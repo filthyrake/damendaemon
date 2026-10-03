@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dllm"
+version = "0.0.1"
+description = "Performance-first local inference: initial measurement tools"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+dllm = "dllm.bench:main"
+
+[tool.setuptools.packages.find]
+include = ["dllm*"]
