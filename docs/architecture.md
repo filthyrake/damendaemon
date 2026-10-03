@@ -1,5 +1,28 @@
 # Execution and model residency
 
+## Implemented prototype boundary
+
+The first executor implements dense Qwen2 with FP16 weights, standard RoPE,
+greedy sampling, static KV allocation, and a CUDA graph for single-token decode.
+The forward pass is dllm code; PyTorch supplies CUDA kernels and graph capture.
+Transformers is used only as an independent validation reference. It does not
+perform dllm inference. This lets us prove numerical behavior and measure GPU
+execution before committing a larger native scheduler implementation.
+
+The service serializes generation behind a bounded admission queue and retains
+one or more GPU executors plus a bounded host weight cache. Graphs remain alive
+for GPU-resident models; restoring an evicted executor currently recaptures its
+graph. Host backing is pageable to avoid pinning multi-GB models. The host budget
+limits retained weights, not transient loader tensors or the full process RSS.
+GPU admission uses a weight/KV estimate plus a 512 MiB workspace reserve; this is
+not an exact predictor of all library allocations, so allocation can still fail.
+
+There is no continuous batching, paged KV allocator, prefix cache, quantization,
+speculative decoding, arbitrary architecture support, or automatic capacity
+tuning yet. The API is a strict text-chat subset. Requests using unsupported
+parameters fail explicitly. The remaining sections describe the target design,
+not additional implemented capabilities.
+
 ## Product contract
 
 dllm owns model discovery, lifecycle, scheduling, and the user interface. A

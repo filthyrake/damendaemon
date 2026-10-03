@@ -1,0 +1,202 @@
+{
+  "model_a": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "model_b": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-1.5B-Instruct/snapshots/989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+  "reports": [
+    {
+      "gpu_models": 1,
+      "trials": [
+        {
+          "model": "a",
+          "wall_seconds": 3.174952533000578,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 2.4951897320006537,
+            "first_token_seconds": 2.5912287549999746,
+            "total_seconds": 3.1669897000001583,
+            "decode_tokens_per_second": 109.42041232056805
+          }
+        },
+        {
+          "model": "b",
+          "wall_seconds": 4.976722016000167,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 3.467766992000179,
+            "first_token_seconds": 3.5017774899997676,
+            "total_seconds": 4.97345691099963,
+            "decode_tokens_per_second": 42.80823602004141
+          }
+        },
+        {
+          "model": "a",
+          "wall_seconds": 1.244170056999792,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 0.6285047450001002,
+            "first_token_seconds": 0.6556413819998852,
+            "total_seconds": 1.240608766999685,
+            "decode_tokens_per_second": 107.6983121033689
+          }
+        },
+        {
+          "model": "b",
+          "wall_seconds": 2.6889331909997054,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 1.183638033000534,
+            "first_token_seconds": 1.2138415179997537,
+            "total_seconds": 2.685552631999599,
+            "decode_tokens_per_second": 42.8073141533717
+          }
+        },
+        {
+          "model": "a",
+          "wall_seconds": 1.472368519000156,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 0.8452049480001733,
+            "first_token_seconds": 0.8827912740007378,
+            "total_seconds": 1.4690200400000322,
+            "decode_tokens_per_second": 107.46657901136811
+          }
+        }
+      ],
+      "sample_text": {
+        "a": "Matrix multiplication is a fundamental operation in linear algebra that allows us to multiply two matrices together. The result of this multiplication is another matrix, which is the product of the two input matrices. The number of columns in the first matrix must equal the number of rows in the second matrix for the multiplication to be defined.\n\nLet's",
+        "b": "Matrix multiplication is a fundamental operation in linear algebra that combines two matrices to produce a third matrix. The process involves multiplying the rows of the first matrix by the columns of the second matrix. Let's go through the steps in detail with a worked example.\n\n### Definition of Matrix Multiplication\n\nGiven two matrices \\( A \\)"
+      },
+      "streaming_and_recovery_passed": true,
+      "stream_benchmark": {
+        "index": 0,
+        "model": "a",
+        "seconds": 1.4795286760008821,
+        "first_output_seconds": 0.874618343000293,
+        "output_tokens": 64,
+        "error": null
+      }
+    },
+    {
+      "gpu_models": 2,
+      "trials": [
+        {
+          "model": "a",
+          "wall_seconds": 3.48770873400008,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 2.8074345200002426,
+            "first_token_seconds": 2.8998113589996137,
+            "total_seconds": 3.484229781999602,
+            "decode_tokens_per_second": 107.79947640357202
+          }
+        },
+        {
+          "model": "b",
+          "wall_seconds": 4.820414841999991,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 3.311337844999798,
+            "first_token_seconds": 3.345903425999495,
+            "total_seconds": 4.817504037999242,
+            "decode_tokens_per_second": 42.81052854034204
+          }
+        },
+        {
+          "model": "a",
+          "wall_seconds": 0.6023392950000925,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 3.3189999157912098e-06,
+            "first_token_seconds": 0.023236345999976038,
+            "total_seconds": 0.5990647329999774,
+            "decode_tokens_per_second": 109.4075968158198
+          }
+        },
+        {
+          "model": "b",
+          "wall_seconds": 1.5046005520007384,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 3.037000169570092e-06,
+            "first_token_seconds": 0.03117808299975877,
+            "total_seconds": 1.5015208209997581,
+            "decode_tokens_per_second": 42.847152824853836
+          }
+        },
+        {
+          "model": "a",
+          "wall_seconds": 0.6172730009993757,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 2.9049997465335764e-06,
+            "first_token_seconds": 0.026729348999651847,
+            "total_seconds": 0.6146527109995077,
+            "decode_tokens_per_second": 107.15682361337335
+          }
+        }
+      ],
+      "sample_text": {
+        "a": "Matrix multiplication is a fundamental operation in linear algebra that allows us to multiply two matrices together. The result of this multiplication is another matrix, which is the product of the two input matrices. The number of columns in the first matrix must equal the number of rows in the second matrix for the multiplication to be defined.\n\nLet's",
+        "b": "Matrix multiplication is a fundamental operation in linear algebra that combines two matrices to produce a third matrix. The process involves multiplying the rows of the first matrix by the columns of the second matrix. Let's go through the steps in detail with a worked example.\n\n### Definition of Matrix Multiplication\n\nGiven two matrices \\( A \\)"
+      },
+      "streaming_and_recovery_passed": true,
+      "stream_benchmark": {
+        "index": 0,
+        "model": "a",
+        "seconds": 0.6490938400002051,
+        "first_output_seconds": 0.04052116500042757,
+        "output_tokens": 64,
+        "error": null
+      }
+    }
+  ]
+}

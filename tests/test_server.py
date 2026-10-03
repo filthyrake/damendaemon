@@ -1,0 +1,91 @@
+from http.server import ThreadingHTTPServer
+import json
+import threading
+import unittest
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+
+from dllm.bench import events
+from dllm.server import handler_for
+from dllm.runtime import BusyError
+
+
+class FakeRuntime:
+    models = {"a": "unused"}
+    closed = 0
+
+    def generate(self, alias, messages, max_tokens):
+        try:
+            if alias == "busy":
+                raise BusyError("request queue is full")
+            if alias != "a":
+                raise ValueError("unknown model")
+            yield {"text": "Hello", "token": 1}
+            yield {"text": " world", "token": 2}
+            yield {"finish_reason": "length", "usage": {
+                "prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5}, "timing": {}}
+        finally:
+            self.closed += 1
+
+
+class ServerTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.runtime = FakeRuntime()
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), handler_for(cls.runtime))
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+        cls.url = f"http://127.0.0.1:{cls.server.server_port}"
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.thread.join()
+
+    def post(self, **changes):
+        data = {"model": "a", "messages": [{"role": "user", "content": "hello"}]}
+        data.update(changes)
+        return urlopen(Request(self.url + "/v1/chat/completions",
+                               data=json.dumps(data).encode(),
+                               headers={"Content-Type": "application/json"}), timeout=5)
+
+    def test_nonstream_completion(self):
+        with self.post() as response:
+            data = json.load(response)
+        self.assertEqual(data["choices"][0]["message"]["content"], "Hello world")
+        self.assertEqual(data["usage"]["completion_tokens"], 2)
+
+    def test_stream_protocol_usage_and_generator_cleanup(self):
+        before = self.runtime.closed
+        with self.post(stream=True, stream_options={"include_usage": True}) as response:
+            chunks = list(events(response))
+        self.assertEqual(chunks[-1], "[DONE]")
+        self.assertEqual(json.loads(chunks[-2])["usage"]["completion_tokens"], 2)
+        self.assertEqual(self.runtime.closed, before + 1)
+
+    def test_reject_unsupported_parameters(self):
+        for changes in ({"temperature": 1}, {"tools": []}, {"stream": "yes"},
+                        {"messages": []}, {"stream_options": {"include_usage": 1}}):
+            with self.subTest(changes=changes), self.assertRaises(HTTPError) as error:
+                self.post(**changes)
+            self.assertEqual(error.exception.code, 400)
+            error.exception.close()
+
+    def test_queue_full_is_503_before_stream(self):
+        with self.assertRaises(HTTPError) as error:
+            self.post(model="busy", stream=True)
+        self.assertEqual(error.exception.code, 503)
+        error.exception.close()
+
+    def test_unknown_model_is_400(self):
+        with self.assertRaises(HTTPError) as error:
+            self.post(model="missing", stream=True)
+        self.assertEqual(error.exception.code, 400)
+        error.exception.close()
+
+    def test_models_and_health(self):
+        with urlopen(self.url + "/v1/models") as response:
+            self.assertEqual(json.load(response)["data"][0]["id"], "a")
+        with urlopen(self.url + "/health") as response:
+            self.assertEqual(json.load(response)["status"], "ok")
