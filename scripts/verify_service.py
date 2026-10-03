@@ -89,10 +89,19 @@ def main():
                     with ThreadPoolExecutor(max_workers=2) as pool:
                         for alias, text in pool.map(concurrent, ("a", "b")):
                             assert text == texts[alias]
+                    def same_model(_):
+                        with post("a") as response:
+                            return json.load(response)
+                    with ThreadPoolExecutor(max_workers=4) as pool:
+                        batched = list(pool.map(same_model, range(4)))
+                    for response in batched:
+                        assert response["choices"][0]["message"]["content"] == texts["a"]
+                    assert max(r["dllm_timing"]["max_batch_size"] for r in batched) == 4
                     benchmark = request_one(base + "/v1", "a", prompt, 64, 120, 0)
                     assert benchmark.error is None, benchmark.error
                     reports.append({"gpu_models": slots, "trials": trials, "sample_text": texts,
                                     "streaming_and_recovery_passed": True,
+                                    "same_model_batch": [r["dllm_timing"] for r in batched],
                                     "stream_benchmark": vars(benchmark)})
                 finally:
                     if process.poll() is None:

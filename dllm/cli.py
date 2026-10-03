@@ -40,6 +40,7 @@ def main():
     server = commands.add_parser("serve", help="serve named local models on loopback")
     server.add_argument("--model", action="append", required=True, metavar="NAME=PATH")
     server.add_argument("--port", type=int, default=8088)
+    server.add_argument("--batch-size", type=int, choices=range(1, 9), default=4)
     for command in (run, server):
         command.add_argument("--context", type=int, default=1024)
         command.add_argument("--gpu-models", type=int, default=1)
@@ -63,7 +64,13 @@ def main():
             # Resolve repository names up front; explicit local paths remain
             # lazy so failed loads can be reported without taking down the API.
             models[alias] = resolve_model(path) if not path.startswith(("/", ".", "~")) else Path(path).expanduser()
-    runtime = Runtime(models, context=args.context, gpu_models=args.gpu_models,
+    runtime_type = Runtime
+    options = {}
+    if args.command == "serve":
+        from .scheduler import BatchedRuntime
+        runtime_type = BatchedRuntime
+        options["batch_size"] = args.batch_size
+    runtime = runtime_type(models, **options, context=args.context, gpu_models=args.gpu_models,
                       host_models=args.host_models, host_gib=args.host_gib, use_graph=not args.no_graph)
     if args.command == "serve":
         from .server import serve

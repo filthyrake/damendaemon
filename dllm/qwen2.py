@@ -1,11 +1,14 @@
 """Independent Qwen2 executor using PyTorch CUDA kernels, not HF generation.
 
-Initial scope: dense Qwen2, FP16, batch size one, greedy decoding. CUDA graphs
-remove Python dispatch from each decode step. Prefill remains eager.
+Dense Qwen2, FP16 and greedy decoding. The single-sequence base is extended by
+BatchExecutor. CUDA graphs remove Python dispatch from each decode step.
 """
 
 import json
 import math
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import torch
@@ -101,17 +104,31 @@ class ModelWeights:
 
 
 class Executor:
-    def __init__(self, model, use_graph=True, fuse_projections=True):
+    def __init__(self, model, use_graph=True, fuse_projections=True, kernels=None, max_batch=1):
         self.model = model
         self.c = model.config
         self.context = model.max_context
+        self.max_batch = max_batch
         self.fuse_projections = fuse_projections
         c = self.c
         self.heads = c["num_attention_heads"]
         self.kv_heads = c["num_key_value_heads"]
         self.dim = c["hidden_size"] // self.heads
         self.eps = c["rms_norm_eps"]
-        kv_bytes = 2 * c["num_hidden_layers"] * self.kv_heads * self.context * self.dim * 2
+        selected = kernels or os.environ.get("DLLM_KERNELS", "auto")
+        if selected not in ("auto", "torch", "triton"):
+            raise ValueError("kernels must be auto, torch, or triton")
+        self.kernels = None
+        if selected != "torch":
+            try:
+                from . import kernels as fused
+                if self.dim & (self.dim - 1):
+                    raise ImportError("fused kernels require power-of-two head dimensions")
+                self.kernels = fused
+            except ImportError:
+                if selected == "triton":
+                    raise
+        kv_bytes = 2 * c["num_hidden_layers"] * max_batch * self.kv_heads * self.context * self.dim * 2
         # A prior failed construction can leave unused allocator blocks cached
         # after its traceback is released. Return those before querying free VRAM.
         torch.cuda.empty_cache()
@@ -124,7 +141,7 @@ class Executor:
             if id(tensor) not in copies:
                 copies[id(tensor)] = tensor.to("cuda")
             self.w[name] = copies[id(tensor)]
-        self.kv = [torch.zeros((2, 1, self.kv_heads, self.context, self.dim),
+        self.kv = [torch.zeros((2, max_batch, self.kv_heads, self.context, self.dim),
                                dtype=torch.float16, device="cuda")
                    for _ in range(c["num_hidden_layers"])]
         inv = 1.0 / (c["rope_theta"] ** (torch.arange(0, self.dim, 2, device="cuda", dtype=torch.float32) / self.dim))
@@ -135,14 +152,24 @@ class Executor:
         self.token = torch.zeros(1, dtype=torch.long, device="cuda")
         self.position = torch.zeros(1, dtype=torch.long, device="cuda")
         self.graph = None
-        if use_graph:
+        if use_graph or self.kernels:
             stream = torch.cuda.Stream()
             stream.wait_stream(torch.cuda.current_stream())
             with torch.cuda.stream(stream), torch.inference_mode():
-                for _ in range(3):
-                    self.forward(self.token, self.position, prefill=False)
+                try:
+                    for _ in range(3):
+                        self.forward(self.token, self.position, prefill=False)
+                except (ImportError, FileNotFoundError, subprocess.CalledProcessError) as error:
+                    if selected != "auto" or self.kernels is None:
+                        raise
+                    self.kernels = None
+                    print(f"dllm: fused kernel toolchain unavailable ({type(error).__name__}); using torch kernels", file=sys.stderr)
+                    for _ in range(3):
+                        self.forward(self.token, self.position, prefill=False)
             torch.cuda.current_stream().wait_stream(stream)
             torch.cuda.synchronize()
+        self.kernel_backend = "triton" if self.kernels else "torch"
+        if use_graph:
             self.graph = torch.cuda.CUDAGraph()
             with torch.cuda.graph(self.graph), torch.inference_mode():
                 self.graph_logits = self.forward(self.token, self.position, prefill=False)
@@ -150,6 +177,8 @@ class Executor:
         self.length = 0
 
     def norm(self, x, weight):
+        if self.kernels:
+            return self.kernels.rms(x, weight, self.eps)
         xf = x.float()
         return (xf * torch.rsqrt(xf.square().mean(-1, keepdim=True) + self.eps)).to(x.dtype) * weight
 
@@ -158,47 +187,60 @@ class Executor:
         return x * cos + torch.cat((-right, left), dim=-1) * sin
 
     @torch.inference_mode()
-    def forward(self, ids, positions, prefill):
+    def forward(self, ids, positions, prefill, slot=0):
         w = self.w
         x = F.embedding(ids, w["embed"])
         count = ids.shape[0]
-        cos = self.cos[positions].view(1, 1, count, self.dim)
-        sin = self.sin[positions].view(1, 1, count, self.dim)
-        mask = None if prefill else (self.arange <= positions[0]).view(1, 1, 1, -1)
+        if not self.kernels or not self.fuse_projections:
+            cos = self.cos[positions].view(1, 1, count, self.dim)
+            sin = self.sin[positions].view(1, 1, count, self.dim)
+        mask = None if prefill or self.kernels else (self.arange <= positions[0]).view(1, 1, 1, -1)
         for i in range(self.c["num_hidden_layers"]):
             hidden = self.norm(x, w[f"{i}.norm1"])
             sizes = [self.heads * self.dim, self.kv_heads * self.dim, self.kv_heads * self.dim]
+            cache_k, cache_v = self.kv[i][:, slot:slot+1].unbind(0)
             if self.fuse_projections:
-                q, k, v = F.linear(hidden, w[f"{i}.qkv.weight"], w[f"{i}.qkv.bias"]).split(sizes, dim=-1)
+                qkv = F.linear(hidden, w[f"{i}.qkv.weight"], w[f"{i}.qkv.bias"])
+                q, k, v = qkv.split(sizes, dim=-1)
             else:
                 q, k, v = [F.linear(hidden, weight, bias) for weight, bias in zip(
                     w[f"{i}.qkv.weight"].split(sizes), w[f"{i}.qkv.bias"].split(sizes))]
-            q = self.rotate(q.view(1, count, self.heads, self.dim).transpose(1, 2), cos, sin)
-            k = self.rotate(k.view(1, count, self.kv_heads, self.dim).transpose(1, 2), cos, sin)
-            v = v.view(1, count, self.kv_heads, self.dim).transpose(1, 2)
-            cache_k, cache_v = self.kv[i].unbind(0)
-            cache_k.index_copy_(2, positions, k)
-            cache_v.index_copy_(2, positions, v)
+            if self.kernels and self.fuse_projections:
+                q = self.kernels.rope_store(qkv, self.cos, self.sin, positions, cache_k, cache_v, self.heads)
+                k, v = cache_k[:, :, :count], cache_v[:, :, :count]
+            else:
+                q = self.rotate(q.view(1, count, self.heads, self.dim).transpose(1, 2), cos, sin)
+                k = self.rotate(k.view(1, count, self.kv_heads, self.dim).transpose(1, 2), cos, sin)
+                v = v.view(1, count, self.kv_heads, self.dim).transpose(1, 2)
+                cache_k.index_copy_(2, positions, k)
+                cache_v.index_copy_(2, positions, v)
             if not prefill:
                 k, v = cache_k, cache_v
-            attention = F.scaled_dot_product_attention(q, k, v, attn_mask=mask,
-                                                       is_causal=prefill, enable_gqa=True)
+            if self.kernels and not prefill:
+                attention = self.kernels.attention(q, cache_k, cache_v, positions)
+            else:
+                attention = F.scaled_dot_product_attention(q, k, v, attn_mask=mask,
+                                                           is_causal=prefill, enable_gqa=True)
             x = x + F.linear(attention.transpose(1, 2).reshape(count, -1), w[f"{i}.out"])
             hidden = self.norm(x, w[f"{i}.norm2"])
             if self.fuse_projections:
-                gate, up = F.linear(hidden, w[f"{i}.gate_up"]).chunk(2, -1)
+                gate_up = F.linear(hidden, w[f"{i}.gate_up"])
+                gate, up = gate_up.chunk(2, -1)
             else:
                 gate, up = [F.linear(hidden, weight) for weight in w[f"{i}.gate_up"].chunk(2)]
-            x = x + F.linear(F.silu(gate) * up, w[f"{i}.down"])
+            activated = self.kernels.swiglu(gate_up) if self.kernels and self.fuse_projections else F.silu(gate) * up
+            x = x + F.linear(activated, w[f"{i}.down"])
         return F.linear(self.norm(x[-1:], w["norm"]), w["head"])
 
     @torch.inference_mode()
-    def prefill(self, tokens):
+    def prefill(self, tokens, slot=0):
         if not tokens or len(tokens) > self.context:
             raise ValueError("prompt is empty or exceeds context")
+        if not 0 <= slot < self.max_batch:
+            raise ValueError("invalid cache slot")
         ids = torch.tensor(tokens, device="cuda", dtype=torch.long)
         self.length = len(tokens)
-        return self.forward(ids, torch.arange(len(tokens), device="cuda"), prefill=True)
+        return self.forward(ids, torch.arange(len(tokens), device="cuda"), prefill=True, slot=slot)
 
     @torch.inference_mode()
     def decode(self, token):

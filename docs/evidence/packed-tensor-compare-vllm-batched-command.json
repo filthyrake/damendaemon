@@ -1,0 +1,30 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/baselines/vllm-venv/bin/vllm",
+    "serve",
+    "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+    "--served-model-name",
+    "a",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "40949",
+    "--dtype",
+    "half",
+    "--max-model-len",
+    "256",
+    "--max-num-seqs",
+    "4",
+    "--gpu-memory-utilization",
+    "0.5",
+    "--no-enable-prefix-caching",
+    "--generation-config",
+    "vllm"
+  ],
+  "model": {
+    "repository": "Qwen/Qwen2.5-0.5B-Instruct",
+    "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283"
+}

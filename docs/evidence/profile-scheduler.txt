@@ -1,0 +1,116 @@
+{
+  "seconds": 0.655380402999981,
+  "results": [
+    {
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 43,
+        "completion_tokens": 64,
+        "total_tokens": 107
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 3.2119996831170283e-06,
+        "kernel_backend": "triton",
+        "max_batch_size": 4,
+        "first_token_seconds": 0.027693883999745594,
+        "total_seconds": 0.6283398490004402,
+        "decode_tokens_per_second": 104.88707769796997
+      }
+    },
+    {
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 43,
+        "completion_tokens": 64,
+        "total_tokens": 107
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "kernel_backend": "triton",
+        "max_batch_size": 4,
+        "first_token_seconds": 0.057805423999525374,
+        "total_seconds": 0.6359984390001046,
+        "decode_tokens_per_second": 108.96015407577501
+      }
+    },
+    {
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 43,
+        "completion_tokens": 64,
+        "total_tokens": 107
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "kernel_backend": "triton",
+        "max_batch_size": 4,
+        "first_token_seconds": 0.09029376700073044,
+        "total_seconds": 0.6439385840003524,
+        "decode_tokens_per_second": 113.79136599059504
+      }
+    },
+    {
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 43,
+        "completion_tokens": 64,
+        "total_tokens": 107
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "kernel_backend": "triton",
+        "max_batch_size": 4,
+        "first_token_seconds": 0.12109171800057084,
+        "total_seconds": 0.6501069590003681,
+        "decode_tokens_per_second": 119.08919652472574
+      }
+    }
+  ]
+}
+         62382 function calls (61602 primitive calls) in 0.649 seconds
+
+   Ordered by: cumulative time
+   List reduced from 164 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.002    0.002    0.653    0.653 scheduler.py:154(_group)
+       66    0.474    0.007    0.474    0.007 {method 'tolist' of 'torch._C.TensorBase' objects}
+    74/70    0.001    0.000    0.151    0.002 _contextlib.py:113(decorate_context)
+        4    0.000    0.000    0.093    0.023 batch.py:69(prefill)
+        4    0.000    0.000    0.093    0.023 qwen2.py:235(prefill)
+        4    0.012    0.003    0.090    0.023 qwen2.py:189(forward)
+       66    0.002    0.000    0.056    0.001 batch.py:74(decode_batch)
+      388    0.001    0.000    0.045    0.000 jit.py:330(<lambda>)
+      388    0.011    0.000    0.044    0.000 jit.py:563(run)
+      202    0.042    0.000    0.042    0.000 {built-in method torch.tensor}
+      196    0.000    0.000    0.026    0.000 qwen2.py:179(norm)
+      196    0.001    0.000    0.026    0.000 kernels.py:22(rms)
+      256    0.003    0.000    0.016    0.000 scheduler.py:105(_emit)
+      388    0.015    0.000    0.015    0.000 {built-in method torch._C._nn.linear}
+       96    0.001    0.000    0.014    0.000 kernels.py:71(rope_store)
+       96    0.001    0.000    0.011    0.000 kernels.py:39(swiglu)
+       66    0.000    0.000    0.008    0.000 graphs.py:86(replay)
+       66    0.008    0.000    0.008    0.000 {built-in method torch._C.replay}
+      388    0.001    0.000    0.007    0.000 driver.py:454(get_current_target)
+      256    0.007    0.000    0.007    0.000 {method 'decode' of 'tokenizers.Tokenizer' objects}
+        4    0.006    0.002    0.006    0.002 {method 'item' of 'torch._C.TensorBase' objects}
+      388    0.000    0.000    0.006    0.000 driver.py:443(__call__)
+       96    0.005    0.000    0.005    0.000 {built-in method torch._C._nn.scaled_dot_product_attention}
+      198    0.004    0.000    0.004    0.000 {method 'copy_' of 'torch._C.TensorBase' objects}
+      388    0.001    0.000    0.004    0.000 __init__.py:494(get_device_capability)
+      388    0.001    0.000    0.004    0.000 compiler.py:306(make_backend)
+      264    0.000    0.000    0.004    0.000 threading.py:590(set)
+     1452    0.002    0.000    0.003    0.000 jit.py:294(mangle_type)
+      388    0.001    0.000    0.003    0.000 __init__.py:511(get_device_properties)
+     1452    0.001    0.000    0.003    0.000 compiler.py:300(compute_spec_key)
+      256    0.000    0.000    0.003    0.000 queue.py:185(put_nowait)
+      520    0.001    0.000    0.003    0.000 threading.py:366(notify)
+      256    0.001    0.000    0.003    0.000 queue.py:122(put)
+       96    0.003    0.000    0.003    0.000 {method 'reshape' of 'torch._C.TensorBase' objects}
+      264    0.000    0.000    0.003    0.000 threading.py:396(notify_all)
+
+

@@ -24,7 +24,7 @@ class BusyError(Exception):
 
 class Runtime:
     def __init__(self, models, context=1024, gpu_models=1, host_models=2,
-                 host_gib=8, use_graph=True, queue_size=8, queue_timeout=120):
+                 host_gib=8, use_graph=True, queue_size=8, queue_timeout=120, batch_size=None):
         if (not models or min(context, gpu_models, host_models, queue_size) <= 0
                 or host_models < gpu_models or host_gib <= 0 or queue_timeout <= 0):
             raise ValueError("invalid model, residency, context, or queue limits")
@@ -34,6 +34,7 @@ class Runtime:
         self.gpu_limit, self.host_limit = gpu_models, host_models
         self.host_bytes = int(host_gib * 1024**3)
         self.use_graph = use_graph
+        self.batch_size = batch_size
         self.queue_timeout = queue_timeout
         self.host = OrderedDict()
         self.gpu = OrderedDict()
@@ -82,7 +83,11 @@ class Runtime:
             self._evict(next(iter(self.gpu)))
         # Failure never publishes a partially initialized executor as ready.
         try:
-            executor = Executor(self.host[alias], self.use_graph)
+            if self.batch_size is None:
+                executor = Executor(self.host[alias], self.use_graph)
+            else:
+                from .batch import BatchExecutor
+                executor = BatchExecutor(self.host[alias], self.use_graph, self.batch_size)
         except Exception:
             gc.collect()
             torch.cuda.empty_cache()
@@ -154,7 +159,8 @@ class Runtime:
             yield {"finish_reason": finish, "usage": {
                 "prompt_tokens": len(prompt), "completion_tokens": len(output),
                 "total_tokens": len(prompt) + len(output),
-            }, "timing": {"source_tier": tier, "activation_seconds": load_seconds,
+            }, "timing": {"source_tier": tier, "kernel_backend": executor.kernel_backend,
+                          "activation_seconds": load_seconds,
                           "first_token_seconds": first_time, "total_seconds": elapsed,
                           "decode_tokens_per_second": (len(output) - 1) / (elapsed - first_time)
                           if len(output) > 1 and elapsed > first_time else None}}

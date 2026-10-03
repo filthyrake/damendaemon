@@ -1,0 +1,181 @@
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from types import SimpleNamespace
+import threading
+import time
+import unittest
+from unittest.mock import patch
+
+from dllm.scheduler import BatchedRuntime
+from dllm.runtime import BusyError
+
+
+class Tensor:
+    def __init__(self, values):
+        self.values = values
+    def argmax(self, _):
+        return self
+    def item(self):
+        return self.values[0]
+    def tolist(self):
+        return self.values
+
+
+class FakeExecutor:
+    context = 256
+    kernel_backend = 'fake'
+    def __init__(self):
+        self.model = SimpleNamespace(eos={9}, chat_tokens=lambda messages: [messages[0]['content']],
+            tokenizer=SimpleNamespace(decode=lambda tokens, **_: ''.join(map(str, tokens))))
+        self.entered = threading.Event()
+        self.release = threading.Event()
+        self.batches = []
+    def prefill(self, tokens, slot):
+        self.entered.set()
+        if not self.release.wait(5):
+            raise TimeoutError('test did not release prefill')
+        if tokens[0] == 'fail':
+            raise ValueError('invalid prompt')
+        return Tensor([9 if tokens[0] == 'eos' else 1])
+    def prefill_batch(self, prompts, slots):
+        return Tensor([self.prefill(prompt, slot).item() for prompt, slot in zip(prompts, slots)])
+    def decode_batch(self, tokens, slots):
+        self.batches.append(tuple(slots))
+        return None, Tensor([token + 1 for token in tokens])
+
+
+class FakeRuntime:
+    def __init__(self, models, **kwargs):
+        self.models = models
+        self.executor = FakeExecutor()
+        self.groups = []
+    @contextmanager
+    def session(self, alias):
+        self.groups.append(alias)
+        yield self.executor, 'disk', 0.01
+
+
+class SchedulerTests(unittest.TestCase):
+    def setUp(self):
+        patcher = patch('dllm.scheduler.Runtime', FakeRuntime)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.runtime = BatchedRuntime({'a': 'a', 'b': 'b'}, batch_size=2, queue_size=4)
+        self.executor = self.runtime.runtime.executor
+        self.addCleanup(self.runtime.close)
+        self.addCleanup(self.executor.release.set)
+
+    def generate(self, alias='a', prompt='ok', count=5):
+        return self.runtime.generate(alias, [{'content': prompt}], count)
+
+    def wait_pending(self, count):
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            with self.runtime.condition:
+                if len(self.runtime.pending) == count:
+                    return
+            time.sleep(.001)
+        self.fail('requests did not enter queue')
+
+    def test_joining_requests_batch_and_report_individual_usage(self):
+        with ThreadPoolExecutor(2) as pool:
+            first = pool.submit(lambda: list(self.generate(count=6)))
+            self.assertTrue(self.executor.entered.wait(2))
+            second = pool.submit(lambda: list(self.generate(count=3)))
+            self.wait_pending(1)
+            self.executor.release.set()
+            a, b = first.result(3), second.result(3)
+        self.assertTrue(any(len(batch) == 2 for batch in self.executor.batches))
+        self.assertEqual([x['token'] for x in a[:-1]], list(range(1, 7)))
+        self.assertEqual([x['token'] for x in b[:-1]], [1, 2, 3])
+        self.assertEqual(b[-1]['timing']['source_tier'], 'gpu')
+        self.assertEqual(b[-1]['timing']['activation_seconds'], 0)
+        self.assertEqual(b[-1]['usage']['completion_tokens'], 3)
+
+    def test_other_model_gets_turn_before_later_same_model(self):
+        with ThreadPoolExecutor(3) as pool:
+            futures = [pool.submit(lambda: list(self.generate('a')))]
+            self.assertTrue(self.executor.entered.wait(2))
+            futures.append(pool.submit(lambda: list(self.generate('b'))))
+            self.wait_pending(1)
+            futures.append(pool.submit(lambda: list(self.generate('a'))))
+            self.wait_pending(2)
+            self.executor.release.set()
+            for future in futures:
+                future.result(3)
+        self.assertEqual(self.runtime.runtime.groups, ['a', 'b', 'a'])
+
+    def test_bad_prompt_and_eos_leave_worker_usable(self):
+        self.executor.release.set()
+        with self.assertRaises(ValueError):
+            list(self.generate(prompt='fail'))
+        result = list(self.generate(prompt='eos'))
+        self.assertEqual(result[-1]['finish_reason'], 'stop')
+        self.assertEqual(result[-1]['usage']['completion_tokens'], 1)
+        self.assertEqual(len(list(self.generate(count=2))), 3)
+
+    def test_cancel_backpressured_request_releases_slot(self):
+        self.executor.release.set()
+        self.executor.model.eos = set()
+        stream = self.generate(count=100)
+        next(stream)
+        stream.close()
+        result = list(self.generate('b', count=2))
+        self.assertEqual(result[-1]['usage']['completion_tokens'], 2)
+
+    def test_close_wakes_queued_consumers_and_rejects_new_work(self):
+        with ThreadPoolExecutor(3) as pool:
+            first = pool.submit(lambda: list(self.generate()))
+            self.assertTrue(self.executor.entered.wait(2))
+            second = pool.submit(lambda: list(self.generate('b')))
+            self.wait_pending(1)
+            closing = pool.submit(self.runtime.close)
+            # close must notify consumers even while the GPU worker is occupied.
+            with self.assertRaises(BusyError):
+                second.result(3)
+            self.executor.release.set()
+            for future in (first,):
+                with self.assertRaises(BusyError):
+                    future.result(3)
+            closing.result(3)
+        self.runtime.close()
+        self.assertFalse(self.runtime.worker.is_alive())
+        with self.assertRaises(BusyError):
+            list(self.generate())
+
+    def test_admission_limit_and_queue_timeout_recover(self):
+        self.runtime.queue_timeout = .05
+        with ThreadPoolExecutor(4) as pool:
+            first = pool.submit(lambda: list(self.generate()))
+            self.assertTrue(self.executor.entered.wait(2))
+            queued = [pool.submit(lambda: list(self.generate())) for _ in range(3)]
+            self.wait_pending(3)
+            with self.assertRaises(BusyError):
+                list(self.generate())
+            time.sleep(.06)
+            self.executor.release.set()
+            first.result(3)
+            for future in queued:
+                with self.assertRaises(BusyError):
+                    future.result(3)
+        self.assertEqual(list(self.generate(count=1))[-1]['usage']['completion_tokens'], 1)
+
+    def test_decode_failure_releases_all_slots(self):
+        self.executor.release.set()
+        with patch.object(self.executor, 'decode_batch', side_effect=RuntimeError('GPU fault')):
+            with self.assertRaisesRegex(RuntimeError, 'GPU fault'):
+                list(self.generate())
+        self.assertEqual(list(self.generate(count=2))[-1]['usage']['completion_tokens'], 2)
+
+    def test_stalled_stream_times_out_without_blocking_following_model(self):
+        self.executor.model.eos = set()
+        self.executor.release.set()
+        self.runtime.queue_timeout = .03
+        stream = self.generate(count=100)
+        next(stream)
+        # Leave its bounded output queue undrained until the worker expires it.
+        time.sleep(.08)
+        with self.assertRaisesRegex(BusyError, 'backpressure'):
+            list(stream)
+        result = list(self.generate('b', count=2))
+        self.assertEqual(result[-1]['usage']['completion_tokens'], 2)

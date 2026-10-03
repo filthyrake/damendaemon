@@ -179,4 +179,6 @@ def serve(runtime, port):
     except KeyboardInterrupt:
         pass
     finally:
+        if hasattr(runtime, "close"):
+            runtime.close()
         server.server_close()

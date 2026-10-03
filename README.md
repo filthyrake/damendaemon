@@ -4,18 +4,21 @@ Damen's LLM runtime: fast GPU inference with effortless model switching.
 
 **Current state:** a working independent NVIDIA inference prototype, verified on
 an A2 with Qwen2.5 0.5B and 1.5B. It implements its own forward pass, static KV
-cache, greedy decoding, CUDA graphs, streaming API, and GPU/host model residency.
-PyTorch provides the GPU kernels; dllm does not depend on vLLM, llama.cpp, Ollama,
+cache, greedy decoding, CUDA graphs, continuous batching, a streaming API, and
+GPU/host model residency. PyTorch/cuBLAS and dllm's fused Triton kernels provide
+GPU execution; dllm does not depend on vLLM, llama.cpp, Ollama,
 or Transformers generation. Transformers is only a validation dependency.
 
 The server selects models from each request without restarting. GPU-resident
 models retain their execution graphs; evicted models restore from the host cache.
-This is an early, single-request executor, not yet a general-purpose replacement.
+This remains an early runtime with deliberately narrow model support.
 
 ## Run a model
 
 Linux, Python 3.11+, NVIDIA CUDA GPU and a compatible driver. Install the CUDA
-build of PyTorch into a fresh environment before installing dllm's runtime extra:
+build of PyTorch into a fresh environment before installing dllm's runtime extra.
+The fast Triton path also needs a C compiler and matching Python development
+headers for its CUDA driver helper:
 
 ```sh
 python3 -m venv .venv
@@ -32,6 +35,12 @@ dllm run Qwen/Qwen2.5-0.5B-Instruct --prompt 'Explain CUDA graphs in one paragra
 without requiring a GPU and prints the resolved immutable revision and local
 snapshot path. Use that path for offline runs, or `run --revision SHA` to pin a
 repository revision.
+
+`DLLM_KERNELS=auto` (default) selects fused Triton kernels when available and
+falls back to PyTorch if its import or compiler setup is unavailable. Set
+`DLLM_KERNELS=triton` to require the fast path, or `DLLM_KERNELS=torch` to use the
+reference tensor path. Non-streaming responses report the selected backend in
+`dllm_timing.kernel_backend`.
 
 The explicit GPU UUID prevents accidentally using another busy device. Obtain
 UUIDs with `nvidia-smi -L`. No GPU is needed for downloading or HTTP benchmarking.
@@ -63,28 +72,34 @@ a partially loaded executor. There is no automatic GPU-budget tuning yet.
 Supported: dense unquantized Qwen2, standard RoPE, text chat templates, FP16,
 greedy decoding, optional streaming usage. `temperature` must be zero. Unsupported
 fields are rejected, including tools, multimodal inputs, and alternate sampling.
-Prompt plus requested output must fit `--context`. Decode attends over that fixed
-capacity, so larger contexts can cost speed even for short requests.
+Prompt plus requested output must fit `--context`. KV memory is reserved per
+slot at that capacity. Fused attention reads the live prefix and skips unused
+context blocks; larger configured contexts still add launch/merge overhead.
 
-Requests run one at a time across all resident models. Up to eight can be admitted,
-with a 120-second queue wait limit; HTTP connections are separately capped at 16.
+The server continuously batches up to four requests for one model by default;
+use `--batch-size 1..8` to choose capacity. Different prompt lengths have separate
+KV slots, and available prompts share packed linear layers. Model groups drain
+before switching; a waiting different model prevents later requests from jumping
+ahead of it. Prefill is still unchunked, so a long prompt can delay active decode.
+Up to eight requests can be admitted, with a 120-second queue wait/backpressure
+limit; HTTP connections are separately capped at 16.
 Disconnects close the generation iterator once a socket write detects them.
 The loopback development server has no authentication and is not a public gateway.
 
 ## Verified results
 
-On the A2, the 0.5B executor measured about 110 decode tokens/s with CUDA graphs,
-versus 37–38 without them; 1.5B measured about 43 versus 31. Both models matched
-192 combined greedy token checks against an independent FP16 reference. The
-real API passed repeated model switching, streaming, concurrent request
-serialization, disconnect recovery, and failed-load recovery.
+Profiling identified excessive small-kernel launches in the first executor.
+Fused normalization, RoPE/cache writes, activation, and attention reduced decode
+from 1,364 to 274 kernels per token. Continuous batching now shares weight reads
+across requests. Performance is measured on the A2 against the same immutable
+FP16 model snapshots, with independent-reference correctness checks. The final
+0.5B HTTP run delivered 139 tokens/s after first output (vLLM: 149), and four
+concurrent requests delivered 433 aggregate output tokens/s including prefill
+(vLLM: 497). These are short-workload measurements, not a broad parity claim.
 
-A matching 0.5B FP16 HTTP workload measured approximately 106 tokens/s after
-first output for dllm, 66 for the tested llama.cpp image, and 150 for vLLM 0.30.0.
-dllm has not reached vLLM performance parity. This is one short, single-request
-workload, not a general speed ranking. See
-[runtime evidence](docs/runtime-proof.md) for revisions, settings, raw measurements,
-correctness tolerances, switching results, and limitations.
+See [fused and batched runtime evidence](docs/batching-proof.md) for current
+HTTP comparisons, correctness gates, model switching, and limitations. The
+[first runtime evidence](docs/runtime-proof.md) preserves the original baseline.
 
 ## Design priorities
 

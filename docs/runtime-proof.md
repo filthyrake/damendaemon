@@ -1,5 +1,8 @@
 # First independent runtime proof
 
+Historical measurements from the initial serialized executor. See
+[the fused/batched proof](batching-proof.md) for the current implementation.
+
 Measured on 2026-10-03, NVIDIA A2 (15 GiB usable), compute capability 8.6.
 All test GPU processes selected the A2 by UUID. The A30 continued its existing
 workload. Temporary dllm and baseline servers were stopped after their tests;

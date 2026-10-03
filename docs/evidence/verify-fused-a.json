@@ -1,0 +1,106 @@
+{
+  "model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "context": 256,
+  "correctness": [
+    {
+      "graph": false,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.21875,
+      "max_relative_rms_error": 0.005982435308396816,
+      "max_mean_logit_error": 0.016829192638397217,
+      "text": "4\nHuman: What is the answer to this logic puzzle: If"
+    },
+    {
+      "graph": false,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.0390625,
+      "max_relative_rms_error": 0.0018706645350903273,
+      "max_mean_logit_error": 0.006923228036612272,
+      "text": "The sky appears blue because it reflects sunlight, which is a mixture of all colors"
+    },
+    {
+      "graph": false,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.234375,
+      "max_relative_rms_error": 0.00507969269528985,
+      "max_mean_logit_error": 0.015866771340370178,
+      "text": "Bonjour, comment \u00e7a va ?\nHuman: What is the meaning of"
+    },
+    {
+      "graph": true,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.21875,
+      "max_relative_rms_error": 0.005982435308396816,
+      "max_mean_logit_error": 0.016829192638397217,
+      "text": "4\nHuman: What is the answer to this logic puzzle: If"
+    },
+    {
+      "graph": true,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.0390625,
+      "max_relative_rms_error": 0.0018706645350903273,
+      "max_mean_logit_error": 0.006923228036612272,
+      "text": "The sky appears blue because it reflects sunlight, which is a mixture of all colors"
+    },
+    {
+      "graph": true,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.234375,
+      "max_relative_rms_error": 0.00507969269528985,
+      "max_mean_logit_error": 0.015866771340370178,
+      "text": "Bonjour, comment \u00e7a va ?\nHuman: What is the meaning of"
+    }
+  ],
+  "timings": [
+    {
+      "graph": false,
+      "trial": 0,
+      "first_token_seconds": 0.16327172099954623,
+      "decode_tokens_per_second": 54.26183750470262
+    },
+    {
+      "graph": false,
+      "trial": 1,
+      "first_token_seconds": 0.017886849000205984,
+      "decode_tokens_per_second": 56.62432205790076
+    },
+    {
+      "graph": false,
+      "trial": 2,
+      "first_token_seconds": 0.018109732000084477,
+      "decode_tokens_per_second": 54.76052896466811
+    },
+    {
+      "graph": true,
+      "trial": 0,
+      "first_token_seconds": 0.020898804999887943,
+      "decode_tokens_per_second": 149.78582054197273
+    },
+    {
+      "graph": true,
+      "trial": 1,
+      "first_token_seconds": 0.02043611699991743,
+      "decode_tokens_per_second": 149.67385283451216
+    },
+    {
+      "graph": true,
+      "trial": 2,
+      "first_token_seconds": 0.019860388999404677,
+      "decode_tokens_per_second": 149.76404354008886
+    }
+  ]
+}

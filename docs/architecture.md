@@ -2,22 +2,28 @@
 
 ## Implemented prototype boundary
 
-The first executor implements dense Qwen2 with FP16 weights, standard RoPE,
-greedy sampling, static KV allocation, and a CUDA graph for single-token decode.
-The forward pass is dllm code; PyTorch supplies CUDA kernels and graph capture.
+The executor implements dense Qwen2 with FP16 weights, standard RoPE,
+greedy sampling, slot-isolated static KV allocation, and a CUDA graph per decode
+batch size. The forward pass and fused Triton kernels are dllm code; PyTorch
+supplies cuBLAS, prefill attention, tensor storage, and graph capture.
 Transformers is used only as an independent validation reference. It does not
 perform dllm inference. This lets us prove numerical behavior and measure GPU
 execution before committing a larger native scheduler implementation.
 
-The service serializes generation behind a bounded admission queue and retains
-one or more GPU executors plus a bounded host weight cache. Graphs remain alive
-for GPU-resident models; restoring an evicted executor currently recaptures its
-graph. Host backing is pageable to avoid pinning multi-GB models. The host budget
+The service has one GPU worker with bounded admission and continuous decode
+batching. Completed/cancelled requests free slots between steps; slow streams
+stop entering decode batches until they drain or time out. Different-length
+prompts share packed linear layers, with causal attention isolated per sequence.
+A different model at the FIFO queue head prevents further admission to the
+current model group, which drains before the worker switches. One or more GPU
+executors plus a bounded host weight cache are retained. Graphs remain alive for
+GPU-resident models; restoring an evicted executor currently recaptures its
+graphs. Pinned decode metadata buffers are reused only after DMA completion. Host backing is pageable to avoid pinning multi-GB models. The host budget
 limits retained weights, not transient loader tensors or the full process RSS.
 GPU admission uses a weight/KV estimate plus a 512 MiB workspace reserve; this is
 not an exact predictor of all library allocations, so allocation can still fail.
 
-There is no continuous batching, paged KV allocator, prefix cache, quantization,
+There is no paged KV allocator, chunked prefill, prefix cache, quantization,
 speculative decoding, arbitrary architecture support, or automatic capacity
 tuning yet. The API is a strict text-chat subset. Requests using unsupported
 parameters fail explicitly. The remaining sections describe the target design,
