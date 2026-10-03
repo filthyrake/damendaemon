@@ -2,9 +2,12 @@
 
 ## Implemented prototype boundary
 
-The executor implements dense Qwen2 with FP16 weights, standard RoPE,
-greedy sampling, slot-isolated static KV allocation, and a CUDA graph per decode
-batch size. The forward pass and fused Triton kernels are dllm code; PyTorch
+The shared decoder implements dense Qwen2, Qwen3, and standard-RoPE Llama
+variants with FP16 weights and KV, greedy sampling, slot-isolated static KV allocation, and a CUDA graph per decode
+batch size. Qwen3 has explicit head dimensions, bias-free projections, and fused Q/K
+normalization. Its residuals and elementwise intermediates remain FP32; the
+linear layers still use FP16 tensor operations.
+The forward pass and fused Triton kernels are dllm code; PyTorch
 supplies cuBLAS, prefill attention, tensor storage, and graph capture.
 Transformers is used only as an independent validation reference. It does not
 perform dllm inference. This lets us prove numerical behavior and measure GPU
@@ -18,10 +21,16 @@ A different model at the FIFO queue head prevents further admission to the
 current model group, which drains before the worker switches. One or more GPU
 executors plus a bounded host weight cache are retained. Graphs remain alive for
 GPU-resident models; restoring an evicted executor currently recaptures its
-graphs. Pinned decode metadata buffers are reused only after DMA completion. Host backing is pageable to avoid pinning multi-GB models. The host budget
+graphs. Pinned decode metadata buffers are reused only after DMA completion.
+Host backing is pageable to avoid pinning multi-GB models. The host budget
 limits retained weights, not transient loader tensors or the full process RSS.
 GPU admission uses a weight/KV estimate plus a 512 MiB workspace reserve; this is
 not an exact predictor of all library allocations, so allocation can still fail.
+
+Configuration validation rejects unsupported rotary scaling, partial rotary
+heads, sliding attention, MoE, and hybrid recurrent layers before loading tensors.
+Model tests use the independent reference precision recorded in each result.
+Qwen3-0.6B remains provisional under the expanded numerical gate.
 
 There is no paged KV allocator, chunked prefill, prefix cache, quantization,
 speculative decoding, arbitrary architecture support, or automatic capacity

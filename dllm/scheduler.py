@@ -18,6 +18,7 @@ class Pending:
     alias: str
     messages: list
     max_tokens: int
+    enable_thinking: bool | None = None
     start: float = field(default_factory=time.perf_counter)
     events: queue.Queue = field(default_factory=lambda: queue.Queue(maxsize=8))
     done: threading.Event = field(default_factory=threading.Event)
@@ -51,14 +52,14 @@ class BatchedRuntime:
         self.worker = threading.Thread(target=self._work, name="dllm-gpu", daemon=True)
         self.worker.start()
 
-    def generate(self, alias, messages, max_tokens=128):
+    def generate(self, alias, messages, max_tokens=128, enable_thinking=None):
         if alias not in self.models:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be positive")
         if not self.admission.acquire(blocking=False):
             raise BusyError("request queue is full")
-        request = Pending(alias, messages, max_tokens)
+        request = Pending(alias, messages, max_tokens, enable_thinking)
         try:
             with self.condition:
                 if self.closed:
@@ -129,6 +130,7 @@ class BatchedRuntime:
                 "total_tokens": prompt_count + count}, "timing": {
                 "source_tier": request.tier, "activation_seconds": request.activation,
                 "kernel_backend": executor.kernel_backend, "max_batch_size": request.max_batch_seen,
+                "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
                 "first_token_seconds": request.first_time, "total_seconds": elapsed,
                 "decode_tokens_per_second": (count-1)/(elapsed-request.first_time)
                 if count > 1 and elapsed > request.first_time else None}}
@@ -173,7 +175,8 @@ class BatchedRuntime:
                             if request.cancelled.is_set():
                                 self._finish(request)
                                 continue
-                            tokens = executor.model.chat_tokens(request.messages)
+                            tokens = executor.model.chat_tokens(request.messages, **(
+                                {"enable_thinking": request.enable_thinking} if request.enable_thinking is not None else {}))
                             if len(tokens) + request.max_tokens > executor.context:
                                 raise ValueError("prompt plus max_tokens exceeds configured context")
                             request.slot = next(free_slots)

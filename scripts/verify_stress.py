@@ -1,0 +1,112 @@
+"""Long-prefix, split-boundary and rolling-slot checks against an independent decoder."""
+import argparse
+import json
+import time
+
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+from dllm.batch import BatchExecutor
+from dllm.qwen2 import ModelWeights
+from dllm.runtime import require_gpu
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('path')
+    parser.add_argument('--context', type=int, default=2048)
+    parser.add_argument("--reference-dtype", choices=("float16", "float32"), default="float16")
+    args = parser.parse_args()
+    if args.context < 1040:
+        parser.error("context must be at least 1040 for split-boundary tests")
+    require_gpu()
+    model = ModelWeights(args.path, args.context)
+    tokenizer = AutoTokenizer.from_pretrained(args.path, local_files_only=True, trust_remote_code=False)
+    reference = AutoModelForCausalLM.from_pretrained(args.path, local_files_only=True,
+        trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype), attn_implementation='sdpa').to('cuda').eval()
+    executor = BatchExecutor(model, max_batch=4)
+    checks, template_checks, states, timings = [], [], {}, []
+    documents = [
+        'Record %d: The parcel is stored in cabinet %d, drawer %d.\n' % (i, i % 11, i % 7)
+        for i in range(200)]
+    corpus = tokenizer.encode(''.join(documents), add_special_tokens=False)
+
+    def compare(actual, target, phase, slot):
+        actual, target = actual.float(), target.float()
+        error = (actual - target).abs()
+        relative = (error.square().mean().sqrt() / target.square().mean().sqrt().clamp_min(1e-6)).item()
+        absolute = error.max().item()
+        match = actual.argmax().item() == target.argmax().item()
+        record = {'phase': phase, 'slot': slot, 'greedy_match': match,
+                  'relative_rms': relative, 'max_absolute': absolute,
+                  'passed': match and relative < .01 and absolute < .5}
+        checks.append(record)
+
+    @torch.inference_mode()
+    def prefill(lengths, slots):
+        prompts = [corpus[slot*13:slot*13+length] for slot, length in zip(slots, lengths)]
+        assert all(len(ids) == length for ids, length in zip(prompts, lengths))
+        torch.cuda.synchronize()
+        start = time.perf_counter()
+        actual = executor.prefill_batch(prompts, slots)
+        torch.cuda.synchronize()
+        timings.append({'kind': 'packed_prefill', 'lengths': lengths, 'seconds': time.perf_counter()-start})
+        for row, (slot, ids) in enumerate(zip(slots, prompts)):
+            ref = reference(torch.tensor([ids], device='cuda'), use_cache=True, logits_to_keep=1)
+            target = ref.logits[:, -1]
+            compare(actual[row], target, 'prefill:'+str(len(ids)), slot)
+            states[slot] = (ref.past_key_values, target.argmax().item())
+
+    @torch.inference_mode()
+    def decode(slots, steps):
+        for step in range(steps):
+            tokens = [states[slot][1] for slot in slots]
+            actual, _ = executor.decode_batch(tokens, slots)
+            for row, (slot, token) in enumerate(zip(slots, tokens)):
+                ref = reference(torch.tensor([[token]], device='cuda'),
+                    past_key_values=states[slot][0], use_cache=True, logits_to_keep=1)
+                target = ref.logits[:, -1]
+                compare(actual[row], target, f'decode:{executor.lengths[slot]}', slot)
+                states[slot] = (ref.past_key_values, target.argmax().item())
+
+    # Real templates, including Unicode, assistant turns, and Qwen3 reasoning controls.
+    modes = (None, False, True) if model.config['model_type'] == 'qwen3' else (None,)
+    messages = [{'role': 'system', 'content': 'Answer briefly.'},
+                {'role': 'user', 'content': 'こんにちは — café 🦙. What is 7 × 8?'},
+                {'role': 'assistant', 'content': '56.'},
+                {'role': 'user', 'content': 'Return it as JSON.'}]
+    for mode in modes:
+        options = {} if mode is None else {'enable_thinking': mode}
+        ids = model.chat_tokens(messages, **options)
+        assert ids == tokenizer.apply_chat_template(messages, add_generation_prompt=True, **options)
+        with torch.inference_mode():
+            actual = executor.prefill(ids, 0)
+            ref = reference(torch.tensor([ids], device='cuda'), use_cache=True, logits_to_keep=1)
+            compare(actual, ref.logits[:, -1], f'template:{mode}', 0)
+        template_checks.append({'enable_thinking': mode, 'tokens': len(ids)})
+    del ref
+    prefill([31, 255, 257, 1023], [3, 0, 2, 1])
+    decode([3, 0, 2, 1], 8)
+    # Release/reuse two slots at new lengths while retaining the other caches.
+    del states[0], states[1]
+    prefill([args.context-16, 65], [0, 1])
+    decode([2, 0, 1, 3], 8)
+    decode([0], 4)
+    decode([3, 1], 3)
+    # An oversized prompt must not alter any length/cached state.
+    before = list(executor.lengths)
+    try:
+        executor.prefill_batch([[1] * (args.context+1)], [0])
+        raise AssertionError('oversized prompt accepted')
+    except ValueError:
+        assert executor.lengths == before
+    decode([1], 1)
+    print(json.dumps({'model_path': args.path, 'reference_dtype': args.reference_dtype, 'architecture': model.config['model_type'],
+        'context': args.context, 'backend': executor.kernel_backend, 'checks': checks,
+        'template_checks': template_checks, 'timings': timings,
+        'passed': all(row['passed'] for row in checks)}, indent=2))
+    assert all(row['passed'] for row in checks), 'long-context correctness gate failed; see JSON checks'
+
+
+if __name__ == '__main__':
+    main()

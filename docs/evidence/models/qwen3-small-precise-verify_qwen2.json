@@ -1,0 +1,107 @@
+{
+  "model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+  "reference_dtype": "float32",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "context": 256,
+  "correctness": [
+    {
+      "graph": false,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.05558967590332031,
+      "max_relative_rms_error": 0.002979665296152234,
+      "max_mean_logit_error": 0.0081704780459404,
+      "text": "<think>\nOkay, so the question is 2 plus 2, and I"
+    },
+    {
+      "graph": false,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.035083234310150146,
+      "max_relative_rms_error": 0.001755997072905302,
+      "max_mean_logit_error": 0.007567165419459343,
+      "text": "<think>\nOkay, the user wants a one-sentence explanation of why the sky"
+    },
+    {
+      "graph": false,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.056433677673339844,
+      "max_relative_rms_error": 0.006406399421393871,
+      "max_mean_logit_error": 0.016433730721473694,
+      "text": "<think>\nOkay, the user wants me to reply in French. The original message"
+    },
+    {
+      "graph": true,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.05558967590332031,
+      "max_relative_rms_error": 0.002979665296152234,
+      "max_mean_logit_error": 0.0081704780459404,
+      "text": "<think>\nOkay, so the question is 2 plus 2, and I"
+    },
+    {
+      "graph": true,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.035083234310150146,
+      "max_relative_rms_error": 0.001755997072905302,
+      "max_mean_logit_error": 0.007567165419459343,
+      "text": "<think>\nOkay, the user wants a one-sentence explanation of why the sky"
+    },
+    {
+      "graph": true,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.056433677673339844,
+      "max_relative_rms_error": 0.006406399421393871,
+      "max_mean_logit_error": 0.016433730721473694,
+      "text": "<think>\nOkay, the user wants me to reply in French. The original message"
+    }
+  ],
+  "timings": [
+    {
+      "graph": false,
+      "trial": 0,
+      "first_token_seconds": 0.23143786400032695,
+      "decode_tokens_per_second": 38.83195098941397
+    },
+    {
+      "graph": false,
+      "trial": 1,
+      "first_token_seconds": 0.02697909400012577,
+      "decode_tokens_per_second": 41.23825519761394
+    },
+    {
+      "graph": false,
+      "trial": 2,
+      "first_token_seconds": 0.025101008999627084,
+      "decode_tokens_per_second": 42.67683612768337
+    },
+    {
+      "graph": true,
+      "trial": 0,
+      "first_token_seconds": 0.02412043499862193,
+      "decode_tokens_per_second": 121.5660875101964
+    },
+    {
+      "graph": true,
+      "trial": 1,
+      "first_token_seconds": 0.0243412449999596,
+      "decode_tokens_per_second": 121.80777635459728
+    },
+    {
+      "graph": true,
+      "trial": 2,
+      "first_token_seconds": 0.025670147999335313,
+      "decode_tokens_per_second": 121.30325327136174
+    }
+  ]
+}

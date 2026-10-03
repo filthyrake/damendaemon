@@ -3,7 +3,7 @@
 Damen's LLM runtime: fast GPU inference with effortless model switching.
 
 **Current state:** a working independent NVIDIA inference prototype, verified on
-an A2 with Qwen2.5 0.5B and 1.5B. It implements its own forward pass, static KV
+an A2 with Qwen2.5, Qwen3, and SmolLM2. It implements its own forward pass, static KV
 cache, greedy decoding, CUDA graphs, continuous batching, a streaming API, and
 GPU/host model residency. PyTorch/cuBLAS and dllm's fused Triton kernels provide
 GPU execution; dllm does not depend on vLLM, llama.cpp, Ollama,
@@ -62,6 +62,12 @@ curl http://127.0.0.1:8088/v1/chat/completions \
   -d '{"model":"small","messages":[{"role":"user","content":"What is 2+2?"}],"temperature":0,"max_tokens":32,"stream":true}'
 ```
 
+Qwen3 thinking defaults to its model template. Use `dllm run Qwen/Qwen3-1.7B
+--thinking off --prompt 'What is 7 times 8?'`, or pass
+`"chat_template_kwargs": {"enable_thinking": false}` in the API request to disable
+it. Explicit thinking controls are rejected for other architectures. Thinking
+text is returned as model content; it is not parsed into a separate field.
+
 Change `model` to `medium` on the next request. `--gpu-models 1` forces eviction
 and host restoration when switching; `--gpu-models 2` keeps both resident if they
 fit. Host weights default to two models with an 8 GiB retained-weight budget.
@@ -69,9 +75,15 @@ The budget excludes transient loading buffers and library overhead. GPU capacity
 is checked conservatively; allocation failures return an error without publishing
 a partially loaded executor. There is no automatic GPU-budget tuning yet.
 
-Supported: dense unquantized Qwen2, standard RoPE, text chat templates, FP16,
-greedy decoding, optional streaming usage. `temperature` must be zero. Unsupported
-fields are rejected, including tools, multimodal inputs, and alternate sampling.
+Implemented: dense unquantized Qwen2, Qwen3, and standard-RoPE Llama decoders,
+text chat templates, FP16 weights/KV, greedy decoding, and optional streaming
+usage. Qwen3 uses FP32 residuals and fused
+elementwise intermediates for accuracy, while its matrix multiplies remain FP16.
+`temperature` must be zero. Unsupported fields are rejected, including tools, multimodal inputs, and alternate sampling.
+Scaled/partial RoPE, sliding attention, and hybrid recurrent architectures such as
+Qwen3.5 are not supported. See the [model validation matrix](docs/model-matrix.md):
+Qwen3-1.7B and SmolLM2-360M pass the expanded tests; Qwen3-0.6B remains provisional
+because two long-context positions exceed the logit-error limit.
 Prompt plus requested output must fit `--context`. KV memory is reserved per
 slot at that capacity. Fused attention reads the live prefix and skips unused
 context blocks; larger configured contexts still add launch/merge overhead.
@@ -97,7 +109,8 @@ FP16 model snapshots, with independent-reference correctness checks. The final
 concurrent requests delivered 433 aggregate output tokens/s including prefill
 (vLLM: 497). These are short-workload measurements, not a broad parity claim.
 
-See [fused and batched runtime evidence](docs/batching-proof.md) for current
+See the [new-model and longer-context results](docs/model-matrix.md), and
+[fused and batched runtime evidence](docs/batching-proof.md) for current
 HTTP comparisons, correctness gates, model switching, and limitations. The
 [first runtime evidence](docs/runtime-proof.md) preserves the original baseline.
 

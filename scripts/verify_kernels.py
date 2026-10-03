@@ -22,6 +22,14 @@ def main():
             gate_up = torch.cat((x, x * 0.3), dim=-1)
             torch.testing.assert_close(kernels.swiglu(gate_up), F.silu(x) * (x * 0.3), atol=0.002, rtol=0.002)
             checks += 2
+            precise_x = xf + .000123
+            precise_norm = precise_x * torch.rsqrt(precise_x.square().mean(-1, keepdim=True)+1e-6)
+            torch.testing.assert_close(kernels.rms(precise_x, w, 1e-6, True),
+                                       (precise_norm*w.float()).half(), atol=.004, rtol=.002)
+            gate, up = gate_up.chunk(2, -1)
+            torch.testing.assert_close(kernels.swiglu(gate_up, True),
+                                       (F.silu(gate.float())*up.float()).half(), atol=.002, rtol=.002)
+            checks += 2
     attention_checks = []
     for dim in (64, 128):
         heads, kv_heads = 14, 2
@@ -61,6 +69,38 @@ def main():
                                                   v[slot:slot+1, :, :position+1], enable_gqa=True)
         torch.testing.assert_close(actual[row:row+1], expected, atol=.003, rtol=.01)
         checks += 1
+    # Qwen3 normalizes each Q/K head before RoPE; values must remain untouched.
+    for dim in (64, 128):
+        batch, heads, kv_heads, context = 4, 16, 8, 1024
+        positions = torch.tensor([0, 255, 256, 1023], device="cuda")
+        slots = torch.tensor([3, 1, 2, 0], device="cuda")
+        qkv = torch.randn((batch, (heads+2*kv_heads)*dim), dtype=torch.float16, device="cuda")
+        cos = torch.randn((context, dim), dtype=torch.float16, device="cuda")
+        sin = torch.randn_like(cos)
+        for normalized in (False, True):
+            qw = torch.randn(dim, dtype=torch.float16, device="cuda") if normalized else None
+            kw = torch.randn_like(qw) if normalized else None
+            q, k, v = qkv.split([heads*dim, kv_heads*dim, kv_heads*dim], -1)
+            def transform(x, weight):
+                x = x.reshape(batch, -1, dim)
+                if weight is not None:
+                    xf = x.float()
+                    x = xf * torch.rsqrt(xf.square().mean(-1, keepdim=True)+1e-6) * weight.float()
+                left, right = x.chunk(2, -1)
+                return (x*cos[positions, None] + torch.cat((-right,left),-1)*sin[positions,None]).half()
+            expected_q, expected_k = transform(q,qw), transform(k,kw)
+            cache_k = torch.zeros((4,kv_heads,context,dim),dtype=torch.float16,device="cuda")
+            cache_v = torch.zeros_like(cache_k)
+            actual = kernels.rope_batch(qkv,cos,sin,positions,slots,cache_k,cache_v,heads,qw,kw)
+            torch.testing.assert_close(actual[:,:,0],expected_q,atol=.004,rtol=.002)
+            torch.testing.assert_close(cache_k[slots,:,positions,:],expected_k,atol=.004,rtol=.002)
+            torch.testing.assert_close(cache_v[slots,:,positions,:],v.reshape(batch,kv_heads,dim),atol=0,rtol=0)
+            checks += 1
+            cache_k.zero_(); cache_v.zero_()
+            actual = kernels.rope_store(qkv,cos,sin,positions,cache_k[:1],cache_v[:1],heads,qw,kw)
+            torch.testing.assert_close(actual[0].transpose(0,1),expected_q,atol=.004,rtol=.002)
+            torch.testing.assert_close(cache_k[0,:,positions,:].transpose(0,1),expected_k,atol=.004,rtol=.002)
+            checks += 1
     print(json.dumps({"checks": checks, "attention": attention_checks, "passed": True}, indent=2))
 
 

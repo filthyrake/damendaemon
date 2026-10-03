@@ -1,0 +1,106 @@
+{
+  "model_path": "/home/damen/.cache/huggingface/hub/models--HuggingFaceTB--SmolLM2-360M-Instruct/snapshots/a10cc1512eabd3dde888204e902eca88bddb4951",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "context": 256,
+  "correctness": [
+    {
+      "graph": false,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.109375,
+      "max_relative_rms_error": 0.008407889865338802,
+      "max_mean_logit_error": 0.021740209311246872,
+      "text": "2 + 2 = 4\nsystem\n\n"
+    },
+    {
+      "graph": false,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.0537109375,
+      "max_relative_rms_error": 0.003126968862488866,
+      "max_mean_logit_error": 0.01138884574174881,
+      "text": "The sky appears blue due to the scattering of sunlight by the Earth's atmosphere,"
+    },
+    {
+      "graph": false,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.09375,
+      "max_relative_rms_error": 0.002960246754810214,
+      "max_mean_logit_error": 0.01839759759604931,
+      "text": "Je suis bien, merci.\nsystem\n"
+    },
+    {
+      "graph": true,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.109375,
+      "max_relative_rms_error": 0.008407889865338802,
+      "max_mean_logit_error": 0.021740209311246872,
+      "text": "2 + 2 = 4\nsystem\n\n"
+    },
+    {
+      "graph": true,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.0537109375,
+      "max_relative_rms_error": 0.003126968862488866,
+      "max_mean_logit_error": 0.01138884574174881,
+      "text": "The sky appears blue due to the scattering of sunlight by the Earth's atmosphere,"
+    },
+    {
+      "graph": true,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.09375,
+      "max_relative_rms_error": 0.002960246754810214,
+      "max_mean_logit_error": 0.01839759759604931,
+      "text": "Je suis bien, merci.\nsystem\n"
+    }
+  ],
+  "timings": [
+    {
+      "graph": false,
+      "trial": 0,
+      "first_token_seconds": 0.035077272999842535,
+      "decode_tokens_per_second": 33.31887035211116
+    },
+    {
+      "graph": false,
+      "trial": 1,
+      "first_token_seconds": 0.0344759769996017,
+      "decode_tokens_per_second": 33.28077886300323
+    },
+    {
+      "graph": false,
+      "trial": 2,
+      "first_token_seconds": 0.049149775000842055,
+      "decode_tokens_per_second": 29.765767280814035
+    },
+    {
+      "graph": true,
+      "trial": 0,
+      "first_token_seconds": 0.04857656800049881,
+      "decode_tokens_per_second": 171.8239652565893
+    },
+    {
+      "graph": true,
+      "trial": 1,
+      "first_token_seconds": 0.045914360000097076,
+      "decode_tokens_per_second": 178.2412442443691
+    },
+    {
+      "graph": true,
+      "trial": 2,
+      "first_token_seconds": 0.04681190900009824,
+      "decode_tokens_per_second": 180.7473334176497
+    }
+  ]
+}

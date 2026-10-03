@@ -55,7 +55,7 @@ def handler_for(runtime):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
-                allowed = {"model", "messages", "max_tokens", "temperature", "stream", "stream_options"}
+                allowed = {"model", "messages", "max_tokens", "temperature", "stream", "stream_options", "chat_template_kwargs"}
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
                 if body.get("temperature", 0) != 0:
@@ -77,6 +77,11 @@ def handler_for(runtime):
                 include_usage = options.get("include_usage", False)
                 if type(include_usage) is not bool:
                     raise ValueError("include_usage must be boolean")
+                template_options = body.get("chat_template_kwargs", {})
+                if (not isinstance(template_options, dict)
+                        or set(template_options) - {"enable_thinking"}
+                        or any(type(value) is not bool for value in template_options.values())):
+                    raise ValueError("chat_template_kwargs supports only boolean enable_thinking")
                 stream = body.get("stream", False)
                 alias = body["model"]
                 request_id = "chatcmpl-" + uuid.uuid4().hex
@@ -90,7 +95,7 @@ def handler_for(runtime):
                     self.wfile.flush()
                 text = ""
                 final = None
-                with closing(runtime.generate(alias, messages, body.get("max_tokens", 128))) as generation:
+                with closing(runtime.generate(alias, messages, body.get("max_tokens", 128), **template_options)) as generation:
                     for event in generation:
                         if stream and not started:
                             self.send_response(200)

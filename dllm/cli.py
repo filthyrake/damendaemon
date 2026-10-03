@@ -32,11 +32,13 @@ def main():
     pull = commands.add_parser("pull", help="download a safetensors model from Hugging Face")
     pull.add_argument("repository")
     pull.add_argument("--revision", default="main")
-    run = commands.add_parser("run", help="generate using a Qwen2 model name or local path")
+    run = commands.add_parser("run", help="generate using a supported dense model name or local path")
     run.add_argument("path", help="local model directory or Hugging Face owner/repository")
     run.add_argument("--revision", default="main")
     run.add_argument("--prompt", required=True)
     run.add_argument("--max-tokens", type=int, default=128)
+    run.add_argument("--thinking", choices=("auto", "on", "off"), default="auto",
+                     help="Qwen3 thinking mode; auto uses the model template default")
     server = commands.add_parser("serve", help="serve named local models on loopback")
     server.add_argument("--model", action="append", required=True, metavar="NAME=PATH")
     server.add_argument("--port", type=int, default=8088)
@@ -76,7 +78,8 @@ def main():
         from .server import serve
         serve(runtime, args.port)
     else:
-        for event in runtime.generate("model", [{"role": "user", "content": args.prompt}], args.max_tokens):
+        for event in runtime.generate("model", [{"role": "user", "content": args.prompt}], args.max_tokens,
+                                      enable_thinking=None if args.thinking == "auto" else args.thinking == "on"):
             if "text" in event:
                 print(event["text"], end="", flush=True)
             else:

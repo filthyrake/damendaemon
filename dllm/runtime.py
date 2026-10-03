@@ -113,7 +113,7 @@ class Runtime:
                 self.lock.release()
             self.admission.release()
 
-    def generate(self, alias, messages, max_tokens=128, ignore_eos=False):
+    def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None):
         """Yield token IDs/text deltas plus a final usage/timing event.
 
         Closing this generator releases its model lease, including on client
@@ -124,7 +124,7 @@ class Runtime:
         start = time.perf_counter()
         with self.session(alias) as (executor, tier, load_seconds):
             model = executor.model
-            prompt = model.chat_tokens(messages)
+            prompt = model.chat_tokens(messages, **({"enable_thinking": enable_thinking} if enable_thinking is not None else {}))
             if len(prompt) + max_tokens > self.context:
                 raise ValueError("prompt plus max_tokens exceeds configured context")
             first = executor.prefill(prompt).argmax(-1).item()
@@ -160,6 +160,7 @@ class Runtime:
                 "prompt_tokens": len(prompt), "completion_tokens": len(output),
                 "total_tokens": len(prompt) + len(output),
             }, "timing": {"source_tier": tier, "kernel_backend": executor.kernel_backend,
+                          "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
                           "activation_seconds": load_seconds,
                           "first_token_seconds": first_time, "total_seconds": elapsed,
                           "decode_tokens_per_second": (len(output) - 1) / (elapsed - first_time)

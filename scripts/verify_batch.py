@@ -15,11 +15,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("path")
     parser.add_argument("--context", type=int, default=512)
+    parser.add_argument("--reference-dtype", choices=("float16", "float32"), default="float16")
     args = parser.parse_args()
     require_gpu()
     model = ModelWeights(args.path, args.context)
     reference = AutoModelForCausalLM.from_pretrained(args.path, local_files_only=True,
-        trust_remote_code=False, torch_dtype=torch.float16, attn_implementation="sdpa").to("cuda").eval()
+        trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype), attn_implementation="sdpa").to("cuda").eval()
     executor = BatchExecutor(model, max_batch=4)
     prompts = ["Explain why the sky looks blue in one sentence.",
                "What is 2 + 2? Answer with one number.",
@@ -77,7 +78,7 @@ def main():
             elapsed = time.perf_counter() - start
             timings.append({"batch_size": size, "trial": trial, "seconds": elapsed,
                             "aggregate_decode_tokens_per_second": 63*size/elapsed})
-    print(json.dumps({"matched_batched_steps": len(errors), "slot_reuse_passed": True, "packed_prefill_passed": True,
+    print(json.dumps({"reference_dtype": args.reference_dtype, "matched_batched_steps": len(errors), "slot_reuse_passed": True, "packed_prefill_passed": True,
                       "max_relative_rms_error": max(errors), "kernel_backend": executor.kernel_backend,
                       "timings": timings}, indent=2))
 

@@ -1,7 +1,7 @@
-"""Independent Qwen2 executor using PyTorch CUDA kernels, not HF generation.
+"""Independent dense decoder using PyTorch/CUDA and dllm kernels, not HF generation.
 
-Dense Qwen2, FP16 and greedy decoding. The single-sequence base is extended by
-BatchExecutor. CUDA graphs remove Python dispatch from each decode step.
+Dense Qwen2, Qwen3 and standard-RoPE Llama; FP16 weights and greedy decoding.
+The single-sequence base is extended by BatchExecutor. CUDA graphs remove Python dispatch from each decode step.
 """
 
 import json
@@ -17,6 +17,8 @@ from safetensors.torch import load_file
 from safetensors import safe_open
 from tokenizers import Tokenizer
 from jinja2.sandbox import ImmutableSandboxedEnvironment
+
+from .config import decoder_config
 
 
 def weight_files(path):
@@ -42,12 +44,8 @@ def weight_bytes(path):
 class ModelWeights:
     def __init__(self, path, max_context):
         self.path = Path(path).resolve()
-        self.config = json.loads((self.path / "config.json").read_text())
+        self.config = decoder_config(json.loads((self.path / "config.json").read_text()))
         c = self.config
-        if (c.get("model_type") != "qwen2" or c.get("use_sliding_window", False)
-                or c.get("rope_scaling") or c.get("quantization_config")
-                or c.get("hidden_act") != "silu"):
-            raise ValueError("only dense, unquantized Qwen2 with standard RoPE is supported")
         if not 1 <= max_context <= c["max_position_embeddings"]:
             raise ValueError("context exceeds model position limit")
         self.max_context = max_context
@@ -76,10 +74,13 @@ class ModelWeights:
         weights["head"] = weights["embed"] if c.get("tie_word_embeddings") else take("lm_head.weight")
         for i in range(c["num_hidden_layers"]):
             prefix = f"model.layers.{i}."
-            for kind in ("weight", "bias"):
+            for kind in (("weight", "bias") if c["model_type"] == "qwen2" else ("weight",)):
                 weights[f"{i}.qkv.{kind}"] = torch.cat([
                     take(prefix + f"self_attn.{p}_proj.{kind}") for p in ("q", "k", "v")
                 ])
+            if c["model_type"] == "qwen3":
+                weights[f"{i}.q_norm"] = take(prefix + "self_attn.q_norm.weight")
+                weights[f"{i}.k_norm"] = take(prefix + "self_attn.k_norm.weight")
             weights[f"{i}.out"] = take(prefix + "self_attn.o_proj.weight")
             weights[f"{i}.gate_up"] = torch.cat([
                 take(prefix + f"mlp.{p}_proj.weight") for p in ("gate", "up")
@@ -92,14 +93,19 @@ class ModelWeights:
         self.weights = weights
         self.bytes = sum(t.numel() * t.element_size() for t in {id(t): t for t in weights.values()}.values())
 
-    def chat_tokens(self, messages):
+    def chat_tokens(self, messages, enable_thinking=None):
         if not messages:
             raise ValueError("at least one message is required")
         for message in messages:
             if message["role"] not in ("system", "user", "assistant") or not isinstance(message["content"], str):
                 raise ValueError("only text system/user/assistant messages are supported")
+        options = {}
+        if enable_thinking is not None:
+            if type(enable_thinking) is not bool or self.config["model_type"] != "qwen3":
+                raise ValueError("enable_thinking is a boolean option for Qwen3 models only")
+            options["enable_thinking"] = enable_thinking
         rendered = self.template.render(messages=messages, add_generation_prompt=True,
-                                        tools=None, **self.special_tokens)
+                                        tools=None, **options, **self.special_tokens)
         return self.tokenizer.encode(rendered, add_special_tokens=False).ids
 
 
@@ -113,8 +119,10 @@ class Executor:
         c = self.c
         self.heads = c["num_attention_heads"]
         self.kv_heads = c["num_key_value_heads"]
-        self.dim = c["hidden_size"] // self.heads
+        self.dim = c["head_dim"]
         self.eps = c["rms_norm_eps"]
+        self.precise = c["model_type"] == "qwen3"
+        self.residual_dtype = torch.float32 if self.precise else torch.float16
         selected = kernels or os.environ.get("DLLM_KERNELS", "auto")
         if selected not in ("auto", "torch", "triton"):
             raise ValueError("kernels must be auto, torch, or triton")
@@ -147,7 +155,7 @@ class Executor:
         inv = 1.0 / (c["rope_theta"] ** (torch.arange(0, self.dim, 2, device="cuda", dtype=torch.float32) / self.dim))
         angles = torch.outer(torch.arange(self.context, device="cuda", dtype=torch.float32), inv)
         angles = torch.cat((angles, angles), dim=-1)
-        self.cos, self.sin = angles.cos().half(), angles.sin().half()
+        self.cos, self.sin = angles.cos().to(self.residual_dtype), angles.sin().to(self.residual_dtype)
         self.arange = torch.arange(self.context, device="cuda")
         self.token = torch.zeros(1, dtype=torch.long, device="cuda")
         self.position = torch.zeros(1, dtype=torch.long, device="cuda")
@@ -178,18 +186,35 @@ class Executor:
 
     def norm(self, x, weight):
         if self.kernels:
-            return self.kernels.rms(x, weight, self.eps)
+            return self.kernels.rms(x, weight, self.eps, self.precise)
         xf = x.float()
-        return (xf * torch.rsqrt(xf.square().mean(-1, keepdim=True) + self.eps)).to(x.dtype) * weight
+        normalized = xf * torch.rsqrt(xf.square().mean(-1, keepdim=True) + self.eps)
+        if self.precise:
+            return (normalized * weight.float()).to(weight.dtype)
+        return normalized.to(weight.dtype) * weight
+
+    def normalize_qk(self, q, k, layer):
+        if self.precise:
+            def norm(x, weight):
+                heads = x.reshape(-1, self.dim).float()
+                return (heads * torch.rsqrt(heads.square().mean(-1, keepdim=True)+self.eps)
+                        * weight.float()).reshape(x.shape)
+            q, k = norm(q, self.w[f"{layer}.q_norm"]), norm(k, self.w[f"{layer}.k_norm"])
+        return q, k
 
     def rotate(self, x, cos, sin):
         left, right = x.chunk(2, dim=-1)
-        return x * cos + torch.cat((-right, left), dim=-1) * sin
+        return (x * cos + torch.cat((-right, left), dim=-1) * sin).to(torch.float16)
+
+    def activate(self, gate, up):
+        if self.precise:
+            return (F.silu(gate.float()) * up.float()).to(torch.float16)
+        return F.silu(gate) * up
 
     @torch.inference_mode()
     def forward(self, ids, positions, prefill, slot=0):
         w = self.w
-        x = F.embedding(ids, w["embed"])
+        x = F.embedding(ids, w["embed"]).to(self.residual_dtype)
         count = ids.shape[0]
         if not self.kernels or not self.fuse_projections:
             cos = self.cos[positions].view(1, 1, count, self.dim)
@@ -200,15 +225,19 @@ class Executor:
             sizes = [self.heads * self.dim, self.kv_heads * self.dim, self.kv_heads * self.dim]
             cache_k, cache_v = self.kv[i][:, slot:slot+1].unbind(0)
             if self.fuse_projections:
-                qkv = F.linear(hidden, w[f"{i}.qkv.weight"], w[f"{i}.qkv.bias"])
+                qkv = F.linear(hidden, w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
                 q, k, v = qkv.split(sizes, dim=-1)
             else:
-                q, k, v = [F.linear(hidden, weight, bias) for weight, bias in zip(
-                    w[f"{i}.qkv.weight"].split(sizes), w[f"{i}.qkv.bias"].split(sizes))]
+                bias = w.get(f"{i}.qkv.bias")
+                biases = bias.split(sizes) if bias is not None else (None, None, None)
+                q, k, v = [F.linear(hidden, weight, part_bias) for weight, part_bias in zip(
+                    w[f"{i}.qkv.weight"].split(sizes), biases)]
             if self.kernels and self.fuse_projections:
-                q = self.kernels.rope_store(qkv, self.cos, self.sin, positions, cache_k, cache_v, self.heads)
+                q = self.kernels.rope_store(qkv, self.cos, self.sin, positions, cache_k, cache_v, self.heads,
+                    w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps)
                 k, v = cache_k[:, :, :count], cache_v[:, :, :count]
             else:
+                q, k = self.normalize_qk(q, k, i)
                 q = self.rotate(q.view(1, count, self.heads, self.dim).transpose(1, 2), cos, sin)
                 k = self.rotate(k.view(1, count, self.kv_heads, self.dim).transpose(1, 2), cos, sin)
                 v = v.view(1, count, self.kv_heads, self.dim).transpose(1, 2)
@@ -228,7 +257,7 @@ class Executor:
                 gate, up = gate_up.chunk(2, -1)
             else:
                 gate, up = [F.linear(hidden, weight) for weight in w[f"{i}.gate_up"].chunk(2)]
-            activated = self.kernels.swiglu(gate_up) if self.kernels and self.fuse_projections else F.silu(gate) * up
+            activated = self.kernels.swiglu(gate_up, self.precise) if self.kernels and self.fuse_projections else self.activate(gate, up)
             x = x + F.linear(activated, w[f"{i}.down"])
         return F.linear(self.norm(x[-1:], w["norm"]), w["head"])
 

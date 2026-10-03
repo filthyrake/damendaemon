@@ -24,6 +24,7 @@ class Tensor:
 class FakeExecutor:
     context = 256
     kernel_backend = 'fake'
+    residual_dtype = 'float16'
     def __init__(self):
         self.model = SimpleNamespace(eos={9}, chat_tokens=lambda messages: [messages[0]['content']],
             tokenizer=SimpleNamespace(decode=lambda tokens, **_: ''.join(map(str, tokens))))

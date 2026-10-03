@@ -14,7 +14,8 @@ class FakeRuntime:
     models = {"a": "unused"}
     closed = 0
 
-    def generate(self, alias, messages, max_tokens):
+    def generate(self, alias, messages, max_tokens, **kwargs):
+        self.last_options = kwargs
         try:
             if alias == "busy":
                 raise BusyError("request queue is full")
@@ -89,3 +90,13 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(json.load(response)["data"][0]["id"], "a")
         with urlopen(self.url + "/health") as response:
             self.assertEqual(json.load(response)["status"], "ok")
+
+    def test_thinking_option_forwarded_without_coercion(self):
+        with self.post(chat_template_kwargs={"enable_thinking": False}) as response:
+            self.assertEqual(response.status, 200)
+            response.read()
+        self.assertEqual(self.runtime.last_options, {"enable_thinking": False})
+        for options in ({"enable_thinking": "false"}, {"other": True}, None):
+            with self.subTest(options=options), self.assertRaises(HTTPError) as error:
+                self.post(chat_template_kwargs=options)
+            self.assertEqual(error.exception.code, 400)

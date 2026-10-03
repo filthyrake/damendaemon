@@ -1,6 +1,7 @@
 """Small inference kernels. Matmuls remain with cuBLAS; reductions use FP32.
 
-FP16 rounding points in RMSNorm, RoPE and SwiGLU match the reference tensor path.
+Qwen2/Llama preserve FP16 rounding points. Qwen3 retains FP32 elementwise
+intermediates before storing FP16 inputs for the next matrix operation.
 Decode attention uses a live-length mask and splits long contexts into blocks.
 """
 import torch
@@ -9,42 +10,47 @@ import triton.language as tl
 
 
 @tr.jit
-def _rms(X, W, Y, D: tl.constexpr, EPS: tl.constexpr, BLOCK: tl.constexpr):
+def _rms(X, W, Y, D: tl.constexpr, EPS: tl.constexpr, BLOCK: tl.constexpr, PRECISE: tl.constexpr):
     row = tl.program_id(0)
     cols = tl.arange(0, BLOCK)
     x = tl.load(X + row * D + cols, cols < D, other=0).to(tl.float32)
     inv = tl.rsqrt(tl.sum(x * x, 0) / D + EPS)
-    norm = (x * inv).to(tl.float16).to(tl.float32)
+    norm = x * inv
+    if not PRECISE:
+        norm = norm.to(tl.float16).to(tl.float32)
     weight = tl.load(W + cols, cols < D, other=0).to(tl.float32)
     tl.store(Y + row * D + cols, norm * weight, cols < D)
 
 
-def rms(x, weight, eps):
-    out = torch.empty_like(x)
+def rms(x, weight, eps, precise=False):
+    out = torch.empty(x.shape, dtype=weight.dtype, device=x.device)
     _rms[(x.numel() // x.shape[-1],)](x, weight, out, x.shape[-1], eps,
-                                   tr.next_power_of_2(x.shape[-1]))
+                                   tr.next_power_of_2(x.shape[-1]), precise)
     return out
 
 
 @tr.jit
-def _swiglu(X, Y, D: tl.constexpr, BLOCK: tl.constexpr):
+def _swiglu(X, Y, D: tl.constexpr, BLOCK: tl.constexpr, PRECISE: tl.constexpr):
     row, block = tl.program_id(0), tl.program_id(1)
     cols = block * BLOCK + tl.arange(0, BLOCK)
     gate = tl.load(X + row * 2 * D + cols, cols < D, other=0).to(tl.float32)
     up = tl.load(X + row * 2 * D + D + cols, cols < D, other=0).to(tl.float32)
-    activated = (gate / (1 + tl.exp(-gate))).to(tl.float16).to(tl.float32)
+    activated = gate / (1 + tl.exp(-gate))
+    if not PRECISE:
+        activated = activated.to(tl.float16).to(tl.float32)
     tl.store(Y + row * D + cols, activated * up, cols < D)
 
 
-def swiglu(gate_up):
+def swiglu(gate_up, precise=False):
     rows, width = gate_up.shape
     out = torch.empty((rows, width // 2), dtype=gate_up.dtype, device=gate_up.device)
-    _swiglu[(rows, tr.cdiv(width // 2, 256))](gate_up, out, width // 2, 256)
+    _swiglu[(rows, tr.cdiv(width // 2, 256))](gate_up, out, width // 2, 256, precise)
     return out
 
 
 @tr.jit
-def _rope_store(X, COS, SIN, POS, Q, K, V,
+def _rope_store(X, COS, SIN, POS, Q, K, V, QW, KW,
+                NORM: tl.constexpr, EPS: tl.constexpr,
                 T: tl.constexpr, H: tl.constexpr, KH: tl.constexpr,
                 D: tl.constexpr, C: tl.constexpr):
     token, head = tl.program_id(0), tl.program_id(1)
@@ -53,12 +59,23 @@ def _rope_store(X, COS, SIN, POS, Q, K, V,
     base = token * (H + 2 * KH) * D + head * D
     x = tl.load(X + base + cols).to(tl.float32)
     if head < H + KH:
-        other = tl.load(X + base + (cols + D // 2) % D).to(tl.float32)
+        if NORM:
+            inv = tl.rsqrt(tl.sum(x * x, 0) / D + EPS)
+            weight = tl.load((QW if head < H else KW) + cols).to(tl.float32)
+            x = x * inv * weight
+            other_cols = (cols + D // 2) % D
+            other = tl.load(X + base + other_cols).to(tl.float32)
+            other_weight = tl.load((QW if head < H else KW) + other_cols).to(tl.float32)
+            other = other * inv * other_weight
+        else:
+            other = tl.load(X + base + (cols + D // 2) % D).to(tl.float32)
         other = tl.where(cols < D // 2, -other, other)
         cos = tl.load(COS + position * D + cols).to(tl.float32)
         sin = tl.load(SIN + position * D + cols).to(tl.float32)
-        a = (x * cos).to(tl.float16).to(tl.float32)
-        b = (other * sin).to(tl.float16).to(tl.float32)
+        a, b = x * cos, other * sin
+        if not NORM:
+            a = a.to(tl.float16).to(tl.float32)
+            b = b.to(tl.float16).to(tl.float32)
         rotated = a + b
         if head < H:
             tl.store(Q + (head * T + token) * D + cols, rotated)
@@ -68,13 +85,14 @@ def _rope_store(X, COS, SIN, POS, Q, K, V,
         tl.store(V + ((head - H - KH) * C + position) * D + cols, x)
 
 
-def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads):
+def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, q_norm=None, k_norm=None, eps=1e-6):
     tokens = qkv.shape[0]
     _, kv_heads, context, dim = cache_k.shape
     query = torch.empty((1, heads, tokens, dim), dtype=qkv.dtype, device=qkv.device)
     _rope_store[(tokens, heads + 2 * kv_heads)](
         qkv, cos, sin, positions, query, cache_k, cache_v,
-        tokens, heads, kv_heads, dim, context, enable_fp_fusion=False)
+        qkv if q_norm is None else q_norm, qkv if k_norm is None else k_norm,
+        q_norm is not None, eps, tokens, heads, kv_heads, dim, context, enable_fp_fusion=False)
     return query
 
 
@@ -142,7 +160,8 @@ def attention(query, cache_k, cache_v, positions, slots=None):
 
 
 @tr.jit
-def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V,
+def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW,
+                NORM: tl.constexpr, EPS: tl.constexpr,
                 H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr, C: tl.constexpr):
     batch, head = tl.program_id(0), tl.program_id(1)
     cols = tl.arange(0, D)
@@ -150,12 +169,23 @@ def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V,
     base = batch * (H + 2 * KH) * D + head * D
     x = tl.load(X + base + cols).to(tl.float32)
     if head < H + KH:
-        other = tl.load(X + base + (cols + D // 2) % D).to(tl.float32)
+        if NORM:
+            inv = tl.rsqrt(tl.sum(x * x, 0) / D + EPS)
+            weight = tl.load((QW if head < H else KW) + cols).to(tl.float32)
+            x = x * inv * weight
+            other_cols = (cols + D // 2) % D
+            other = tl.load(X + base + other_cols).to(tl.float32)
+            other_weight = tl.load((QW if head < H else KW) + other_cols).to(tl.float32)
+            other = other * inv * other_weight
+        else:
+            other = tl.load(X + base + (cols + D // 2) % D).to(tl.float32)
         other = tl.where(cols < D // 2, -other, other)
         cos = tl.load(COS + position * D + cols).to(tl.float32)
         sin = tl.load(SIN + position * D + cols).to(tl.float32)
-        a = (x * cos).to(tl.float16).to(tl.float32)
-        b = (other * sin).to(tl.float16).to(tl.float32)
+        a, b = x * cos, other * sin
+        if not NORM:
+            a = a.to(tl.float16).to(tl.float32)
+            b = b.to(tl.float16).to(tl.float32)
         if head < H:
             tl.store(Q + (batch * H + head) * D + cols, a + b)
         else:
@@ -164,10 +194,11 @@ def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V,
         tl.store(V + ((slot * KH + head - H - KH) * C + position) * D + cols, x)
 
 
-def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads):
+def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads, q_norm=None, k_norm=None, eps=1e-6):
     _, kv_heads, context, dim = cache_k.shape
     query = torch.empty((qkv.shape[0], heads, 1, dim), device=qkv.device, dtype=qkv.dtype)
     _rope_batch[(qkv.shape[0], heads + 2 * kv_heads)](
         qkv, cos, sin, positions, slots, query, cache_k, cache_v,
-        heads, kv_heads, dim, context, enable_fp_fusion=False)
+        qkv if q_norm is None else q_norm, qkv if k_norm is None else k_norm,
+        q_norm is not None, eps, heads, kv_heads, dim, context, enable_fp_fusion=False)
     return query

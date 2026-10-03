@@ -41,20 +41,22 @@ class BatchExecutor(Executor):
     def forward_batch(self, ids, positions, slots):
         batch = ids.shape[0]
         w = self.w
-        x = F.embedding(ids, w["embed"])
+        x = F.embedding(ids, w["embed"]).to(self.residual_dtype)
         if not self.kernels:
             cos = self.cos[positions].view(batch, 1, 1, self.dim)
             sin = self.sin[positions].view(batch, 1, 1, self.dim)
             mask = self.arange.view(1, 1, 1, -1) <= positions.view(batch, 1, 1, 1)
         for i in range(self.c["num_hidden_layers"]):
-            qkv = F.linear(self.norm(x, w[f"{i}.norm1"]), w[f"{i}.qkv.weight"], w[f"{i}.qkv.bias"])
+            qkv = F.linear(self.norm(x, w[f"{i}.norm1"]), w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
             cache_k, cache_v = self.kv[i].unbind(0)
             if self.kernels:
                 q = self.kernels.rope_batch(qkv, self.cos, self.sin, positions, slots,
-                                             cache_k, cache_v, self.heads)
+                                             cache_k, cache_v, self.heads,
+                    w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps)
                 attended = self.kernels.attention(q, cache_k, cache_v, positions, slots)
             else:
                 q, k, v = qkv.split([self.heads*self.dim, self.kv_heads*self.dim, self.kv_heads*self.dim], -1)
+                q, k = self.normalize_qk(q, k, i)
                 q = self.rotate(q.view(batch, self.heads, 1, self.dim), cos, sin)
                 k = self.rotate(k.view(batch, self.kv_heads, 1, self.dim), cos, sin)
                 v = v.view(batch, self.kv_heads, self.dim)
@@ -65,10 +67,10 @@ class BatchExecutor(Executor):
             x = x + F.linear(attended.reshape(batch, -1), w[f"{i}.out"])
             gate_up = F.linear(self.norm(x, w[f"{i}.norm2"]), w[f"{i}.gate_up"])
             if self.kernels:
-                activated = self.kernels.swiglu(gate_up)
+                activated = self.kernels.swiglu(gate_up, self.precise)
             else:
                 gate, up = gate_up.chunk(2, -1)
-                activated = F.silu(gate) * up
+                activated = self.activate(gate, up)
             x = x + F.linear(activated, w[f"{i}.down"])
         return F.linear(self.norm(x, w["norm"]), w["head"])
 
@@ -91,18 +93,20 @@ class BatchExecutor(Executor):
         positions = torch.tensor([i for length in lengths for i in range(length)], device="cuda")
         slot_ids = torch.tensor([slot for slot, length in zip(slots, lengths) for _ in range(length)], device="cuda")
         w = self.w
-        x = F.embedding(ids, w["embed"])
+        x = F.embedding(ids, w["embed"]).to(self.residual_dtype)
         if not self.kernels:
             cos = self.cos[positions].view(-1, 1, 1, self.dim)
             sin = self.sin[positions].view(-1, 1, 1, self.dim)
         for i in range(self.c["num_hidden_layers"]):
-            qkv = F.linear(self.norm(x, w[f"{i}.norm1"]), w[f"{i}.qkv.weight"], w[f"{i}.qkv.bias"])
+            qkv = F.linear(self.norm(x, w[f"{i}.norm1"]), w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
             cache_k, cache_v = self.kv[i].unbind(0)
             if self.kernels:
                 query = self.kernels.rope_batch(qkv, self.cos, self.sin, positions, slot_ids,
-                                                 cache_k, cache_v, self.heads)
+                                                 cache_k, cache_v, self.heads,
+                    w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps)
             else:
                 q, k, v = qkv.split([self.heads*self.dim, self.kv_heads*self.dim, self.kv_heads*self.dim], -1)
+                q, k = self.normalize_qk(q, k, i)
                 query = self.rotate(q.view(-1, self.heads, 1, self.dim), cos, sin)
                 k = self.rotate(k.view(-1, self.kv_heads, 1, self.dim), cos, sin)
                 cache_k[slot_ids, :, positions, :] = k.squeeze(2)
@@ -117,10 +121,10 @@ class BatchExecutor(Executor):
             x = x + F.linear(torch.cat(attended), w[f"{i}.out"])
             gate_up = F.linear(self.norm(x, w[f"{i}.norm2"]), w[f"{i}.gate_up"])
             if self.kernels:
-                activated = self.kernels.swiglu(gate_up)
+                activated = self.kernels.swiglu(gate_up, self.precise)
             else:
                 gate, up = gate_up.chunk(2, -1)
-                activated = F.silu(gate) * up
+                activated = self.activate(gate, up)
             x = x + F.linear(activated, w[f"{i}.down"])
         ends = torch.tensor([end - 1 for end in accumulate(lengths)], device="cuda")
         logits = F.linear(self.norm(x.index_select(0, ends), w["norm"]), w["head"])

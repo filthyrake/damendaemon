@@ -22,12 +22,13 @@ def main():
     parser.add_argument("--steps", type=int, default=16)
     parser.add_argument("--unfused", action="store_true")
     parser.add_argument("--diagnostic", action="store_true")
+    parser.add_argument("--reference-dtype", choices=("float16", "float32"), default="float16")
     args = parser.parse_args()
     require_gpu()
     model = ModelWeights(args.path, args.context)
     tokenizer = AutoTokenizer.from_pretrained(args.path, local_files_only=True, trust_remote_code=False)
     reference = AutoModelForCausalLM.from_pretrained(
-        args.path, local_files_only=True, trust_remote_code=False, torch_dtype=torch.float16,
+        args.path, local_files_only=True, trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype),
         attn_implementation="sdpa").to("cuda").eval()
     cases = []
     prompts = ["What is 2 + 2? Answer with one number.",
@@ -91,7 +92,7 @@ def main():
         del executor
         gc.collect()
         torch.cuda.empty_cache()
-    print(json.dumps({"model_path": args.path, "device": torch.cuda.get_device_name(),
+    print(json.dumps({"model_path": args.path, "reference_dtype": args.reference_dtype, "device": torch.cuda.get_device_name(),
                       "torch": torch.__version__, "context": args.context,
                       "correctness": cases, "timings": timings}, indent=2))
     if not args.diagnostic:
