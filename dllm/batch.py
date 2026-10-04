@@ -16,6 +16,7 @@ class BatchExecutor(Executor):
         super().__init__(model, use_graph=False, kernels=kernels, max_batch=max_batch)
         self.lengths = [0] * max_batch
         self.batch_graphs = {}
+        self.configure_prefill_graphs(use_graph)
         if use_graph and self.device == "cuda":
             self.capture_graphs()
 

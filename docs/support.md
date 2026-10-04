@@ -20,6 +20,9 @@ Configuration acceptance alone is not checkpoint qualification.
 | GPT-2 | Original GPT-2 | NVIDIA A2, Apple M4 | Learned positions; FP32, raw completions |
 | GPT-NeoX | Pythia-160M | NVIDIA A2, Apple M4 | Partial rotary / parallel residual; FP32 |
 | BLOOM | BLOOM-560m | NVIDIA A2, Apple M4 | ALiBi; FP32, 2048 context |
+| T5 / FLAN-T5 | Small checkpoints | NVIDIA A2, Apple M4 | FP32 encoder-decoder raw generation; no quantization or prefix reuse |
+| Mamba | 130M, 370M | NVIDIA A2, Apple M4 | FP32/Q8 raw generation; recurrent-state prefix snapshots |
+| Mamba-2 | 130M | NVIDIA A2, Apple M4 | Single-group configuration; optional qualified CUDA SSD/compensated projection paths |
 | BERT sentence encoder | all-MiniLM-L6-v2 | NVIDIA A2, Apple M4 | Specified mean-pooling/L2 pipeline; 384 dimensions, 256 input tokens |
 
 Exact pins, precision, context, correctness gates and comparisons:
@@ -38,7 +41,9 @@ Model licenses remain those of their respective publishers.
 | HTTP generation | Text chat and raw text/token-ID completions; streaming SSE; usage and timing; bounded admission and cancellation |
 | Sampling | Greedy or request-seeded temperature/top-p/top-k; repetition, frequency and presence penalties; token bias; text stops |
 | Token scores | Opt-in chat selected-token logprobs and up to 20 alternatives; raw distribution; no custom text stops with scores |
-| Structured output | Optional constrained JSON / limited JSON schema, with explicit unsupported combinations |
+| Structured output | Optional constrained JSON / bounded JSON schema including anyOf, with explicit unsupported combinations |
+| Function tools | Qualified Qwen2/Qwen3 JSON calls and result history; auto/none and required/named single-call schemas; strict auto unsupported |
+| Direct choices | Unquantized Qwen2/Qwen3 candidate-token logits/probabilities without answer generation; explicit raw prompts, no calibrated confidence |
 | Batching | Continuous decode, up to 16 slots; CUDA graph replay; opt-in bounded CUDA dense paged KV with admission reservations |
 | Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state |
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
@@ -49,8 +54,8 @@ Model licenses remain those of their respective publishers.
 The runtime does **not** currently provide general vLLM/llama.cpp parity.
 Missing major capabilities include paged KV for other architectures/devices, shared prefix pages, KV quantization,
 multi-GPU tensor/pipeline parallelism, adapters, GGUF/AWQ/GPTQ checkpoint import,
-multimodal inference, tool-call protocol handling, prompt/raw-completion token log-probabilities,
-encoder-decoder generation, and a CPU inference backend. Model registration is
+multimodal inference, additional tool-call formats, prompt/raw-completion token log-probabilities,
+trained decision-head checkpoints, and a CPU inference backend. Model registration is
 process-local. The HTTP API is a supported subset, not full OpenAI or Ollama API
 compatibility. The development server is loopback-only and is not an authenticated
 multi-tenant service.
@@ -59,3 +64,7 @@ Performance is workload-specific. Comparable results include losses as well as
 wins; a passing numerical gate is not a claim of throughput parity. In particular,
 Mistral Q4 single-request decoding still trails llama.cpp, and several concurrent
 workloads still trail vLLM. See the raw trials accompanying each comparison.
+
+Recent evidence: [T5](evidence/t5/), [Mamba](evidence/mamba/),
+[Mamba-2](evidence/mamba2/), [function tools](evidence/tools/),
+[direct token choices](evidence/scoring/) and [upstream research](upstream-inference-research.md).

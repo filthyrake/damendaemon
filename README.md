@@ -631,3 +631,10 @@ Choose token IDs appropriate to your model and prompt; the IDs above only show
 the request format. Probabilities are **not calibrated confidence**. This is
 single-token choice scoring, not multi-token answer scoring or Jev model support.
 [Real A2/M4 correctness and latency evidence](docs/evidence/scoring/README.md).
+
+For repeated short Qwen2/Qwen3 prompts on NVIDIA, opt-in
+`DLLM_PREFILL_GRAPHS=4` caches up to four prompt-length/slot CUDA graphs per
+resident executor. `DLLM_PREFILL_GRAPH_MAX_TOKENS` defaults to128. First captures
+are expensive; dynamic workloads may not amortize them. Quantization, paged KV,
+packed/chunked prefill and direct token scoring retain their existing paths.
+[Correctness, memory release and matched HTTP performance](docs/evidence/prefill-graphs/README.md).

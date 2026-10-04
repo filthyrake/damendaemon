@@ -1,0 +1,352 @@
+{
+  "model_a": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "model_b": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+  "reports": [
+    {
+      "gpu_models": 1,
+      "trials": [
+        {
+          "model": "a",
+          "wall_seconds": 4.64065145800123,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 3.7984890020015882,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 4.1748243019974325,
+            "total_seconds": 4.627451762004057,
+            "decode_tokens_per_second": 139.18731311414018
+          }
+        },
+        {
+          "model": "b",
+          "wall_seconds": 5.238712828999269,
+          "usage": {
+            "prompt_tokens": 22,
+            "completion_tokens": 64,
+            "total_tokens": 86
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 2.515233784011798,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 4.687705037009437,
+            "total_seconds": 5.234566551007447,
+            "decode_tokens_per_second": 115.20284091564218
+          }
+        },
+        {
+          "model": "a",
+          "wall_seconds": 1.8049647090083454,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 1.1667711990012322,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 1.3526268459972925,
+            "total_seconds": 1.800791379995644,
+            "decode_tokens_per_second": 140.57337254677034
+          }
+        },
+        {
+          "model": "b",
+          "wall_seconds": 2.2395175569981802,
+          "usage": {
+            "prompt_tokens": 22,
+            "completion_tokens": 64,
+            "total_tokens": 86
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 1.3940212309971685,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 1.6879443810030352,
+            "total_seconds": 2.2353266309946775,
+            "decode_tokens_per_second": 115.09324608344883
+          }
+        },
+        {
+          "model": "a",
+          "wall_seconds": 1.7719651009974768,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 1.1426996740046889,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 1.3210261009953683,
+            "total_seconds": 1.7675489310058765,
+            "decode_tokens_per_second": 141.09021032254364
+          }
+        }
+      ],
+      "sample_text": {
+        "a": "Matrix multiplication is a fundamental operation in linear algebra that allows us to multiply two matrices together. The result of this multiplication is another matrix, which is the product of the two input matrices. The number of columns in the first matrix must equal the number of rows in the second matrix for the multiplication to be defined.\n\nLet's",
+        "b": "<think>\nOkay, so I need to explain how matrix multiplication works in detail with a worked example. Let me start by recalling what I know about matrices. A matrix is a rectangular array of numbers, right? And matrix multiplication is a way to multiply two matrices. But how exactly does that work?\n\nHmm, I remember"
+      },
+      "streaming_and_recovery_passed": true,
+      "same_model_batch": [
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 1.0124000255018473e-05,
+          "cached_prompt_tokens": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 4,
+          "residual_dtype": "float16",
+          "first_token_seconds": 0.009352303997729905,
+          "total_seconds": 0.5586500890058232,
+          "decode_tokens_per_second": 114.69188793301207
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 4,
+          "residual_dtype": "float16",
+          "first_token_seconds": 0.048071878001792356,
+          "total_seconds": 0.5655790599994361,
+          "decode_tokens_per_second": 121.73744093137405
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 4,
+          "residual_dtype": "float16",
+          "first_token_seconds": 0.04636274799122475,
+          "total_seconds": 0.563908302996424,
+          "decode_tokens_per_second": 121.72841480469695
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 4,
+          "residual_dtype": "float16",
+          "first_token_seconds": 0.046996370001579635,
+          "total_seconds": 0.5645181979925837,
+          "decode_tokens_per_second": 121.73399573224398
+        }
+      ],
+      "stream_benchmark": {
+        "index": 0,
+        "model": "a",
+        "seconds": 0.4634956410009181,
+        "first_output_seconds": 0.011754065009881742,
+        "output_tokens": 64,
+        "error": null
+      }
+    },
+    {
+      "gpu_models": 2,
+      "trials": [
+        {
+          "model": "a",
+          "wall_seconds": 4.868315585001255,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 4.207755969007849,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 4.407937719995971,
+            "total_seconds": 4.861529978996259,
+            "decode_tokens_per_second": 138.89125916489672
+          }
+        },
+        {
+          "model": "b",
+          "wall_seconds": 4.697483629992348,
+          "usage": {
+            "prompt_tokens": 22,
+            "completion_tokens": 64,
+            "total_tokens": 86
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 3.61176660899946,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 4.116885051000281,
+            "total_seconds": 4.693732264000573,
+            "decode_tokens_per_second": 109.214361411794
+          }
+        },
+        {
+          "model": "a",
+          "wall_seconds": 0.47620264800207224,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 6.3350016716867685e-06,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 0.009773836995009333,
+            "total_seconds": 0.47295613700407557,
+            "decode_tokens_per_second": 136.01556017742226
+          }
+        },
+        {
+          "model": "b",
+          "wall_seconds": 0.5844342269992922,
+          "usage": {
+            "prompt_tokens": 22,
+            "completion_tokens": 64,
+            "total_tokens": 86
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 5.7779980124905705e-06,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.012263101001735777,
+            "total_seconds": 0.5812233670003479,
+            "decode_tokens_per_second": 110.72829468930556
+          }
+        },
+        {
+          "model": "a",
+          "wall_seconds": 0.4923752429895103,
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 64,
+            "total_tokens": 107
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 5.155990947969258e-06,
+            "cached_prompt_tokens": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 0.009659949006163515,
+            "total_seconds": 0.4891449880087748,
+            "decode_tokens_per_second": 131.39096087554236
+          }
+        }
+      ],
+      "sample_text": {
+        "a": "Matrix multiplication is a fundamental operation in linear algebra that allows us to multiply two matrices together. The result of this multiplication is another matrix, which is the product of the two input matrices. The number of columns in the first matrix must equal the number of rows in the second matrix for the multiplication to be defined.\n\nLet's",
+        "b": "<think>\nOkay, so I need to explain how matrix multiplication works in detail with a worked example. Let me start by recalling what I know about matrices. A matrix is a rectangular array of numbers, right? And matrix multiplication is a way to multiply two matrices. But how exactly does that work?\n\nHmm, I remember"
+      },
+      "streaming_and_recovery_passed": true,
+      "same_model_batch": [
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 4,
+          "residual_dtype": "float16",
+          "first_token_seconds": 0.07285518400021829,
+          "total_seconds": 0.6287494319985854,
+          "decode_tokens_per_second": 113.33090822012798
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 5.39699976798147e-06,
+          "cached_prompt_tokens": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 4,
+          "residual_dtype": "float16",
+          "first_token_seconds": 0.010014965999289416,
+          "total_seconds": 0.6205359980085632,
+          "decode_tokens_per_second": 103.19054823166687
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 4,
+          "residual_dtype": "float16",
+          "first_token_seconds": 0.07210762400063686,
+          "total_seconds": 0.6280931060027797,
+          "decode_tokens_per_second": 113.31231127318752
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 4,
+          "residual_dtype": "float16",
+          "first_token_seconds": 0.07091920600214507,
+          "total_seconds": 0.6270189049973851,
+          "decode_tokens_per_second": 113.28903812361037
+        }
+      ],
+      "stream_benchmark": {
+        "index": 0,
+        "model": "a",
+        "seconds": 0.49429202899045777,
+        "first_output_seconds": 0.012563517986563966,
+        "output_tokens": 64,
+        "error": null
+      }
+    }
+  ]
+}

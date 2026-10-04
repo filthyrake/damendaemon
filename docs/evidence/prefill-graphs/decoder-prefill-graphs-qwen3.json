@@ -1,0 +1,93 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+  "gpu": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "checks": [
+    {
+      "count": 16,
+      "slot": 0,
+      "value": 40,
+      "first_call_ms": 275.19589599978644,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 16,
+      "slot": 0,
+      "value": 100,
+      "first_call_ms": 17.4320599908242,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 16,
+      "slot": 1,
+      "value": 40,
+      "first_call_ms": 267.7226459927624,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 32,
+      "slot": 0,
+      "value": 100,
+      "first_call_ms": 299.30079900077544,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 16,
+      "slot": 0,
+      "value": 200,
+      "first_call_ms": 275.1498769939644,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 128,
+      "slot": 2,
+      "value": 40,
+      "first_call_ms": 301.8257779913256,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 129,
+      "slot": 3,
+      "value": 100,
+      "first_call_ms": 106.23346999636851,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    }
+  ],
+  "timings": [
+    {
+      "tokens": 16,
+      "eager_ms": 42.56986500695348,
+      "graph_ms": 9.62159399932716,
+      "speedup": 4.424408784025848
+    },
+    {
+      "tokens": 128,
+      "eager_ms": 45.93510300037451,
+      "graph_ms": 31.03198499593418,
+      "speedup": 1.480250232345528
+    }
+  ],
+  "cache": {
+    "hits": 36,
+    "captures": 7,
+    "evictions": 5
+  },
+  "memory": {
+    "allocated_with_cache": 1461453312,
+    "allocated_after_clear": 1460234752,
+    "reserved_with_cache": 1744830464,
+    "reserved_after_clear": 1686110208
+  },
+  "eviction_frees_graph": true,
+  "unload_frees_executor_and_graph": true,
+  "scoring_bypasses_graph": true,
+  "timing": "median 15 synchronized complete prefills after 3 warmups, includes prompt tensor creation/copy; loading and HTTP excluded"
+}

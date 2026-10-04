@@ -1,0 +1,39 @@
+{
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "gpu": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "compute_dtype": "torch.float16",
+  "rows": [
+    {
+      "tokens": 16,
+      "eager_ms": 20.640417002141476,
+      "graph_ms": 7.495547994039953,
+      "speedup": 2.753690192972362,
+      "capture_ms": 148.82206900801975,
+      "retained_allocated_bytes": 304128,
+      "changed_prompt_equal": true,
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 128,
+      "eager_ms": 20.709026997792535,
+      "graph_ms": 11.161054004332982,
+      "speedup": 1.855472340672557,
+      "capture_ms": 147.66512699134182,
+      "retained_allocated_bytes": 304128,
+      "changed_prompt_equal": true,
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 512,
+      "eager_ms": 40.68583299522288,
+      "graph_ms": 39.28952998830937,
+      "speedup": 1.035538806581015,
+      "capture_ms": 152.50556099636015,
+      "retained_allocated_bytes": 304128,
+      "changed_prompt_equal": true,
+      "max_logit_error": 0.0
+    }
+  ],
+  "timing": "median 25 synchronized complete forward/replay calls after 5 warmups; device IDs already resident; HTTP and input copy excluded"
+}

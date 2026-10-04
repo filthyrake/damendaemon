@@ -390,6 +390,14 @@ class Executor:
                 self.graph_logits = self.forward(self.token, self.position, prefill=False)
                 self.graph_next = self.graph_logits.argmax(dim=-1)
         self.length = 0
+        self.configure_prefill_graphs(use_graph)
+
+    def configure_prefill_graphs(self,use_graph):
+        from .prefill_graphs import configuration,PrefillGraphs
+        count,tokens=configuration()
+        eligible=(use_graph and self.device=='cuda' and self.c['model_type'] in ('qwen2','qwen3')
+            and not self.model.scales and not hasattr(self,'pool'))
+        self.prefill_graph_cache=PrefillGraphs(count,tokens) if eligible and count else None
 
     def allocate_kv(self):
         return [torch.zeros((2, self.max_batch, self.kv_heads, self.context, self.dim),
@@ -568,6 +576,10 @@ class Executor:
             raise ValueError("invalid cache slot")
         ids = torch.tensor(tokens, device=self.device, dtype=torch.long)
         self.length = len(tokens)
+        cache=self.prefill_graph_cache
+        if (cache is not None and len(tokens)<=cache.max_tokens
+                and getattr(self,'_candidate_head',None) is None):
+            return cache.run(ids,slot,self.forward)
         return self.forward(ids, torch.arange(len(tokens), device=self.device), prefill=True, slot=slot)
 
     @torch.inference_mode()
