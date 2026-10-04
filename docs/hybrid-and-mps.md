@@ -82,7 +82,8 @@ tensor baseline and `DLLM_KERNELS=metal` requires the custom kernels.
 
 Qwen2.5-0.5B and Qwen3-0.6B pass 48 single-sequence greedy comparisons each.
 SmolLM2-360M passes batched decode, reordered slots, and cache reuse, plus 82
-long-context comparisons at context 2048 against CPU FP32. Native kernel tests
+long-context comparisons at context 2048 against CPU FP32. Qwen3-0.6B also
+passes 84 expanded comparisons at that context. Native kernel tests
 cover 25 groups, including attention at context 4096 and the tensor fallback
 at 4097. The live three-model service passes switching, concurrent requests,
 cancellation, and recovery. This Apple result does not close the separate
@@ -118,6 +119,21 @@ Reproduce with `scripts/compare_mps.py`, `scripts/verify_metal_kernels.py`,
 `scripts/verify_stress.py`, and `scripts/verify_model_service.py`. Dense reference
 checks use the separate `validation` extra (Transformers 4.51.3); hybrid reference
 checks require the newer isolated environment described above.
+
+### Host dispatch investigation
+
+`scripts/profile_host.py` separates unprofiled decode dispatch from blocking
+token readback and records a separate cProfile call breakdown. Host API time
+includes waits for GPU work; this is not a measurement of pure Python overhead.
+The call profile includes prefill; the unprofiled timings exclude it.
+
+The initial profile exposed three small metadata tensor constructions per eager
+decode step. The eager path now packs token IDs, positions, and slot IDs into
+one transfer. This reduces decode tensor constructions from 96 to 32 for a
+32-step run, while CUDA graph metadata staging is unchanged. The updated path
+passes all 82 SmolLM2 long-context checks. Before/after profiles are retained as
+`metal-host-*.json`; short-run timing variability means those profiles alone
+are not an end-to-end speedup claim.
 
 ## Remaining scope
 
