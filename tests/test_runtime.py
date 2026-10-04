@@ -25,6 +25,7 @@ class RuntimeTests(unittest.TestCase):
         self.modules = patch.dict("sys.modules", {
             "torch": SimpleNamespace(cuda=SimpleNamespace(
                 synchronize=lambda: None, empty_cache=lambda: None)),
+            "dllm.models": SimpleNamespace(load=Weights,weight_bytes=lambda _:100,config=lambda _: {"max_position_embeddings":2048}),
             "dllm.qwen2": SimpleNamespace(ModelWeights=Weights, Executor=Executor,
                                           weight_bytes=lambda _: 100),
         })
@@ -122,7 +123,7 @@ class RuntimeTests(unittest.TestCase):
             (root/'config.json').write_text('{}')
             (root/'tokenizer_config.json').write_text('{}')
             Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
-            with patch('dllm.config.decoder_config',return_value={'max_position_embeddings':2048}):
+            with patch('dllm.models.config',return_value={'max_position_embeddings':2048}):
                 for _ in range(2):
                     self.assertEqual(runtime.manage('register','a',str(root))['models'][0]['id'],'a')
                 with self.assertRaises(ValueError):runtime.manage('register','a',str(root/'other'))

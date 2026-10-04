@@ -514,3 +514,52 @@ The accurate Qwen3 path also passes the real mixed Qwen2/Qwen3/SmolLM2 service
 checks at GPU-residency capacities one and three, and the Qwen2 numerical batch
 regression. Reports are `qwen3-small-accurate-service.json` and
 `qwen2-precision-regression.json` under `evidence/models`.
+
+## Sentence embeddings
+
+Issue #18. The independent BERT encoder qualifies
+`sentence-transformers/all-MiniLM-L6-v2` at revision
+`1110a243fdf4706b3f48f1d95db1a4f5529b4d41`. It implements absolute position/type
+embeddings, bidirectional attention, post-layer normalization, exact GELU,
+masked mean pooling, and L2 normalization. Checkpoint metadata must declare the
+supported Transformer/Pooling/Normalize pipeline. No Transformers model runs
+in production; the FP32 eager Transformers model is an independent validator.
+
+CUDA uses FP16 dense matrices with FP32 embeddings, normalization, GELU and
+residuals. An initial all-FP16 implementation failed the unchanged batch
+invariance gate on a whitespace input. The mixed-precision implementation
+passes reference and batch-invariance gates: relative RMS below 0.002, maximum
+absolute difference below 0.001, cosine similarity above 0.99999. Apple uses
+FP32 throughout and passes the same gates. Tests cover mixed lengths, reordered
+batches, Unicode, the 256-token boundary, normalization and a basic semantic
+ordering check; this is not a retrieval-quality benchmark.
+
+Live HTTP checks on A2 and M4 pass text/token input equivalence, exact
+float/base64 equivalence, indexed batch order, usage accounting, concurrent
+requests, encoder/decoder switching with host restoration, and recovery after
+invalid task/input requests. The unit suite has 94 passing tests.
+
+Warm encoder medians, 30 measured iterations after five warmups, including
+input upload and output download but excluding tokenization and HTTP:
+
+| Device | Input tokens | Batch | Latency ms | Inputs/s |
+|---|---:|---:|---:|---:|
+| A2 | 32 | 1 | 3.06 | 327 |
+| A2 | 32 | 32 | 5.17 | 6192 |
+| A2 | 128 | 32 | 18.36 | 1743 |
+| A2 | 256 | 32 | 38.77 | 825 |
+| M4 | 32 | 1 | 3.96 | 253 |
+| M4 | 32 | 8 | 4.57 | 1750 |
+| M4 | 256 | 32 | 98.21 | 326 |
+
+Batched input uploads reduced the A2 32-input/32-token median from 6.93 to
+5.17 ms in sequential before/after runs. No competing-runtime performance
+claim is made. CUDA and Apple arithmetic and PyTorch versions differ. Full
+measurements, reference checks, and API checks are in `evidence/embeddings/`;
+`scripts/benchmark_encoder.py` reproduces the warmed workload.
+
+Remaining limits: no embedding CUDA graphs or request coalescing, no shortening
+of vectors, quantized encoders, reranking, general encoder-decoder generation,
+or arbitrary SentenceTransformers pooling modules. Each HTTP request executes
+its own input batch; generation groups drain before an embedding request.
+The global quantization setting must remain `none` when serving this encoder.

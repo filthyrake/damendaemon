@@ -1,0 +1,73 @@
+{
+  "device": "Apple MPS",
+  "model_path": "results/models/minilm",
+  "torch_version": "2.13.0",
+  "rounds": 30,
+  "compute_dtype": "torch.float32",
+  "scope": "warmed encoder; includes input upload and vector download; excludes tokenization and HTTP",
+  "results": [
+    {
+      "batch": 1,
+      "tokens_per_input": 32,
+      "median_ms": 3.9573539688717574,
+      "p95_ms": 5.336834001354873,
+      "inputs_per_second": 252.69410011485533
+    },
+    {
+      "batch": 8,
+      "tokens_per_input": 32,
+      "median_ms": 4.570874996716157,
+      "p95_ms": 5.021666001994163,
+      "inputs_per_second": 1750.2119409844772
+    },
+    {
+      "batch": 32,
+      "tokens_per_input": 32,
+      "median_ms": 21.43529153545387,
+      "p95_ms": 23.55045801959932,
+      "inputs_per_second": 1492.8651633719164
+    },
+    {
+      "batch": 1,
+      "tokens_per_input": 128,
+      "median_ms": 4.4227079779375345,
+      "p95_ms": 4.897375009022653,
+      "inputs_per_second": 226.10581684082507
+    },
+    {
+      "batch": 8,
+      "tokens_per_input": 128,
+      "median_ms": 13.510499993572012,
+      "p95_ms": 14.15108295623213,
+      "inputs_per_second": 592.1320457278574
+    },
+    {
+      "batch": 32,
+      "tokens_per_input": 128,
+      "median_ms": 46.05766650638543,
+      "p95_ms": 46.2531250086613,
+      "inputs_per_second": 694.7811825326305
+    },
+    {
+      "batch": 1,
+      "tokens_per_input": 256,
+      "median_ms": 4.80206252541393,
+      "p95_ms": 4.994207993149757,
+      "inputs_per_second": 208.24385245042214
+    },
+    {
+      "batch": 8,
+      "tokens_per_input": 256,
+      "median_ms": 25.17479201196693,
+      "p95_ms": 25.489832973107696,
+      "inputs_per_second": 317.7781963877664
+    },
+    {
+      "batch": 32,
+      "tokens_per_input": 256,
+      "median_ms": 98.2107290183194,
+      "p95_ms": 101.3764999806881,
+      "inputs_per_second": 325.8299813051076
+    }
+  ]
+}

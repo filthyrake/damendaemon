@@ -53,7 +53,7 @@ def handler_for(runtime):
 
         def do_POST(self):
             management = {'/v1/models/register': 'register', '/v1/models/load': 'load', '/v1/models/unload': 'unload'}
-            if self.path not in ("/v1/chat/completions", "/v1/completions") and self.path not in management:
+            if self.path not in ("/v1/chat/completions", "/v1/completions", "/v1/embeddings") and self.path not in management:
                 self.send_json(404, {"error": "not found"})
                 return
             started = False
@@ -65,6 +65,13 @@ def handler_for(runtime):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
+                if self.path == '/v1/embeddings':
+                    if (not isinstance(body, dict) or set(body) - {'model','input','encoding_format','dimensions'}
+                            or not isinstance(body.get('model'), str)):
+                        raise ValueError('unsupported embedding request')
+                    self.send_json(200, runtime.embed(body['model'], body.get('input'),
+                        body.get('encoding_format','float'), body.get('dimensions')))
+                    return
                 if self.path in management:
                     action = management[self.path]
                     fields = {'model'} | ({'path'} if action == 'register' else {'release_host'} if action == 'unload' else set())

@@ -1,0 +1,68 @@
+"""Independent encoder/reference checks for vectors, padding and batch composition."""
+import argparse
+import json
+import os
+import torch
+from torch.nn import functional as F
+from transformers import AutoModel,AutoTokenizer
+from dllm.encoder import EncoderWeights,EncoderExecutor
+from dllm.runtime import require_gpu
+from dllm.device import device_name
+
+
+def main():
+    p=argparse.ArgumentParser()
+    p.add_argument('path')
+    p.add_argument('--device',choices=('cuda','mps'),default='cuda')
+    args=p.parse_args()
+    os.environ['DLLM_DEVICE']=args.device
+    require_gpu()
+    torch.set_num_threads(4)
+    model=EncoderWeights(args.path,2048)
+    executor=EncoderExecutor(model)
+    reference=AutoModel.from_pretrained(args.path,local_files_only=True,trust_remote_code=False,
+        torch_dtype=torch.float32,attn_implementation='eager').eval()
+    tokenizer=AutoTokenizer.from_pretrained(args.path,local_files_only=True,trust_remote_code=False)
+    texts=['A dog is playing in the park.','A puppy chases a ball.','Financial markets fell today.',
+           'こんにちは — café 🦙',' ','A long sentence '+('about a blue sky. '*20)]
+    checks=[]
+    def metrics(actual,expected):
+        actual,expected=actual.float().cpu(),expected.float().cpu()
+        delta=actual-expected
+        relative=(delta.square().mean(-1)/expected.square().mean(-1)).sqrt()
+        cosine=F.cosine_similarity(actual,expected)
+        absolute=delta.abs().amax(-1)
+        assert torch.isfinite(actual).all() and torch.allclose(actual.norm(dim=-1),torch.ones(actual.shape[0]),atol=1e-5)
+        assert (relative<.002).all() and (absolute<.001).all() and (cosine>.99999).all(),(relative,absolute,cosine)
+        return {'relative_rms':relative.tolist(),'max_absolute':absolute.tolist(),'cosine_similarity':cosine.tolist()}
+    @torch.inference_mode()
+    def check(inputs):
+        tokens=model.encode(inputs)
+        for value,ids in zip(inputs,tokens):
+            if isinstance(value,str):assert ids==tokenizer.encode(value,add_special_tokens=True)
+        count,length=len(tokens),max(map(len,tokens))
+        ids=torch.full((count,length),model.config['pad_token_id'],dtype=torch.long)
+        mask=torch.zeros_like(ids)
+        for i,row in enumerate(tokens):ids[i,:len(row)]=torch.tensor(row);mask[i,:len(row)]=1
+        hidden=reference(input_ids=ids,attention_mask=mask).last_hidden_state
+        expected=F.normalize((hidden*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True),p=2,dim=-1)
+        actual=executor.embed(tokens).cpu()
+        checks.append({'lengths':list(map(len,tokens)),**metrics(actual,expected)})
+        return actual
+    singles=torch.cat([check([text]) for text in texts])
+    mixed=check(texts)
+    checks.append({'kind':'batch_invariance',**metrics(mixed,singles)})
+    check([texts[5],texts[0],texts[4]])
+    seed=tokenizer.encode('blue',add_special_tokens=False)[0]
+    check([[tokenizer.cls_token_id]+[seed]*(length-2)+[tokenizer.sep_token_id] for length in (2,127,255,256)])
+    assert torch.dot(mixed[0],mixed[1])>torch.dot(mixed[0],mixed[2])
+    for bad in ([[seed]*257],[[model.config['vocab_size']]],[[True]],[[1.5]],[]):
+        try:model.encode(bad);raise AssertionError('invalid encoder input accepted')
+        except ValueError:pass
+    print(json.dumps({'passed':True,'model_path':args.path,'device':device_name(),'compute_dtype':str(executor.compute_dtype),
+        'reference_dtype':'float32','reference_attention':'eager','host_weight_bytes':model.bytes,
+        'embedding_dimensions':model.config['hidden_size'],'max_input_tokens':model.max_context,
+        'semantic_ordering':True,'checks':checks},indent=2))
+
+
+if __name__=='__main__':main()

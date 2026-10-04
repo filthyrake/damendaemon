@@ -74,8 +74,7 @@ class Runtime:
                 import json
                 from pathlib import Path
                 from tokenizers import Tokenizer
-                from .config import decoder_config
-                from .qwen2 import weight_bytes
+                from .models import config as read_config, weight_bytes
                 candidate = Path(path).expanduser().resolve()
                 with self.registry_lock:
                     existing = self.models.get(model)
@@ -84,13 +83,14 @@ class Runtime:
                             raise ValueError('alias already refers to another snapshot')
                         return self._status()
                 try:
-                    config = decoder_config(json.loads((candidate/'config.json').read_text()))
+                    config = read_config(candidate)
                     Tokenizer.from_file(str(candidate/'tokenizer.json'))
                     json.loads((candidate/'tokenizer_config.json').read_text())
                     estimated = weight_bytes(candidate)
                 except Exception as error:
                     raise ValueError('invalid local model snapshot') from error
-                if self.context > config['max_position_embeddings'] or estimated > self.host_bytes:
+                if ((config.get('task') != 'embedding' and self.context > config['max_position_embeddings'])
+                        or estimated > self.host_bytes):
                     raise ValueError('model exceeds configured context or host capacity')
                 with self.registry_lock:
                     self.models[model] = candidate
@@ -119,7 +119,7 @@ class Runtime:
 
     def _activate(self, alias):
         import torch
-        from .qwen2 import ModelWeights, weight_bytes
+        from .models import load, weight_bytes
         start = time.perf_counter()
         if alias in self.gpu:
             self.gpu.move_to_end(alias)
@@ -138,7 +138,7 @@ class Runtime:
                 if victim in self.gpu:
                     self._evict(victim)
                 del self.host[victim]
-            model = ModelWeights(self.models[alias], self.context)
+            model = load(self.models[alias], self.context)
             if model.bytes > self.host_bytes:
                 raise MemoryError("model exceeds configured host weight budget")
             while sum(m.bytes for m in self.host.values()) + model.bytes > self.host_bytes:
@@ -177,6 +177,31 @@ class Runtime:
             if acquired:
                 self.lock.release()
             self.admission.release()
+
+    def embed(self, alias, inputs, encoding_format='float', dimensions=None):
+        from .embeddings import options
+        inputs, encoding_format, dimensions = options(inputs, encoding_format, dimensions)
+        start = time.perf_counter()
+        with self.session(alias) as (executor, tier, activation):
+            model = executor.model
+            if getattr(model, 'task', None) != 'embedding':
+                raise ValueError('model does not support embeddings')
+            width = model.config['hidden_size']
+            if dimensions is not None and dimensions != width:
+                raise ValueError('this encoder does not support dimension reduction')
+            tokens = model.encode(inputs)
+            values = executor.embed(tokens).float().cpu().tolist()
+            if encoding_format == 'base64':
+                import base64
+                import struct
+                values = [base64.b64encode(struct.pack('<'+str(width)+'f',*row)).decode('ascii') for row in values]
+            count = sum(map(len,tokens))
+            return {'object':'list', 'model':alias,
+                    'data':[{'object':'embedding','index':i,'embedding':row} for i,row in enumerate(values)],
+                    'usage':{'prompt_tokens':count,'total_tokens':count},
+                    'dllm_timing':{'source_tier':tier,'activation_seconds':activation,
+                        'total_seconds':time.perf_counter()-start,'kernel_backend':executor.kernel_backend,
+                        'compute_dtype':str(executor.compute_dtype).removeprefix('torch.')}}
 
     def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None,
                  temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None):
@@ -243,6 +268,9 @@ class Runtime:
 
 def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     """Choose an execution path from the validated architecture, not the model name."""
+    if model.config.get('task') == 'embedding':
+        from .encoder import EncoderExecutor
+        return EncoderExecutor(model)
     if model.config['model_type'] == 'olmoe':
         from .moe import OlmoeExecutor
         if kwargs.pop('fuse_projections', True) is False:

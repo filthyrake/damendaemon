@@ -323,3 +323,23 @@ POST bodies use `model`; registration also requires `path`, and unloading accept
 boolean `release_host`. Commands share bounded admission and wait for active
 model groups to finish. Ordinary generation still loads registered models on
 demand. These extensions are separate from OpenAI's completion protocol.
+
+Sentence embeddings are available through `POST /v1/embeddings`. Register the
+pinned `sentence-transformers/all-MiniLM-L6-v2` snapshot at revision
+`1110a243fdf4706b3f48f1d95db1a4f5529b4d41` like any other model, then send:
+
+```json
+{"model":"minilm","input":["A dog plays outside.","A puppy runs in the park."],"encoding_format":"float"}
+```
+
+The independent BERT executor supports masked mean pooling and normalized
+384-dimensional vectors on CUDA and Apple Silicon. Inputs can be strings or
+explicit token-ID sequences, with up to 64 inputs per request. Float and
+little-endian FP32 base64 output are supported. `dimensions`, if supplied, must
+be 384. Inputs exceeding 256 tokens (including special tokens) are rejected,
+not silently truncated. This is qualification of the pinned MiniLM checkpoint,
+not all SentenceTransformers models. Encoder quantization is unsupported; use
+`DLLM_QUANTIZATION=none` for a server that includes this encoder. Requests share
+the model-residency scheduler with chat and completion workloads. See
+[encoder evidence](docs/architecture-parity.md#sentence-embeddings) for precision,
+performance, and current batching limits.

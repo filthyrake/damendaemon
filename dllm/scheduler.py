@@ -66,10 +66,20 @@ class BatchedRuntime:
 
     def manage(self, action, model=None, path=None, release_host=False):
         from .management import command
-        options = command(action, model, path, release_host)
+        return self._submit(command(action, model, path, release_host))
+
+    def embed(self, alias, inputs, encoding_format="float", dimensions=None):
+        from .embeddings import options
+        inputs, encoding_format, dimensions = options(inputs, encoding_format, dimensions)
+        if not isinstance(alias, str) or alias not in self.models:
+            raise ValueError("unknown model")
+        return self._submit({"action":"embed", "model":alias, "inputs":inputs,
+                             "encoding_format":encoding_format, "dimensions":dimensions})
+
+    def _submit(self, options):
         if not self.admission.acquire(blocking=False):
             raise BusyError('request queue is full')
-        request = Pending(model or '', None, 0, command=options)
+        request = Pending(options.get('model') or '', None, 0, command=options)
         try:
             with self.condition:
                 if self.closed:
@@ -305,7 +315,12 @@ class BatchedRuntime:
                     return
             if first.command is not None:
                 try:
-                    first.final = self.runtime.manage(**first.command)
+                    if first.command['action'] == 'embed':
+                        options = first.command
+                        first.final = self.runtime.embed(options['model'], options['inputs'],
+                                                         options['encoding_format'], options['dimensions'])
+                    else:
+                        first.final = self.runtime.manage(**first.command)
                     self._finish(first)
                 except Exception as error:
                     self._finish(first, error)

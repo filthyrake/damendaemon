@@ -22,6 +22,12 @@ class FakeRuntime:
         self.last_management=command(action,**options)
         return {'models': [{'id':'a','residency':'disk'}]}
 
+    def embed(self, alias, inputs, encoding_format='float', dimensions=None):
+        from dllm.embeddings import options
+        values,encoding_format,dimensions=options(inputs,encoding_format,dimensions)
+        self.last_embedding=(alias,values,encoding_format,dimensions)
+        return {'object':'list','data':[{'object':'embedding','index':i,'embedding':[0.,1.]} for i in range(len(values))]}
+
     def generate(self, alias, messages, max_tokens, **kwargs):
         self.last_options = kwargs
         self.last_max_tokens = max_tokens
@@ -188,3 +194,14 @@ class ServerTests(unittest.TestCase):
                             headers={'Content-Type':'application/json'}))
         self.assertEqual(error.exception.code,400)
         error.exception.close()
+
+    def test_embedding_protocol_and_validation(self):
+        def post(body):
+            return urlopen(Request(self.url+'/v1/embeddings',data=json.dumps(body).encode(),
+                                  headers={'Content-Type':'application/json'}))
+        with post({'model':'a','input':['hello','world'],'encoding_format':'base64','dimensions':384}) as response:
+            self.assertEqual(len(json.load(response)['data']),2)
+        self.assertEqual(self.runtime.last_embedding,('a',['hello','world'],'base64',384))
+        for body in ({'model':'a','input':[True]}, {'model':'a','input':'x','stream':True}, {'input':'x'}):
+            with self.assertRaises(HTTPError) as error:post(body)
+            self.assertEqual(error.exception.code,400);error.exception.close()
