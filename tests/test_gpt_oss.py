@@ -93,3 +93,14 @@ class GptOssTests(unittest.TestCase):
             with self.subTest(low=low,high=high):
                 values=torch.full((3,7),127,dtype=torch.uint8);values[0,0]=low;values[-1,-1]=high
                 self.assertEqual(scale_capabilities(values),(half,normal))
+
+
+    def test_long_attention_rejects_tf32_if_global_policy_changes_after_load(self):
+        from types import SimpleNamespace
+        from dllm.gpt_oss import GptOssExecutor
+        previous=torch.backends.cuda.matmul.allow_tf32
+        try:
+            torch.backends.cuda.matmul.allow_tf32=True
+            with self.assertRaisesRegex(ValueError,'precision highest'):
+                GptOssExecutor.attention_projection(None,SimpleNamespace(shape=(256,32)),None,None,True)
+        finally:torch.backends.cuda.matmul.allow_tf32=previous

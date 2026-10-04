@@ -1307,8 +1307,25 @@ See [full proof, limits and rejected experiment](evidence/gpt-oss/normal-scales/
 A 32 MiB prefill attention workspace bound and shorter expert-intermediate
 lifetimes allow a two-slot, 4096-context replay on A2. Attention partitioning is
 bit-identical; the measured attention allocation peak drops from 1.08 GiB to
-95.8 MiB, including the full output. Longer-context numerical parity remains
-unqualified: a nearly tied expert choice produces a greedy mismatch at a
-789-token prefix with both bounded and unbounded attention.
+95.8 MiB, including the full output. The original nearly tied expert choice
+produced a greedy mismatch at a 789-token prefix with both bounded and unbounded
+attention. IEEE FP32 attention projections now repair all five targeted output
+prefixes; longer-context internal-state qualification remains open.
 See [all measurements, failed checks and reproduction](evidence/gpt-oss/context-4k/README.md)
 and [issue #41](https://github.com/filthyrake/dllm/issues/41).
+
+### GPT-OSS bounded fused prefill attention
+
+Prefills of 256 or more tokens now use bounded fused FP32 sink attention and
+IEEE FP32 attention projections. The sink normalization comes from the fused
+operator's log-sum-exp output. Full attention partitions heads; windowed
+attention trims each query tile's key range. The unchanged decode graphs and
+short-prefill path remain in use. `DLLM_GPT_OSS_ATTENTION=native` provides the
+bounded native attention path with the same IEEE projection policy for matched
+comparisons.
+
+Two independent 72-check reference sets pass, as do all five sensitive output
+prefixes and real 4K raw/tool HTTP lifecycle tests. Long-context absolute
+hidden-state failures are retained in issue #41, including the observed
+variation between independent CPU and CUDA references. See the
+[fused-prefill implementation, proof and limits](evidence/gpt-oss/fused-prefill/README.md).

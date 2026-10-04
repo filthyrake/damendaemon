@@ -22,6 +22,7 @@ def main():
                 return F.linear(x.float(),w.float(),None if bias is None else bias.float())
             return linear(x,w,bias)
         executor.dense_linear=project
+        executor.attention_projection_policy='experimental_ieee_attention_prefill_3_plus'
         return executor
     replay_gpt_oss.GptOssExecutor=create
     try:replay_gpt_oss.main()

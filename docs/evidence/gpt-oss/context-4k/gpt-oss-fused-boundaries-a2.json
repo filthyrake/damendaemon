@@ -1,0 +1,88 @@
+{
+  "gpu": "NVIDIA A2",
+  "context": 2048,
+  "reference": "gpt-oss-cpu-boundary-reference.pt",
+  "fused_attention": true,
+  "rows": [
+    {
+      "mode": "original",
+      "prefix_tokens": 788,
+      "warm_prefill_seconds": 1.9532378340081777,
+      "relative_rms": 1.496977574788616e-06,
+      "max_abs": 2.86102294921875e-05,
+      "greedy_match": true
+    },
+    {
+      "mode": "original",
+      "prefix_tokens": 789,
+      "warm_prefill_seconds": 1.9609291910019238,
+      "relative_rms": 0.1465073823928833,
+      "max_abs": 2.876980781555176,
+      "greedy_match": false
+    },
+    {
+      "mode": "original",
+      "prefix_tokens": 790,
+      "warm_prefill_seconds": 1.9519087950029643,
+      "relative_rms": 0.015351841226220131,
+      "max_abs": 0.2951498031616211,
+      "greedy_match": true
+    },
+    {
+      "mode": "original",
+      "prefix_tokens": 791,
+      "warm_prefill_seconds": 1.9484112549980637,
+      "relative_rms": 0.007044631522148848,
+      "max_abs": 0.1347036361694336,
+      "greedy_match": true
+    },
+    {
+      "mode": "original",
+      "prefix_tokens": 1025,
+      "warm_prefill_seconds": 2.3118441439874005,
+      "relative_rms": 0.0012195007875561714,
+      "max_abs": 0.024408459663391113,
+      "greedy_match": true
+    },
+    {
+      "mode": "attention_ieee",
+      "prefix_tokens": 788,
+      "warm_prefill_seconds": 2.208123105985578,
+      "relative_rms": 3.041021955141332e-06,
+      "max_abs": 5.1021575927734375e-05,
+      "greedy_match": true
+    },
+    {
+      "mode": "attention_ieee",
+      "prefix_tokens": 789,
+      "warm_prefill_seconds": 2.216609642986441,
+      "relative_rms": 1.2118830454710405e-05,
+      "max_abs": 0.0002611875534057617,
+      "greedy_match": true
+    },
+    {
+      "mode": "attention_ieee",
+      "prefix_tokens": 790,
+      "warm_prefill_seconds": 2.241471310000634,
+      "relative_rms": 2.832430936905439e-06,
+      "max_abs": 7.343292236328125e-05,
+      "greedy_match": true
+    },
+    {
+      "mode": "attention_ieee",
+      "prefix_tokens": 791,
+      "warm_prefill_seconds": 2.2435668819962302,
+      "relative_rms": 2.6600937417242676e-06,
+      "max_abs": 5.340576171875e-05,
+      "greedy_match": true
+    },
+    {
+      "mode": "attention_ieee",
+      "prefix_tokens": 1025,
+      "warm_prefill_seconds": 2.6775087009882554,
+      "relative_rms": 2.579755118858884e-06,
+      "max_abs": 4.100799560546875e-05,
+      "greedy_match": true
+    }
+  ]
+}

@@ -40,7 +40,7 @@ def main():
             x=torch.nn.functional.embedding(torch.tensor(ids,device='cuda'),executor.w['embed']).float()
             start=time.perf_counter()
             for layer in range(model.config['num_hidden_layers']):
-                x=executor.layer(x,positions,slots,layer,prefill=True)
+                x=executor.layer(x,positions,slots,layer,prefill=True,prefill_slot=slot)
                 compare(x,case['layers'][layer],'layer',case=index,layer=layer)
             logits=executor.dense_linear(executor.norm(x[-1:],executor.w['norm']),executor.w['head'])
             compare(logits[0],case['logits'][-1],'full_prefill',case=index)
@@ -73,6 +73,7 @@ def main():
         'reference_torch':reference['torch'],'reference_dtype':reference['dtype'],'torch':str(torch.__version__),
         'graph':not args.no_graph,'scalar':args.scalar,'prefill_mode':executor.grouped_prefill,'chunked_experts':executor.chunked_experts,'normal_experts':executor.normal_experts,
         'normal_scale_projections':sum(executor.expert_normal.values()),
+        'fused_prefill_attention':executor.fused_prefill_attention,'attention_projection_policy':executor.attention_projection_policy,
         'prefill_attention_scratch_bytes':executor.prefill_attention_bytes,'compute_dtype':str(executor.compute_dtype),'kernel_backend':executor.kernel_backend,
         'context':executor.context,'max_batch':executor.max_batch,'host_weight_bytes':model.bytes,
         'allocated_bytes':torch.cuda.memory_allocated(),'peak_allocated_bytes':torch.cuda.max_memory_allocated(),

@@ -114,6 +114,13 @@ class GptOssExecutor(BatchExecutor):
         self.chunked_experts=True
         self.normal_experts=True
         self.prefill_attention_bytes=32*1024**2
+        attention_mode=os.environ.get('DLLM_GPT_OSS_ATTENTION','fused')
+        if attention_mode not in ('native','fused'):
+            raise ValueError('DLLM_GPT_OSS_ATTENTION must be native or fused')
+        self.fused_prefill_attention=attention_mode=='fused'
+        self.attention_projection_policy='ieee_fp32_prefill_256_plus'
+        if torch.backends.cuda.matmul.allow_tf32:
+            raise ValueError('GPT-OSS attention projections require torch FP32 matmul precision highest')
         self.expert_linear=routed_linear
         self.expert_activation=mxfp4_kernels.swiglu
         self.combine=moe_kernels.combine
@@ -167,28 +174,43 @@ class GptOssExecutor(BatchExecutor):
 
     @torch.inference_mode()
     def forward(self,ids,positions,prefill,slot=0):
-        return self._forward(ids,positions,torch.full_like(positions,slot),prefill)
+        return self._forward(ids,positions,torch.full_like(positions,slot),prefill,slot if prefill else None)
 
     @torch.inference_mode()
     def forward_batch(self,ids,positions,slots):
         return self._forward(ids,positions,slots,False)
 
-    def layer(self,x,positions,slots,i,prefill=False):
+    def attention_projection(self,x,weight,bias,prefill):
+        if prefill and x.shape[0]>=256:
+            if torch.backends.cuda.matmul.allow_tf32:
+                raise ValueError('GPT-OSS attention projections require torch FP32 matmul precision highest')
+            # Preserve FP32 attention products at longer prefixes. Compensated
+            # FP16 products can cross nearly tied expert-routing boundaries.
+            # Expand one matrix transiently; retaining FP32 copies would not fit A2.
+            return F.linear(x.float(),weight.float(),bias.float())
+        return self.dense_linear(x,weight,bias)
+
+    def layer(self,x,positions,slots,i,prefill=False,prefill_slot=None):
         w=self.w
-        qkv=self.dense_linear(self.norm(x,w[f'{i}.norm1']),w[f'{i}.qkv.weight'],w[f'{i}.qkv.bias'])
+        qkv=self.attention_projection(self.norm(x,w[f'{i}.norm1']),w[f'{i}.qkv.weight'],w[f'{i}.qkv.bias'],prefill)
         ck,cv=self.kv[i].unbind(0)
         query=self.kernels.rope_batch(qkv,self.cos,self.sin,positions,slots,ck,cv,self.heads,precise=True)
         window=self.c['sliding_window'] if self.c['layer_types'][i]=='sliding_attention' else 0
-        attended=self.kernels.attention(query,ck,cv,positions,slots,window=window,sinks=w[f'{i}.sinks'],
-            scratch_bytes=self.prefill_attention_bytes if prefill else None)
-        x=x+self.dense_linear(attended.reshape(x.shape[0],-1),w[f'{i}.out'],w[f'{i}.out.bias'])
+        if prefill and self.fused_prefill_attention and prefill_slot is not None and x.shape[0]>=256:
+            from .sink_attention import prefill_attention
+            count=x.shape[0]
+            attended=prefill_attention(query,ck[prefill_slot,:,:count],cv[prefill_slot,:,:count],w[f'{i}.sinks'],window)
+        else:
+            attended=self.kernels.attention(query,ck,cv,positions,slots,window=window,sinks=w[f'{i}.sinks'],
+                scratch_bytes=self.prefill_attention_bytes if prefill else None)
+        x=x+self.attention_projection(attended.reshape(x.shape[0],-1),w[f'{i}.out'],w[f'{i}.out.bias'],prefill)
         # Expert expansion must not overlap dead long-prompt attention tensors.
         del qkv,query,attended
         return x+self.experts(self.norm(x,w[f'{i}.norm2']),i,prefill)
 
-    def _forward(self,ids,positions,slots,prefill):
+    def _forward(self,ids,positions,slots,prefill,prefill_slot=None):
         x=F.embedding(ids,self.w['embed']).float()
-        for i in range(self.c['num_hidden_layers']):x=self.layer(x,positions,slots,i,prefill)
+        for i in range(self.c['num_hidden_layers']):x=self.layer(x,positions,slots,i,prefill,prefill_slot=prefill_slot)
         if prefill:x=x[-1:]
         return self.dense_linear(self.norm(x,self.w['norm']),self.w['head'])
 

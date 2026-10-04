@@ -54,8 +54,22 @@ FP64 checks, alternating warm timings and incremental memory peaks. Omitting
 for the 4K windowed case. `sink_attention.py` explains the sink normalization.
 
 This uses PyTorch's version-specific efficient-attention operator to obtain
-log-sum-exp, so it is intentionally isolated from serving until model-level and
-lifecycle verification. `replay_fused_attention.py` runs the existing numerical
+log-sum-exp. The bounded layout has now been integrated in `dllm/sink_attention.py`
+with a 256-row threshold and model-level/lifecycle verification; the earlier
+layouts remain here for comparison. `replay_fused_attention.py` runs the existing numerical
 gates using `gpt_oss_fused_attention.py`; optional `--ieee-attention` also applies
 the independent attention-projection control. `probe_gpt_oss_projection.py
 --fused` checks sensitive output prefixes with the experimental attention path.
+
+
+## Packed multi-row MXFP4 prefill projection (rejected)
+
+`probe_mxfp4_prefill.py MODEL --output REPORT.json` compares unpack-then-compensated
+matmul with `mxfp4_prefill.py`, which expands packed weights inside each Tensor
+Core tile. The baseline includes unpack cost. Layer 0/23, gate/up and down,
+16/128/512 rows were bit-exact, with selected FP64 product error below 3.22e-7
+relative RMS. Six alternating warm timing samples per case showed the fused
+layout about 3.9–8.2x slower on A2, despite lower temporary memory. It is rejected
+and is not wired into serving. This result concerns this layout and hardware,
+not every possible packed GEMM. Evidence:
+`docs/evidence/gpt-oss/context-4k/gpt-oss-packed-prefill-projection-a2.json`.

@@ -10,8 +10,11 @@ from scripts.experiments.sink_attention import attention as fused,bounded_attent
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--bounded',action='store_true');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--output',required=True);p.add_argument('--bounded',action='store_true');p.add_argument('--production',action='store_true');args=p.parse_args()
     implementation=bounded_attention if args.bounded else fused
+    if args.production:
+        from dllm.sink_attention import prefill_attention
+        implementation=prefill_attention
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('restricted to A2')
     torch.set_num_threads(4);torch.manual_seed(43);rows=[]
     with torch.inference_mode():
@@ -49,7 +52,7 @@ def main():
                 row={'tokens':count,'window':window,'fp64_max_abs':max(errors),'baseline_max_abs':float((actual-expected).abs().max()),
                     'milliseconds':{k:statistics.median(v) for k,v in samples.items()},'samples':samples,'incremental_peak_bytes':peaks}
                 rows.append(row);print(json.dumps(row),flush=True)
-                Path(args.output).write_text(json.dumps({'gpu':torch.cuda.get_device_name(),'torch':str(torch.__version__),'bounded':args.bounded,'rows':rows},indent=2)+'\n')
+                Path(args.output).write_text(json.dumps({'gpu':torch.cuda.get_device_name(),'torch':str(torch.__version__),'bounded':args.bounded or args.production,'production':args.production,'rows':rows},indent=2)+'\n')
                 del actual,expected
 
 

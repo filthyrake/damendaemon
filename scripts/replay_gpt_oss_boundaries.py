@@ -17,13 +17,19 @@ def main():
     executor=GptOssExecutor(model,max_batch=1);rows=[]
     for index,position in enumerate(reference['positions']):
         ids=reference['ids'][:position+1]
-        actual=executor.prefill(ids)[0].cpu();executor.prefill_attention_bytes=None
+        actual=executor.prefill(ids)[0].cpu()
+        fused=executor.fused_prefill_attention
+        executor.fused_prefill_attention=False
+        bounded=executor.prefill(ids)[0].cpu() if fused else actual
+        executor.prefill_attention_bytes=None
         unbounded=executor.prefill(ids)[0].cpu();executor.prefill_attention_bytes=32*1024**2
-        exact=torch.equal(actual,unbounded);assert exact
+        executor.fused_prefill_attention=fused
+        exact=torch.equal(bounded,unbounded);assert exact
         expected=reference['logits'][index];error=actual-expected
         relative=float(error.square().mean().sqrt()/expected.square().mean().sqrt());maximum=float(error.abs().max())
         row={'prefix_tokens':position+1,'relative_rms':relative,'max_absolute_error':maximum,
             'greedy_match':int(actual.argmax())==int(expected.argmax()),'bounded_unbounded_exact':exact,
+            'fused_attention':fused,'native_attention_max_abs_difference':float((actual-bounded).abs().max()),
             'native_token':int(actual.argmax()),'reference_token':int(expected.argmax()),
             'passed':relative<.01 and maximum<.5 and int(actual.argmax())==int(expected.argmax())}
         rows.append(row);print(json.dumps(row),flush=True)

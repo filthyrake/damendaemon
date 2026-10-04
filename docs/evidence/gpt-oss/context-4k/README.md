@@ -4,7 +4,9 @@ Checkpoint: `openai/gpt-oss-20b`, revision
 `6cee5e81ee83917806bbde320786a8fb61efebee`.
 Hardware: NVIDIA A2, native MXFP4 weights, FP32 residual/KV policy.
 
-This evidence does **not** qualify longer-context numerical parity. Track the
+The subsequent [fused-prefill implementation](../fused-prefill/README.md) repairs
+the five targeted output prefixes. The original failures below are preserved
+as historical controls. This evidence does **not** qualify longer-context numerical parity. Track the
 open failure in [issue #41](https://github.com/filthyrake/dllm/issues/41).
 
 ## Memory change

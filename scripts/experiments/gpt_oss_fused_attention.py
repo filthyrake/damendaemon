@@ -10,17 +10,18 @@ class FusedAttentionExecutor(GptOssExecutor):
         self.experimental_ieee_attention=ieee_attention
         self.experimental_prefill_slot=None
         super().__init__(*args,**kwargs)
+        self.attention_projection_policy='experimental_ieee_attention_prefill_16_plus' if ieee_attention else 'experimental_compensated_attention'
 
     def forward(self,ids,positions,prefill,slot=0):
         self.experimental_prefill_slot=slot if prefill else None
         try:return super().forward(ids,positions,prefill,slot)
         finally:self.experimental_prefill_slot=None
 
-    def layer(self,x,positions,slots,i,prefill=False):
-        if not prefill or x.shape[0]<16:return super().layer(x,positions,slots,i,prefill)
+    def layer(self,x,positions,slots,i,prefill=False,prefill_slot=None):
+        if not prefill or x.shape[0]<16:return super().layer(x,positions,slots,i,prefill,prefill_slot=prefill_slot)
         # Direct layer replay has no host-side slot argument; that diagnostic
         # may synchronize. Normal prefill forwards the already-known integer.
-        slot=self.experimental_prefill_slot
+        slot=prefill_slot if prefill_slot is not None else self.experimental_prefill_slot
         if slot is None:
             slot=int(slots[0])
             if not bool(torch.all(slots==slot)) or not torch.equal(positions,torch.arange(x.shape[0],device=x.device)):
