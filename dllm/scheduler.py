@@ -27,6 +27,7 @@ class Pending:
     stops: tuple = ()
     raw_prompt: str | list | None = None
     schema: str | None = None
+    tools: list | None = None
     command: dict | None = None
     start: float = field(default_factory=time.perf_counter)
     events: queue.Queue = field(default_factory=lambda: queue.Queue(maxsize=8))
@@ -118,13 +119,17 @@ class BatchedRuntime:
     def generate(self, alias, messages, max_tokens=128, enable_thinking=None,
                  temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None,
                  presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None,
-                 logprobs=False,top_logprobs=0):
+                 logprobs=False,top_logprobs=0,tools=None):
         if alias not in self.models:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be positive")
         sampler = Sampler(Sampling(temperature, top_p, top_k, seed, presence_penalty, frequency_penalty, repetition_penalty, logit_bias))
         stops = stop_sequences(stop)
+        from .tool_calls import validate_tools
+        tools=validate_tools(tools)
+        if tools and (raw_prompt is not None or response_format is not None or logprobs or stops):
+            raise ValueError('tool calls cannot combine with raw prompts, structured output, scores or custom stops')
         from .logprobs import options as score_options
         sampler.logprobs_top=score_options(logprobs,top_logprobs)
         if stops and sampler.logprobs_top is not None:
@@ -138,7 +143,7 @@ class BatchedRuntime:
         schema, enable_thinking = prepare_options(response_format, stops, enable_thinking)
         if not self.admission.acquire(blocking=False):
             raise BusyError("request queue is full")
-        request = Pending(alias, messages, max_tokens, enable_thinking, sampler, stops, raw_prompt, schema)
+        request = Pending(alias, copy.deepcopy(messages), max_tokens, enable_thinking, sampler, stops, raw_prompt, schema,tools=tools)
         try:
             with self.condition:
                 if self.closed:
@@ -255,7 +260,7 @@ class BatchedRuntime:
         thinking=request.enable_thinking
         if request.schema is not None and request.raw_prompt is None and executor.model.config['model_type'] in ('qwen3','qwen3_5_text'):
             thinking=False
-        tokens=encode(executor.model,request.messages,request.raw_prompt,thinking)
+        tokens=encode(executor.model,request.messages,request.raw_prompt,thinking,request.tools)
         validate_lengths(executor,len(tokens),request.max_tokens)
         if request.schema is not None:
             from .structured import Constraint

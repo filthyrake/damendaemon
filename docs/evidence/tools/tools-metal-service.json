@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "device": "mps",
+  "reports": [
+    {
+      "model": "results/models/qwen2",
+      "template_ids_equal": true,
+      "history_template_ids_equal": true,
+      "tool_call": {
+        "name": "get_weather",
+        "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}"
+      },
+      "continuation": {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The current temperature in Paris is 21\u00b0C, which is sunny."
+        },
+        "finish_reason": "stop"
+      },
+      "stream_and_nonstream_equal": true,
+      "tool_choice_none": true
+    },
+    {
+      "model": "results/models/qwen3",
+      "template_ids_equal": true,
+      "history_template_ids_equal": true,
+      "tool_call": {
+        "name": "get_weather",
+        "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}"
+      },
+      "continuation": {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The current weather in Paris is sunny with a temperature of 21\u00b0C."
+        },
+        "finish_reason": "stop"
+      },
+      "stream_and_nonstream_equal": true,
+      "tool_choice_none": true
+    }
+  ],
+  "concurrent_calls": 4,
+  "max_batch_seen": 4,
+  "request_local_ids": true,
+  "host_restore": true,
+  "disconnect_recovery": true,
+  "tools_executed": false
+}

@@ -582,3 +582,30 @@ gated normalization, with FP32 state and FP32 or Q8 matrix weights, raw completi
 chunking, prefix snapshots
 and model switching through context 2048. Single-group models only; Codestral
 and Falcon hybrids are not covered. [Preparation and real GPU evidence](docs/evidence/mamba2/README.md).
+
+### Function tools
+
+Qwen2.5/Qwen3 JSON-call chat templates support `tools`, `tool_choice: "auto"`
+or `"none"`, assistant `tool_calls`, and `tool` result messages with matching
+`tool_call_id`. Streaming returns indexed tool calls after each complete call is
+validated. dllm describes calls; your application executes them and returns results.
+
+```json
+{
+  "model": "qwen3",
+  "messages": [{"role": "user", "content": "What is the weather in Paris?"}],
+  "tools": [{"type": "function", "function": {
+    "name": "get_weather",
+    "description": "Get current weather for a city",
+    "parameters": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]}
+  }}],
+  "tool_choice": "auto",
+  "chat_template_kwargs": {"enable_thinking": false},
+  "max_tokens": 128
+}
+```
+
+Auto mode does not enforce argument schemas. Strict/forced calls, other tool
+formats, and combining active tools with scores, custom stops or structured
+response formats remain unsupported. Malformed/truncated calls stay text.
+[A2/M4 tool-call and history evidence](docs/evidence/tools/README.md).

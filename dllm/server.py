@@ -83,9 +83,11 @@ def handler_for(runtime):
                 if raw:
                     allowed = (allowed - {'messages', 'chat_template_kwargs', 'max_completion_tokens'}) | {'prompt'}
                 else:
-                    allowed |= {'logprobs','top_logprobs'}
+                    allowed |= {'logprobs','top_logprobs','tools','tool_choice'}
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
+                from .tool_calls import select_tools,validate_messages,ToolCallStream
+                selected_tools=select_tools(body.get('tools'),body.get('tool_choice'))
                 sampling = {key: body[key] for key in ("temperature", "top_p", "top_k", "seed", "presence_penalty", "frequency_penalty", "repetition_penalty", "logit_bias") if key in body}
                 Sampling(**sampling)
                 from .logprobs import options as score_options
@@ -101,6 +103,10 @@ def handler_for(runtime):
                     if report_scores and stops:
                         raise ValueError('logprobs with custom text stops is not yet supported')
                     sampling['stop'] = body['stop']
+                if selected_tools:
+                    if report_scores or body.get('response_format') is not None or sampling.get('stop'):
+                        raise ValueError('tool calls cannot combine with structured output, scores or custom stops')
+                    sampling['tools']=selected_tools
                 if 'max_tokens' in body and 'max_completion_tokens' in body:
                     raise ValueError('specify only one completion token limit')
                 max_tokens = body.get('max_completion_tokens', body.get('max_tokens', 128))
@@ -113,12 +119,8 @@ def handler_for(runtime):
                 messages = body.get("messages")
                 if raw:
                     sampling['raw_prompt'] = validate_raw(body.get('prompt'))
-                elif not isinstance(messages, list) or not messages or any(
-                    not isinstance(m, dict) or set(m) != {"role", "content"}
-                    or m["role"] not in ("system", "user", "assistant")
-                    or not isinstance(m["content"], str) for m in messages
-                ):
-                    raise ValueError("messages must contain text role/content objects")
+                else:
+                    messages=validate_messages(messages)
                 options = body.get("stream_options", {})
                 if not isinstance(options, dict) or set(options) - {"include_usage"}:
                     raise ValueError("unsupported stream options")
@@ -146,6 +148,7 @@ def handler_for(runtime):
                     self.wfile.write(("data: " + json.dumps(payload) + "\n\n").encode())
                     self.wfile.flush()
                 text = ""
+                tool_parser=ToolCallStream(selected_tools) if selected_tools else None
                 token_scores=[]
                 final = None
                 with closing(runtime.generate(alias, messages, max_tokens, **template_options, **sampling)) as generation:
@@ -161,25 +164,35 @@ def handler_for(runtime):
                             if not raw:
                                 send_event(chunk({"role": "assistant"}))
                         if "finish_reason" in event:
-                            final = event
+                            final = dict(event)
+                            if tool_parser:
+                                for delta in tool_parser.feed(final=True):
+                                    text+=delta.get('content','')
+                                    if stream:send_event(chunk(delta))
+                                if tool_parser.calls and final['finish_reason']=='stop':
+                                    final['finish_reason']='tool_calls'
                             if stream:
-                                send_event(chunk({}, event["finish_reason"]))
+                                send_event(chunk({}, final["finish_reason"]))
                                 if include_usage:
                                     send_event({"id": request_id, "object": stream_object,
                                                 "created": created, "model": alias, "choices": [],
                                                 "usage": event["usage"]})
                         else:
-                            text += event["text"]
                             score=event.get('logprobs')
                             if score is not None and not stream:
                                 token_scores.append(score)
-                            if stream and (event["text"] or score is not None):
-                                send_event(chunk({"content": event["text"]},score=score))
+                            deltas=tool_parser.feed(event['text']) if tool_parser else [{'content':event['text']}]
+                            for delta in deltas:
+                                text+=delta.get('content','')
+                                if stream and (delta.get('content') or delta.get('tool_calls') or score is not None):
+                                    send_event(chunk(delta,score=score))
                 if stream:
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 else:
                     choice = {'text': text, 'logprobs': None} if raw else {'message': {'role': 'assistant', 'content': text}}
+                    if tool_parser and tool_parser.calls:
+                        choice['message'].update(content=text or None,tool_calls=tool_parser.calls)
                     if report_scores:
                         choice['logprobs']={'content':token_scores}
                     self.send_json(200, {"id": request_id, "object": "text_completion" if raw else "chat.completion",

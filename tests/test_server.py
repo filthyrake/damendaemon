@@ -37,6 +37,11 @@ class FakeRuntime:
             if alias != "a":
                 raise ValueError("unknown model")
             parts=[('Hello',b'Hello'),(' world',b' world')]
+            finish='length'
+            if messages and messages[0]['content']=='tools':
+                fragments=['<tool','_call>\n{"name":"weather","arguments":',
+                    '{"city":"Paris","literal":"</tool_call>"}}\n</tool','_call>']
+                parts=[(part,part.encode()) for part in fragments];finish='stop'
             if messages and messages[0]['content']=='unicode':
                 parts=[('',bytes([240])),('',bytes([159])),('',bytes([166])),('🦙',bytes([153]))]
             for token,(text,raw) in enumerate(parts,1):
@@ -44,7 +49,7 @@ class FakeRuntime:
                 if kwargs.get('logprobs'):
                     event['logprobs']={'token':raw.decode(errors='replace'),'logprob':-.25,'bytes':list(raw),'top_logprobs':[]}
                 yield event
-            yield {"finish_reason": "length", "usage": {
+            yield {"finish_reason": finish, "usage": {
                 "prompt_tokens": 3, "completion_tokens": len(parts), "total_tokens": 3+len(parts)}, "timing": {}}
         finally:
             self.closed += 1
@@ -77,6 +82,41 @@ class ServerTests(unittest.TestCase):
             data = json.load(response)
         self.assertEqual(data["choices"][0]["message"]["content"], "Hello world")
         self.assertEqual(data["usage"]["completion_tokens"], 2)
+
+    def test_tool_call_stream_and_nonstream_with_result_history(self):
+        tools=[{'type':'function','function':{'name':'weather','parameters':{'type':'object'}}}]
+        messages=[{'role':'user','content':'tools'}]
+        with self.post(messages=messages,tools=tools) as response:whole=json.load(response)
+        choice=whole['choices'][0];call=choice['message']['tool_calls'][0]
+        self.assertEqual(choice['finish_reason'],'tool_calls')
+        self.assertIsNone(choice['message']['content'])
+        self.assertEqual(json.loads(call['function']['arguments']),{'city':'Paris','literal':'</tool_call>'})
+        with self.post(messages=messages,tools=tools,stream=True,stream_options={'include_usage':True}) as response:
+            streamed=list(events(response))
+        self.assertEqual(streamed[-1],'[DONE]')
+        payloads=[json.loads(value) for value in streamed[:-1]]
+        calls=[call for payload in payloads for choice in payload['choices'] for call in choice['delta'].get('tool_calls',[])]
+        self.assertEqual(len(calls),1)
+        self.assertEqual(calls[0]['function'],call['function'])
+        self.assertEqual(calls[0]['index'],0)
+        self.assertNotEqual(calls[0]['id'],call['id'])
+        self.assertEqual(payloads[-1]['usage'],whole['usage'])
+        self.assertEqual(payloads[-2]['choices'][0]['finish_reason'],'tool_calls')
+        history=messages+[choice['message'],{'role':'tool','tool_call_id':call['id'],'content':'Sunny'}]
+        with self.post(messages=history,tools=tools) as response:self.assertEqual(response.status,200)
+
+    def test_tool_choice_none_and_invalid_combinations(self):
+        tools=[{'type':'function','function':{'name':'weather','parameters':{'type':'object'}}}]
+        with self.post(messages=[{'role':'user','content':'tools'}],tools=tools,tool_choice='none') as response:
+            result=json.load(response)
+        self.assertIn('<tool_call>',result['choices'][0]['message']['content'])
+        self.assertNotIn('tool_calls',result['choices'][0]['message'])
+        self.assertNotIn('tools',self.runtime.last_options)
+        for options in ({'tool_choice':'required'},{'stop':'stop'},{'logprobs':True},
+                {'response_format':{'type':'json_object'}}):
+            with self.subTest(options=options),self.assertRaises(HTTPError) as error:
+                self.post(tools=tools,**options)
+            self.assertEqual(error.exception.code,400)
 
     def test_chat_logprobs_stream_and_nonstream_match(self):
         with self.post(logprobs=True,top_logprobs=2) as response:
@@ -149,7 +189,7 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(self.runtime.closed, before + 1)
 
     def test_reject_unsupported_parameters(self):
-        for changes in ({"temperature": -1}, {"tools": []}, {"stream": "yes"},
+        for changes in ({"temperature": -1}, {"tools": [{'type':'unsupported'}]}, {"stream": "yes"},
                         {"messages": []}, {"stream_options": {"include_usage": 1}}):
             with self.subTest(changes=changes), self.assertRaises(HTTPError) as error:
                 self.post(**changes)

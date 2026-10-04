@@ -7,6 +7,7 @@ stages metadata, replays the graph, and reads the selected token.
 """
 
 import json
+from functools import partial
 import math
 import os
 import subprocess
@@ -99,11 +100,16 @@ class ModelWeights:
             raise ValueError("model needs one text chat template")
         environment = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True,
                                                      extensions=['jinja2.ext.loopcontrols'])
+        # Match tokenizer-template JSON semantics: insertion order, Unicode,
+        # and literal angle brackets, rather than Jinja's HTML-safe serializer.
+        environment.filters['tojson']=partial(json.dumps,ensure_ascii=False,allow_nan=False)
         def raise_exception(message):
             raise ValueError(message)
         environment.globals.update(raise_exception=raise_exception,
                                    strftime_now=lambda fmt: datetime.now().strftime(fmt))
         self.template = environment.from_string(template) if template is not None else None
+        self.supports_tool_calls=(c['model_type'] in ('qwen2','qwen3') and isinstance(template,str)
+            and all(marker in template for marker in ('<tool_call>','</tool_call>','tool_calls','tools')))
         self.special_tokens = {key: tokenizer_config.get(key) for key in ("bos_token", "eos_token")}
         self.eos = eos_ids(c.get('eos_token_id'))
         generation = self.path / "generation_config.json"
@@ -184,21 +190,22 @@ class ModelWeights:
         self.bytes = sum(t.numel() * t.element_size() for t in
                          {id(t):t for t in (*weights.values(), *self.scales.values())}.values())
 
-    def chat_tokens(self, messages, enable_thinking=None):
+    def chat_tokens(self, messages, enable_thinking=None, tools=None):
         if self.template is None:
             raise ValueError('model has no chat template; use raw completions')
-        if not messages:
-            raise ValueError("at least one message is required")
-        for message in messages:
-            if message["role"] not in ("system", "user", "assistant") or not isinstance(message["content"], str):
-                raise ValueError("only text system/user/assistant messages are supported")
+        from .tool_calls import template_messages,validate_tools
+        messages=template_messages(messages)
+        tools=validate_tools(tools)
+        if tools or any(m['role']=='tool' or m.get('tool_calls') for m in messages):
+            if not self.supports_tool_calls:
+                raise ValueError('tool chat requires a qualified Qwen2 or Qwen3 JSON-call template')
         options = {}
         if enable_thinking is not None:
             if type(enable_thinking) is not bool or self.config["model_type"] not in ("qwen3", "qwen3_5_text"):
                 raise ValueError("enable_thinking is a boolean option for Qwen3/Qwen3.5 models only")
             options["enable_thinking"] = enable_thinking
         rendered = self.template.render(messages=messages, add_generation_prompt=True,
-                                        tools=None, **options, **self.special_tokens)
+                                        tools=tools, **options, **self.special_tokens)
         ids = self.tokenizer.encode(rendered, add_special_tokens=False).ids
         if set(ids) & set(self.config.get("multimodal_token_ids", [])):
             raise ValueError("multimodal input is not supported by the text executor")

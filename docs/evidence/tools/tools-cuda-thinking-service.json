@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "reports": [
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+      "template_ids_equal": true,
+      "history_template_ids_equal": true,
+      "tool_call": {
+        "name": "get_weather",
+        "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}"
+      },
+      "continuation": {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "<think>\nOkay, the user asked for the current weather in Paris using the get_weather function. I called the function with city 'Paris' and unit 'celsius'. The response came back with the temperature as 21\u00b0C and conditions as sunny. Now I need to present this information clearly. Let me check if the units are correct. The response uses Celsius, which matches the user's request. The conditions are sunny, so I should mention that. I should also confirm the city and temperature to ensure accuracy. Alright, time to format the answer.\n"
+        },
+        "finish_reason": "stop"
+      },
+      "stream_and_nonstream_equal": true,
+      "tool_choice_none": true
+    },
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "template_ids_equal": true,
+      "history_template_ids_equal": true,
+      "tool_call": {
+        "name": "get_weather",
+        "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}"
+      },
+      "continuation": {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The current temperature in Paris is 21\u00b0C, which is sunny."
+        },
+        "finish_reason": "stop"
+      },
+      "stream_and_nonstream_equal": true,
+      "tool_choice_none": true
+    }
+  ],
+  "concurrent_calls": 4,
+  "qwen3_thinking": true,
+  "runtime_environment": {
+    "DLLM_DEVICE": "cuda",
+    "DLLM_QWEN3_PRECISION": "float32"
+  },
+  "max_batch_seen": 4,
+  "request_local_ids": true,
+  "host_restore": true,
+  "disconnect_recovery": true,
+  "tools_executed": false
+}
