@@ -1,0 +1,373 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--unsloth--Llama-3.2-1B-Instruct/snapshots/5a8abab4a5d6f164389b1079fb721cfab8d7126c",
+  "gpu": "NVIDIA A2",
+  "context": 8192,
+  "optimization": "tiles",
+  "rows": [
+    {
+      "prompt_tokens": 512,
+      "completion_tokens": 32,
+      "ordinary_ms": [
+        825.9295129973907,
+        822.5084419973427,
+        822.5588099885499,
+        823.7899700034177
+      ],
+      "optimized_ms": [
+        779.5601690013427,
+        774.8149410035694,
+        780.5069020105293,
+        779.054869999527
+      ],
+      "median_ordinary_ms": 823.1743899959838,
+      "median_optimized_ms": 779.3075195004349,
+      "first_token": [
+        {
+          "optimized": false,
+          "seconds": 0.22247829700063448
+        },
+        {
+          "optimized": true,
+          "seconds": 0.17847783499746583
+        },
+        {
+          "optimized": true,
+          "seconds": 0.17782446900673676
+        },
+        {
+          "optimized": false,
+          "seconds": 0.22169945199857466
+        },
+        {
+          "optimized": false,
+          "seconds": 0.22283097100444138
+        },
+        {
+          "optimized": true,
+          "seconds": 0.17835243399895262
+        },
+        {
+          "optimized": true,
+          "seconds": 0.17906126299931202
+        },
+        {
+          "optimized": false,
+          "seconds": 0.22212601400678977
+        }
+      ],
+      "peak_allocations": [
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 4740851712
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 4740851712
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 4740851712
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 4740851712
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 4740851712
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 4740851712
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 4740851712
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 4740851712
+        }
+      ],
+      "exact_response": true,
+      "example": {
+        "id": "cmpl-c39c2322684e4b488886ebcd5c59ab7d",
+        "object": "text_completion",
+        "created": 1791138349,
+        "model": "a",
+        "choices": [
+          {
+            "index": 0,
+            "text": ".\nRecord 32: The parcel is in cabinet 0, drawer 4.\nRecord 33: The parcel is in cabinet 1, drawer 5",
+            "logprobs": null,
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 512,
+          "completion_tokens": 32,
+          "total_tokens": 544
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 2.915010554715991e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.22212601400678977,
+          "total_seconds": 0.8204044529993553,
+          "decode_tokens_per_second": 51.815338778045486
+        }
+      }
+    },
+    {
+      "prompt_tokens": 2048,
+      "completion_tokens": 32,
+      "ordinary_ms": [
+        1777.388547998271,
+        1781.310755002778,
+        1779.437078992487,
+        1777.0778289996088
+      ],
+      "optimized_ms": [
+        1519.8375579930143,
+        1520.9239420073573,
+        1519.2093060031766,
+        1521.7918999987887
+      ],
+      "median_ordinary_ms": 1778.412813495379,
+      "median_optimized_ms": 1520.3807500001858,
+      "first_token": [
+        {
+          "optimized": false,
+          "seconds": 1.125757337998948
+        },
+        {
+          "optimized": true,
+          "seconds": 0.8674404890043661
+        },
+        {
+          "optimized": true,
+          "seconds": 0.8674142329982715
+        },
+        {
+          "optimized": false,
+          "seconds": 1.1280139619921101
+        },
+        {
+          "optimized": false,
+          "seconds": 1.1284614230098668
+        },
+        {
+          "optimized": true,
+          "seconds": 0.8661916609999025
+        },
+        {
+          "optimized": true,
+          "seconds": 0.8680010899988702
+        },
+        {
+          "optimized": false,
+          "seconds": 1.127692306006793
+        }
+      ],
+      "peak_allocations": [
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 5074329600
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 5074329600
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 5074329600
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 5074329600
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 5074329600
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 5074329600
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 5074329600
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 5074329600
+        }
+      ],
+      "exact_response": true,
+      "example": {
+        "id": "cmpl-f63517c71156408f8ca4a4354db45332",
+        "object": "text_completion",
+        "created": 1791138365,
+        "model": "a",
+        "choices": [
+          {
+            "index": 0,
+            "text": ".\nRecord 128: The parcel is in cabinet 7, drawer 2.\nRecord 129: The parcel is in cabinet 8, drawer 3",
+            "logprobs": null,
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 2048,
+          "completion_tokens": 32,
+          "total_tokens": 2080
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 4.4869957491755486e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.127692306006793,
+          "total_seconds": 1.7721896620059852,
+          "decode_tokens_per_second": 48.099499108013184
+        }
+      }
+    },
+    {
+      "prompt_tokens": 8160,
+      "completion_tokens": 32,
+      "ordinary_ms": [
+        7269.394246992306,
+        7281.16442800092,
+        7280.623837010353,
+        7295.829827999114
+      ],
+      "optimized_ms": [
+        6317.075829996611,
+        6326.716714000213,
+        6363.159479995375,
+        6361.595239010057
+      ],
+      "median_ordinary_ms": 7280.894132505637,
+      "median_optimized_ms": 6344.155976505135,
+      "first_token": [
+        {
+          "optimized": false,
+          "seconds": 6.4158702149870805
+        },
+        {
+          "optimized": true,
+          "seconds": 5.467909817001782
+        },
+        {
+          "optimized": true,
+          "seconds": 5.476432796000154
+        },
+        {
+          "optimized": false,
+          "seconds": 6.427655722989584
+        },
+        {
+          "optimized": false,
+          "seconds": 6.425804472994059
+        },
+        {
+          "optimized": true,
+          "seconds": 5.503161590997479
+        },
+        {
+          "optimized": true,
+          "seconds": 5.508570393998525
+        },
+        {
+          "optimized": false,
+          "seconds": 6.444229004991939
+        }
+      ],
+      "peak_allocations": [
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 6403391488
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 6403391488
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 6403391488
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 6403391488
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 6403391488
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 6403391488
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 6403391488
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 6403391488
+        }
+      ],
+      "exact_response": true,
+      "example": {
+        "id": "cmpl-3da9bfe93e294c8ba10a92ee50956e21",
+        "object": "text_completion",
+        "created": 1791138429,
+        "model": "a",
+        "choices": [
+          {
+            "index": 0,
+            "text": ".\nRecord 510: The parcel is in cabinet 4, drawer 6.\nRecord 511: The parcel is in cabinet 5, drawer 0",
+            "logprobs": null,
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 8160,
+          "completion_tokens": 32,
+          "total_tokens": 8192
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 5.041001713834703e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 6.444229004991939,
+          "total_seconds": 7.287188203990809,
+          "decode_tokens_per_second": 36.77520814390161
+        }
+      }
+    }
+  ],
+  "method": "Same resident FP32 policy and FP16 stored matrices; four alternating full HTTP rounds after warmup. Wider output tiles versus the original compensated-kernel launch shape; arithmetic is otherwise identical."
+}

@@ -16,7 +16,7 @@ from dllm.server import BoundedHTTPServer,handler_for
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('model')
-    parser.add_argument('--optimization',choices=('attention','projection'),default='attention')
+    parser.add_argument('--optimization',choices=('attention','projection','tiles'),default='attention')
     parser.add_argument('--context',type=int,default=8192);parser.add_argument('--lengths',type=int,nargs='+')
     args=parser.parse_args();lengths=args.lengths or [512,2048,args.context-32]
     if any(n<1 or n+32>args.context for n in lengths):parser.error('prompt and output must fit context')
@@ -34,6 +34,12 @@ def main():
             assert executor.compute_dtype==torch.float32
             optimized_linear=executor.linear
             def original_linear(x,weight,bias=None):
+                if args.optimization=='tiles':
+                    if weight.dtype==torch.float16 and x.shape[0]>=512:
+                        from dllm.precise_matmul import linear
+                        result=linear(x.float(),weight,wide_tiles=False)
+                        return result if bias is None else result+bias.float()
+                    return optimized_linear(x,weight,bias)
                 if weight.dtype==torch.float16 and x.shape[0]>128:
                     result=executor.kernels.linear_fp32(x.float(),weight)
                     return result if bias is None else result+bias.float()
@@ -52,7 +58,7 @@ def main():
         for length in lengths:
             tokens=corpus[:length];assert len(tokens)==length
             native=[];baseline=[];first=[];peaks=[];expected=None
-            modes=[False,True] if length<=2048 or args.optimization=='projection' else [True]
+            modes=[False,True] if length<=2048 or args.optimization!='attention' else [True]
             for mode in modes:
                 select(mode)
                 result,_=post(tokens)
@@ -71,7 +77,10 @@ def main():
                 'median_optimized_ms':statistics.median(native),'first_token':first,'peak_allocations':peaks,
                 'exact_response':True,'example':result})
         print(json.dumps({'passed':True,'model':args.model,'gpu':'NVIDIA A2','context':args.context,'optimization':args.optimization,'rows':rows,
-            'method':'Same resident FP32 policy and FP16 stored matrices; four alternating full HTTP rounds after warmup. Projection compares compensated arithmetic with FP32 weight expansion. Attention above 2048 prompt tokens is optimized only because original full 8K math attention exhausted A2 memory.'},indent=2))
+            'method':'Same resident FP32 policy and FP16 stored matrices; four alternating full HTTP rounds after warmup. '+{
+                'projection':'Compensated arithmetic versus FP32 weight expansion.',
+                'tiles':'Wider output tiles versus the original compensated-kernel launch shape; arithmetic is otherwise identical.',
+                'attention':'Fused versus math attention; above2048 prompt tokens only fused is measured after the original full8K allocation failure.'}[args.optimization]},indent=2))
     finally:
         dense.scaled_attention=optimized
         server.shutdown();server.server_close();thread.join();runtime.close()

@@ -43,7 +43,7 @@ def _matmul(HI,LO,S,W,Y,M:tl.constexpr,N:tl.constexpr,K:tl.constexpr,BM:tl.const
 
 
 
-def linear(x, weight):
+def linear(x, weight, *, wide_tiles=True):
     rows, width = x.shape
     hi = torch.empty_like(x, dtype=torch.float16)
     lo = torch.empty_like(hi)
@@ -51,6 +51,11 @@ def linear(x, weight):
     result = torch.empty((rows, weight.shape[0]), device=x.device, dtype=torch.float32)
     _split[(rows,)](x, hi, lo, scales, width, tr.next_power_of_2(width))
     bm = 16 if rows <= 16 else min(64, tr.next_power_of_2(rows))
-    _matmul[(tr.cdiv(rows,bm),tr.cdiv(weight.shape[0],64))](
-        hi,lo,scales,weight,result,rows,weight.shape[0],width,bm,64,64,num_warps=4,num_stages=3)
+    # Wider output tiles amortize loads for long prompts. Keep the original
+    # layout for small rows, where fewer blocks can reduce GPU utilization.
+    wide = wide_tiles and rows >= 512
+    bn = 128 if wide else 64
+    _matmul[(tr.cdiv(rows,bm),tr.cdiv(weight.shape[0],bn))](
+        hi,lo,scales,weight,result,rows,weight.shape[0],width,bm,bn,64,
+        num_warps=8 if wide else 4,num_stages=2 if wide else 3)
     return result
