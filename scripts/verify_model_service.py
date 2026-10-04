@@ -75,8 +75,12 @@ def main():
                     for result in batched:
                         assert result['choices'][0]['message']['content'] == baselines['new']
                     reasoning = request('new', chat_template_kwargs={'enable_thinking':True}, max_tokens=16)
-                    assert '<think>' in reasoning['choices'][0]['message']['content']
-                    assert '<think>' not in baselines['new']
+                    nonthinking = request('new', chat_template_kwargs={'enable_thinking':False}, max_tokens=16)
+                    # Families differ in whether reasoning delimiters are special tokens.
+                    # Verify that the requested template changes actual input tokens.
+                    assert reasoning['usage']['prompt_tokens'] != nonthinking['usage']['prompt_tokens']
+                    assert reasoning['choices'][0]['message']['content']
+                    assert nonthinking['choices'][0]['message']['content']
                     with post('new', stream=True, max_tokens=128) as response:
                         stream = events(response)
                         next(stream)

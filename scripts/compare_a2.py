@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--model-metadata', default='model-a.json')
     parser.add_argument('--label', default='batched')
     parser.add_argument('--context', type=int, default=256)
+    parser.add_argument('--startup-timeout', type=int, default=900)
     parser.add_argument('--thinking', choices=('auto', 'on', 'off'), default='auto')
     args = parser.parse_args()
     if not args.label.replace('-', '').replace('_', '').isalnum():
@@ -43,6 +44,9 @@ def main():
                        '--host', '127.0.0.1', '--port', str(port), '--dtype', 'half',
                        '--max-model-len', str(args.context), '--max-num-seqs', '4', '--gpu-memory-utilization', '0.5',
                        '--no-enable-prefix-caching', '--generation-config', 'vllm']
+            config = json.loads((Path(model['path']) / 'config.json').read_text())
+            if config.get('vision_config') is not None:
+                command += ['--language-model-only']
             env.update(PATH=str(venv) + ':' + env.get('PATH', ''), VLLM_NO_USAGE_STATS='1',
                        DO_NOT_TRACK='1', HF_HUB_OFFLINE='1',
                        VLLM_CACHE_ROOT=str(root / 'baselines/vllm-cache'),
@@ -54,7 +58,7 @@ def main():
             process = subprocess.Popen(command, env=env, stdout=log, stderr=log, start_new_session=True)
             try:
                 base = f'http://127.0.0.1:{port}'
-                deadline = time.monotonic() + 360
+                deadline = time.monotonic() + args.startup_timeout
                 while time.monotonic() < deadline:
                     if process.poll() is not None:
                         raise RuntimeError(f'{engine} exited; inspect its benchmark log')

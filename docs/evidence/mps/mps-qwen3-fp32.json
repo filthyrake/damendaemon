@@ -1,0 +1,119 @@
+{
+  "model_path": "results/models/qwen3",
+  "reference_dtype": "float32",
+  "device": "Apple MPS",
+  "torch": "2.6.0",
+  "context": 256,
+  "correctness": [
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 7.867813110351562e-05,
+      "max_relative_rms_error": 3.9901119635032956e-06,
+      "max_mean_logit_error": 1.3092558219796047e-05,
+      "text": "<think>\nOkay, so the question is"
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.00010204315185546875,
+      "max_relative_rms_error": 3.935895165341208e-06,
+      "max_mean_logit_error": 1.9148088540532626e-05,
+      "text": "<think>\nOkay, the user wants a"
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 7.510185241699219e-05,
+      "max_relative_rms_error": 4.036573500343366e-06,
+      "max_mean_logit_error": 1.2327461263339501e-05,
+      "text": "<think>\nOkay, the user wants me"
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 7.867813110351562e-05,
+      "max_relative_rms_error": 3.9901119635032956e-06,
+      "max_mean_logit_error": 1.3092558219796047e-05,
+      "text": "<think>\nOkay, so the question is"
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.00010204315185546875,
+      "max_relative_rms_error": 3.935895165341208e-06,
+      "max_mean_logit_error": 1.9148088540532626e-05,
+      "text": "<think>\nOkay, the user wants a"
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 7.510185241699219e-05,
+      "max_relative_rms_error": 4.036573500343366e-06,
+      "max_mean_logit_error": 1.2327461263339501e-05,
+      "text": "<think>\nOkay, the user wants me"
+    }
+  ],
+  "timings": [
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 0,
+      "first_token_seconds": 0.36725374998059124,
+      "decode_tokens_per_second": 15.105711810459079
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 1,
+      "first_token_seconds": 0.061128375004045665,
+      "decode_tokens_per_second": 15.615519311672626
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 2,
+      "first_token_seconds": 0.06610433297464624,
+      "decode_tokens_per_second": 15.413788661624752
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "trial": 0,
+      "first_token_seconds": 0.07714279199717566,
+      "decode_tokens_per_second": 13.830226668225368
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "trial": 1,
+      "first_token_seconds": 0.06293474999256432,
+      "decode_tokens_per_second": 14.781569752222897
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "trial": 2,
+      "first_token_seconds": 0.06714162498246878,
+      "decode_tokens_per_second": 14.504655508862237
+    }
+  ]
+}

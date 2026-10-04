@@ -5,6 +5,8 @@ from itertools import accumulate
 import torch
 from torch.nn import functional as F
 
+from .device import attention as scaled_attention
+
 from .qwen2 import Executor
 
 
@@ -15,13 +17,13 @@ class BatchExecutor(Executor):
         super().__init__(model, use_graph=False, kernels=kernels, max_batch=max_batch)
         self.lengths = [0] * max_batch
         self.batch_graphs = {}
-        if use_graph:
+        if use_graph and self.device == "cuda":
             stream = torch.cuda.Stream()
             stream.wait_stream(torch.cuda.current_stream())
             for size in range(1, max_batch + 1):
-                metadata = torch.zeros((3, size), dtype=torch.long, device="cuda")
+                metadata = torch.zeros((3, size), dtype=torch.long, device=self.device)
                 ids, positions, slots = metadata.unbind(0)
-                slots.copy_(torch.arange(size, device="cuda"))
+                slots.copy_(torch.arange(size, device=self.device))
                 staging = torch.empty((3, size), dtype=torch.long, pin_memory=True)
                 staging_values = (ctypes.c_int64 * (3 * size)).from_address(staging.data_ptr())
                 copied = torch.cuda.Event()
@@ -47,7 +49,7 @@ class BatchExecutor(Executor):
             sin = self.sin[positions].view(batch, 1, 1, self.dim)
             mask = self.arange.view(1, 1, 1, -1) <= positions.view(batch, 1, 1, 1)
         for i in range(self.c["num_hidden_layers"]):
-            qkv = F.linear(self.norm(x, w[f"{i}.norm1"]), w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
+            qkv = self.linear(self.norm(x, w[f"{i}.norm1"]), w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
             cache_k, cache_v = self.kv[i].unbind(0)
             if self.kernels:
                 q = self.kernels.rope_batch(qkv, self.cos, self.sin, positions, slots,
@@ -62,17 +64,17 @@ class BatchExecutor(Executor):
                 v = v.view(batch, self.kv_heads, self.dim)
                 cache_k[slots, :, positions, :] = k.squeeze(2)
                 cache_v[slots, :, positions, :] = v
-                attended = F.scaled_dot_product_attention(q, cache_k.index_select(0, slots),
+                attended = scaled_attention(q, cache_k.index_select(0, slots),
                     cache_v.index_select(0, slots), attn_mask=mask, enable_gqa=True)
-            x = x + F.linear(attended.reshape(batch, -1), w[f"{i}.out"])
-            gate_up = F.linear(self.norm(x, w[f"{i}.norm2"]), w[f"{i}.gate_up"])
+            x = x + self.linear(attended.reshape(batch, -1), w[f"{i}.out"])
+            gate_up = self.linear(self.norm(x, w[f"{i}.norm2"]), w[f"{i}.gate_up"])
             if self.kernels:
                 activated = self.kernels.swiglu(gate_up, self.precise)
             else:
                 gate, up = gate_up.chunk(2, -1)
                 activated = self.activate(gate, up)
-            x = x + F.linear(activated, w[f"{i}.down"])
-        return F.linear(self.norm(x, w["norm"]), w["head"])
+            x = x + self.linear(activated, w[f"{i}.down"])
+        return self.linear(self.norm(x, w["norm"]), w["head"])
 
     def prefill(self, tokens, slot=0):
         result = super().prefill(tokens, slot)
@@ -89,16 +91,16 @@ class BatchExecutor(Executor):
         if len(prompts) == 1:
             return self.prefill(prompts[0], slots[0])
         lengths = [len(ids) for ids in prompts]
-        ids = torch.tensor([token for prompt in prompts for token in prompt], device="cuda")
-        positions = torch.tensor([i for length in lengths for i in range(length)], device="cuda")
-        slot_ids = torch.tensor([slot for slot, length in zip(slots, lengths) for _ in range(length)], device="cuda")
+        ids = torch.tensor([token for prompt in prompts for token in prompt], device=self.device)
+        positions = torch.tensor([i for length in lengths for i in range(length)], device=self.device)
+        slot_ids = torch.tensor([slot for slot, length in zip(slots, lengths) for _ in range(length)], device=self.device)
         w = self.w
         x = F.embedding(ids, w["embed"]).to(self.residual_dtype)
         if not self.kernels:
             cos = self.cos[positions].view(-1, 1, 1, self.dim)
             sin = self.sin[positions].view(-1, 1, 1, self.dim)
         for i in range(self.c["num_hidden_layers"]):
-            qkv = F.linear(self.norm(x, w[f"{i}.norm1"]), w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
+            qkv = self.linear(self.norm(x, w[f"{i}.norm1"]), w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
             cache_k, cache_v = self.kv[i].unbind(0)
             if self.kernels:
                 query = self.kernels.rope_batch(qkv, self.cos, self.sin, positions, slot_ids,
@@ -114,20 +116,20 @@ class BatchExecutor(Executor):
             attended, offset = [], 0
             for slot, length in zip(slots, lengths):
                 q = query[offset:offset+length, :, 0, :].transpose(0, 1).unsqueeze(0)
-                attention = F.scaled_dot_product_attention(q, cache_k[slot:slot+1, :, :length],
+                attention = scaled_attention(q, cache_k[slot:slot+1, :, :length],
                     cache_v[slot:slot+1, :, :length], is_causal=True, enable_gqa=True)
                 attended.append(attention.transpose(1, 2).reshape(length, -1))
                 offset += length
-            x = x + F.linear(torch.cat(attended), w[f"{i}.out"])
-            gate_up = F.linear(self.norm(x, w[f"{i}.norm2"]), w[f"{i}.gate_up"])
+            x = x + self.linear(torch.cat(attended), w[f"{i}.out"])
+            gate_up = self.linear(self.norm(x, w[f"{i}.norm2"]), w[f"{i}.gate_up"])
             if self.kernels:
                 activated = self.kernels.swiglu(gate_up, self.precise)
             else:
                 gate, up = gate_up.chunk(2, -1)
                 activated = self.activate(gate, up)
-            x = x + F.linear(activated, w[f"{i}.down"])
-        ends = torch.tensor([end - 1 for end in accumulate(lengths)], device="cuda")
-        logits = F.linear(self.norm(x.index_select(0, ends), w["norm"]), w["head"])
+            x = x + self.linear(activated, w[f"{i}.down"])
+        ends = torch.tensor([end - 1 for end in accumulate(lengths)], device=self.device)
+        logits = self.linear(self.norm(x.index_select(0, ends), w["norm"]), w["head"])
         for slot, length in zip(slots, lengths):
             self.lengths[slot] = length
         return logits
@@ -149,8 +151,8 @@ class BatchExecutor(Executor):
             copied.record()
             graph.replay()
         else:
-            logits = self.forward_batch(torch.tensor(tokens, device="cuda"),
-                torch.tensor(positions, device="cuda"), torch.tensor(slots, device="cuda"))
+            logits = self.forward_batch(torch.tensor(tokens, device=self.device),
+                torch.tensor(positions, device=self.device), torch.tensor(slots, device=self.device))
             next_ids = logits.argmax(-1)
         for slot in slots:
             self.lengths[slot] += 1

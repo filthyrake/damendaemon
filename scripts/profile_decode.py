@@ -6,7 +6,7 @@ import json
 import torch
 
 from dllm.qwen2 import ModelWeights, Executor
-from dllm.runtime import require_gpu
+from dllm.runtime import require_gpu, make_executor
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
     args = parser.parse_args()
     require_gpu()
     model = ModelWeights(args.path, args.context)
-    executor = Executor(model, use_graph=not args.eager)
+    executor = make_executor(model, use_graph=not args.eager)
     prompt = model.chat_tokens([{"role": "user", "content": "Explain matrix multiplication in detail."}])
     token = executor.prefill(prompt).argmax(-1).item()
     for _ in range(3):

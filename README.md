@@ -2,8 +2,9 @@
 
 Damen's LLM runtime: fast GPU inference with effortless model switching.
 
-**Current state:** a working independent NVIDIA inference prototype, verified on
-an A2 with Qwen2.5, Qwen3, and SmolLM2. It implements its own forward pass, static KV
+**Current state:** an independent GPU inference prototype, verified on an A2
+with Qwen2.5, Qwen3, Qwen3.5 text models, and SmolLM2, plus an experimental
+Apple Silicon MPS path. It implements its own forward pass, static KV
 cache, greedy decoding, CUDA graphs, continuous batching, a streaming API, and
 GPU/host model residency. PyTorch/cuBLAS and dllm's fused Triton kernels provide
 GPU execution; dllm does not depend on vLLM, llama.cpp, Ollama,
@@ -45,6 +46,31 @@ reference tensor path. Non-streaming responses report the selected backend in
 The explicit GPU UUID prevents accidentally using another busy device. Obtain
 UUIDs with `nvidia-smi -L`. No GPU is needed for downloading or HTTP benchmarking.
 
+For optional parallel hybrid prefill, install `.[hybrid]` and set
+`DLLM_HYBRID_PREFILL=fla`. This uses the kernel-only FLA package for prompts of
+64 tokens or more; dllm still owns model execution, state, scheduling, and
+switching. The default `scan` path has no FLA dependency. Both paths are checked
+against independently generated FP32 reference logits. First-use compilation
+can be substantial; warm measurements exclude it.
+
+## Apple Silicon (experimental)
+
+Install `.[runtime]` in a native arm64 Python environment on macOS and select MPS:
+
+```sh
+dllm run Qwen/Qwen2.5-0.5B-Instruct --device mps --prompt 'What is 2 + 2?'
+dllm serve --device mps --model small=Qwen/Qwen2.5-0.5B-Instruct \
+  --model other=HuggingFaceTB/SmolLM2-360M-Instruct
+```
+
+The dense MPS path uses FP32 weights, activations, and KV. On PyTorch 2.13,
+`auto` selects dllm's native Metal kernels for normalization, activation,
+small-batch matrix operations, rotary/cache writes, and decode attention.
+`DLLM_KERNELS=metal` requires them; `DLLM_KERNELS=torch` selects the tensor
+baseline. CUDA graphs and Triton are disabled on MPS. Execution stays on the
+Apple GPU, with no automatic CPU fallback. Metal performance parity remains open. The same scheduler and model residency interface apply. Hybrid MPS
+execution is not yet qualified. See [hardware-specific evidence](docs/hybrid-and-mps.md).
+
 ## Serve and switch models
 
 ```sh
@@ -62,7 +88,7 @@ curl http://127.0.0.1:8088/v1/chat/completions \
   -d '{"model":"small","messages":[{"role":"user","content":"What is 2+2?"}],"temperature":0,"max_tokens":32,"stream":true}'
 ```
 
-Qwen3 thinking defaults to its model template. Use `dllm run Qwen/Qwen3-1.7B
+Qwen3 and Qwen3.5 thinking default to their model templates. Use `dllm run Qwen/Qwen3-1.7B
 --thinking off --prompt 'What is 7 times 8?'`, or pass
 `"chat_template_kwargs": {"enable_thinking": false}` in the API request to disable
 it. Explicit thinking controls are rejected for other architectures. Thinking
@@ -75,13 +101,16 @@ The budget excludes transient loading buffers and library overhead. GPU capacity
 is checked conservatively; allocation failures return an error without publishing
 a partially loaded executor. There is no automatic GPU-budget tuning yet.
 
-Implemented: dense unquantized Qwen2, Qwen3, and standard-RoPE Llama decoders,
-text chat templates, FP16 weights/KV, greedy decoding, and optional streaming
-usage. Qwen3 uses FP32 residuals and fused
+Implemented: dense unquantized Qwen2, Qwen3, standard-RoPE Llama, and the
+dense Qwen3.5 text backbone; text chat templates, greedy decoding, and optional
+streaming usage. CUDA uses FP16 weights/KV. Qwen3 uses FP32 residuals and fused
 elementwise intermediates for accuracy, while its matrix multiplies remain FP16.
 `temperature` must be zero. Unsupported fields are rejected, including tools, multimodal inputs, and alternate sampling.
-Scaled/partial RoPE, sliding attention, and hybrid recurrent architectures such as
-Qwen3.5 are not supported. See the [model validation matrix](docs/model-matrix.md):
+Qwen3.5 has a separate hybrid executor with FP32 recurrent state, causal
+convolution, gated attention, partial RoPE, and FP32 vocabulary accumulation.
+Vision, MoE, generic rotary scaling, sliding attention, and quantization remain
+unsupported. Qwen3.5 checkpoint qualification does not imply all newer Qwen
+variants are supported. See the [model validation matrix](docs/model-matrix.md):
 Qwen3-1.7B and SmolLM2-360M pass the expanded tests; Qwen3-0.6B remains provisional
 because two long-context positions exceed the logit-error limit.
 Prompt plus requested output must fit `--context`. KV memory is reserved per
@@ -90,7 +119,8 @@ context blocks; larger configured contexts still add launch/merge overhead.
 
 The server continuously batches up to four requests for one model by default;
 use `--batch-size 1..8` to choose capacity. Different prompt lengths have separate
-KV slots, and available prompts share packed linear layers. Model groups drain
+KV slots. Dense decoders pack available prompts into shared linear layers;
+hybrid prompts currently prefill separately. Model groups drain
 before switching; a waiting different model prevents later requests from jumping
 ahead of it. Prefill is still unchunked, so a long prompt can delay active decode.
 Up to eight requests can be admitted, with a 120-second queue wait/backpressure
@@ -109,7 +139,8 @@ FP16 model snapshots, with independent-reference correctness checks. The final
 concurrent requests delivered 433 aggregate output tokens/s including prefill
 (vLLM: 497). These are short-workload measurements, not a broad parity claim.
 
-See the [new-model and longer-context results](docs/model-matrix.md), and
+See the [hybrid and Apple Silicon proof](docs/hybrid-and-mps.md),
+[new-model and longer-context results](docs/model-matrix.md), and
 [fused and batched runtime evidence](docs/batching-proof.md) for current
 HTTP comparisons, correctness gates, model switching, and limitations. The
 [first runtime evidence](docs/runtime-proof.md) preserves the original baseline.

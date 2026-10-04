@@ -1,0 +1,107 @@
+{
+  "model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "reference_dtype": "float32",
+  "device": "NVIDIA A2",
+  "torch": "2.13.0+cu130",
+  "context": 256,
+  "correctness": [
+    {
+      "graph": false,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.15988588333129883,
+      "max_relative_rms_error": 0.008728574961423874,
+      "max_mean_logit_error": 0.017384430393576622,
+      "text": "4\nassistant\n<think>\n\n</think>\n\n4\n"
+    },
+    {
+      "graph": false,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.019367694854736328,
+      "max_relative_rms_error": 0.0009766228031367064,
+      "max_mean_logit_error": 0.0025400184094905853,
+      "text": "Light scatters off the atmosphere's molecules, which is why the sky appears blue"
+    },
+    {
+      "graph": false,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.16494488716125488,
+      "max_relative_rms_error": 0.008743567392230034,
+      "max_mean_logit_error": 0.021521763876080513,
+      "text": "Bonjour, comment allez-vous ?\n\n\n"
+    },
+    {
+      "graph": true,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.15988588333129883,
+      "max_relative_rms_error": 0.008728574961423874,
+      "max_mean_logit_error": 0.017384430393576622,
+      "text": "4\nassistant\n<think>\n\n</think>\n\n4\n"
+    },
+    {
+      "graph": true,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.019367694854736328,
+      "max_relative_rms_error": 0.0009766228031367064,
+      "max_mean_logit_error": 0.0025400184094905853,
+      "text": "Light scatters off the atmosphere's molecules, which is why the sky appears blue"
+    },
+    {
+      "graph": true,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.16494488716125488,
+      "max_relative_rms_error": 0.008743567392230034,
+      "max_mean_logit_error": 0.021521763876080513,
+      "text": "Bonjour, comment allez-vous ?\n\n\n"
+    }
+  ],
+  "timings": [
+    {
+      "graph": false,
+      "trial": 0,
+      "first_token_seconds": 0.04283739600032277,
+      "decode_tokens_per_second": 29.727644480221937
+    },
+    {
+      "graph": false,
+      "trial": 1,
+      "first_token_seconds": 0.034042609000607627,
+      "decode_tokens_per_second": 30.814552919035727
+    },
+    {
+      "graph": false,
+      "trial": 2,
+      "first_token_seconds": 0.03482524599894532,
+      "decode_tokens_per_second": 30.545051484041732
+    },
+    {
+      "graph": true,
+      "trial": 0,
+      "first_token_seconds": 0.037080816000525374,
+      "decode_tokens_per_second": 80.54849041934868
+    },
+    {
+      "graph": true,
+      "trial": 1,
+      "first_token_seconds": 0.036128121999354335,
+      "decode_tokens_per_second": 80.78816824096091
+    },
+    {
+      "graph": true,
+      "trial": 2,
+      "first_token_seconds": 0.0362342999997054,
+      "decode_tokens_per_second": 80.75166262376199
+    }
+  ]
+}

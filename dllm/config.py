@@ -1,6 +1,8 @@
 """Validate supported dense decoder variants before loading weight tensors."""
 
 def decoder_config(config):
+    if config.get('model_type') in ('qwen3_5', 'qwen3_5_text'):
+        return hybrid_config(config)
     c = dict(config)
     kind = c.get('model_type')
     if kind not in ('qwen2', 'qwen3', 'llama'):
@@ -27,4 +29,42 @@ def decoder_config(config):
     c.setdefault('rope_theta', 10000.0)
     if c['rope_theta'] <= 0 or c.get('rms_norm_eps', 0) <= 0:
         raise ValueError('RoPE base and normalization epsilon must be positive')
+    return c
+
+
+def hybrid_config(config):
+    """Validate the dense, text-only Qwen3.5 backbone before allocating weights."""
+    c = dict(config.get('text_config', config))
+    if c.get('model_type') != 'qwen3_5_text':
+        raise ValueError('Qwen3.5 requires a text backbone configuration')
+    if config.get('quantization_config') or c.get('quantization_config') or c.get('num_experts', 0):
+        raise ValueError('quantized and MoE hybrid checkpoints are not supported')
+    rope = c.get('rope_parameters', {})
+    if (rope.get('rope_type') != 'default' or c.get('hidden_act') != 'silu'
+            or c.get('attention_bias', False) or c.get('mlp_bias', False)
+            or not c.get('attn_output_gate', False)):
+        raise ValueError('unsupported hybrid attention, activation, or rotary configuration')
+    for key in ('hidden_size', 'intermediate_size', 'num_hidden_layers', 'num_attention_heads',
+                'num_key_value_heads', 'head_dim', 'vocab_size', 'max_position_embeddings',
+                'linear_num_key_heads', 'linear_num_value_heads', 'linear_key_head_dim',
+                'linear_value_head_dim', 'linear_conv_kernel_dim'):
+        if type(c.get(key)) is not int or c[key] <= 0:
+            raise ValueError(f'{key} must be a positive integer')
+    layers = c.get('layer_types', [])
+    if len(layers) != c['num_hidden_layers'] or any(x not in ('linear_attention', 'full_attention') for x in layers):
+        raise ValueError('invalid hybrid layer layout')
+    if (c['num_attention_heads'] % c['num_key_value_heads']
+            or c['linear_num_value_heads'] % c['linear_num_key_heads']):
+        raise ValueError('query/value heads must divide into key heads')
+    fraction = rope.get('partial_rotary_factor', 1.)
+    dim = c['head_dim'] * fraction
+    if not 0 < fraction <= 1 or int(dim) != dim or int(dim) % 2:
+        raise ValueError('invalid partial rotary dimension')
+    c['rotary_dim'] = int(dim)
+    c['rope_theta'] = rope.get('rope_theta', 10000.)
+    if c['rope_theta'] <= 0 or c.get('rms_norm_eps', 0) <= 0:
+        raise ValueError('invalid rotary base or normalization epsilon')
+    c['tie_word_embeddings'] = config.get('tie_word_embeddings', c.get('tie_word_embeddings', False))
+    c['multimodal_token_ids'] = [config[k] for k in ('image_token_id', 'video_token_id', 'vision_start_token_id',
+                                                   'vision_end_token_id') if k in config]
     return c

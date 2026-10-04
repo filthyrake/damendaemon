@@ -7,8 +7,15 @@ import os
 import threading
 import time
 
+from .device import selected_device, synchronize, empty_cache
+
 
 def require_gpu():
+    if selected_device() == 'mps':
+        import torch
+        if not torch.backends.mps.is_available():
+            raise RuntimeError('Apple MPS is not available')
+        return
     visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
     if not visible.startswith("GPU-") or "," in visible:
         raise ValueError("set CUDA_VISIBLE_DEVICES to exactly one GPU UUID")
@@ -43,14 +50,14 @@ class Runtime:
 
     def _evict(self, alias):
         import torch
-        torch.cuda.synchronize()
+        synchronize()
         del self.gpu[alias]
         gc.collect()
-        torch.cuda.empty_cache()
+        empty_cache()
 
     def _activate(self, alias):
         import torch
-        from .qwen2 import ModelWeights, Executor, weight_bytes
+        from .qwen2 import ModelWeights, weight_bytes
         start = time.perf_counter()
         if alias in self.gpu:
             self.gpu.move_to_end(alias)
@@ -83,17 +90,13 @@ class Runtime:
             self._evict(next(iter(self.gpu)))
         # Failure never publishes a partially initialized executor as ready.
         try:
-            if self.batch_size is None:
-                executor = Executor(self.host[alias], self.use_graph)
-            else:
-                from .batch import BatchExecutor
-                executor = BatchExecutor(self.host[alias], self.use_graph, self.batch_size)
+            executor = make_executor(self.host[alias], self.use_graph, self.batch_size)
         except Exception:
             gc.collect()
-            torch.cuda.empty_cache()
+            empty_cache()
             raise
         self.gpu[alias] = executor
-        torch.cuda.synchronize()
+        synchronize()
         return executor, tier, time.perf_counter() - start
 
     @contextmanager
@@ -165,3 +168,17 @@ class Runtime:
                           "first_token_seconds": first_time, "total_seconds": elapsed,
                           "decode_tokens_per_second": (len(output) - 1) / (elapsed - first_time)
                           if len(output) > 1 and elapsed > first_time else None}}
+
+
+def make_executor(model, use_graph=True, max_batch=None, **kwargs):
+    """Choose an execution path from the validated architecture, not the model name."""
+    if model.config['model_type'] == 'qwen3_5_text':
+        from .hybrid import HybridExecutor
+        if kwargs.pop('fuse_projections', True) is False:
+            raise ValueError('unfused projection mode is not available for hybrid execution')
+        return HybridExecutor(model, use_graph, max_batch or 1, **kwargs)
+    if max_batch is not None:
+        from .batch import BatchExecutor
+        return BatchExecutor(model, use_graph, max_batch, **kwargs)
+    from .qwen2 import Executor
+    return Executor(model, use_graph, **kwargs)

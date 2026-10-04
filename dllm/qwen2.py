@@ -13,7 +13,8 @@ from pathlib import Path
 
 import torch
 from torch.nn import functional as F
-from safetensors.torch import load_file
+
+from .device import selected_device, empty_cache, available_memory, attention as scaled_attention
 from safetensors import safe_open
 from tokenizers import Tokenizer
 from jinja2.sandbox import ImmutableSandboxedEnvironment
@@ -54,6 +55,8 @@ class ModelWeights:
         self.tokenizer.no_padding()
         tokenizer_config = json.loads((self.path / "tokenizer_config.json").read_text())
         template = tokenizer_config.get("chat_template")
+        if template is None and (self.path / "chat_template.jinja").exists():
+            template = (self.path / "chat_template.jinja").read_text()
         if not isinstance(template, str):
             raise ValueError("model needs one text chat template")
         self.template = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True).from_string(template)
@@ -65,7 +68,16 @@ class ModelWeights:
             self.eos.update(eos if isinstance(eos, list) else [eos])
         state = {}
         for candidate in weight_files(self.path):
-            state.update(load_file(str(candidate), device="cpu"))
+            with safe_open(str(candidate), framework="pt", device="cpu") as reader:
+                for key in reader.keys():
+                    if not key.startswith(('model.visual.', 'mtp.')):
+                        state[key] = reader.get_tensor(key)
+        if c["model_type"] == "qwen3_5_text":
+            from .hybrid import load_weights
+            self.weights = load_weights(state, c)
+            self.bytes = sum(t.numel() * t.element_size() for t in
+                             {id(t): t for t in self.weights.values()}.values())
+            return
         weights = {}
         def take(key):
             return state.pop(key).to(torch.float16)
@@ -101,16 +113,21 @@ class ModelWeights:
                 raise ValueError("only text system/user/assistant messages are supported")
         options = {}
         if enable_thinking is not None:
-            if type(enable_thinking) is not bool or self.config["model_type"] != "qwen3":
-                raise ValueError("enable_thinking is a boolean option for Qwen3 models only")
+            if type(enable_thinking) is not bool or self.config["model_type"] not in ("qwen3", "qwen3_5_text"):
+                raise ValueError("enable_thinking is a boolean option for Qwen3/Qwen3.5 models only")
             options["enable_thinking"] = enable_thinking
         rendered = self.template.render(messages=messages, add_generation_prompt=True,
                                         tools=None, **options, **self.special_tokens)
-        return self.tokenizer.encode(rendered, add_special_tokens=False).ids
+        ids = self.tokenizer.encode(rendered, add_special_tokens=False).ids
+        if set(ids) & set(self.config.get("multimodal_token_ids", [])):
+            raise ValueError("multimodal input is not supported by the text executor")
+        return ids
 
 
 class Executor:
     def __init__(self, model, use_graph=True, fuse_projections=True, kernels=None, max_batch=1):
+        self.device = selected_device()
+        use_graph = use_graph and self.device == "cuda"
         self.model = model
         self.c = model.config
         self.context = model.max_context
@@ -122,45 +139,60 @@ class Executor:
         self.dim = c["head_dim"]
         self.eps = c["rms_norm_eps"]
         self.precise = c["model_type"] == "qwen3"
-        self.residual_dtype = torch.float32 if self.precise else torch.float16
+        self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
+        self.residual_dtype = torch.float32 if self.precise else self.compute_dtype
         selected = kernels or os.environ.get("DLLM_KERNELS", "auto")
-        if selected not in ("auto", "torch", "triton"):
-            raise ValueError("kernels must be auto, torch, or triton")
+        if selected not in ("auto", "torch", "triton", "metal"):
+            raise ValueError("kernels must be auto, torch, triton, or metal")
         self.kernels = None
-        if selected != "torch":
-            try:
-                from . import kernels as fused
-                if self.dim & (self.dim - 1):
-                    raise ImportError("fused kernels require power-of-two head dimensions")
-                self.kernels = fused
-            except ImportError:
-                if selected == "triton":
-                    raise
-        kv_bytes = 2 * c["num_hidden_layers"] * max_batch * self.kv_heads * self.context * self.dim * 2
+        if self.device == 'mps':
+            if selected == 'triton':
+                raise ValueError('Triton kernels require CUDA')
+            if selected != 'torch':
+                try:
+                    from . import metal_kernels
+                    self.kernels = metal_kernels
+                except ImportError:
+                    if selected == 'metal':
+                        raise
+        else:
+            if selected == 'metal':
+                raise ValueError('Metal kernels require MPS')
+            if selected != 'torch':
+                try:
+                    from . import kernels as fused
+                    if self.dim & (self.dim - 1):
+                        raise ImportError("fused kernels require power-of-two head dimensions")
+                    self.kernels = fused
+                except ImportError:
+                    if selected == "triton":
+                        raise
+        self.linear = self.kernels.linear if self.device == 'mps' and self.kernels else F.linear
+        kv_bytes = 2 * c["num_hidden_layers"] * max_batch * self.kv_heads * self.context * self.dim * (4 if self.device == "mps" else 2)
         # A prior failed construction can leave unused allocator blocks cached
         # after its traceback is released. Return those before querying free VRAM.
-        torch.cuda.empty_cache()
-        free, _ = torch.cuda.mem_get_info()
-        if model.bytes + kv_bytes + 512 * 1024**2 > free:
+        empty_cache()
+        free = available_memory()
+        if model.bytes * (2 if self.device == "mps" else 1) + kv_bytes + 512 * 1024**2 > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         self.w = {}
         copies = {}
         for name, tensor in model.weights.items():
             if id(tensor) not in copies:
-                copies[id(tensor)] = tensor.to("cuda")
+                copies[id(tensor)] = tensor.to(device=self.device, dtype=self.compute_dtype)
             self.w[name] = copies[id(tensor)]
         self.kv = [torch.zeros((2, max_batch, self.kv_heads, self.context, self.dim),
-                               dtype=torch.float16, device="cuda")
+                               dtype=self.compute_dtype, device=self.device)
                    for _ in range(c["num_hidden_layers"])]
-        inv = 1.0 / (c["rope_theta"] ** (torch.arange(0, self.dim, 2, device="cuda", dtype=torch.float32) / self.dim))
-        angles = torch.outer(torch.arange(self.context, device="cuda", dtype=torch.float32), inv)
+        inv = 1.0 / (c["rope_theta"] ** (torch.arange(0, self.dim, 2, device=self.device, dtype=torch.float32) / self.dim))
+        angles = torch.outer(torch.arange(self.context, device=self.device, dtype=torch.float32), inv)
         angles = torch.cat((angles, angles), dim=-1)
         self.cos, self.sin = angles.cos().to(self.residual_dtype), angles.sin().to(self.residual_dtype)
-        self.arange = torch.arange(self.context, device="cuda")
-        self.token = torch.zeros(1, dtype=torch.long, device="cuda")
-        self.position = torch.zeros(1, dtype=torch.long, device="cuda")
+        self.arange = torch.arange(self.context, device=self.device)
+        self.token = torch.zeros(1, dtype=torch.long, device=self.device)
+        self.position = torch.zeros(1, dtype=torch.long, device=self.device)
         self.graph = None
-        if use_graph or self.kernels:
+        if self.device == "cuda" and (use_graph or self.kernels):
             stream = torch.cuda.Stream()
             stream.wait_stream(torch.cuda.current_stream())
             with torch.cuda.stream(stream), torch.inference_mode():
@@ -176,7 +208,7 @@ class Executor:
                         self.forward(self.token, self.position, prefill=False)
             torch.cuda.current_stream().wait_stream(stream)
             torch.cuda.synchronize()
-        self.kernel_backend = "triton" if self.kernels else "torch"
+        self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if use_graph:
             self.graph = torch.cuda.CUDAGraph()
             with torch.cuda.graph(self.graph), torch.inference_mode():
@@ -194,7 +226,7 @@ class Executor:
         return normalized.to(weight.dtype) * weight
 
     def normalize_qk(self, q, k, layer):
-        if self.precise:
+        if self.c["model_type"] == "qwen3":
             def norm(x, weight):
                 heads = x.reshape(-1, self.dim).float()
                 return (heads * torch.rsqrt(heads.square().mean(-1, keepdim=True)+self.eps)
@@ -204,11 +236,11 @@ class Executor:
 
     def rotate(self, x, cos, sin):
         left, right = x.chunk(2, dim=-1)
-        return (x * cos + torch.cat((-right, left), dim=-1) * sin).to(torch.float16)
+        return (x * cos + torch.cat((-right, left), dim=-1) * sin).to(self.compute_dtype)
 
     def activate(self, gate, up):
         if self.precise:
-            return (F.silu(gate.float()) * up.float()).to(torch.float16)
+            return (F.silu(gate.float()) * up.float()).to(self.compute_dtype)
         return F.silu(gate) * up
 
     @torch.inference_mode()
@@ -225,12 +257,12 @@ class Executor:
             sizes = [self.heads * self.dim, self.kv_heads * self.dim, self.kv_heads * self.dim]
             cache_k, cache_v = self.kv[i][:, slot:slot+1].unbind(0)
             if self.fuse_projections:
-                qkv = F.linear(hidden, w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
+                qkv = self.linear(hidden, w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
                 q, k, v = qkv.split(sizes, dim=-1)
             else:
                 bias = w.get(f"{i}.qkv.bias")
                 biases = bias.split(sizes) if bias is not None else (None, None, None)
-                q, k, v = [F.linear(hidden, weight, part_bias) for weight, part_bias in zip(
+                q, k, v = [self.linear(hidden, weight, part_bias) for weight, part_bias in zip(
                     w[f"{i}.qkv.weight"].split(sizes), biases)]
             if self.kernels and self.fuse_projections:
                 q = self.kernels.rope_store(qkv, self.cos, self.sin, positions, cache_k, cache_v, self.heads,
@@ -241,25 +273,29 @@ class Executor:
                 q = self.rotate(q.view(1, count, self.heads, self.dim).transpose(1, 2), cos, sin)
                 k = self.rotate(k.view(1, count, self.kv_heads, self.dim).transpose(1, 2), cos, sin)
                 v = v.view(1, count, self.kv_heads, self.dim).transpose(1, 2)
-                cache_k.index_copy_(2, positions, k)
-                cache_v.index_copy_(2, positions, v)
+                if self.device == 'mps':
+                    cache_k[:, :, positions, :] = k
+                    cache_v[:, :, positions, :] = v
+                else:
+                    cache_k.index_copy_(2, positions, k)
+                    cache_v.index_copy_(2, positions, v)
             if not prefill:
                 k, v = cache_k, cache_v
             if self.kernels and not prefill:
                 attention = self.kernels.attention(q, cache_k, cache_v, positions)
             else:
-                attention = F.scaled_dot_product_attention(q, k, v, attn_mask=mask,
+                attention = scaled_attention(q, k, v, attn_mask=mask,
                                                            is_causal=prefill, enable_gqa=True)
-            x = x + F.linear(attention.transpose(1, 2).reshape(count, -1), w[f"{i}.out"])
+            x = x + self.linear(attention.transpose(1, 2).reshape(count, -1), w[f"{i}.out"])
             hidden = self.norm(x, w[f"{i}.norm2"])
             if self.fuse_projections:
-                gate_up = F.linear(hidden, w[f"{i}.gate_up"])
+                gate_up = self.linear(hidden, w[f"{i}.gate_up"])
                 gate, up = gate_up.chunk(2, -1)
             else:
-                gate, up = [F.linear(hidden, weight) for weight in w[f"{i}.gate_up"].chunk(2)]
+                gate, up = [self.linear(hidden, weight) for weight in w[f"{i}.gate_up"].chunk(2)]
             activated = self.kernels.swiglu(gate_up, self.precise) if self.kernels and self.fuse_projections else self.activate(gate, up)
-            x = x + F.linear(activated, w[f"{i}.down"])
-        return F.linear(self.norm(x[-1:], w["norm"]), w["head"])
+            x = x + self.linear(activated, w[f"{i}.down"])
+        return self.linear(self.norm(x[-1:], w["norm"]), w["head"])
 
     @torch.inference_mode()
     def prefill(self, tokens, slot=0):
@@ -267,9 +303,9 @@ class Executor:
             raise ValueError("prompt is empty or exceeds context")
         if not 0 <= slot < self.max_batch:
             raise ValueError("invalid cache slot")
-        ids = torch.tensor(tokens, device="cuda", dtype=torch.long)
+        ids = torch.tensor(tokens, device=self.device, dtype=torch.long)
         self.length = len(tokens)
-        return self.forward(ids, torch.arange(len(tokens), device="cuda"), prefill=True, slot=slot)
+        return self.forward(ids, torch.arange(len(tokens), device=self.device), prefill=True, slot=slot)
 
     @torch.inference_mode()
     def decode(self, token):

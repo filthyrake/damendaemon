@@ -1,0 +1,57 @@
+"""Replay independent teacher-forced logits in the production runtime environment.
+
+Generate the local trace with verify_stress.py --golden-output. Only trusted,
+locally generated traces are accepted; torch.load uses weights_only=True.
+"""
+import argparse
+import json
+import time
+import torch
+from dllm.qwen2 import ModelWeights
+from dllm.runtime import require_gpu, make_executor
+from dllm.device import device_name, synchronize
+
+
+@torch.inference_mode()
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument('trace')
+    p.add_argument('--no-graph', action='store_true')
+    args = p.parse_args()
+    require_gpu()
+    torch.set_num_threads(4)
+    trace = torch.load(args.trace, map_location='cpu', weights_only=True)
+    model = ModelWeights(trace['path'], trace['context'])
+    executor = make_executor(model, use_graph=not args.no_graph, max_batch=4)
+    checks, timings = [], []
+    for event in trace['trace']:
+        synchronize()
+        start = time.perf_counter()
+        if event['kind'] == 'prefill':
+            actual = executor.prefill_batch(event['prompts'], event['slots'])
+        else:
+            actual, _ = executor.decode_batch(event['tokens'], event['slots'])
+        synchronize()
+        timings.append({'kind': event['kind'], 'seconds': time.perf_counter()-start,
+                        'slots': event['slots'], 'lengths': [len(p) for p in event.get('prompts', [])]})
+        for row, target in enumerate(event['targets']):
+            value = actual[row].float().cpu()
+            target = target.squeeze(0)
+            error = value-target
+            relative = (error.square().mean().sqrt()/target.square().mean().sqrt().clamp_min(1.e-6)).item()
+            absolute = error.abs().max().item()
+            match = value.argmax().item() == target.argmax().item()
+            checks.append({'kind': event['kind'], 'slot': event['slots'][row], 'relative_rms': relative,
+                           'max_absolute': absolute, 'greedy_match': match,
+                           'passed': relative < .01 and absolute < .5 and match})
+    passed = all(c['passed'] for c in checks)
+    print(json.dumps({'passed': passed, 'model_path': trace['path'], 'context': trace['context'],
+        'device': device_name(), 'torch': str(torch.__version__), 'reference_dtype': trace['reference_dtype'],
+        'reference_torch': trace['reference_torch'], 'graph_requested': not args.no_graph,
+        'kernel_backend': executor.kernel_backend, 'checks': checks, 'timings': timings}, indent=2))
+    if not passed:
+        raise SystemExit(1)
+
+
+if __name__ == '__main__':
+    main()

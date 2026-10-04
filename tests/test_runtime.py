@@ -8,6 +8,7 @@ from dllm.runtime import Runtime, BusyError
 class Weights:
     def __init__(self, path, context):
         self.path, self.bytes = path, 100
+        self.config = {"model_type": "qwen2"}
 
 
 class Executor:

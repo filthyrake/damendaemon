@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -9,7 +10,7 @@ def download(repository, revision="main"):
     from huggingface_hub import HfApi, snapshot_download
     revision = HfApi().model_info(repository, revision=revision).sha
     path = snapshot_download(repository, revision=revision,
-        allow_patterns=["*.json", "*.safetensors", "LICENSE*", "README.md"])
+        allow_patterns=["*.json", "*.safetensors", "LICENSE*", "README.md", "*.jinja"])
     return {"repository": repository, "revision": revision, "path": path}
 
 
@@ -26,7 +27,7 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "bench":
         from .bench import main as bench_main
         return bench_main()
-    parser = argparse.ArgumentParser(description="dllm: independent NVIDIA inference prototype")
+    parser = argparse.ArgumentParser(description="dllm: independent GPU inference runtime")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("bench", help="benchmark a streaming HTTP endpoint")
     pull = commands.add_parser("pull", help="download a safetensors model from Hugging Face")
@@ -44,6 +45,7 @@ def main():
     server.add_argument("--port", type=int, default=8088)
     server.add_argument("--batch-size", type=int, choices=range(1, 9), default=4)
     for command in (run, server):
+        command.add_argument("--device", choices=("cuda", "mps"), default=os.environ.get("DLLM_DEVICE", "cuda"))
         command.add_argument("--context", type=int, default=1024)
         command.add_argument("--gpu-models", type=int, default=1)
         command.add_argument("--host-models", type=int, default=2)
@@ -54,6 +56,7 @@ def main():
         # Resolve the revision before downloading; report its immutable identity.
         print(json.dumps(download(args.repository, args.revision)))
         return
+    os.environ["DLLM_DEVICE"] = args.device
     from .runtime import Runtime
     if args.command == "run":
         models = {"model": resolve_model(args.path, args.revision)}

@@ -1,0 +1,378 @@
+{
+  "models": {
+    "old": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+    "new": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+    "llama": "/home/damen/.cache/huggingface/hub/models--HuggingFaceTB--SmolLM2-360M-Instruct/snapshots/a10cc1512eabd3dde888204e902eca88bddb4951"
+  },
+  "reports": [
+    {
+      "gpu_models": 1,
+      "transitions": [
+        {
+          "model": "old",
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 32,
+            "total_tokens": 73
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 3.8280393069999263,
+            "kernel_backend": "triton",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 3.9030423299991526,
+            "total_seconds": 4.121052973998303,
+            "decode_tokens_per_second": 142.19489209949217
+          }
+        },
+        {
+          "model": "new",
+          "usage": {
+            "prompt_tokens": 24,
+            "completion_tokens": 32,
+            "total_tokens": 56
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 2.6676209899997048,
+            "kernel_backend": "triton-hybrid",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 2.7221033469995746,
+            "total_seconds": 3.087581775000217,
+            "decode_tokens_per_second": 84.8203276171077
+          }
+        },
+        {
+          "model": "llama",
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 32,
+            "total_tokens": 73
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 1.5348913739999261,
+            "kernel_backend": "triton",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 1.5719082129999151,
+            "total_seconds": 1.7467976430016279,
+            "decode_tokens_per_second": 177.25485182092712
+          }
+        },
+        {
+          "model": "old",
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 32,
+            "total_tokens": 73
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 1.0049237000002904,
+            "kernel_backend": "triton",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 1.0342368809997424,
+            "total_seconds": 1.2506997719992796,
+            "decode_tokens_per_second": 143.21161404088556
+          }
+        },
+        {
+          "model": "new",
+          "usage": {
+            "prompt_tokens": 24,
+            "completion_tokens": 32,
+            "total_tokens": 56
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 1.3396577809999144,
+            "kernel_backend": "triton-hybrid",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 1.3812697299999854,
+            "total_seconds": 1.7495165899999847,
+            "decode_tokens_per_second": 84.18265942579947
+          }
+        },
+        {
+          "model": "llama",
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 32,
+            "total_tokens": 73
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 1.0578633880013513,
+            "kernel_backend": "triton",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 1.0928115429996978,
+            "total_seconds": 1.2705027680003695,
+            "decode_tokens_per_second": 174.45993745545294
+          }
+        }
+      ],
+      "sample_text": {
+        "old": "Binary search is a search algorithm that allows us to efficiently find a specific element in a sorted list. It works by repeatedly dividing the search interval in half. Here",
+        "new": "### Binary Search: A Step-by-Step Guide\n\nBinary search is a highly efficient algorithm used to find a specific value in a sorted list of numbers. Unlike",
+        "llama": "Binary search is a fast and efficient algorithm used to find an element in a sorted list or array. It works by repeatedly dividing the list in half until the target"
+      },
+      "concurrent_mixed_models_passed": true,
+      "concurrent_qwen3_passed": true,
+      "thinking_modes_passed": true,
+      "disconnect_and_rejection_recovery_passed": true,
+      "long_chat": {
+        "id": "chatcmpl-260d0168af864ccbb36edf1ad51c4091",
+        "object": "chat.completion",
+        "created": 1791071562,
+        "model": "new",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "Cabinet 7.\n"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 827,
+          "completion_tokens": 8,
+          "total_tokens": 835
+        },
+        "dllm_timing": {
+          "source_tier": "host",
+          "activation_seconds": 1.2883960580002167,
+          "kernel_backend": "triton-hybrid",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.905609016001108,
+          "total_seconds": 1.9913124840004457,
+          "decode_tokens_per_second": 81.67697484603661
+        }
+      },
+      "reasoning": {
+        "id": "chatcmpl-bbdd0f2f9e4a414c96c30bef7993e130",
+        "object": "chat.completion",
+        "created": 1791071560,
+        "model": "new",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "Here's a thinking process that leads to the explanation of binary search:\n\n1"
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 22,
+          "completion_tokens": 16,
+          "total_tokens": 38
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 6.2489998526871204e-06,
+          "kernel_backend": "triton-hybrid",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.04166792300020461,
+          "total_seconds": 0.21951013100078853,
+          "decode_tokens_per_second": 84.34443189071713
+        }
+      }
+    },
+    {
+      "gpu_models": 3,
+      "transitions": [
+        {
+          "model": "old",
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 32,
+            "total_tokens": 73
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 3.4505438590003905,
+            "kernel_backend": "triton",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 3.5198935009993875,
+            "total_seconds": 3.732245488999979,
+            "decode_tokens_per_second": 145.98403477114445
+          }
+        },
+        {
+          "model": "new",
+          "usage": {
+            "prompt_tokens": 24,
+            "completion_tokens": 32,
+            "total_tokens": 56
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 2.6662825719995453,
+            "kernel_backend": "triton-hybrid",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 2.7158571829986613,
+            "total_seconds": 3.0817462079994584,
+            "decode_tokens_per_second": 84.72514309477434
+          }
+        },
+        {
+          "model": "llama",
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 32,
+            "total_tokens": 73
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 1.4361851559988281,
+            "kernel_backend": "triton",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 1.4661567720013409,
+            "total_seconds": 1.6423455359999934,
+            "decode_tokens_per_second": 175.9476557780783
+          }
+        },
+        {
+          "model": "old",
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 32,
+            "total_tokens": 73
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 5.112000508233905e-06,
+            "kernel_backend": "triton",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 0.02000395699906221,
+            "total_seconds": 0.2362290299988672,
+            "decode_tokens_per_second": 143.36912722433425
+          }
+        },
+        {
+          "model": "new",
+          "usage": {
+            "prompt_tokens": 24,
+            "completion_tokens": 32,
+            "total_tokens": 56
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 4.421000994625501e-06,
+            "kernel_backend": "triton-hybrid",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.03425954200065462,
+            "total_seconds": 0.4016705300000467,
+            "decode_tokens_per_second": 84.37417772614708
+          }
+        },
+        {
+          "model": "llama",
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 32,
+            "total_tokens": 73
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 4.883000656263903e-06,
+            "kernel_backend": "triton",
+            "max_batch_size": 1,
+            "residual_dtype": "float16",
+            "first_token_seconds": 0.027025035999031388,
+            "total_seconds": 0.20298519499920076,
+            "decode_tokens_per_second": 176.17624453254876
+          }
+        }
+      ],
+      "sample_text": {
+        "old": "Binary search is a search algorithm that allows us to efficiently find a specific element in a sorted list. It works by repeatedly dividing the search interval in half. Here",
+        "new": "### Binary Search: A Step-by-Step Guide\n\nBinary search is a highly efficient algorithm used to find a specific value in a sorted list of numbers. Unlike",
+        "llama": "Binary search is a fast and efficient algorithm used to find an element in a sorted list or array. It works by repeatedly dividing the list in half until the target"
+      },
+      "concurrent_mixed_models_passed": true,
+      "concurrent_qwen3_passed": true,
+      "thinking_modes_passed": true,
+      "disconnect_and_rejection_recovery_passed": true,
+      "long_chat": {
+        "id": "chatcmpl-1af00d08441247f6a61d3d6d26d56323",
+        "object": "chat.completion",
+        "created": 1791071579,
+        "model": "new",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "Cabinet 7.\n"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 827,
+          "completion_tokens": 8,
+          "total_tokens": 835
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 3.4099994081771e-06,
+          "kernel_backend": "triton-hybrid",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.2374622460010869,
+          "total_seconds": 0.32237999599965406,
+          "decode_tokens_per_second": 82.43270694428566
+        }
+      },
+      "reasoning": {
+        "id": "chatcmpl-a65f43cd67914214a141d438b0564295",
+        "object": "chat.completion",
+        "created": 1791071579,
+        "model": "new",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "Here's a thinking process that leads to the explanation of binary search:\n\n1"
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 22,
+          "completion_tokens": 16,
+          "total_tokens": 38
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 3.203000233042985e-06,
+          "kernel_backend": "triton-hybrid",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.04509459499968216,
+          "total_seconds": 0.22306257499985804,
+          "decode_tokens_per_second": 84.28482471950952
+        }
+      }
+    }
+  ],
+  "passed": true
+}

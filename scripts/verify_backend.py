@@ -23,9 +23,9 @@ def main():
             if backend == 'auto':
                 assert result.returncode == 0, result.stderr
                 final = json.loads(result.stderr.strip().splitlines()[-1])
-                assert final['timing']['kernel_backend'] == 'torch', final
+                assert final['timing']['kernel_backend'] in ('torch', 'torch-hybrid'), final
                 assert result.stdout.strip() == '4', result.stdout
-                results.append({'requested': backend, 'actual': 'torch', 'text': result.stdout.strip()})
+                results.append({'requested': backend, 'actual': final['timing']['kernel_backend'], 'text': result.stdout.strip()})
             else:
                 assert result.returncode != 0 and 'FileNotFoundError' in result.stderr, result.stderr
                 results.append({'requested': backend, 'missing_compiler_rejected': True})

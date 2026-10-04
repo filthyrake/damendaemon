@@ -27,8 +27,27 @@ limits retained weights, not transient loader tensors or the full process RSS.
 GPU admission uses a weight/KV estimate plus a 512 MiB workspace reserve; this is
 not an exact predictor of all library allocations, so allocation can still fail.
 
-Configuration validation rejects unsupported rotary scaling, partial rotary
-heads, sliding attention, MoE, and hybrid recurrent layers before loading tensors.
+A separate dense Qwen3.5 text executor owns convolution and FP32 recurrent state
+per slot, alongside KV for its gated full-attention layers. Prefill overwrites
+all state for a reused slot; decode graphs index the requested slots dynamically.
+Capturing graphs mutates recurrent buffers, so construction clears all caches
+after capture. FP32 vocabulary accumulation avoids losing close-token ordering.
+Hybrid prompts currently prefill independently; decode is continuously batched.
+
+Configuration validation rejects unsupported rotary scaling, sliding attention,
+MoE, and hybrid variants outside this explicit Qwen3.5 implementation. Vision
+weights are excluded from text loading and multimodal input tokens are rejected.
+
+The experimental MPS dense executor uses FP32 compute and KV to meet the
+independent CPU FP32 gate. Native Metal kernels implement RMSNorm, SwiGLU,
+small-batch matrix-vector multiplication, rotary/cache writes, and live-prefix
+decode attention. PyTorch supplies prefill matrix operations and attention.
+The Metal attention kernel handles allocated contexts through 4096 tokens;
+larger allocations use MPS tensor attention. It has no CUDA graphs or Triton kernels. Explicit
+`--device mps` selects Apple GPU execution with the same request scheduler and
+host/device residency lifecycle. MPS memory admission uses the driver allocation
+and recommended working-set limit. There is no automatic CPU execution fallback.
+Hybrid MPS has not been qualified.
 Model tests use the independent reference precision recorded in each result.
 Qwen3-0.6B remains provisional under the expanded numerical gate.
 

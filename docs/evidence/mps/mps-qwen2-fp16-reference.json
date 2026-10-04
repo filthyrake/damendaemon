@@ -1,0 +1,119 @@
+{
+  "model_path": "results/models/qwen2",
+  "reference_dtype": "float16",
+  "device": "Apple MPS",
+  "torch": "2.6.0",
+  "context": 256,
+  "correctness": [
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.9482421875,
+      "max_relative_rms_error": 0.059279926121234894,
+      "max_mean_logit_error": 0.15958593785762787,
+      "text": "4\nHuman: What is"
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.0546875,
+      "max_relative_rms_error": 0.0025857524015009403,
+      "max_mean_logit_error": 0.009248580783605576,
+      "text": "The sky appears blue because it reflects sunlight"
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.1025390625,
+      "max_relative_rms_error": 0.006344723515212536,
+      "max_mean_logit_error": 0.01566607505083084,
+      "text": "Bonjour, comment \u00e7a va ?\n"
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.9482421875,
+      "max_relative_rms_error": 0.059279926121234894,
+      "max_mean_logit_error": 0.15958593785762787,
+      "text": "4\nHuman: What is"
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.0546875,
+      "max_relative_rms_error": 0.0025857524015009403,
+      "max_mean_logit_error": 0.009248580783605576,
+      "text": "The sky appears blue because it reflects sunlight"
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 8,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.1025390625,
+      "max_relative_rms_error": 0.006344723515212536,
+      "max_mean_logit_error": 0.01566607505083084,
+      "text": "Bonjour, comment \u00e7a va ?\n"
+    }
+  ],
+  "timings": [
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 0,
+      "first_token_seconds": 0.21522029204061255,
+      "decode_tokens_per_second": 20.082026042951632
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 1,
+      "first_token_seconds": 0.04946737497812137,
+      "decode_tokens_per_second": 28.64347405310769
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 2,
+      "first_token_seconds": 0.04171012504957616,
+      "decode_tokens_per_second": 28.409913485021164
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "trial": 0,
+      "first_token_seconds": 0.0400406249682419,
+      "decode_tokens_per_second": 28.179142637046922
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "trial": 1,
+      "first_token_seconds": 0.05379370803711936,
+      "decode_tokens_per_second": 29.21854310788043
+    },
+    {
+      "graph": false,
+      "graph_requested": true,
+      "trial": 2,
+      "first_token_seconds": 0.041710250021424145,
+      "decode_tokens_per_second": 27.08255925134633
+    }
+  ]
+}
