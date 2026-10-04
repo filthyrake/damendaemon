@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--gguf', help='matching checkpoint and precision for llama.cpp')
     parser.add_argument('--thinking', choices=('auto', 'on', 'off'), default='auto')
     parser.add_argument('--raw', action='store_true')
+    parser.add_argument('--prompt-token-ids')
     parser.add_argument('--host-gib', type=float, default=8)
     parser.add_argument('--dtype', choices=('half','float'), default='half', help='vLLM model arithmetic/storage precision')
     args = parser.parse_args()
@@ -93,7 +94,8 @@ def main():
                     with (root / name).open('w') as out:
                         subprocess.run([sys.executable, 'scripts/compare_llama.py', base + '/v1',
                                         '--engine', engine, '--concurrency', str(concurrency), '--thinking', args.thinking,
-                                        *(['--raw'] if args.raw else [])],
+                                        *(['--raw'] if args.raw else []),
+                                        *(['--prompt-token-ids', args.prompt_token_ids] if args.prompt_token_ids else [])],
                                        stdout=out, check=True, timeout=180)
                     print(name, 'complete', flush=True)
             finally:

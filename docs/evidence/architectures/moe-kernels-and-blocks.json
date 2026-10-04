@@ -1,0 +1,182 @@
+{
+  "passed": true,
+  "scope": "routed kernels and synthetic OLMoE variants",
+  "checks": [
+    {
+      "kind": "routed_kernel",
+      "batch": 1,
+      "quantized": false,
+      "shared_input": false
+    },
+    {
+      "kind": "routed_kernel",
+      "batch": 1,
+      "quantized": false,
+      "shared_input": true
+    },
+    {
+      "kind": "routed_kernel",
+      "batch": 1,
+      "quantized": true,
+      "shared_input": false
+    },
+    {
+      "kind": "routed_kernel",
+      "batch": 1,
+      "quantized": true,
+      "shared_input": true
+    },
+    {
+      "kind": "routed_kernel",
+      "batch": 4,
+      "quantized": false,
+      "shared_input": false
+    },
+    {
+      "kind": "routed_kernel",
+      "batch": 4,
+      "quantized": false,
+      "shared_input": true
+    },
+    {
+      "kind": "routed_kernel",
+      "batch": 4,
+      "quantized": true,
+      "shared_input": false
+    },
+    {
+      "kind": "routed_kernel",
+      "batch": 4,
+      "quantized": true,
+      "shared_input": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 3,
+      "normalized": false,
+      "clip": null,
+      "relative_rms": 0.00031684539862908423,
+      "greedy_match": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 1,
+      "normalized": false,
+      "clip": null,
+      "relative_rms": 0.000367644737707451,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "normalized": false,
+      "clip": null,
+      "relative_rms": 0.000343209394486621,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "normalized": false,
+      "clip": null,
+      "relative_rms": 0.00034026268986053765,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "normalized": false,
+      "clip": null,
+      "relative_rms": 0.0004499519127421081,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "normalized": false,
+      "clip": null,
+      "relative_rms": 0.0003374326915945858,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "normalized": false,
+      "clip": null,
+      "relative_rms": 0.00031297680106945336,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "normalized": false,
+      "clip": null,
+      "relative_rms": 0.00036567493225447834,
+      "greedy_match": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 3,
+      "normalized": true,
+      "clip": 0.75,
+      "relative_rms": 0.0003692629106808454,
+      "greedy_match": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 1,
+      "normalized": true,
+      "clip": 0.75,
+      "relative_rms": 0.0003247916465625167,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "normalized": true,
+      "clip": 0.75,
+      "relative_rms": 0.00031474430579692125,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "normalized": true,
+      "clip": 0.75,
+      "relative_rms": 0.0003496004792395979,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "normalized": true,
+      "clip": 0.75,
+      "relative_rms": 0.0003684730618260801,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "normalized": true,
+      "clip": 0.75,
+      "relative_rms": 0.0003058477013837546,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "normalized": true,
+      "clip": 0.75,
+      "relative_rms": 0.00036349482252262533,
+      "greedy_match": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "normalized": true,
+      "clip": 0.75,
+      "relative_rms": 0.00031985604437068105,
+      "greedy_match": true
+    }
+  ]
+}

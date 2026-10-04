@@ -103,8 +103,10 @@ class ModelWeights:
                 for key in reader.keys():
                     if not key.startswith(('model.visual.', 'mtp.')):
                         state[key] = reader.get_tensor(key)
-        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2"):
-            if c['model_type'] == 'starcoder2':
+        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2", "olmoe"):
+            if c['model_type'] == 'olmoe':
+                from .moe import load_weights
+            elif c['model_type'] == 'starcoder2':
                 from .starcoder import load_weights
             elif c["model_type"] == "gemma3_text":
                 from .gemma import load_weights
@@ -197,10 +199,10 @@ class Executor:
         self.dim = c["head_dim"]
         self.eps = c["rms_norm_eps"]
         self.window = c.get("sliding_window") if c["model_type"] in ("phi3", "mistral", "starcoder2") else None
-        self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3", "starcoder2")
-        self.rotary_precise = c["model_type"] in ("qwen3", "starcoder2")
+        self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3", "starcoder2", "olmoe")
+        self.rotary_precise = c["model_type"] in ("qwen3", "starcoder2", "olmoe")
         self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
-        if c["model_type"] in ("gemma3_text", "starcoder2"):
+        if c["model_type"] in ("gemma3_text", "starcoder2", "olmoe"):
             self.compute_dtype = torch.float32
         self.residual_dtype = torch.float32 if self.precise else self.compute_dtype
         selected = kernels or os.environ.get("DLLM_KERNELS", "auto")
@@ -252,6 +254,8 @@ class Executor:
         def device_dtype(name, tensor):
             if tensor.dtype == torch.int8:
                 return torch.int8
+            if c['model_type'] == 'olmoe' and tensor.ndim == 2:
+                return torch.float16
             if c['model_type'] == 'starcoder2' and 'norm' in name:
                 return torch.float32
             if c['model_type'] == 'phi3' and name == 'norm':

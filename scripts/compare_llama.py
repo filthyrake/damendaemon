@@ -19,7 +19,15 @@ def main():
     parser.add_argument("--concurrency", type=int, default=1)
     parser.add_argument("--thinking", choices=("auto", "on", "off"), default="auto")
     parser.add_argument('--raw', action='store_true', help='benchmark a raw code-completion prompt')
+    parser.add_argument('--prompt-token-ids', help='JSON token array, identical across engines; uses raw completion API')
     args = parser.parse_args()
+    prompt_ids = None
+    if args.prompt_token_ids:
+        with open(args.prompt_token_ids) as source:
+            prompt_ids = json.load(source)
+        if not isinstance(prompt_ids,list) or not prompt_ids or any(type(t) is not int or t < 0 for t in prompt_ids):
+            parser.error('prompt token file must contain a nonempty integer array')
+        args.raw = True
     if not 1 <= args.concurrency <= 8:
         parser.error("concurrency must be 1..8")
     def request(trial):
@@ -29,7 +37,7 @@ def main():
                 "stream_options": {"include_usage": True}}
         if args.raw:
             del body['messages']
-            body['prompt'] = 'def binary_search(values, target):\n    '
+            body['prompt'] = prompt_ids if prompt_ids is not None else 'def binary_search(values, target):\n    '
         if args.thinking != "auto":
             body["chat_template_kwargs"] = {"enable_thinking": args.thinking == "on"}
         if args.engine == "llama.cpp":
@@ -72,7 +80,7 @@ def main():
             rounds.append({"warmup": trial == 0, "seconds": elapsed,
                            "aggregate_output_tokens_per_second": 64 * args.concurrency / elapsed})
     print(json.dumps({"engine": args.engine, "concurrency": args.concurrency, "thinking": args.thinking, 'raw': args.raw,
-                      "trials": trials, "rounds": rounds}, indent=2))
+                      'prompt_token_ids': prompt_ids, "trials": trials, "rounds": rounds}, indent=2))
 
 
 if __name__ == "__main__":

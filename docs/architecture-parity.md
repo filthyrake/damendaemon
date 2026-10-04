@@ -310,7 +310,9 @@ arithmetic and KV. Use `--host-gib 16` for this 3B checkpoint. At context 2048,
 all 82 checks pass against FP32 eager reference: A2 worst relative RMS 0.02999%,
 Apple M4 0.00677%. Synthetic bias/no-bias and tied/untied-head variants also
 exercise window boundaries and reordered batches. Real checkpoint qualification
-beyond 2048 tokens remains open.
+beyond 2048 tokens was subsequently extended: the complete 4352-context trace,
+including 4095/4096/4097 window boundaries, passes 97/97 on A2 and M4, with
+worst relative RMS 0.00502% / 0.00622%. Apple raw HTTP service and CLI also pass.
 
 The CUDA Q8 path passes all 82 independently quantized-reference checks at
 2048, worst relative RMS 0.07770%, with 3,826,790,400 host weight bytes. This
@@ -319,3 +321,34 @@ weights use Q8 blocks. Actual raw code-completion service checks pass, including
 text/token-ID equivalence, streaming, batch four, seeded sampling, stopping and
 recovery. Q8-vs-original task quality and performance remain separate open
 measurements. Original FP32 and Q8 references are both retained as evidence.
+
+## Further Q8 batching work
+
+A fused Q8 Tensor Core path now handles 2–16 FP16 input rows, dequantizing tiles
+inside matrix multiplication. FP32 inputs keep the precise vector path; larger
+prefill batches retain expanded-weight cuBLAS while tile reuse is investigated.
+Fourteen native matrix gates pass, plus 82 Qwen2, 84 Qwen3.5 and 97 Mistral
+reference checks. Representative four-row large matrices improve by roughly
+1.8–3.1x in isolated kernel timing. This is not an end-to-end speed claim.
+
+The first Mistral cross-engine chat benchmark was rejected as a matched
+comparison because templates produced 23 vs 26 input tokens. The benchmark
+client can now accept a frozen token-ID array and use raw completions across
+engines. A corrected end-to-end comparison is pending.
+
+## MoE execution in progress
+
+Issue #14. OLMoE has an independent CUDA implementation with whole-projection
+Q/K normalization, optional QKV clipping, expert routing, gated expert MLPs and
+weighted aggregation. Decode selects expert weight addresses on GPU, including
+inside captured graphs. Prefill currently groups tokens with a Python expert
+loop; eliminating those synchronization points remains a performance task.
+Projection/cache/activation arithmetic is FP32, with FP16 or Q8 matrix storage.
+Apple MoE is not yet supported.
+
+Eight routed projection/aggregation cases and sixteen complete synthetic model
+checks pass, including repeated and mixed experts, quantized/unquantized weights,
+normalized/unnormalized routing, clipping and reordered batches. The official
+OLMoE-1B-7B-0924-Instruct revision `7f1c97f440f06ce36705e4f2b843edb5925f4498`
+is downloaded; independent real-model reference generation is underway.
+Synthetic success is not a real-checkpoint qualification.

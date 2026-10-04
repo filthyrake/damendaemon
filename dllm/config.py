@@ -40,6 +40,8 @@ def eos_ids(value):
     return set(values)
 
 def decoder_config(config):
+    if config.get('model_type') == 'olmoe':
+        return olmoe_config(config)
     if config.get('model_type') == 'starcoder2':
         return starcoder_config(config)
     if config.get('model_type') == 'gemma3_text':
@@ -90,6 +92,22 @@ def starcoder_config(config):
     common = decoder_config({**c, 'model_type': 'mistral', 'hidden_act': 'silu', 'rms_norm_eps': epsilon})
     return {**common, **c, 'head_dim': common['head_dim'], 'rms_norm_eps': epsilon,
             'use_bias': c.get('use_bias', True), 'tie_word_embeddings': c.get('tie_word_embeddings', True)}
+
+
+def olmoe_config(config):
+    c = dict(config)
+    common = decoder_config({**c, 'model_type':'llama'})
+    for name in ('num_experts','num_experts_per_tok'):
+        if type(c.get(name)) is not int or c[name]<=0:
+            raise ValueError('expert counts must be positive integers')
+    if c['num_experts_per_tok']>c['num_experts'] or type(c.get('norm_topk_prob',False)) is not bool:
+        raise ValueError('invalid expert routing configuration')
+    clip = c.get('clip_qkv')
+    if clip is not None and (type(clip) not in (int,float) or not math.isfinite(clip) or clip<=0):
+        raise ValueError('QKV clip must be finite and positive')
+    if common['head_dim']*c['num_attention_heads'] != c['hidden_size']:
+        raise ValueError('OLMoE requires whole-projection Q/K normalization dimensions')
+    return {**common,**c,'head_dim':common['head_dim'],'norm_topk_prob':c.get('norm_topk_prob',False)}
 
 
 def hybrid_config(config):

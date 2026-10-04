@@ -36,6 +36,14 @@ class ConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 decoder_config({**config, **change})
 
+    def test_moe_router_and_projection_dimensions(self):
+        config = self.config(model_type='olmoe',head_dim=64,num_experts=64,num_experts_per_tok=8)
+        self.assertFalse(decoder_config(config)['norm_topk_prob'])
+        for change in ({'num_experts':0},{'num_experts_per_tok':65},{'norm_topk_prob':1},
+                       {'clip_qkv':-1},{'head_dim':128},{'attention_bias':True}):
+            with self.assertRaises(ValueError):
+                decoder_config({**config, **change})
+
     def test_unsupported_variants_fail_before_weight_loading(self):
         for changes in ({'model_type': 'qwen3_5'}, {'model_type': 'qwen3_moe'},
                         {'rope_scaling': {'type': 'yarn', 'factor': 2}},

@@ -20,6 +20,35 @@ def expand(weight, scales, dtype):
 
 
 @tr.jit
+def _matmul(X, W, S, BIAS, Y, M: tl.constexpr, N: tl.constexpr, K: tl.constexpr,
+            BM: tl.constexpr, BN: tl.constexpr, BK: tl.constexpr, BIASED: tl.constexpr):
+    rows = tl.program_id(0)*BM + tl.arange(0,BM)
+    outputs = tl.program_id(1)*BN + tl.arange(0,BN)
+    columns = tl.arange(0,BK)
+    groups = tl.arange(0,BK//32)
+    accumulator = tl.full((BM,BN),0,tl.float32)
+    for start in range(tr.cdiv(K,BK)):
+        k = start*BK+columns
+        x = tl.load(X+rows[:,None]*K+k[None,:],(rows[:,None]<M)&(k[None,:]<K),other=0)
+        values = tl.load(W+outputs[None,:]*K+k[:,None],(outputs[None,:]<N)&(k[:,None]<K),other=0).to(tl.float32)
+        g = start*(BK//32)+groups
+        scales = tl.load(S+outputs[None,:]*(K//32)+g[:,None],(outputs[None,:]<N)&(g[:,None]<K//32),other=0).to(tl.float32)
+        weight = (values.reshape(BK//32,32,BN)*scales[:,None,:]).reshape(BK,BN).to(tl.float16)
+        accumulator += tl.dot(x,weight)
+    if BIASED:
+        accumulator += tl.load(BIAS+outputs,outputs<N,other=0)[None,:].to(tl.float32)
+    tl.store(Y+rows[:,None]*N+outputs[None,:],accumulator,(rows[:,None]<M)&(outputs[None,:]<N))
+
+
+def matmul(x, weight, scales, bias=None):
+    result = torch.empty((x.shape[0],weight.shape[0]),device=x.device,dtype=x.dtype)
+    _matmul[(tr.cdiv(x.shape[0],16),tr.cdiv(weight.shape[0],64))](x,weight,scales,
+        weight if bias is None else bias,result,x.shape[0],weight.shape[0],weight.shape[1],
+        16,64,128,bias is not None,num_warps=4,num_stages=3)
+    return result
+
+
+@tr.jit
 def _linear(X, W, S, BIAS, Y, K: tl.constexpr, N: tl.constexpr,
             BK: tl.constexpr, BN: tl.constexpr, ROWS: tl.constexpr, BIASED: tl.constexpr):
     outputs = tl.program_id(0) * BN + tl.arange(0, BN)
@@ -42,7 +71,9 @@ def _linear(X, W, S, BIAS, Y, K: tl.constexpr, N: tl.constexpr,
 def linear(x, weight, scales, bias=None):
     shape = x.shape[:-1]
     x = x.reshape(-1,x.shape[-1]).contiguous()
-    if x.shape[0] > 4:
+    if x.dtype == torch.float16 and 2 <= x.shape[0] <= 16:
+        result = matmul(x,weight,scales,bias)
+    elif x.shape[0] > 4:
         result = torch.nn.functional.linear(x, expand(weight, scales, x.dtype), bias)
     else:
         result = torch.empty((x.shape[0],weight.shape[0]), device=x.device, dtype=x.dtype)
