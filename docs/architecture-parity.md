@@ -646,3 +646,20 @@ This qualifies the pinned 124M base checkpoint and its 1024-position limit.
 It has no chat template. Cross-attention, alternate attention scaling/upcast
 modes, untied output heads, GPT-2 quantization, and other GPT architectures are
 rejected or unqualified. Evidence is in `evidence/architectures/gpt2-*.json`.
+
+GPT-2 matched FP32 A2 HTTP comparison, same pinned checkpoint and token IDs,
+context1024, 14 prompt tokens and 64 output tokens, five measured rounds:
+
+| Concurrent requests | dllm tokens/s | vLLM tokens/s | dllm TTFT ms | vLLM TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 271.00 | 236.06 | 12.43 | 30.63 |
+| 2 | 476.50 | 424.90 | 20.23 | 43.62 |
+| 4 | 753.68 | 800.57 | 42.16 | 48.70 |
+
+Both use FP32 weights/arithmetic; environments differ (dllm torch2.6, vLLM0.30
+with torch2.13). These medians include prompt processing and exclude first
+model-load warmup. This narrow result leads at concurrency1/2 but remains about
+6% behind at concurrency4; it does not establish general runtime parity.
+The no-graph, pure-Torch CUDA fallback also passes all 84 recorded reference
+checks. Full evidence: `compare-*-gpt2-fp32-*.json` and
+`gpt2-a2-torch-reference.json` in `evidence/architectures/`.

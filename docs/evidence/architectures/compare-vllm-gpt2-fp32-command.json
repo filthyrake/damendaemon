@@ -1,0 +1,31 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/baselines/vllm-venv/bin/vllm",
+    "serve",
+    "/home/damen/.cache/huggingface/hub/models--openai-community--gpt2/snapshots/607a30d783dfa663caf39e06633721c8d4cfcd7e",
+    "--served-model-name",
+    "a",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "42765",
+    "--dtype",
+    "float",
+    "--max-model-len",
+    "1024",
+    "--max-num-seqs",
+    "4",
+    "--gpu-memory-utilization",
+    "0.5",
+    "--no-enable-prefix-caching",
+    "--generation-config",
+    "vllm"
+  ],
+  "model": {
+    "repository": "openai-community/gpt2",
+    "revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+    "path": "/home/damen/.cache/huggingface/hub/models--openai-community--gpt2/snapshots/607a30d783dfa663caf39e06633721c8d4cfcd7e"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {}
+}
