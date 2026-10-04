@@ -132,6 +132,11 @@ because two long-context positions exceed the logit-error limit.
 Static linear and Llama 3 rotary scaling are now supported; dynamic/YaRN/LongRoPE
 variants remain unsupported. The pinned Llama 3.2 1B checkpoint passes the A2
 8192-context gate. See [architecture qualification](docs/architecture-parity.md).
+Chat requests also accept `stop` (one string or up to four strings, each 1–256
+characters). Matching stop text is excluded from streamed and complete responses;
+partial matches are withheld until they resolve. `max_completion_tokens` is an
+alias for `max_tokens`; specify only one.
+
 Prompt plus requested output must fit `--context`. KV memory is reserved per
 slot at that capacity. Fused attention reads the live prefix and skips unused
 context blocks; larger configured contexts still add launch/merge overhead.

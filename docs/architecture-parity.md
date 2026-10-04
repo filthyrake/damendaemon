@@ -115,3 +115,16 @@ four. Prefill still converts stored weights for dense FP32 matrix operations,
 and prompts are processed separately. These remain performance gaps. The first
 GEMV version regressed batched throughput; sharing weight loads across rows and
 removing full-context attention copies resolved that regression.
+
+
+### Stop sequences and completion budget compatibility
+
+Issue #9. Streaming and nonstreaming paths now share incremental text stopping.
+Partial stop prefixes are retained across tokens; matching stop text is excluded,
+and unmatched prefixes are released at EOS or the requested length limit. Usage
+counts generated tokens, including the token that completed the stop sequence.
+`max_completion_tokens` is accepted as an alias for `max_tokens`, with ambiguous
+simultaneous limits rejected. Unicode, overlapping stops, every split of a stop
+sequence, replacement-character handling and malformed inputs are unit tested.
+The live M4 HTTP test verifies stop omission, stop finish reason, streamed stop
+matching and the alternate completion budget alongside seeded sampling.

@@ -1,0 +1,80 @@
+{
+  "passed": true,
+  "model": "results/models/qwen2",
+  "greedy": "Once upon a time, in a far-off land, there was a robot gardener named Zephyr. Zephyr was a sleek and agile robot with",
+  "seeded": "Once upon a time, in a world where robots had taken over the world, there was a small robot gardener named Zephyr. Zephyr was",
+  "concurrent": [
+    "Once upon a time, in a world where robots had taken over the world, there was a small robot gardener named Zephyr. Zephyr was",
+    "Once upon a time, in a world where robots had taken over the world, there was a small robot gardener named Zephyr. Zephyr was",
+    "Once upon a time, in a world where robots had taken over the world, there was a small robot gardener named Zephyr. Zephyr was",
+    "Once upon a time, in a world where robots had taken over the world, there was a small robot gardener named Zephyr. Zephyr was"
+  ],
+  "other_seeds": [
+    "Once upon a time, in a lush and verdant garden, there lived a robot gardener named Zephyr. Zephyr was a curious and intelligent",
+    "In the quiet town of Verdant Haven, where the air was filled with the rustling of leaves and the chirping of birds, there lived a peculiar robot",
+    "Once upon a time, in a vast and mysterious land, there lived a robot gardener named Xing. Xing was a creature of pure magic, able"
+  ],
+  "stop_sequence": "upon a t",
+  "stopped": {
+    "id": "chatcmpl-ce265f89b0794dccb39f7993f531426d",
+    "object": "chat.completion",
+    "created": 1791080171,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Once "
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 40,
+      "completion_tokens": 4,
+      "total_tokens": 44
+    },
+    "dllm_timing": {
+      "source_tier": "gpu",
+      "activation_seconds": 1.500011421740055e-06,
+      "kernel_backend": "metal",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 0.05253216699929908,
+      "total_seconds": 0.09752304200083017,
+      "decode_tokens_per_second": 66.6801879247271
+    }
+  },
+  "limit_alias": {
+    "id": "chatcmpl-41ce8eaa328d4d4187d90f4d61a8b037",
+    "object": "chat.completion",
+    "created": 1791080171,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Once"
+        },
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 40,
+      "completion_tokens": 1,
+      "total_tokens": 41
+    },
+    "dllm_timing": {
+      "source_tier": "gpu",
+      "activation_seconds": 3.3300602808594704e-07,
+      "kernel_backend": "metal",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 0.05210641701705754,
+      "total_seconds": 0.05211654200684279,
+      "decode_tokens_per_second": null
+    }
+  }
+}

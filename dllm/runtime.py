@@ -117,7 +117,7 @@ class Runtime:
             self.admission.release()
 
     def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None,
-                 temperature=0, top_p=1, top_k=0, seed=None):
+                 temperature=0, top_p=1, top_k=0, seed=None, stop=None):
         """Yield token IDs/text deltas plus a final usage/timing event.
 
         Closing this generator releases its model lease, including on client
@@ -126,6 +126,8 @@ class Runtime:
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be a positive integer")
         from .sampling import Sampling, Sampler
+        from .stopping import stop_sequences, text_delta
+        stops = stop_sequences(stop)
         sampler = Sampler(Sampling(temperature, top_p, top_k, seed))
         start = time.perf_counter()
         with self.session(alias) as (executor, tier, load_seconds):
@@ -145,16 +147,9 @@ class Runtime:
                     first_time = time.perf_counter() - start
                 stop = not ignore_eos and token in model.eos
                 decoded = model.tokenizer.decode(output, skip_special_tokens=True)
-                # Wait for complete UTF-8 sequences. Tokenizer decode can end
-                # with a replacement character for a partial byte sequence.
-                if not decoded.endswith("\ufffd") or stop or index == max_tokens - 1:
-                    if not decoded.startswith(emitted):
-                        raise RuntimeError("tokenizer revised already streamed text")
-                    delta = decoded[len(emitted):]
-                    emitted = decoded
-                    yield {"token": token, "text": delta}
-                else:
-                    yield {"token": token, "text": ""}
+                delta, emitted, text_stop = text_delta(decoded, emitted, stops, stop or index == max_tokens-1)
+                stop = stop or text_stop
+                yield {"token": token, "text": delta}
                 if stop:
                     finish = "stop"
                     break

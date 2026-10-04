@@ -12,6 +12,7 @@ import time
 
 from .runtime import Runtime, BusyError
 from .sampling import Sampling, Sampler, sample_rows
+from .stopping import stop_sequences, text_delta
 
 
 @dataclass(eq=False)
@@ -21,6 +22,7 @@ class Pending:
     max_tokens: int
     enable_thinking: bool | None = None
     sampler: Sampler = field(default_factory=lambda: Sampler(Sampling()))
+    stops: tuple = ()
     start: float = field(default_factory=time.perf_counter)
     events: queue.Queue = field(default_factory=lambda: queue.Queue(maxsize=8))
     done: threading.Event = field(default_factory=threading.Event)
@@ -55,15 +57,16 @@ class BatchedRuntime:
         self.worker.start()
 
     def generate(self, alias, messages, max_tokens=128, enable_thinking=None,
-                 temperature=0, top_p=1, top_k=0, seed=None):
+                 temperature=0, top_p=1, top_k=0, seed=None, stop=None):
         if alias not in self.models:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be positive")
         sampler = Sampler(Sampling(temperature, top_p, top_k, seed))
+        stops = stop_sequences(stop)
         if not self.admission.acquire(blocking=False):
             raise BusyError("request queue is full")
-        request = Pending(alias, messages, max_tokens, enable_thinking, sampler)
+        request = Pending(alias, messages, max_tokens, enable_thinking, sampler, stops)
         try:
             with self.condition:
                 if self.closed:
@@ -119,11 +122,9 @@ class BatchedRuntime:
         stop = token in executor.model.eos
         finished = stop or len(request.output) >= request.max_tokens
         decoded = executor.model.tokenizer.decode(request.output, skip_special_tokens=True)
-        delta = ""
-        if not decoded.endswith("\ufffd") or finished:
-            if not decoded.startswith(request.emitted):
-                raise RuntimeError("tokenizer revised streamed text")
-            delta, request.emitted = decoded[len(request.emitted):], decoded
+        delta, request.emitted, text_stop = text_delta(decoded, request.emitted, request.stops, finished)
+        stop = stop or text_stop
+        finished = finished or text_stop
         request.events.put_nowait({"token": token, "text": delta})
         request.ready.set()
         if finished:

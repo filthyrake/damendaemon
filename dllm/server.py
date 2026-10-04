@@ -10,6 +10,7 @@ import uuid
 
 from .runtime import BusyError
 from .sampling import Sampling
+from .stopping import stop_sequences
 
 
 def handler_for(runtime):
@@ -56,11 +57,19 @@ def handler_for(runtime):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
-                allowed = {"model", "messages", "max_tokens", "temperature", "top_p", "top_k", "seed", "stream", "stream_options", "chat_template_kwargs"}
+                allowed = {"model", "messages", "max_tokens", "max_completion_tokens", "stop", "temperature", "top_p", "top_k", "seed", "stream", "stream_options", "chat_template_kwargs"}
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
                 sampling = {key: body[key] for key in ("temperature", "top_p", "top_k", "seed") if key in body}
                 Sampling(**sampling)
+                if 'stop' in body:
+                    stop_sequences(body['stop'])
+                    sampling['stop'] = body['stop']
+                if 'max_tokens' in body and 'max_completion_tokens' in body:
+                    raise ValueError('specify only one completion token limit')
+                max_tokens = body.get('max_completion_tokens', body.get('max_tokens', 128))
+                if type(max_tokens) is not int or max_tokens <= 0:
+                    raise ValueError('completion token limit must be a positive integer')
                 if not isinstance(body.get("model"), str):
                     raise ValueError("model must be a string")
                 if "stream" in body and type(body["stream"]) is not bool:
@@ -96,7 +105,7 @@ def handler_for(runtime):
                     self.wfile.flush()
                 text = ""
                 final = None
-                with closing(runtime.generate(alias, messages, body.get("max_tokens", 128), **template_options, **sampling)) as generation:
+                with closing(runtime.generate(alias, messages, max_tokens, **template_options, **sampling)) as generation:
                     for event in generation:
                         if stream and not started:
                             self.send_response(200)

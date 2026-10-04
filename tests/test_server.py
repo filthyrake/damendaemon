@@ -16,6 +16,7 @@ class FakeRuntime:
 
     def generate(self, alias, messages, max_tokens, **kwargs):
         self.last_options = kwargs
+        self.last_max_tokens = max_tokens
         try:
             if alias == "busy":
                 raise BusyError("request queue is full")
@@ -110,5 +111,17 @@ class ServerTests(unittest.TestCase):
                        {'top_p':0}, {'top_p':1.1}, {'top_k':1.5}, {'seed':-1}):
             with self.subTest(change=change), self.assertRaises(HTTPError) as error:
                 self.post(**change)
+            self.assertEqual(error.exception.code, 400)
+            error.exception.close()
+
+    def test_stop_and_completion_limit_alias(self):
+        with self.post(stop=['END', '🦙'], max_completion_tokens=3) as response:
+            response.read()
+        self.assertEqual(self.runtime.last_options, {'stop':['END', '🦙']})
+        self.assertEqual(self.runtime.last_max_tokens, 3)
+        for changes in ({'max_completion_tokens':True}, {'max_tokens':0},
+                        {'max_tokens':3, 'max_completion_tokens':3}, {'stop':[]}, {'stop':''}):
+            with self.subTest(changes=changes), self.assertRaises(HTTPError) as error:
+                self.post(**changes)
             self.assertEqual(error.exception.code, 400)
             error.exception.close()

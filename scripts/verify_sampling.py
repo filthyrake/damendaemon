@@ -31,9 +31,11 @@ def main():
                     time.sleep(.1)
                 else:
                     raise RuntimeError(logpath.read_text())
-                def request(**options):
+                def request(return_result=False, **options):
                     body = {'model':'a', 'messages':[{'role':'user','content':'Invent a strange story about a robot gardener.'}],
                             'max_tokens':32, **options}
+                    if 'max_completion_tokens' in options:
+                        body.pop('max_tokens')
                     with urlopen(Request(base+'/v1/chat/completions', data=json.dumps(body).encode(),
                             headers={'Content-Type':'application/json'}), timeout=180) as response:
                         if options.get('stream'):
@@ -41,9 +43,19 @@ def main():
                             assert chunks[-1] == '[DONE]'
                             return ''.join(json.loads(x)['choices'][0]['delta'].get('content','')
                                 for x in chunks[:-1] if json.loads(x).get('choices'))
-                        return json.load(response)['choices'][0]['message']['content']
+                        result = json.load(response)
+                        return result if return_result else result['choices'][0]['message']['content']
                 greedy = request(temperature=0)
                 assert request(temperature=1, top_k=1, seed=8) == greedy
+                assert len(greedy) >= 13
+                needle = greedy[5:13]
+                prefix = greedy[:greedy.index(needle)]
+                stopped = request(stop=needle, return_result=True)
+                assert stopped['choices'][0]['message']['content'] == prefix
+                assert stopped['choices'][0]['finish_reason'] == 'stop'
+                assert request(stop=['a stop that cannot occur 🦙', needle], stream=True) == prefix
+                limited = request(max_completion_tokens=1, return_result=True)
+                assert limited['usage']['completion_tokens'] == 1
                 options = {'temperature':.8, 'top_p':.9, 'top_k':32, 'seed':123}
                 baseline = request(**options)
                 assert request(**options) == baseline
@@ -54,7 +66,8 @@ def main():
                 alternatives = [request(**{**options, 'seed':seed}) for seed in (1,2,3)]
                 assert len(set(alternatives + [baseline])) > 1
                 results = {'passed':True, 'model':args.model, 'greedy':greedy,
-                           'seeded':baseline, 'concurrent':concurrent, 'other_seeds':alternatives}
+                           'seeded':baseline, 'concurrent':concurrent, 'other_seeds':alternatives,
+                           'stop_sequence':needle, 'stopped':stopped, 'limit_alias':limited}
             except Exception:
                 print(logpath.read_text(), file=sys.stderr)
                 raise
