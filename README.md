@@ -387,3 +387,15 @@ It preserves FIFO model/management barriers and cancellation/slot reuse. Other
 architectures, including Phi-3 pending a numerical fix, retain full prefill.
 This does not implement paged KV or prefix caching. Measurements and exact
 qualified model/precision combinations are in the architecture evidence.
+
+For repeated prompt prefixes, `dllm serve --prefix-cache-tokens 4096` enables
+bounded GPU KV snapshots on the same decoders qualified for chunked prefill.
+The budget is per resident model, with at most four entries. Exact repeats can
+reuse final prompt logits; divergent suffixes resume from matching cached KV.
+The cache copies KV into independent request slots, so decoding one request
+cannot modify another's snapshot. Evicting a model also evicts its prefix cache.
+`dllm_timing.cached_prompt_tokens` reports reuse; ordinary usage still counts
+all input tokens. The default is disabled. This uses additional GPU memory and
+copies; it is not paged KV or zero-copy sharing. Under memory pressure, caching
+is skipped while ordinary inference continues. Numerical qualification and
+latency measurements are in the architecture evidence.

@@ -46,6 +46,7 @@ def main():
     server.add_argument("--port", type=int, default=8088)
     server.add_argument("--batch-size", type=int, choices=range(1, 9), default=4)
     server.add_argument("--prefill-chunk-size",type=int,default=0,help="opt-in prompt token budget per decode step; 0 disables")
+    server.add_argument("--prefix-cache-tokens",type=int,default=0,help="opt-in GPU prefix snapshot token budget per model")
     for command in (run, server):
         command.add_argument("--device", choices=("cuda", "mps"), default=os.environ.get("DLLM_DEVICE", "cuda"))
         command.add_argument("--context", type=int, default=1024)
@@ -107,6 +108,7 @@ def main():
         runtime_type = BatchedRuntime
         options["batch_size"] = args.batch_size
         options["prefill_chunk_size"] = args.prefill_chunk_size
+        options["prefix_cache_tokens"] = args.prefix_cache_tokens
     runtime = runtime_type(models, **options, context=args.context, gpu_models=args.gpu_models,
                       host_models=args.host_models, host_gib=args.host_gib, use_graph=not args.no_graph)
     if args.command == "serve":

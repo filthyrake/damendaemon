@@ -43,16 +43,26 @@ class Pending:
     slot: int = -1
     tier: str = "gpu"
     activation: float = 0
+    cached_tokens: int = 0
 
 
 class BatchedRuntime:
-    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, **kwargs):
+    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, prefix_cache_tokens=0, **kwargs):
         if not 1 <= batch_size <= 16 or queue_size < batch_size or queue_timeout <= 0:
             raise ValueError("batch size must be 1..16 and fit inside the request queue")
         if type(prefill_chunk_size) is not int or prefill_chunk_size<0:
             raise ValueError('prefill chunk size must be a nonnegative integer')
+        if type(prefix_cache_tokens) is not int or prefix_cache_tokens<0:
+            raise ValueError('prefix cache tokens must be a nonnegative integer')
+        self.prefix_cache_tokens=prefix_cache_tokens
         self.prefill_chunk_size=prefill_chunk_size
         self.runtime = Runtime(models, batch_size=batch_size, **kwargs)
+        if prefill_chunk_size or prefix_cache_tokens:
+            from .device import selected_device
+            if selected_device()=='cuda':
+                # Load offset-attention dispatch before the server advertises
+                # readiness, not on the first partial-prefix hit.
+                from torch.nn.attention.bias import causal_lower_right
         self.models = self.runtime.models
         self.batch_size = batch_size
         self.queue_timeout = queue_timeout
@@ -206,6 +216,7 @@ class BatchedRuntime:
                 "prompt_tokens": prompt_count, "completion_tokens": count,
                 "total_tokens": prompt_count + count}, "timing": {
                 "source_tier": request.tier, "activation_seconds": request.activation,
+                "cached_prompt_tokens":request.cached_tokens,
                 "kernel_backend": executor.kernel_backend,
                 "weight_quantization": getattr(executor.model, "quantization", "none"), "max_batch_size": request.max_batch_seen,
                 "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
@@ -249,6 +260,11 @@ class BatchedRuntime:
     def _chunked_group(self,first,executor,tier,activation):
         first.tier,first.activation=tier,activation
         active,partial={},{}
+        cache=getattr(executor,'prefix_cache',None)
+        if self.prefix_cache_tokens and cache is None:
+            from .prefix import PrefixCache
+            cache=executor.prefix_cache=PrefixCache(executor,self.prefix_cache_tokens)
+        chunk_size=self.prefill_chunk_size or executor.context
         next_request=first
         try:
             while next_request is not None or active or partial:
@@ -267,7 +283,14 @@ class BatchedRuntime:
                                 continue
                             tokens=self._prepare(request,executor)
                             request.slot=next(i for i in range(self.batch_size) if i not in active and i not in partial)
-                            partial[request.slot]=(request,tokens,0)
+                            reused,logits=cache.restore(tokens,request.slot) if cache is not None else (0,None)
+                            request.cached_tokens=reused
+                            if logits is not None:
+                                token=request.sampler.select(logits.squeeze(0)).item()
+                                if not self._emit(request,token,executor,len(tokens)):
+                                    active[request.slot]=(request,len(tokens))
+                            else:
+                                partial[request.slot]=(request,tokens,reused)
                         except Exception as error:
                             self._finish(request,error)
                 for slot,(request,_,__) in list(partial.items()):
@@ -278,10 +301,11 @@ class BatchedRuntime:
                 if partial:
                     slot=next(iter(partial))
                     request,tokens,start=partial[slot]
-                    end=min(start+self.prefill_chunk_size,len(tokens))
+                    end=min(start+chunk_size,len(tokens))
                     try:
                         logits=executor.prefill_chunk(tokens[start:end],slot,start,final=end==len(tokens))
                         if end==len(tokens):
+                            if cache is not None:cache.remember(tokens,slot,logits)
                             token=request.sampler.select(logits.squeeze(0)).item()
                             if not self._emit(request,token,executor,len(tokens)):
                                 active[slot]=(request,len(tokens))
@@ -317,7 +341,7 @@ class BatchedRuntime:
             raise
 
     def _group(self, first, executor, tier, activation):
-        if self.prefill_chunk_size and getattr(executor,'supports_chunked_prefill',False):
+        if (self.prefill_chunk_size or self.prefix_cache_tokens) and getattr(executor,'supports_chunked_prefill',False):
             return self._chunked_group(first,executor,tier,activation)
         first.tier, first.activation = tier, activation
         active = {}  # slot -> (request, prompt length)

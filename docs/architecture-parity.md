@@ -707,3 +707,49 @@ measurements and the optimized run are both retained in `evidence/chunked/`;
 `scripts/benchmark_chunked.py` reproduces the workload. The 108-test unit suite
 includes decode/chunk ordering, cancellation without output, reused slots,
 management barriers, budget validation and unsupported-architecture fallback.
+
+## Bounded prefix reuse
+
+Issue #22. `--prefix-cache-tokens` enables executor-owned GPU KV snapshots on
+the decoders eligible for chunked prefill. At most four entries and the selected
+total token budget are retained. An exact prompt can also reuse its saved final
+logits; a divergent or shorter prompt resumes from a matching prefix, leaving
+its final token to be recomputed when no exact logits exist. KV is copied into
+independent request slots. This is neither paged KV nor zero-copy sharing.
+
+Caches disappear with GPU model eviction, do not cross aliases/precisions, and
+use weak executor references. Snapshots are skipped when the memory reserve
+cannot be maintained; partial allocations are discarded on allocator failure.
+Prompt usage remains unchanged, while `cached_prompt_tokens` reports actual
+reuse. The default remains disabled because cache misses add copying/memory
+costs and this first implementation retains whole bounded snapshots.
+
+Independent full-prompt FP32 eager references pass 48 checks each for Qwen2 on
+A2/M4 and accurate Qwen3 on A2: exact matches, divergent/shorter prefixes,
+post-snapshot decoding, reordered/reused slots, token/entry bounds and eviction.
+Worst relative RMS is 0.0084753 for Qwen2 CUDA, 0.0000130 for Qwen2 M4, and
+0.00000252 for accurate Qwen3 CUDA. The existing 1% RMS/0.5 absolute/exact-greedy
+gates are unchanged. 114 unit tests pass, including low-memory and failed
+allocation behavior and executor-lifetime isolation.
+
+Live Qwen2.5-0.5B HTTP tests compare disabled caching with a 4096-token budget,
+a 1536-token repeated prefix and eight output tokens. Exact timings are medians
+of five warm requests; partial timings use five distinct three-token suffixes,
+each reusing 1536 tokens but requiring new model computation:
+
+| Device | Cache | Exact first-token ms | Exact HTTP total ms | Partial first-token ms |
+|---|---|---:|---:|---:|
+| A2 | disabled | 103.48 | 162.86 | 113.32 |
+| A2 | enabled | 1.79 | 60.61 | 25.34 |
+| M4 | disabled | 559.61 | 838.81 | 568.41 |
+| M4 | enabled | 3.81 | 282.73 | 42.69 |
+
+First-token values come from runtime telemetry; HTTP totals are measured by
+the client. This is repeated-prefix latency evidence, not a general throughput
+comparison. Greedy outputs agree with uncached requests. Four concurrent
+requests, model alias switching/restoration, divergent suffixes, and combined
+256-token chunking plus caching pass. An initial first-partial-hit CUDA test
+exposed a one-second lazy PyTorch attention import; optional offset-attention
+support now initializes before the server advertises readiness. That startup
+cost is moved, not eliminated. Both the original result and final evidence are
+retained in `evidence/prefix/`.
