@@ -177,7 +177,7 @@ class YarnConfigTests(unittest.TestCase):
         self.assertGreater(attention_factor(parsed), 1)
         self.assertEqual(attention_factor({**parsed, 'rope_scaling':{**parsed['rope_scaling'], 'attention_factor':1.2}}), 1.2)
         for change in ({'factor':0}, {'beta_fast':0}, {'beta_slow':64}, {'attention_factor':float('nan')},
-                       {'original_max_position_embeddings':False}, {'original_max_position_embeddings':None}, {'mscale':1}, {'truncate':True}):
+                       {'original_max_position_embeddings':False}, {'original_max_position_embeddings':None}, {'mscale':1}, {'truncate':1}):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 decoder_config({**config, 'rope_scaling':{**config['rope_scaling'], **change}})
         for change in ({'rope_theta':float('nan')}, {'rope_theta':True}, {'rope_theta':1}, {'max_position_embeddings':16, 'rope_scaling':{'type':'yarn', 'factor':2, 'original_max_position_embeddings':32}}):

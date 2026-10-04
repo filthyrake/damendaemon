@@ -1,0 +1,89 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "models": {
+    "oss": "models/gpt-oss-20b",
+    "swap": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775"
+  },
+  "context": 256,
+  "batch_size": 2,
+  "reference": {
+    "id": "cmpl-9aa18bd35fb147d5952cb2e06b424dd3",
+    "object": "text_completion",
+    "created": 1791141148,
+    "model": "oss",
+    "choices": [
+      {
+        "index": 0,
+        "text": " Paris.\"\n    },\n    {\n        \"question\": \"What is the largest planet",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 5,
+      "completion_tokens": 16,
+      "total_tokens": 21
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 13.652236009002081,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton-mxfp4",
+      "weight_quantization": "mxfp4",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 14.161511618993245,
+      "total_seconds": 15.521563237998635,
+      "decode_tokens_per_second": 11.028993157604969
+    }
+  },
+  "warm": {
+    "id": "cmpl-01874bd6bfa94383b2c533a0755c6597",
+    "object": "text_completion",
+    "created": 1791141163,
+    "model": "oss",
+    "choices": [
+      {
+        "index": 0,
+        "text": " Paris.\"\n    },\n    {\n        \"question\": \"What is the largest planet",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 5,
+      "completion_tokens": 16,
+      "total_tokens": 21
+    },
+    "dllm_timing": {
+      "source_tier": "gpu",
+      "activation_seconds": 5.276990123093128e-06,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton-mxfp4",
+      "weight_quantization": "mxfp4",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 0.39398179500130937,
+      "total_seconds": 1.75468730799912,
+      "decode_tokens_per_second": 11.023693118544845
+    }
+  },
+  "cold_http_seconds": 15.530415007000556,
+  "warm_http_seconds": 1.7588729720009724,
+  "host_restore_http_seconds": 6.9303687310020905,
+  "stream_equivalence": true,
+  "disconnect_recovery": true,
+  "concurrent_equivalence": true,
+  "unqualified_harmony_rejected": true,
+  "graph_executor_reclaimed_on_swap": true,
+  "host_swap_restore_equivalence": true,
+  "explicit_unload_restore": true,
+  "native_format_reported": true
+}

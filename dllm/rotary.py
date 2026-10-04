@@ -24,8 +24,11 @@ def inverse_frequencies(config, device):
             factor = config['max_position_embeddings'] / original
         def boundary(rotations):
             return dim * math.log(original / (2 * math.pi * rotations)) / (2 * math.log(config['rope_theta']))
-        low = max(0, math.floor(boundary(scaling.get('beta_fast', 32))))
-        high = min(dim - 1, math.ceil(boundary(scaling.get('beta_slow', 1))))
+        low = boundary(scaling.get('beta_fast', 32))
+        high = boundary(scaling.get('beta_slow', 1))
+        if scaling.get('truncate', True):
+            low, high = math.floor(low), math.ceil(high)
+        low, high = max(0, low), min(dim - 1, high)
         upper = high + .001 if low == high else high
         blend = ((torch.arange(dim // 2, device=device, dtype=torch.float32) - low) / (upper - low)).clamp(0, 1)
         # Compute interpolation directly to match the specified frequency schedule.

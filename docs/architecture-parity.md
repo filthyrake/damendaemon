@@ -1102,3 +1102,39 @@ reversed document order. HTTP lifecycle and concurrency checks pass on both.
 [Exact revision, measured latency, arithmetic gates and scope](evidence/reranking/xlm-roberta/README.md).
 The model's8192-token capacity is distinct from the tested2048-token limit;
 quantized reranking and other classifier variants remain unqualified.
+
+## GPT-OSS-20B packed raw execution
+
+Issue #39. Checkpoint `openai/gpt-oss-20b` at
+`6cee5e81ee83917806bbde320786a8fb61efebee` now has an independent native CUDA
+executor with packed MXFP4 experts, GPU-resident top-k routing, biased
+projections, clipped/interleaved SwiGLU, learned attention sinks, alternating
+local/full attention and fractional-boundary YaRN. It does not load an upstream
+inference runtime. Floating checkpoint values are preserved during loading;
+FP16 matrix storage is used only when lossless. Arithmetic, residuals and KV
+are FP32. Prepared host weights occupy 13,775,206,656 bytes.
+
+On A2, 72 checks pass against an independent Transformers 5.18 CPU FP32 eager
+reference with one layer expanded at a time. These include all 24 layer outputs,
+13- and 137-token causal prompts, graph decode from 5- and 129-token prefixes,
+exact greedy logit agreement, isolation of another live slot, and slot reuse.
+Worst relative RMS error is 0.0006742%; the established gates are 1% relative RMS,
+0.5 maximum absolute error and exact greedy agreement. The executor context is
+256 with two slots; this is not a 128K or GPT-OSS-120B qualification.
+
+Raw HTTP completions pass streaming/non-streaming equivalence, disconnect
+recovery, two simultaneous requests, actual GPU swapping to Qwen2 and back,
+graph/executor reclamation, and explicit unload/host restoration. Response
+metadata identifies native `mxfp4` weights rather than mislabeling them as
+unquantized. Harmony chat/tool handling remains unqualified and the chat route
+is explicitly rejected. Raw text continuation is not a chat-quality assessment.
+
+Initial A2 measurements: approximately 90.4 ms per graph decode step (~11 tokens/s)
+for a short raw prompt; 10.98 seconds for a 129-token prefill. The latter is a
+known bottleneck: the initial routed expert implementation rereads weights per
+token. A warm 5-token prompt / 16-output-token HTTP request takes 1.759 seconds;
+cold disk-to-response takes 15.53 seconds and host restoration plus response
+6.93 seconds in the service probe. These are narrow initial measurements,
+not a matched comparison with another engine. Two-slot reference peak allocated
+memory is 13,930,619,904 bytes. Supporting reports and reproduction scripts are
+linked in [GPT-OSS evidence](evidence/gpt-oss/).

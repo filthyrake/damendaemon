@@ -47,6 +47,8 @@ def weight_bytes(path,quantization=None):
         raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
     if config['model_type'] in ('gpt2','gpt_neox','bloom') and quantized:
         raise ValueError('GPT-2/GPT-NeoX/BLOOM quantization is not implemented')
+    if config['model_type']=='gpt_oss' and quantized:
+        raise ValueError('GPT-OSS uses checkpoint-native MXFP4; conversion is unsupported')
     element_bytes = 4 if config['model_type'] in ('starcoder2','gpt2','gpt_neox','bloom') else 2
     total, embedding, has_head = 0, None, False
     for file in weight_files(path):
@@ -61,6 +63,10 @@ def weight_bytes(path,quantization=None):
                 if is_embedding:
                     embedding = shape
                 has_head = has_head or key == 'lm_head.weight'
+                if config['model_type']=='gpt_oss':
+                    total += math.prod(shape)*(1 if key.endswith(('_blocks','_scales')) else
+                        4 if len(shape)==1 or key.endswith('_bias') or reader.get_slice(key).get_dtype()=='F32' else 2)
+                    continue
                 if quantized and len(shape) == 2 and not is_embedding and shape[1] % 32 == 0:
                     total += math.prod(shape)//(2 if quantization=='q4_0' else 1) + 2 * shape[0] * (shape[1] // 32)
                 else:
@@ -79,6 +85,9 @@ class ModelWeights:
         self.path = Path(path).resolve()
         self.config = decoder_config(json.loads((self.path / "config.json").read_text()))
         c = self.config
+        self.weight_format = 'mxfp4' if c['model_type']=='gpt_oss' else self.quantization
+        if c['model_type']=='gpt_oss' and self.quantization!='none':
+            raise ValueError('GPT-OSS uses checkpoint-native MXFP4; conversion is unsupported')
         if self.quantization != 'none' and selected_device() != 'cuda':
             if self.quantization!='q8_0' or c['model_type'] not in ('qwen2','qwen3','llama'):
                 raise ValueError('Metal decoder quantization supports Q8 Qwen2, Qwen3 and Llama only')
@@ -132,8 +141,10 @@ class ModelWeights:
                 for key in reader.keys():
                     if not key.startswith(('model.visual.', 'mtp.')):
                         state[key] = reader.get_tensor(key)
-        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom"):
-            if c['model_type'] == 'bloom':
+        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom", "gpt_oss"):
+            if c['model_type'] == 'gpt_oss':
+                from .gpt_oss import load_weights
+            elif c['model_type'] == 'bloom':
                 from .bloom import load_weights
             elif c['model_type'] == 'gpt_neox':
                 from .neox import load_weights
@@ -191,6 +202,8 @@ class ModelWeights:
                          {id(t):t for t in (*weights.values(), *self.scales.values())}.values())
 
     def chat_tokens(self, messages, enable_thinking=None, tools=None, tool_json=False):
+        if getattr(self,'config',{}).get('model_type')=='gpt_oss':
+            raise ValueError('GPT-OSS Harmony chat is not yet qualified; use raw completions')
         if self.template is None:
             raise ValueError('model has no chat template; use raw completions')
         from .tool_calls import template_messages,validate_tools
@@ -318,6 +331,8 @@ class Executor:
         empty_cache()
         free = available_memory()
         def device_dtype(name, tensor):
+            if c['model_type']=='gpt_oss':
+                return tensor.dtype
             if tensor.dtype in (torch.int8,torch.uint8):
                 return tensor.dtype
             if self.dense_precision != 'standard' and tensor.ndim == 2:

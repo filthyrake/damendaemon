@@ -1,0 +1,152 @@
+"""Independent packed GPT-OSS execution; Harmony serving is a separate gate."""
+import math
+import os
+
+import torch
+from torch.nn import functional as F
+
+from .batch import BatchExecutor
+from .device import selected_device
+
+
+def validate_config(config):
+    from .config import decoder_config
+    c=dict(config)
+    scaling=c.get('rope_scaling')
+    if (not isinstance(scaling,dict) or scaling.get('rope_type')!='yarn'
+            or scaling.get('truncate') is not False):
+        raise ValueError('GPT-OSS requires the untruncated YaRN schedule')
+    quant=c.get('quantization_config')
+    exclusions=['model.layers.*.self_attn','model.layers.*.mlp.router','model.embed_tokens','lm_head']
+    if (not isinstance(quant,dict) or quant.get('quant_method')!='mxfp4'
+            or set(quant)-{'quant_method','modules_to_not_convert'}
+            or quant.get('modules_to_not_convert')!=exclusions):
+        raise ValueError('GPT-OSS requires checkpoint-native MXFP4 experts and unquantized dense projections')
+    if c.get('attention_bias') is not True or c.get('tie_word_embeddings',False):
+        raise ValueError('GPT-OSS requires biased attention and an independent output head')
+    # Reuse the established dimension/numerical checks without permitting the
+    # generic dense loader to interpret expert tensors as ordinary matrices.
+    common=decoder_config({**c,'model_type':'llama','attention_bias':False,
+        'quantization_config':None,'layer_types':[],'sliding_window':None})
+    for name in ('num_local_experts','num_experts_per_tok','sliding_window'):
+        if type(c.get(name)) is not int or c[name]<=0:
+            raise ValueError(f'{name} must be a positive integer')
+    if c['num_experts_per_tok']>c['num_local_experts']:
+        raise ValueError('expert count per token exceeds the expert bank')
+    if c.get('experts_per_token',c['num_experts_per_tok'])!=c['num_experts_per_tok']:
+        raise ValueError('conflicting expert counts')
+    if c['hidden_size']%32 or c['intermediate_size']%32:
+        raise ValueError('MXFP4 projection widths must be multiples of 32')
+    layers=c.get('layer_types')
+    if (not isinstance(layers,list) or len(layers)!=c['num_hidden_layers']
+            or any(x not in ('full_attention','sliding_attention') for x in layers)):
+        raise ValueError('GPT-OSS needs one full/sliding attention type per layer')
+    limit=c.get('swiglu_limit',7.)
+    if type(limit) not in (int,float) or not math.isfinite(limit) or limit<=0:
+        raise ValueError('SwiGLU limit must be finite and positive')
+    return {**common,**c,'swiglu_limit':limit}
+
+
+def load_weights(state,c):
+    hidden=c['hidden_size'];middle=c['intermediate_size'];experts=c['num_local_experts']
+    q=c['num_attention_heads']*c['head_dim'];kv=c['num_key_value_heads']*c['head_dim']
+    def take(name,shape,matrix=False,packed=False):
+        value=state.pop(name)
+        if tuple(value.shape)!=tuple(shape):raise ValueError(f'incorrect GPT-OSS tensor shape: {name}')
+        if packed:
+            if value.dtype!=torch.uint8:raise ValueError(f'expected packed bytes: {name}')
+            if name.endswith('_scales') and (value==255).any():
+                raise ValueError(f'reserved MXFP4 scale in checkpoint: {name}')
+            return value.contiguous()
+        if value.dtype not in (torch.bfloat16,torch.float16,torch.float32) or not torch.isfinite(value).all():
+            raise ValueError(f'invalid floating tensor: {name}')
+        if matrix:
+            half=value.half()
+            # Preserve every checkpoint value. FP16 storage is used only when
+            # conversion is lossless; unusual values retain their source dtype.
+            return (half if torch.equal(half.float(),value.float()) else value).contiguous()
+        return value.float().contiguous()
+    w={'embed':take('model.embed_tokens.weight',(c['vocab_size'],hidden),matrix=True),
+       'head':take('lm_head.weight',(c['vocab_size'],hidden),matrix=True),
+       'norm':take('model.norm.weight',(hidden,))}
+    for i in range(c['num_hidden_layers']):
+        root=f'model.layers.{i}.'
+        matrices=[];biases=[]
+        for p,n in (('q',q),('k',kv),('v',kv)):
+            matrices.append(take(root+f'self_attn.{p}_proj.weight',(n,hidden),matrix=True))
+            biases.append(take(root+f'self_attn.{p}_proj.bias',(n,)))
+        w[f'{i}.qkv.weight']=torch.cat(matrices)
+        w[f'{i}.qkv.bias']=torch.cat(biases)
+        for dst,src,shape,matrix in (
+            ('out','self_attn.o_proj.weight',(hidden,q),True),
+            ('out.bias','self_attn.o_proj.bias',(hidden,),False),
+            ('sinks','self_attn.sinks',(c['num_attention_heads'],),False),
+            ('norm1','input_layernorm.weight',(hidden,),False),
+            ('norm2','post_attention_layernorm.weight',(hidden,),False),
+            ('router','mlp.router.weight',(experts,hidden),True),
+            ('router.bias','mlp.router.bias',(experts,),False)):
+            w[f'{i}.{dst}']=take(root+src,shape,matrix=matrix)
+        for dst,src,n,k in (('up','gate_up_proj',2*middle,hidden),('down','down_proj',hidden,middle)):
+            prefix=root+'mlp.experts.'+src
+            w[f'{i}.{dst}.blocks']=take(prefix+'_blocks',(experts,n,k//32,16),packed=True)
+            w[f'{i}.{dst}.scales']=take(prefix+'_scales',(experts,n,k//32),packed=True)
+            w[f'{i}.{dst}.bias']=take(prefix+'_bias',(experts,n))
+    if state:raise ValueError('unexpected GPT-OSS checkpoint tensors: '+', '.join(sorted(state)[:4]))
+    return w
+
+
+class GptOssExecutor(BatchExecutor):
+    def __init__(self,model,use_graph=True,max_batch=1,kernels=None):
+        if selected_device()!='cuda' or (kernels or os.environ.get('DLLM_KERNELS','auto'))=='torch':
+            raise ValueError('GPT-OSS requires native CUDA kernels')
+        from . import mxfp4_kernels,moe_kernels
+        from .mxfp4 import routed_linear
+        self.expert_linear=routed_linear
+        self.expert_activation=mxfp4_kernels.swiglu
+        self.combine=moe_kernels.combine
+        super().__init__(model,use_graph,max_batch,kernels)
+        self.kernel_backend+='-mxfp4'
+
+    def experts(self,x,i):
+        w=self.w
+        router=self.dense_linear(x,w[f'{i}.router'],w[f'{i}.router.bias'])
+        # GPT-OSS normalizes only the selected logits, after top-k selection.
+        logits,selected=router.topk(self.c['num_experts_per_tok'],dim=-1)
+        probabilities=logits.softmax(-1)
+        up=self.expert_linear(x,w[f'{i}.up.blocks'],w[f'{i}.up.scales'],selected,w[f'{i}.up.bias'])
+        activation=self.expert_activation(up,self.c['swiglu_limit'])
+        down=self.expert_linear(activation,w[f'{i}.down.blocks'],w[f'{i}.down.scales'],selected,
+            w[f'{i}.down.bias'],False)
+        return self.combine(down,probabilities)
+
+    @torch.inference_mode()
+    def forward(self,ids,positions,prefill,slot=0):
+        return self._forward(ids,positions,torch.full_like(positions,slot),prefill)
+
+    @torch.inference_mode()
+    def forward_batch(self,ids,positions,slots):
+        return self._forward(ids,positions,slots,False)
+
+    def layer(self,x,positions,slots,i):
+        w=self.w
+        qkv=self.dense_linear(self.norm(x,w[f'{i}.norm1']),w[f'{i}.qkv.weight'],w[f'{i}.qkv.bias'])
+        ck,cv=self.kv[i].unbind(0)
+        query=self.kernels.rope_batch(qkv,self.cos,self.sin,positions,slots,ck,cv,self.heads,precise=True)
+        window=self.c['sliding_window'] if self.c['layer_types'][i]=='sliding_attention' else 0
+        attended=self.kernels.attention(query,ck,cv,positions,slots,window=window,sinks=w[f'{i}.sinks'])
+        x=x+self.dense_linear(attended.reshape(x.shape[0],-1),w[f'{i}.out'],w[f'{i}.out.bias'])
+        return x+self.experts(self.norm(x,w[f'{i}.norm2']),i)
+
+    def _forward(self,ids,positions,slots,prefill):
+        x=F.embedding(ids,self.w['embed']).float()
+        for i in range(self.c['num_hidden_layers']):x=self.layer(x,positions,slots,i)
+        if prefill:x=x[-1:]
+        return self.dense_linear(self.norm(x,self.w['norm']),self.w['head'])
+
+    @torch.inference_mode()
+    def prefill_batch(self,prompts,slots):
+        if (not prompts or len(prompts)!=len(slots) or len(set(slots))!=len(slots)
+                or any(slot<0 or slot>=self.max_batch for slot in slots)
+                or any(not ids or len(ids)>self.context for ids in prompts)):
+            raise ValueError('invalid prefill batch')
+        return torch.cat([self.prefill(ids,slot) for ids,slot in zip(prompts,slots)])

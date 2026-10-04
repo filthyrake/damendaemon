@@ -1,7 +1,7 @@
 # GPT-OSS primitive qualification
 
-Tracking: [#39](https://github.com/filthyrake/dllm/issues/39). These are primitive
-checks, not a claim of GPT-OSS model, generation, Harmony or serving support.
+Tracking: [#39](https://github.com/filthyrake/dllm/issues/39). The initial reports below qualify primitives. Subsequent full-model and raw
+HTTP qualification is recorded separately at the end; Harmony remains unqualified.
 
 Checkpoint: `openai/gpt-oss-20b` at
 `6cee5e81ee83917806bbde320786a8fb61efebee`, HF-format root shards,
@@ -42,3 +42,18 @@ Reproduction scripts: `prepare_gpt_oss.py`, `verify_mxfp4.py`,
 restrict execution to the authorized A2. Reports preserve precision, cases,
 measured samples and numerical errors instead of treating successful import or
 synthetic execution as model qualification.
+
+## Full checkpoint and raw service
+
+`gpt-oss-reference-replay-a2.json` records 72 passing layer/logit, graph decode,
+window-boundary and slot checks against the independent CPU reference generated
+by `scripts/reference_gpt_oss.py`. The reference uses unmodified Transformers
+5.18 decoder layers, eager attention and FP32 arithmetic, with independent
+FP64 table-based expansion of only one layer at a time.
+
+`gpt-oss-service-a2.json` records raw HTTP streaming, two-request batching,
+disconnect recovery, graph reclamation and model swapping/host restoration.
+`scripts/replay_gpt_oss.py` and `scripts/verify_gpt_oss_service.py` reproduce these
+gates. Exact pins, context/precision limits and initial slow-prefill timings
+are described in `docs/architecture-parity.md`. No Harmony or cross-engine
+performance parity claim follows from these checks.

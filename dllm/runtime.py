@@ -340,7 +340,7 @@ class Runtime:
                     "prompt_tokens": len(prompt), "completion_tokens": len(output),
                     "total_tokens": len(prompt) + len(output),
                 }, "timing": {"source_tier": tier, "kernel_backend": executor.kernel_backend,
-                              "weight_quantization": model.quantization,
+                              "weight_quantization": getattr(model,"weight_format",model.quantization),
                               "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
                               "activation_seconds": load_seconds,
                               "first_token_seconds": first_time, "total_seconds": elapsed,
@@ -387,6 +387,11 @@ def make_executor(model, use_graph=True, max_batch=None, **kwargs):
         if kwargs.pop('fuse_projections',True) is False:
             raise ValueError('GPT-2 requires packed checkpoint projections')
         return Gpt2Executor(model,use_graph,max_batch or 1,**kwargs)
+    if model.config['model_type'] == 'gpt_oss':
+        from .gpt_oss import GptOssExecutor
+        if kwargs.pop('fuse_projections',True) is False:
+            raise ValueError('GPT-OSS requires packed projections')
+        return GptOssExecutor(model,use_graph,max_batch or 1,**kwargs)
     if model.config['model_type'] == 'olmoe':
         from .moe import OlmoeExecutor
         if kwargs.pop('fuse_projections', True) is False:

@@ -12,7 +12,7 @@ def rotary_scaling(value):
         raise ValueError('supported rotary scaling types are linear, llama3 and yarn')
     common = {'rope_type', 'type', 'factor'}
     extra = {'low_freq_factor', 'high_freq_factor', 'original_max_position_embeddings'}
-    yarn_fields = {'original_max_position_embeddings', 'attention_factor', 'beta_fast', 'beta_slow'}
+    yarn_fields = {'original_max_position_embeddings', 'attention_factor', 'beta_fast', 'beta_slow', 'truncate'}
     if set(value) - (common | (extra if kind == 'llama3' else yarn_fields if kind == 'yarn' else set())):
         raise ValueError('unsupported rotary scaling fields')
     if 'type' in value and value['type'] != kind:
@@ -30,6 +30,8 @@ def rotary_scaling(value):
         if type(original) is not int or original <= 0:
             raise ValueError('original context must be a positive integer')
     if kind == 'yarn':
+        if 'truncate' in value and type(value['truncate']) is not bool:
+            raise ValueError('YaRN truncate must be boolean')
         for name in ('attention_factor', 'beta_fast', 'beta_slow'):
             number = value.get(name, 1)
             if type(number) not in (int, float) or not math.isfinite(number) or number <= 0:
@@ -51,6 +53,9 @@ def eos_ids(value):
     return set(values)
 
 def decoder_config(config):
+    if config.get('model_type') == 'gpt_oss':
+        from .gpt_oss import validate_config
+        return validate_config(config)
     scaling = config.get('rope_scaling')
     if (isinstance(scaling, dict) and scaling.get('rope_type', scaling.get('type')) == 'yarn'
             and config.get('model_type') not in ('qwen2', 'qwen3', 'llama', 'mistral')):

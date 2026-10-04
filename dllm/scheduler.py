@@ -261,7 +261,7 @@ class BatchedRuntime:
                 "speculative_proposed_drafts":request.speculative_proposed,
                 "speculative_matched_drafts":request.speculative_matched,
                 "kernel_backend": executor.kernel_backend,
-                "weight_quantization": getattr(executor.model, "quantization", "none"), "max_batch_size": request.max_batch_seen,
+                "weight_quantization": getattr(executor.model, "weight_format", getattr(executor.model, "quantization", "none")), "max_batch_size": request.max_batch_seen,
                 "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
                 "first_token_seconds": request.first_time, "total_seconds": elapsed,
                 "decode_tokens_per_second": (count-1)/(elapsed-request.first_time)
