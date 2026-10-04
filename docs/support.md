@@ -37,6 +37,7 @@ Model licenses remain those of their respective publishers.
 | Persistent prepared weights | Opt-in safetensors cache for dense Q4/Q8; source identity and layout checks; no automatic disk eviction |
 | HTTP generation | Text chat and raw text/token-ID completions; streaming SSE; usage and timing; bounded admission and cancellation |
 | Sampling | Greedy or request-seeded temperature/top-p/top-k; repetition, frequency and presence penalties; token bias; text stops |
+| Token scores | Opt-in chat selected-token logprobs and up to 20 alternatives; raw distribution; no custom text stops with scores |
 | Structured output | Optional constrained JSON / limited JSON schema, with explicit unsupported combinations |
 | Batching | Continuous decode, up to 16 slots; CUDA graph replay; opt-in bounded CUDA dense paged KV with admission reservations |
 | Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state |
@@ -48,7 +49,7 @@ Model licenses remain those of their respective publishers.
 The runtime does **not** currently provide general vLLM/llama.cpp parity.
 Missing major capabilities include paged KV for other architectures/devices, shared prefix pages, KV quantization,
 multi-GPU tensor/pipeline parallelism, adapters, GGUF/AWQ/GPTQ checkpoint import,
-multimodal inference, tool-call protocol handling, token log-probabilities,
+multimodal inference, tool-call protocol handling, prompt/raw-completion token log-probabilities,
 encoder-decoder generation, and a CPU inference backend. Model registration is
 process-local. The HTTP API is a supported subset, not full OpenAI or Ollama API
 compatibility. The development server is loopback-only and is not an authenticated

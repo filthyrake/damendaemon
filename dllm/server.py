@@ -82,16 +82,24 @@ def handler_for(runtime):
                 allowed = {"model", "messages", "max_tokens", "max_completion_tokens", "stop", "temperature", "top_p", "top_k", "seed", "presence_penalty", "frequency_penalty", "repetition_penalty", "logit_bias", "stream", "stream_options", "chat_template_kwargs", "response_format"}
                 if raw:
                     allowed = (allowed - {'messages', 'chat_template_kwargs', 'max_completion_tokens'}) | {'prompt'}
+                else:
+                    allowed |= {'logprobs','top_logprobs'}
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
                 sampling = {key: body[key] for key in ("temperature", "top_p", "top_k", "seed", "presence_penalty", "frequency_penalty", "repetition_penalty", "logit_bias") if key in body}
                 Sampling(**sampling)
+                from .logprobs import options as score_options
+                report_scores=score_options(body.get('logprobs',False),body.get('top_logprobs',0)) is not None
+                if report_scores:
+                    sampling.update(logprobs=True,top_logprobs=body.get('top_logprobs') or 0)
                 if "response_format" in body:
                     from .structured import response_schema
                     response_schema(body["response_format"])
                     sampling["response_format"] = body["response_format"]
                 if 'stop' in body:
-                    stop_sequences(body['stop'])
+                    stops=stop_sequences(body['stop'])
+                    if report_scores and stops:
+                        raise ValueError('logprobs with custom text stops is not yet supported')
                     sampling['stop'] = body['stop']
                 if 'max_tokens' in body and 'max_completion_tokens' in body:
                     raise ValueError('specify only one completion token limit')
@@ -127,8 +135,10 @@ def handler_for(runtime):
                 request_id = ("cmpl-" if raw else "chatcmpl-") + uuid.uuid4().hex
                 created = int(time.time())
                 stream_object = 'text_completion' if raw else 'chat.completion.chunk'
-                def chunk(delta, finish=None):
+                def chunk(delta, finish=None, score=None):
                     choice = {'text': delta.get('content', ''), 'logprobs': None} if raw else {'delta': delta}
+                    if report_scores:
+                        choice['logprobs']={'content':[score]} if score is not None else None
                     return {"id": request_id, "object": stream_object,
                             "created": created, "model": alias,
                             "choices": [{"index": 0, **choice, "finish_reason": finish}]}
@@ -136,6 +146,7 @@ def handler_for(runtime):
                     self.wfile.write(("data: " + json.dumps(payload) + "\n\n").encode())
                     self.wfile.flush()
                 text = ""
+                token_scores=[]
                 final = None
                 with closing(runtime.generate(alias, messages, max_tokens, **template_options, **sampling)) as generation:
                     for event in generation:
@@ -159,13 +170,18 @@ def handler_for(runtime):
                                                 "usage": event["usage"]})
                         else:
                             text += event["text"]
-                            if stream and event["text"]:
-                                send_event(chunk({"content": event["text"]}))
+                            score=event.get('logprobs')
+                            if score is not None and not stream:
+                                token_scores.append(score)
+                            if stream and (event["text"] or score is not None):
+                                send_event(chunk({"content": event["text"]},score=score))
                 if stream:
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 else:
                     choice = {'text': text, 'logprobs': None} if raw else {'message': {'role': 'assistant', 'content': text}}
+                    if report_scores:
+                        choice['logprobs']={'content':token_scores}
                     self.send_json(200, {"id": request_id, "object": "text_completion" if raw else "chat.completion",
                         "created": created, "model": alias,
                         "choices": [{"index": 0, **choice,

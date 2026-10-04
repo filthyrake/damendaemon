@@ -117,13 +117,18 @@ class BatchedRuntime:
 
     def generate(self, alias, messages, max_tokens=128, enable_thinking=None,
                  temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None,
-                 presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None):
+                 presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None,
+                 logprobs=False,top_logprobs=0):
         if alias not in self.models:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be positive")
         sampler = Sampler(Sampling(temperature, top_p, top_k, seed, presence_penalty, frequency_penalty, repetition_penalty, logit_bias))
         stops = stop_sequences(stop)
+        from .logprobs import options as score_options
+        sampler.logprobs_top=score_options(logprobs,top_logprobs)
+        if stops and sampler.logprobs_top is not None:
+            raise ValueError('logprobs with custom text stops is not yet supported')
         if raw_prompt is not None:
             from .prompts import validate_raw
             raw_prompt = validate_raw(raw_prompt)
@@ -207,7 +212,10 @@ class BatchedRuntime:
         delta, request.emitted, text_stop = text_delta(decoded, request.emitted, request.stops, finished)
         stop = stop or text_stop
         finished = finished or text_stop
-        request.events.put_nowait({"token": token, "text": delta})
+        event={"token": token, "text": delta}
+        if request.sampler.logprobs_top is not None and token not in executor.model.eos:
+            event['logprobs']=request.sampler.token_decoder.format(request.sampler.last_logprobs)
+        request.events.put_nowait(event)
         request.ready.set()
         if finished:
             elapsed = time.perf_counter() - request.start
@@ -255,6 +263,9 @@ class BatchedRuntime:
             request.sampler.constraint=Constraint(executor.model,request.schema)
         if request.sampler.has_adjustments:
             request.sampler.prepare(tokens,executor.model.config['vocab_size'])
+        if request.sampler.logprobs_top is not None:
+            from .logprobs import decoder_for
+            request.sampler.token_decoder=decoder_for(executor.model)
         return tokens
 
     def _chunked_group(self,first,executor,tier,activation):

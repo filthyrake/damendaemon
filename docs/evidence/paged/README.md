@@ -191,8 +191,8 @@ rounds per concurrency in each process:
 | 2 | paged | 199.67 | 354.39 | 628.47 |
 | 3 | fixed | 197.16 | 344.95 | 592.48 |
 
-The current paged path falls within the measured fixed-run throughput range at
-c1/c4 and exceeds it at c2. The fixed runs themselves vary by about 7% at c4;
+The current paged and fixed run ranges overlap at c1/c4; paged exceeds the
+measured fixed range at c2. The fixed runs themselves vary by about 7% at c4;
 the earlier single-pair 7% loss is not a stable estimate of current paging
 overhead. These results support comparable performance on this workload, not a
 universal speedup. All raw trials and TTFT measurements are retained.

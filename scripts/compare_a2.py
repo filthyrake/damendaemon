@@ -30,6 +30,7 @@ def main():
     parser.add_argument('--raw', action='store_true')
     parser.add_argument('--llama-override-kv', action='append', default=[], help='explicit GGUF metadata override KEY=TYPE:VALUE')
     parser.add_argument('--prompt-token-ids')
+    parser.add_argument('--top-logprobs',type=int,choices=range(21),default=None)
     parser.add_argument('--host-gib', type=float, default=8)
     parser.add_argument('--dtype', choices=('half','float'), default='half', help='vLLM model arithmetic/storage precision')
     args = parser.parse_args()
@@ -101,6 +102,7 @@ def main():
                         subprocess.run([sys.executable, 'scripts/compare_llama.py', base + '/v1',
                                         '--engine', engine, '--concurrency', str(concurrency), '--thinking', args.thinking,
                                         *(['--raw'] if args.raw else []),
+                                        *(['--top-logprobs',str(args.top_logprobs)] if args.top_logprobs is not None else []),
                                         *(['--prompt-token-ids', args.prompt_token_ids] if args.prompt_token_ids else [])],
                                        stdout=out, check=True, timeout=180)
                     print(name, 'complete', flush=True)

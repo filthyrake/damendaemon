@@ -222,7 +222,8 @@ class Runtime:
 
     def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None,
                  temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None,
-                 presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None):
+                 presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None,
+                 logprobs=False,top_logprobs=0):
         """Yield token IDs/text deltas plus a final usage/timing event.
 
         Closing this generator releases its model lease, including on client
@@ -234,11 +235,17 @@ class Runtime:
         from .stopping import stop_sequences, text_delta
         stops = stop_sequences(stop)
         sampler = Sampler(Sampling(temperature, top_p, top_k, seed, presence_penalty, frequency_penalty, repetition_penalty, logit_bias))
+        from .logprobs import options as score_options,decoder_for
+        sampler.logprobs_top=score_options(logprobs,top_logprobs)
+        if stops and sampler.logprobs_top is not None:
+            raise ValueError('logprobs with custom text stops is not yet supported')
         from .structured import prepare_options, Constraint
         schema, enable_thinking = prepare_options(response_format, stops, enable_thinking, ignore_eos)
         start = time.perf_counter()
         with self.session(alias) as (executor, tier, load_seconds):
             model = executor.model
+            if sampler.logprobs_top is not None:
+                sampler.token_decoder=decoder_for(model)
             from .prompts import encode
             if schema is not None and raw_prompt is None and model.config["model_type"] in ("qwen3", "qwen3_5_text"):
                 enable_thinking = False
@@ -267,14 +274,17 @@ class Runtime:
                     decoded = model.tokenizer.decode(output, skip_special_tokens=True)
                     delta, emitted, text_stop = text_delta(decoded, emitted, stops, stop or index == max_tokens-1)
                     stop = stop or text_stop
-                    yield {"token": token, "text": delta}
+                    event={"token": token, "text": delta}
+                    if sampler.logprobs_top is not None and token not in model.eos:
+                        event['logprobs']=sampler.token_decoder.format(sampler.last_logprobs)
+                    yield event
                     if stop:
                         finish = "stop"
                         break
                     if index + 1 < max_tokens:
                         logits, next_token = executor.decode(token)
                         token = (sampler.select(logits.squeeze(0)).item()
-                                 if temperature or sampler.constraint is not None or sampler.has_adjustments else next_token.item())
+                                 if temperature or sampler.constraint is not None or sampler.has_adjustments or sampler.logprobs_top is not None else next_token.item())
                 elapsed = time.perf_counter() - start
                 yield {"finish_reason": finish, "usage": {
                     "prompt_tokens": len(prompt), "completion_tokens": len(output),

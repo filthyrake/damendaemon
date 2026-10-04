@@ -36,10 +36,16 @@ class FakeRuntime:
                 raise BusyError("request queue is full")
             if alias != "a":
                 raise ValueError("unknown model")
-            yield {"text": "Hello", "token": 1}
-            yield {"text": " world", "token": 2}
+            parts=[('Hello',b'Hello'),(' world',b' world')]
+            if messages and messages[0]['content']=='unicode':
+                parts=[('',bytes([240])),('',bytes([159])),('',bytes([166])),('🦙',bytes([153]))]
+            for token,(text,raw) in enumerate(parts,1):
+                event={'text':text,'token':token}
+                if kwargs.get('logprobs'):
+                    event['logprobs']={'token':raw.decode(errors='replace'),'logprob':-.25,'bytes':list(raw),'top_logprobs':[]}
+                yield event
             yield {"finish_reason": "length", "usage": {
-                "prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5}, "timing": {}}
+                "prompt_tokens": 3, "completion_tokens": len(parts), "total_tokens": 3+len(parts)}, "timing": {}}
         finally:
             self.closed += 1
 
@@ -71,6 +77,40 @@ class ServerTests(unittest.TestCase):
             data = json.load(response)
         self.assertEqual(data["choices"][0]["message"]["content"], "Hello world")
         self.assertEqual(data["usage"]["completion_tokens"], 2)
+
+    def test_chat_logprobs_stream_and_nonstream_match(self):
+        with self.post(logprobs=True,top_logprobs=2) as response:
+            whole=json.load(response)['choices'][0]['logprobs']['content']
+        with self.post(logprobs=True,top_logprobs=2,stream=True) as response:
+            chunks=list(events(response))
+        scores=[]
+        for value in chunks[:-1]:
+            for choice in json.loads(value)['choices']:
+                if choice.get('logprobs'):scores.extend(choice['logprobs']['content'])
+        self.assertEqual(scores,whole)
+        self.assertEqual(bytes(b for score in scores for b in score['bytes']).decode(),'Hello world')
+        self.assertEqual(self.runtime.last_options['top_logprobs'],2)
+
+    def test_invalid_logprobs_combinations(self):
+        for options in ({'logprobs':1},{'top_logprobs':1},{'logprobs':True,'top_logprobs':21},
+                        {'logprobs':True,'stop':'x'}):
+            with self.subTest(options=options),self.assertRaises(HTTPError) as caught:
+                self.post(**options)
+            self.assertEqual(caught.exception.code,400)
+        with self.assertRaises(HTTPError) as caught:self.raw_post(logprobs=2)
+        self.assertEqual(caught.exception.code,400)
+
+    def test_stream_keeps_scores_when_utf8_text_is_buffered(self):
+        with self.post(messages=[{'role':'user','content':'unicode'}],logprobs=True,stream=True) as response:
+            chunks=[json.loads(value) for value in events(response) if value!='[DONE]']
+        records=[];text=''
+        for chunk in chunks:
+            for choice in chunk['choices']:
+                text+=choice['delta'].get('content','')
+                if choice.get('logprobs'):records.extend(choice['logprobs']['content'])
+        self.assertEqual(text,'🦙')
+        self.assertEqual(len(records),4)
+        self.assertEqual(bytes(b for record in records for b in record['bytes']).decode(),text)
 
     def raw_post(self, **changes):
         body = {'model': 'a', 'prompt': 'hello', **changes}

@@ -53,6 +53,9 @@ class Sampler:
     def __init__(self, options):
         self.options = options
         self.constraint = None
+        self.logprobs_top = None
+        self.last_logprobs = None
+        self.token_decoder = None
         self.prompt_tokens = set()
         self.counts = Counter()
         self.has_penalties = bool(options.presence_penalty or options.frequency_penalty or options.repetition_penalty != 1)
@@ -96,6 +99,16 @@ class Sampler:
         return values
 
     def select(self, logits):
+        selected = self._select(logits)
+        self.capture(logits,selected)
+        return selected
+
+    def capture(self, logits, selected):
+        if self.logprobs_top is not None:
+            from .logprobs import scores
+            self.last_logprobs=scores(logits,selected,self.logprobs_top)
+
+    def _select(self, logits):
         import torch
         options = self.options
         logits = self.adjust(logits)
@@ -129,6 +142,16 @@ class Sampler:
 def sample_rows(logits, samplers, greedy=None):
     """Retain the existing batched argmax/readback for all-greedy traffic."""
     if all(not sampler.options.temperature and sampler.constraint is None and not sampler.has_adjustments for sampler in samplers):
-        return (greedy if greedy is not None else logits.argmax(-1)).tolist()
-    import torch
-    return torch.stack([sampler.select(logits[i]) for i, sampler in enumerate(samplers)]).tolist()
+        selected=greedy if greedy is not None else logits.argmax(-1)
+    else:
+        import torch
+        selected=torch.stack([sampler._select(logits[i]) for i,sampler in enumerate(samplers)])
+    scored=[i for i,sampler in enumerate(samplers) if sampler.logprobs_top is not None]
+    if scored:
+        from .logprobs import score_rows
+        all_rows=len(scored)==len(samplers)
+        packets=score_rows(logits if all_rows else logits[scored],selected if all_rows else selected[scored],
+                           [samplers[i].logprobs_top for i in scored])
+        for index,packet in zip(scored,packets):samplers[index].last_logprobs=packet
+        if all_rows:return [packet['token_id'] for packet in packets]
+    return selected.tolist()
