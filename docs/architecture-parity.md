@@ -467,3 +467,17 @@ tokens/sec, with TTFT 45.5 / 74.2 / 125.8 ms. Four-request throughput improves
 26.7% over the first accurate path; it still trails the faster, numerically
 provisional standard path. The accurate path remains opt-in. Reports use the
 `qwen3-small-staged` label in `evidence/models`.
+
+## Large-model hot-swap lifetime fix
+
+Issue #16. The scheduler now releases its completed group executor reference
+before entering the next model session. Previously its worker-local variable
+kept the old weights/KV alive while the residency cache attempted eviction and
+the replacement model checked free VRAM. Individually fitting models could thus
+fail to swap when their combined footprints exceeded the device.
+
+A lifecycle regression test and actual A2 Q8 OLMoE → Mistral → OLMoE requests
+pass with one GPU-resident model. The two measured individual process footprints
+sum to more than the A2's total VRAM; the final request restores from host and
+matches the first response. No disk weights are deleted. Full response/timing/
+memory evidence is in `evidence/architectures/large-model-swap.json`.

@@ -263,6 +263,10 @@ class BatchedRuntime:
             except Exception as error:
                 if not first.done.is_set():
                     self._finish(first, error)
+            finally:
+                # A worker local otherwise retains the previous model while the
+                # next session tries to evict it and reserve replacement VRAM.
+                executor = None
 
     def close(self):
         with self.condition:

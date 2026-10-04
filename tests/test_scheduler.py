@@ -180,3 +180,30 @@ class SchedulerTests(unittest.TestCase):
             list(stream)
         result = list(self.generate('b', count=2))
         self.assertEqual(result[-1]['usage']['completion_tokens'], 2)
+
+
+class ExecutorLeaseTests(unittest.TestCase):
+    def test_worker_releases_previous_executor_before_next_activation(self):
+        import gc
+        import weakref
+        class EphemeralRuntime:
+            def __init__(self,models,**kwargs):
+                self.models=models
+                self.previous=None
+            @contextmanager
+            def session(self,alias):
+                gc.collect()
+                if self.previous is not None and self.previous() is not None:
+                    raise RuntimeError('previous executor still leased during activation')
+                executor=FakeExecutor()
+                executor.release.set()
+                self.previous=weakref.ref(executor)
+                yield executor,'disk',0
+        with patch('dllm.scheduler.Runtime',EphemeralRuntime):
+            runtime=BatchedRuntime({'a':'a','b':'b'})
+            try:
+                for alias in ('a','b','a'):
+                    result=list(runtime.generate(alias,[{'content':'eos'}],1))
+                    self.assertEqual(result[-1]['finish_reason'],'stop')
+            finally:
+                runtime.close()

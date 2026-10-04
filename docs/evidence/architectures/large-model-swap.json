@@ -1,0 +1,118 @@
+{
+  "passed": true,
+  "models": {
+    "a": "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+    "b": "/home/damen/.cache/huggingface/hub/models--mistralai--Mistral-7B-Instruct-v0.1/snapshots/ec5deb64f2c6e6fa90c1abf74a91d5c93a9669ca"
+  },
+  "gpu_total_mib": 15356,
+  "reports": [
+    {
+      "model": "a",
+      "memory_mib": 9372,
+      "response": {
+        "id": "chatcmpl-4dcffea022b240979daef58179f6bd8b",
+        "object": "chat.completion",
+        "created": 1791091876,
+        "model": "a",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "2 + 2 equals 4. This is"
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 22,
+          "completion_tokens": 8,
+          "total_tokens": 30
+        },
+        "dllm_timing": {
+          "source_tier": "disk",
+          "activation_seconds": 49.585893244002364,
+          "kernel_backend": "triton+q8_0-olmoe",
+          "weight_quantization": "q8_0",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 51.213791955997294,
+          "total_seconds": 51.276294531999156,
+          "decode_tokens_per_second": 111.99538399491742
+        }
+      }
+    },
+    {
+      "model": "b",
+      "memory_mib": 8634,
+      "response": {
+        "id": "chatcmpl-7a077a4853314386bad9ecba6bd8f37c",
+        "object": "chat.completion",
+        "created": 1791091927,
+        "model": "b",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "4"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 19,
+          "completion_tokens": 3,
+          "total_tokens": 22
+        },
+        "dllm_timing": {
+          "source_tier": "disk",
+          "activation_seconds": 58.05394807900302,
+          "kernel_backend": "triton+q8_0",
+          "weight_quantization": "q8_0",
+          "max_batch_size": 1,
+          "residual_dtype": "float16",
+          "first_token_seconds": 59.620738644000085,
+          "total_seconds": 59.71668300800229,
+          "decode_tokens_per_second": 20.845414118894862
+        }
+      }
+    },
+    {
+      "model": "a",
+      "memory_mib": 9386,
+      "response": {
+        "id": "chatcmpl-b62968b1f1bd40ee9a4ce386a5ac3e95",
+        "object": "chat.completion",
+        "created": 1791091987,
+        "model": "a",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "2 + 2 equals 4. This is"
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 22,
+          "completion_tokens": 8,
+          "total_tokens": 30
+        },
+        "dllm_timing": {
+          "source_tier": "host",
+          "activation_seconds": 2.9350430569975288,
+          "kernel_backend": "triton+q8_0-olmoe",
+          "weight_quantization": "q8_0",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 3.376422442997864,
+          "total_seconds": 3.4381498809962068,
+          "decode_tokens_per_second": 113.40175822926476
+        }
+      }
+    }
+  ]
+}
