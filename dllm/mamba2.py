@@ -101,8 +101,20 @@ class Mamba2Weights(MambaWeights):
 
 
 class Mamba2Executor(MambaExecutor):
-    def __init__(self,*args,**kwargs):
+    def __init__(self,model,*args,**kwargs):
         import os
+        projection=os.environ.get('DLLM_MAMBA2_COMPENSATED','0')
+        if projection not in ('0','1'):raise ValueError('Mamba-2 compensated projection policy must be 0 or 1')
+        self.prefill_compensated=projection=='1'
+        if self.prefill_compensated:
+            if selected_device()!='cuda' or model.quantization!='none':
+                raise ValueError('Mamba-2 compensated projections require CUDA and unquantized weights')
+            if (model.config['hidden_size'],model.config['intermediate_size'])!=(768,1536):
+                raise ValueError('Mamba-2 compensated projections are qualified for 130M geometry only')
+            for name,weight in model.weights.items():
+                if name.endswith(('in_proj','out_proj')) and (
+                        not torch.isfinite(weight).all() or not torch.equal(weight,weight.half().float())):
+                    raise ValueError('Mamba-2 compensated projections require exactly representable FP16 weights')
         policy=os.environ.get('DLLM_MAMBA2_SSD','0')
         if policy not in ('0','1'):raise ValueError('Mamba-2 SSD policy must be 0 or 1')
         self.prefill_ssd=policy=='1'
@@ -115,14 +127,23 @@ class Mamba2Executor(MambaExecutor):
         if selected_device()=='cuda':from . import mamba2_kernels as native
         else:from . import mamba2_metal as native
         self.ssd=native
-        super().__init__(*args,**kwargs)
+        super().__init__(model,*args,**kwargs)
+
+    def project(self,x,weight,bias=None):
+        if self.prefill_compensated and x.shape[0]>=128:
+            from .precise_matmul import linear
+            # Preserve resident FP32 weights and the existing decode path.
+            # The checked conversion is temporary, bounded to one projection.
+            result=linear(x,weight.half())
+            return result if bias is None else result+bias
+        return self.linear(x,weight,bias)
 
     def run(self,ids,slots,reset,return_logits=True):
         batch,length=ids.shape;i=self.c['intermediate_size'];cd=self.c['conv_dim'];n=self.c['num_heads']
         x=F.embedding(ids,self.w['embed']).reshape(batch*length,-1)
         for layer in range(self.c['num_hidden_layers']):
             p=f'{layer}.'
-            packed=self.linear(self.norm(x,self.w[p+'norm']),self.w[p+'in_proj'],self.w.get(p+'in_bias'))
+            packed=self.project(self.norm(x,self.w[p+'norm']),self.w[p+'in_proj'],self.w.get(p+'in_bias'))
             gate,signal,dt=[v.reshape(batch,length,-1).contiguous() for v in packed.split((i,cd,n),-1)]
             if self.recurrent:
                 signal=self.recurrent.conv(signal,self.w[p+'conv'],self.w[p+'conv_bias'],self.conv[layer],slots,reset)
@@ -146,6 +167,6 @@ class Mamba2Executor(MambaExecutor):
                     out.append(((state*c[:,None,:]).sum(-1)+self.w[p+'D'][head]*value)*F.silu(gate[:,t]))
                 self.state[layer].index_copy_(0,slots,state);output=torch.stack(out,1)
             output=self.norm(output.reshape(batch*length,i),self.w[p+'gated_norm'])
-            x=x+self.linear(output,self.w[p+'out_proj'],self.w.get(p+'out_bias'))
+            x=x+self.project(output,self.w[p+'out_proj'],self.w.get(p+'out_bias'))
         if not return_logits:return None
         return self.linear(self.norm(x.reshape(batch,length,-1)[:,-1].contiguous(),self.w['norm']),self.w['head'])

@@ -2,10 +2,32 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
+import torch
 from dllm.mamba2 import config
 
 
 class Mamba2Tests(unittest.TestCase):
+    def test_compensated_projection_rejects_lossy_weights_before_gpu_allocation(self):
+        from dllm.mamba2 import Mamba2Executor
+        for value in (1.0001,1.e5,float('inf'),float('nan')):
+            model=SimpleNamespace(quantization='none',config={'hidden_size':768,'intermediate_size':1536},
+                weights={'0.in_proj':torch.tensor([[value]])})
+            with self.subTest(value=value),patch.dict('os.environ',{'DLLM_MAMBA2_COMPENSATED':'1'}),\
+                    patch('dllm.mamba2.selected_device',return_value='cuda'),\
+                    self.assertRaisesRegex(ValueError,'exactly representable'):
+                Mamba2Executor(model)
+
+    def test_compensated_projection_rejects_unqualified_device_and_quantization(self):
+        from dllm.mamba2 import Mamba2Executor
+        for device,quantization in (('mps','none'),('cuda','q8_0')):
+            with self.subTest(device=device,quantization=quantization),\
+                    patch.dict('os.environ',{'DLLM_MAMBA2_COMPENSATED':'1'}),\
+                    patch('dllm.mamba2.selected_device',return_value=device),\
+                    self.assertRaisesRegex(ValueError,'CUDA and unquantized'):
+                Mamba2Executor(SimpleNamespace(quantization=quantization))
+
     def test_reject_unqualified_groups_geometry_and_precision(self):
         value={'model_type':'mamba2','architectures':['Mamba2ForCausalLM'],'hidden_size':768,
             'num_heads':24,'head_dim':64,'state_size':128,'conv_kernel':4,'vocab_size':50288,

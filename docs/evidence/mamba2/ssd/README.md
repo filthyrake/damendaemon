@@ -58,14 +58,39 @@ optimization or treating use of Tensor Cores as evidence of improved performance
 
 ## 32-token block qualification
 
-The selected SSD block is now32 tokens. A64-token experiment exceeded A2 shared
-memory (163840 bytes required,101376 available), so it is not used. The32-token
-kernel passes the same closed-form/random/state checks; both FP32 and Q8 pass139
-full-reference checks through2048, plus chunk256/prefix and HTTP restoration.
+The selected SSD block is now 32 tokens. A 64-token experiment exceeded A2 shared
+memory (163840 bytes required, 101376 available), so it is not used. The 32-token
+kernel passes the same closed-form/random/state checks; both FP32 and Q8 pass 139
+full-reference checks through 2048, plus chunk256/prefix and HTTP restoration.
 Evidence is in `block32/`. No correctness threshold changed.
 
-On the same pinned FP32,1536-input,32-output,context2048 serving workload,
-c1/c2/c4 throughput is90.99/99.54/113.62 tokens/s and median first text
-232.19/349.66/921.05 ms. Every trial's text agrees with the16-token run and
-upstream comparisons above. This is another5-6% throughput improvement; the
+On the same pinned FP32, 1536-input, 32-output, context2048 serving workload,
+c1/c2/c4 throughput is 90.99/99.54/113.62 tokens/s and median first text
+232.19/349.66/921.05 ms. Every trial's text agrees with the 16-token run and
+upstream comparisons above. This is another 5-6% throughput improvement; the
 long-prompt vLLM gap remains. Independent GPU jobs were serialized on A2.
+
+## Compensated projection experiment
+
+`DLLM_MAMBA2_COMPENSATED=1` adds an independent opt-in CUDA prefill projection
+path for unquantized 130M geometry, at 128 or more packed prompt rows. It reuses
+dllm's existing power-of-two-scaled high/low FP16 activation decomposition and
+FP32 accumulation. Every selected checkpoint weight must be finite and exactly
+representable as FP16, checked before GPU allocation; Q8 and unqualified
+geometries/devices reject the option. Resident weights remain FP32 and each
+projection temporarily converts its matrix. Decode retains its existing path.
+There is no persistent extra weight cache. This is compensated approximate
+arithmetic with explicit numerical qualification, not a lossy weight conversion.
+
+The full 159-check reference trace passes through 2048, including four simultaneous
+128-token prompts, reordered state and decode, with maximum relative RMS
+0.00002930. Chunk/prefix and real HTTP/model restoration also pass. Evidence and
+the matched benchmark are under `compensated/`; isolated projection measurements
+include the cost of temporary weight conversion.
+
+With both SSD and compensated projections enabled, the matched long-prompt
+c1/c2/c4 throughput is 98.00/109.30/127.57 tokens/s and median first text is
+197.64/391.34/783.32 ms. All output text matches previous runs and both upstream
+comparators. Throughput improves across concurrency; c2 first-text latency does
+not improve in this measurement. vLLM still leads this workload. Both switches
+remain experimental and disabled by default.

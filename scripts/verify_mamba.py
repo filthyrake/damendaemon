@@ -13,7 +13,10 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('model')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda');p.add_argument('--context',type=int,default=512)
     p.add_argument('--reference-quantization',choices=('none','q8_0'),default='none')
+    p.add_argument('--batched-prefill-length',type=int,default=0)
     args=p.parse_args();os.environ['DLLM_DEVICE']=args.device
+    if args.batched_prefill_length and not 1<=args.batched_prefill_length<=args.context-4:
+        p.error('batched prefill must leave space for four decode tokens')
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,args.context);executor=make_executor(model,max_batch=4)
     assert model.quantization==args.reference_quantization
@@ -63,6 +66,9 @@ def main():
     else:raise AssertionError('exhausted recurrent context accepted')
     assert executor.lengths==before
     prefill([3],[0]);decode([0],32)
+    if args.batched_prefill_length:
+        prefill([args.batched_prefill_length]*4,[3,0,2,1]);decode([1,3,0,2],4)
+        for slot in states:state_check(slot,states[slot][0])
     prompt=model.raw_tokens('The capital of France is')
     logits=executor.prefill(prompt);generated=[]
     for step in range(16):
@@ -79,6 +85,8 @@ def main():
         'reference_quantization':args.reference_quantization,
         'architecture':model.config['model_type'],
         'prefill_ssd':getattr(executor,'prefill_ssd',False),
+        'prefill_compensated':getattr(executor,'prefill_compensated',False),
+        'batched_prefill_length':args.batched_prefill_length,
         'reference_chunk_size':16 if model.config['model_type']=='mamba2' else None,
         'reference':'CPU FP32 Transformers; independent GGUF quantization when selected'},indent=2))
     if not passed:raise SystemExit(1)
