@@ -31,8 +31,11 @@ class PrefixCache:
                 reused=count
         if best is None:return 0,None
         key,cache,logits=best
-        for layer,saved in zip(self.executor.kv,cache):
-            layer[:,slot,:,:reused,:].copy_(saved[:,:,:reused,:])
+        if hasattr(self.executor,'restore_prefix'):
+            self.executor.restore_prefix(slot,reused,cache)
+        else:
+            for layer,saved in zip(self.executor.kv,cache):
+                layer[:,slot,:,:reused,:].copy_(saved[:,:,:reused,:])
         self.executor.lengths[slot]=reused
         self.entries.move_to_end(key)
         return reused,None if logits is None else logits.clone()
@@ -45,15 +48,18 @@ class PrefixCache:
         while self.entries and (self.tokens+count>self.token_budget or len(self.entries)>=self.max_entries):
             old,_=self.entries.popitem(last=False)
             self.tokens-=len(old)
-        needed=sum(layer[:,slot,:,:count,:].numel()*layer.element_size() for layer in self.executor.kv)
+        needed=sum(2*layer.shape[2]*count*layer.shape[-1]*layer.element_size() for layer in self.executor.kv)
         if count==len(prompt):needed+=logits.numel()*logits.element_size()
         if needed+256*1024**2>available_memory():
             empty_cache()
             if needed+256*1024**2>available_memory():return
         snapshots=[]
         try:
-            for layer in self.executor.kv:
-                snapshots.append(layer[:,slot,:,:count,:].clone())
+            if hasattr(self.executor,'snapshot_prefix'):
+                snapshots=self.executor.snapshot_prefix(slot,count)
+            else:
+                for layer in self.executor.kv:
+                    snapshots.append(layer[:,slot,:,:count,:].clone())
             saved_logits=logits.clone() if count==len(prompt) else None
         except torch.OutOfMemoryError:
             snapshots.clear()

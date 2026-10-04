@@ -6,7 +6,6 @@ admission to the current group, avoiding starvation and active-model eviction.
 """
 from collections import deque
 import copy
-import os
 import traceback
 from dataclasses import dataclass, field
 import queue
@@ -55,8 +54,6 @@ class BatchedRuntime:
             raise ValueError('prefill chunk size must be a nonnegative integer')
         if type(prefix_cache_tokens) is not int or prefix_cache_tokens<0:
             raise ValueError('prefix cache tokens must be a nonnegative integer')
-        if os.environ.get('DLLM_KV_CACHE_TOKENS') is not None and prefix_cache_tokens:
-            raise ValueError('paged KV does not yet support prefix snapshots')
         self.prefix_cache_tokens=prefix_cache_tokens
         self.prefill_chunk_size=prefill_chunk_size
         self.runtime = Runtime(models, batch_size=batch_size, **kwargs)
@@ -347,7 +344,12 @@ class BatchedRuntime:
         from .pages import PageCapacityError
         first.tier, first.activation = tier, activation
         active, partial, waiting = {}, {}, deque([(first, None)])
-        chunk_size = self.prefill_chunk_size if getattr(executor,'supports_chunked_prefill',False) else 0
+        cache=getattr(executor,'prefix_cache',None)
+        if self.prefix_cache_tokens and cache is None:
+            from .prefix import PrefixCache
+            cache=executor.prefix_cache=PrefixCache(executor,self.prefix_cache_tokens)
+        chunk_size = ((self.prefill_chunk_size or executor.context)
+                      if (self.prefill_chunk_size or cache is not None) and getattr(executor,'supports_chunked_prefill',False) else 0)
         owned = set()
         prepared = []
         try:
@@ -383,7 +385,22 @@ class BatchedRuntime:
                     prepared.append((request,tokens))
                 if chunk_size:
                     for request,tokens in prepared:
-                        partial[request.slot]=(request,tokens,0)
+                        try:
+                            reused,logits=cache.restore(tokens,request.slot) if cache is not None else (0,None)
+                            request.cached_tokens=reused
+                            if logits is None:
+                                partial[request.slot]=(request,tokens,reused)
+                            else:
+                                token=request.sampler.select(logits.squeeze(0)).item()
+                                if self._emit(request,token,executor,len(tokens)):
+                                    executor.release_request(request.slot)
+                                    owned.remove(request.slot)
+                                else:
+                                    active[request.slot]=(request,len(tokens))
+                        except Exception as error:
+                            self._finish(request,error)
+                            executor.release_request(request.slot)
+                            owned.remove(request.slot)
                     prepared=[]
                 if prepared:
                     try:
@@ -417,6 +434,8 @@ class BatchedRuntime:
                     try:
                         logits=executor.prefill_chunk(tokens[start:end],slot,start,final=end==len(tokens))
                         if end==len(tokens):
+                            if cache is not None:
+                                cache.remember(tokens,slot,logits)
                             token=request.sampler.select(logits.squeeze(0)).item()
                             if self._emit(request,token,executor,len(tokens)):
                                 executor.release_request(slot)

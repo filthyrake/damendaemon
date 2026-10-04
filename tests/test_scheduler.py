@@ -435,3 +435,25 @@ class PagedChunkedSchedulerTests(ChunkedSchedulerTests):
             for future in (first,second):
                 self.assertEqual(future.result(5)[-1]['usage']['completion_tokens'],8)
         self.assertGreater(self.executor.deferred,0)
+
+    def test_exact_prefix_hit_still_reserves_and_releases_pages(self):
+        import torch
+        from unittest.mock import Mock
+        logits=torch.zeros(1,10);logits[0,1]=1
+        cache=SimpleNamespace(restore=Mock(return_value=(2,logits)),remember=Mock())
+        self.runtime.prefix_cache_tokens=32
+        with patch('dllm.prefix.PrefixCache',return_value=cache):
+            result=self.generate('ab',2)
+        self.assertEqual(result[-1]['timing']['cached_prompt_tokens'],2)
+        self.assertFalse(any(e[0]=='prefill' for e in self.executor.chunk_events))
+        cache.remember.assert_not_called()
+
+    def test_prefix_restore_failure_returns_reservation(self):
+        from unittest.mock import Mock
+        cache=SimpleNamespace(restore=Mock(side_effect=[ValueError('bad snapshot'),(0,None)]),remember=Mock())
+        self.runtime.prefix_cache_tokens=32
+        self.executor.release.set()
+        with patch('dllm.prefix.PrefixCache',return_value=cache):
+            with self.assertRaisesRegex(ValueError,'bad snapshot'):
+                self.generate('ab',2)
+            self.assertEqual(self.generate('ab',2)[-1]['usage']['completion_tokens'],2)

@@ -27,7 +27,7 @@ Initial A2 evidence:
   cancelled after one output token. Ownership returns to zero, and model
   switching plus host restore preserves output and frees pages.
 
-This is opt-in CUDA dense support. Prefix snapshots are currently rejected in combination; no KV quantization or shared-prefix page
+This is opt-in CUDA dense support. No KV quantization or shared-prefix page
 references are implemented. Actual memory and matched throughput measurements
 are recorded alongside their JSON evidence when complete.
 
@@ -80,7 +80,8 @@ These are instrumented GPU times, not end-to-end latency.
 
 Paged request admission now keeps a reservation across partial prompt chunks,
 executes at most one chunk between decode steps, and releases ownership on
-partial cancellation or failure. Prefix snapshots remain unsupported.
+partial cancellation or failure. Prefix snapshots were initially unsupported;
+the later integration is described below.
 The 155-test local suite includes decode interleaving, capacity deferral,
 partial cancellation, failed-chunk recovery and model-management barriers.
 
@@ -109,3 +110,34 @@ outputs in all modes:
 Chunking reduces the worst stream interruption but increases total request
 latency in this test. It remains opt-in. Offset chunks currently materialize the
 live prefix; bulk page copy and prefix integration are the next optimization.
+
+## Native bulk copies and prefix snapshots
+
+A native CUDA kernel gathers or restores all K/V heads for a prompt prefix in
+one launch per layer. Exact FP16/FP32 oracle checks cover fragmented pages,
+lengths 1/15/16/17/127/513 and untouched storage outside the live prefix.
+Offset chunks use this kernel in place of separate index-select and layout
+copies. Qwen2/Qwen3/Mistral Q4 replay remains 82/84/97 passing checks.
+
+The scheduler can now combine page reservations, chunking and bounded prefix
+snapshots. Exact hits use saved logits; partial hits restore independent pages
+and compute the remaining suffix. Snapshots occupy additional GPU memory under
+the separate prefix token budget; this is copied reuse, not shared page
+references. Restored requests retain their full admission reservation.
+The 157 local tests include exact-hit cleanup and failed-restore recovery.
+
+Qwen2 Q4 prefix reuse passes 48 independent FP32 eager-reference checks,
+including exact/partial matches, divergent suffixes, slot reuse, decode after
+restore and bounded eviction. The live HTTP comparison uses Qwen2 Q4,
+2048-context slots, a 2048-token physical pool, 128-token prompt chunks,
+1536-token prompts, eight output tokens and five warm trials per cache mode:
+
+| Prefix snapshot budget | Repeated TTFT ms | Partial-prefix TTFT ms | Repeated HTTP total ms |
+|---|---:|---:|---:|
+| disabled | 330.13 | 330.11 | 371.09 |
+| 4096 tokens | 3.30 | 30.53 | 44.20 |
+
+Outputs match across cache modes, concurrent requests and model eviction/host
+restore. These are warmed prompt-reuse results, not improvements to uncached
+model throughput. The physical pool only fits one of these long reservations
+at a time, so concurrent hits also exercise capacity deferral.

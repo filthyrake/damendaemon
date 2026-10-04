@@ -17,12 +17,15 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument('model')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
+    p.add_argument('--reference-quantization',choices=('none','q8_0','q4_0'),default='none')
     args=p.parse_args()
     os.environ['DLLM_DEVICE']=args.device
     require_gpu();torch.set_num_threads(4)
     model=ModelWeights(args.model,1024)
+    if model.quantization!=args.reference_quantization:
+        raise ValueError('runtime and reference quantization must match')
     executor=make_executor(model,max_batch=4)
-    reference=load_reference(args.model,local_files_only=True,trust_remote_code=False,
+    reference=load_reference(args.model,reference_quantization=args.reference_quantization,local_files_only=True,trust_remote_code=False,
         torch_dtype=torch.float32,attn_implementation='eager').eval()
     tokenizer=AutoTokenizer.from_pretrained(args.model,local_files_only=True)
     corpus=tokenizer.encode('A blue bird flies above the forest. '*100,add_special_tokens=False)
@@ -61,6 +64,7 @@ def main():
     check(corpus[:600],2)
     assert check(corpus[:600],1)==512
     print(json.dumps({'passed':True,'device':device_name(),'model':args.model,'checks':checks,
+        'weight_quantization':model.quantization,'kernel_backend':executor.kernel_backend,
         'exact_and_divergent_prefixes':True,'slot_and_output_isolation':True,'bounded_eviction':True,
         'cache_token_budget':512,'entry_limit':4,'reference_dtype':'float32','reference_attention':'eager'},indent=2))
 

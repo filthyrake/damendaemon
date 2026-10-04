@@ -7,6 +7,7 @@ from .batch import BatchExecutor
 from .device import selected_device
 from .pages import PagePool, PageCapacityError
 from .prefill import groups
+from .paged_kernels import copy_pages
 
 
 class PagedExecutor(BatchExecutor):
@@ -61,33 +62,46 @@ class PagedExecutor(BatchExecutor):
             self.lengths[slot] = 0
         self._sync_pages()
 
+    def snapshot_prefix(self,slot,count):
+        if not 0<count<=self.lengths[slot]:
+            raise ValueError('prefix exceeds populated KV cache')
+        return [copy_pages(layer,self.page_table,slot,count) for layer in self.kv]
+
+    def restore_prefix(self,slot,count,snapshots):
+        if len(snapshots)!=len(self.kv):
+            raise ValueError('prefix layer count mismatch')
+        size=min(self.context,max(count,len(self.pool.pages[slot])*16)) if slot in self.reserved_slots else count
+        self.pool.resize_many([(slot,size)],replace=True)
+        self._sync_pages()
+        for layer,saved in zip(self.kv,snapshots):
+            copy_pages(layer,self.page_table,slot,count,snapshot=saved[:,:,:count].contiguous())
+
     @property
     def supports_chunked_prefill(self):
         return True
 
     def _forward(self, ids, positions, slots, prefill_lengths=None, assigned=None, starts=None, return_logits=True):
         w = self.w
+        current_kv = prefill_lengths is not None and (starts is None or 0 in starts)
         x = F.embedding(ids, w['embed']).to(self.residual_dtype)
         for layer in range(self.c['num_hidden_layers']):
             qkv = self.linear(self.norm(x,w[f'{layer}.norm1']), w[f'{layer}.qkv.weight'], w.get(f'{layer}.qkv.bias'))
             ck, cv = self.kv[layer].unbind(0)
             rotated = self.kernels.rope_batch(qkv,self.cos,self.sin,positions,slots,ck,cv,self.heads,
                 w.get(f'{layer}.q_norm'),w.get(f'{layer}.k_norm'),self.eps,self.rotary_precise,
-                page_table=self.page_table,materialize=prefill_lengths is not None)
+                page_table=self.page_table,materialize=current_kv)
             if prefill_lengths is None:
                 attended = self.kernels.attention(rotated,ck,cv,positions,slots,
                     window=self.window or 0,page_table=self.page_table).reshape(ids.numel(),-1)
             else:
-                query,key,value = rotated
+                query,key,value = rotated if current_kv else (rotated,None,None)
                 attended, offset = [], 0
                 for slot,length,start in zip(assigned,prefill_lengths,starts or [0]*len(prefill_lengths)):
                     q = query[offset:offset+length,:,0].transpose(0,1).unsqueeze(0)
                     if start:
                         # Offset prefill needs earlier tokens as well as this chunk.
-                        pages = self.page_table[slot,:(start+length+15)//16]
-                        def gather(cache):
-                            return cache.index_select(0,pages).permute(1,0,2,3).reshape(1,self.kv_heads,-1,self.dim)[:,:,:start+length]
-                        k,v = gather(ck),gather(cv)
+                        dense = copy_pages(self.kv[layer],self.page_table,slot,start+length)
+                        k,v = dense[0].unsqueeze(0),dense[1].unsqueeze(0)
                     else:
                         k = key[offset:offset+length].transpose(0,1).unsqueeze(0)
                         v = value[offset:offset+length].transpose(0,1).unsqueeze(0)

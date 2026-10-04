@@ -2,6 +2,7 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
+import os
 from pathlib import Path
 import statistics
 import subprocess
@@ -81,6 +82,7 @@ def main():
     assert rows[0]['divergent_choices']==rows[1]['divergent_choices']
     assert [r['choices'] for r in rows[0]['partial_trials']]==[r['choices'] for r in rows[1]['partial_trials']]
     print(json.dumps({'passed':True,'model':args.model,'device':args.device,
+        'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')},
         'prefill_chunk_size':args.chunk_size,'prompt_tokens':len(prompt),'max_output_tokens':8,'results':rows},indent=2))
 
 

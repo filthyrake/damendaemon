@@ -46,7 +46,7 @@ Model licenses remain those of their respective publishers.
 | Position schemes | Standard/linear/Llama3 RoPE, fixture-qualified static YaRN; learned positions; partial rotary; ALiBi |
 
 The runtime does **not** currently provide general vLLM/llama.cpp parity.
-Missing major capabilities include paged KV for other architectures/devices and its combination with prefix snapshots, KV quantization,
+Missing major capabilities include paged KV for other architectures/devices, shared prefix pages, KV quantization,
 multi-GPU tensor/pipeline parallelism, adapters, GGUF/AWQ/GPTQ checkpoint import,
 multimodal inference, tool-call protocol handling, token log-probabilities,
 encoder-decoder generation, and a CPU inference backend. Model registration is
