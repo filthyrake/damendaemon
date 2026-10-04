@@ -46,9 +46,12 @@ class Pending:
 
 
 class BatchedRuntime:
-    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, **kwargs):
+    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, **kwargs):
         if not 1 <= batch_size <= 16 or queue_size < batch_size or queue_timeout <= 0:
             raise ValueError("batch size must be 1..16 and fit inside the request queue")
+        if type(prefill_chunk_size) is not int or prefill_chunk_size<0:
+            raise ValueError('prefill chunk size must be a nonnegative integer')
+        self.prefill_chunk_size=prefill_chunk_size
         self.runtime = Runtime(models, batch_size=batch_size, **kwargs)
         self.models = self.runtime.models
         self.batch_size = batch_size
@@ -228,7 +231,94 @@ class BatchedRuntime:
                 return self.pending.popleft()
         return None
 
+    def _prepare(self,request,executor):
+        from .prompts import encode
+        thinking=request.enable_thinking
+        if request.schema is not None and request.raw_prompt is None and executor.model.config['model_type'] in ('qwen3','qwen3_5_text'):
+            thinking=False
+        tokens=encode(executor.model,request.messages,request.raw_prompt,thinking)
+        if len(tokens)+request.max_tokens>executor.context:
+            raise ValueError('prompt plus max_tokens exceeds configured context')
+        if request.schema is not None:
+            from .structured import Constraint
+            request.sampler.constraint=Constraint(executor.model,request.schema)
+        if request.sampler.has_adjustments:
+            request.sampler.prepare(tokens,executor.model.config['vocab_size'])
+        return tokens
+
+    def _chunked_group(self,first,executor,tier,activation):
+        first.tier,first.activation=tier,activation
+        active,partial={},{}
+        next_request=first
+        try:
+            while next_request is not None or active or partial:
+                if next_request is not None:
+                    incoming=[next_request]
+                    next_request=None
+                    with self.condition:
+                        while len(incoming)+len(active)+len(partial)<self.batch_size:
+                            request=self._next(first.alias)
+                            if request is None:break
+                            incoming.append(request)
+                    for request in incoming:
+                        try:
+                            if request.cancelled.is_set():
+                                self._finish(request)
+                                continue
+                            tokens=self._prepare(request,executor)
+                            request.slot=next(i for i in range(self.batch_size) if i not in active and i not in partial)
+                            partial[request.slot]=(request,tokens,0)
+                        except Exception as error:
+                            self._finish(request,error)
+                for slot,(request,_,__) in list(partial.items()):
+                    if request.cancelled.is_set():
+                        self._finish(request)
+                        del partial[slot]
+                # At most one bounded prompt chunk before each decode step.
+                if partial:
+                    slot=next(iter(partial))
+                    request,tokens,start=partial[slot]
+                    end=min(start+self.prefill_chunk_size,len(tokens))
+                    try:
+                        logits=executor.prefill_chunk(tokens[start:end],slot,start,final=end==len(tokens))
+                        if end==len(tokens):
+                            token=request.sampler.select(logits.squeeze(0)).item()
+                            if not self._emit(request,token,executor,len(tokens)):
+                                active[slot]=(request,len(tokens))
+                            del partial[slot]
+                        else:
+                            partial[slot]=(request,tokens,end)
+                    except Exception as error:
+                        self._finish(request,error)
+                        del partial[slot]
+                for slot,(request,_) in list(active.items()):
+                    if request.cancelled.is_set():
+                        self._finish(request)
+                        del active[slot]
+                    elif request.events.full() and time.monotonic()-request.last_progress>self.queue_timeout:
+                        self._finish(request,BusyError('stream backpressure timeout'))
+                        del active[slot]
+                ready=[(slot,request,length) for slot,(request,length) in active.items() if not request.events.full()]
+                if ready:
+                    logits,next_tokens=executor.decode_batch([r.output[-1] for _,r,_ in ready],[slot for slot,_,_ in ready])
+                    selected=sample_rows(logits,[r.sampler for _,r,_ in ready],next_tokens)
+                    for (slot,request,length),token in zip(ready,selected):
+                        request.max_batch_seen=max(request.max_batch_seen,len(ready))
+                        if self._emit(request,token,executor,length):del active[slot]
+                with self.condition:
+                    if len(active)+len(partial)<self.batch_size:
+                        next_request=self._next(first.alias)
+                    if active and not ready and not partial and next_request is None:
+                        self.condition.wait(timeout=.02)
+        except Exception as error:
+            for request,_ in active.values():self._finish(request,error)
+            for request,_,__ in partial.values():self._finish(request,error)
+            if next_request:self._finish(next_request,error)
+            raise
+
     def _group(self, first, executor, tier, activation):
+        if self.prefill_chunk_size and getattr(executor,'supports_chunked_prefill',False):
+            return self._chunked_group(first,executor,tier,activation)
         first.tier, first.activation = tier, activation
         active = {}  # slot -> (request, prompt length)
         next_request = first
@@ -250,18 +340,7 @@ class BatchedRuntime:
                             if request.cancelled.is_set():
                                 self._finish(request)
                                 continue
-                            from .prompts import encode
-                            thinking = request.enable_thinking
-                            if request.schema is not None and request.raw_prompt is None and executor.model.config["model_type"] in ("qwen3", "qwen3_5_text"):
-                                thinking = False
-                            tokens = encode(executor.model, request.messages, request.raw_prompt, thinking)
-                            if len(tokens) + request.max_tokens > executor.context:
-                                raise ValueError("prompt plus max_tokens exceeds configured context")
-                            if request.schema is not None:
-                                from .structured import Constraint
-                                request.sampler.constraint = Constraint(executor.model, request.schema)
-                            if request.sampler.has_adjustments:
-                                request.sampler.prepare(tokens,executor.model.config['vocab_size'])
+                            tokens = self._prepare(request,executor)
                             request.slot = next(free_slots)
                             prepared.append((request, tokens))
                         except Exception as error:

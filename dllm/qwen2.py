@@ -391,7 +391,21 @@ class Executor:
             return F.linear(normalized.float(), self.w['head'].float())
         return self.linear(normalized, self.w['head'])
 
-    def prefill_attention(self, query, key, value):
+    def prefill_attention(self, query, key, value, query_start=0):
+        if query_start:
+            if (self.device=='cuda' and query.dtype==torch.float16
+                    and (not self.window or key.shape[-2]<=self.window)):
+                # A materialized offset mask disables fused Flash SDPA on
+                # torch2.6. Its lower-right causal bias preserves the kernel.
+                from torch.nn.attention.bias import causal_lower_right
+                return scaled_attention(query,key,value,
+                    attn_mask=causal_lower_right(query.shape[-2],key.shape[-2]),enable_gqa=True)
+            qpos=self.arange[query_start:query_start+query.shape[-2],None]
+            kpos=self.arange[None,:key.shape[-2]]
+            mask=kpos<=qpos
+            if self.window:
+                mask=mask & (kpos>qpos-self.window)
+            return scaled_attention(query,key,value,attn_mask=mask,enable_gqa=True)
         if not self.window:
             return scaled_attention(query, key, value, is_causal=True, enable_gqa=True)
         if query.shape[-2] > 2048:

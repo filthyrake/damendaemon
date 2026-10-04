@@ -78,23 +78,39 @@ class BatchExecutor(Executor):
         self.lengths[slot] = len(tokens)
         return result
 
+    @property
+    def supports_chunked_prefill(self):
+        return self.c['model_type'] in ('qwen2','qwen3','llama','mistral')
+
+    @torch.inference_mode()
+    def prefill_chunk(self,tokens,slot,start,final=True):
+        if not self.supports_chunked_prefill:
+            raise ValueError('chunked prefill is not supported for this architecture')
+        if (type(start) is not int or start<0 or not 0<=slot<self.max_batch
+                or (start and self.lengths[slot]!=start)):
+            raise ValueError('invalid partial prompt cache state')
+        return self._prefill_batch([tokens],[slot],[start],return_logits=final)
+
     @torch.inference_mode()
     def prefill_batch(self, prompts, slots):
+        return self._prefill_batch(prompts,slots,[0]*len(prompts))
+
+    def _prefill_batch(self,prompts,slots,starts,return_logits=True):
         """Pack different prompt lengths into shared linear layers; isolate attention."""
         if (not prompts or len(prompts) != len(slots) or len(set(slots)) != len(slots)
                 or any(slot < 0 or slot >= self.max_batch for slot in slots)
-                or any(not ids or len(ids) > self.context for ids in prompts)):
+                or any(not ids or start+len(ids) > self.context for ids,start in zip(prompts,starts))):
             raise ValueError("invalid prefill batch")
         if sum(map(len, prompts)) > self.context:
             # Bound temporary activations by one configured context. Validate
             # the entire request set above before writing any group's cache.
             return torch.cat([self.prefill_batch(batch, assigned)
                               for batch, assigned in groups(prompts, slots, self.context)])
-        if len(prompts) == 1:
+        if len(prompts) == 1 and starts[0] == 0 and return_logits:
             return self.prefill(prompts[0], slots[0])
         lengths = [len(ids) for ids in prompts]
         ids = torch.tensor([token for prompt in prompts for token in prompt], device=self.device)
-        positions = torch.tensor([i for length in lengths for i in range(length)], device=self.device)
+        positions = torch.tensor([i for length,start in zip(lengths,starts) for i in range(start,start+length)], device=self.device)
         slot_ids = torch.tensor([slot for slot, length in zip(slots, lengths) for _ in range(length)], device=self.device)
         w = self.w
         x = F.embedding(ids, w["embed"]).to(self.residual_dtype)
@@ -116,10 +132,10 @@ class BatchExecutor(Executor):
                 cache_k[slot_ids, :, positions, :] = k.squeeze(2)
                 cache_v[slot_ids, :, positions, :] = v.view(-1, self.kv_heads, self.dim)
             attended, offset = [], 0
-            for slot, length in zip(slots, lengths):
+            for slot, length, start in zip(slots, lengths, starts):
                 q = query[offset:offset+length, :, 0, :].transpose(0, 1).unsqueeze(0)
-                attention = self.prefill_attention(q, cache_k[slot:slot+1, :, :length],
-                    cache_v[slot:slot+1, :, :length])
+                attention = self.prefill_attention(q, cache_k[slot:slot+1, :, :start+length],
+                    cache_v[slot:slot+1, :, :start+length],query_start=start)
                 attended.append(attention.transpose(1, 2).reshape(length, -1))
                 offset += length
             x = x + self.linear(torch.cat(attended), w[f"{i}.out"])
@@ -130,10 +146,12 @@ class BatchExecutor(Executor):
                 gate, up = gate_up.chunk(2, -1)
                 activated = self.activate(gate, up)
             x = x + self.linear(activated, w[f"{i}.down"])
-        ends = torch.tensor([end - 1 for end in accumulate(lengths)], device=self.device)
-        logits = self.output_logits(x.index_select(0, ends))
-        for slot, length in zip(slots, lengths):
-            self.lengths[slot] = length
+        logits=None
+        if return_logits:
+            ends = torch.tensor([end - 1 for end in accumulate(lengths)], device=self.device)
+            logits = self.output_logits(x.index_select(0, ends))
+        for slot, length, start in zip(slots, lengths, starts):
+            self.lengths[slot] = start+length
         return logits
 
     @torch.inference_mode()

@@ -663,3 +663,47 @@ model-load warmup. This narrow result leads at concurrency1/2 but remains about
 The no-graph, pure-Torch CUDA fallback also passes all 84 recorded reference
 checks. Full evidence: `compare-*-gpt2-fp32-*.json` and
 `gpt2-a2-torch-reference.json` in `evidence/architectures/`.
+
+## Interleaved prompt chunks
+
+Issue #21. The opt-in `--prefill-chunk-size` scheduler path bounds prompt tokens
+processed between active decode steps. Partially prepared prompts reserve cache
+slots; output sampling waits for the final chunk. Cancellation discards the
+partial request, and slot reuse starts again at position 0. Other-model and
+management requests remain FIFO barriers. Unsupported architectures retain
+full prefill. This is scheduling, not paged KV or shared-prefix reuse.
+
+Offset-aware attention includes previous cached chunks and respects sliding
+windows. CUDA FP16 non-windowed attention uses a lower-right causal bias to
+retain fused Flash SDPA; materializing the offset mask had disabled that fast
+path. Intermediate chunks skip the unused vocabulary output projection.
+
+The final path passes 82 Qwen2 A2 reference checks, 84 accurate-Qwen3 A2 checks,
+82 Llama 3.2 A2 checks, and 82 Qwen2 M4 checks with uneven 127-token chunks.
+Q8 Mistral passes 97 checks using 257-token chunks through its 4096-token window. Qwen3 qualification uses
+`DLLM_QWEN3_PRECISION=float32`; the existing standard-Qwen3 accuracy limitation
+is unchanged. Phi-3's 257-token-chunk test fails one absolute-error gate despite
+matching every greedy token, so it is deliberately excluded from chunking;
+its full-prefill support is unchanged. Failed evidence is retained alongside
+passing evidence, rather than widening the tolerance.
+
+Live HTTP experiment: a 1536-token prompt requesting 8 output tokens joins after
+four content events from a short request with a 64-token output limit. Three
+warmed trials per setting, same greedy outputs throughout:
+
+| Device | Chunk tokens | Median largest stream gap ms | Short request seconds | Long request seconds |
+|---|---:|---:|---:|---:|
+| A2 | disabled | 111.60 | 0.572 | 0.170 |
+| A2 | 128 | 33.75 | 0.744 | 0.408 |
+| A2 | 256 | 31.17 | 0.597 | 0.226 |
+| M4 | disabled | 590.26 | 2.159 | 0.825 |
+| M4 | 128 | 120.18 | 2.534 | 1.345 |
+| M4 | 256 | 158.97 | 2.243 | 1.023 |
+
+Gaps measure SSE content arrival, including transport, not internal GPU token
+latency. This workload shows a responsiveness/total-latency tradeoff and does
+not justify changing the global default. The initial slower implementation's
+measurements and the optimized run are both retained in `evidence/chunked/`;
+`scripts/benchmark_chunked.py` reproduces the workload. The 108-test unit suite
+includes decode/chunk ordering, cancellation without output, reused slots,
+management barriers, budget validation and unsupported-architecture fallback.

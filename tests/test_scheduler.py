@@ -247,3 +247,98 @@ class ExecutorLeaseTests(unittest.TestCase):
                 self.assertEqual(result[-1]['finish_reason'],'stop')
             finally:
                 runtime.close()
+
+
+class ChunkExecutor(FakeExecutor):
+    supports_chunked_prefill=True
+    def __init__(self):
+        super().__init__()
+        self.model.chat_tokens=lambda messages: list(messages[0]['content'])
+        self.chunk_events=[]
+    def prefill_chunk(self,tokens,slot,start,final=True):
+        import torch
+        self.entered.set()
+        if not self.release.wait(5):raise TimeoutError('test did not release chunk')
+        if tokens==list('fa'):raise ValueError('invalid prompt')
+        self.chunk_events.append(('prefill',slot,start,len(tokens)))
+        logits=torch.zeros(1,10)
+        logits[0,1]=1
+        return logits
+    def decode_batch(self,tokens,slots):
+        self.chunk_events.append(('decode',tuple(slots)))
+        return super().decode_batch(tokens,slots)
+
+
+class ChunkedSchedulerTests(unittest.TestCase):
+    def setUp(self):
+        patcher=patch('dllm.scheduler.Runtime',FakeRuntime)
+        patcher.start();self.addCleanup(patcher.stop)
+        self.runtime=BatchedRuntime({'a':'a','b':'b'},batch_size=2,queue_size=4,prefill_chunk_size=2)
+        self.executor=ChunkExecutor()
+        self.runtime.runtime.executor=self.executor
+        self.addCleanup(self.runtime.close)
+        self.addCleanup(self.executor.release.set)
+
+    def generate(self,prompt,count=8,alias='a'):
+        return list(self.runtime.generate(alias,[{'content':prompt}],count))
+
+    def wait_pending(self,count):
+        deadline=time.monotonic()+3
+        while time.monotonic()<deadline:
+            with self.runtime.condition:
+                if len(self.runtime.pending)==count:return
+            time.sleep(.001)
+        self.fail('requests did not queue')
+
+    def test_decode_interleaves_chunks_and_preserves_usage(self):
+        with ThreadPoolExecutor(2) as pool:
+            short=pool.submit(self.generate,'ab')
+            self.assertTrue(self.executor.entered.wait(2))
+            long=pool.submit(self.generate,'abcdefgh')
+            self.wait_pending(1)
+            self.executor.release.set()
+            a,b=short.result(3),long.result(3)
+        chunks=[i for i,e in enumerate(self.executor.chunk_events) if e[0]=='prefill' and e[1]==1]
+        self.assertEqual([self.executor.chunk_events[i][2] for i in chunks],[0,2,4,6])
+        for a_index,b_index in zip(chunks,chunks[1:]):
+            self.assertTrue(any(e[0]=='decode' and 0 in e[1] for e in self.executor.chunk_events[a_index+1:b_index]))
+        self.assertEqual(b[-1]['usage']['prompt_tokens'],8)
+        self.assertEqual(a[-1]['usage']['prompt_tokens'],2)
+        self.assertEqual([e['token'] for e in b if 'token' in e],list(range(1,9)))
+
+    def test_partial_group_preserves_management_barrier(self):
+        with ThreadPoolExecutor(3) as pool:
+            first=pool.submit(self.generate,'abcdef',2)
+            self.assertTrue(self.executor.entered.wait(2))
+            control=pool.submit(self.runtime.manage,'status')
+            self.wait_pending(1)
+            last=pool.submit(self.generate,'ab',2)
+            self.wait_pending(2)
+            self.executor.release.set()
+            first.result(3);control.result(3);last.result(3)
+        self.assertEqual(self.runtime.runtime.groups,['a','control:status','a'])
+
+    def test_partial_cancellation_reuses_slot_without_emitting(self):
+        with ThreadPoolExecutor(1) as pool:
+            cancelled=pool.submit(self.generate,'abcdefgh')
+            self.assertTrue(self.executor.entered.wait(2))
+            with self.runtime.condition:
+                request=next(iter(self.runtime.requests))
+                request.cancelled.set()
+            self.executor.release.set()
+            self.assertEqual(cancelled.result(3),[])
+        result=self.generate('ab',2)
+        self.assertEqual(result[-1]['usage']['completion_tokens'],2)
+        self.assertEqual([e[2] for e in self.executor.chunk_events if e[0]=='prefill'],[0,0])
+
+    def test_unsupported_executor_keeps_full_prefill_path(self):
+        self.executor.supports_chunked_prefill=False
+        self.executor.release.set()
+        result=self.generate('ab',2)
+        self.assertEqual(result[-1]['usage']['completion_tokens'],2)
+        self.assertFalse(any(e[0]=='prefill' for e in self.executor.chunk_events))
+
+    def test_invalid_chunk_budget_is_rejected(self):
+        for value in (-1,True,1.5):
+            with self.subTest(value=value),self.assertRaises(ValueError):
+                BatchedRuntime({},prefill_chunk_size=value)

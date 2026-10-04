@@ -23,11 +23,13 @@ def main():
     parser.add_argument('--context', type=int, default=2048)
     parser.add_argument("--reference-dtype", choices=("float16", "bfloat16", "float32"), default="float16")
     parser.add_argument('--reference-quantization', choices=('none', 'q8_0'), default='none')
+    parser.add_argument('--prefill-chunk-size',type=int,default=0)
     parser.add_argument('--reference-only', action='store_true', help='generate a reference trace without a dllm GPU executor')
     parser.add_argument('--golden-output', help='save teacher-forced inputs and FP32 reference logits for cross-environment replay')
     parser.add_argument('--reference-attention', choices=('sdpa', 'eager'), default='sdpa')
     parser.add_argument('--reference-device', choices=('cpu', 'cuda', 'mps'))
     args = parser.parse_args()
+    if args.prefill_chunk_size<0:parser.error('invalid prefill chunk size')
     torch.set_num_threads(4)
     reference_device = args.reference_device or selected_device()
     if args.context < 512:
@@ -49,6 +51,16 @@ def main():
         trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype), attn_implementation=args.reference_attention).to(reference_device).eval()
     logit_options = {} if model.config['model_type']=='gpt2' else {'logits_to_keep':1}
     executor = None if args.reference_only else make_executor(model, max_batch=4)
+    def native_prefill(prompts,slots):
+        if not args.prefill_chunk_size:
+            return executor.prefill_batch(prompts,slots)
+        values=[]
+        for prompt,slot in zip(prompts,slots):
+            for start in range(0,len(prompt),args.prefill_chunk_size):
+                output=executor.prefill_chunk(prompt[start:start+args.prefill_chunk_size],slot,start,
+                    final=start+args.prefill_chunk_size>=len(prompt))
+            values.append(output)
+        return torch.cat(values)
     cache_lengths = executor.lengths if executor else [0]*4
     checks, template_checks, states, timings = [], [], {}, []
     trace = []
@@ -83,7 +95,7 @@ def main():
         assert all(len(ids) == length for ids, length in zip(prompts, lengths))
         synchronize()
         start = time.perf_counter()
-        actual = executor.prefill_batch(prompts, slots) if executor else None
+        actual = native_prefill(prompts, slots) if executor else None
         synchronize()
         if executor is not None:
             timings.append({'kind': 'batched_prefill', 'lengths': lengths, 'seconds': time.perf_counter()-start})
@@ -132,7 +144,7 @@ def main():
             ids = model.chat_tokens(messages, **options)
             assert ids == tokenizer.apply_chat_template(messages, return_dict=False, add_generation_prompt=True, **options)
         with torch.inference_mode():
-            actual = executor.prefill(ids, 0) if executor else None
+            actual = native_prefill([ids], [0]) if executor else None
             ref = reference(torch.tensor([ids], device=reference_device), use_cache=True, **logit_options)
             compare(actual, ref.logits[:, -1], f'template:{mode}', 0)
             trace.append({'kind': 'prefill', 'prompts': [ids], 'slots': [0],
@@ -180,7 +192,7 @@ def main():
         'weight_dtype': str(executor.w['head'].dtype) if executor else None,
         'reference_only': args.reference_only, 'reference_quantization': args.reference_quantization,
         'weight_quantization': model.quantization if executor else None,
-        'context': args.context, 'backend': executor.kernel_backend if executor else None, 'checks': checks,
+        'prefill_chunk_size':args.prefill_chunk_size, 'context': args.context, 'backend': executor.kernel_backend if executor else None, 'checks': checks,
         'template_checks': template_checks, 'timings': timings,
         'passed': all(row['passed'] for row in checks) if executor else None}, indent=2))
     assert all(row['passed'] for row in checks), 'long-context correctness gate failed; see JSON checks'

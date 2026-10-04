@@ -377,3 +377,13 @@ pinned `openai-community/gpt2` revision
 `607a30d783dfa663caf39e06633721c8d4cfcd7e` with `--raw` or `/v1/completions`.
 This base model has no chat template. GPT-2 quantization is not yet supported;
 register it with `--quantization none` when the server default is Q8.
+
+Opt-in scheduler chunking is available with `dllm serve --prefill-chunk-size 256`.
+On supported dense rotary decoders, the worker processes at most that many
+prompt tokens before returning to active decoding, and samples the first output
+only after the full prompt is cached. The default is 0 (full prefill). This can
+reduce stream stalls when a long prompt joins, at a cost to long-request latency.
+It preserves FIFO model/management barriers and cancellation/slot reuse. Other
+architectures, including Phi-3 pending a numerical fix, retain full prefill.
+This does not implement paged KV or prefix caching. Measurements and exact
+qualified model/precision combinations are in the architecture evidence.
