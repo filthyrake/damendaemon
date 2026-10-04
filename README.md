@@ -426,3 +426,12 @@ for the larger KV cache. MPS retains its FP32 execution policy. Full and chunked
 model execution is verified on A2/M4 using an explicit Qwen2 configuration
 fixture; this does not establish trained 128K-context quality. Dynamic NTK and
 LongRoPE remain unsupported.
+
+### GPT-NeoX base models
+
+The independent GPT-NeoX decoder supports partial rotary embeddings and parallel
+residual blocks. Pinned Pythia-160M is qualified on Apple M4 through 2048 context
+and the raw completions API; CUDA qualification is in progress. It uses FP32
+storage/arithmetic/KV. Use `dllm run PATH --raw --prompt 'Once upon a time'` or
+`/v1/completions`; the base checkpoint has no chat template. Quantization,
+chunked prefill and prefix reuse are not yet supported for this architecture.

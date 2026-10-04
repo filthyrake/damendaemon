@@ -55,6 +55,8 @@ def decoder_config(config):
     if (isinstance(scaling, dict) and scaling.get('rope_type', scaling.get('type')) == 'yarn'
             and config.get('model_type') not in ('qwen2', 'qwen3', 'llama', 'mistral')):
         raise ValueError('YaRN is currently supported only for Qwen2/Qwen3/Llama/Mistral')
+    if config.get('model_type') == 'gpt_neox':
+        return neox_config(config)
     if config.get('model_type') == 'gpt2':
         return gpt2_config(config)
     if config.get('model_type') == 'olmoe':
@@ -223,3 +225,29 @@ def gpt2_config(config):
             'num_hidden_layers':c['n_layer'],'head_dim':c['n_embd']//c['n_head'],
             'max_position_embeddings':c['n_positions'],'rms_norm_eps':epsilon,
             'tie_word_embeddings':True,'rope_theta':10000.0}
+
+
+def neox_config(config):
+    c = dict(config)
+    if (c.get('architectures') != ['GPTNeoXForCausalLM'] or c.get('hidden_act') != 'gelu'
+            or c.get('rope_scaling') is not None or c.get('rope_parameters') is not None
+            or c.get('tie_word_embeddings',False) is not False or c.get('attention_bias',True) is not True
+            or c.get('quantization_config') or type(c.get('use_parallel_residual',True)) is not bool):
+        raise ValueError('unsupported GPT-NeoX activation, attention or weight format')
+    for name in ('hidden_size','intermediate_size','num_attention_heads','num_hidden_layers','max_position_embeddings','vocab_size'):
+        if type(c.get(name)) is not int or c[name]<=0:
+            raise ValueError('invalid GPT-NeoX dimensions')
+    if c['hidden_size'] % c['num_attention_heads']:
+        raise ValueError('GPT-NeoX hidden size must divide into heads')
+    dim = c['hidden_size']//c['num_attention_heads']
+    fraction = c.get('rotary_pct',.25)
+    base, epsilon = c.get('rotary_emb_base',10000), c.get('layer_norm_eps',1e-5)
+    if (type(fraction) not in (int,float) or not math.isfinite(fraction) or not 0<fraction<=1
+            or int(dim*fraction)!=dim*fraction or int(dim*fraction)%2 or int(dim*fraction)<2):
+        raise ValueError('invalid GPT-NeoX rotary dimension')
+    for value in (base,epsilon):
+        if type(value) not in (int,float) or not math.isfinite(value) or value<=0:
+            raise ValueError('invalid GPT-NeoX rotary base or LayerNorm epsilon')
+    return {**c,'head_dim':dim,'num_key_value_heads':c['num_attention_heads'],
+            'rotary_dim':int(dim*fraction),'rope_theta':base,'rope_scaling':None,
+            'rms_norm_eps':epsilon,'use_parallel_residual':c.get('use_parallel_residual',True)}

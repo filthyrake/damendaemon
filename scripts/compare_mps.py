@@ -22,6 +22,8 @@ def main():
                    help='device weight storage; the supplied GGUF must use the matching type')
     p.add_argument('--engines', nargs='+', choices=('dllm', 'llama.cpp'), default=['dllm', 'llama.cpp'])
     p.add_argument('--concurrencies', nargs='+', type=int, choices=range(1,9), default=[1,2,4])
+    p.add_argument('--raw', action='store_true')
+    p.add_argument('--prompt-token-ids')
     args = p.parse_args()
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
@@ -60,7 +62,9 @@ def main():
                 for concurrency in args.concurrencies:
                     with (output / f'compare-mps-{engine}-c{concurrency}.json').open('w') as out:
                         subprocess.run([sys.executable, 'scripts/compare_llama.py', base+'/v1',
-                            '--engine', engine, '--concurrency', str(concurrency)], env=env,
+                            '--engine', engine, '--concurrency', str(concurrency),
+                            *(['--raw'] if args.raw else []),
+                            *(['--prompt-token-ids',args.prompt_token_ids] if args.prompt_token_ids else [])], env=env,
                             stdout=out, check=True, timeout=300)
                     print(engine, concurrency, 'complete', flush=True)
             finally:

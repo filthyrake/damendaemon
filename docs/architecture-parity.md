@@ -839,3 +839,35 @@ Identical pinned Mistral checkpoint, matching Q4_0 projection/FP16 embedding
 policy, 23 explicit prompt token IDs, 64 output tokens, context 2048, FP16 KV,
 A2 only, sequential servers and five warm measured rounds. This establishes a
 real execution bottleneck; Q4 is not yet a performance improvement in dllm.
+
+## GPT-NeoX / Pythia
+
+Issue #24. Independent execution now supports GPT-NeoX head-interleaved packed
+QKV weights, partial-head rotary embeddings, biased LayerNorm/projections,
+exact GELU and parallel or sequential residual branches. The first qualified
+checkpoint is `EleutherAI/pythia-160m` revision
+`50f5173d932e8e61f858120bcb800b97af589f46`, with parallel residuals and 25% rotary
+dimensions. Checkpoint tensors are validated and reordered into the runtime's
+whole-Q/K/V layout. Quantization and nonstandard rotary schedules are rejected.
+Execution uses FP32 weights/arithmetic/KV; this base model has no chat template.
+
+On Apple M4, all 82 independent CPU FP32 eager-reference checks pass through
+2048 context, including reused/reordered/shrinking slots (worst relative RMS
+0.00001517, maximum absolute error 0.01184). Raw text/token-ID completions,
+streaming, concurrent requests, sampling/stops and invalid-request recovery pass.
+The 119-test suite includes geometry rejection and explicit QKV row mapping.
+A2 qualification is still pending; acceptance is not a CUDA checkpoint claim.
+
+Matched M4 HTTP comparison: identical checkpoint converted to FP32 GGUF,
+identical explicit prompt IDs, FP32 KV, 2048 context, 64 output tokens, five
+warm rounds, sequential engines:
+
+| Concurrent requests | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 116.20 | 129.99 | 20.94 | 9.68 |
+| 2 | 211.84 | 197.00 | 43.69 | 13.25 |
+| 4 | 377.98 | 267.98 | 88.79 | 38.73 |
+
+This is a narrow throughput/latency tradeoff, not general parity. GPU prefill is
+still per-prompt; GPT-NeoX chunked prefill/prefix reuse are not yet enabled.
+Evidence is stored under `evidence/architectures/pythia160m*`.

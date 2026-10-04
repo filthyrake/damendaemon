@@ -277,6 +277,11 @@ class Runtime:
 
 def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     """Choose an execution path from the validated architecture, not the model name."""
+    if model.config['model_type'] == 'gpt_neox':
+        from .neox import NeoxExecutor
+        if kwargs.pop('fuse_projections',True) is False:
+            raise ValueError('GPT-NeoX requires packed checkpoint projections')
+        return NeoxExecutor(model,use_graph,max_batch or 1,**kwargs)
     if model.config.get('task') == 'embedding':
         from .encoder import EncoderExecutor
         return EncoderExecutor(model,use_graph=use_graph)
