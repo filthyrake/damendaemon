@@ -30,6 +30,28 @@ kernel void conv(device const float* x, device const float* w, device const floa
         }
     }
 }
+kernel void conv_continue(device const float* x, device const float* w, device const float* bias,
+                 device float* history, device const long* slots, device float* out,
+                 constant long& inner, constant long& length, constant long& width, constant long& stride,
+                 uint2 id [[thread_position_in_grid]]) {
+    long channel=id.x,row=id.y;
+    if(channel>=inner)return;
+    long base=(slots[row]*inner+channel)*width;
+    for(long t=0;t<length;++t) {
+        float acc=bias[channel];
+        for(long j=0;j<width;++j) {
+            long source=t+j-width+1;
+            float value=source<0?history[base+source+width]:x[(row*length+source)*stride+channel];
+            acc+=value*w[channel*width+j];
+        }
+        out[(row*length+t)*inner+channel]=acc/(1+exp(-acc));
+    }
+    // Write history after the last output; each channel has one owner.
+    for(long j=0;j<width;++j) {
+        long source=length-width+j;
+        history[base+j]=source<0?history[base+source+width]:x[(row*length+source)*stride+channel];
+    }
+}
 kernel void scan(device const float* x, device const float* gate, device const float* p,
                  device const float* dt, device const float* dt_weight, device const float* bias, device const float* a, device const float* d,
                  device float* state, device const long* slots, device float* out,
@@ -73,10 +95,13 @@ def library():
 
 def conv(x,weight,bias,history,slots,reset):
     batch,length,stride=x.shape;inner=history.shape[1]
-    if not reset and length!=1:raise ValueError('Mamba decode convolution needs one token')
     out=torch.empty((batch,length,inner),device=x.device,dtype=x.dtype)
-    library().conv(x,weight,bias,history,slots,out,inner,length,weight.shape[-1],stride,int(reset),
-        threads=(((inner+255)//256)*256,batch*length),group_size=(256,1))
+    if not reset and length>1:
+        library().conv_continue(x,weight,bias,history,slots,out,inner,length,weight.shape[-1],stride,
+            threads=(((inner+255)//256)*256,batch),group_size=(256,1))
+    else:
+        library().conv(x,weight,bias,history,slots,out,inner,length,weight.shape[-1],stride,int(reset),
+            threads=(((inner+255)//256)*256,batch*length),group_size=(256,1))
     return out
 
 

@@ -30,8 +30,8 @@ this behavior without using Transformers cache helpers.
 
 Real HTTP tests on both GPUs pass raw strings/token IDs, SSE/nonstream equality,
 four concurrent distinct prompts, full prompt/output context, invalid requests,
-cancellation and switching to Qwen and back. Prefix/chunk options are explicitly
-rejected. Local suite: 174 passing tests.
+cancellation and switching to Qwen and back. This initial evidence predates prefix/chunk support; see the updates below.
+Initial local suite: 174 passing tests.
 
 ## Matched serving baseline
 
@@ -128,3 +128,11 @@ with first text 44.76 / 53.27 / 87.39 ms. The earlier separate-prefill result wa
 no Apple throughput improvement is established by these noisy sequential runs.
 This change reduces redundant equal-length prefill work without claiming that
 all real prompt distributions will benefit.
+
+## Later qualification
+
+[CUDA Q8](q8/README.md) covers both checkpoints with independently quantized
+reference weights and explicit cross-engine output differences.
+[Chunking and prefix reuse](chunks/README.md) adds CUDA/Metal continuation,
+complete-prefix snapshots, state isolation and measured stream latency tradeoffs.
+These supersede the corresponding exclusions in the initial scope above.

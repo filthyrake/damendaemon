@@ -31,11 +31,39 @@ def _conv(X,W,BIAS,HISTORY,SLOTS,Y,I:tl.constexpr,T:tl.constexpr,C:tl.constexpr,
                 tl.store(HISTORY+(slot*I+channels)*C+j,value,valid)
 
 
+@tr.jit
+def _conv_continue(X,W,BIAS,HISTORY,SLOTS,Y,I:tl.constexpr,T:tl.constexpr,C:tl.constexpr,STRIDE:tl.constexpr,BLOCK:tl.constexpr):
+    row,block=tl.program_id(0),tl.program_id(1)
+    channels=block*BLOCK+tl.arange(0,BLOCK);valid=channels<I
+    slot=tl.load(SLOTS+row)
+    # One program owns each channel's history. Keep the old history intact
+    # until every output that can reference it has been computed.
+    for t in range(T):
+        acc=tl.load(BIAS+channels,valid,other=0)
+        for j in tl.static_range(C):
+            source=t+j-C+1
+            if source<0:
+                value=tl.load(HISTORY+(slot*I+channels)*C+source+C,valid,other=0)
+            else:
+                value=tl.load(X+(row*T+source)*STRIDE+channels,valid,other=0)
+            acc+=value*tl.load(W+channels*C+j,valid,other=0)
+        tl.store(Y+(row*T+t)*I+channels,acc/(1+tl.exp(-acc)),valid)
+    for j in tl.static_range(C):
+        source=T-C+j
+        if source<0:
+            value=tl.load(HISTORY+(slot*I+channels)*C+source+C,valid,other=0)
+        else:
+            value=tl.load(X+(row*T+source)*STRIDE+channels,valid,other=0)
+        tl.store(HISTORY+(slot*I+channels)*C+j,value,valid)
+
+
 def conv(x,weight,bias,history,slots,reset):
     batch,length,stride=x.shape;inner=history.shape[1]
-    if not reset and length!=1:raise ValueError('Mamba decode convolution needs one token')
     out=torch.empty((batch,length,inner),device=x.device,dtype=x.dtype)
-    _conv[(batch,tr.cdiv(inner,128),length)](x,weight,bias,history,slots,out,inner,length,weight.shape[-1],stride,reset,128,enable_fp_fusion=False)
+    if not reset and length>1:
+        _conv_continue[(batch,tr.cdiv(inner,128))](x,weight,bias,history,slots,out,inner,length,weight.shape[-1],stride,128,enable_fp_fusion=False)
+    else:
+        _conv[(batch,tr.cdiv(inner,128),length)](x,weight,bias,history,slots,out,inner,length,weight.shape[-1],stride,reset,128,enable_fp_fusion=False)
     return out
 
 

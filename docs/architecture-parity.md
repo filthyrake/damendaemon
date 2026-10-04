@@ -1048,3 +1048,9 @@ show A2 throughput competitive with vLLM for this checkpoint; Apple is still
 behind llama.cpp. Both 130M and 370M checkpoints are now qualified, including CUDA Q8 matrix
 weights. Other Mamba generations/hybrids remain unsupported.
 [Q8 storage, numerical limits and measurements](evidence/mamba/q8/README.md).
+
+Mamba chunked prefill and complete-prefix recurrent snapshots now work on both
+GPUs, including CUDA Q8. No rewind to shorter/divergent prefixes is permitted.
+[Qualification and latency tradeoffs](evidence/mamba/chunks/README.md): A2
+128-token chunks reduce the measured active-stream gap from 162 to 23 ms,
+while increasing incoming request time from 206 to 278 ms.

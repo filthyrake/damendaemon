@@ -20,7 +20,9 @@ def main():
     p.add_argument('--chunk-size',type=int,default=0)
     args=p.parse_args()
     tokenizer=Tokenizer.from_file(str(Path(args.model)/'tokenizer.json'))
+    tokenizer.no_padding();tokenizer.no_truncation()
     prompt=tokenizer.encode('A blue bird flies over a green field. '*200,add_special_tokens=True).ids[:1536]
+    assert len(prompt)==1536
     rows=[];baseline=None
     for budget in (0,4096):
         with tempfile.TemporaryDirectory(prefix='dllm-prefix-service-') as directory:

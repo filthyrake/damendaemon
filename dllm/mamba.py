@@ -119,8 +119,8 @@ class MambaWeights:
 
 
 class MambaExecutor:
-    supports_chunked_prefill=False
-    requires_full_prefill=True
+    supports_chunked_prefill=True
+    prefix_can_rewind=False
     capture_graphs=BatchExecutor.capture_graphs
     decode_batch=BatchExecutor.decode_batch
 
@@ -189,7 +189,7 @@ class MambaExecutor:
         self.state[layer].index_copy_(0,slots,state)
         return torch.stack(output,1)
 
-    def run(self,ids,slots,reset):
+    def run(self,ids,slots,reset,return_logits=True):
         batch,length=ids.shape;i=self.c['intermediate_size'];r=self.c['time_step_rank']
         x=F.embedding(ids,self.w['embed']).reshape(batch*length,-1)
         for layer in range(self.c['num_hidden_layers']):
@@ -206,9 +206,10 @@ class MambaExecutor:
                     self.conv[layer].index_copy_(0,slots,F.pad(signal.transpose(1,2),(self.c['conv_kernel']-length,0)))
                     signal=F.silu(F.conv1d(signal.transpose(1,2),self.w[p+'conv'][:,None],self.w[p+'conv_bias'],padding=self.c['conv_kernel']-1,groups=i)[:,:,:length]).transpose(1,2).contiguous()
                 else:
-                    history=self.conv[layer].index_select(0,slots).roll(-1,-1);history[:,:,-1]=signal[:,0]
-                    self.conv[layer].index_copy_(0,slots,history)
-                    signal=F.silu((history*self.w[p+'conv']).sum(-1)+self.w[p+'conv_bias'])[:,None]
+                    history=self.conv[layer].index_select(0,slots)
+                    combined=torch.cat((history,signal.transpose(1,2)),-1)
+                    self.conv[layer].index_copy_(0,slots,combined[:,:,-self.c['conv_kernel']:])
+                    signal=F.silu(F.conv1d(combined[:,:,1:],self.w[p+'conv'][:,None],self.w[p+'conv_bias'],groups=i)).transpose(1,2).contiguous()
             params=self.linear(signal.reshape(batch*length,i),self.w[p+'x_proj']).reshape(batch,length,-1)
             fused_dt=self.fuse_time_step and self.recurrent is not None and self.device=='mps' and length==1
             dt=None if fused_dt else self.linear(params[:,:,:r].contiguous().reshape(batch*length,r),self.w[p+'dt_proj']).reshape(batch,length,i)
@@ -217,11 +218,34 @@ class MambaExecutor:
                     **({'dt_weight':self.w[p+'dt_proj']} if fused_dt else {}))
             else:output=self.tensor_recurrence(signal,gate,params,dt,layer,slots,reset)
             x=x+self.linear(output.reshape(batch*length,i),self.w[p+'out_proj'],self.w.get(p+'out_bias'))
+        if not return_logits:return None
         x=x.reshape(batch,length,-1)[:,-1].contiguous()
         return self.linear(self.norm(x,self.w['norm']),self.w['head'])
 
     @torch.inference_mode()
     def forward_batch(self,ids,positions,slots):return self.run(ids[:,None],slots,False)
+
+    @torch.inference_mode()
+    def prefill_chunk(self,tokens,slot,start,final=True):
+        if (type(slot) is not int or not 0<=slot<self.max_batch
+                or type(start) is not int or start<0
+                or (start and self.lengths[slot]!=start)
+                or not tokens or start+len(tokens)>self.context):
+            raise ValueError('invalid Mamba partial prompt state')
+        logits=self.run(torch.tensor([tokens],device=self.device),
+            torch.tensor([slot],device=self.device),start==0,return_logits=final)
+        self.lengths[slot]=start+len(tokens)
+        return logits
+
+    def prefix_state_bytes(self,count):
+        return sum(t[0].numel()*t.element_size() for t in self.conv+self.state)
+
+    def snapshot_prefix(self,slot,count):
+        if self.lengths[slot]!=count:raise ValueError('Mamba snapshots cannot rewind recurrent state')
+        return [t[slot].clone() for t in self.conv+self.state]
+
+    def restore_prefix(self,slot,count,snapshot):
+        for target,saved in zip(self.conv+self.state,snapshot):target[slot].copy_(saved)
 
     @torch.inference_mode()
     def prefill_batch(self,prompts,slots):

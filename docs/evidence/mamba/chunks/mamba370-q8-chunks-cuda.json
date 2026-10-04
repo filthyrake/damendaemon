@@ -1,0 +1,86 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "model": "models/mamba-370m",
+  "quantization": "q8_0",
+  "checks": [
+    {
+      "label": "interleaved-chunk",
+      "length": 1,
+      "relative_rms": 2.7732546641345834e-06,
+      "greedy_match": true
+    },
+    {
+      "label": "interleaved-chunk",
+      "length": 3,
+      "relative_rms": 5.386909265325812e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "interleaved-chunk",
+      "length": 3,
+      "relative_rms": 6.23381538389367e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "interleaved-chunk",
+      "length": 81,
+      "relative_rms": 5.091106345389562e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "interleaved-chunk",
+      "length": 257,
+      "relative_rms": 6.344022835946816e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "exact-prefix",
+      "length": 257,
+      "relative_rms": 6.344022835946816e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "decode-after-prefix",
+      "length": 258,
+      "relative_rms": 1.0633217470967793e-06,
+      "greedy_match": true
+    },
+    {
+      "label": "snapshot-survives-other-slot-decode",
+      "length": 257,
+      "relative_rms": 6.344022835946816e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "extend-prefix",
+      "length": 274,
+      "relative_rms": 6.999258062023728e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "full-context-chunked",
+      "length": 2048,
+      "relative_rms": 7.152501098062203e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "reset-after-reuse",
+      "length": 3,
+      "relative_rms": 2.0740624222526094e-06,
+      "greedy_match": true
+    },
+    {
+      "label": "reset-after-reuse",
+      "length": 3,
+      "relative_rms": 3.318809547181445e-07,
+      "greedy_match": true
+    }
+  ],
+  "state_checks": true,
+  "prefix_no_rewind": true,
+  "independent_snapshot": true,
+  "invalid_state_rejected": true,
+  "snapshot_bytes": 7864320,
+  "reference": "CPU full prompt recomputation; independently quantized matrices when selected"
+}

@@ -61,6 +61,22 @@ class PrefixTests(unittest.TestCase):
         self.assertFalse(self.cache.entries)
         self.assertEqual(self.cache.tokens,0)
 
+    def test_recurrent_snapshots_only_resume_complete_stored_prefix(self):
+        self.executor.prefix_can_rewind=False
+        self.remember([1,2,3,4])
+        self.assertEqual(self.cache.restore([1,2,9],1),(0,None))
+        self.assertEqual(self.cache.restore([1,2],1),(0,None))
+        self.assertEqual(self.cache.restore([1,2,3,4,5],1),(4,None))
+        self.assertEqual(self.cache.restore([1,2,3,4],1)[0],4)
+        self.remember([9]*13)
+        self.assertEqual(self.cache.tokens,4)
+
+    def test_recurrent_snapshot_memory_uses_fixed_state_size(self):
+        self.executor.prefix_can_rewind=False
+        self.executor.prefix_state_bytes=lambda count:2*1024**3
+        self.remember([1])
+        self.assertFalse(self.cache.entries)
+
     def test_cache_does_not_own_executor_lifetime(self):
         import weakref
         reference=weakref.ref(self.executor)

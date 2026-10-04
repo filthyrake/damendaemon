@@ -16,7 +16,9 @@ from dllm.server import BoundedHTTPServer,handler_for
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--other-model',required=True)
-    p.add_argument('--device',choices=('cuda','mps'),default='cuda');args=p.parse_args()
+    p.add_argument('--device',choices=('cuda','mps'),default='cuda')
+    p.add_argument('--chunk-size',type=int,default=0);p.add_argument('--prefix-budget',type=int,default=0)
+    args=p.parse_args()
     os.environ['DLLM_DEVICE']=args.device
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,512)
@@ -24,7 +26,8 @@ def main():
     prompt='The blue bird flies over the green field every morning.'
     if encoder_decoder:prompt='translate English to German: '+prompt
     ids=model.raw_tokens(prompt)
-    runtime=BatchedRuntime({'a':args.model,'b':args.other_model},context=512,batch_size=4,gpu_models=1)
+    runtime=BatchedRuntime({'a':args.model,'b':args.other_model},context=512,batch_size=4,gpu_models=1,
+        prefill_chunk_size=args.chunk_size,prefix_cache_tokens=args.prefix_budget)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
     worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
     base=f'http://127.0.0.1:{server.server_port}'
@@ -69,17 +72,18 @@ def main():
             'oversized_requests_rejected':True,'chat_rejected':True,
             'cancellation_recovery':True,'decoder_only_switch_and_host_restore':True,
             'restore_timing':restored['dllm_timing'],
+            'prefill_chunk_size':args.chunk_size,'prefix_cache_tokens':args.prefix_budget,
             'sample':expected}
     finally:
         server.shutdown();server.server_close();worker.join();runtime.close()
-    for options in ({'prefill_chunk_size':128},{'prefix_cache_tokens':512}):
+    for options in (({'prefill_chunk_size':128},{'prefix_cache_tokens':512}) if encoder_decoder else ()):
         runtime=BatchedRuntime({'a':args.model},context=512,**options)
         try:
             try:list(runtime.generate('a',None,2,raw_prompt=ids))
             except ValueError as error:assert 'does not yet support' in str(error)
             else:raise AssertionError('unsupported cache option accepted')
         finally:runtime.close()
-    report['unsupported_cache_options_rejected']=True
+    report['unsupported_cache_options_rejected']=encoder_decoder
     print(json.dumps(report,indent=2))
 
 

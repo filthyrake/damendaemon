@@ -564,6 +564,9 @@ with native GPU causal convolution and recurrent-state kernels. Use raw
 completions with context up to 2048. Both devices pass independent logits/state
 checks and real streaming, concurrent, cancellation and model-switching tests.
 FP32 runs on both devices; CUDA also supports Q8 matrix weights with FP32
-embeddings and recurrent state. Prefix snapshots and chunked prefill remain unsupported. Mamba2 and Falcon hybrids are separate architectures.
+embeddings and recurrent state. Optional chunked prefill interleaves long prompts
+with decoding; prefix caching restores complete recurrent snapshots (it cannot
+rewind to shorter prefixes). [Latency and correctness evidence](docs/evidence/mamba/chunks/README.md).
+Mamba2 and Falcon hybrids are separate architectures.
 [Matched benchmarks and qualification](docs/evidence/mamba/README.md) include
 remaining performance gaps, especially on Apple.

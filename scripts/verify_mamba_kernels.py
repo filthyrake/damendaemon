@@ -20,7 +20,7 @@ def main():
         weight=torch.randn(inner,width);bias=torch.randn(inner)
         a=-torch.rand(inner,state_size);d=torch.randn(inner);dt_bias=torch.linspace(-15,15,inner)
         gh=history.to(device);gs=state.to(device)
-        for reset,steps in ((True,length),(False,1),(False,1)):
+        for reset,steps in ((True,length),(False,1),(False,2),(False,7),(False,33),(False,1)):
             x=torch.randn(batch,steps,inner);gate=torch.randn_like(x)
             params=torch.randn(batch,steps,rank+2*state_size);dt=torch.randn_like(x)
             dt_weight=torch.randn(inner,rank)
@@ -32,8 +32,11 @@ def main():
                     conv=F.silu(F.conv1d(x[row].T[None],weight[:,None],bias,padding=width-1,groups=inner)[0,:,:steps].T)
                     state[slot].zero_()
                 else:
-                    history[slot]=history[slot].roll(-1,-1);history[slot,:,-1]=x[row,0]
-                    conv=F.silu((history[slot]*weight).sum(-1)+bias)[None]
+                    outputs=[]
+                    for t in range(steps):
+                        history[slot]=history[slot].roll(-1,-1);history[slot,:,-1]=x[row,t]
+                        outputs.append(F.silu((history[slot]*weight).sum(-1)+bias))
+                    conv=torch.stack(outputs)
                 expected_conv.append(conv)
                 output=[]
                 for t in range(steps):

@@ -25,7 +25,10 @@ class PrefixCache:
                 if left!=right:break
                 common+=1
             exact=common==len(prompt)==len(key) and logits is not None
+            if not getattr(self.executor,'prefix_can_rewind',True) and common!=len(key):
+                continue
             count=common if exact else min(common,len(prompt)-1)
+            if not getattr(self.executor,'prefix_can_rewind',True) and count!=len(key):continue
             if count>reused:
                 best=(key,cache,logits if exact else None)
                 reused=count
@@ -42,13 +45,18 @@ class PrefixCache:
 
     @torch.inference_mode()
     def remember(self,prompt,slot,logits):
+        if not getattr(self.executor,'prefix_can_rewind',True) and len(prompt)>self.token_budget:
+            return
         count=min(len(prompt),self.token_budget)
         key=tuple(prompt[:count])
         if not key or key in self.entries:return
         while self.entries and (self.tokens+count>self.token_budget or len(self.entries)>=self.max_entries):
             old,_=self.entries.popitem(last=False)
             self.tokens-=len(old)
-        needed=sum(2*layer.shape[2]*count*layer.shape[-1]*layer.element_size() for layer in self.executor.kv)
+        if hasattr(self.executor,'prefix_state_bytes'):
+            needed=self.executor.prefix_state_bytes(count)
+        else:
+            needed=sum(2*layer.shape[2]*count*layer.shape[-1]*layer.element_size() for layer in self.executor.kv)
         if count==len(prompt):needed+=logits.numel()*logits.element_size()
         if needed+256*1024**2>available_memory():
             empty_cache()

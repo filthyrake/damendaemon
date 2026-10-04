@@ -21,7 +21,9 @@ def main():
     p.add_argument('--rounds',type=int,default=3)
     args=p.parse_args()
     tokenizer=Tokenizer.from_file(str(Path(args.model)/'tokenizer.json'))
+    tokenizer.no_padding();tokenizer.no_truncation()
     long_prompt=tokenizer.encode('The blue bird flies over the green field. '*200,add_special_tokens=True).ids[:1536]
+    assert len(long_prompt)==1536
     short_prompt=tokenizer.encode('Explain matrix multiplication in detail.',add_special_tokens=True).ids
     measurements=[]
     short_expected=long_expected=None
