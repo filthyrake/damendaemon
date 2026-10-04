@@ -166,6 +166,8 @@ class HybridExecutor:
             tensor.zero_()
 
     def norm(self, x, weight, dtype=torch.float16):
+        if self.fused:
+            return self.fused.norm(x, weight, self.eps, dtype)
         x = x.float()
         return (x * torch.rsqrt(x.square().mean(-1, keepdim=True)+self.eps) * weight).to(dtype)
 
@@ -222,7 +224,10 @@ class HybridExecutor:
                 outputs.append((state*q[:, t, :, :, None]).sum(-2))
             self.state[i][slots] = state
             out = torch.stack(outputs, 1)
-        out = self.norm(out, w[f'{i}.gated_norm'], torch.float32) * F.silu(z.float())
+        if self.fused:
+            out = self.fused.norm(out, w[f'{i}.gated_norm'], self.eps, torch.float16, gate=z)
+        else:
+            out = self.norm(out, w[f'{i}.gated_norm'], torch.float32) * F.silu(z.float())
         return F.linear(out.reshape(n, length, -1).half(), w[f'{i}.out'])
 
     def attention(self, x, i, positions, slots, prefill):
@@ -255,8 +260,14 @@ class HybridExecutor:
             h = self.norm(x, self.w[f'{i}.norm1'])
             x = x + (self.linear_attention(h, i, slots, prefill) if kind == 'linear_attention'
                      else self.attention(h, i, positions, slots, prefill))
-            gate, up = F.linear(self.norm(x, self.w[f'{i}.norm2']), self.w[f'{i}.gate_up']).chunk(2, -1)
-            x = x + F.linear((F.silu(gate.float())*up.float()).half(), self.w[f'{i}.down'])
+            gate_up = F.linear(self.norm(x, self.w[f'{i}.norm2']), self.w[f'{i}.gate_up'])
+            if self.fused:
+                activated = self.dense_fused.swiglu(gate_up.reshape(-1, gate_up.shape[-1]), True)
+                activated = activated.view(*gate_up.shape[:-1], -1)
+            else:
+                gate, up = gate_up.chunk(2, -1)
+                activated = (F.silu(gate.float())*up.float()).half()
+            x = x + F.linear(activated, self.w[f'{i}.down'])
         normalized = self.norm(x[:, -1], self.w['norm'])
         if self.fused:
             return self.fused.output_head(normalized, self.w['head'])

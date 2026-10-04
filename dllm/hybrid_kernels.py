@@ -9,6 +9,30 @@ import triton.language as tl
 
 
 @tr.jit
+def _norm(X, W, Z, Y, D: tl.constexpr, EPS: tl.constexpr,
+          GATED: tl.constexpr, BLOCK: tl.constexpr):
+    row = tl.program_id(0)
+    cols = tl.arange(0, BLOCK)
+    x = tl.load(X + row*D + cols, cols < D, other=0).to(tl.float32)
+    weight = tl.load(W + cols, cols < D, other=0).to(tl.float32)
+    out = (x * tl.rsqrt(tl.sum(x*x, 0)/D + EPS)) * weight
+    if GATED:
+        z = tl.load(Z + row*D + cols, cols < D, other=0).to(tl.float32)
+        out = out * (z / (1 + tl.exp(-z)))
+    tl.store(Y + row*D + cols, out, cols < D)
+
+
+def norm(x, weight, eps, dtype=torch.float16, gate=None):
+    x = x.contiguous()
+    gate = gate.contiguous() if gate is not None else None
+    out = torch.empty(x.shape, dtype=dtype, device=x.device)
+    _norm[(x.numel()//x.shape[-1],)](x, weight, x if gate is None else gate, out,
+        x.shape[-1], eps, gate is not None, tr.next_power_of_2(x.shape[-1]),
+        enable_fp_fusion=False)
+    return out
+
+
+@tr.jit
 def _scan(Q, K, V, G, B, STATE, OUT, SLOTS,
           T: tl.constexpr, HK: tl.constexpr, HV: tl.constexpr,
           DK: tl.constexpr, DV: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,

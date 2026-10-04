@@ -32,8 +32,8 @@ The gate requires exact greedy-token agreement, relative RMS logit error below
 1%, and maximum absolute error below 0.5. Both checkpoints pass 84 comparisons
 at context 2048: mixed prompt lengths, 255/257 boundaries, a 2032-token prompt,
 reordered and shrinking decode batches, slot reuse, and three template modes.
-Worst production replay relative RMS error is 0.2155% for 0.8B and 0.3094% for
-2B. The live service also passes mixed-model requests, capacity-one eviction,
+Before elementwise fusion, worst production replay relative RMS error is
+0.2155% for 0.8B and 0.3094% for 2B. The live service also passes mixed-model requests, capacity-one eviction,
 resident switching, cancellation, rejected requests, and subsequent recovery.
 
 Earlier failed experiments are retained in `evidence/hybrid`: the initial
@@ -65,6 +65,34 @@ from these numbers and remains in the evidence. Hybrid prompts are currently
 prefilled independently, so this does not measure packed or chunked prefill.
 The optional kernel library is [Flash Linear Attention](https://github.com/fla-org/flash-linear-attention),
 under its MIT license. It is installed as a dependency, not vendored.
+
+### CUDA performance and baseline status
+
+Before additional elementwise fusion, the Qwen3.5-0.8B HTTP run reached median
+aggregate throughput of 78.3 / 122.3 / 217.5 tokens/s at concurrency 1 / 2 / 4.
+Median first-output latencies were 47.1 / 90.5 / 187.5 ms. This used the pinned
+checkpoint above, context 2048, thinking disabled, 26 input tokens and exactly
+64 generated tokens, with one excluded warmup and five measured rounds.
+
+The paired vLLM 0.30.0 comparison did not complete. Two startup attempts exceeded
+360 seconds; a text-only retry exceeded 900 seconds in Qwen GDN kernel warmup.
+The final log is retained as `vllm-qwen35-startup-timeout.log`. Its process group
+was cleaned up and the A2 released. There is no comparative Qwen3.5 throughput
+claim from these incomplete runs, and the existing A30 service was untouched.
+
+The CUDA profile measured 1300 kernel launches per token before elementwise
+fusion. Matrix kernels and the FP32 vocabulary projection account for most
+device execution time; many remaining launches implement normalization,
+activation, casts, and gating. CUDA graph replay removes per-operation Python
+dispatch but does not fuse those device operations.
+
+Fused RMS normalization, normalization with SiLU gating, and MLP SwiGLU now
+retain FP32 intermediate arithmetic while directly writing the required output
+precision. Both checkpoints still pass all 84 independent replay comparisons;
+worst relative RMS errors are 0.2535% and 0.4511%. These remain below the
+unchanged 1% limit, with exact greedy-token agreement and the same absolute
+error limit. Isolated kernel checks cover gated/ungated normalization and both
+FP16 and FP32 outputs. The PyTorch fallback remains available.
 
 ## Apple M4, 32 GiB unified memory
 

@@ -2,7 +2,7 @@
 import json
 import torch
 from dllm.runtime import require_gpu
-from dllm.hybrid_kernels import scan, conv_step, output_head
+from dllm.hybrid_kernels import scan, conv_step, output_head, norm
 
 
 def reference(q, k, v, decay, beta, state):
@@ -24,6 +24,17 @@ def main():
     require_gpu()
     torch.manual_seed(573)
     checks = []
+    for rows, width in ((1,128), (7,1024), (4,1536)):
+        x = torch.randn(rows,width,device='cuda')
+        weight = torch.randn(width,device='cuda')
+        gate = torch.randn_like(x).half()
+        for dtype in (torch.float16,torch.float32):
+            for gated in (False,True):
+                target = x*torch.rsqrt(x.square().mean(-1,keepdim=True)+1.e-6)*weight
+                if gated:
+                    target *= torch.nn.functional.silu(gate.float())
+                actual = norm(x,weight,1.e-6,dtype,gate if gated else None)
+                torch.testing.assert_close(actual,target.to(dtype),atol=2.e-5,rtol=1.e-3)
     for length, kh, vh, kd, vd in ((1, 2, 4, 64, 64), (7, 2, 2, 128, 128),
                                    (65, 2, 4, 128, 128), (257, 2, 2, 128, 128)):
         slots = torch.tensor([3, 1], device='cuda')
@@ -78,7 +89,8 @@ def main():
         actual = output_head(x, weight)
         target = x.float() @ weight.float().T
         torch.testing.assert_close(actual, target, atol=.0002, rtol=.0002)
-    print(json.dumps({'passed': True, 'fp32_output_projection': True, 'scan': checks, 'convolution_graph_reorder': True}, indent=2))
+    print(json.dumps({'passed': True, 'fused_norm_and_gate': True, 'fp32_output_projection': True,
+                     'scan': checks, 'convolution_graph_reorder': True}, indent=2))
 
 
 if __name__ == '__main__':

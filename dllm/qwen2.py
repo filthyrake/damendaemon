@@ -1,7 +1,9 @@
 """Independent dense decoder using PyTorch/CUDA and dllm kernels, not HF generation.
 
 Dense Qwen2, Qwen3 and standard-RoPE Llama; FP16 weights and greedy decoding.
-The single-sequence base is extended by BatchExecutor. CUDA graphs remove Python dispatch from each decode step.
+The single-sequence base is extended by BatchExecutor. CUDA graphs remove
+per-operation Python dispatch within a captured decode step; the host still
+stages metadata, replays the graph, and reads the selected token.
 """
 
 import json

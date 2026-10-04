@@ -1,0 +1,273 @@
+{
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "backend": "triton-hybrid",
+  "context": 2048,
+  "batch": 4,
+  "steps": 32,
+  "cuda_graphs": true,
+  "unprofiled_rounds": [
+    {
+      "seconds": 0.46329332900131703,
+      "aggregate_tokens_per_second": 276.28284714549847,
+      "dispatch_median_seconds": 0.0005446265004138695,
+      "readback_median_seconds": 0.01393714249934419
+    },
+    {
+      "seconds": 0.46875353200084646,
+      "aggregate_tokens_per_second": 273.06460914254797,
+      "dispatch_median_seconds": 0.0005648730002576485,
+      "readback_median_seconds": 0.013917273499828298
+    },
+    {
+      "seconds": 0.46504102499966393,
+      "aggregate_tokens_per_second": 275.2445335335576,
+      "dispatch_median_seconds": 0.0005045114976383047,
+      "readback_median_seconds": 0.013913666500229738
+    }
+  ],
+  "host_calls": [
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'cpu' of 'torch._C.TensorBase' objects>",
+      "calls": 33,
+      "self_seconds": 0.44688799300000004,
+      "cumulative_seconds": 0.44688799300000004
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._nn.linear>",
+      "calls": 600,
+      "self_seconds": 0.027976154000000003,
+      "cumulative_seconds": 0.027976154000000003
+    },
+    {
+      "file": "/home/damen/dllm-dev/dllm/hybrid.py",
+      "line": 168,
+      "function": "norm",
+      "calls": 316,
+      "self_seconds": 0.018343411,
+      "cumulative_seconds": 0.040628827
+    },
+    {
+      "file": "/home/damen/dllm-dev/dllm/hybrid.py",
+      "line": 180,
+      "function": "linear_attention",
+      "calls": 72,
+      "self_seconds": 0.015061019,
+      "cumulative_seconds": 0.096338923
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'float' of 'torch._C.TensorBase' objects>",
+      "calls": 920,
+      "self_seconds": 0.012559653,
+      "cumulative_seconds": 0.012559653
+    },
+    {
+      "file": "/home/damen/dllm-dev/dllm/hybrid.py",
+      "line": 251,
+      "function": "forward",
+      "calls": 4,
+      "self_seconds": 0.009587980000000001,
+      "cumulative_seconds": 0.179844619
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.tensor>",
+      "calls": 8,
+      "self_seconds": 0.009306103000000001,
+      "cumulative_seconds": 0.009306103000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C.replay>",
+      "calls": 32,
+      "self_seconds": 0.009240312,
+      "cumulative_seconds": 0.009240312
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'mean' of 'torch._C.TensorBase' objects>",
+      "calls": 316,
+      "self_seconds": 0.006772722,
+      "cumulative_seconds": 0.006772722
+    },
+    {
+      "file": "/home/damen/dllm-dev/dllm/hybrid.py",
+      "line": 172,
+      "function": "rotate",
+      "calls": 48,
+      "self_seconds": 0.006591214000000001,
+      "cumulative_seconds": 0.010531105
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'square' of 'torch._C.TensorBase' objects>",
+      "calls": 316,
+      "self_seconds": 0.006049452,
+      "cumulative_seconds": 0.006049452
+    },
+    {
+      "file": "/home/damen/dllm-dev/dllm/hybrid.py",
+      "line": 228,
+      "function": "attention",
+      "calls": 24,
+      "self_seconds": 0.0054825030000000005,
+      "cumulative_seconds": 0.031015981
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'contiguous' of 'torch._C.TensorBase' objects>",
+      "calls": 432,
+      "self_seconds": 0.005395334000000001,
+      "cumulative_seconds": 0.005395334000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.conv1d>",
+      "calls": 72,
+      "self_seconds": 0.004298986,
+      "cumulative_seconds": 0.004298986
+    },
+    {
+      "file": "/home/damen/dllm-dev/venv/lib64/python3.11/site-packages/triton/runtime/jit.py",
+      "line": 563,
+      "function": "run",
+      "calls": 76,
+      "self_seconds": 0.004177093000000001,
+      "cumulative_seconds": 0.020713328
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.rsqrt>",
+      "calls": 316,
+      "self_seconds": 0.004092423,
+      "cumulative_seconds": 0.004092423
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'to' of 'torch._C.TensorBase' objects>",
+      "calls": 316,
+      "self_seconds": 0.003824589,
+      "cumulative_seconds": 0.003824589
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._nn.silu>",
+      "calls": 240,
+      "self_seconds": 0.0037835050000000004,
+      "cumulative_seconds": 0.0037835050000000004
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'half' of 'torch._C.TensorBase' objects>",
+      "calls": 240,
+      "self_seconds": 0.0035345570000000002,
+      "cumulative_seconds": 0.0035345570000000002
+    },
+    {
+      "file": "/home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/autograd/grad_mode.py",
+      "line": 269,
+      "function": "__enter__",
+      "calls": 41,
+      "self_seconds": 0.002675078,
+      "cumulative_seconds": 0.0027388390000000003
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._nn.pad>",
+      "calls": 72,
+      "self_seconds": 0.002564761,
+      "cumulative_seconds": 0.002564761
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method __triton_launcher.launch>",
+      "calls": 72,
+      "self_seconds": 0.0025120480000000002,
+      "cumulative_seconds": 0.0025120480000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.cat>",
+      "calls": 97,
+      "self_seconds": 0.002477191,
+      "cumulative_seconds": 0.002477191
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'copy_' of 'torch._C.TensorBase' objects>",
+      "calls": 32,
+      "self_seconds": 0.002124286,
+      "cumulative_seconds": 0.002124286
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'chunk' of 'torch._C.TensorBase' objects>",
+      "calls": 168,
+      "self_seconds": 0.0020460820000000003,
+      "cumulative_seconds": 0.0020460820000000003
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._nn.scaled_dot_product_attention>",
+      "calls": 24,
+      "self_seconds": 0.001960676,
+      "cumulative_seconds": 0.001960676
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'reshape' of 'torch._C.TensorBase' objects>",
+      "calls": 312,
+      "self_seconds": 0.001641747,
+      "cumulative_seconds": 0.001641747
+    },
+    {
+      "file": "/home/damen/dllm-dev/scripts/profile_host.py",
+      "line": 40,
+      "function": "run",
+      "calls": 1,
+      "self_seconds": 0.001566401,
+      "cumulative_seconds": 0.659636942
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'sigmoid' of 'torch._C.TensorBase' objects>",
+      "calls": 96,
+      "self_seconds": 0.0015337500000000002,
+      "cumulative_seconds": 0.0015337500000000002
+    },
+    {
+      "file": "/home/damen/dllm-dev/dllm/hybrid_kernels.py",
+      "line": 44,
+      "function": "scan",
+      "calls": 72,
+      "self_seconds": 0.001504904,
+      "cumulative_seconds": 0.026969238000000003
+    }
+  ],
+  "interpretation": "Host API time may include GPU waits; not a measurement of pure Python overhead. Profiled calls include prefill; unprofiled timing measures decode only."
+}

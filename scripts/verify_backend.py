@@ -11,6 +11,7 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('path')
+    parser.add_argument('--thinking', choices=('auto', 'off'), default='auto')
     args = parser.parse_args()
     results = []
     for backend in ('auto', 'triton'):
@@ -19,7 +20,7 @@ def main():
                    'CC': str(Path(cache) / 'missing-compiler')}
             result = subprocess.run([sys.executable, '-m', 'dllm', 'run', args.path,
                 '--prompt', 'What is 2 + 2? Answer with one number.', '--max-tokens', '8',
-                '--context', '128'], capture_output=True, text=True, env=env, timeout=120)
+                '--context', '128', '--thinking', args.thinking], capture_output=True, text=True, env=env, timeout=120)
             if backend == 'auto':
                 assert result.returncode == 0, result.stderr
                 final = json.loads(result.stderr.strip().splitlines()[-1])

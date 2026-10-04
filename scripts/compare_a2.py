@@ -21,6 +21,7 @@ def main():
     parser.add_argument('--label', default='batched')
     parser.add_argument('--context', type=int, default=256)
     parser.add_argument('--startup-timeout', type=int, default=900)
+    parser.add_argument('--engines', nargs='+', choices=('dllm', 'vllm'), default=['dllm', 'vllm'])
     parser.add_argument('--thinking', choices=('auto', 'on', 'off'), default='auto')
     args = parser.parse_args()
     if not args.label.replace('-', '').replace('_', '').isalnum():
@@ -30,7 +31,7 @@ def main():
     if os.environ.get('CUDA_VISIBLE_DEVICES') != uuid:
         raise RuntimeError('this benchmark is restricted to the authorized A2 UUID')
     model = json.loads((root / args.model_metadata).read_text())
-    for engine in ('dllm', 'vllm'):
+    for engine in args.engines:
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0))
             port = sock.getsockname()[1]
