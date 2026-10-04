@@ -27,12 +27,15 @@ class Sampling:
 class Sampler:
     def __init__(self, options):
         self.options = options
+        self.constraint = None
         # Never mutate the global RNG, or consume another request's stream.
         self.random = random.Random(options.seed) if options.temperature else None
 
     def select(self, logits):
         import torch
         options = self.options
+        if self.constraint is not None:
+            logits = self.constraint.apply(logits)
         if not options.temperature:
             return logits.argmax(-1)
         values = logits.float()
@@ -60,7 +63,7 @@ class Sampler:
 
 def sample_rows(logits, samplers, greedy=None):
     """Retain the existing batched argmax/readback for all-greedy traffic."""
-    if all(not sampler.options.temperature for sampler in samplers):
+    if all(not sampler.options.temperature and sampler.constraint is None for sampler in samplers):
         return (greedy if greedy is not None else logits.argmax(-1)).tolist()
     import torch
     return torch.stack([sampler.select(logits[i]) for i, sampler in enumerate(samplers)]).tolist()

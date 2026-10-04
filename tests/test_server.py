@@ -153,3 +153,14 @@ class ServerTests(unittest.TestCase):
                 self.post(**changes)
             self.assertEqual(error.exception.code, 400)
             error.exception.close()
+
+    def test_response_format_validation_and_forwarding(self):
+        fmt={'type':'json_object'}
+        for method in (self.post,self.raw_post):
+            with method(response_format=fmt) as response:
+                response.read()
+            self.assertEqual(self.runtime.last_options['response_format'],fmt)
+            with self.assertRaises(HTTPError) as error:
+                method(response_format={'type':'json_schema','json_schema':{'name':'bad','schema':{'type':'string','pattern':'x'}}})
+            self.assertEqual(error.exception.code,400)
+            error.exception.close()

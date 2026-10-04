@@ -390,3 +390,37 @@ Repeating the identical-token Mistral comparison above after this change gives:
 Single-request prompt latency improves 2.76x. Batch-two decode and batched
 prefill remain gaps; these results do not establish universal engine parity.
 Reports use the `mistral-q8-prefill` label in `evidence/quantization`.
+
+## Constrained JSON responses
+
+Issue #15. Optional XGrammar 0.2.8 compiles JSON-object or a bounded JSON-schema
+subset. Each request owns its matcher; a model owns a compiler with a 64 MiB
+cache limit. CUDA uses XGrammar's Triton mask kernel; Apple uses device bitwise
+masking. Masks apply before greedy/top-k/top-p selection and do not modify
+shared graph logits. Completed JSON permits EOS; a token-budget cutoff retains
+`length` rather than claiming a complete object. No automatic JSON repair runs.
+
+Supported schemas: a single object/array/string/integer/number/boolean/null type;
+object properties, required keys and boolean additionalProperties; typed array
+items; primitive enum/const; title/description annotations. Unsupported keywords
+(including refs, composition, patterns, numeric bounds and cardinality) fail
+closed. The compiler uses strict mode and schema property order. Stop strings,
+explicit thinking and ignore-EOS conflict with constraints and are rejected.
+Qwen3/Qwen3.5 chat constraints automatically disable thinking.
+
+XGrammar and Transformers tokenizer adaptation are optional runtime dependencies;
+neither supplies model generation. Grammar compilation and CPU mask generation
+add constrained-request overhead; unconstrained sampling retains its fast path.
+
+JSON formatting permits at most eight whitespace characters between grammar
+elements, preventing unbounded whitespace-only generation. String contents are
+not subject to this formatting limit.
+
+Live service checks pass on A2 Q8 Qwen2.5-0.5B, Qwen3.5-0.8B and Phi-3 mini,
+and Apple M4 Qwen2.5-0.5B and Gemma 3-270M. They cover Unicode, strict required
+keys/constant values, raw/chat, stream equivalence, mixed constrained/plain
+batches, seeded sampling, JSON objects, length truncation, rejection and
+disconnect recovery. Tokenizer-level CPU/device mask equality checks cover
+Qwen2, Phi-3 and Gemma, including nested JSON and padded vocabulary.
+Reports are under `evidence/structured`. No broad schema or tool-call parity
+is claimed.

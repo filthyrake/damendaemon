@@ -24,6 +24,7 @@ class Pending:
     sampler: Sampler = field(default_factory=lambda: Sampler(Sampling()))
     stops: tuple = ()
     raw_prompt: str | list | None = None
+    schema: str | None = None
     start: float = field(default_factory=time.perf_counter)
     events: queue.Queue = field(default_factory=lambda: queue.Queue(maxsize=8))
     done: threading.Event = field(default_factory=threading.Event)
@@ -58,7 +59,7 @@ class BatchedRuntime:
         self.worker.start()
 
     def generate(self, alias, messages, max_tokens=128, enable_thinking=None,
-                 temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None):
+                 temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None):
         if alias not in self.models:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
@@ -70,9 +71,11 @@ class BatchedRuntime:
             raw_prompt = validate_raw(raw_prompt)
             if messages is not None or enable_thinking is not None:
                 raise ValueError('raw prompts cannot include chat messages or template options')
+        from .structured import prepare_options
+        schema, enable_thinking = prepare_options(response_format, stops, enable_thinking)
         if not self.admission.acquire(blocking=False):
             raise BusyError("request queue is full")
-        request = Pending(alias, messages, max_tokens, enable_thinking, sampler, stops, raw_prompt)
+        request = Pending(alias, messages, max_tokens, enable_thinking, sampler, stops, raw_prompt, schema)
         try:
             with self.condition:
                 if self.closed:
@@ -120,6 +123,8 @@ class BatchedRuntime:
         if request.cancelled.is_set():
             self._finish(request)
             return True
+        if request.sampler.constraint is not None:
+            request.sampler.constraint.accept(token)
         request.output.append(token)
         now = time.perf_counter()
         if request.first_time is None:
@@ -188,9 +193,15 @@ class BatchedRuntime:
                                 self._finish(request)
                                 continue
                             from .prompts import encode
-                            tokens = encode(executor.model, request.messages, request.raw_prompt, request.enable_thinking)
+                            thinking = request.enable_thinking
+                            if request.schema is not None and request.raw_prompt is None and executor.model.config["model_type"] in ("qwen3", "qwen3_5_text"):
+                                thinking = False
+                            tokens = encode(executor.model, request.messages, request.raw_prompt, thinking)
                             if len(tokens) + request.max_tokens > executor.context:
                                 raise ValueError("prompt plus max_tokens exceeds configured context")
+                            if request.schema is not None:
+                                from .structured import Constraint
+                                request.sampler.constraint = Constraint(executor.model, request.schema)
                             request.slot = next(free_slots)
                             prepared.append((request, tokens))
                         except Exception as error:

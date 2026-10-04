@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "model_path": "results/models/qwen2",
+  "device": "mps",
+  "raw": false,
+  "mixed_batch": true,
+  "stream_and_raw": true,
+  "unicode": true,
+  "sampling": true,
+  "truncation_and_recovery": true,
+  "disconnect_recovery": true,
+  "sample": {
+    "id": "chatcmpl-9003f4a0b02c46d794d72bf935940e04",
+    "object": "chat.completion",
+    "created": 1791090371,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\n  \"name\": \"caf\u00e9\",\n  \"ok\": true,\n  \"values\": []\n}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 47,
+      "completion_tokens": 23,
+      "total_tokens": 70
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 0.51751683303155,
+      "kernel_backend": "metal",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 1.2491199999931268,
+      "total_seconds": 1.7860155839589424,
+      "decode_tokens_per_second": 40.97631021193266
+    }
+  }
+}

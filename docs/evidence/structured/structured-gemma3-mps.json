@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "model_path": "results/models/gemma3",
+  "device": "mps",
+  "raw": false,
+  "mixed_batch": true,
+  "stream_and_raw": true,
+  "unicode": true,
+  "sampling": true,
+  "truncation_and_recovery": true,
+  "disconnect_recovery": true,
+  "sample": {
+    "id": "chatcmpl-e9408934c2a044e78cd6b8e84ad02f8b",
+    "object": "chat.completion",
+    "created": 1791090276,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\n  \"name\": \"caf\u00e9\",\n  \"ok\": true\n  \n  \n ,\"values\": []\n}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 27,
+      "completion_tokens": 29,
+      "total_tokens": 56
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 0.603192874987144,
+      "kernel_backend": "metal-gemma",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 1.6291552920010872,
+      "total_seconds": 2.2850047089741565,
+      "decode_tokens_per_second": 42.692726829319945
+    }
+  }
+}

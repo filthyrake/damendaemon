@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "device": "cuda",
+  "raw": false,
+  "mixed_batch": true,
+  "stream_and_raw": true,
+  "unicode": true,
+  "sampling": true,
+  "truncation_and_recovery": true,
+  "disconnect_recovery": true,
+  "sample": {
+    "id": "chatcmpl-22212a1fd9f640e4b9da8a3ffcbd9045",
+    "object": "chat.completion",
+    "created": 1791090368,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\n  \"name\": \"caf\u00e9\",\n  \"ok\": true,\n  \"values\": []\n}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 47,
+      "completion_tokens": 23,
+      "total_tokens": 70
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 6.623876031997497,
+      "kernel_backend": "triton+q8_0",
+      "weight_quantization": "q8_0",
+      "max_batch_size": 1,
+      "residual_dtype": "float16",
+      "first_token_seconds": 9.121390296000754,
+      "total_seconds": 9.219028573999822,
+      "decode_tokens_per_second": 225.32146665071434
+    }
+  }
+}

@@ -59,13 +59,17 @@ def handler_for(runtime):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
-                allowed = {"model", "messages", "max_tokens", "max_completion_tokens", "stop", "temperature", "top_p", "top_k", "seed", "stream", "stream_options", "chat_template_kwargs"}
+                allowed = {"model", "messages", "max_tokens", "max_completion_tokens", "stop", "temperature", "top_p", "top_k", "seed", "stream", "stream_options", "chat_template_kwargs", "response_format"}
                 if raw:
                     allowed = (allowed - {'messages', 'chat_template_kwargs', 'max_completion_tokens'}) | {'prompt'}
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
                 sampling = {key: body[key] for key in ("temperature", "top_p", "top_k", "seed") if key in body}
                 Sampling(**sampling)
+                if "response_format" in body:
+                    from .structured import response_schema
+                    response_schema(body["response_format"])
+                    sampling["response_format"] = body["response_format"]
                 if 'stop' in body:
                     stop_sequences(body['stop'])
                     sampling['stop'] = body['stop']

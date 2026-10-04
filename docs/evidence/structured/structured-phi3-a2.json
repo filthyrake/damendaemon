@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "model_path": "/home/damen/.cache/huggingface/hub/models--microsoft--Phi-3-mini-4k-instruct/snapshots/f39ac1d28e925b323eae81227eaba4464caced4e",
+  "device": "cuda",
+  "raw": false,
+  "mixed_batch": true,
+  "stream_and_raw": true,
+  "unicode": true,
+  "sampling": true,
+  "truncation_and_recovery": true,
+  "disconnect_recovery": true,
+  "sample": {
+    "id": "chatcmpl-46eba81f45e849809730a14472a7581d",
+    "object": "chat.completion",
+    "created": 1791090279,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"name\":\"caf\u00e9\",\"ok\":true,\"values\":[]}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 22,
+      "completion_tokens": 16,
+      "total_tokens": 38
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 38.867898947002686,
+      "kernel_backend": "triton+q8_0",
+      "weight_quantization": "q8_0",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 41.236706562998734,
+      "total_seconds": 41.66197715299859,
+      "decode_tokens_per_second": 35.271660803078646
+    }
+  }
+}

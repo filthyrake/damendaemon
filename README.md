@@ -8,7 +8,7 @@ Apple Silicon MPS path. It implements its own forward pass, static KV
 cache, greedy decoding, CUDA graphs, continuous batching, a streaming API, and
 GPU/host model residency. PyTorch/cuBLAS and dllm's fused Triton kernels provide
 GPU execution; dllm does not depend on vLLM, llama.cpp, Ollama,
-or Transformers generation. Transformers is only a validation dependency.
+or Transformers generation. Transformers is used for validation and optional structured-output tokenizer adaptation; model execution remains independent.
 
 Additional qualified checkpoints include Llama 3.2, Gemma 3 text, and Phi-3
 mini. Exact revisions, numerical gates, and remaining limits are recorded in
@@ -269,3 +269,22 @@ CUDA_VISIBLE_DEVICES=GPU-your-device-uuid /tmp/dllm-cuda-probe
 
 The first A2 measurements and their limitations are in
 [the hardware evidence](docs/a2-hardware.md).
+
+Optional constrained JSON responses are enabled by installing `dllm[structured]`.
+Both completion routes accept `response_format: {"type":"json_object"}` or
+`{"type":"json_schema","json_schema":{"name":"result","strict":true,"schema":...}}`.
+The supported schema subset includes object properties/required/additionalProperties,
+arrays with an item schema, primitive types, and primitive enum/const values.
+Unknown keywords are rejected. Schemas are limited to 16 KiB, 256 nodes and depth
+16; property order follows the schema. A completion that exhausts its token
+budget has finish reason `length` and can contain incomplete JSON.
+
+Grammar masks apply before sampling, with independent state for each request.
+Structured responses reject custom stop strings and explicit thinking; Qwen3/
+Qwen3.5 chat thinking is automatically disabled. Plain requests keep the existing
+fast path. The optional XGrammar compiler and mask kernels are reused; dllm
+still executes the model itself. Apple uses a native PyTorch/Metal bitmask path.
+
+JSON formatting permits at most eight whitespace characters between grammar
+elements, preventing unbounded whitespace-only generation. String contents are
+not subject to this formatting limit.
