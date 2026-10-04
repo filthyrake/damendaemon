@@ -526,7 +526,9 @@ Chat requests can set `"logprobs": true` and `"top_logprobs": 5` (0–20).
 Streaming and nonstream responses include selected-token scores and top
 alternatives under `choices[].logprobs.content`, with token bytes where the
 tokenizer provides a supported byte mapping. Scoring is opt-in and leaves the
-default generation path without probability calculations.
+default generation path without probability calculations. CUDA batches use
+fused native scoring with one compact readback; Apple uses the qualified
+PyTorch log-softmax fallback.
 
 These are raw model log probabilities before sampling filters, bias, penalties
 or grammar constraints. Custom text stops combined with scores, raw-completion

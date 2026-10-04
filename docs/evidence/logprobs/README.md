@@ -30,7 +30,7 @@ Independent qualification:
 - Real HTTP streaming/nonstream scores match; four concurrent requests preserve
   scores/output; scoring does not change output; prefix hits, chunked prompts,
   cancellation and recovery pass. A2 additionally uses a 2048-token page pool.
-- The local suite has 168 passing tests, including independent log-softmax,
+- The local suite has 169 passing tests, including independent log-softmax,
   sampling invariance, request isolation, Unicode byte fragments, protocol
   validation and decoder lifetime.
 
@@ -57,3 +57,37 @@ at concurrency 1/2/4, with TTFT 30.84 / 52.24 / 76.44 ms. This recovers much
 of the initial overhead, but remains slower than the earlier scoring-off
 205.22 / 351.42 / 643.39 tokens/s. Additional score kernels, host transfers and
 larger JSON responses are opt-in costs, not claimed to be free.
+
+## Fused CUDA scoring
+
+CUDA now defaults to two native kernels plus one compact host readback for
+batched or top-alternative scoring. Partial block maxima and exponential sums
+are merged without adding/subtracting a large logit offset, preserving numerical
+stability. Top-k ties choose the lowest token ID. The native path is bounded to
+vocabularies up to 262144; larger vocabularies and Apple use PyTorch log-softmax.
+Single-request selected-token-only scoring also uses the faster measured Torch
+path. `DLLM_LOGPROBS_KERNELS=torch` or `triton` can force a backend for diagnosis.
+
+The native FP64 oracle passes 24 shape/dtype/top-count cases, plus equal-value
+ties, all-masked blocks, non-finite rejection and logit offsets of +/-1e6.
+It does not mutate model logits. Native A2 model/API proof and updated M4
+fallback proof pass all 24 token checks and service scenarios.
+
+At four rows and top-five alternatives, isolated scoring/readback time is
+0.552 ms for the initial batched Torch implementation, 0.396 ms for the improved
+Torch log-softmax fallback, and 0.232 ms for native CUDA. GPU events decrease
+from 36 to 25 to 3 (the last includes the single host transfer). These are
+component measurements, separate from serving performance.
+
+Final matched A2 Qwen2 Q4 serving, same 2048-token paged context/pool and
+64-token outputs, five warm measured rounds:
+
+| Concurrent requests | Scoring off tokens/s | Torch top-five tokens/s | Native top-five tokens/s | Native TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 209.32 | 196.67 | 203.81 | 28.33 |
+| 2 | 364.85 | 342.11 | 346.61 | 44.00 |
+| 4 | 652.44 | 569.16 | 611.99 | 72.10 |
+
+Native scoring retains about 97% / 95% / 94% of scoring-off throughput in
+these runs. Response serialization and transport are included. The remaining
+cost is explicit; unrelated models, vocabularies and hardware may differ.

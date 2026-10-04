@@ -30,6 +30,12 @@ class LogprobTests(unittest.TestCase):
         self.assertAlmostEqual(sampler.last_logprobs['logprob'],torch.log_softmax(logits,0)[2].item())
         self.assertTrue(torch.equal(logits,original))
 
+    def test_large_logit_offset_does_not_lose_probability_precision(self):
+        logits=torch.tensor([1.e6,1.e6+1,1.e6+2])
+        result=scores(logits,0,2)
+        expected=torch.log_softmax(logits.double(),-1)
+        self.assertAlmostEqual(result['logprob'],expected[0].item(),places=6)
+
     def test_scoring_does_not_change_seeded_sampling(self):
         plain=Sampler(Sampling(temperature=.8,top_p=.9,top_k=3,seed=73))
         scored=Sampler(plain.options);scored.logprobs_top=3

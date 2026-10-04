@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import json
 import math
+import os
 import re
 
 
@@ -23,11 +24,19 @@ def scores(logits,selected,top):
 def score_rows(logits,selected,tops):
     """One set of reductions/readbacks for a scored batch, not per request."""
     import torch
-    values=logits.float()
-    normalizer=torch.logsumexp(values,-1,keepdim=True)
+    backend=os.environ.get('DLLM_LOGPROBS_KERNELS','auto')
+    if backend not in ('torch','triton','auto'):
+        raise ValueError('DLLM_LOGPROBS_KERNELS must be auto, torch or triton')
+    native_case=backend=='triton' or len(tops)>1 or max(tops)>0
+    if backend!='torch' and native_case and logits.device.type=='cuda' and logits.shape[-1]<=262144:
+        from .logprob_kernels import score_rows as native
+        return native(logits,selected,tops)
+    if backend=='triton':
+        raise ValueError('native logprobs require CUDA and vocabulary <= 262144')
+    values=torch.log_softmax(logits.float(),dim=-1)
     best,ids=values.topk(min(max(tops),values.shape[-1]),dim=-1)
     chosen=selected.reshape(-1,1)
-    numbers=torch.cat((values.gather(1,chosen),best),dim=1).sub(normalizer).cpu().tolist()
+    numbers=torch.cat((values.gather(1,chosen),best),dim=1).cpu().tolist()
     token_ids=torch.cat((chosen,ids),dim=1).cpu().tolist()
     result=[]
     for row,ids,top in zip(numbers,token_ids,tops):
