@@ -128,3 +128,42 @@ simultaneous limits rejected. Unicode, overlapping stops, every split of a stop
 sequence, replacement-character handling and malformed inputs are unit tested.
 The live M4 HTTP test verifies stop omission, stop finish reason, streamed stop
 matching and the alternate completion budget alongside seeded sampling.
+
+
+## Phi-3 mini 4K
+
+Issue #8. Official `microsoft/Phi-3-mini-4k-instruct` revision
+`f39ac1d28e925b323eae81227eaba4464caced4e`. Packed QKV and gate/up weights feed
+the shared dense executor; attention respects the 2047-token sliding window.
+Native CUDA rotary/cache and attention kernels now mask padded lanes for
+non-power-of-two head dimensions, including Phi-3's 96-wide heads.
+
+The A2 path passes 97/97 comparisons at 4096 context against independently
+saved CPU FP32 eager-reference logits (Transformers 4.51.3 / torch 2.6). This
+includes 4080-token prefill, 2046/2047/2048 window boundaries, slot reuse and
+reordered/shrinking batches. Worst relative RMS is 0.97840%, maximum absolute
+error 0.41998, with exact greedy-token agreement. The 1% / 0.5 gates were not
+relaxed. This result is close to the relative-error limit and does not establish
+blanket Phi-family support. LongRoPE variants remain rejected.
+
+CUDA retains FP16 projection weights, matrix outputs, rotary multiplication
+rounding and KV, with FP32 residuals, normalization/activation intermediates and
+final vocabulary accumulation. Plain FP16 execution failed three checks; FP32
+final logits fixed a close token-ranking failure. Apple uses its existing FP32
+arithmetic/FP16 storage path: the isolated slot-0 replay passes 28 checks at 4K,
+including long prefill and slot reuse, worst relative RMS 0.001023%. Apple
+multi-slot Phi-3 qualification is not established by that lower-memory run.
+
+The initial fallback implementation exceeded A2 memory during packed prefill.
+Native attention avoids whole-cache graph copies; packed dense prefill is now
+also split into groups bounded by one configured context's total token count.
+This bounds aggregate activation work while retaining ordinary short-prompt
+batching and preserving slot/order semantics. An independent Qwen2 Apple replay
+also verifies the grouping change.
+
+Validation can now generate a reference trace with `verify_stress.py
+--reference-only --golden-output ...` and replay it in a separate process. A
+reference-only report explicitly has `passed: null` and performs no dllm
+qualification. This permits sequential GPU reference/runtime validation without
+two resident model copies. `replay_reference.py --slot N` can isolate one original
+slot for memory-constrained hardware; the report records that reduced scope.

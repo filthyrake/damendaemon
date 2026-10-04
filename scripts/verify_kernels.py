@@ -121,6 +121,24 @@ def main():
             torch.testing.assert_close(actual[0].transpose(0,1),expected_q,atol=.004,rtol=.002)
             torch.testing.assert_close(cache_k[0,:,positions,:].transpose(0,1),expected_k,atol=.004,rtol=.002)
             checks += 1
+    # FP32 residual decoders rotate in FP32 before the final cache cast.
+    dim, heads, kv_heads, context = 96, 4, 2, 512
+    qkv = torch.randn((3, (heads+2*kv_heads)*dim), device='cuda', dtype=torch.float16)
+    positions = torch.tensor([1,255,511], device='cuda')
+    slots = torch.tensor([2,0,1], device='cuda')
+    cos = torch.randn((context,dim), device='cuda')
+    sin = torch.randn_like(cos)
+    cache_k = torch.zeros((3,kv_heads,context,dim), device='cuda', dtype=torch.float16)
+    cache_v = torch.zeros_like(cache_k)
+    q, k, _ = qkv.split([heads*dim,kv_heads*dim,kv_heads*dim],-1)
+    def rotate_fp32(value):
+        value = value.reshape(3,-1,dim).float()
+        left,right = value.chunk(2,-1)
+        return (value*cos[positions,None]+torch.cat((-right,left),-1)*sin[positions,None]).half()
+    actual = kernels.rope_batch(qkv,cos,sin,positions,slots,cache_k,cache_v,heads,precise=True)
+    torch.testing.assert_close(actual[:,:,0],rotate_fp32(q),atol=.004,rtol=.002)
+    torch.testing.assert_close(cache_k[slots,:,positions],rotate_fp32(k),atol=.004,rtol=.002)
+    checks += 1
     print(json.dumps({"checks": checks, "attention": attention_checks, "passed": True}, indent=2))
 
 

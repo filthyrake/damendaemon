@@ -107,10 +107,14 @@ The budget excludes transient loading buffers and library overhead. GPU capacity
 is checked conservatively; allocation failures return an error without publishing
 a partially loaded executor. There is no automatic GPU-budget tuning yet.
 
-Implemented: dense unquantized Qwen2, Qwen3, standard-RoPE Llama, and the
+Implemented: dense unquantized Qwen2, Qwen3, Llama, Phi-3, and the
 dense Qwen3.5 text backbone; text chat templates, greedy or sampled decoding, and optional
 streaming usage. CUDA uses FP16 weights/KV. Qwen3 uses FP32 residuals and fused
 elementwise intermediates for accuracy, while its matrix multiplies remain FP16.
+Phi-3 adds packed projections, sliding attention and native 96-wide heads; its
+CUDA path retains FP16 matrix/KV storage with FP32 residuals and final logits.
+The pinned Phi-3 mini 4K checkpoint passes the strict 4K CUDA replay; Apple has
+a 4K single-slot qualification. LongRoPE Phi variants remain unsupported.
 Sampling accepts finite `temperature >= 0`, `top_p` in `(0, 1]`, nonnegative integer
 `top_k` (zero disables it), and an optional unsigned 64-bit `seed`. Temperature
 defaults to zero and retains the greedy fast path. Seeds belong to requests;

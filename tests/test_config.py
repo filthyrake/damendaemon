@@ -106,3 +106,14 @@ class GemmaConfigTests(unittest.TestCase):
                        {'rope_scaling':{'type':'linear','factor':2}}):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 decoder_config(self.config(**change))
+
+
+class Phi3ConfigTests(unittest.TestCase):
+    def test_packed_decoder_and_non_power_of_two_heads(self):
+        c = ConfigTests().config(model_type='phi3', hidden_size=3072, num_attention_heads=32,
+                                 num_key_value_heads=32, head_dim=96, sliding_window=2047)
+        self.assertEqual(decoder_config(c)['head_dim'], 96)
+        self.assertEqual(decoder_config(c)['sliding_window'], 2047)
+        for window in (False, -1, 0, 3.5):
+            with self.subTest(window=window), self.assertRaises(ValueError):
+                decoder_config({**c, 'sliding_window':window})

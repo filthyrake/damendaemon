@@ -19,6 +19,7 @@ def main():
     parser.add_argument('qwen2')
     parser.add_argument('qwen3')
     parser.add_argument('llama')
+    parser.add_argument('--host-gib', type=int, default=8)
     args = parser.parse_args()
     models = {'old': args.qwen2, 'new': args.qwen3, 'llama': args.llama}
     reports = []
@@ -27,7 +28,7 @@ def main():
             logpath = Path(directory) / 'server.log'
             with logpath.open('w') as log:
                 command = [sys.executable, '-m', 'dllm', 'serve', '--port', '0', '--context', '2048',
-                           '--gpu-models', str(capacity), '--host-models', '3', '--host-gib', '8']
+                           '--gpu-models', str(capacity), '--host-models', '3', '--host-gib', str(args.host_gib)]
                 for alias, path in models.items():
                     command += ['--model', alias+'='+path]
                 process = subprocess.Popen(command, stdout=log, stderr=log)

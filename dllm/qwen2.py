@@ -1,6 +1,6 @@
 """Independent dense decoder using PyTorch/CUDA and dllm kernels, not HF generation.
 
-Dense Qwen2, Qwen3 and standard-RoPE Llama; FP16 weights and greedy decoding.
+Dense Qwen2, Qwen3, Llama and Phi-3; model-specific mixed precision.
 The single-sequence base is extended by BatchExecutor. CUDA graphs remove
 per-operation Python dispatch within a captured decode step; the host still
 stages metadata, replays the graph, and reads the selected token.
@@ -100,17 +100,23 @@ class ModelWeights:
         weights["head"] = weights["embed"] if c.get("tie_word_embeddings") else take("lm_head.weight")
         for i in range(c["num_hidden_layers"]):
             prefix = f"model.layers.{i}."
-            for kind in (("weight", "bias") if c["model_type"] == "qwen2" else ("weight",)):
-                weights[f"{i}.qkv.{kind}"] = torch.cat([
-                    take(prefix + f"self_attn.{p}_proj.{kind}") for p in ("q", "k", "v")
-                ])
+            if c['model_type'] == 'phi3':
+                weights[f'{i}.qkv.weight'] = take(prefix + 'self_attn.qkv_proj.weight')
+            else:
+                for kind in (("weight", "bias") if c["model_type"] == "qwen2" else ("weight",)):
+                    weights[f"{i}.qkv.{kind}"] = torch.cat([
+                        take(prefix + f"self_attn.{p}_proj.{kind}") for p in ("q", "k", "v")
+                    ])
             if c["model_type"] == "qwen3":
                 weights[f"{i}.q_norm"] = take(prefix + "self_attn.q_norm.weight")
                 weights[f"{i}.k_norm"] = take(prefix + "self_attn.k_norm.weight")
             weights[f"{i}.out"] = take(prefix + "self_attn.o_proj.weight")
-            weights[f"{i}.gate_up"] = torch.cat([
-                take(prefix + f"mlp.{p}_proj.weight") for p in ("gate", "up")
-            ])
+            if c['model_type'] == 'phi3':
+                weights[f'{i}.gate_up'] = take(prefix + 'mlp.gate_up_proj.weight')
+            else:
+                weights[f"{i}.gate_up"] = torch.cat([
+                    take(prefix + f"mlp.{p}_proj.weight") for p in ("gate", "up")
+                ])
             weights[f"{i}.down"] = take(prefix + "mlp.down_proj.weight")
             weights[f"{i}.norm1"] = take(prefix + "input_layernorm.weight")
             weights[f"{i}.norm2"] = take(prefix + "post_attention_layernorm.weight")
@@ -152,7 +158,9 @@ class Executor:
         self.kv_heads = c["num_key_value_heads"]
         self.dim = c["head_dim"]
         self.eps = c["rms_norm_eps"]
-        self.precise = c["model_type"] in ("qwen3", "gemma3_text")
+        self.window = c.get("sliding_window") if c["model_type"] == "phi3" else None
+        self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3")
+        self.rotary_precise = c["model_type"] == "qwen3"
         self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
         if c["model_type"] == "gemma3_text":
             self.compute_dtype = torch.float32
@@ -177,8 +185,6 @@ class Executor:
             if selected != 'torch':
                 try:
                     from . import kernels as fused
-                    if self.dim & (self.dim - 1):
-                        raise ImportError("fused kernels require power-of-two head dimensions")
                     self.kernels = fused
                 except ImportError:
                     if selected == "triton":
@@ -220,6 +226,8 @@ class Executor:
             if id(tensor) not in copies:
                 dtype = torch.float16 if (half_metal_weights or half_gemma_weights) and tensor.ndim == 2 else self.compute_dtype
                 if c["model_type"] == "gemma3_text" and (tensor.ndim == 1 or (self.device == "mps" and name.endswith(".down"))):
+                    dtype = torch.float32
+                if c["model_type"] == "phi3" and name == "norm":
                     dtype = torch.float32
                 copies[id(tensor)] = tensor.to(device=self.device, dtype=dtype)
             self.w[name] = copies[id(tensor)]
@@ -278,12 +286,42 @@ class Executor:
 
     def rotate(self, x, cos, sin):
         left, right = x.chunk(2, dim=-1)
-        return (x * cos + torch.cat((-right, left), dim=-1) * sin).to(self.compute_dtype)
+        a, b = x * cos, torch.cat((-right, left), dim=-1) * sin
+        if self.device == 'cuda' and self.c['model_type'] == 'phi3':
+            # Keep the checkpoint's FP16 rotary multiplication boundaries even
+            # though residual accumulation and final logits use FP32.
+            a, b = a.half(), b.half()
+        return (a + b).to(self.compute_dtype)
 
     def activate(self, gate, up):
         if self.precise:
             return (F.silu(gate.float()) * up.float()).to(self.compute_dtype)
         return F.silu(gate) * up
+
+    def output_logits(self, x):
+        normalized = self.norm(x, self.w['norm'])
+        if self.c['model_type'] == 'phi3' and self.device == 'cuda':
+            if self.kernels:
+                return self.kernels.linear_fp32(normalized.float(), self.w['head'])
+            return F.linear(normalized.float(), self.w['head'].float())
+        return self.linear(normalized, self.w['head'])
+
+    def prefill_attention(self, query, key, value):
+        if not self.window:
+            return scaled_attention(query, key, value, is_causal=True, enable_gqa=True)
+        positions = self.arange[:query.shape[-2]]
+        mask = (positions[None, :] <= positions[:, None]) & (positions[None, :] > positions[:, None] - self.window)
+        return scaled_attention(query, key, value, attn_mask=mask, enable_gqa=True)
+
+    def decode_attention(self, query, cache_k, cache_v, positions, slots=None):
+        if self.kernels and (not self.window or self.device == 'cuda'):
+            options = {'window': self.window} if self.window else {}
+            return self.kernels.attention(query, cache_k, cache_v, positions, slots, **options)
+        mask = self.arange[None, None, None, :] <= positions[:, None, None, None]
+        if self.window:
+            mask = mask & (self.arange[None, None, None, :] > positions[:, None, None, None] - self.window)
+        key, value = (cache_k, cache_v) if slots is None else (cache_k.index_select(0, slots), cache_v.index_select(0, slots))
+        return scaled_attention(query, key, value, attn_mask=mask, enable_gqa=True)
 
     @torch.inference_mode()
     def forward(self, ids, positions, prefill, slot=0):
@@ -293,7 +331,6 @@ class Executor:
         if not self.kernels or not self.fuse_projections:
             cos = self.cos[positions].view(1, 1, count, self.dim)
             sin = self.sin[positions].view(1, 1, count, self.dim)
-        mask = None if prefill or self.kernels else (self.arange <= positions[0]).view(1, 1, 1, -1)
         for i in range(self.c["num_hidden_layers"]):
             hidden = self.norm(x, w[f"{i}.norm1"])
             sizes = [self.heads * self.dim, self.kv_heads * self.dim, self.kv_heads * self.dim]
@@ -308,7 +345,7 @@ class Executor:
                     w[f"{i}.qkv.weight"].split(sizes), biases)]
             if self.kernels and self.fuse_projections:
                 q = self.kernels.rope_store(qkv, self.cos, self.sin, positions, cache_k, cache_v, self.heads,
-                    w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps)
+                    w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps, self.rotary_precise)
                 k, v = cache_k[:, :, :count], cache_v[:, :, :count]
             else:
                 q, k = self.normalize_qk(q, k, i)
@@ -323,11 +360,8 @@ class Executor:
                     cache_v.index_copy_(2, positions, v)
             if not prefill:
                 k, v = cache_k, cache_v
-            if self.kernels and not prefill:
-                attention = self.kernels.attention(q, cache_k, cache_v, positions)
-            else:
-                attention = scaled_attention(q, k, v, attn_mask=mask,
-                                                           is_causal=prefill, enable_gqa=True)
+            attention = (self.prefill_attention(q, k, v) if prefill
+                         else self.decode_attention(q, cache_k, cache_v, positions))
             x = x + self.linear(attention.transpose(1, 2).reshape(count, -1), w[f"{i}.out"])
             hidden = self.norm(x, w[f"{i}.norm2"])
             if self.fuse_projections:
@@ -337,7 +371,7 @@ class Executor:
                 gate, up = [self.linear(hidden, weight) for weight in w[f"{i}.gate_up"].chunk(2)]
             activated = self.kernels.swiglu(gate_up, self.precise) if self.kernels and self.fuse_projections else self.activate(gate, up)
             x = x + self.linear(activated, w[f"{i}.down"])
-        return self.linear(self.norm(x[-1:], w["norm"]), w["head"])
+        return self.output_logits(x[-1:])
 
     @torch.inference_mode()
     def prefill(self, tokens, slot=0):

@@ -193,7 +193,7 @@ def linear(x, weight, bias=None):
 
 
 def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads,
-               qw=None, kw=None, eps=1.e-6, single=False):
+               qw=None, kw=None, eps=1.e-6, precise=False, single=False):
     n, dim = qkv.shape[0], cache_k.shape[-1]
     kvheads, context = cache_k.shape[1:3]
     q = torch.empty((n, heads, 1, dim), device='mps', dtype=torch.float32)
@@ -204,9 +204,9 @@ def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads,
     return q
 
 
-def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, qw=None, kw=None, eps=1.e-6):
+def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, qw=None, kw=None, eps=1.e-6, precise=False):
     return rope_batch(qkv, cos, sin, positions, positions, cache_k, cache_v,
-                      heads, qw, kw, eps, single=True).permute(2,1,0,3)
+                      heads, qw, kw, eps, precise=precise, single=True).permute(2,1,0,3)
 
 
 def attention(q, cache_k, cache_v, positions, slots=None):

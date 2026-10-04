@@ -20,12 +20,15 @@ def main():
     parser.add_argument('--model-metadata', default='model-a.json')
     parser.add_argument('--label', default='batched')
     parser.add_argument('--context', type=int, default=256)
+    parser.add_argument('--gpu-memory-utilization', type=float, default=.5)
     parser.add_argument('--startup-timeout', type=int, default=900)
     parser.add_argument('--engines', nargs='+', choices=('dllm', 'vllm'), default=['dllm', 'vllm'])
     parser.add_argument('--thinking', choices=('auto', 'on', 'off'), default='auto')
     args = parser.parse_args()
     if not args.label.replace('-', '').replace('_', '').isalnum():
         parser.error('label must contain only letters, digits, hyphens or underscores')
+    if not 0 < args.gpu_memory_utilization < 1:
+        parser.error('GPU memory utilization must be between zero and one')
     root = Path.cwd()
     uuid = 'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'
     if os.environ.get('CUDA_VISIBLE_DEVICES') != uuid:
@@ -43,7 +46,7 @@ def main():
             venv = root / 'baselines/vllm-venv/bin'
             command = [str(venv / 'vllm'), 'serve', model['path'], '--served-model-name', 'a',
                        '--host', '127.0.0.1', '--port', str(port), '--dtype', 'half',
-                       '--max-model-len', str(args.context), '--max-num-seqs', '4', '--gpu-memory-utilization', '0.5',
+                       '--max-model-len', str(args.context), '--max-num-seqs', '4', '--gpu-memory-utilization', str(args.gpu_memory_utilization),
                        '--no-enable-prefix-caching', '--generation-config', 'vllm']
             config = json.loads((Path(model['path']) / 'config.json').read_text())
             if config.get('vision_config') is not None:

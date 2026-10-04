@@ -2,7 +2,9 @@
 
 This report records the dense-CUDA milestone. Subsequent Qwen3.5 and Apple
 Silicon implementation and evidence are in [hybrid and MPS validation](hybrid-and-mps.md).
-The support boundaries below describe this earlier measurement set.
+Llama 3.2, Gemma 3, Phi-3 and API additions are recorded in
+[architecture qualification](architecture-parity.md). The support boundaries
+below describe this earlier measurement set.
 
 A2 measurements from 2026-10-03. All GPU work selected the A2 UUID; the A30
 remained assigned to its existing workload. The runtime still has no vLLM or

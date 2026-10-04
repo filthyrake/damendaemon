@@ -17,15 +17,28 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('trace')
     p.add_argument('--no-graph', action='store_true')
+    p.add_argument('--slot', type=int, help='replay one original slot in isolation to reduce memory use')
     p.add_argument('--model-path', help='local copy of the exact checkpoint used to generate the trace')
     args = p.parse_args()
     require_gpu()
     torch.set_num_threads(4)
     trace = torch.load(args.trace, map_location='cpu', weights_only=True)
+    events = trace['trace']
+    if args.slot is not None:
+        selected = []
+        for event in events:
+            rows = [i for i, slot in enumerate(event['slots']) if slot == args.slot]
+            if rows:
+                selected.append({**event, 'slots': [0]*len(rows),
+                    **{key: [event[key][i] for i in rows] for key in ('targets', 'prompts', 'tokens') if key in event}})
+        if not selected:
+            raise ValueError('selected slot is absent from the reference trace')
+        events = selected
+    capacity = max(max(event['slots']) for event in events) + 1
     model = ModelWeights(args.model_path or trace['path'], trace['context'])
-    executor = make_executor(model, use_graph=not args.no_graph, max_batch=4)
+    executor = make_executor(model, use_graph=not args.no_graph, max_batch=capacity)
     checks, timings = [], []
-    for event in trace['trace']:
+    for event in events:
         synchronize()
         start = time.perf_counter()
         if event['kind'] == 'prefill':
@@ -47,6 +60,7 @@ def main():
                            'passed': relative < .01 and absolute < .5 and match})
     passed = all(c['passed'] for c in checks)
     print(json.dumps({'passed': passed, 'model_path': trace['path'], 'context': trace['context'],
+        'local_model_path': str(model.path), 'source_slot': args.slot,
         'device': device_name(), 'torch': str(torch.__version__), 'reference_dtype': trace['reference_dtype'],
         'reference_torch': trace['reference_torch'], 'reference_attention': trace.get('reference_attention', 'sdpa'), 'graph_requested': not args.no_graph,
         'kernel_backend': executor.kernel_backend, 'checks': checks, 'timings': timings}, indent=2))

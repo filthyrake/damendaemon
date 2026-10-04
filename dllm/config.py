@@ -46,8 +46,8 @@ def decoder_config(config):
         return hybrid_config(config)
     c = dict(config)
     kind = c.get('model_type')
-    if kind not in ('qwen2', 'qwen3', 'llama'):
-        raise ValueError(f'unsupported model architecture: {kind}; expected qwen2, qwen3, or llama')
+    if kind not in ('qwen2', 'qwen3', 'llama', 'phi3'):
+        raise ValueError(f'unsupported model architecture: {kind}; expected qwen2, qwen3, llama, or phi3')
     if (c.get('quantization_config') or c.get('rope_parameters')
             or c.get('use_sliding_window', False) or c.get('hidden_act') != 'silu'
             or c.get('partial_rotary_factor', 1) != 1 or c.get('mlp_bias', False)
@@ -59,6 +59,9 @@ def decoder_config(config):
                  'num_hidden_layers', 'max_position_embeddings', 'vocab_size'):
         if type(c.get(name)) is not int or c[name] <= 0:
             raise ValueError(f'{name} must be a positive integer')
+    if kind == 'phi3' and c.get('sliding_window') is not None:
+        if type(c['sliding_window']) is not int or c['sliding_window'] <= 0:
+            raise ValueError('sliding_window must be a positive integer')
     heads = c['num_attention_heads']
     if heads % c['num_key_value_heads']:
         raise ValueError('query head count must be divisible by KV head count')

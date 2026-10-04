@@ -5,9 +5,8 @@ from itertools import accumulate
 import torch
 from torch.nn import functional as F
 
-from .device import attention as scaled_attention
-
 from .qwen2 import Executor
+from .prefill import groups
 
 
 class BatchExecutor(Executor):
@@ -47,15 +46,14 @@ class BatchExecutor(Executor):
         if not self.kernels:
             cos = self.cos[positions].view(batch, 1, 1, self.dim)
             sin = self.sin[positions].view(batch, 1, 1, self.dim)
-            mask = self.arange.view(1, 1, 1, -1) <= positions.view(batch, 1, 1, 1)
         for i in range(self.c["num_hidden_layers"]):
             qkv = self.linear(self.norm(x, w[f"{i}.norm1"]), w[f"{i}.qkv.weight"], w.get(f"{i}.qkv.bias"))
             cache_k, cache_v = self.kv[i].unbind(0)
             if self.kernels:
                 q = self.kernels.rope_batch(qkv, self.cos, self.sin, positions, slots,
                                              cache_k, cache_v, self.heads,
-                    w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps)
-                attended = self.kernels.attention(q, cache_k, cache_v, positions, slots)
+                    w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps, self.rotary_precise)
+                attended = self.decode_attention(q, cache_k, cache_v, positions, slots)
             else:
                 q, k, v = qkv.split([self.heads*self.dim, self.kv_heads*self.dim, self.kv_heads*self.dim], -1)
                 q, k = self.normalize_qk(q, k, i)
@@ -64,8 +62,7 @@ class BatchExecutor(Executor):
                 v = v.view(batch, self.kv_heads, self.dim)
                 cache_k[slots, :, positions, :] = k.squeeze(2)
                 cache_v[slots, :, positions, :] = v
-                attended = scaled_attention(q, cache_k.index_select(0, slots),
-                    cache_v.index_select(0, slots), attn_mask=mask, enable_gqa=True)
+                attended = self.decode_attention(q, cache_k, cache_v, positions, slots)
             x = x + self.linear(attended.reshape(batch, -1), w[f"{i}.out"])
             gate_up = self.linear(self.norm(x, w[f"{i}.norm2"]), w[f"{i}.gate_up"])
             if self.kernels:
@@ -74,7 +71,7 @@ class BatchExecutor(Executor):
                 gate, up = gate_up.chunk(2, -1)
                 activated = self.activate(gate, up)
             x = x + self.linear(activated, w[f"{i}.down"])
-        return self.linear(self.norm(x, w["norm"]), w["head"])
+        return self.output_logits(x)
 
     def prefill(self, tokens, slot=0):
         result = super().prefill(tokens, slot)
@@ -88,6 +85,11 @@ class BatchExecutor(Executor):
                 or any(slot < 0 or slot >= self.max_batch for slot in slots)
                 or any(not ids or len(ids) > self.context for ids in prompts)):
             raise ValueError("invalid prefill batch")
+        if sum(map(len, prompts)) > self.context:
+            # Bound temporary activations by one configured context. Validate
+            # the entire request set above before writing any group's cache.
+            return torch.cat([self.prefill_batch(batch, assigned)
+                              for batch, assigned in groups(prompts, slots, self.context)])
         if len(prompts) == 1:
             return self.prefill(prompts[0], slots[0])
         lengths = [len(ids) for ids in prompts]
@@ -105,7 +107,7 @@ class BatchExecutor(Executor):
             if self.kernels:
                 query = self.kernels.rope_batch(qkv, self.cos, self.sin, positions, slot_ids,
                                                  cache_k, cache_v, self.heads,
-                    w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps)
+                    w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps, self.rotary_precise)
             else:
                 q, k, v = qkv.split([self.heads*self.dim, self.kv_heads*self.dim, self.kv_heads*self.dim], -1)
                 q, k = self.normalize_qk(q, k, i)
@@ -116,8 +118,8 @@ class BatchExecutor(Executor):
             attended, offset = [], 0
             for slot, length in zip(slots, lengths):
                 q = query[offset:offset+length, :, 0, :].transpose(0, 1).unsqueeze(0)
-                attention = scaled_attention(q, cache_k[slot:slot+1, :, :length],
-                    cache_v[slot:slot+1, :, :length], is_causal=True, enable_gqa=True)
+                attention = self.prefill_attention(q, cache_k[slot:slot+1, :, :length],
+                    cache_v[slot:slot+1, :, :length])
                 attended.append(attention.transpose(1, 2).reshape(length, -1))
                 offset += length
             x = x + self.linear(torch.cat(attended), w[f"{i}.out"])
@@ -129,7 +131,7 @@ class BatchExecutor(Executor):
                 activated = self.activate(gate, up)
             x = x + self.linear(activated, w[f"{i}.down"])
         ends = torch.tensor([end - 1 for end in accumulate(lengths)], device=self.device)
-        logits = self.linear(self.norm(x.index_select(0, ends), w["norm"]), w["head"])
+        logits = self.output_logits(x.index_select(0, ends))
         for slot, length in zip(slots, lengths):
             self.lengths[slot] = length
         return logits
