@@ -3,8 +3,10 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os
+from pathlib import Path
 import threading
 from urllib.request import Request,urlopen
+from urllib.error import HTTPError
 import torch
 from transformers import AutoTokenizer
 from dllm.bench import events
@@ -23,6 +25,8 @@ MESSAGES=[{'role':'user','content':"What is the current weather in Paris? Use ge
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--other-model',required=True)
+    p.add_argument('--chat-template', help='explicit template file for the first model')
+    p.add_argument('--other-chat-template', help='explicit template file for the other model')
     p.add_argument('--thinking',action='store_true')
     p.add_argument('--reference-model', help='HF tokenizer reference when the model is a standalone GGUF')
     p.add_argument('--other-reference-model', help='HF tokenizer reference for the other model')
@@ -30,10 +34,33 @@ def main():
     os.environ['DLLM_DEVICE']=args.device;require_gpu();torch.set_num_threads(4)
     paths={'a':args.model,'b':args.other_model}
     references={'a':args.reference_model or args.model, 'b':args.other_reference_model or args.other_model}
-    runtime=BatchedRuntime(paths,context=2048,batch_size=4,gpu_models=1,host_models=2,host_gib=16)
+    from dllm.chat_template import read_override, override_metadata
+    templates = {alias:read_override(file) for alias,file in
+                 (('a',args.chat_template),('b',args.other_chat_template)) if file is not None}
+    runtime=BatchedRuntime({},context=2048,batch_size=4,gpu_models=1,host_models=2,host_gib=16)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
     worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
     base=f'http://127.0.0.1:{server.server_port}'
+    def manage(action, **body):
+        with urlopen(Request(base+'/v1/models/'+action, data=json.dumps(body).encode(),
+                headers={'Content-Type':'application/json'}), timeout=180) as response:
+            return json.load(response)
+    for alias,path in paths.items():
+        body={'model':alias,'path':path}
+        if alias in templates:body['chat_template']=templates[alias]
+        manage('register',**body)
+        manage('register',**body)
+    before=runtime.manage('status')
+    for body in ({'model':'bad','path':args.model,'chat_template':'{{'},
+                 {'model':'a','path':args.model,'chat_template':'changed template'}):
+        try:
+            manage('register',**body)
+        except HTTPError as error:
+            assert error.code==400,error.read().decode()
+            error.close()
+        else:
+            raise AssertionError('invalid registration succeeded')
+        assert runtime.manage('status')==before
     thinking={alias:({'enable_thinking':args.thinking} if model_config(path)['model_type']=='qwen3' else {})
               for alias,path in paths.items()}
     def post(alias='a',stream=False,**changes):
@@ -68,6 +95,9 @@ def main():
                 template_differs = template != tokenizer.chat_template
                 tokenizer.chat_template = template
                 template_source = 'gguf metadata'
+            if alias in templates:
+                tokenizer.chat_template = templates[alias]
+                template_source = 'explicit override'
             actual=model.chat_tokens(MESSAGES,tools=TOOLS,**thinking[alias])
             expected=tokenizer.apply_chat_template(MESSAGES,tools=TOOLS,add_generation_prompt=True,return_dict=False,**thinking[alias])
             assert actual==expected,(alias,'function definition template mismatch',len(actual),len(expected))
@@ -113,11 +143,18 @@ def main():
         max_batch=max(r['dllm_timing']['max_batch_size'] for r in outputs);assert max_batch>=2,max_batch
         with post('a',stream=True) as response:next(events(response))
         runtime.manage('status');check(request('a'))
+        for alias in paths:
+            manage('unload',model=alias,release_host=True)
+            reloaded=request(alias);check(reloaded)
+            assert reloaded['dllm_timing']['source_tier']=='disk'
+        status=runtime.manage('status')
+        for item in status['models']:
+            assert item['chat_template']==override_metadata(templates.get(item['id']))
         print(json.dumps({'passed':True,'device':args.device,'reports':reports,'concurrent_calls':4,
             'qwen3_thinking':args.thinking,
             'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')},
             'max_batch_seen':max_batch,'request_local_ids':True,'host_restore':True,
-            'disconnect_recovery':True,'tools_executed':False},indent=2))
+            'disconnect_recovery':True,'disk_reload':True,'template_identity':True,'invalid_registration_atomic':True,'tools_executed':False},indent=2))
     finally:
         server.shutdown();server.server_close();worker.join();runtime.close()
 

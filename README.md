@@ -321,6 +321,24 @@ host. Alias registration is idempotent for the same path; an existing alias
 cannot silently change to different weights. The registry is process-local, so
 use startup `--model` entries when you want aliases restored after a restart.
 
+Use a per-model chat-template override when a checkpoint template needs replacing:
+
+```sh
+dllm add chat /path/to/model.gguf --chat-template /path/to/chat.jinja
+dllm run /path/to/model.gguf --chat-template /path/to/chat.jinja --prompt "Hello"
+dllm serve --model chat=/path/to/model.gguf --chat-template chat=/path/to/chat.jinja
+```
+
+The registration API accepts `chat_template` as literal UTF-8 template text (at
+most 128 KiB), never a server-side file path. Templates use the same sandbox and
+JSON serialization as checkpoint templates. Invalid syntax is rejected before
+registration. Overrides remain attached to the alias across host/GPU eviction
+and disk reload; status exposes the source and SHA-256. Registration identity
+includes the path, quantization and template text. Startup overrides must name a
+configured alias. Encoder, T5 and Mamba overrides are not supported. The default
+always remains the checkpoint's embedded template unless explicitly overridden.
+An override does not add an unsupported tool-call protocol to a model family.
+
 The dllm HTTP extensions are `GET /v1/models/status` and
 `POST /v1/models/register`, `/v1/models/load`, `/v1/models/unload`.
 POST bodies use `model`; registration also requires `path`, and unloading accepts

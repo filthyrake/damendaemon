@@ -31,3 +31,18 @@ class CliTests(unittest.TestCase):
     def test_local_path_cannot_silently_ignore_filename(self):
         with tempfile.TemporaryDirectory() as directory, self.assertRaises(ValueError):
             resolve_model(directory, filename='model.gguf')
+
+    def test_serve_assigns_templates_to_named_models(self):
+        from dllm.cli import main
+        with tempfile.TemporaryDirectory() as directory:
+            template = Path(directory)/'chat.jinja'
+            template.write_text('custom {{ messages }}')
+            args = ['dllm','serve','--model','a='+directory,'--model','b='+directory,
+                    '--chat-template','b='+str(template)]
+            with patch('sys.argv',args), patch('dllm.scheduler.BatchedRuntime') as runtime, patch('dllm.server.serve'):
+                main()
+            self.assertEqual(runtime.call_args.kwargs['chat_templates'], {'b':'custom {{ messages }}'})
+            for suffix in (['--chat-template','missing='+str(template)], ['--chat-template','b='+str(template)]):
+                with patch('sys.argv',args+suffix), patch('dllm.scheduler.BatchedRuntime') as runtime, patch('sys.stderr'), self.assertRaises(SystemExit):
+                    main()
+                runtime.assert_not_called()

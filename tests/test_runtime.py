@@ -156,3 +156,47 @@ class RuntimeTests(unittest.TestCase):
                 self.assertEqual(load.call_args.kwargs,{'quantization':'none'})
                 runtime.manage('load','packed')
                 self.assertEqual(load.call_args.kwargs,{'quantization':'q8_0'})
+
+    def test_template_identity_atomicity_and_reload(self):
+        import tempfile
+        from pathlib import Path
+        from tokenizers import Tokenizer, models
+        from dllm.chat_template import compile_template, override_metadata
+        template = 'custom {{ messages }}'
+        def configure(model, tokenizer, text, config):
+            model.template = compile_template(text)
+        def load(path, context, quantization=None):
+            model = Weights(path, context, quantization)
+            model.tokenizer, model.special_tokens = object(), {'eos_token':'end'}
+            model.configure_tokenizer = lambda *args: configure(model, *args)
+            return model
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root/'tokenizer_config.json').write_text('{}')
+            Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
+            runtime = Runtime({'other':'other'})
+            for bad in ('{{', ''):
+                with self.assertRaises(ValueError):
+                    runtime.manage('register', 'new', str(root), chat_template=bad)
+                self.assertNotIn('new', runtime.models)
+            with patch('dllm.models.config', return_value={'model_type':'t5'}), self.assertRaises(ValueError):
+                runtime.manage('register', 'new', str(root), chat_template=template)
+            self.assertNotIn('new', runtime.models)
+            for _ in range(2):runtime.manage('register', 'new', str(root), chat_template=template)
+            for different in (None, 'another {{ messages }}'):
+                with self.assertRaises(ValueError):
+                    runtime.manage('register', 'new', str(root), chat_template=different)
+            status = runtime.manage('status')['models'][1]
+            self.assertEqual(status['chat_template'], override_metadata(template))
+            with patch('dllm.models.load', side_effect=load) as loader:
+                for alias, expected in (('new','disk'), ('other','disk'), ('new','host')):
+                    self.assertEqual(runtime.manage('load', alias)['source_tier'], expected)
+                self.assertEqual(loader.call_count, 2)
+                self.assertEqual(runtime.host['new'].template.render(messages='hello'), 'custom hello')
+                runtime.manage('unload', 'new', release_host=True)
+                self.assertEqual(runtime.manage('load', 'new')['source_tier'], 'disk')
+                self.assertEqual(loader.call_count, 3)
+                self.assertEqual(runtime.host['new'].template.render(messages='hello'), 'custom hello')
+            with self.assertRaises(ValueError):Runtime({}, chat_templates={'missing':template})
+            configured = Runtime({'new':root}, chat_templates={'new':template})
+            self.assertEqual(configured.chat_templates, {'new':template})

@@ -207,3 +207,19 @@ tracked separately so a caller can select a canonical template. Tool reference
 checks now read the actual GGUF template with the upstream reader and render
 it independently through Transformers; they do not assume a different HF
 snapshot has identical template text.
+
+## Explicit chat-template overrides
+
+`gguf-template-tools-a2.json` qualifies the Qwen3 Q8 comparator's embedded
+chat template and the official Qwen2.5 Q8 GGUF with an explicit override from
+HF tokenizer revision `7ae557604adf67be50417f59c2c2f167def9a775`.
+The original official GGUF template stays unchanged on disk and remains the
+loader default. Its doubled-brace tool example is not silently repaired.
+
+Actual A2 HTTP registration, function arguments, independent tokenizer IDs,
+tool-result history, streaming equality, four-way concurrency with distinct IDs,
+model swaps, cancellation recovery, and full host/GPU eviction plus disk reload
+passed. The maximum observed batch was four. No external tool was executed.
+The report predates the proof script's additional malformed/conflicting HTTP
+registration checks; those are covered by CPU/runtime/HTTP regression tests.
+The complete local suite passed 268 tests after the override changes.

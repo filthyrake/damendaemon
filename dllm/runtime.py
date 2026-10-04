@@ -43,15 +43,23 @@ class BusyError(Exception):
 
 class Runtime:
     def __init__(self, models, context=1024, gpu_models=1, host_models=2,
-                 host_gib=8, use_graph=True, queue_size=8, queue_timeout=120, batch_size=None):
+                 host_gib=8, use_graph=True, queue_size=8, queue_timeout=120, batch_size=None, chat_templates=None):
         if (min(context, gpu_models, host_models, queue_size) <= 0
                 or host_models < gpu_models or host_gib <= 0 or queue_timeout <= 0):
             raise ValueError("invalid model, residency, context, or queue limits")
+        from .chat_template import validate_override
+        overrides = dict(chat_templates or {})
+        if overrides.keys() - models.keys():
+            raise ValueError("chat template refers to an unknown model alias")
+        for alias, text in overrides.items():
+            from .models import config
+            validate_override(text, config(models[alias]))
         require_gpu()
         from .management import quantization_mode
         self.default_quantization = quantization_mode()
         self.models = dict(models)
         self.quantizations = {alias:self.default_quantization for alias in self.models}
+        self.chat_templates = {alias: overrides.get(alias) for alias in self.models}
         self.registry_lock = threading.RLock()
         self.context = context
         self.gpu_limit, self.host_limit = gpu_models, host_models
@@ -69,8 +77,10 @@ class Runtime:
             return list(self.models)
 
     def _status(self):
+        from .chat_template import override_metadata
         with self.registry_lock:
             models = [{'id': alias, 'quantization':self.quantizations[alias], 'residency': 'gpu' if alias in self.gpu else 'host' if alias in self.host else 'disk',
+                       'chat_template': override_metadata(self.chat_templates[alias]),
                        'host_weight_bytes': self.host[alias].bytes if alias in self.host else None}
                       for alias in self.models]
         return {'models': models, 'device': selected_device(), 'context': self.context,
@@ -78,10 +88,10 @@ class Runtime:
                 'host_budget_bytes': self.host_bytes, 'gpu_model_limit': self.gpu_limit,
                 'host_model_limit': self.host_limit}
 
-    def manage(self, action, model=None, path=None, release_host=False, quantization=None):
+    def manage(self, action, model=None, path=None, release_host=False, quantization=None, chat_template=None):
         """Called by the GPU worker between request groups, or under this lock."""
         from .management import command
-        command(action, model, path, release_host, quantization)
+        command(action, model, path, release_host, quantization, chat_template)
         if not self.lock.acquire(timeout=self.queue_timeout):
             raise BusyError('model management timeout')
         try:
@@ -95,11 +105,15 @@ class Runtime:
                 with self.registry_lock:
                     existing = self.models.get(model)
                     if existing is not None:
-                        if Path(existing).expanduser().resolve() != candidate or self.quantizations[model] != policy:
-                            raise ValueError('alias already refers to another snapshot or quantization')
+                        if (Path(existing).expanduser().resolve() != candidate or self.quantizations[model] != policy
+                                or self.chat_templates[model] != chat_template):
+                            raise ValueError('alias already refers to another snapshot, quantization or chat template')
                         return self._status()
                 try:
                     config = read_config(candidate)
+                    if chat_template is not None:
+                        from .chat_template import validate_override
+                        validate_override(chat_template, config)
                     if not is_gguf(candidate):
                         Tokenizer.from_file(str(candidate/'tokenizer.json'))
                         json.loads((candidate/'tokenizer_config.json').read_text())
@@ -112,6 +126,7 @@ class Runtime:
                 with self.registry_lock:
                     self.models[model] = candidate
                     self.quantizations[model] = policy
+                    self.chat_templates[model] = chat_template
             elif action != 'status':
                 if model not in self.models:
                     raise ValueError('unknown model')
@@ -157,6 +172,8 @@ class Runtime:
                     self._evict(victim)
                 del self.host[victim]
             model = load(self.models[alias], self.context,quantization=self.quantizations[alias])
+            if self.chat_templates[alias] is not None:
+                model.configure_tokenizer(model.tokenizer, self.chat_templates[alias], model.special_tokens)
             if model.bytes > self.host_bytes:
                 raise MemoryError("model exceeds configured host weight budget")
             while sum(m.bytes for m in self.host.values()) + model.bytes > self.host_bytes:

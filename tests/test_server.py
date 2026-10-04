@@ -303,13 +303,14 @@ class ServerTests(unittest.TestCase):
     def test_management_protocol_and_field_validation(self):
         with urlopen(self.url+'/v1/models/status') as response:
             self.assertEqual(json.load(response)['models'][0]['residency'],'disk')
-        for action,body in (('register',{'model':'b','path':'/local/model'}),
+        for action,body in (('register',{'model':'b','path':'/local/model','chat_template':'{{ messages }}'}),
                             ('load',{'model':'b'}),('unload',{'model':'b','release_host':True})):
             with urlopen(Request(self.url+'/v1/models/'+action,data=json.dumps(body).encode(),
                                  headers={'Content-Type':'application/json'})) as response:
                 self.assertEqual(response.status,200)
                 response.read()
             self.assertEqual(self.runtime.last_management['action'],action)
+            if action=='register':self.assertEqual(self.runtime.last_management['chat_template'],'{{ messages }}')
         with self.assertRaises(HTTPError) as error:
             urlopen(Request(self.url+'/v1/models/load',data=b'{"model":"a","path":"wrong"}',
                             headers={'Content-Type':'application/json'}))

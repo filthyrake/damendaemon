@@ -10,7 +10,7 @@ def quantization_mode(value=None):
     return value
 
 
-def command(action, model=None, path=None, release_host=False, quantization=None):
+def command(action, model=None, path=None, release_host=False, quantization=None, chat_template=None):
     if action not in ('status', 'register', 'load', 'unload'):
         raise ValueError('unknown model management action')
     if type(release_host) is not bool:
@@ -32,4 +32,9 @@ def command(action, model=None, path=None, release_host=False, quantization=None
         if action != 'register':
             raise ValueError('quantization is only supported by register')
         result['quantization'] = quantization_mode(quantization)
+    if chat_template is not None:
+        if action != 'register':
+            raise ValueError('chat_template is only supported by register')
+        from .chat_template import validate_override
+        result['chat_template'] = validate_override(chat_template)
     return result

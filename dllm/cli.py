@@ -53,6 +53,7 @@ def main():
     run.add_argument("path", help="local model directory, GGUF file or Hugging Face owner/repository")
     run.add_argument("--revision", default="main")
     run.add_argument("--filename", help="exact GGUF filename within the repository")
+    run.add_argument("--chat-template", metavar="FILE", help="override the model chat template with local UTF-8 text")
     run.add_argument("--prompt", required=True)
     run.add_argument('--raw', action='store_true', help='use the prompt directly without a chat template')
     run.add_argument("--max-tokens", type=int, default=128)
@@ -61,6 +62,7 @@ def main():
                      help="Qwen3 thinking mode; auto uses the model template default")
     server = commands.add_parser("serve", help="serve named local models on loopback")
     server.add_argument("--model", action="append", metavar="NAME=PATH")
+    server.add_argument("--chat-template", action="append", metavar="NAME=FILE", help="override a named model chat template")
     server.add_argument("--port", type=int, default=8088)
     server.add_argument("--batch-size", type=int, choices=range(1, 9), default=4)
     server.add_argument("--prefill-chunk-size",type=int,default=0,help="opt-in prompt token budget per decode step; 0 disables")
@@ -82,6 +84,7 @@ def main():
             management.add_argument('path', help='local snapshot or Hugging Face repository on this host')
             management.add_argument('--revision', default='main')
             management.add_argument('--filename', help='exact GGUF filename within the repository')
+            management.add_argument('--chat-template', metavar='FILE')
             management.add_argument('--quantization', choices=('none','q8_0','q4_0'))
         if name == 'unload':
             management.add_argument('--release-host', action='store_true')
@@ -92,6 +95,9 @@ def main():
         body = None if action == 'status' else {'model': args.model}
         if action == 'register':
             body['path'] = str(resolve_model(args.path, args.revision, args.filename))
+            if args.chat_template is not None:
+                from .chat_template import read_override
+                body['chat_template'] = read_override(args.chat_template)
             if args.quantization is not None:
                 body['quantization'] = args.quantization
         if action == 'unload':
@@ -128,6 +134,16 @@ def main():
             # Resolve repository names up front; explicit local paths remain
             # lazy so failed loads can be reported without taking down the API.
             models[alias] = resolve_model(path) if not path.startswith(("/", ".", "~")) else Path(path).expanduser()
+    from .chat_template import read_override
+    templates = {}
+    if args.command == "run" and args.chat_template:
+        templates["model"] = read_override(args.chat_template)
+    elif args.command == "serve":
+        for entry in args.chat_template or []:
+            alias, separator, path = entry.partition("=")
+            if not separator or alias not in models or not path or alias in templates:
+                parser.error("chat templates need unique NAME=FILE entries for configured models")
+            templates[alias] = read_override(path)
     runtime_type = Runtime
     options = {}
     if args.command == "serve":
@@ -136,7 +152,7 @@ def main():
         options["batch_size"] = args.batch_size
         options["prefill_chunk_size"] = args.prefill_chunk_size
         options["prefix_cache_tokens"] = args.prefix_cache_tokens
-    runtime = runtime_type(models, **options, context=args.context, gpu_models=args.gpu_models,
+    runtime = runtime_type(models, chat_templates=templates, **options, context=args.context, gpu_models=args.gpu_models,
                       host_models=args.host_models, host_gib=args.host_gib, use_graph=not args.no_graph)
     if args.command == "serve":
         from .server import serve

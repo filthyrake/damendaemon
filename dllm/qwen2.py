@@ -7,12 +7,10 @@ stages metadata, replays the graph, and reads the selected token.
 """
 
 import json
-from functools import partial
 import math
 import os
 import subprocess
 import sys
-from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -21,7 +19,7 @@ from torch.nn import functional as F
 from .device import selected_device, empty_cache, available_memory, attention as scaled_attention
 from safetensors import safe_open
 from tokenizers import Tokenizer
-from jinja2.sandbox import ImmutableSandboxedEnvironment
+from .chat_template import compile_template
 
 from .config import decoder_config, eos_ids
 from .rotary import inverse_frequencies, attention_factor
@@ -186,16 +184,7 @@ class ModelWeights:
         c = self.config
         if template is not None and not isinstance(template, str):
             raise ValueError("model needs one text chat template")
-        environment = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True,
-                                                     extensions=['jinja2.ext.loopcontrols'])
-        # Match tokenizer-template JSON semantics: insertion order, Unicode,
-        # and literal angle brackets, rather than Jinja's HTML-safe serializer.
-        environment.filters['tojson']=partial(json.dumps,ensure_ascii=False,allow_nan=False)
-        def raise_exception(message):
-            raise ValueError(message)
-        environment.globals.update(raise_exception=raise_exception,
-                                   strftime_now=lambda fmt: datetime.now().strftime(fmt))
-        self.template = environment.from_string(template) if template is not None else None
+        self.template = compile_template(template) if template is not None else None
         self.supports_tool_calls=(c['model_type'] in ('qwen2','qwen3') and isinstance(template,str)
             and all(marker in template for marker in ('<tool_call>','</tool_call>','tool_calls','tools')))
         self.supports_tool_calls |= (c['model_type']=='gpt_oss' and isinstance(template,str)
