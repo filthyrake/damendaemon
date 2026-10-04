@@ -108,14 +108,23 @@ is checked conservatively; allocation failures return an error without publishin
 a partially loaded executor. There is no automatic GPU-budget tuning yet.
 
 Implemented: dense unquantized Qwen2, Qwen3, standard-RoPE Llama, and the
-dense Qwen3.5 text backbone; text chat templates, greedy decoding, and optional
+dense Qwen3.5 text backbone; text chat templates, greedy or sampled decoding, and optional
 streaming usage. CUDA uses FP16 weights/KV. Qwen3 uses FP32 residuals and fused
 elementwise intermediates for accuracy, while its matrix multiplies remain FP16.
-`temperature` must be zero. Unsupported fields are rejected, including tools, multimodal inputs, and alternate sampling.
+Sampling accepts finite `temperature >= 0`, `top_p` in `(0, 1]`, nonnegative integer
+`top_k` (zero disables it), and an optional unsigned 64-bit `seed`. Temperature
+defaults to zero and retains the greedy fast path. Seeds belong to requests;
+batching and cancellation do not share RNG state. Exact outputs can still vary
+across devices, kernels, and precision. Unsupported fields such as tools and
+multimodal inputs are rejected.
 Qwen3.5 has a separate hybrid executor with FP32 recurrent state, causal
 convolution, gated attention, partial RoPE, and FP32 vocabulary accumulation.
-Vision, MoE, generic rotary scaling, sliding attention, and quantization remain
-unsupported. Qwen3.5 checkpoint qualification does not imply all newer Qwen
+Vision, MoE, dynamic rotary scaling, and quantization remain unsupported.
+Gemma 3 text has a separate full-precision correctness path with alternating
+sliding/full attention, GELU gating and its own normalization; the pinned 270M
+checkpoint passes CUDA and Metal reference replay, including 511/512/513-token
+window boundaries. Its CUDA weights, arithmetic and KV are FP32; performance
+optimization remains open. This does not imply support for multimodal Gemma. Qwen3.5 checkpoint qualification does not imply all newer Qwen
 variants are supported. See the [model validation matrix](docs/model-matrix.md):
 Qwen3-1.7B and SmolLM2-360M pass the expanded tests; Qwen3-0.6B remains provisional
 because two long-context positions exceed the logit-error limit.

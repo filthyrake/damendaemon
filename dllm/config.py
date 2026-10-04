@@ -40,6 +40,8 @@ def eos_ids(value):
     return set(values)
 
 def decoder_config(config):
+    if config.get('model_type') == 'gemma3_text':
+        return gemma_config(config)
     if config.get('model_type') in ('qwen3_5', 'qwen3_5_text'):
         return hybrid_config(config)
     c = dict(config)
@@ -108,3 +110,29 @@ def hybrid_config(config):
     c['multimodal_token_ids'] = [config[k] for k in ('image_token_id', 'video_token_id', 'vision_start_token_id',
                                                    'vision_end_token_id') if k in config]
     return c
+
+
+def gemma_config(config):
+    """Gemma 3 text uses explicit local/global attention and four layer norms."""
+    c = dict(config)
+    if (c.get('hidden_activation') != 'gelu_pytorch_tanh'
+            or c.get('attn_logit_softcapping') is not None
+            or c.get('final_logit_softcapping') is not None
+            or c.get('use_bidirectional_attention', False)
+            or c.get('attention_bias', False) or c.get('rope_scaling') is not None):
+        raise ValueError('unsupported Gemma activation, attention, softcap, or rotary scaling')
+    layers = c.get('layer_types', [])
+    if (len(layers) != c.get('num_hidden_layers')
+            or any(x not in ('sliding_attention', 'full_attention') for x in layers)):
+        raise ValueError('Gemma requires an explicit valid layer layout')
+    if type(c.get('sliding_window')) is not int or c['sliding_window'] <= 0:
+        raise ValueError('Gemma sliding window must be a positive integer')
+    for name in ('query_pre_attn_scalar', 'rope_local_base_freq'):
+        value = c.get(name)
+        if type(value) not in (int, float) or not math.isfinite(value) or value <= 0:
+            raise ValueError(f'{name} must be finite and positive')
+    # Share dimension and unsupported-weight-format checks with dense decoders.
+    common = decoder_config({**c, 'model_type': 'llama', 'hidden_act': 'silu',
+                             'layer_types': ['full_attention'] * len(layers)})
+    return {**common, **c, 'head_dim': common['head_dim'],
+            'tie_word_embeddings': c.get('tie_word_embeddings', True)}

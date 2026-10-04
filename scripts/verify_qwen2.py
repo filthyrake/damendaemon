@@ -24,7 +24,8 @@ def main():
     parser.add_argument("--steps", type=int, default=16)
     parser.add_argument("--unfused", action="store_true")
     parser.add_argument("--diagnostic", action="store_true")
-    parser.add_argument("--reference-dtype", choices=("float16", "float32"), default="float16")
+    parser.add_argument("--reference-dtype", choices=("float16", "bfloat16", "float32"), default="float16")
+    parser.add_argument('--reference-attention', choices=('sdpa', 'eager'), default='sdpa')
     parser.add_argument('--reference-device', choices=('cpu', 'cuda', 'mps'))
     args = parser.parse_args()
     torch.set_num_threads(4)
@@ -34,7 +35,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.path, local_files_only=True, trust_remote_code=False)
     reference = load_reference(
         args.path, local_files_only=True, trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype),
-        attn_implementation="sdpa").to(reference_device).eval()
+        attn_implementation=args.reference_attention).to(reference_device).eval()
     cases = []
     prompts = ["What is 2 + 2? Answer with one number.",
                "Explain why the sky looks blue in one sentence.",

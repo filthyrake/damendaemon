@@ -9,6 +9,7 @@ import time
 import uuid
 
 from .runtime import BusyError
+from .sampling import Sampling
 
 
 def handler_for(runtime):
@@ -55,11 +56,11 @@ def handler_for(runtime):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
-                allowed = {"model", "messages", "max_tokens", "temperature", "stream", "stream_options", "chat_template_kwargs"}
+                allowed = {"model", "messages", "max_tokens", "temperature", "top_p", "top_k", "seed", "stream", "stream_options", "chat_template_kwargs"}
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
-                if body.get("temperature", 0) != 0:
-                    raise ValueError("only greedy decoding (temperature=0) is supported")
+                sampling = {key: body[key] for key in ("temperature", "top_p", "top_k", "seed") if key in body}
+                Sampling(**sampling)
                 if not isinstance(body.get("model"), str):
                     raise ValueError("model must be a string")
                 if "stream" in body and type(body["stream"]) is not bool:
@@ -95,7 +96,7 @@ def handler_for(runtime):
                     self.wfile.flush()
                 text = ""
                 final = None
-                with closing(runtime.generate(alias, messages, body.get("max_tokens", 128), **template_options)) as generation:
+                with closing(runtime.generate(alias, messages, body.get("max_tokens", 128), **template_options, **sampling)) as generation:
                     for event in generation:
                         if stream and not started:
                             self.send_response(200)

@@ -83,3 +83,26 @@ class RotaryConfigTests(unittest.TestCase):
         for value in ([],[True],[-1],'2'):
             with self.subTest(value=value),self.assertRaises(ValueError):
                 eos_ids(value)
+
+
+class GemmaConfigTests(unittest.TestCase):
+    def config(self, **changes):
+        return {**ConfigTests().config(), 'model_type':'gemma3_text',
+                'hidden_activation':'gelu_pytorch_tanh', 'sliding_window':512,
+                'rope_local_base_freq':10000, 'query_pre_attn_scalar':256,
+                'layer_types':['sliding_attention']*27+['full_attention'], **changes}
+
+    def test_preserves_local_attention_and_tied_default(self):
+        c = decoder_config(self.config())
+        self.assertEqual(c['layer_types'][0], 'sliding_attention')
+        self.assertTrue(c['tie_word_embeddings'])
+
+    def test_unsupported_variants_fail_before_loading(self):
+        for change in ({'layer_types':[]}, {'sliding_window':0}, {'sliding_window':True},
+                       {'query_pre_attn_scalar':float('nan')}, {'rope_local_base_freq':-1},
+                       {'use_bidirectional_attention':True}, {'attn_logit_softcapping':50},
+                       {'final_logit_softcapping':30}, {'attention_bias':True},
+                       {'hidden_activation':'silu'}, {'quantization_config':{'bits':4}},
+                       {'rope_scaling':{'type':'linear','factor':2}}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                decoder_config(self.config(**change))

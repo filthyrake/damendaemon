@@ -66,7 +66,7 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(self.runtime.closed, before + 1)
 
     def test_reject_unsupported_parameters(self):
-        for changes in ({"temperature": 1}, {"tools": []}, {"stream": "yes"},
+        for changes in ({"temperature": -1}, {"tools": []}, {"stream": "yes"},
                         {"messages": []}, {"stream_options": {"include_usage": 1}}):
             with self.subTest(changes=changes), self.assertRaises(HTTPError) as error:
                 self.post(**changes)
@@ -100,3 +100,15 @@ class ServerTests(unittest.TestCase):
             with self.subTest(options=options), self.assertRaises(HTTPError) as error:
                 self.post(chat_template_kwargs=options)
             self.assertEqual(error.exception.code, 400)
+
+    def test_sampling_options_validated_and_forwarded(self):
+        options = {'temperature': .7, 'top_p': .9, 'top_k': 20, 'seed': 42}
+        with self.post(**options) as response:
+            response.read()
+        self.assertEqual(self.runtime.last_options, options)
+        for change in ({'temperature':True}, {'temperature':float('nan')},
+                       {'top_p':0}, {'top_p':1.1}, {'top_k':1.5}, {'seed':-1}):
+            with self.subTest(change=change), self.assertRaises(HTTPError) as error:
+                self.post(**change)
+            self.assertEqual(error.exception.code, 400)
+            error.exception.close()

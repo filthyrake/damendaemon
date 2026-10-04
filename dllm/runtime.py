@@ -116,7 +116,8 @@ class Runtime:
                 self.lock.release()
             self.admission.release()
 
-    def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None):
+    def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None,
+                 temperature=0, top_p=1, top_k=0, seed=None):
         """Yield token IDs/text deltas plus a final usage/timing event.
 
         Closing this generator releases its model lease, including on client
@@ -124,13 +125,15 @@ class Runtime:
         """
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be a positive integer")
+        from .sampling import Sampling, Sampler
+        sampler = Sampler(Sampling(temperature, top_p, top_k, seed))
         start = time.perf_counter()
         with self.session(alias) as (executor, tier, load_seconds):
             model = executor.model
             prompt = model.chat_tokens(messages, **({"enable_thinking": enable_thinking} if enable_thinking is not None else {}))
             if len(prompt) + max_tokens > self.context:
                 raise ValueError("prompt plus max_tokens exceeds configured context")
-            first = executor.prefill(prompt).argmax(-1).item()
+            first = sampler.select(executor.prefill(prompt).squeeze(0)).item()
             output = []
             emitted = ""
             first_time = None
@@ -156,8 +159,9 @@ class Runtime:
                     finish = "stop"
                     break
                 if index + 1 < max_tokens:
-                    _, next_token = executor.decode(token)
-                    token = next_token.item()
+                    logits, next_token = executor.decode(token)
+                    token = (sampler.select(logits.squeeze(0)).item()
+                             if temperature else next_token.item())
             elapsed = time.perf_counter() - start
             yield {"finish_reason": finish, "usage": {
                 "prompt_tokens": len(prompt), "completion_tokens": len(output),
@@ -172,6 +176,11 @@ class Runtime:
 
 def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     """Choose an execution path from the validated architecture, not the model name."""
+    if model.config['model_type'] == 'gemma3_text':
+        from .gemma import GemmaExecutor
+        if kwargs.pop('fuse_projections', True) is False:
+            raise ValueError('Gemma requires fused projections')
+        return GemmaExecutor(model, use_graph, max_batch or 1, **kwargs)
     if model.config['model_type'] == 'qwen3_5_text':
         from .hybrid import HybridExecutor
         if kwargs.pop('fuse_projections', True) is False:

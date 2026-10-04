@@ -17,11 +17,12 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('trace')
     p.add_argument('--no-graph', action='store_true')
+    p.add_argument('--model-path', help='local copy of the exact checkpoint used to generate the trace')
     args = p.parse_args()
     require_gpu()
     torch.set_num_threads(4)
     trace = torch.load(args.trace, map_location='cpu', weights_only=True)
-    model = ModelWeights(trace['path'], trace['context'])
+    model = ModelWeights(args.model_path or trace['path'], trace['context'])
     executor = make_executor(model, use_graph=not args.no_graph, max_batch=4)
     checks, timings = [], []
     for event in trace['trace']:
@@ -47,7 +48,7 @@ def main():
     passed = all(c['passed'] for c in checks)
     print(json.dumps({'passed': passed, 'model_path': trace['path'], 'context': trace['context'],
         'device': device_name(), 'torch': str(torch.__version__), 'reference_dtype': trace['reference_dtype'],
-        'reference_torch': trace['reference_torch'], 'graph_requested': not args.no_graph,
+        'reference_torch': trace['reference_torch'], 'reference_attention': trace.get('reference_attention', 'sdpa'), 'graph_requested': not args.no_graph,
         'kernel_backend': executor.kernel_backend, 'checks': checks, 'timings': timings}, indent=2))
     if not passed:
         raise SystemExit(1)

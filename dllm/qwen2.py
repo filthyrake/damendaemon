@@ -83,8 +83,11 @@ class ModelWeights:
                 for key in reader.keys():
                     if not key.startswith(('model.visual.', 'mtp.')):
                         state[key] = reader.get_tensor(key)
-        if c["model_type"] == "qwen3_5_text":
-            from .hybrid import load_weights
+        if c["model_type"] in ("qwen3_5_text", "gemma3_text"):
+            if c["model_type"] == "gemma3_text":
+                from .gemma import load_weights
+            else:
+                from .hybrid import load_weights
             self.weights = load_weights(state, c)
             self.bytes = sum(t.numel() * t.element_size() for t in
                              {id(t): t for t in self.weights.values()}.values())
@@ -149,8 +152,10 @@ class Executor:
         self.kv_heads = c["num_key_value_heads"]
         self.dim = c["head_dim"]
         self.eps = c["rms_norm_eps"]
-        self.precise = c["model_type"] == "qwen3"
+        self.precise = c["model_type"] in ("qwen3", "gemma3_text")
         self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
+        if c["model_type"] == "gemma3_text":
+            self.compute_dtype = torch.float32
         self.residual_dtype = torch.float32 if self.precise else self.compute_dtype
         selected = kernels or os.environ.get("DLLM_KERNELS", "auto")
         if selected not in ("auto", "torch", "triton", "metal"):
@@ -187,15 +192,19 @@ class Executor:
             half_metal_weights = storage == 'float16'
             if half_metal_weights and self.kernels is None:
                 raise ValueError('FP16 MPS weight storage requires native Metal kernels')
-        kv_bytes = 2 * c["num_hidden_layers"] * max_batch * self.kv_heads * self.context * self.dim * (4 if self.device == "mps" else 2)
+        kv_bytes = 2 * c["num_hidden_layers"] * max_batch * self.kv_heads * self.context * self.dim * (4 if self.compute_dtype == torch.float32 else 2)
         # A prior failed construction can leave unused allocator blocks cached
         # after its traceback is released. Return those before querying free VRAM.
         empty_cache()
         free = available_memory()
         device_weight_bytes = model.bytes
+        if self.device == "cuda" and c["model_type"] == "gemma3_text":
+            device_weight_bytes = sum(t.numel() * 4 for t in {id(t):t for t in model.weights.values()}.values())
         if self.device == 'mps':
             device_weight_bytes = sum(t.numel() * (2 if half_metal_weights and t.ndim == 2 else 4)
                 for t in {id(t):t for t in model.weights.values()}.values())
+        if self.device == "mps" and half_metal_weights and c["model_type"] == "gemma3_text":
+            device_weight_bytes += sum(t.numel() * 2 for name, t in model.weights.items() if name.endswith(".down"))
         if device_weight_bytes + kv_bytes + 512 * 1024**2 > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         self.w = {}
@@ -203,6 +212,8 @@ class Executor:
         for name, tensor in model.weights.items():
             if id(tensor) not in copies:
                 dtype = torch.float16 if half_metal_weights and tensor.ndim == 2 else self.compute_dtype
+                if c["model_type"] == "gemma3_text" and (tensor.ndim == 1 or name.endswith(".down")):
+                    dtype = torch.float32
                 copies[id(tensor)] = tensor.to(device=self.device, dtype=dtype)
             self.w[name] = copies[id(tensor)]
         self.kv = [torch.zeros((2, max_batch, self.kv_heads, self.context, self.dim),

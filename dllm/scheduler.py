@@ -11,6 +11,7 @@ import threading
 import time
 
 from .runtime import Runtime, BusyError
+from .sampling import Sampling, Sampler, sample_rows
 
 
 @dataclass(eq=False)
@@ -19,6 +20,7 @@ class Pending:
     messages: list
     max_tokens: int
     enable_thinking: bool | None = None
+    sampler: Sampler = field(default_factory=lambda: Sampler(Sampling()))
     start: float = field(default_factory=time.perf_counter)
     events: queue.Queue = field(default_factory=lambda: queue.Queue(maxsize=8))
     done: threading.Event = field(default_factory=threading.Event)
@@ -52,14 +54,16 @@ class BatchedRuntime:
         self.worker = threading.Thread(target=self._work, name="dllm-gpu", daemon=True)
         self.worker.start()
 
-    def generate(self, alias, messages, max_tokens=128, enable_thinking=None):
+    def generate(self, alias, messages, max_tokens=128, enable_thinking=None,
+                 temperature=0, top_p=1, top_k=0, seed=None):
         if alias not in self.models:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be positive")
+        sampler = Sampler(Sampling(temperature, top_p, top_k, seed))
         if not self.admission.acquire(blocking=False):
             raise BusyError("request queue is full")
-        request = Pending(alias, messages, max_tokens, enable_thinking)
+        request = Pending(alias, messages, max_tokens, enable_thinking, sampler)
         try:
             with self.condition:
                 if self.closed:
@@ -185,9 +189,10 @@ class BatchedRuntime:
                             self._finish(request, error)
                     if prepared:
                         try:
-                            first_tokens = executor.prefill_batch(
+                            logits = executor.prefill_batch(
                                 [tokens for _, tokens in prepared],
-                                [request.slot for request, _ in prepared]).argmax(-1).tolist()
+                                [request.slot for request, _ in prepared])
+                            first_tokens = sample_rows(logits, [r.sampler for r, _ in prepared])
                             for (request, tokens), token in zip(prepared, first_tokens):
                                 if not self._emit(request, token, executor, len(tokens)):
                                     active[request.slot] = (request, len(tokens))
@@ -205,9 +210,10 @@ class BatchedRuntime:
                 ready = [(slot, request, length) for slot, (request, length) in active.items()
                          if not request.events.full()]
                 if ready:
-                    _, next_tokens = executor.decode_batch([r.output[-1] for _, r, _ in ready],
+                    logits, next_tokens = executor.decode_batch([r.output[-1] for _, r, _ in ready],
                                                            [slot for slot, _, _ in ready])
-                    for (slot, request, length), token in zip(ready, next_tokens.tolist()):
+                    selected = sample_rows(logits, [r.sampler for _, r, _ in ready], next_tokens)
+                    for (slot, request, length), token in zip(ready, selected):
                         request.max_batch_seen = max(request.max_batch_seen, len(ready))
                         if self._emit(request, token, executor, length):
                             del active[slot]

@@ -17,8 +17,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('path')
     parser.add_argument('--context', type=int, default=2048)
-    parser.add_argument("--reference-dtype", choices=("float16", "float32"), default="float16")
+    parser.add_argument("--reference-dtype", choices=("float16", "bfloat16", "float32"), default="float16")
     parser.add_argument('--golden-output', help='save teacher-forced inputs and FP32 reference logits for cross-environment replay')
+    parser.add_argument('--reference-attention', choices=('sdpa', 'eager'), default='sdpa')
     parser.add_argument('--reference-device', choices=('cpu', 'cuda', 'mps'))
     args = parser.parse_args()
     torch.set_num_threads(4)
@@ -29,7 +30,7 @@ def main():
     model = ModelWeights(args.path, args.context)
     tokenizer = AutoTokenizer.from_pretrained(args.path, local_files_only=True, trust_remote_code=False)
     reference = load_reference(args.path, local_files_only=True,
-        trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype), attn_implementation='sdpa').to(reference_device).eval()
+        trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype), attn_implementation=args.reference_attention).to(reference_device).eval()
     executor = make_executor(model, max_batch=4)
     checks, template_checks, states, timings = [], [], {}, []
     trace = []
@@ -112,6 +113,10 @@ def main():
     decode([2, 0, 1, 3], 8)
     decode([0], 4)
     decode([3, 1], 3)
+    if model.config['model_type'] == 'gemma3_text':
+        states.clear()
+        prefill([511, 512, 513], [2, 0, 3])
+        decode([3, 2, 0], 4)
     # An oversized prompt must not alter any length/cached state.
     before = list(executor.lengths)
     try:
@@ -119,11 +124,11 @@ def main():
         raise AssertionError('oversized prompt accepted')
     except ValueError:
         assert executor.lengths == before
-    decode([1], 1)
+    decode([next(iter(states))], 1)
     if args.golden_output:
         torch.save({'path': args.path, 'context': args.context, 'reference_dtype': args.reference_dtype,
-                    'reference_torch': str(torch.__version__), 'trace': trace}, args.golden_output)
-    print(json.dumps({'model_path': args.path, 'reference_dtype': args.reference_dtype, 'architecture': model.config['model_type'],
+                    'reference_torch': str(torch.__version__), 'reference_attention': args.reference_attention, 'trace': trace}, args.golden_output)
+    print(json.dumps({'model_path': args.path, 'reference_dtype': args.reference_dtype, 'reference_attention': args.reference_attention, 'architecture': model.config['model_type'],
         'device': device_name(), 'torch': str(torch.__version__), 'reference_device': reference_device,
         'weight_dtype': str(executor.w['head'].dtype),
         'context': args.context, 'backend': executor.kernel_backend, 'checks': checks,
