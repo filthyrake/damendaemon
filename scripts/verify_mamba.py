@@ -3,7 +3,7 @@ import argparse
 import json
 import os
 import torch
-from transformers import AutoModelForCausalLM
+from reference_model import load_reference
 from dllm.models import load
 from dllm.runtime import require_gpu,make_executor
 
@@ -12,10 +12,12 @@ from dllm.runtime import require_gpu,make_executor
 def main():
     p=argparse.ArgumentParser();p.add_argument('model')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda');p.add_argument('--context',type=int,default=512)
+    p.add_argument('--reference-quantization',choices=('none','q8_0'),default='none')
     args=p.parse_args();os.environ['DLLM_DEVICE']=args.device
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,args.context);executor=make_executor(model,max_batch=4)
-    reference=AutoModelForCausalLM.from_pretrained(args.model,local_files_only=True,torch_dtype=torch.float32).eval()
+    assert model.quantization==args.reference_quantization
+    reference=load_reference(args.model,reference_quantization=args.reference_quantization,local_files_only=True,torch_dtype=torch.float32).eval()
     corpus=model.raw_tokens('The blue bird flew over the green field while a dog slept under a tree. '*200)
     states={};checks=[]
     def compare(actual,target,slot,phase):
@@ -73,7 +75,8 @@ def main():
         'kernel_backend':executor.kernel_backend,'fused_time_step':executor.fuse_time_step,
         'checks':checks,'recurrent_state_checks':True,
         'slot_reuse':True,'generated_ids':generated,'generated_text':model.tokenizer.decode(generated),
-        'reference':'CPU FP32 Transformers Mamba eager recurrence'},indent=2))
+        'reference_quantization':args.reference_quantization,
+        'reference':'CPU FP32 Transformers Mamba eager recurrence; independent GGUF quantization when selected'},indent=2))
     if not passed:raise SystemExit(1)
 
 

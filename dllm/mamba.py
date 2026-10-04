@@ -34,14 +34,26 @@ def config(path):
     return c
 
 
+def packable(name,shape):
+    name=name.removesuffix('.weight').rsplit('.',1)[-1]
+    return len(shape)==2 and shape[1]%32==0 and name in ('head','lm_head','in_proj','out_proj','x_proj','dt_proj')
+
+
 def weight_bytes(path,quantization=None):
     from .quantization import mode
     from .qwen2 import weight_files
-    if mode(quantization)!='none':raise ValueError('Mamba quantization is not implemented')
-    config(path);total=0
+    quantization=mode(quantization)
+    if quantization not in ('none','q8_0'):raise ValueError('Mamba supports none or q8_0 weight precision')
+    c=config(path);total=0;has_head=False
     for file in weight_files(path):
         with safe_open(str(file),framework='pt',device='cpu') as reader:
-            total+=sum(math.prod(reader.get_slice(name).get_shape())*4 for name in reader.keys())
+            for name in reader.keys():
+                shape=reader.get_slice(name).get_shape();count=math.prod(shape)
+                total+=count+count//32*2 if quantization=='q8_0' and packable(name,shape) else count*4
+                has_head=has_head or name=='lm_head.weight'
+    if quantization=='q8_0' and c['tie_word_embeddings'] and not has_head and c['hidden_size']%32==0:
+        # Quantized output head is separate from the unchanged input embedding.
+        count=c['vocab_size']*c['hidden_size'];total+=count+count//32*2
     return total
 
 
@@ -51,7 +63,8 @@ class MambaWeights:
     def __init__(self,path,max_context,quantization=None):
         from .quantization import mode
         from .qwen2 import weight_files
-        if mode(quantization)!='none':raise ValueError('Mamba quantization is not implemented')
+        self.quantization=mode(quantization)
+        if self.quantization not in ('none','q8_0'):raise ValueError('Mamba supports none or q8_0 weight precision')
         self.path=Path(path).resolve();self.config=c=config(path)
         if type(max_context) is not int or not 1<=max_context<=2048:raise ValueError('Mamba context must be 1..2048')
         self.max_context=max_context;self.eos=eos_ids(c['eos_token_id'])
@@ -87,7 +100,13 @@ class MambaWeights:
                 w[target+'in_bias']=take(prefix+'in_proj.bias',(2*i,))
                 w[target+'out_bias']=take(prefix+'out_proj.bias',(h,))
         if state:raise ValueError('unexpected Mamba checkpoint tensors: '+', '.join(state))
-        self.bytes=sum(x.numel()*x.element_size() for x in {id(x):x for x in w.values()}.values());self.scales={}
+        self.scales={}
+        if self.quantization=='q8_0':
+            from .quantization import quantize
+            for name,value in list(w.items()):
+                if packable(name,value.shape):w[name],self.scales[name]=quantize(value)
+        tensors=list(w.values())+list(self.scales.values())
+        self.bytes=sum(x.numel()*x.element_size() for x in {id(x):x for x in tensors}.values())
 
     def raw_tokens(self,prompt):
         tokens=self.tokenizer.encode(prompt,add_special_tokens=True).ids if isinstance(prompt,str) else list(prompt)
@@ -110,6 +129,7 @@ class MambaExecutor:
         if not 1<=max_batch<=16:raise ValueError('batch capacity must be 1..16')
         self.model=model;self.c=c=model.config;self.context=model.max_context
         self.device=selected_device();self.max_batch=max_batch
+        if model.quantization!='none' and self.device!='cuda':raise ValueError('Mamba Q8 requires CUDA')
         self.compute_dtype=self.residual_dtype=torch.float32
         selected=kernels or os.environ.get('DLLM_KERNELS','auto')
         fuse=os.environ.get('DLLM_MAMBA_FUSED_DT','0')
@@ -134,6 +154,9 @@ class MambaExecutor:
         for name,value in model.weights.items():
             if id(value) not in copies:copies[id(value)]=value.to(self.device)
             self.w[name]=copies[id(value)]
+        if model.scales:
+            from .quantization import Linear
+            self.linear=Linear(self.w,model.scales,self.device,self.linear)
         self.conv=[torch.zeros((max_batch,c['intermediate_size'],c['conv_kernel']),device=self.device) for _ in range(c['num_hidden_layers'])]
         self.state=[torch.zeros((max_batch,c['intermediate_size'],c['state_size']),device=self.device) for _ in range(c['num_hidden_layers'])]
         self.lengths=[0]*max_batch;self.length=0;self.batch_graphs={}

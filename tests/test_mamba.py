@@ -2,10 +2,18 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
-from dllm.mamba import config
+from dllm.mamba import config,packable
 
 
 class MambaTests(unittest.TestCase):
+    def test_only_aligned_projections_are_quantized(self):
+        self.assertTrue(packable('0.in_proj',(3072,768)))
+        self.assertTrue(packable('backbone.layers.0.mixer.dt_proj.weight',(2048,64)))
+        self.assertTrue(packable('head',(50280,768)))
+        self.assertFalse(packable('0.dt_proj',(1536,48)))
+        for name in ('embed','0.A','0.conv','0.norm'):
+            self.assertFalse(packable(name,(1536,32)))
+
     def test_configuration_requires_qualified_recurrence_geometry(self):
         value={'model_type':'mamba','architectures':['MambaForCausalLM'],'hidden_size':768,
             'intermediate_size':1536,'state_size':16,'conv_kernel':4,'time_step_rank':48,

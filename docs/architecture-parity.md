@@ -1045,5 +1045,6 @@ state-space recurrence, with native CUDA/Metal kernels and fixed per-slot state.
 Both A2 and M4 pass independent FP32 logits/state checks through 2048 context and
 real HTTP/residency proof. [Evidence and matched three-engine measurements](evidence/mamba/README.md)
 show A2 throughput competitive with vLLM for this checkpoint; Apple is still
-behind llama.cpp. Other Mamba generations/hybrids and quantized execution are
-not covered by this initial checkpoint qualification.
+behind llama.cpp. Both 130M and 370M checkpoints are now qualified, including CUDA Q8 matrix
+weights. Other Mamba generations/hybrids remain unsupported.
+[Q8 storage, numerical limits and measurements](evidence/mamba/q8/README.md).

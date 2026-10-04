@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "model": "results/models/mamba-370m",
+  "reports": [
+    {
+      "quantization": "none",
+      "bytes": 1486065664,
+      "estimate": 1486065664,
+      "packed_projections": 0,
+      "embedding_dtype": "torch.float32",
+      "dt_projection_dtype": "torch.float32",
+      "state_matrix_dtype": "torch.float32"
+    },
+    {
+      "quantization": "q8_0",
+      "bytes": 607472128,
+      "estimate": 607472128,
+      "packed_projections": 193,
+      "embedding_dtype": "torch.float32",
+      "dt_projection_dtype": "torch.int8",
+      "state_matrix_dtype": "torch.float32"
+    }
+  ]
+}

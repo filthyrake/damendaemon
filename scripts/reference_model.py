@@ -21,6 +21,10 @@ def load_reference(path, reference_quantization='none', **kwargs):
         for module in model.modules():
             if isinstance(module, torch.nn.Linear):
                 weight = module.weight.detach().float().cpu().numpy()
+                # Mamba-130M's rank-48 time-step projection does not form whole
+                # Q8/Q4 blocks. dllm retains that small matrix in FP32.
+                if config['model_type']=='mamba' and weight.shape[1]%32:
+                    continue
                 packed = quantize(weight, getattr(GGMLQuantizationType,reference_quantization.upper()))
                 restored = dequantize(packed, getattr(GGMLQuantizationType,reference_quantization.upper()))
                 module.weight = torch.nn.Parameter(torch.from_numpy(restored).to(module.weight.dtype), requires_grad=False)

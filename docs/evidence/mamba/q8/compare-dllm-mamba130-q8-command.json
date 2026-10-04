@@ -1,0 +1,27 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/venv/bin/python",
+    "-m",
+    "dllm",
+    "serve",
+    "--port",
+    "41251",
+    "--context",
+    "512",
+    "--batch-size",
+    "4",
+    "--host-gib",
+    "8",
+    "--model",
+    "a=/home/damen/dllm-dev/models/mamba-130m"
+  ],
+  "model": {
+    "repository": "state-spaces/mamba-130m-hf",
+    "revision": "1e76775f628fbf1350fbe4dbb3d971ba64af25a1",
+    "path": "/home/damen/dllm-dev/models/mamba-130m"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_QUANTIZATION": "q8_0"
+  }
+}

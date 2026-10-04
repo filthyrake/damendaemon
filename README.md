@@ -563,7 +563,7 @@ Pinned `state-spaces/mamba-130m-hf` and `mamba-370m-hf` run independently on A2 
 with native GPU causal convolution and recurrent-state kernels. Use raw
 completions with context up to 2048. Both devices pass independent logits/state
 checks and real streaming, concurrent, cancellation and model-switching tests.
-This initial path uses FP32 and does not support Mamba quantization, prefix
-snapshots or chunked prefill. Mamba2 and Falcon hybrids are separate architectures.
+FP32 runs on both devices; CUDA also supports Q8 matrix weights with FP32
+embeddings and recurrent state. Prefix snapshots and chunked prefill remain unsupported. Mamba2 and Falcon hybrids are separate architectures.
 [Matched benchmarks and qualification](docs/evidence/mamba/README.md) include
 remaining performance gaps, especially on Apple.
