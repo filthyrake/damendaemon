@@ -22,13 +22,16 @@ def main():
     parser.add_argument('--context', type=int, default=256)
     parser.add_argument('--gpu-memory-utilization', type=float, default=.5)
     parser.add_argument('--startup-timeout', type=int, default=900)
-    parser.add_argument('--engines', nargs='+', choices=('dllm', 'vllm'), default=['dllm', 'vllm'])
+    parser.add_argument('--engines', nargs='+', choices=('dllm', 'vllm', 'llama.cpp'), default=['dllm', 'vllm'])
+    parser.add_argument('--gguf', help='matching checkpoint and precision for llama.cpp')
     parser.add_argument('--thinking', choices=('auto', 'on', 'off'), default='auto')
     args = parser.parse_args()
     if not args.label.replace('-', '').replace('_', '').isalnum():
         parser.error('label must contain only letters, digits, hyphens or underscores')
     if not 0 < args.gpu_memory_utilization < 1:
         parser.error('GPU memory utilization must be between zero and one')
+    if 'llama.cpp' in args.engines and not args.gguf:
+        parser.error('llama.cpp requires --gguf with matching weights and precision')
     root = Path.cwd()
     uuid = 'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'
     if os.environ.get('CUDA_VISIBLE_DEVICES') != uuid:
@@ -42,6 +45,13 @@ def main():
         if engine == 'dllm':
             command = [sys.executable, '-m', 'dllm', 'serve', '--port', str(port), '--context', str(args.context),
                        '--batch-size', '4', '--model', 'a=' + model['path']]
+        elif engine == 'llama.cpp':
+            command = [str(root / 'baselines/llama-cuda-build/bin/llama-server'),
+                       '-m', args.gguf, '--alias', 'a', '--host', '127.0.0.1', '--port', str(port),
+                       '-ngl', '99', '-c', str(args.context*4), '-np', '4',
+                       '--kv-unified-per-slot', str(args.context),
+                       '--cache-type-k', 'f16', '--cache-type-v', 'f16',
+                       '--flash-attn', 'on', '--cache-ram', '0', '--jinja']
         else:
             venv = root / 'baselines/vllm-venv/bin'
             command = [str(venv / 'vllm'), 'serve', model['path'], '--served-model-name', 'a',

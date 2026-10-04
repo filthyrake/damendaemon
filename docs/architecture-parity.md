@@ -227,3 +227,33 @@ at concurrency 1 / 2 / 4 (2048 context, 64 output tokens). It is experimental,
 not recommended for speed. Profiling and a matching-precision comparator are
 in progress; no cross-engine performance win is claimed. Raw evidence is under
 `docs/evidence/quantization/`.
+
+### Q8 grouped-load optimization and comparator
+
+The initial profile attributed 27.7 of 28.1 ms per decoded token to Q8 matrix
+kernels. Loading each scale once per explicit 32-value group avoids the costly
+expanded scale-load layout. Native fused prefill expansion also removes the
+intermediate FP32 weight copies. Narrower launch tiles limit register pressure
+for wide matrices. Ten CUDA matrix checks and both full model traces still pass:
+Qwen2 worst relative RMS 0.6139%, Qwen3.5 0.2653%.
+
+The optimized Qwen2 A2 HTTP comparison uses the same pinned checkpoint,
+Q8_0 projection/output matrices, FP16 input embeddings, FP16 KV, 2048-token
+per-request context, 43 prompt tokens, and 64 output tokens. A benchmark-only
+GGUF conversion explicitly adds a separately quantized tied output head to
+match dllm's storage policy. llama.cpp is pinned to
+`836d57176dc699a726c55418e4f96b8ca628e1bf`, native CUDA build for SM86,
+flash attention enabled, four slots, prompt caching disabled. Engines run
+sequentially; values are medians of five warm rounds.
+
+| Concurrent requests | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 218.8 | 116.7 | 31.8 | 33.8 |
+| 2 | 277.7 | 160.2 | 48.3 | 44.1 |
+| 4 | 336.6 | 191.8 | 74.0 | 63.0 |
+
+This is a narrow throughput win, with worse batched first-output latency.
+Quantized weights and cache precision match, but kernel arithmetic differs;
+generated texts diverge. Independent quantized-reference logits, rather than
+cross-engine text equality, provide the numerical gate. Neither these numbers
+nor sampled logit agreement establish broad task-quality or engine parity.
