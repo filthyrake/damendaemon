@@ -823,3 +823,19 @@ FP32 and 0.01357 against matched FP16 eager execution. Both failed reports are
 retained alongside successful evidence in `evidence/rotary/`. That path is not
 enabled for YaRN. The accuracy policy has memory/performance costs; no YaRN
 throughput parity or trained long-context quality claim is made here.
+
+Mistral7B Q4 now passes all 97 independent CPU FP32 eager-reference checks at
+4352 context, including the 4095/4096/4097 sliding-window boundary; worst RMS
+0.003294, host weight storage 4,262,273,024 bytes. The original implementation's
+matched Q4 serving comparison is poor and retained as the optimization baseline:
+
+| Concurrent requests | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 4.18 | 34.20 | 165.90 | 67.24 |
+| 2 | 14.99 | 64.09 | 370.07 | 86.85 |
+| 4 | 29.68 | 84.02 | 662.97 | 138.79 |
+
+Identical pinned Mistral checkpoint, matching Q4_0 projection/FP16 embedding
+policy, 23 explicit prompt token IDs, 64 output tokens, context 2048, FP16 KV,
+A2 only, sequential servers and five warm measured rounds. This establishes a
+real execution bottleneck; Q4 is not yet a performance improvement in dllm.
