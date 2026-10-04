@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "model_path": "/Users/damenknight/dllm/results/models/starcoder2",
+  "device": "mps",
+  "raw_text_equals_token_ids": true,
+  "stream_matches_nonstream": true,
+  "concurrent_batch": 4,
+  "seed_and_stop_passed": true,
+  "base_checkpoint_without_template": true,
+  "rejection_recovery": true,
+  "sample": {
+    "id": "cmpl-34bbb22588c44a84ac0717e7ae52d507",
+    "object": "text_completion",
+    "created": 1791086445,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": " low = 0\n     high = len(values) - 1\n     while low <= high:\n         mid = (",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 24,
+      "total_tokens": 34
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 10.99426195799606,
+      "kernel_backend": "metal",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 11.454161082976498,
+      "total_seconds": 15.119370041997172,
+      "decode_tokens_per_second": 6.275222028854117
+    }
+  }
+}
