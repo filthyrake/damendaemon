@@ -1,6 +1,7 @@
 """Independent T5 text encoder-decoder weights and relative-position geometry."""
 import json
 import math
+from collections import OrderedDict
 from pathlib import Path
 import torch
 from safetensors import safe_open
@@ -189,6 +190,13 @@ class T5Executor:
         self.cross_kv=[torch.zeros(shape,device=self.device) for _ in range(layers)]
         self.encoder_lengths=torch.ones(max_batch,device=self.device,dtype=torch.long)
         self.lengths=[0]*max_batch;self.batch_graphs={};self.length=0
+        self.prefill_graph_limit=int(os.environ.get('DLLM_T5_PREFILL_GRAPHS','0'))
+        if not 0<=self.prefill_graph_limit<=8:raise ValueError('T5 prefill graph limit must be 0..8')
+        if not use_graph or self.device!='cuda':self.prefill_graph_limit=0
+        self.prefill_graphs=OrderedDict();self.prefill_graph_hits=0
+        # cuBLAS retains a workspace per CUDA stream. Reuse this stream across
+        # graph eviction/capture so distinct prompt shapes cannot grow that pool.
+        self.prefill_warmup_stream=torch.cuda.Stream() if self.prefill_graph_limit else None
         self.arange=torch.arange(self.context,device=self.device)
         positions=torch.arange(self.context)
         self.bias={}
@@ -220,9 +228,7 @@ class T5Executor:
         else:hidden=F.relu(hidden)
         return x+self.linear(hidden,self.w[prefix+'down'])
 
-    def encode_batch(self,prompts):
-        lengths=[len(prompt) for prompt in prompts]
-        ids=torch.tensor([token for prompt in prompts for token in prompt],device=self.device)
+    def encode_batch(self,ids,lengths):
         x=F.embedding(ids,self.w['embed'])
         for layer in range(self.c['num_layers']):
             prefix=f'encoder.{layer}.'
@@ -280,21 +286,43 @@ class T5Executor:
         if sum(map(len,prompts))>self.context:
             from .prefill import groups
             return torch.cat([self.prefill_batch(batch,assigned) for batch,assigned in groups(prompts,slots,self.context)])
-        encoded=self.encode_batch(prompts)
+        lengths=[len(prompt) for prompt in prompts]
+        ids=torch.tensor([token for prompt in prompts for token in prompt],device=self.device)
+        key=(tuple(lengths),tuple(slots))
+        cached=self.prefill_graphs.get(key)
+        if cached is not None:
+            input_ids,_,graph,logits=cached
+            input_ids.copy_(ids);graph.replay()
+            self.prefill_graphs.move_to_end(key);self.prefill_graph_hits+=1
+        else:
+            metadata=torch.tensor([slots,lengths,[self.c['decoder_start_token_id']]*len(slots),[0]*len(slots)],device=self.device)
+            if self.prefill_graph_limit:
+                while len(self.prefill_graphs)>=self.prefill_graph_limit:self.prefill_graphs.popitem(last=False)
+                stream=self.prefill_warmup_stream;stream.wait_stream(torch.cuda.current_stream())
+                with torch.cuda.stream(stream):
+                    for _ in range(3):self.prefill_tensors(ids,lengths,slots,metadata)
+                torch.cuda.current_stream().wait_stream(stream);torch.cuda.synchronize()
+                graph=torch.cuda.CUDAGraph()
+                with torch.cuda.graph(graph):logits=self.prefill_tensors(ids,lengths,slots,metadata)
+                graph.replay()
+                self.prefill_graphs[key]=(ids,metadata,graph,logits)
+            else:logits=self.prefill_tensors(ids,lengths,slots,metadata)
+        for slot in slots:self.lengths[slot]=1
+        return logits
+
+    def prefill_tensors(self,ids,lengths,slots,metadata):
+        """Device-only prompt work; static shape/slot metadata makes it capturable."""
+        encoded=self.encode_batch(ids,lengths)
         for layer in range(self.c['num_decoder_layers']):
             k,v=self.linear(encoded,self.w[f'decoder.{layer}.crosskv']).chunk(2,-1)
             offset=0
-            for prompt,slot in zip(prompts,slots):
-                length=len(prompt)
+            for length,slot in zip(lengths,slots):
                 for cache,values in zip(self.cross_kv[layer],(k,v)):
                     cache[slot,:,:length].copy_(values[offset:offset+length].reshape(length,self.heads,self.dim).transpose(0,1))
                 offset+=length
-        slot_ids=torch.tensor(slots,device=self.device)
-        self.encoder_lengths.index_copy_(0,slot_ids,torch.tensor([len(prompt) for prompt in prompts],device=self.device))
-        ids=torch.full_like(slot_ids,self.c['decoder_start_token_id'])
-        logits=self.forward_batch(ids,torch.zeros_like(slot_ids),slot_ids)
-        for slot in slots:self.lengths[slot]=1
-        return logits
+        slot_ids,encoder_lengths,start_ids,positions=metadata.unbind(0)
+        self.encoder_lengths.index_copy_(0,slot_ids,encoder_lengths)
+        return self.forward_batch(start_ids,positions,slot_ids)
 
     def prefill(self,tokens,slot=0):
         logits=self.prefill_batch([tokens],[slot]);self.length=1

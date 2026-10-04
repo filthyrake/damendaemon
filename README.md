@@ -550,3 +550,9 @@ Qualification includes full 512-position decoder traces and real streaming,
 concurrency, cancellation and model-switching proofs. Initial storage/compute is
 FP32. T5 quantization, chat templates, paged KV, prefix snapshots and chunked
 prefill are not supported. [Evidence and measured performance](docs/evidence/t5/README.md).
+
+For repeated T5 prompt lengths on CUDA, `DLLM_T5_PREFILL_GRAPHS=1..8` enables
+bounded prompt graph caching. It recomputes each prompt with its current tokens.
+Warm latency improves, but a new shape incurs capture overhead; default 0 keeps
+it off. `--no-graph` also disables prompt graphs. See the T5 evidence for cold
+cost, memory bounds and separate core/HTTP measurements.

@@ -113,3 +113,27 @@ All output IDs agree. Timings exclude model load and HTTP/tokenizer overhead.
 Dllm has substantially slower encoder/prefill latency in this workload, while
 its decoder is faster. Total times are close; this is not a universal win or an
 HTTP comparison. Raw core trials and llama.cpp initialization log are retained.
+
+## Opt-in CUDA prompt graphs
+
+`DLLM_T5_PREFILL_GRAPHS=1..8` enables a bounded LRU of captured prompt shapes
+and slot assignments. Default 0 retains eager prompt execution. Input token IDs
+are replaced on replay; this caches GPU execution, not prompt outputs. Decoder
+and cross-attention state are recomputed for every request. `--no-graph` disables
+both prompt and decode capture. Apple continues eager prompt execution.
+
+Full 573-check CUDA reference and real service proof pass with four entries.
+A separate CPU-reference oracle changes token IDs at the same shape, interleaves
+decode, changes slots, evicts entries and recaptures. Its first version exposed
+an extra retained 8-MiB cuBLAS workspace for each newly created warmup stream;
+reusing one stream fixes it. The repeated-eviction trace now stays below 9 MiB
+above decode allocations for two entries rather than growing past 40 MiB.
+
+FLAN-T5 A2 HTTP throughput becomes 428.46 / 607.85 / 1020.21 tokens/s at
+concurrency 1/2/4, first text 7.25 / 10.21 / 12.76 ms. Core first token averages
+3.014 ms and total eight-output time 13.020 ms with identical IDs, compared with
+16.426 / 25.800 ms eager and llama.cpp 6.155 / 26.806 ms from the earlier core
+run. These are warm, repeated-shape measurements. Initial capture costs roughly
+300-360 ms per new shape in these runs; shape churn can therefore be slower.
+The setting remains opt-in. Production should choose its cache limit based on
+actual prompt-shape reuse and cold latency, not these warm numbers alone.
