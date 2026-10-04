@@ -183,7 +183,7 @@ def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=No
 
 
 @tr.jit
-def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW,
+def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW, TMPK, TMPV, MATERIALIZE: tl.constexpr,
                 PAGES, PAGED: tl.constexpr, MAX_PAGES: tl.constexpr,
                 NORM: tl.constexpr, EPS: tl.constexpr, PRECISE: tl.constexpr,
                 H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr, RD: tl.constexpr, C: tl.constexpr, BD: tl.constexpr):
@@ -218,23 +218,31 @@ def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW,
             tl.store(Q + (batch * H + head) * D + cols, a + b, cols < D)
         else:
             tl.store(K + ((cache_slot * KH + head - H) * C + cache_position) * D + cols, a + b, cols < D)
+            if MATERIALIZE:
+                tl.store(TMPK + (batch * KH + head - H) * D + cols, a + b, cols < D)
     else:
         tl.store(V + ((cache_slot * KH + head - H - KH) * C + cache_position) * D + cols, x, cols < D)
+        if MATERIALIZE:
+            tl.store(TMPV + (batch * KH + head - H - KH) * D + cols, x, cols < D)
 
 
 
-def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads, q_norm=None, k_norm=None, eps=1e-6, precise=False, page_table=None):
+def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads, q_norm=None, k_norm=None, eps=1e-6, precise=False, page_table=None, materialize=False):
     _, kv_heads, context, dim = cache_k.shape
     rotary_dim = cos.shape[-1]
     if not 0 < rotary_dim <= dim or rotary_dim % 2 or (q_norm is not None and rotary_dim != dim):
         raise ValueError('unsupported rotary table width')
     query = torch.empty((qkv.shape[0], heads, 1, dim), device=qkv.device, dtype=qkv.dtype)
+    # Prefill consumes contiguous current-token K/V without gathering cache pages.
+    key = torch.empty((qkv.shape[0], kv_heads, dim), device=qkv.device, dtype=cache_k.dtype) if materialize else cache_k
+    value = torch.empty_like(key) if materialize else cache_v
     _rope_batch[(qkv.shape[0], heads + 2 * kv_heads)](
         qkv, cos, sin, positions, slots, query, cache_k, cache_v,
         qkv if q_norm is None else q_norm, qkv if k_norm is None else k_norm,
+        key, value, materialize,
         slots if page_table is None else page_table, page_table is not None, 0 if page_table is None else page_table.shape[1],
         q_norm is not None, eps, precise, heads, kv_heads, dim, rotary_dim, context, tr.next_power_of_2(dim), enable_fp_fusion=False)
-    return query
+    return (query, key, value) if materialize else query
 
 
 @tr.jit

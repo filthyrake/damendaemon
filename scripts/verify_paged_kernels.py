@@ -44,9 +44,15 @@ def main():
                 expected_q=rotate(q,heads).unsqueeze(2)
                 expected_k=rotate(k,kh)
                 torch.testing.assert_close(query,expected_q,atol=.002 if dtype==torch.float16 else .000002,rtol=.002)
+                direct_q,direct_k,direct_v=kernels.rope_batch(packed,cos,sin,pos,slots,physical_k,physical_v,heads,
+                    precise=True,page_table=table,materialize=True)
+                torch.testing.assert_close(direct_q,query,atol=0,rtol=0)
+                torch.testing.assert_close(direct_k,expected_k,atol=.002 if dtype==torch.float16 else .000002,rtol=.002)
+                torch.testing.assert_close(direct_v,v.reshape(3,kh,dim),atol=0,rtol=0)
                 for row,(slot,position) in enumerate(zip(slots.tolist(),pos.tolist())):
                     block=table[slot,position//page].item()
                     torch.testing.assert_close(physical_k[block,:,position%page],expected_k[row],atol=.002,rtol=.002)
+                    torch.testing.assert_close(physical_k[block,:,position%page],direct_k[row],atol=0,rtol=0)
                     torch.testing.assert_close(physical_v[block,:,position%page],v[row].reshape(kh,dim),atol=0,rtol=0)
                     logical_k[slot,:,position]=expected_k[row]
                     logical_v[slot,:,position]=v[row].reshape(kh,dim)

@@ -1,0 +1,142 @@
+{
+  "layout": "paged",
+  "reports": {
+    "prefill": {
+      "steps": 4,
+      "gpu_us_per_step": 15983.600500000022,
+      "kernels": [
+        {
+          "name": "_gemm",
+          "calls": 388,
+          "total_us": 51540.72199999992
+        },
+        {
+          "name": "void pytorch_flash::flash_fwd_kernel<pytorch_flash::Flash_fwd_kernel_traits<64, 128, 128, 4, false, false, cutlass::half_t, pytorch_flash::Flash_kernel_traits<64, 128, 128, 4, cutlass::half_t> >, false, true, false, false, false, true, false>(pytorch_flash::Flash_fwd_params)",
+          "calls": 384,
+          "total_us": 3576.276000000231
+        },
+        {
+          "name": "_swiglu",
+          "calls": 96,
+          "total_us": 2410.9990000001308
+        },
+        {
+          "name": "void at::native::(anonymous namespace)::indexSelectSmallIndex<c10::Half, int, unsigned int, 2, 2, -2>(at::cuda::detail::TensorInfo<c10::Half, unsigned int>, at::cuda::detail::TensorInfo<c10::Half const, unsigned int>, at::cuda::detail::TensorInfo<int const, unsigned int>, int, int, unsigned int, long)",
+          "calls": 768,
+          "total_us": 1676.6020000001445
+        },
+        {
+          "name": "void at::native::elementwise_kernel<128, 4, at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#10}::operator()() const::{lambda(c10::Half)#1}>(at::TensorIteratorBase&, at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#10}::operator()() const::{lambda(c10::Half)#1} const&)::{lambda(int)#1}>(int, at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#10}::operator()() const::{lambda(c10::Half)#1}>(at::TensorIteratorBase&, at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#10}::operator()() const::{lambda(c10::Half)#1} const&)::{lambda(int)#1})",
+          "calls": 768,
+          "total_us": 1548.2599999997947
+        },
+        {
+          "name": "_rope_batch",
+          "calls": 96,
+          "total_us": 1348.5679999999847
+        },
+        {
+          "name": "void at::native::vectorized_elementwise_kernel<4, at::native::CUDAFunctor_add<c10::Half>, std::array<char*, 3ul> >(int, at::native::CUDAFunctor_add<c10::Half>, std::array<char*, 3ul>)",
+          "calls": 192,
+          "total_us": 741.3979999999137
+        },
+        {
+          "name": "_rms",
+          "calls": 196,
+          "total_us": 605.1789999999928
+        },
+        {
+          "name": "void at::native::(anonymous namespace)::CatArrayBatchedCopy_contig<at::native::(anonymous namespace)::OpaqueType<2u>, unsigned int, 2, 128, 1>(at::native::(anonymous namespace)::OpaqueType<2u>*, at::native::(anonymous namespace)::CatArrInputTensorMetadata<at::native::(anonymous namespace)::OpaqueType<2u>, unsigned int, 128, 1>, at::native::(anonymous namespace)::TensorSizeStride<unsigned int, 4u>, int, unsigned int)",
+          "calls": 96,
+          "total_us": 425.53399999996327
+        },
+        {
+          "name": "void at::native::(anonymous namespace)::indexSelectLargeIndex<c10::Half, long, unsigned int, 2, 2, -2, true>(at::cuda::detail::TensorInfo<c10::Half, unsigned int>, at::cuda::detail::TensorInfo<c10::Half const, unsigned int>, at::cuda::detail::TensorInfo<long const, unsigned int>, int, int, unsigned int, unsigned int, long)",
+          "calls": 4,
+          "total_us": 42.52799999999479
+        },
+        {
+          "name": "void at::native::(anonymous namespace)::indexSelectSmallIndex<c10::Half, long, unsigned int, 2, 2, -2>(at::cuda::detail::TensorInfo<c10::Half, unsigned int>, at::cuda::detail::TensorInfo<c10::Half const, unsigned int>, at::cuda::detail::TensorInfo<long const, unsigned int>, int, int, unsigned int, long)",
+          "calls": 4,
+          "total_us": 12.417000000044936
+        },
+        {
+          "name": "Memcpy HtoD (Pageable -> Device)",
+          "calls": 17,
+          "total_us": 5.918999999965308
+        }
+      ]
+    },
+    "decode": {
+      "steps": 4,
+      "gpu_us_per_step": 4371.393750000007,
+      "kernels": [
+        {
+          "name": "_gemm",
+          "calls": 388,
+          "total_us": 15312.26199999999
+        },
+        {
+          "name": "_attention",
+          "calls": 96,
+          "total_us": 1001.9950000000008
+        },
+        {
+          "name": "_rms",
+          "calls": 196,
+          "total_us": 271.32900000002337
+        },
+        {
+          "name": "_merge",
+          "calls": 96,
+          "total_us": 231.16500000000087
+        },
+        {
+          "name": "void at::native::vectorized_elementwise_kernel<4, at::native::CUDAFunctor_add<c10::Half>, std::array<char*, 3ul> >(int, at::native::CUDAFunctor_add<c10::Half>, std::array<char*, 3ul>)",
+          "calls": 192,
+          "total_us": 217.3389999999963
+        },
+        {
+          "name": "_swiglu",
+          "calls": 96,
+          "total_us": 163.87100000001192
+        },
+        {
+          "name": "_rope_batch",
+          "calls": 96,
+          "total_us": 159.51900000000478
+        },
+        {
+          "name": "void at::native::reduce_kernel<512, 1, at::native::ReduceOp<c10::Half, at::native::ArgMaxOps<float>, unsigned int, long, 4> >(at::native::ReduceOp<c10::Half, at::native::ArgMaxOps<float>, unsigned int, long, 4>)",
+          "calls": 4,
+          "total_us": 91.32600000000275
+        },
+        {
+          "name": "void at::native::(anonymous namespace)::indexSelectSmallIndex<c10::Half, long, unsigned int, 2, 2, -2>(at::cuda::detail::TensorInfo<c10::Half, unsigned int>, at::cuda::detail::TensorInfo<c10::Half const, unsigned int>, at::cuda::detail::TensorInfo<long const, unsigned int>, int, int, unsigned int, long)",
+          "calls": 4,
+          "total_us": 22.206999999999425
+        },
+        {
+          "name": "void at::native::vectorized_elementwise_kernel<4, at::native::FillFunctor<long>, std::array<char*, 1ul> >(int, at::native::FillFunctor<long>, std::array<char*, 1ul>)",
+          "calls": 8,
+          "total_us": 10.208999999998014
+        },
+        {
+          "name": "Memcpy HtoD (Pinned -> Device)",
+          "calls": 4,
+          "total_us": 2.7519999999999527
+        },
+        {
+          "name": "Memset (Unknown)",
+          "calls": 4,
+          "total_us": 1.1850000000013097
+        },
+        {
+          "name": "Memcpy HtoD (Pageable -> Device)",
+          "calls": 1,
+          "total_us": 0.4159999999997126
+        }
+      ]
+    }
+  }
+}

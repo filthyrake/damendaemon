@@ -54,3 +54,19 @@ The initial implementation loses about 7% throughput at four requests. It stays
 opt-in; the memory reduction is not a claim of a universal speed improvement.
 Prefill gathers and page-table updates are being profiled as follow-up work in
 issue #27. The unit/lifecycle suite has 148 passing tests.
+
+## Fused prefill materialization
+
+The initial profile identified 384 extra page-gather/copy launches per packed
+four-request prefill (24 layers). The rotary/cache-write kernel now optionally
+also emits current-token K/V, so full prefill consumes views directly. Decode
+continues to read physical pages. This removes the gathers without changing
+cache precision or ownership. The fragmented kernel oracle additionally checks
+materialized K/V against the cache and independent rotation.
+
+Qwen2/Qwen3 Q4 independently pass 82/84 reference checks after this change.
+Matched serving results (`qwen2-paged-direct-kv`) are 194.89 / 346.20 / 605.62
+tokens/s at concurrency 1/2/4, with median TTFT 30.07 / 49.76 / 72.89 ms.
+The four-request TTFT improves from the initial 88.50 ms, but throughput remains
+below the earlier fixed-cache result; this is not evidence of a throughput win.
+Profiles are diagnostic, separate from the unprofiled HTTP measurements.

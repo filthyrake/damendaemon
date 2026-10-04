@@ -71,20 +71,21 @@ class PagedExecutor(BatchExecutor):
         for layer in range(self.c['num_hidden_layers']):
             qkv = self.linear(self.norm(x,w[f'{layer}.norm1']), w[f'{layer}.qkv.weight'], w.get(f'{layer}.qkv.bias'))
             ck, cv = self.kv[layer].unbind(0)
-            query = self.kernels.rope_batch(qkv,self.cos,self.sin,positions,slots,ck,cv,self.heads,
-                w.get(f'{layer}.q_norm'),w.get(f'{layer}.k_norm'),self.eps,self.rotary_precise,page_table=self.page_table)
+            rotated = self.kernels.rope_batch(qkv,self.cos,self.sin,positions,slots,ck,cv,self.heads,
+                w.get(f'{layer}.q_norm'),w.get(f'{layer}.k_norm'),self.eps,self.rotary_precise,
+                page_table=self.page_table,materialize=prefill_lengths is not None)
             if prefill_lengths is None:
-                attended = self.kernels.attention(query,ck,cv,positions,slots,
+                attended = self.kernels.attention(rotated,ck,cv,positions,slots,
                     window=self.window or 0,page_table=self.page_table).reshape(ids.numel(),-1)
             else:
+                query,key,value = rotated
                 attended, offset = [], 0
-                for slot,length in zip(assigned,prefill_lengths):
-                    pages = self.page_table[slot,:(length+15)//16]
-                    def gather(cache):
-                        return cache.index_select(0,pages).permute(1,0,2,3).reshape(1,self.kv_heads,-1,self.dim)[:,:,:length]
+                for length in prefill_lengths:
                     q = query[offset:offset+length,:,0].transpose(0,1).unsqueeze(0)
-                    value = self.prefill_attention(q,gather(ck),gather(cv))
-                    attended.append(value.transpose(1,2).reshape(length,-1))
+                    k = key[offset:offset+length].transpose(0,1).unsqueeze(0)
+                    v = value[offset:offset+length].transpose(0,1).unsqueeze(0)
+                    output = self.prefill_attention(q,k,v)
+                    attended.append(output.transpose(1,2).reshape(length,-1))
                     offset += length
                 attended = torch.cat(attended)
             x = x + self.linear(attended,w[f'{layer}.out'])
