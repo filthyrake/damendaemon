@@ -32,11 +32,12 @@ class BusyError(Exception):
 class Runtime:
     def __init__(self, models, context=1024, gpu_models=1, host_models=2,
                  host_gib=8, use_graph=True, queue_size=8, queue_timeout=120, batch_size=None):
-        if (not models or min(context, gpu_models, host_models, queue_size) <= 0
+        if (min(context, gpu_models, host_models, queue_size) <= 0
                 or host_models < gpu_models or host_gib <= 0 or queue_timeout <= 0):
             raise ValueError("invalid model, residency, context, or queue limits")
         require_gpu()
         self.models = dict(models)
+        self.registry_lock = threading.RLock()
         self.context = context
         self.gpu_limit, self.host_limit = gpu_models, host_models
         self.host_bytes = int(host_gib * 1024**3)
@@ -47,6 +48,67 @@ class Runtime:
         self.gpu = OrderedDict()
         self.lock = threading.Lock()
         self.admission = threading.BoundedSemaphore(queue_size)
+
+    def model_ids(self):
+        with self.registry_lock:
+            return list(self.models)
+
+    def _status(self):
+        with self.registry_lock:
+            models = [{'id': alias, 'residency': 'gpu' if alias in self.gpu else 'host' if alias in self.host else 'disk',
+                       'host_weight_bytes': self.host[alias].bytes if alias in self.host else None}
+                      for alias in self.models]
+        return {'models': models, 'device': selected_device(), 'context': self.context,
+                'host_cached_bytes': sum(model.bytes for model in self.host.values()),
+                'host_budget_bytes': self.host_bytes, 'gpu_model_limit': self.gpu_limit,
+                'host_model_limit': self.host_limit}
+
+    def manage(self, action, model=None, path=None, release_host=False):
+        """Called by the GPU worker between request groups, or under this lock."""
+        from .management import command
+        command(action, model, path, release_host)
+        if not self.lock.acquire(timeout=self.queue_timeout):
+            raise BusyError('model management timeout')
+        try:
+            if action == 'register':
+                import json
+                from pathlib import Path
+                from tokenizers import Tokenizer
+                from .config import decoder_config
+                from .qwen2 import weight_bytes
+                candidate = Path(path).expanduser().resolve()
+                with self.registry_lock:
+                    existing = self.models.get(model)
+                    if existing is not None:
+                        if Path(existing).expanduser().resolve() != candidate:
+                            raise ValueError('alias already refers to another snapshot')
+                        return self._status()
+                try:
+                    config = decoder_config(json.loads((candidate/'config.json').read_text()))
+                    Tokenizer.from_file(str(candidate/'tokenizer.json'))
+                    json.loads((candidate/'tokenizer_config.json').read_text())
+                    estimated = weight_bytes(candidate)
+                except Exception as error:
+                    raise ValueError('invalid local model snapshot') from error
+                if self.context > config['max_position_embeddings'] or estimated > self.host_bytes:
+                    raise ValueError('model exceeds configured context or host capacity')
+                with self.registry_lock:
+                    self.models[model] = candidate
+            elif action != 'status':
+                if model not in self.models:
+                    raise ValueError('unknown model')
+                if action == 'load':
+                    executor, tier, seconds = self._activate(model)
+                    return {**self._status(), 'source_tier': tier, 'activation_seconds': seconds}
+                if model in self.gpu:
+                    self._evict(model)
+                if release_host:
+                    self.host.pop(model, None)
+                    gc.collect()
+                    empty_cache()
+            return self._status()
+        finally:
+            self.lock.release()
 
     def _evict(self, alias):
         import torch

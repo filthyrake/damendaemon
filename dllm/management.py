@@ -1,0 +1,21 @@
+"""Validation for dllm's local model-management extensions."""
+
+
+def command(action, model=None, path=None, release_host=False):
+    if action not in ('status', 'register', 'load', 'unload'):
+        raise ValueError('unknown model management action')
+    if type(release_host) is not bool:
+        raise ValueError('release_host must be boolean')
+    if action == 'status':
+        if model is not None or path is not None or release_host:
+            raise ValueError('status does not accept model options')
+    elif not isinstance(model, str) or not 1 <= len(model) <= 128 or any(ord(c) < 32 for c in model):
+        raise ValueError('model must be a nonempty alias of at most 128 characters')
+    if action == 'register':
+        if not isinstance(path, str) or not path or len(path) > 4096 or '\x00' in path:
+            raise ValueError('register requires a local snapshot path')
+    elif path is not None:
+        raise ValueError('path is only supported by register')
+    if release_host and action != 'unload':
+        raise ValueError('release_host is only supported by unload')
+    return {'action': action, 'model': model, 'path': path, 'release_host': release_host}

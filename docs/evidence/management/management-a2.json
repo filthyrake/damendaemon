@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "models": {
+    "a": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+    "b": "/home/damen/.cache/huggingface/hub/models--HuggingFaceTB--SmolLM2-360M-Instruct/snapshots/a10cc1512eabd3dde888204e902eca88bddb4951"
+  },
+  "empty_registry": true,
+  "idempotent_registration": true,
+  "host_and_gpu_unload": true,
+  "active_stream_unload": true,
+  "cli_management": true,
+  "error_recovery": true,
+  "disk_preserved": true,
+  "final_status": {
+    "models": [
+      {
+        "id": "a",
+        "residency": "gpu",
+        "host_weight_bytes": 988065536
+      },
+      {
+        "id": "b",
+        "residency": "host",
+        "host_weight_bytes": 723642240
+      }
+    ],
+    "device": "cuda",
+    "context": 512,
+    "host_cached_bytes": 1711707776,
+    "host_budget_bytes": 8589934592,
+    "gpu_model_limit": 1,
+    "host_model_limit": 2,
+    "source_tier": "disk",
+    "activation_seconds": 1.9661336649951409
+  }
+}

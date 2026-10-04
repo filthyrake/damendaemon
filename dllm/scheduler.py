@@ -5,6 +5,8 @@ Model groups drain before switching; a queued different model prevents new
 admission to the current group, avoiding starvation and active-model eviction.
 """
 from collections import deque
+import copy
+import traceback
 from dataclasses import dataclass, field
 import queue
 import threading
@@ -25,6 +27,7 @@ class Pending:
     stops: tuple = ()
     raw_prompt: str | list | None = None
     schema: str | None = None
+    command: dict | None = None
     start: float = field(default_factory=time.perf_counter)
     events: queue.Queue = field(default_factory=lambda: queue.Queue(maxsize=8))
     done: threading.Event = field(default_factory=threading.Event)
@@ -57,6 +60,37 @@ class BatchedRuntime:
         self.closed = False
         self.worker = threading.Thread(target=self._work, name="dllm-gpu", daemon=True)
         self.worker.start()
+
+    def model_ids(self):
+        return self.runtime.model_ids()
+
+    def manage(self, action, model=None, path=None, release_host=False):
+        from .management import command
+        options = command(action, model, path, release_host)
+        if not self.admission.acquire(blocking=False):
+            raise BusyError('request queue is full')
+        request = Pending(model or '', None, 0, command=options)
+        try:
+            with self.condition:
+                if self.closed:
+                    raise BusyError('runtime is closed')
+                self.requests.add(request)
+                self.pending.append(request)
+                self.condition.notify_all()
+            request.done.wait()
+            if request.error:
+                raise request.error
+            return request.final
+        finally:
+            request.cancelled.set()
+            with self.condition:
+                try:
+                    self.pending.remove(request)
+                except ValueError:
+                    pass
+                self.requests.discard(request)
+                self.condition.notify_all()
+            self.admission.release()
 
     def generate(self, alias, messages, max_tokens=128, enable_thinking=None,
                  temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None):
@@ -114,6 +148,18 @@ class BatchedRuntime:
         with self.condition:
             if request.done.is_set():
                 return
+            if error is not None:
+                # Do not transport worker frames (and their GPU tensors) to the
+                # caller. A retained exception must not pin an evicted model.
+                try:
+                    detached = copy.copy(error).with_traceback(None)
+                except Exception:
+                    detached = RuntimeError(str(error))
+                detached.__cause__ = detached.__context__ = None
+                detached.__notes__ = list(getattr(error, '__notes__', ()))
+                if error.__traceback__ is not None:
+                    detached.add_note('Worker traceback:\n'+''.join(traceback.format_tb(error.__traceback__)))
+                error = detached
             request.error = error
             request.done.set()
             request.ready.set()
@@ -164,7 +210,7 @@ class BatchedRuntime:
             elif time.perf_counter() - first.start > self.queue_timeout:
                 self.pending.popleft()
                 self._finish(first, BusyError("request queue timeout"))
-            elif alias is not None and first.alias != alias:
+            elif alias is not None and (first.command is not None or first.alias != alias):
                 return None
             else:
                 return self.pending.popleft()
@@ -257,6 +303,13 @@ class BatchedRuntime:
                     first = self._next()
                 if self.closed:
                     return
+            if first.command is not None:
+                try:
+                    first.final = self.runtime.manage(**first.command)
+                    self._finish(first)
+                except Exception as error:
+                    self._finish(first, error)
+                continue
             try:
                 with self.runtime.session(first.alias) as (executor, tier, activation):
                     self._group(first, executor, tier, activation)

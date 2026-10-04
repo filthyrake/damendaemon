@@ -41,13 +41,19 @@ def handler_for(runtime):
             elif self.path == "/v1/models":
                 self.send_json(200, {"object": "list", "data": [
                     {"id": alias, "object": "model", "owned_by": "dllm"}
-                    for alias in runtime.models
+                    for alias in runtime.model_ids()
                 ]})
+            elif self.path == '/v1/models/status':
+                try:
+                    self.send_json(200, runtime.manage('status'))
+                except BusyError:
+                    self.send_json(503, {'error': 'model management is busy'})
             else:
                 self.send_json(404, {"error": "not found"})
 
         def do_POST(self):
-            if self.path not in ("/v1/chat/completions", "/v1/completions"):
+            management = {'/v1/models/register': 'register', '/v1/models/load': 'load', '/v1/models/unload': 'unload'}
+            if self.path not in ("/v1/chat/completions", "/v1/completions") and self.path not in management:
                 self.send_json(404, {"error": "not found"})
                 return
             started = False
@@ -59,6 +65,13 @@ def handler_for(runtime):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
+                if self.path in management:
+                    action = management[self.path]
+                    fields = {'model'} | ({'path'} if action == 'register' else {'release_host'} if action == 'unload' else set())
+                    if not isinstance(body, dict) or set(body) - fields:
+                        raise ValueError('unsupported model management fields')
+                    self.send_json(200, runtime.manage(action, **body))
+                    return
                 allowed = {"model", "messages", "max_tokens", "max_completion_tokens", "stop", "temperature", "top_p", "top_k", "seed", "stream", "stream_options", "chat_template_kwargs", "response_format"}
                 if raw:
                     allowed = (allowed - {'messages', 'chat_template_kwargs', 'max_completion_tokens'}) | {'prompt'}

@@ -97,3 +97,36 @@ class RuntimeTests(unittest.TestCase):
                 pass
         self.assertEqual(set(runtime.host), {"a", "c"})
         self.assertEqual(set(runtime.gpu), {"a", "c"})
+
+
+    def test_model_management_residency_and_idempotent_unload(self):
+        runtime=Runtime({'a':'a'})
+        self.assertEqual(runtime.manage('status')['models'][0]['residency'],'disk')
+        self.assertEqual(runtime.manage('load','a')['source_tier'],'disk')
+        self.assertEqual(runtime.manage('load','a')['source_tier'],'gpu')
+        self.assertEqual(runtime.manage('unload','a')['models'][0]['residency'],'host')
+        self.assertEqual(runtime.manage('load','a')['source_tier'],'host')
+        for _ in range(2):
+            self.assertEqual(runtime.manage('unload','a',release_host=True)['models'][0]['residency'],'disk')
+        self.assertEqual(runtime.model_ids(),['a'])
+        with self.assertRaises(ValueError):runtime.manage('unload','unknown')
+
+    def test_empty_registry_and_atomic_registration(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from tokenizers import Tokenizer,models
+        runtime=Runtime({})
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'config.json').write_text('{}')
+            (root/'tokenizer_config.json').write_text('{}')
+            Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
+            with patch('dllm.config.decoder_config',return_value={'max_position_embeddings':2048}):
+                for _ in range(2):
+                    self.assertEqual(runtime.manage('register','a',str(root))['models'][0]['id'],'a')
+                with self.assertRaises(ValueError):runtime.manage('register','a',str(root/'other'))
+                with self.assertRaises(ValueError):runtime.manage('register','bad',str(root/'missing'))
+            self.assertEqual(runtime.model_ids(),['a'])
+            self.assertEqual(runtime.host,{})
+            self.assertEqual(runtime.gpu,{})

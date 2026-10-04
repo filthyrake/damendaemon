@@ -14,6 +14,14 @@ class FakeRuntime:
     models = {"a": "unused"}
     closed = 0
 
+    def model_ids(self):
+        return list(self.models)
+
+    def manage(self, action, **options):
+        from dllm.management import command
+        self.last_management=command(action,**options)
+        return {'models': [{'id':'a','residency':'disk'}]}
+
     def generate(self, alias, messages, max_tokens, **kwargs):
         self.last_options = kwargs
         self.last_max_tokens = max_tokens
@@ -164,3 +172,19 @@ class ServerTests(unittest.TestCase):
                 method(response_format={'type':'json_schema','json_schema':{'name':'bad','schema':{'type':'string','pattern':'x'}}})
             self.assertEqual(error.exception.code,400)
             error.exception.close()
+
+    def test_management_protocol_and_field_validation(self):
+        with urlopen(self.url+'/v1/models/status') as response:
+            self.assertEqual(json.load(response)['models'][0]['residency'],'disk')
+        for action,body in (('register',{'model':'b','path':'/local/model'}),
+                            ('load',{'model':'b'}),('unload',{'model':'b','release_host':True})):
+            with urlopen(Request(self.url+'/v1/models/'+action,data=json.dumps(body).encode(),
+                                 headers={'Content-Type':'application/json'})) as response:
+                self.assertEqual(response.status,200)
+                response.read()
+            self.assertEqual(self.runtime.last_management['action'],action)
+        with self.assertRaises(HTTPError) as error:
+            urlopen(Request(self.url+'/v1/models/load',data=b'{"model":"a","path":"wrong"}',
+                            headers={'Content-Type':'application/json'}))
+        self.assertEqual(error.exception.code,400)
+        error.exception.close()

@@ -50,6 +50,11 @@ class FakeRuntime:
         self.models = models
         self.executor = FakeExecutor()
         self.groups = []
+    def model_ids(self):
+        return list(self.models)
+    def manage(self, **options):
+        self.groups.append('control:'+options['action'])
+        return {'done': options['action']}
     @contextmanager
     def session(self, alias):
         self.groups.append(alias)
@@ -77,6 +82,33 @@ class SchedulerTests(unittest.TestCase):
                     return
             time.sleep(.001)
         self.fail('requests did not enter queue')
+
+    def test_management_is_a_barrier_between_generation_groups(self):
+        with ThreadPoolExecutor(3) as pool:
+            first=pool.submit(lambda:list(self.generate('a',count=4)))
+            self.assertTrue(self.executor.entered.wait(2))
+            control=pool.submit(self.runtime.manage,'status')
+            self.wait_pending(1)
+            last=pool.submit(lambda:list(self.generate('a',count=2)))
+            self.wait_pending(2)
+            self.executor.release.set()
+            first.result(3)
+            self.assertEqual(control.result(3),{'done':'status'})
+            last.result(3)
+        self.assertEqual(self.runtime.runtime.groups,['a','control:status','a'])
+
+    def test_management_uses_bounded_admission_and_releases_it(self):
+        acquired=[]
+        try:
+            for _ in range(4):
+                self.assertTrue(self.runtime.admission.acquire(blocking=False))
+                acquired.append(True)
+            with self.assertRaises(BusyError):self.runtime.manage('status')
+        finally:
+            for _ in acquired:self.runtime.admission.release()
+        self.assertEqual(self.runtime.manage('status'),{'done':'status'})
+        with self.assertRaises(ValueError):self.runtime.manage('register','a')
+        self.assertEqual(self.runtime.manage('status'),{'done':'status'})
 
     def test_joining_requests_batch_and_report_individual_usage(self):
         with ThreadPoolExecutor(2) as pool:
@@ -205,5 +237,13 @@ class ExecutorLeaseTests(unittest.TestCase):
                 for alias in ('a','b','a'):
                     result=list(runtime.generate(alias,[{'content':'eos'}],1))
                     self.assertEqual(result[-1]['finish_reason'],'stop')
+                retained = None
+                try:
+                    list(runtime.generate('a',[{'content':'fail'}],1))
+                except ValueError as error:
+                    retained = error
+                self.assertIsNotNone(retained)
+                result = list(runtime.generate('b',[{'content':'eos'}],1))
+                self.assertEqual(result[-1]['finish_reason'],'stop')
             finally:
                 runtime.close()

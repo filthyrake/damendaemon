@@ -5,13 +5,13 @@ Damen's LLM runtime: fast GPU inference with effortless model switching.
 **Current state:** an independent GPU inference prototype, verified on an A2
 with Qwen2.5, Qwen3, Qwen3.5 text models, and SmolLM2, plus an experimental
 Apple Silicon MPS path. It implements its own forward pass, static KV
-cache, greedy decoding, CUDA graphs, continuous batching, a streaming API, and
+cache, seeded sampling, CUDA graphs, continuous batching, a streaming API, and
 GPU/host model residency. PyTorch/cuBLAS and dllm's fused Triton kernels provide
 GPU execution; dllm does not depend on vLLM, llama.cpp, Ollama,
 or Transformers generation. Transformers is used for validation and optional structured-output tokenizer adaptation; model execution remains independent.
 
-Additional qualified checkpoints include Llama 3.2, Gemma 3 text, and Phi-3
-mini. Exact revisions, numerical gates, and remaining limits are recorded in
+Additional qualified checkpoints include Llama 3.2, Gemma 3 text, Phi-3
+mini, Mistral 7B, StarCoder2 3B, and CUDA OLMoE. Exact revisions, numerical gates, and remaining limits are recorded in
 [architecture evidence](docs/architecture-parity.md).
 
 The server selects models from each request without restarting. GPU-resident
@@ -298,3 +298,28 @@ The accurate Qwen3 mode uses compensated Tensor Core products for small batches:
 FP32 activations are split into scaled high/residual FP16 components, with FP32
 accumulation. Both tested Qwen3 sizes pass independent FP32-reference gates;
 this is qualified numerical approximation, not bitwise FP32 equivalence.
+
+You can start `dllm serve` with no models and manage its registry without a
+restart. Run these commands on the server's host:
+
+```sh
+dllm add small Qwen/Qwen2.5-0.5B-Instruct --revision 7ae557604adf67be50417f59c2c2f167def9a775
+dllm load small
+dllm models
+dllm unload small                 # retain the RAM copy
+dllm unload small --release-host  # release GPU and RAM copies; keep disk files
+```
+
+`add` also accepts an existing local snapshot directory. Downloads happen in the
+CLI before registration. Commands default to `http://127.0.0.1:8088`; use
+`--server` to select another endpoint. Snapshot paths must exist on that server's
+host. Alias registration is idempotent for the same path; an existing alias
+cannot silently change to different weights. The registry is process-local, so
+use startup `--model` entries when you want aliases restored after a restart.
+
+The dllm HTTP extensions are `GET /v1/models/status` and
+`POST /v1/models/register`, `/v1/models/load`, `/v1/models/unload`.
+POST bodies use `model`; registration also requires `path`, and unloading accepts
+boolean `release_host`. Commands share bounded admission and wait for active
+model groups to finish. Ordinary generation still loads registered models on
+demand. These extensions are separate from OpenAI's completion protocol.

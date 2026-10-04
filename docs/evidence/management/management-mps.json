@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "device": "mps",
+  "models": {
+    "a": "/Users/damenknight/dllm/results/models/qwen2",
+    "b": "/Users/damenknight/dllm/results/models/smollm2"
+  },
+  "empty_registry": true,
+  "idempotent_registration": true,
+  "host_and_gpu_unload": true,
+  "active_stream_unload": true,
+  "cli_management": true,
+  "error_recovery": true,
+  "disk_preserved": true,
+  "final_status": {
+    "models": [
+      {
+        "id": "a",
+        "residency": "gpu",
+        "host_weight_bytes": 988065536
+      },
+      {
+        "id": "b",
+        "residency": "host",
+        "host_weight_bytes": 723642240
+      }
+    ],
+    "device": "mps",
+    "context": 512,
+    "host_cached_bytes": 1711707776,
+    "host_budget_bytes": 8589934592,
+    "gpu_model_limit": 1,
+    "host_model_limit": 2,
+    "source_tier": "disk",
+    "activation_seconds": 0.4496074580238201
+  }
+}

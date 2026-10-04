@@ -481,3 +481,36 @@ pass with one GPU-resident model. The two measured individual process footprints
 sum to more than the A2's total VRAM; the final request restores from host and
 matches the first response. No disk weights are deleted. Full response/timing/
 memory evidence is in `evidence/architectures/large-model-swap.json`.
+
+## Dynamic model management
+
+Issue #17. The server can start empty and accept local snapshot registration,
+explicit warm loading, GPU/host unloading and residency status through HTTP and
+CLI. CLI repository resolution/download completes before registration. Aliases
+are process-local and cannot be replaced with different paths; repeated
+registration and unloading are idempotent. Checkpoint files are never removed.
+
+Management uses the scheduler's bounded queue and acts as a FIFO barrier:
+active generations drain before controls run, and later generations cannot
+extend that group past a waiting control. Registration validates architecture,
+context, tokenizer metadata, weight headers and host capacity before publishing
+an alias. A failed registration leaves the registry unchanged. Generation after
+unload restores the registered snapshot normally.
+
+The error path also detaches cross-thread exception tracebacks from GPU worker
+frames. Retaining a client exception can no longer retain the old executor while
+a replacement loads; readable worker stack text is preserved as exception notes.
+A regression test reproduced this failure before the fix. Unit coverage includes
+control fairness, admission saturation, atomic registration, state transitions,
+HTTP field validation and retained-exception lifecycle behavior.
+
+Live A2 and M4 tests pass empty startup, idempotent add, warm load, GPU-only
+unload, full host/GPU unload, loading after eviction, unload during an active
+stream, invalid registration/load recovery, model switching and all four CLI
+commands. Reports are under `evidence/management`. The registry does not persist
+across process restarts; startup aliases remain supported.
+
+The accurate Qwen3 path also passes the real mixed Qwen2/Qwen3/SmolLM2 service
+checks at GPU-residency capacities one and three, and the Qwen2 numerical batch
+regression. Reports are `qwen3-small-accurate-service.json` and
+`qwen2-precision-regression.json` under `evidence/models`.

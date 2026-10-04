@@ -42,7 +42,7 @@ def main():
     run.add_argument("--thinking", choices=("auto", "on", "off"), default="auto",
                      help="Qwen3 thinking mode; auto uses the model template default")
     server = commands.add_parser("serve", help="serve named local models on loopback")
-    server.add_argument("--model", action="append", required=True, metavar="NAME=PATH")
+    server.add_argument("--model", action="append", metavar="NAME=PATH")
     server.add_argument("--port", type=int, default=8088)
     server.add_argument("--batch-size", type=int, choices=range(1, 9), default=4)
     for command in (run, server):
@@ -52,7 +52,31 @@ def main():
         command.add_argument("--host-models", type=int, default=2)
         command.add_argument("--host-gib", type=float, default=8)
         command.add_argument("--no-graph", action="store_true")
+    for name in ('models', 'add', 'load', 'unload'):
+        management = commands.add_parser(name, help='manage models on a running dllm server')
+        management.add_argument('--server', default='http://127.0.0.1:8088')
+        if name != 'models':
+            management.add_argument('model')
+        if name == 'add':
+            management.add_argument('path', help='local snapshot or Hugging Face repository on this host')
+            management.add_argument('--revision', default='main')
+        if name == 'unload':
+            management.add_argument('--release-host', action='store_true')
     args = parser.parse_args()
+    if args.command in ('models', 'add', 'load', 'unload'):
+        from urllib.request import Request, urlopen
+        action = {'models':'status', 'add':'register'}.get(args.command, args.command)
+        body = None if action == 'status' else {'model': args.model}
+        if action == 'register':
+            body['path'] = str(resolve_model(args.path, args.revision))
+        if action == 'unload':
+            body['release_host'] = args.release_host
+        request = Request(args.server.rstrip('/')+'/v1/models/'+action,
+                          data=None if body is None else json.dumps(body).encode(),
+                          headers={'Content-Type':'application/json'})
+        with urlopen(request, timeout=300) as response:
+            print(json.dumps(json.load(response), indent=2))
+        return
     if args.command == 'run' and args.raw and args.thinking != 'auto':
         parser.error('--raw cannot use chat thinking controls')
     if args.command == "pull":
@@ -65,7 +89,7 @@ def main():
         models = {"model": resolve_model(args.path, args.revision)}
     else:
         models = {}
-        for entry in args.model:
+        for entry in args.model or []:
             alias, separator, path = entry.partition("=")
             if not separator or not alias or not path or alias in models:
                 parser.error("models need unique NAME=PATH entries")
