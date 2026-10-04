@@ -53,3 +53,21 @@ fixed decoder and cross-attention caches. No T5 chat template, quantization,
 chunked prefill, prefix snapshots or paged KV. ReLU/tied-head configurations are
 implemented but require a separate real-checkpoint qualification. Other T5
 variants (mT5/UMT5/LongT5), speech/vision encoder-decoders remain unsupported.
+
+## Native Metal decoder attention
+
+The default M4 decoder now reads its caches directly through native Metal
+attention. This removes per-layer cache gathering and temporary SDPA masks.
+The shared kernel supports explicit attention scaling and relative buckets;
+other architectures retain their original scaled-dot-product default.
+
+Three independent CPU attention-oracle cases (head widths 64/96/128, reordered
+slots, relative boundaries and NaN-poisoned future cache) pass. All 29 existing
+Metal kernel checks and 198 FLAN-T5 CPU-reference logit checks pass (maximum
+relative RMS 0.000000776). Real service/residency proof also passes.
+
+Two native serving runs, same workload as above, yield 228.96/278.06/660.90 and
+225.44/401.42/575.41 tokens/s at concurrency 1/2/4. The laptop and scheduler
+introduce run variation, especially at concurrency two; both runs improve over
+the initial gathered-SDPA measurements. Raw runs are in metal-native/ and
+metal-native-repeat/. No llama.cpp speedup claim is made.

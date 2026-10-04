@@ -1028,7 +1028,7 @@ FLAN-T5-small adds independently implemented text encoder-decoder inference on
 A2 and M4: bidirectional relative encoder attention, causal relative decoder
 attention, cached cross-attention and gated GELU. Separate context accounting
 allows a full encoder input plus decoder output. CUDA uses native attention and
-graph replay; Apple uses native projection/norm kernels with SDPA attention.
+graph replay; Apple uses native projection, norm and relative decoder-attention kernels.
 
 [Qualification, limitations and initial timing evidence](evidence/t5/README.md)
 include 198 independent FP32 logit checks per GPU plus real API and residency

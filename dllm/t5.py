@@ -231,7 +231,7 @@ class T5Executor:
         return self.norm(x,self.w['encoder.norm'])
 
     def attention(self,query,ck,cv,positions,slots,relative=False):
-        if self.kernels and self.device=='cuda':
+        if self.kernels:
             return self.kernels.attention(query,ck,cv,positions,slots,scale=1.,
                 relative_bias=self.w['decoder.relative'] if relative else None,
                 relative_max_distance=self.c['relative_attention_max_distance'])

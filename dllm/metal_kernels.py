@@ -120,6 +120,8 @@ kernel void attention(device const float* q, device const float* k, device const
                       constant long& heads, constant long& kvheads, constant long& dim,
                       constant long& context, constant long& single,
                       device const float* slopes, constant long& has_alibi,
+                      device const float* relative, constant long& buckets,
+                      constant float& relative_denom, constant float& scale,
                       uint2 group [[threadgroup_position_in_grid]],
                       uint tid [[thread_index_in_threadgroup]]) {
     threadgroup float scores[4096];
@@ -132,7 +134,15 @@ kernel void attention(device const float* q, device const float* k, device const
         float dot=0;
         for (uint d=lane; d<dim; d+=32) dot+=q[qb+d]*k[base+p*dim+d];
         dot=simd_sum(dot);
-        if(lane==0) scores[p]=dot*rsqrt(float(dim))+(has_alibi?slopes[head]*float(p):0.0f);
+        if(lane==0) {
+            float bias=has_alibi?slopes[head]*float(p):0.0f;
+            if(buckets) {
+                long distance=end-p, exact=buckets/2;
+                long bucket=distance<exact?distance:min(buckets-1,exact+long(log(float(distance)/float(exact))/relative_denom*float(buckets-exact)));
+                bias+=relative[head*buckets+bucket];
+            }
+            scores[p]=dot*scale+bias;
+        }
     }
     threadgroup_barrier(mem_flags::mem_threadgroup);
     float maximum=-INFINITY;
@@ -210,8 +220,19 @@ def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, qw=None, kw=No
                       heads, qw, kw, eps, precise=precise, single=True).permute(2,1,0,3)
 
 
-def attention(q, cache_k, cache_v, positions, slots=None, alibi=None):
+def attention(q, cache_k, cache_v, positions, slots=None, alibi=None,scale=None,
+              relative_bias=None,relative_max_distance=128):
+    import math
     n, heads, _, dim = q.shape
+    scale=dim**-.5 if scale is None else scale
+    buckets=0
+    if relative_bias is not None:
+        if (relative_bias.ndim!=2 or relative_bias.shape[0]!=heads or relative_bias.shape[1]<2
+                or relative_bias.shape[1]%2 or relative_max_distance<=relative_bias.shape[1]//2
+                or relative_bias.dtype!=torch.float32 or relative_bias.device!=q.device
+                or not relative_bias.is_contiguous()):
+            raise ValueError('invalid relative attention bias')
+        buckets=relative_bias.shape[1]
     if alibi is not None and (alibi.shape != (heads,) or alibi.dtype != torch.float32
                               or alibi.device != q.device or not alibi.is_contiguous()):
         raise ValueError('ALiBi needs one contiguous FP32 slope per query head on the same device')
@@ -223,11 +244,18 @@ def attention(q, cache_k, cache_v, positions, slots=None, alibi=None):
         if alibi is not None:
             bias = alibi[None,:,None,None] * torch.arange(context, device='mps')
             mask = bias.masked_fill(~mask, -float('inf'))
+        if relative_bias is not None:
+            from .t5 import relative_buckets
+            indices=relative_buckets(positions,torch.arange(context,device=q.device),buckets,relative_max_distance)
+            bias=relative_bias[:,indices].permute(1,0,2).unsqueeze(2)
+            mask=bias.masked_fill(~mask,-float('inf')) if mask.dtype==torch.bool else mask+bias
         return tensor_attention(q, cache_k.index_select(0,actual_slots), cache_v.index_select(0,actual_slots),
-                                attn_mask=mask, enable_gqa=True)
+                                attn_mask=mask, enable_gqa=True,scale=scale)
     out = torch.empty_like(q, memory_format=torch.contiguous_format)
     library().attention(q.contiguous(), cache_k, cache_v, positions,
         slots if slots is not None else positions, out, heads, kvheads, dim, context, int(slots is None),
         q if alibi is None else alibi, int(alibi is not None),
+        q if relative_bias is None else relative_bias,buckets,
+        math.log(relative_max_distance/(buckets//2)) if buckets else 1.,scale,
         threads=(heads*256,n), group_size=(256,1))
     return out
