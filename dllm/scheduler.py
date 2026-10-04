@@ -55,8 +55,8 @@ class BatchedRuntime:
             raise ValueError('prefill chunk size must be a nonnegative integer')
         if type(prefix_cache_tokens) is not int or prefix_cache_tokens<0:
             raise ValueError('prefix cache tokens must be a nonnegative integer')
-        if os.environ.get('DLLM_KV_CACHE_TOKENS') is not None and (prefill_chunk_size or prefix_cache_tokens):
-            raise ValueError('paged KV does not yet support interleaved prefill or prefix snapshots')
+        if os.environ.get('DLLM_KV_CACHE_TOKENS') is not None and prefix_cache_tokens:
+            raise ValueError('paged KV does not yet support prefix snapshots')
         self.prefix_cache_tokens=prefix_cache_tokens
         self.prefill_chunk_size=prefill_chunk_size
         self.runtime = Runtime(models, batch_size=batch_size, **kwargs)
@@ -346,13 +346,14 @@ class BatchedRuntime:
     def _paged_group(self, first, executor, tier, activation):
         from .pages import PageCapacityError
         first.tier, first.activation = tier, activation
-        active, waiting = {}, deque([(first, None)])
+        active, partial, waiting = {}, {}, deque([(first, None)])
+        chunk_size = self.prefill_chunk_size if getattr(executor,'supports_chunked_prefill',False) else 0
         owned = set()
         prepared = []
         try:
-            while waiting or active:
+            while waiting or active or partial:
                 with self.condition:
-                    while len(waiting)+len(active)<self.batch_size:
+                    while len(waiting)+len(active)+len(partial)<self.batch_size:
                         request=self._next(first.alias)
                         if request is None:
                             break
@@ -362,7 +363,7 @@ class BatchedRuntime:
                         self._finish(request, None if request.cancelled.is_set() else BusyError('KV admission timeout'))
                         waiting.remove((request,tokens))
                 prepared=[]
-                while waiting and len(active)+len(prepared)<self.batch_size:
+                while waiting and len(active)+len(partial)+len(prepared)<self.batch_size:
                     request,tokens=waiting[0]
                     slot=next(i for i in range(self.batch_size) if i not in owned)
                     try:
@@ -380,6 +381,10 @@ class BatchedRuntime:
                     owned.add(slot)
                     waiting.popleft()
                     prepared.append((request,tokens))
+                if chunk_size:
+                    for request,tokens in prepared:
+                        partial[request.slot]=(request,tokens,0)
+                    prepared=[]
                 if prepared:
                     try:
                         logits=executor.prefill_batch([tokens for _,tokens in prepared],[r.slot for r,_ in prepared])
@@ -398,6 +403,34 @@ class BatchedRuntime:
                                 executor.release_request(request.slot)
                                 owned.remove(request.slot)
                     prepared=[]
+                for slot,(request,_,__) in list(partial.items()):
+                    if request.cancelled.is_set():
+                        self._finish(request)
+                        executor.release_request(slot)
+                        owned.remove(slot)
+                        del partial[slot]
+                # Bound prompt work between decode steps, keeping its reservation.
+                if partial:
+                    slot=next(iter(partial))
+                    request,tokens,start=partial[slot]
+                    end=min(start+chunk_size,len(tokens))
+                    try:
+                        logits=executor.prefill_chunk(tokens[start:end],slot,start,final=end==len(tokens))
+                        if end==len(tokens):
+                            token=request.sampler.select(logits.squeeze(0)).item()
+                            if self._emit(request,token,executor,len(tokens)):
+                                executor.release_request(slot)
+                                owned.remove(slot)
+                            else:
+                                active[slot]=(request,len(tokens))
+                            del partial[slot]
+                        else:
+                            partial[slot]=(request,tokens,end)
+                    except Exception as error:
+                        self._finish(request,error)
+                        executor.release_request(slot)
+                        owned.remove(slot)
+                        del partial[slot]
                 for slot,(request,_) in list(active.items()):
                     timed_out=request.events.full() and time.monotonic()-request.last_progress>self.queue_timeout
                     if request.cancelled.is_set() or timed_out:
@@ -416,14 +449,16 @@ class BatchedRuntime:
                             owned.remove(slot)
                             del active[slot]
                 with self.condition:
-                    if not waiting and len(active)<self.batch_size:
+                    if not waiting and len(active)+len(partial)<self.batch_size:
                         request=self._next(first.alias)
                         if request is not None:
                             waiting.append((request,None))
-                    if (active or waiting) and not ready and not prepared:
+                    if (active or waiting) and not ready and not prepared and not partial:
                         self.condition.wait(timeout=.02)
         except Exception as error:
             for request,_ in [*active.values(),*waiting,*prepared]:
+                self._finish(request,error)
+            for request,_,__ in partial.values():
                 self._finish(request,error)
             raise
         finally:

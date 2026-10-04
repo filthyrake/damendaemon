@@ -400,3 +400,38 @@ class PagedSchedulerTests(SchedulerTests):
             list(self.generate(count=200))
         self.runtime.manage('status')
         self.assertEqual(self.executor.pool.used_tokens,0)
+
+
+class PagedChunkExecutor(ChunkExecutor,FakePagedExecutor):
+    pass
+
+
+class PagedChunkedSchedulerTests(ChunkedSchedulerTests):
+    def setUp(self):
+        super().setUp()
+        self.executor=PagedChunkExecutor()
+        self.runtime.runtime.executor=self.executor
+        self.addCleanup(self.executor.release.set)
+
+    def tearDown(self):
+        self.runtime.manage('status')
+        self.assertEqual(self.executor.pool.used_tokens,0)
+
+    def test_chunk_error_returns_pages_and_recovers(self):
+        self.executor.release.set()
+        with self.assertRaises(ValueError):
+            self.generate('fail')
+        self.assertEqual(self.generate('ab',2)[-1]['usage']['completion_tokens'],2)
+
+    def test_chunk_capacity_waits_for_prior_owner(self):
+        from dllm.pages import PagePool
+        self.executor.pool=PagePool(32,2,self.executor.context)
+        with ThreadPoolExecutor(2) as pool:
+            first=pool.submit(self.generate,'abcdefghijklmnop',8)
+            self.assertTrue(self.executor.entered.wait(2))
+            second=pool.submit(self.generate,'abcdefghijklmnop',8)
+            self.wait_pending(1)
+            self.executor.release.set()
+            for future in (first,second):
+                self.assertEqual(future.result(5)[-1]['usage']['completion_tokens'],8)
+        self.assertGreater(self.executor.deferred,0)

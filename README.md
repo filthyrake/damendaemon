@@ -494,16 +494,21 @@ page per slot. `DLLM_KV_CACHE_TOKENS=2048` selects the same policy; an explicit
 `--kv-cache-tokens 0` restores fixed slots. Fixed slots remain the default.
 
 The CUDA dense path supports Qwen2, Qwen3, Llama and Mistral, including supported
-weight quantization policies. Qwen2 and accurate Qwen3 have independent paged
-reference proof. Page reservations cover each request's prompt plus maximum
+weight quantization policies. Qwen2, accurate Qwen3, Llama and Mistral have
+independent paged reference proof. Page reservations cover each request's prompt plus maximum
 output, rounded to pages. Requests wait in order when other requests temporarily
 own the capacity; requests larger than the entire pool are rejected. Completion,
 cancellation, failures and model eviction release ownership. CUDA decode graphs
 read the live page table without rebuilding graphs at page boundaries.
 
-This initial implementation does not combine paged KV with prefix snapshots or
-interleaved prefill, and it rejects unsupported architectures and Apple Silicon.
-It does not quantize KV or share pages between different prompts. Prefill gathers
-one sequence's live pages for attention; decode reads pages directly. Reducing
+Add `--prefill-chunk-size 128` to interleave bounded prompt chunks with active
+decodes while keeping each request's page reservation. Qwen2, accurate Qwen3
+and Mistral Q4 pass chunked reference checks; Llama Q4 currently exceeds the
+1% numerical-error gate on one chunked check and is not qualified for that mode.
+Prefix snapshots remain
+unsupported in combination, as do other architectures and Apple Silicon.
+It does not quantize KV or share pages between different prompts. Full prefill
+uses fused current-token K/V outputs; offset chunks gather prior pages, and
+decode reads pages directly. Reducing
 the pool saves allocated GPU memory but may reduce simultaneous admission for
 long requests. See [paged-cache evidence](docs/evidence/paged/README.md).

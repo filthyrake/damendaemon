@@ -27,8 +27,7 @@ Initial A2 evidence:
   cancelled after one output token. Ownership returns to zero, and model
   switching plus host restore preserves output and frees pages.
 
-This is opt-in CUDA dense support. Prefix snapshots and interleaved prefill are
-currently rejected in combination; no KV quantization or shared-prefix page
+This is opt-in CUDA dense support. Prefix snapshots are currently rejected in combination; no KV quantization or shared-prefix page
 references are implemented. Actual memory and matched throughput measurements
 are recorded alongside their JSON evidence when complete.
 
@@ -70,3 +69,43 @@ tokens/s at concurrency 1/2/4, with median TTFT 30.07 / 49.76 / 72.89 ms.
 The four-request TTFT improves from the initial 88.50 ms, but throughput remains
 below the earlier fixed-cache result; this is not evidence of a throughput win.
 Profiles are diagnostic, separate from the unprofiled HTTP measurements.
+
+Llama Q4 passes 82 reference checks at context 2048 and Mistral Q4 passes 97
+at context 4352, including its sliding-window boundary. The fused prefill
+profile measures 15.16 ms GPU time per four-request prefill, versus 15.98 ms
+for the initial paged path and 15.11 ms for fixed slots. Decode is 4.37 ms.
+These are instrumented GPU times, not end-to-end latency.
+
+## Interleaved prompt chunks
+
+Paged request admission now keeps a reservation across partial prompt chunks,
+executes at most one chunk between decode steps, and releases ownership on
+partial cancellation or failure. Prefix snapshots remain unsupported.
+The 155-test local suite includes decode interleaving, capacity deferral,
+partial cancellation, failed-chunk recovery and model-management barriers.
+
+The reference replay retires all slots replaced by a prefill event before
+replaying its chunks sequentially; otherwise an old long prompt temporarily
+consumes pages that the event has already logically discarded.
+
+With 128-token chunks, Qwen2/Qwen3/Mistral Q4 pass 82/84/97 independent checks.
+The real 512-token-pool service proof also passes with 128-token chunks.
+Llama Q4 matches every greedy token but fails one of 82 numerical checks:
+relative RMS 0.0109906 exceeds the 0.01 limit (max absolute 0.08594).
+The fixed-cache chunked path fails the identical check with identical error;
+Llama Q4 chunking is therefore **not numerically qualified**, while full paged
+prefill remains qualified. Both failed trace reports are retained.
+
+Qwen2 Q4 streaming benchmark, A2, 2048-token pool/context, 1536-token prompt
+joining a 64-output-token stream, three measured rounds and identical greedy
+outputs in all modes:
+
+| Prompt chunk | Median worst active-stream gap ms | Long request s | Short request s |
+|---|---:|---:|---:|
+| full | 124.08 | 0.167 | 0.446 |
+| 128 | 36.25 | 0.437 | 0.673 |
+| 256 | 52.01 | 0.295 | 0.567 |
+
+Chunking reduces the worst stream interruption but increases total request
+latency in this test. It remains opt-in. Offset chunks currently materialize the
+live prefix; bulk page copy and prefix integration are the next optimization.

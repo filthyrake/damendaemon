@@ -63,9 +63,9 @@ class PagedExecutor(BatchExecutor):
 
     @property
     def supports_chunked_prefill(self):
-        return False
+        return True
 
-    def _forward(self, ids, positions, slots, prefill_lengths=None, assigned=None):
+    def _forward(self, ids, positions, slots, prefill_lengths=None, assigned=None, starts=None, return_logits=True):
         w = self.w
         x = F.embedding(ids, w['embed']).to(self.residual_dtype)
         for layer in range(self.c['num_hidden_layers']):
@@ -80,11 +80,18 @@ class PagedExecutor(BatchExecutor):
             else:
                 query,key,value = rotated
                 attended, offset = [], 0
-                for length in prefill_lengths:
+                for slot,length,start in zip(assigned,prefill_lengths,starts or [0]*len(prefill_lengths)):
                     q = query[offset:offset+length,:,0].transpose(0,1).unsqueeze(0)
-                    k = key[offset:offset+length].transpose(0,1).unsqueeze(0)
-                    v = value[offset:offset+length].transpose(0,1).unsqueeze(0)
-                    output = self.prefill_attention(q,k,v)
+                    if start:
+                        # Offset prefill needs earlier tokens as well as this chunk.
+                        pages = self.page_table[slot,:(start+length+15)//16]
+                        def gather(cache):
+                            return cache.index_select(0,pages).permute(1,0,2,3).reshape(1,self.kv_heads,-1,self.dim)[:,:,:start+length]
+                        k,v = gather(ck),gather(cv)
+                    else:
+                        k = key[offset:offset+length].transpose(0,1).unsqueeze(0)
+                        v = value[offset:offset+length].transpose(0,1).unsqueeze(0)
+                    output = self.prefill_attention(q,k,v,query_start=start)
                     attended.append(output.transpose(1,2).reshape(length,-1))
                     offset += length
                 attended = torch.cat(attended)
@@ -92,6 +99,8 @@ class PagedExecutor(BatchExecutor):
             gate_up = self.linear(self.norm(x,w[f'{layer}.norm2']),w[f'{layer}.gate_up'])
             activated = self.kernels.swiglu(gate_up,self.precise)
             x = x + self.linear(activated,w[f'{layer}.down'])
+        if not return_logits:
+            return None
         if prefill_lengths is not None:
             ends = torch.tensor([end-1 for end in accumulate(prefill_lengths)],device=self.device)
             x = x.index_select(0,ends)
@@ -108,24 +117,34 @@ class PagedExecutor(BatchExecutor):
 
     @torch.inference_mode()
     def prefill_batch(self, prompts, slots):
+        return self._prefill_batch(prompts,slots,[0]*len(prompts))
+
+    @torch.inference_mode()
+    def prefill_chunk(self,tokens,slot,start,final=True):
+        if (type(start) is not int or start<0 or type(slot) is not int or not 0<=slot<self.max_batch
+                or (start and self.lengths[slot]!=start)):
+            raise ValueError('invalid partial prompt cache state')
+        return self._prefill_batch([tokens],[slot],[start],return_logits=final)
+
+    def _prefill_batch(self,prompts,slots,starts,return_logits=True):
         if (not prompts or len(prompts)!=len(slots) or len(set(slots))!=len(slots)
                 or any(type(slot) is not int or not 0<=slot<self.max_batch for slot in slots)
-                or any(not prompt or len(prompt)>self.context for prompt in prompts)):
+                or any(not prompt or start+len(prompt)>self.context for prompt,start in zip(prompts,starts))):
             raise ValueError('invalid prefill batch')
         # Admission reservations remain intact; standalone callers replace old slots.
         lengths = [len(prompt) for prompt in prompts]
-        sizes = [(slot, min(self.context,max(length,len(self.pool.pages[slot])*16)) if slot in self.reserved_slots else length)
-                 for slot,length in zip(slots,lengths)]
+        sizes = [(slot, min(self.context,max(start+length,len(self.pool.pages[slot])*16)) if slot in self.reserved_slots else start+length)
+                 for slot,length,start in zip(slots,lengths,starts)]
         self.pool.resize_many(sizes,replace=True)
         self._sync_pages()
         if sum(lengths)>self.context:
             return torch.cat([self.prefill_batch(batch,assigned) for batch,assigned in groups(prompts,slots,self.context)])
         ids = torch.tensor([token for prompt in prompts for token in prompt],device=self.device)
-        positions = torch.tensor([i for length in lengths for i in range(length)],device=self.device)
+        positions = torch.tensor([i for length,start in zip(lengths,starts) for i in range(start,start+length)],device=self.device)
         slot_ids = torch.tensor([slot for slot,length in zip(slots,lengths) for _ in range(length)],device=self.device)
-        logits = self._forward(ids,positions,slot_ids,lengths,slots)
-        for slot,length in zip(slots,lengths):
-            self.lengths[slot] = length
+        logits = self._forward(ids,positions,slot_ids,lengths,slots,starts,return_logits)
+        for slot,length,start in zip(slots,lengths,starts):
+            self.lengths[slot] = start+length
         return logits
 
     def prefill(self, tokens, slot=0):

@@ -45,6 +45,11 @@ def main():
         start = time.perf_counter()
         if event['kind'] == 'prefill':
             if args.prefill_chunk_size:
+                # This event replaces all listed slots. Retire their old pages
+                # before replaying the replacement prompts sequentially.
+                if hasattr(executor,'release_request'):
+                    for slot in event['slots']:
+                        executor.release_request(slot)
                 outputs=[]
                 for prompt,slot in zip(event['prompts'],event['slots']):
                     for chunk_start in range(0,len(prompt),args.prefill_chunk_size):
