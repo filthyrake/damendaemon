@@ -350,6 +350,10 @@ class Executor:
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if model.scales:
             self.kernel_backend += '+'+model.quantization
+            if (model.quantization=='q4_0' and self.compute_dtype==torch.float16
+                    and os.environ.get('DLLM_Q4_CUDA_LIBRARY')
+                    and any(w.dtype==torch.uint8 and w.shape[0]>=1024 and w.shape[1]>=2048 for w in self.w.values())):
+                self.kernel_backend += '+cuda-gemv'
         if use_graph:
             self.graph = torch.cuda.CUDAGraph()
             with torch.cuda.graph(self.graph), torch.inference_mode():

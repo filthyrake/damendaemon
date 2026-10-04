@@ -900,3 +900,25 @@ Matched A2 FP32 Pythia-160M comparison, using the same explicit prompt IDs,
 The four-request throughput deficit is about 14%; this architecture is
 numerically/API qualified but is not a general performance-parity claim.
 Serving environments remain torch 2.6/dllm versus torch 2.13/vLLM 0.30.
+
+An optional independent CUDA C++ kernel now vectorizes Q4 nibble conversion
+with FP16 pairs while preserving the dequantized FP16 rounding boundary and
+FP32 accumulation. The first scalar CUDA attempt was slower; its source and
+measurements are retained. Eighteen vectorized matrix shapes pass with and
+without bias (36 checks); full Mistral replay passes 97/97, worst RMS 0.003693.
+The C interface validates dimensions, uses the caller's stream and reports
+launch errors. Python validates device/dtype/shape/contiguity and library ABI.
+The library is explicitly selected at startup with `DLLM_Q4_CUDA_LIBRARY`.
+
+Measured native selection is restricted to one FP16 input row, input width at
+least 4096 and at least 1024 outputs. Batched and smaller matrix workloads stay
+on the faster Tensor Core path. Matched Mistral serving reaches
+22.53/37.89/70.64 tokens/s at concurrency 1/2/4, with TTFT
+81.43/142.44/320.10 ms. Single-request throughput improves another 12.3%; batch
+throughput is effectively unchanged. The remaining gap to llama.cpp is explicit.
+The native build used CUDA 12.6 for SM86; other device/toolkit builds are not
+qualified by this evidence.
+
+The native selection also passes Llama3.2-1B Q4 replay, 82/82 checks at 2048
+context, worst RMS 0.007112. The full unit suite now has 121 passing tests,
+including native ABI mismatch rejection and explicit opt-in/device boundaries.

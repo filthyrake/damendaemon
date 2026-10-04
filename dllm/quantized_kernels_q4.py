@@ -81,6 +81,10 @@ def linear(x,weight,scales,bias=None):
     x=x.reshape(-1,x.shape[-1]).contiguous()
     rows,k=x.shape;n=weight.shape[0]
     if weight.shape[1]*2!=k:raise ValueError('Q4 matrix width mismatch')
+    if x.dtype==torch.float16 and rows==1 and k>=4096 and n>=1024:
+        from .native_q4 import linear_if_enabled
+        native=linear_if_enabled(x,weight,scales,bias)
+        if native is not None:return native.reshape(*shape,n)
     if x.dtype==torch.float16 and 1<=rows<=128:
         result=torch.empty((rows,n),device=x.device,dtype=x.dtype)
         bm=16 if rows<=16 else tr.next_power_of_2(rows)

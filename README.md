@@ -435,3 +435,21 @@ and the raw completions API. It uses FP32
 storage/arithmetic/KV. Use `dllm run PATH --raw --prompt 'Once upon a time'` or
 `/v1/completions`; the base checkpoint has no chat template. Quantization,
 chunked prefill and prefix reuse are not yet supported for this architecture.
+
+### Optional CUDA C++ Q4 decode
+
+A separately built native kernel improves single-request Mistral Q4 decode on
+A2. Build for your GPU architecture (86 in this A2 example):
+
+```sh
+cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86 -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target dllm-q4 -j2
+export DLLM_Q4_CUDA_LIBRARY="$PWD/build/libdllm-q4.so"
+```
+
+Set the library path before starting the server. The runtime checks its ABI
+and uses it only for qualified FP16 single-row shapes; other shapes retain the
+Triton path. CUDA graph capture uses the caller's current stream. The measured
+Mistral Q4 result is 22.53 tokens/s versus 20.06 with the paired Tensor Core
+path alone, still below the matched llama.cpp result of 34.20. There is no
+runtime compilation requirement when this option is unset.
