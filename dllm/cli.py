@@ -50,6 +50,7 @@ def main():
     for command in (run, server):
         command.add_argument("--device", choices=("cuda", "mps"), default=os.environ.get("DLLM_DEVICE", "cuda"))
         command.add_argument("--context", type=int, default=1024)
+        command.add_argument("--kv-cache-tokens",type=int,help="shared CUDA KV token budget, multiple of 16; 0 selects fixed slots")
         command.add_argument("--gpu-models", type=int, default=1)
         command.add_argument("--host-models", type=int, default=2)
         command.add_argument("--host-gib", type=float, default=8)
@@ -89,6 +90,13 @@ def main():
         print(json.dumps(download(args.repository, args.revision)))
         return
     os.environ["DLLM_DEVICE"] = args.device
+    if args.kv_cache_tokens is not None:
+        if args.kv_cache_tokens < 0 or args.kv_cache_tokens % 16:
+            parser.error('KV token budget must be a nonnegative multiple of 16')
+        if args.kv_cache_tokens:
+            os.environ['DLLM_KV_CACHE_TOKENS'] = str(args.kv_cache_tokens)
+        else:
+            os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
     from .runtime import Runtime
     if args.command == "run":
         models = {"model": resolve_model(args.path, args.revision)}

@@ -484,3 +484,26 @@ Use raw completions for the base checkpoint, which has no chat template.
 Quantization, prompt-prefix reuse and interleaved prefill are not yet supported
 for BLOOM. Acceptance of another BLOOM configuration does not qualify its
 checkpoint or an extended context. See [architecture evidence](docs/architecture-parity.md).
+
+### Shared paged KV cache (CUDA, opt-in)
+
+`dllm serve --kv-cache-tokens 2048 --context 2048 --batch-size 4 ...` allocates
+one shared 2048-token KV pool per resident model, instead of four separate
+2048-token caches. The budget must be a multiple of 16 and fit at least one
+page per slot. `DLLM_KV_CACHE_TOKENS=2048` selects the same policy; an explicit
+`--kv-cache-tokens 0` restores fixed slots. Fixed slots remain the default.
+
+The CUDA dense path supports Qwen2, Qwen3, Llama and Mistral, including supported
+weight quantization policies. Qwen2 and accurate Qwen3 have independent paged
+reference proof. Page reservations cover each request's prompt plus maximum
+output, rounded to pages. Requests wait in order when other requests temporarily
+own the capacity; requests larger than the entire pool are rejected. Completion,
+cancellation, failures and model eviction release ownership. CUDA decode graphs
+read the live page table without rebuilding graphs at page boundaries.
+
+This initial implementation does not combine paged KV with prefix snapshots or
+interleaved prefill, and it rejects unsupported architectures and Apple Silicon.
+It does not quantize KV or share pages between different prompts. Prefill gathers
+one sequence's live pages for attention; decode reads pages directly. Reducing
+the pool saves allocated GPU memory but may reduce simultaneous admission for
+long requests. See [paged-cache evidence](docs/evidence/paged/README.md).

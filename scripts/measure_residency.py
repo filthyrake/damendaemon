@@ -40,6 +40,9 @@ def main():
     torch.cuda.synchronize()
     print(json.dumps({'model':args.path,'quantization':args.quantization,'device':torch.cuda.get_device_name(),
         'torch':str(torch.__version__),'context':args.context,'batch_capacity':4,'prompt_tokens':len(prompt),
+        'kv_layout':'paged' if hasattr(executor,'pool') else 'fixed',
+        'kv_storage_bytes':sum(t.numel()*t.element_size() for t in executor.kv),
+        'kv_token_capacity':getattr(executor,'kv_token_capacity',executor.context*executor.max_batch),
         'weight_cache_status':model.weight_cache_status,'generated_tokens':generated,
         'device_load_seconds':device_seconds,'load_and_generation_seconds':time.perf_counter()-start,
         'host_weight_bytes':model.bytes,'host_load_seconds':host_seconds,'resident_allocated_bytes':resident,

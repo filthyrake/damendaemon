@@ -38,7 +38,7 @@ Model licenses remain those of their respective publishers.
 | HTTP generation | Text chat and raw text/token-ID completions; streaming SSE; usage and timing; bounded admission and cancellation |
 | Sampling | Greedy or request-seeded temperature/top-p/top-k; repetition, frequency and presence penalties; token bias; text stops |
 | Structured output | Optional constrained JSON / limited JSON schema, with explicit unsupported combinations |
-| Batching | Continuous decode with fixed KV slots, up to 16; CUDA graph replay |
+| Batching | Continuous decode, up to 16 slots; CUDA graph replay; opt-in bounded CUDA dense paged KV with admission reservations |
 | Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state |
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
 | Embeddings | Text/token-ID inputs, float/base64 output for the qualified BERT sentence encoder |
@@ -46,7 +46,7 @@ Model licenses remain those of their respective publishers.
 | Position schemes | Standard/linear/Llama3 RoPE, fixture-qualified static YaRN; learned positions; partial rotary; ALiBi |
 
 The runtime does **not** currently provide general vLLM/llama.cpp parity.
-Missing major capabilities include paged KV allocation, KV quantization,
+Missing major capabilities include paged KV for other architectures/devices and its combination with prefix/chunked prefill, KV quantization,
 multi-GPU tensor/pipeline parallelism, adapters, GGUF/AWQ/GPTQ checkpoint import,
 multimodal inference, tool-call protocol handling, token log-probabilities,
 encoder-decoder generation, and a CPU inference backend. Model registration is

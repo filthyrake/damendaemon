@@ -6,6 +6,7 @@ admission to the current group, avoiding starvation and active-model eviction.
 """
 from collections import deque
 import copy
+import os
 import traceback
 from dataclasses import dataclass, field
 import queue
@@ -54,6 +55,8 @@ class BatchedRuntime:
             raise ValueError('prefill chunk size must be a nonnegative integer')
         if type(prefix_cache_tokens) is not int or prefix_cache_tokens<0:
             raise ValueError('prefix cache tokens must be a nonnegative integer')
+        if os.environ.get('DLLM_KV_CACHE_TOKENS') is not None and (prefill_chunk_size or prefix_cache_tokens):
+            raise ValueError('paged KV does not yet support interleaved prefill or prefix snapshots')
         self.prefix_cache_tokens=prefix_cache_tokens
         self.prefill_chunk_size=prefill_chunk_size
         self.runtime = Runtime(models, batch_size=batch_size, **kwargs)
@@ -340,7 +343,96 @@ class BatchedRuntime:
             if next_request:self._finish(next_request,error)
             raise
 
+    def _paged_group(self, first, executor, tier, activation):
+        from .pages import PageCapacityError
+        first.tier, first.activation = tier, activation
+        active, waiting = {}, deque([(first, None)])
+        owned = set()
+        prepared = []
+        try:
+            while waiting or active:
+                with self.condition:
+                    while len(waiting)+len(active)<self.batch_size:
+                        request=self._next(first.alias)
+                        if request is None:
+                            break
+                        waiting.append((request,None))
+                for request,tokens in list(waiting):
+                    if request.cancelled.is_set() or time.monotonic()-request.last_progress>self.queue_timeout:
+                        self._finish(request, None if request.cancelled.is_set() else BusyError('KV admission timeout'))
+                        waiting.remove((request,tokens))
+                prepared=[]
+                while waiting and len(active)+len(prepared)<self.batch_size:
+                    request,tokens=waiting[0]
+                    slot=next(i for i in range(self.batch_size) if i not in owned)
+                    try:
+                        if tokens is None:
+                            tokens=self._prepare(request,executor)
+                            waiting[0]=(request,tokens)
+                        executor.reserve_request(slot,len(tokens)+request.max_tokens)
+                    except PageCapacityError:
+                        break  # Preserve FIFO while existing reservations finish.
+                    except Exception as error:
+                        self._finish(request,error)
+                        waiting.popleft()
+                        continue
+                    request.slot=slot
+                    owned.add(slot)
+                    waiting.popleft()
+                    prepared.append((request,tokens))
+                if prepared:
+                    try:
+                        logits=executor.prefill_batch([tokens for _,tokens in prepared],[r.slot for r,_ in prepared])
+                        selected=sample_rows(logits,[r.sampler for r,_ in prepared])
+                        for (request,tokens),token in zip(prepared,selected):
+                            if self._emit(request,token,executor,len(tokens)):
+                                executor.release_request(request.slot)
+                                owned.remove(request.slot)
+                            else:
+                                active[request.slot]=(request,len(tokens))
+                    except Exception as error:
+                        for request,_ in prepared:
+                            self._finish(request,error)
+                            active.pop(request.slot,None)
+                            if request.slot in owned:
+                                executor.release_request(request.slot)
+                                owned.remove(request.slot)
+                    prepared=[]
+                for slot,(request,_) in list(active.items()):
+                    timed_out=request.events.full() and time.monotonic()-request.last_progress>self.queue_timeout
+                    if request.cancelled.is_set() or timed_out:
+                        self._finish(request,BusyError('stream backpressure timeout') if timed_out else None)
+                        executor.release_request(slot)
+                        owned.remove(slot)
+                        del active[slot]
+                ready=[(slot,r,length) for slot,(r,length) in active.items() if not r.events.full()]
+                if ready:
+                    logits,next_ids=executor.decode_batch([r.output[-1] for _,r,_ in ready],[slot for slot,_,_ in ready])
+                    selected=sample_rows(logits,[r.sampler for _,r,_ in ready],next_ids)
+                    for (slot,request,length),token in zip(ready,selected):
+                        request.max_batch_seen=max(request.max_batch_seen,len(ready))
+                        if self._emit(request,token,executor,length):
+                            executor.release_request(slot)
+                            owned.remove(slot)
+                            del active[slot]
+                with self.condition:
+                    if not waiting and len(active)<self.batch_size:
+                        request=self._next(first.alias)
+                        if request is not None:
+                            waiting.append((request,None))
+                    if (active or waiting) and not ready and not prepared:
+                        self.condition.wait(timeout=.02)
+        except Exception as error:
+            for request,_ in [*active.values(),*waiting,*prepared]:
+                self._finish(request,error)
+            raise
+        finally:
+            for slot in owned:
+                executor.release_request(slot)
+
     def _group(self, first, executor, tier, activation):
+        if hasattr(executor,'reserve_request'):
+            return self._paged_group(first,executor,tier,activation)
         if (self.prefill_chunk_size or self.prefix_cache_tokens) and getattr(executor,'supports_chunked_prefill',False):
             return self._chunked_group(first,executor,tier,activation)
         first.tier, first.activation = tier, activation

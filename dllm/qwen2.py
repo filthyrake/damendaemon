@@ -290,7 +290,7 @@ class Executor:
             if storage not in ('float16', 'float32'):
                 raise ValueError('DLLM_GEMMA_WEIGHT_DTYPE must be float16 or float32')
             half_gemma_weights = storage == 'float16'
-        kv_bytes = 2 * c["num_hidden_layers"] * max_batch * self.kv_heads * self.context * self.dim * (4 if self.compute_dtype == torch.float32 else 2)
+        kv_bytes = 2 * c["num_hidden_layers"] * getattr(self, 'kv_token_capacity', max_batch * self.context) * self.kv_heads * self.dim * (4 if self.compute_dtype == torch.float32 else 2)
         # A prior failed construction can leave unused allocator blocks cached
         # after its traceback is released. Return those before querying free VRAM.
         empty_cache()
@@ -331,9 +331,7 @@ class Executor:
             from .quantization import Linear
             self.quant_linear = Linear(self.w, model.scales, self.device, self.linear)
             self.linear = self.quant_linear
-        self.kv = [torch.zeros((2, max_batch, self.kv_heads, self.context, self.dim),
-                               dtype=self.compute_dtype, device=self.device)
-                   for _ in range(c["num_hidden_layers"])]
+        self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
         inv = inverse_frequencies(rotary_config, self.device)
         angles = torch.outer(torch.arange(self.context, device=self.device, dtype=torch.float32), inv)
@@ -373,6 +371,11 @@ class Executor:
                 self.graph_logits = self.forward(self.token, self.position, prefill=False)
                 self.graph_next = self.graph_logits.argmax(dim=-1)
         self.length = 0
+
+    def allocate_kv(self):
+        return [torch.zeros((2, self.max_batch, self.kv_heads, self.context, self.dim),
+                            dtype=self.compute_dtype, device=self.device)
+                for _ in range(self.c['num_hidden_layers'])]
 
     def dense_linear(self, x, weight, bias=None):
         if self.kernels and weight.dtype == torch.float16 and 3 <= x.shape[0] <= 128:

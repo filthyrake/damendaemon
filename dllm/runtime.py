@@ -25,6 +25,18 @@ def require_gpu():
     torch.cuda.set_device(0)
 
 
+@contextmanager
+def request_kv(executor, tokens):
+    paged = hasattr(executor, 'reserve_request')
+    if paged:
+        executor.reserve_request(0, tokens)
+    try:
+        yield
+    finally:
+        if paged:
+            executor.release_request(0)
+
+
 class BusyError(Exception):
     pass
 
@@ -237,46 +249,57 @@ class Runtime:
                 sampler.constraint = Constraint(model, schema)
             if sampler.has_adjustments:
                 sampler.prepare(prompt,model.config['vocab_size'])
-            first = sampler.select(executor.prefill(prompt).squeeze(0)).item()
-            output = []
-            emitted = ""
-            first_time = None
-            token = first
-            finish = "length"
-            for index in range(max_tokens):
-                if sampler.constraint is not None:
-                    sampler.constraint.accept(token)
-                sampler.observe(token)
-                output.append(token)
-                if first_time is None:
-                    first_time = time.perf_counter() - start
-                stop = not ignore_eos and token in model.eos
-                decoded = model.tokenizer.decode(output, skip_special_tokens=True)
-                delta, emitted, text_stop = text_delta(decoded, emitted, stops, stop or index == max_tokens-1)
-                stop = stop or text_stop
-                yield {"token": token, "text": delta}
-                if stop:
-                    finish = "stop"
-                    break
-                if index + 1 < max_tokens:
-                    logits, next_token = executor.decode(token)
-                    token = (sampler.select(logits.squeeze(0)).item()
-                             if temperature or sampler.constraint is not None or sampler.has_adjustments else next_token.item())
-            elapsed = time.perf_counter() - start
-            yield {"finish_reason": finish, "usage": {
-                "prompt_tokens": len(prompt), "completion_tokens": len(output),
-                "total_tokens": len(prompt) + len(output),
-            }, "timing": {"source_tier": tier, "kernel_backend": executor.kernel_backend,
-                          "weight_quantization": model.quantization,
-                          "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
-                          "activation_seconds": load_seconds,
-                          "first_token_seconds": first_time, "total_seconds": elapsed,
-                          "decode_tokens_per_second": (len(output) - 1) / (elapsed - first_time)
-                          if len(output) > 1 and elapsed > first_time else None}}
+            with request_kv(executor, len(prompt)+max_tokens):
+                first = sampler.select(executor.prefill(prompt).squeeze(0)).item()
+                output = []
+                emitted = ""
+                first_time = None
+                token = first
+                finish = "length"
+                for index in range(max_tokens):
+                    if sampler.constraint is not None:
+                        sampler.constraint.accept(token)
+                    sampler.observe(token)
+                    output.append(token)
+                    if first_time is None:
+                        first_time = time.perf_counter() - start
+                    stop = not ignore_eos and token in model.eos
+                    decoded = model.tokenizer.decode(output, skip_special_tokens=True)
+                    delta, emitted, text_stop = text_delta(decoded, emitted, stops, stop or index == max_tokens-1)
+                    stop = stop or text_stop
+                    yield {"token": token, "text": delta}
+                    if stop:
+                        finish = "stop"
+                        break
+                    if index + 1 < max_tokens:
+                        logits, next_token = executor.decode(token)
+                        token = (sampler.select(logits.squeeze(0)).item()
+                                 if temperature or sampler.constraint is not None or sampler.has_adjustments else next_token.item())
+                elapsed = time.perf_counter() - start
+                yield {"finish_reason": finish, "usage": {
+                    "prompt_tokens": len(prompt), "completion_tokens": len(output),
+                    "total_tokens": len(prompt) + len(output),
+                }, "timing": {"source_tier": tier, "kernel_backend": executor.kernel_backend,
+                              "weight_quantization": model.quantization,
+                              "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
+                              "activation_seconds": load_seconds,
+                              "first_token_seconds": first_time, "total_seconds": elapsed,
+                              "decode_tokens_per_second": (len(output) - 1) / (elapsed - first_time)
+                              if len(output) > 1 and elapsed > first_time else None}}
 
 
 def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     """Choose an execution path from the validated architecture, not the model name."""
+    budget = os.environ.get('DLLM_KV_CACHE_TOKENS')
+    if budget is not None:
+        if (not budget.isascii() or not budget.isdecimal() or int(budget)<=0
+                or selected_device()!='cuda' or os.environ.get('DLLM_KERNELS')=='torch'
+                or model.config['model_type'] not in ('qwen2','qwen3','llama','mistral')):
+            raise ValueError('paged KV requires a positive token budget and a supported native CUDA dense decoder')
+        from .paged import PagedExecutor
+        if kwargs.pop('fuse_projections',True) is False:
+            raise ValueError('paged KV requires fused projections')
+        return PagedExecutor(model,use_graph,max_batch or 1,cache_tokens=int(budget),**kwargs)
     if model.config['model_type'] == 'bloom':
         from .bloom import BloomExecutor
         if kwargs.pop('fuse_projections', True) is False:

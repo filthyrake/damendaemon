@@ -102,6 +102,7 @@ def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, q_norm=None, k
 
 @tr.jit
 def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE, ALIBI, HAS_ALIBI: tl.constexpr,
+               PAGES, PAGED: tl.constexpr, PAGE_SIZE: tl.constexpr, MAX_PAGES: tl.constexpr,
                H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr,
                C: tl.constexpr, SPLITS: tl.constexpr, BLOCK: tl.constexpr, SLOTTED: tl.constexpr, WINDOW: tl.constexpr, SCALE: tl.constexpr, BD: tl.constexpr):
     bh, split = tl.program_id(0), tl.program_id(1)
@@ -115,8 +116,13 @@ def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE, ALIBI, HAS_ALIBI: tl.constex
         if WINDOW:
             valid = valid & (times > position - WINDOW)
         q = tl.load(Q + bh * D + cols, cols < D, other=0).to(tl.float32)
-        kh = slot * KH + head // (H // KH)
-        offsets = (kh * C + times[:, None]) * D + cols[None, :]
+        if PAGED:
+            physical = tl.load(PAGES + slot * MAX_PAGES + times // PAGE_SIZE, valid, other=0)
+            kh = physical * KH + head // (H // KH)
+            offsets = (kh[:, None] * PAGE_SIZE + (times % PAGE_SIZE)[:, None]) * D + cols[None, :]
+        else:
+            kh = slot * KH + head // (H // KH)
+            offsets = (kh * C + times[:, None]) * D + cols[None, :]
         k = tl.load(K + offsets, valid[:, None] & (cols[None, :] < D), other=0).to(tl.float32)
         logits = tl.sum(k * q[None, :], 1) * SCALE
         if HAS_ALIBI:
@@ -151,12 +157,16 @@ def _merge(PART, LSE, OUT, D: tl.constexpr, S: tl.constexpr, BLOCK: tl.constexpr
     tl.store(OUT + head * D + cols, tl.sum(partial * weights[:, None], 0), cols < D)
 
 
-def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=None, alibi=None):
+def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=None, alibi=None, page_table=None):
     batch, heads, _, dim = query.shape
     if alibi is not None and (alibi.shape != (heads,) or alibi.dtype != torch.float32
                               or alibi.device != query.device or not alibi.is_contiguous()):
         raise ValueError('ALiBi needs one contiguous FP32 slope per query head on the same device')
     _, kv_heads, context, _ = cache_k.shape
+    page_size = context
+    max_pages = 0 if page_table is None else page_table.shape[1]
+    if page_table is not None:
+        context = max_pages * page_size
     block = min(256, tr.next_power_of_2(context))
     splits = tr.cdiv(context, block)
     out = torch.empty_like(query)
@@ -165,6 +175,7 @@ def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=No
     _attention[(batch * heads, splits)](query, cache_k, cache_v, positions,
                                positions if slots is None else slots, out, partial, lse,
                                positions if alibi is None else alibi, alibi is not None,
+                               positions if page_table is None else page_table, page_table is not None, page_size, max_pages,
                                heads, kv_heads, dim, context, splits, block, slots is not None, window, dim ** -.5 if scale is None else scale, tr.next_power_of_2(dim), num_warps=4)
     if splits > 1:
         _merge[(batch * heads,)](partial, lse, out, dim, splits, tr.next_power_of_2(splits), tr.next_power_of_2(dim))
@@ -173,11 +184,16 @@ def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=No
 
 @tr.jit
 def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW,
+                PAGES, PAGED: tl.constexpr, MAX_PAGES: tl.constexpr,
                 NORM: tl.constexpr, EPS: tl.constexpr, PRECISE: tl.constexpr,
                 H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr, RD: tl.constexpr, C: tl.constexpr, BD: tl.constexpr):
     batch, head = tl.program_id(0), tl.program_id(1)
     cols = tl.arange(0, BD)
     position, slot = tl.load(POS + batch), tl.load(SLOTS + batch)
+    cache_slot, cache_position = slot, position
+    if PAGED:
+        cache_slot = tl.load(PAGES + slot * MAX_PAGES + position // C)
+        cache_position = position % C
     base = batch * (H + 2 * KH) * D + head * D
     x = tl.load(X + base + cols, cols < D, other=0).to(tl.float32)
     if head < H + KH:
@@ -201,13 +217,13 @@ def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW,
         if head < H:
             tl.store(Q + (batch * H + head) * D + cols, a + b, cols < D)
         else:
-            tl.store(K + ((slot * KH + head - H) * C + position) * D + cols, a + b, cols < D)
+            tl.store(K + ((cache_slot * KH + head - H) * C + cache_position) * D + cols, a + b, cols < D)
     else:
-        tl.store(V + ((slot * KH + head - H - KH) * C + position) * D + cols, x, cols < D)
+        tl.store(V + ((cache_slot * KH + head - H - KH) * C + cache_position) * D + cols, x, cols < D)
 
 
 
-def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads, q_norm=None, k_norm=None, eps=1e-6, precise=False):
+def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads, q_norm=None, k_norm=None, eps=1e-6, precise=False, page_table=None):
     _, kv_heads, context, dim = cache_k.shape
     rotary_dim = cos.shape[-1]
     if not 0 < rotary_dim <= dim or rotary_dim % 2 or (q_norm is not None and rotary_dim != dim):
@@ -216,6 +232,7 @@ def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads, q_norm=
     _rope_batch[(qkv.shape[0], heads + 2 * kv_heads)](
         qkv, cos, sin, positions, slots, query, cache_k, cache_v,
         qkv if q_norm is None else q_norm, qkv if k_norm is None else k_norm,
+        slots if page_table is None else page_table, page_table is not None, 0 if page_table is None else page_table.shape[1],
         q_norm is not None, eps, precise, heads, kv_heads, dim, rotary_dim, context, tr.next_power_of_2(dim), enable_fp_fusion=False)
     return query
 

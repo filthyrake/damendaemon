@@ -342,3 +342,61 @@ class ChunkedSchedulerTests(unittest.TestCase):
         for value in (-1,True,1.5):
             with self.subTest(value=value),self.assertRaises(ValueError):
                 BatchedRuntime({},prefill_chunk_size=value)
+
+
+class FakePagedExecutor(FakeExecutor):
+    def __init__(self):
+        from dllm.pages import PagePool
+        super().__init__()
+        self.pool=PagePool(128,2,self.context)
+        self.deferred=0
+    def reserve_request(self,slot,tokens):
+        from dllm.pages import PageCapacityError
+        if self.pool.needed(tokens)>self.pool.capacity:
+            raise ValueError('request exceeds pool')
+        try:
+            self.pool.resize_many([(slot,tokens)],replace=True)
+        except PageCapacityError:
+            self.deferred+=1
+            raise
+    def release_request(self,slot):
+        self.pool.release(slot)
+
+
+class PagedSchedulerTests(SchedulerTests):
+    def setUp(self):
+        super().setUp()
+        self.executor=FakePagedExecutor()
+        self.runtime.runtime.executor=self.executor
+        self.addCleanup(self.executor.release.set)
+
+    def test_capacity_waits_then_reuses_pages(self):
+        from dllm.pages import PagePool
+        self.executor.pool=PagePool(32,2,self.executor.context)
+        with ThreadPoolExecutor(3) as pool:
+            first=pool.submit(lambda:list(self.generate(count=20)))
+            self.assertTrue(self.executor.entered.wait(2))
+            second=pool.submit(lambda:list(self.generate(count=20)))
+            third=pool.submit(lambda:list(self.generate(count=20)))
+            self.wait_pending(2)
+            self.executor.release.set()
+            for future in (first,second,third):
+                self.assertIn('finish_reason',future.result(timeout=5)[-1])
+        self.runtime.manage('status')
+        self.assertGreater(self.executor.deferred,0)
+        self.assertEqual(self.executor.pool.used_tokens,0)
+
+    def test_failed_prefill_releases_reservation(self):
+        self.executor.release.set()
+        with self.assertRaises(ValueError):
+            list(self.generate(prompt='fail',count=20))
+        self.assertIn('finish_reason',list(self.generate(count=20))[-1])
+        self.runtime.manage('status')
+        self.assertEqual(self.executor.pool.used_tokens,0)
+
+    def test_impossible_request_rejected_without_leak(self):
+        self.executor.release.set()
+        with self.assertRaises(ValueError):
+            list(self.generate(count=200))
+        self.runtime.manage('status')
+        self.assertEqual(self.executor.pool.used_tokens,0)
