@@ -74,6 +74,13 @@ def main():
     try:
         for alias in selected:
             rows=[]
+            with runtime.runtime.session(alias) as (executor,_,_):
+                precision={'compute_dtype':str(executor.compute_dtype),
+                    'residual_dtype':str(executor.residual_dtype),'kv_dtype':str(executor.kv[0].dtype),
+                    'matrix_storage_dtype':str(executor.w['head'].dtype),
+                    'qwen3_precision':executor.qwen3_precision,'llama_precision':executor.llama_precision,
+                    'dense_precision':executor.dense_precision}
+            del executor
             for name,text in [('repetition',repetition),('explanation','Explain why the sky looks blue in simple language.'),
                     ('code','Write a Python function that returns a list containing the integers from 1 to 30, written out explicitly.')]:
                 print(alias+' '+name,file=__import__('sys').stderr,flush=True)
@@ -132,7 +139,7 @@ def main():
             assert graph_ref() is None and verifier_ref() is None
             restored,_=post(data);equal(restored,result)
             assert restored['dllm_timing']['source_tier']=='host'
-            reports.append({'model':alias,'rows':rows,'fallback':fallback,'stream_equivalence':True,
+            reports.append({'model':alias,'precision':precision,'rows':rows,'fallback':fallback,'stream_equivalence':True,
                 'disconnect_recovery':True,'backpressure':True,'concurrent_equivalence':True,
                 'graph_reclaimed_on_unload':True,'host_restore':True})
         print(json.dumps({'passed':True,'gpu':'NVIDIA A2','speculative_width':8,

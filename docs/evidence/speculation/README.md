@@ -12,7 +12,10 @@ proposal tests; oracle figures there are not actual feature performance.
 eligible executor; default0 keeps ordinary decoding. Qualified pinned models:
 Qwen2.5-0.5B-Instruct (`7ae557604adf67be50417f59c2c2f167def9a775`) and
 Qwen3-0.6B (`c1899de289a04d12100db370d81485cdf75e47ca`) on A2. Qwen2 uses its
-existing FP16 policy; Qwen3 keeps its qualified FP32 arithmetic policy.
+existing FP16 policy. These Qwen3 measurements use the default `standard`
+policy: FP16 compute/KV with FP32 residual accumulation. They do not use
+`DLLM_QWEN3_PRECISION=float32`; the standard mode retains its separately
+documented long-context independent-reference gap.
 Qwen3-1.7B is also qualified below. Llama3.2-1B requires explicit
 `DLLM_LLAMA_PRECISION=float32`; its default mixed policy remains excluded.
 See the [Llama precision gate and cost](llama/README.md).
@@ -142,7 +145,7 @@ are the `sixteen-events` and `backpressure` files under `serving/`.
 
 Qwen3-1.7B (`70d244cc86ccca08cf5af4e1e306ecf908b1ad5e`) passes the same
 18 verifier width/slot/acceptance cases and complete HTTP suite on A2, using its
-existing qualified FP32 arithmetic policy. The six-round alternating A/B test
+standard FP16 compute/KV and FP32 residual policy. The six-round alternating A/B test
 keeps 512 context, 64 output tokens, thinking disabled and a resident model.
 
 | Workload | Ordinary ms | Speculative ms | Speedup |
@@ -155,3 +158,13 @@ Response text, finish reason and usage match exactly. Streaming, fallback,
 concurrency, disconnect recovery, graph reclamation and host restoration also
 pass. These are the same narrow workloads, not a general speedup or cross-engine
 comparison. Raw reports are the `qwen3-1.7b` files under `serving/`.
+
+## Precision-label correction
+
+The earlier prose incorrectly described the Qwen3 speculative runs as the
+separate FP32 arithmetic mode. Both saved verifier reports explicitly record
+`compute_dtype: torch.float16`; the serving reports record FP32 residuals.
+The tables remain valid comparisons at the same standard policy, but do not
+establish speculation performance in the higher-precision mode. That mode
+requires explicit qualification. New reports record compute, residual, KV and
+matrix storage dtypes plus the selected precision policies to prevent ambiguity.
