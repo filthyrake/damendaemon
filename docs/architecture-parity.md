@@ -782,3 +782,12 @@ accepts `--format q4_0`; it starts from unquantized same-checkpoint GGUF weights
 retains unquantized embeddings and quantizes an independent output head.
 Broader model and matched serving qualification are still in progress. No
 four-bit throughput improvement is claimed from kernel or CPU checks alone.
+
+The Q4 model matrix now also passes Qwen3-0.6B in accurate FP32 arithmetic mode
+(84 checks, worst relative RMS 0.00001317) and Llama3.2-1B in FP16 (82 checks,
+worst RMS 0.007198), both at 2048 context. Qwen2's 82 checks have worst RMS
+0.007822. Live HTTP tests pass disk/host/GPU restoration with one and three
+resident models, mixed concurrent aliases, four-request same-model batching,
+reasoning-template controls, streaming disconnect recovery and long prompts.
+These results qualify execution of independently quantized weights; they do
+not replace the original-weight drift study or pending Mistral timing results.

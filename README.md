@@ -407,7 +407,8 @@ Q4_0 projection weights with FP16 block scales. Input embeddings and norms keep
 their existing precision. `DLLM_QUANTIZATION=q4_0` sets the startup default;
 per-model policies can mix Q4, Q8 and unquantized models in the same server.
 
-The first independent model gate passes Qwen2.5-0.5B on A2. The loader currently
+Independent model gates pass Qwen2.5-0.5B, accurate Qwen3-0.6B and
+Llama3.2-1B on A2, along with live model-switching tests. The loader currently
 allows dense Qwen2/Qwen3/Llama/Phi-3/Mistral only; acceptance alone is not a
 checkpoint qualification. Four-bit quantization is lossy: on our small authored
 171-token Qwen2 corpus, next-token agreement with the original weights was

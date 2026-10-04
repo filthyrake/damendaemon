@@ -1,0 +1,731 @@
+{
+  "model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+  "reference_dtype": "float32",
+  "reference_attention": "sdpa",
+  "architecture": "qwen3",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "reference_device": "cuda",
+  "weight_dtype": "torch.uint8",
+  "reference_only": false,
+  "reference_quantization": "q4_0",
+  "weight_quantization": "q4_0",
+  "prefill_chunk_size": 0,
+  "context": 2048,
+  "backend": "triton+q4_0",
+  "checks": [
+    {
+      "phase": "template:None",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.2085660020820796e-06,
+      "max_absolute": 6.42538070678711e-05,
+      "passed": true
+    },
+    {
+      "phase": "template:False",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.4105086140480125e-06,
+      "max_absolute": 5.817413330078125e-05,
+      "passed": true
+    },
+    {
+      "phase": "template:True",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.2085660020820796e-06,
+      "max_absolute": 6.42538070678711e-05,
+      "passed": true
+    },
+    {
+      "phase": "prefill:31",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 1.3166961252863985e-05,
+      "max_absolute": 0.00014257431030273438,
+      "passed": true
+    },
+    {
+      "phase": "prefill:255",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 3.7627844449161785e-06,
+      "max_absolute": 3.1948089599609375e-05,
+      "passed": true
+    },
+    {
+      "phase": "prefill:257",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 3.219473228455172e-06,
+      "max_absolute": 4.1484832763671875e-05,
+      "passed": true
+    },
+    {
+      "phase": "prefill:1023",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.939594651252264e-06,
+      "max_absolute": 3.647804260253906e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:32",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 4.400915258884197e-06,
+      "max_absolute": 4.1544437408447266e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:256",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 3.921460120182019e-06,
+      "max_absolute": 3.62396240234375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:258",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.184974846386467e-06,
+      "max_absolute": 3.2901763916015625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:1024",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.538205535529414e-06,
+      "max_absolute": 2.8461217880249023e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:33",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.1501896299014334e-06,
+      "max_absolute": 2.574920654296875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:257",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.204693601015606e-06,
+      "max_absolute": 4.00543212890625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:259",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 1.2389165249260259e-06,
+      "max_absolute": 2.8133392333984375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:1025",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.6123050247406354e-06,
+      "max_absolute": 3.910064697265625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:34",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 3.830443802144146e-06,
+      "max_absolute": 4.100799560546875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:258",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 3.1125575787882553e-06,
+      "max_absolute": 3.218650817871094e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:260",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.0495906483120052e-06,
+      "max_absolute": 3.4332275390625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:1026",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.039831315414631e-06,
+      "max_absolute": 3.3855438232421875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:35",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.262024281662889e-06,
+      "max_absolute": 3.129243850708008e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:259",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.5675496999610914e-06,
+      "max_absolute": 2.9802322387695312e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:261",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.728664867390762e-06,
+      "max_absolute": 4.291534423828125e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:1027",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.7574208161240676e-06,
+      "max_absolute": 4.863739013671875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:36",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.0153174773440696e-06,
+      "max_absolute": 2.86102294921875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:260",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.629539267218206e-06,
+      "max_absolute": 3.314018249511719e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:262",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.3005295588518493e-06,
+      "max_absolute": 2.6941299438476562e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:1028",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 1.1347138752171304e-05,
+      "max_absolute": 0.00017309188842773438,
+      "passed": true
+    },
+    {
+      "phase": "decode:37",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.212715799032594e-06,
+      "max_absolute": 2.9146671295166016e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:261",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 1.8326485360375955e-06,
+      "max_absolute": 3.0517578125e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:263",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 1.6983606201392831e-06,
+      "max_absolute": 2.8133392333984375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:1029",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.8898875825689174e-06,
+      "max_absolute": 5.2928924560546875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:38",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.2100196019891882e-06,
+      "max_absolute": 3.0517578125e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:262",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.745693109318381e-06,
+      "max_absolute": 4.982948303222656e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:264",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.4037090042838827e-06,
+      "max_absolute": 2.8371810913085938e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:1030",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 1.585822587912844e-06,
+      "max_absolute": 2.7179718017578125e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:39",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.636962790347752e-06,
+      "max_absolute": 2.6345252990722656e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:263",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 4.487185378820868e-06,
+      "max_absolute": 7.796287536621094e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:265",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.3880093067418784e-06,
+      "max_absolute": 2.2411346435546875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:1031",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 1.2729346963169519e-06,
+      "max_absolute": 2.09808349609375e-05,
+      "passed": true
+    },
+    {
+      "phase": "prefill:2032",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 4.368468125903746e-06,
+      "max_absolute": 5.91278076171875e-05,
+      "passed": true
+    },
+    {
+      "phase": "prefill:65",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 3.4244701510033337e-06,
+      "max_absolute": 3.445148468017578e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:266",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.711106617425685e-06,
+      "max_absolute": 3.1948089599609375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2033",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.3833720206312137e-06,
+      "max_absolute": 3.24249267578125e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:66",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.5859023935481673e-06,
+      "max_absolute": 2.0503997802734375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:40",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 7.917835318949074e-06,
+      "max_absolute": 6.961822509765625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:267",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 1.2398949138514581e-06,
+      "max_absolute": 2.5272369384765625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2034",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 1.7104775906773284e-06,
+      "max_absolute": 2.574920654296875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:67",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.362831537539023e-06,
+      "max_absolute": 2.765655517578125e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:41",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.692669795578695e-06,
+      "max_absolute": 2.7894973754882812e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:268",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.3381483060802566e-06,
+      "max_absolute": 2.384185791015625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2035",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 1.4865155435472843e-06,
+      "max_absolute": 3.528594970703125e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:68",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 1.5070263543748297e-06,
+      "max_absolute": 2.384185791015625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:42",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 1.6407941529905656e-06,
+      "max_absolute": 2.6345252990722656e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:269",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.5348567760374863e-06,
+      "max_absolute": 3.24249267578125e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2036",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 1.7040632656062371e-06,
+      "max_absolute": 2.86102294921875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:69",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.0145894268353004e-06,
+      "max_absolute": 2.2172927856445312e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:43",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 3.3357121083099628e-06,
+      "max_absolute": 3.170967102050781e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:270",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.735336238401942e-06,
+      "max_absolute": 3.4332275390625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2037",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 1.4135913488644292e-06,
+      "max_absolute": 2.86102294921875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:70",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.4845542156981537e-06,
+      "max_absolute": 2.2649765014648438e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:44",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 3.7704423903051065e-06,
+      "max_absolute": 4.553794860839844e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:271",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.044861275862786e-06,
+      "max_absolute": 3.1948089599609375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2038",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 1.6449781696792343e-06,
+      "max_absolute": 2.6226043701171875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:71",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.2872395675221924e-06,
+      "max_absolute": 2.849102020263672e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:45",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.459544475641451e-06,
+      "max_absolute": 2.4318695068359375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:272",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 2.343217829547939e-06,
+      "max_absolute": 3.0279159545898438e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2039",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.2911974610906327e-06,
+      "max_absolute": 4.1961669921875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:72",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 1.92751940630842e-06,
+      "max_absolute": 2.1457672119140625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:46",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.872980303436634e-06,
+      "max_absolute": 3.147125244140625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:273",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 7.565572104795137e-06,
+      "max_absolute": 0.0001392364501953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:2040",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 1.8836642539099557e-06,
+      "max_absolute": 2.193450927734375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:73",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.0906607005599653e-06,
+      "max_absolute": 2.47955322265625e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:47",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 3.6409990116226254e-06,
+      "max_absolute": 4.458427429199219e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2041",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.314847506568185e-06,
+      "max_absolute": 2.5033950805664062e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2042",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 3.9303290577663574e-06,
+      "max_absolute": 5.245208740234375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2043",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.536009787945659e-06,
+      "max_absolute": 5.340576171875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:2044",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 2.4840308014972834e-06,
+      "max_absolute": 3.62396240234375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:48",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 4.908758000965463e-06,
+      "max_absolute": 5.519390106201172e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:74",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 2.2738079223927343e-06,
+      "max_absolute": 2.9206275939941406e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:49",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 2.682396143427468e-06,
+      "max_absolute": 2.6226043701171875e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:75",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 1.94763379113283e-06,
+      "max_absolute": 1.9311904907226562e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:50",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 1.8213379462395096e-06,
+      "max_absolute": 2.193450927734375e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:76",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 1.5536701312157675e-06,
+      "max_absolute": 1.9788742065429688e-05,
+      "passed": true
+    },
+    {
+      "phase": "decode:51",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 1.6515754168722196e-06,
+      "max_absolute": 2.5510787963867188e-05,
+      "passed": true
+    }
+  ],
+  "template_checks": [
+    {
+      "input_kind": "chat",
+      "enable_thinking": null,
+      "tokens": 49,
+      "runtime_compared": true
+    },
+    {
+      "input_kind": "chat",
+      "enable_thinking": false,
+      "tokens": 53,
+      "runtime_compared": true
+    },
+    {
+      "input_kind": "chat",
+      "enable_thinking": true,
+      "tokens": 49,
+      "runtime_compared": true
+    }
+  ],
+  "timings": [
+    {
+      "kind": "batched_prefill",
+      "lengths": [
+        31,
+        255,
+        257,
+        1023
+      ],
+      "seconds": 0.8388594360003481
+    },
+    {
+      "kind": "batched_prefill",
+      "lengths": [
+        2032,
+        65
+      ],
+      "seconds": 1.757962427996972
+    }
+  ],
+  "passed": true
+}
