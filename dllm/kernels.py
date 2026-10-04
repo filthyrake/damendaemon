@@ -168,7 +168,7 @@ def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=No
 @tr.jit
 def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW,
                 NORM: tl.constexpr, EPS: tl.constexpr, PRECISE: tl.constexpr,
-                H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr, C: tl.constexpr, BD: tl.constexpr):
+                H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr, RD: tl.constexpr, C: tl.constexpr, BD: tl.constexpr):
     batch, head = tl.program_id(0), tl.program_id(1)
     cols = tl.arange(0, BD)
     position, slot = tl.load(POS + batch), tl.load(SLOTS + batch)
@@ -179,15 +179,15 @@ def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW,
             inv = tl.rsqrt(tl.sum(x * x, 0) / D + EPS)
             weight = tl.load((QW if head < H else KW) + cols, cols < D, other=0).to(tl.float32)
             x = x * inv * weight
-            other_cols = (cols + D // 2) % D
+            other_cols = (cols + RD // 2) % RD
             other = tl.load(X + base + other_cols, cols < D, other=0).to(tl.float32)
             other_weight = tl.load((QW if head < H else KW) + other_cols, cols < D, other=0).to(tl.float32)
             other = other * inv * other_weight
         else:
-            other = tl.load(X + base + (cols + D // 2) % D, cols < D, other=0).to(tl.float32)
-        other = tl.where(cols < D // 2, -other, other)
-        cos = tl.load(COS + position * D + cols, cols < D, other=0).to(tl.float32)
-        sin = tl.load(SIN + position * D + cols, cols < D, other=0).to(tl.float32)
+            other = tl.load(X + base + (cols + RD // 2) % RD, cols < D, other=0).to(tl.float32)
+        other = tl.where(cols < RD // 2, -other, other)
+        cos = tl.load(COS + position * RD + cols, cols < RD, other=1).to(tl.float32)
+        sin = tl.load(SIN + position * RD + cols, cols < RD, other=0).to(tl.float32)
         a, b = x * cos, other * sin
         if not NORM and not PRECISE:
             a = a.to(tl.float16).to(tl.float32)
@@ -203,11 +203,14 @@ def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW,
 
 def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads, q_norm=None, k_norm=None, eps=1e-6, precise=False):
     _, kv_heads, context, dim = cache_k.shape
+    rotary_dim = cos.shape[-1]
+    if not 0 < rotary_dim <= dim or rotary_dim % 2 or (q_norm is not None and rotary_dim != dim):
+        raise ValueError('unsupported rotary table width')
     query = torch.empty((qkv.shape[0], heads, 1, dim), device=qkv.device, dtype=qkv.dtype)
     _rope_batch[(qkv.shape[0], heads + 2 * kv_heads)](
         qkv, cos, sin, positions, slots, query, cache_k, cache_v,
         qkv if q_norm is None else q_norm, qkv if k_norm is None else k_norm,
-        q_norm is not None, eps, precise, heads, kv_heads, dim, context, tr.next_power_of_2(dim), enable_fp_fusion=False)
+        q_norm is not None, eps, precise, heads, kv_heads, dim, rotary_dim, context, tr.next_power_of_2(dim), enable_fp_fusion=False)
     return query
 
 

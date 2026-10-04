@@ -139,6 +139,31 @@ def main():
     torch.testing.assert_close(actual[:,:,0],rotate_fp32(q),atol=.004,rtol=.002)
     torch.testing.assert_close(cache_k[slots,:,positions],rotate_fp32(k),atol=.004,rtol=.002)
     checks += 1
+    # Partial-head rotary must preserve the tail and touch only assigned KV positions.
+    for dim in (64,96,128):
+        for rotary_dim in (dim//4,dim//2,dim):
+            heads,kv_heads,context=4,2,512
+            packed=torch.randn((3,(heads+2*kv_heads)*dim),device='cuda',dtype=torch.float32)
+            positions=torch.tensor([0,255,511],device='cuda')
+            slots=torch.tensor([2,0,3],device='cuda')
+            cos=torch.randn((context,rotary_dim),device='cuda')
+            sin=torch.randn_like(cos)
+            ck=torch.full((4,kv_heads,context,dim),float('nan'),device='cuda')
+            cv=torch.full_like(ck,float('nan'))
+            expected_k,expected_v=ck.clone(),cv.clone()
+            q,k,v=packed.split([heads*dim,kv_heads*dim,kv_heads*dim],-1)
+            def partial(value):
+                value=value.reshape(3,-1,dim)
+                part,tail=value[...,:rotary_dim],value[...,rotary_dim:]
+                left,right=part.chunk(2,-1)
+                return torch.cat((part*cos[positions,None]+torch.cat((-right,left),-1)*sin[positions,None],tail),-1)
+            expected_k[slots,:,positions,:]=partial(k)
+            expected_v[slots,:,positions,:]=v.reshape(3,kv_heads,dim)
+            actual=kernels.rope_batch(packed,cos,sin,positions,slots,ck,cv,heads,precise=True)
+            torch.testing.assert_close(actual[:,:,0],partial(q),atol=1e-6,rtol=1e-6)
+            torch.testing.assert_close(ck,expected_k,atol=1e-6,rtol=1e-6,equal_nan=True)
+            torch.testing.assert_close(cv,expected_v,atol=0,rtol=0,equal_nan=True)
+            checks+=1
     print(json.dumps({"checks": checks, "attention": attention_checks, "passed": True}, indent=2))
 
 

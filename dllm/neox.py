@@ -52,11 +52,15 @@ class NeoxExecutor(StarcoderExecutor):
         x = F.embedding(ids,w['embed']).to(self.residual_dtype)
         for i in range(self.c['num_hidden_layers']):
             packed = self._linear(self.layer_norm(x,f'{i}.norm1'),w[f'{i}.qkv.weight'],w[f'{i}.qkv.bias'])
-            q,k,v = [part.reshape(count,self.heads,self.dim) for part in packed.chunk(3,-1)]
-            query = self.partial_rotate(q,positions).contiguous().unsqueeze(2)
-            key = self.partial_rotate(k,positions)
             ck,cv = self.kv[i].unbind(0)
-            ck[slots,:,positions,:],cv[slots,:,positions,:] = key,v
+            if self.device=='cuda' and self.kernels:
+                query=self.kernels.rope_batch(packed,self.cos,self.sin,positions,slots,
+                    ck,cv,self.heads,precise=True)
+            else:
+                q,k,v = [part.reshape(count,self.heads,self.dim) for part in packed.chunk(3,-1)]
+                query = self.partial_rotate(q,positions).contiguous().unsqueeze(2)
+                key = self.partial_rotate(k,positions)
+                ck[slots,:,positions,:],cv[slots,:,positions,:] = key,v
             if prefill:
                 attended = self.prefill_attention(query[:,:,0,:].transpose(0,1).unsqueeze(0),
                     ck.index_select(0,slots[:1])[:,:,:count],cv.index_select(0,slots[:1])[:,:,:count])

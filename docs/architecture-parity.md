@@ -922,3 +922,13 @@ qualified by this evidence.
 The native selection also passes Llama3.2-1B Q4 replay, 82/82 checks at 2048
 context, worst RMS 0.007112. The full unit suite now has 121 passing tests,
 including native ABI mismatch rejection and explicit opt-in/device boundaries.
+
+GPT-NeoX now fuses CUDA partial rotary and KV writes through the shared slotted
+kernel, preserving unrotated tail values. All 115 kernel checks pass, including
+nine partial-width/head-dimension combinations with unused cache entries filled
+with NaNs; full-head normalized rotary remains covered. The 82-check Pythia
+model replay remains unchanged numerically. A2 throughput improves to
+274.87/459.25/742.04 tokens/s, TTFT 13.00/27.84/47.34 ms, at concurrency 1/2/4.
+The four-request gap to the same vLLM baseline falls to about 8%. MPS retains
+its previously qualified path. Raw measurements are preserved alongside the
+initial baseline, rather than replacing it.
