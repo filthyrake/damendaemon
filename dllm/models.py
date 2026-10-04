@@ -4,6 +4,9 @@ from pathlib import Path
 
 
 def config(path):
+    if Path(path).suffix.lower() == ".gguf":
+        from .gguf_model import plan
+        return dict(plan(path).config)
     value = json.loads((Path(path)/'config.json').read_text())
     if value.get('model_type')=='mamba2':
         from .mamba2 import config as mamba_config
@@ -22,6 +25,9 @@ def config(path):
 
 
 def weight_bytes(path,quantization=None):
+    if Path(path).suffix.lower() == ".gguf":
+        from .gguf_model import weight_bytes as estimate
+        return estimate(path, quantization)
     if config(path).get('model_type')=='mamba2':
         from .mamba2 import weight_bytes as estimate
     elif config(path).get('model_type')=='mamba':
@@ -36,6 +42,9 @@ def weight_bytes(path,quantization=None):
 
 
 def load(path,context,quantization=None):
+    if Path(path).suffix.lower() == ".gguf":
+        from .gguf_model import GgufWeights
+        return GgufWeights(path, context, quantization)
     if config(path).get('model_type')=='mamba2':
         from .mamba2 import Mamba2Weights
         return Mamba2Weights(path,context,quantization=quantization)

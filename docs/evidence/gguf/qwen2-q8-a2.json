@@ -1,0 +1,228 @@
+{
+  "gguf": "/home/damen/dllm-dev/baselines/qwen-a-dllm-q8.gguf",
+  "hf": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "quantization": "q8_0",
+  "weights_exact": 171,
+  "scales_exact": 97,
+  "cases": [
+    {
+      "graph": false,
+      "prompt_tokens": 1,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        271,
+        40,
+        1079,
+        4460,
+        311,
+        1855,
+        264,
+        2025
+      ]
+    },
+    {
+      "graph": false,
+      "prompt_tokens": 17,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": false,
+      "prompt_tokens": 129,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": false,
+      "prompt_tokens": 505,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 1,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        271,
+        40,
+        1079,
+        4460,
+        311,
+        1855,
+        264,
+        2025
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 17,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 129,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 505,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    }
+  ],
+  "http": {
+    "registration": true,
+    "exact_chat": true,
+    "stream": true,
+    "concurrency": true,
+    "cancellation_recovery": true,
+    "host_restore": true,
+    "unload": true,
+    "sample": "Binary search is a search algorithm that works on a sorted list of elements. It works by repeatedly dividing the search interval in half. If the value of the search",
+    "warm_raw_trials": [
+      {
+        "model": "gguf",
+        "seconds": 0.09394646300643217,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " 1. Start with the middle element of the array.\n2. Compare the"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.09434721599973273,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " 1. Start with the middle element of the array.\n2. Compare the"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.09532667700841557,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " 1. Start with the middle element of the array.\n2. Compare the"
+      },
+      {
+        "model": "gguf",
+        "seconds": 0.09078489300736692,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " 1. Start with the middle element of the array.\n2. Compare the"
+      },
+      {
+        "model": "gguf",
+        "seconds": 0.09112166700651869,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " 1. Start with the middle element of the array.\n2. Compare the"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.09353949000069406,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " 1. Start with the middle element of the array.\n2. Compare the"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.08942474199284334,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " 1. Start with the middle element of the array.\n2. Compare the"
+      },
+      {
+        "model": "gguf",
+        "seconds": 0.08855836300062947,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " 1. Start with the middle element of the array.\n2. Compare the"
+      }
+    ],
+    "warm_medians": {
+      "gguf": 0.0909532800069428,
+      "hf": 0.09394335300021339
+    }
+  },
+  "passed": true
+}

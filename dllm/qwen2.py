@@ -99,29 +99,11 @@ class ModelWeights:
             raise ValueError("context exceeds model position limit")
         self.max_context = max_context
         self.tokenizer = Tokenizer.from_file(str(self.path / "tokenizer.json"))
-        self.tokenizer.no_truncation()
-        self.tokenizer.no_padding()
         tokenizer_config = json.loads((self.path / "tokenizer_config.json").read_text())
         template = tokenizer_config.get("chat_template")
         if template is None and (self.path / "chat_template.jinja").exists():
             template = (self.path / "chat_template.jinja").read_text()
-        if template is not None and not isinstance(template, str):
-            raise ValueError("model needs one text chat template")
-        environment = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True,
-                                                     extensions=['jinja2.ext.loopcontrols'])
-        # Match tokenizer-template JSON semantics: insertion order, Unicode,
-        # and literal angle brackets, rather than Jinja's HTML-safe serializer.
-        environment.filters['tojson']=partial(json.dumps,ensure_ascii=False,allow_nan=False)
-        def raise_exception(message):
-            raise ValueError(message)
-        environment.globals.update(raise_exception=raise_exception,
-                                   strftime_now=lambda fmt: datetime.now().strftime(fmt))
-        self.template = environment.from_string(template) if template is not None else None
-        self.supports_tool_calls=(c['model_type'] in ('qwen2','qwen3') and isinstance(template,str)
-            and all(marker in template for marker in ('<tool_call>','</tool_call>','tool_calls','tools')))
-        self.supports_tool_calls |= (c['model_type']=='gpt_oss' and isinstance(template,str)
-            and all(marker in template for marker in ('functions.', '<|call|>', 'tool_calls', 'tools')))
-        self.special_tokens = {key: tokenizer_config.get(key) for key in ("bos_token", "eos_token")}
+        self.configure_tokenizer(self.tokenizer, template, tokenizer_config)
         self.eos = eos_ids(c.get('eos_token_id'))
         generation = self.path / "generation_config.json"
         if generation.exists():
@@ -195,6 +177,30 @@ class ModelWeights:
         self.finalize_weights(weights)
         if cache is not None:
             self.weight_cache_status = 'stored' if cache.save(self.weights, self.scales) else 'write-failed'
+
+    def configure_tokenizer(self, tokenizer, template, tokenizer_config):
+        """Share template behavior across HF snapshots and standalone GGUF files."""
+        self.tokenizer = tokenizer
+        self.tokenizer.no_truncation()
+        self.tokenizer.no_padding()
+        c = self.config
+        if template is not None and not isinstance(template, str):
+            raise ValueError("model needs one text chat template")
+        environment = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True,
+                                                     extensions=['jinja2.ext.loopcontrols'])
+        # Match tokenizer-template JSON semantics: insertion order, Unicode,
+        # and literal angle brackets, rather than Jinja's HTML-safe serializer.
+        environment.filters['tojson']=partial(json.dumps,ensure_ascii=False,allow_nan=False)
+        def raise_exception(message):
+            raise ValueError(message)
+        environment.globals.update(raise_exception=raise_exception,
+                                   strftime_now=lambda fmt: datetime.now().strftime(fmt))
+        self.template = environment.from_string(template) if template is not None else None
+        self.supports_tool_calls=(c['model_type'] in ('qwen2','qwen3') and isinstance(template,str)
+            and all(marker in template for marker in ('<tool_call>','</tool_call>','tool_calls','tools')))
+        self.supports_tool_calls |= (c['model_type']=='gpt_oss' and isinstance(template,str)
+            and all(marker in template for marker in ('functions.', '<|call|>', 'tool_calls', 'tools')))
+        self.special_tokens = {key: tokenizer_config.get(key) for key in ("bos_token", "eos_token")}
 
     def finalize_weights(self, weights, prepared_scales=None):
         from .quantization import prepare

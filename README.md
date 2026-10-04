@@ -115,7 +115,7 @@ Mistral 7B Instruct v0.1 is qualified on A2 with Q8 storage through its 4096-tok
 window boundary. See the architecture evidence for exact revisions and limits.
 Enable experimental Q8 on-load conversion with `DLLM_QUANTIZATION=q8_0`; it
 supports native Metal for Qwen2, Qwen3, Llama and Mamba-1/2; other families require CUDA.
-It does not import GGUF/AWQ/GPTQ files.
+Standalone Qwen GGUF import is described below; AWQ/GPTQ import remains unsupported.
 
 ```sh
 curl http://127.0.0.1:8088/v1/completions \
@@ -420,7 +420,7 @@ checkpoint qualification. Four-bit quantization is lossy: on our small authored
 171-token Qwen2 corpus, next-token agreement with the original weights was
 74.3% for Q4 versus 95.3% for Q8. This is not a broad quality evaluation.
 Q4 remains opt-in and CUDA-only. This is on-load conversion from safetensors;
-GGUF, AWQ and GPTQ checkpoint import are still unsupported.
+Standalone Qwen GGUF import is available below. AWQ and GPTQ import remain unsupported.
 
 ### Static YaRN configurations
 
@@ -742,3 +742,32 @@ Direct CUDA generation (`dllm run` and `Runtime.generate`) reuses the native
 one-request decode graph. A2 measurements show 2.5–3.0× faster Qwen3-0.6B FP32
 decode and about 2% faster GPT-OSS decode versus the previous scalar dispatch;
 HTTP batching already used these graphs. [Scope and evidence](docs/evidence/scalar-decode/README.md).
+
+
+### Standalone Qwen GGUF files
+
+Install `dllm[gguf]` alongside the runtime extra. Local `.gguf` files work with
+`run`, `serve --model NAME=PATH`, and `add`, including normal host/GPU residency
+and model swapping. Keep conversion policy `none`: existing Q4_0/Q8_0 matrix
+values and scales are imported directly into dllm's kernels, without
+requantization or another inference engine.
+
+```sh
+python -m pip install -e '.[runtime,gguf]'
+dllm run /models/qwen.gguf --context 512 --prompt 'Explain binary search.'
+dllm add qwen /models/qwen.gguf --quantization none
+```
+
+Initial import scope is dense Qwen2/Qwen3, little-endian GGUF v2/v3, F16/F32 and
+Q4_0/Q8_0. Floating tensors follow the existing decoder's FP16 weight policy;
+this does not provide FP32-weight inference. Embeddings expand to FP16 for
+lookup, while packed output heads stay packed. Mixed matrix formats are allowed
+between projections, but Q/K/V and gate/up components must each have compatible
+formats. Unsupported architectures, split files, scaled RoPE, packed formats,
+or malformed tensors fail explicitly. Q4 requires CUDA.
+
+The embedded Qwen2 BPE tokenizer and chat template need no HF sidecar files.
+GGUF tokenization follows llama.cpp's Qwen2 behavior, including preserving
+combining marks; some HF tokenizers normalize those inputs to NFC and produce
+different token IDs. Import acceptance is not broad model qualification. See
+[GGUF validation and limitations](docs/evidence/gguf/README.md).

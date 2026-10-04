@@ -23,11 +23,11 @@ def download(repository, revision="main"):
 
 def resolve_model(value, revision="main"):
     path = Path(value).expanduser()
-    if path.is_dir():
+    if path.is_dir() or (path.is_file() and path.suffix.lower() == ".gguf"):
         return path.resolve()
     if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*", str(value)):
         return Path(download(str(value), revision)["path"])
-    raise ValueError("model must be a local directory or a Hugging Face owner/repository")
+    raise ValueError("model must be a local directory, GGUF file or a Hugging Face owner/repository")
 
 
 def main():
@@ -41,7 +41,7 @@ def main():
     pull.add_argument("repository")
     pull.add_argument("--revision", default="main")
     run = commands.add_parser("run", help="generate using a supported dense model name or local path")
-    run.add_argument("path", help="local model directory or Hugging Face owner/repository")
+    run.add_argument("path", help="local model directory, GGUF file or Hugging Face owner/repository")
     run.add_argument("--revision", default="main")
     run.add_argument("--prompt", required=True)
     run.add_argument('--raw', action='store_true', help='use the prompt directly without a chat template')

@@ -100,8 +100,9 @@ class Runtime:
                         return self._status()
                 try:
                     config = read_config(candidate)
-                    Tokenizer.from_file(str(candidate/'tokenizer.json'))
-                    json.loads((candidate/'tokenizer_config.json').read_text())
+                    if candidate.suffix.lower() != '.gguf':
+                        Tokenizer.from_file(str(candidate/'tokenizer.json'))
+                        json.loads((candidate/'tokenizer_config.json').read_text())
                     estimated = weight_bytes(candidate,quantization=policy)
                 except Exception as error:
                     raise ValueError('invalid local model snapshot') from error
