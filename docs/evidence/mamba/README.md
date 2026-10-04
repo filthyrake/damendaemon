@@ -112,3 +112,19 @@ These compare installed configurations. vLLM reports no A2-specific selective
 state-update tuning file and uses its default configuration; the results do not
 claim to beat every manually tuned vLLM setup. More/larger Mamba checkpoints
 remain separate qualification work.
+
+## Equal-length prompt batching
+
+Prompts with the same length now share projection/convolution/scan batches.
+Interleaved lengths retain their original request/slot ordering; unequal lengths
+remain separate so padding never advances recurrent state. Each group's temporary
+activation count is bounded to one configured context. Expanded independent
+traces use different token contents at interleaved repeated lengths, reordered
+slots and decoder continuation: 139 checks pass for 130M on M4 and 370M on A2.
+
+370M A2 serving becomes 92.09 / 106.58 / 192.74 tokens/s at concurrency 1/2/4,
+with first text 44.76 / 53.27 / 87.39 ms. The earlier separate-prefill result was
+92.45 / 106.30 / 183.57 tokens/s. M4's new 130M run gives 50.37 / 90.08 / 165.20;
+no Apple throughput improvement is established by these noisy sequential runs.
+This change reduces redundant equal-length prefill work without claiming that
+all real prompt distributions will benefit.

@@ -31,7 +31,7 @@ def main():
             assert relative<.001,(slot,layer,relative)
             torch.testing.assert_close(executor.conv[layer][slot].cpu(),cache.conv_states[layer][0],atol=.001,rtol=.001)
     def prefill(lengths,slots):
-        prompts=[corpus[:length] for length in lengths]
+        prompts=[corpus[row*3:row*3+length] for row,length in enumerate(lengths)]
         actual=executor.prefill_batch(prompts,slots)
         for row,(slot,prompt) in enumerate(zip(slots,prompts)):
             result=reference(torch.tensor([prompt]),use_cache=True)
@@ -51,6 +51,7 @@ def main():
                 compare(actual[row],result.logits[0,-1],slot,'decode:'+str(length))
                 states[slot]=(result.cache_params,length+1,result.logits[0,-1].argmax().item())
     prefill([1,3,4,17],[3,0,2,1]);decode([2,3,1,0],8)
+    prefill([31,17,31,17],[1,3,0,2]);decode([3,0,2,1],8)
     prefill([args.context-8,31],[0,1]);decode([1,2,0,3],8)
     for slot in states:state_check(slot,states[slot][0])
     before=list(executor.lengths)

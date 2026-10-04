@@ -206,11 +206,21 @@ class MambaExecutor:
                 or any(type(s) is not int or not 0<=s<self.max_batch for s in slots)
                 or any(not p or len(p)>self.context for p in prompts)):
             raise ValueError('invalid Mamba prompt batch')
-        # Separate sequences avoid padding advancing recurrent state.
-        outputs=[]
-        for prompt,slot in zip(prompts,slots):
-            outputs.append(self.run(torch.tensor([prompt],device=self.device),torch.tensor([slot],device=self.device),True))
-            self.lengths[slot]=len(prompt)
+        # Equal lengths share projection work without padding advancing state.
+        # Bound temporary token activations to one configured context and retain
+        # the caller's row order even when lengths are interleaved.
+        groups={};outputs=[None]*len(prompts)
+        for row,(prompt,slot) in enumerate(zip(prompts,slots)):
+            groups.setdefault(len(prompt),[]).append((row,prompt,slot))
+        for length,entries in groups.items():
+            capacity=max(1,self.context//length)
+            for start in range(0,len(entries),capacity):
+                chunk=entries[start:start+capacity]
+                ids=torch.tensor([p for _,p,_ in chunk],device=self.device)
+                assigned=torch.tensor([s for _,_,s in chunk],device=self.device)
+                logits=self.run(ids,assigned,True)
+                for index,(row,_,slot) in enumerate(chunk):
+                    outputs[row]=logits[index:index+1];self.lengths[slot]=length
         return torch.cat(outputs)
 
     def prefill(self,tokens,slot=0):
