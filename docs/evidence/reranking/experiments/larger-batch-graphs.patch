@@ -1,0 +1,31 @@
+diff --git a/dllm/encoder.py b/dllm/encoder.py
+index e799a60..b74015f 100644
+--- a/dllm/encoder.py
++++ b/dllm/encoder.py
+@@ -2,6 +2,7 @@
+ from collections import OrderedDict
+ import json
+ import math
++import os
+ from pathlib import Path
+ import torch
+ from torch.nn import functional as F
+@@ -159,6 +160,9 @@ class EncoderExecutor:
+         self.residual_dtype = torch.float32
+         self.kernel_backend = 'torch-'+self.device+'-bert'+('-rerank' if model.task=='rerank' else '')
+         self.use_graph = use_graph and self.device == 'cuda'
++        self.graph_max_batch = int(os.environ.get('DLLM_ENCODER_GRAPH_MAX_BATCH','8'))
++        if not 0 <= self.graph_max_batch <= 64:
++            raise ValueError('encoder graph batch limit must be 0..64')
+         self.graphs = OrderedDict()
+         empty_cache()
+         def dtype(name):
+@@ -188,7 +192,7 @@ class EncoderExecutor:
+         lengths = torch.tensor([len(values) for values in tokens],device=self.device)
+         mask = torch.arange(length,device=self.device)[None,:] < lengths[:,None]
+         # Bound retained graph allocations and avoid capturing large padded batches.
+-        if self.use_graph and batch <= 8:
++        if self.use_graph and batch <= self.graph_max_batch and batch*length <= 4096:
+             key = (batch,length)
+             if key not in self.graphs:
+                 if len(self.graphs) >= 4:

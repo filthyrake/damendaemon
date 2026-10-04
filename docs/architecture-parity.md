@@ -559,8 +559,9 @@ measurements, reference checks, and API checks are in `evidence/embeddings/`;
 `scripts/benchmark_encoder.py` reproduces the warmed workload.
 
 Remaining limits: no request coalescing, no shortening
-of vectors, quantized encoders, reranking, general encoder-decoder generation,
-or arbitrary SentenceTransformers pooling modules. Each HTTP request executes
+of vectors, quantized encoders or arbitrary SentenceTransformers pooling modules.
+Trained BERT reranking (#35) and T5 encoder-decoder generation (#29) are now
+qualified separately; their task contracts do not change the embedding pipeline. Each HTTP request executes
 its own input batch; generation groups drain before an embedding request.
 Register the encoder with `quantization: "none"` if the server default is Q8.
 
@@ -1066,3 +1067,27 @@ Single-group pure Mamba-2 only; no claim for Codestral or attention hybrids.
 Mamba-1/2 now support native Metal Q8 matrix projections as well as CUDA Q8.
 FP32 activations/state remain unchanged; quantization is opt-in and measured
 model drift is nonzero. [Q8 qualification and performance gaps](evidence/mamba2/q8/README.md).
+
+## Function tools and direct decisions (issues #32–#35)
+
+Qualified Qwen2/Qwen3 templates now support auto/none tool calls, assistant/tool
+history and grammar-constrained required/named single calls, including correlated
+`anyOf` function schemas. [GPU/API evidence](evidence/tools/README.md). Automatic
+strict selection, additional tool formats and multiple forced calls remain open.
+
+Unquantized Qwen2/Qwen3 expose direct candidate-token scoring on A2/M4, without
+answer decoding. Optional candidate-keyed CUDA graphs reduce repeated-shape
+latency while retaining explicit capture/memory costs. Scores are conditional
+on the provided tokens and uncalibrated. [Evidence](evidence/scoring/README.md).
+This is independent work inspired by [NInfer/Jev research](upstream-inference-research.md),
+not support for their model weights or a dependency on their runtimes.
+
+The pinned MS MARCO MiniLM-L6-v2 BERT cross-encoder now supports trained scalar
+relevance scoring via `/v1/rerank`. A2/M4 FP32 execution matches an independent
+CPU reference through512-token query/document pairs; task switching and HTTP
+ranking semantics are qualified. [Reranker evidence](evidence/reranking/README.md).
+These raw relevance scores are also not calibrated confidence.
+
+Opt-in bounded CUDA prefill graphs separately improve repeated short Qwen2/Qwen3
+requests, with verified model unload/eviction and matched HTTP measurements.
+[Capture costs, memory and warm latency](evidence/prefill-graphs/README.md).
