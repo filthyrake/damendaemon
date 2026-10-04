@@ -168,3 +168,30 @@ The tables remain valid comparisons at the same standard policy, but do not
 establish speculation performance in the higher-precision mode. That mode
 requires explicit qualification. New reports record compute, residual, KV and
 matrix storage dtypes plus the selected precision policies to prevent ambiguity.
+
+## Explicit higher-precision Qwen3 qualification
+
+A subsequent run explicitly sets `DLLM_QWEN3_PRECISION=float32`. Its report
+records FP32 compute/residual/KV, FP16 stored matrices, and the actual `float32`
+policy for both pinned Qwen3 sizes. The full HTTP suite passes exact responses,
+streaming, sampling/penalty/logprob/stop/schema fallback, concurrency, disconnect
+recovery, graph reclamation and host restoration. Each model also passes all
+18 width/slot/acceptance cases after a 257-token prefix; those reports are under
+`../precise-prefill/` and include explicit precision metadata.
+
+Context 512, 64 output tokens, thinking disabled, six alternating warm A/B
+rounds, same resident executor and higher-precision policy per pair:
+
+| Model/workload | Ordinary ms | Speculative ms | Speedup |
+|---|---:|---:|---:|
+| Qwen3-0.6B repetition | 595.336 | 315.386 | 1.89× |
+| Qwen3-0.6B explanation | 599.511 | 631.504 | 0.95× |
+| Qwen3-0.6B code/list | 596.545 | 478.912 | 1.25× |
+| Qwen3-1.7B repetition | 1421.220 | 352.212 | 4.04× |
+| Qwen3-1.7B explanation | 1418.837 | 1439.031 | 0.99× |
+| Qwen3-1.7B code/list | 1437.764 | 1125.474 | 1.28× |
+
+These results are distinct from the earlier standard-policy tables. Poor
+proposals still cost time: explanation is about 5% slower on the small model in
+this run. The feature remains opt-in; neither policy nor workload-specific
+performance is conflated with broad engine parity.
