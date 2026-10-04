@@ -1,0 +1,332 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "context": 1024,
+  "batch_size": 2,
+  "rows": [
+    {
+      "case": "auto_stream_equivalence",
+      "response": {
+        "id": "chatcmpl-90a2faf5e0424b5cb14ca2ebd84178c5",
+        "object": "chat.completion",
+        "created": 1791144456,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": null,
+              "reasoning_content": "We need to call weather function.",
+              "tool_calls": [
+                {
+                  "id": "call_ec942a202b9949faa4f46038f9575a6e",
+                  "type": "function",
+                  "function": {
+                    "name": "weather",
+                    "arguments": "{\"city\": \"Paris\"}"
+                  }
+                }
+              ]
+            },
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 131,
+          "completion_tokens": 30,
+          "total_tokens": 161
+        },
+        "dllm_timing": {
+          "source_tier": "disk",
+          "activation_seconds": 24.674130058003357,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 27.442407131995424,
+          "total_seconds": 29.234761079991586,
+          "decode_tokens_per_second": 16.179839943121603
+        }
+      }
+    },
+    {
+      "case": "tool_result_history",
+      "response": {
+        "id": "chatcmpl-23c4405800f343c48340cf599847a382",
+        "object": "chat.completion",
+        "created": 1791144488,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "Here\u2019s the current weather in Paris:\n\n- **Temperature:** 19\u202f\u00b0C  \n- **Condition:** Sunny  \n\nLet me know if you\u2019d like more details or weather for another location!"
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 183,
+          "completion_tokens": 42,
+          "total_tokens": 225
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 5.551992217078805e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 2.9381976970034884,
+          "total_seconds": 5.483272765995935,
+          "decode_tokens_per_second": 16.10954446865539
+        }
+      }
+    },
+    {
+      "case": "incomplete_header_or_arguments",
+      "cap": 1,
+      "response": {
+        "id": "chatcmpl-18f75b18db1c4901a1e62c242c5c5b32",
+        "object": "chat.completion",
+        "created": 1791144493,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": ""
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 131,
+          "completion_tokens": 1,
+          "total_tokens": 132
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 5.699999746866524e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.1111261839978397,
+          "total_seconds": 1.1112524869968183,
+          "decode_tokens_per_second": null
+        }
+      }
+    },
+    {
+      "case": "incomplete_header_or_arguments",
+      "cap": 4,
+      "response": {
+        "id": "chatcmpl-120a78d3f91f493b8147f711871e89f8",
+        "object": "chat.completion",
+        "created": 1791144495,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "",
+              "reasoning_content": "We"
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 131,
+          "completion_tokens": 4,
+          "total_tokens": 135
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 5.093999789096415e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.078785969002638,
+          "total_seconds": 1.2638213930040365,
+          "decode_tokens_per_second": 16.213111711935365
+        }
+      }
+    },
+    {
+      "case": "incomplete_header_or_arguments",
+      "cap": 29,
+      "response": {
+        "id": "chatcmpl-82c911c13e9e49d5b29143bb37ab50fe",
+        "object": "chat.completion",
+        "created": 1791144498,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "",
+              "reasoning_content": "We need to call weather function."
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 131,
+          "completion_tokens": 29,
+          "total_tokens": 160
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 6.133006536401808e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.072000221000053,
+          "total_seconds": 2.799480287998449,
+          "decode_tokens_per_second": 16.208580657403324
+        }
+      }
+    },
+    {
+      "case": "none_choice",
+      "response": {
+        "id": "chatcmpl-a612d0d942e948e1a39f20776c0d578d",
+        "object": "chat.completion",
+        "created": 1791144504,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "4",
+              "reasoning_content": "Simple."
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 78,
+          "completion_tokens": 13,
+          "total_tokens": 91
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 4.923000233247876e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.2534792030055542,
+          "total_seconds": 1.9928280300082406,
+          "decode_tokens_per_second": 16.23049846261053
+        }
+      }
+    },
+    {
+      "case": "captured_tokens",
+      "tokens": [
+        200005,
+        35644,
+        200008,
+        2167,
+        1309,
+        316,
+        2421,
+        11122,
+        1114,
+        13,
+        200007,
+        200006,
+        173781,
+        200005,
+        12606,
+        815,
+        316,
+        28,
+        44580,
+        85363,
+        220,
+        200003,
+        4108,
+        200008,
+        10848,
+        17500,
+        7534,
+        72782,
+        18583,
+        200012
+      ],
+      "content": "",
+      "reasoning_content": "We need to call weather function.",
+      "calls": [
+        {
+          "id": "call_c6468049504647cf8d9c9d34ab5562b8",
+          "type": "function",
+          "function": {
+            "name": "weather",
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        }
+      ],
+      "final": {
+        "finish_reason": "tool_calls",
+        "usage": {
+          "prompt_tokens": 131,
+          "completion_tokens": 30,
+          "total_tokens": 161
+        },
+        "timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 3.6869896575808525e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.1139953179954318,
+          "total_seconds": 2.9022668010002235,
+          "decode_tokens_per_second": 16.216777080889287
+        }
+      }
+    }
+  ],
+  "disconnect_recovery": true,
+  "concurrent_calls_isolated": true,
+  "unsupported_choices_rejected": true
+}

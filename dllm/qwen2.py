@@ -119,6 +119,8 @@ class ModelWeights:
         self.template = environment.from_string(template) if template is not None else None
         self.supports_tool_calls=(c['model_type'] in ('qwen2','qwen3') and isinstance(template,str)
             and all(marker in template for marker in ('<tool_call>','</tool_call>','tool_calls','tools')))
+        self.supports_tool_calls |= (c['model_type']=='gpt_oss' and isinstance(template,str)
+            and all(marker in template for marker in ('functions.', '<|call|>', 'tool_calls', 'tools')))
         self.special_tokens = {key: tokenizer_config.get(key) for key in ("bos_token", "eos_token")}
         self.eos = eos_ids(c.get('eos_token_id'))
         generation = self.path / "generation_config.json"
@@ -209,7 +211,22 @@ class ModelWeights:
         tools=validate_tools(tools)
         if tools or any(m['role']=='tool' or m.get('tool_calls') for m in messages):
             if not self.supports_tool_calls:
-                raise ValueError('tool chat requires a qualified Qwen2 or Qwen3 JSON-call template')
+                raise ValueError('tool chat requires a qualified function-call template')
+        if self.config['model_type']=='gpt_oss':
+            if tool_json:raise ValueError('Harmony supports auto or none tool choice only')
+            # The pinned template expects non-null content, parsed arguments and
+            # one function per message. Never silently discard extra calls.
+            for message in messages:
+                calls=message.get('tool_calls')
+                if calls:
+                    if len(calls)!=1:raise ValueError('Harmony history supports one call per assistant message')
+                    message['content']=message.get('content') or ''
+                    if message.get('reasoning_content'):
+                        if message['content']:
+                            raise ValueError('Harmony tool history cannot combine commentary and reasoning')
+                        message['thinking']=message['reasoning_content']
+                elif message.get('role')=='assistant':message.pop('tool_calls',None)
+            for tool in tools or []:tool['function'].setdefault('description','')
         if tool_json and not tools:raise ValueError('forced tool prefix requires tools')
         options = {}
         if reasoning_effort is not None:

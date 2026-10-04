@@ -251,6 +251,9 @@ class BatchedRuntime:
         stop = stop or text_stop
         finished = finished or text_stop
         event={"token": token, "text": delta}
+        if request.output_decoder is not None:
+            event['tool_call_format']='harmony'
+            if request.output_decoder.calls:event['tool_calls']=request.output_decoder.calls
         if reasoning:event['reasoning_content']=reasoning
         if request.sampler.logprobs_top is not None and token not in executor.model.eos:
             event['logprobs']=request.sampler.token_decoder.format(request.sampler.last_logprobs)
@@ -259,7 +262,8 @@ class BatchedRuntime:
         if finished:
             elapsed = time.perf_counter() - request.start
             count = len(request.output)
-            request.final = {"finish_reason": "stop" if stop else "length", "usage": {
+            reason="tool_calls" if request.output_decoder is not None and request.output_decoder.calls else "stop" if stop else "length"
+            request.final = {"finish_reason": reason, "usage": {
                 "prompt_tokens": prompt_count, "completion_tokens": count,
                 "total_tokens": prompt_count + count}, "timing": {
                 "source_tier": request.tier, "activation_seconds": request.activation,
@@ -301,7 +305,7 @@ class BatchedRuntime:
         validate_lengths(executor,len(tokens),request.max_tokens)
         from .harmony import output_stream
         request.output_decoder=output_stream(executor.model,request.raw_prompt,request.stops,
-            request.schema,request.sampler.logprobs_top)
+            request.schema,request.sampler.logprobs_top,tools=request.tools)
         if request.schema is not None:
             from .structured import Constraint
             request.sampler.constraint=Constraint(executor.model,request.schema)

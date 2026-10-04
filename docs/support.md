@@ -17,7 +17,7 @@ Configuration acceptance alone is not checkpoint qualification.
 | Mistral | 7B Instruct v0.1 | NVIDIA A2 | Sliding-window boundaries; Q8 and Q4 proof |
 | StarCoder2 | 3B | NVIDIA A2, Apple M4 | FP32 path; Q8 separately qualified on CUDA |
 | OLMoE | 1B-7B 0924 Instruct | NVIDIA A2 | Q8 weights; expert prefill performance remains limited |
-| GPT-OSS | 20B, native MXFP4 | NVIDIA A2 | Text Harmony chat + raw completions; 512-context/two-slot chat proof; tools, 120B and long-context qualification pending |
+| GPT-OSS | 20B, native MXFP4 | NVIDIA A2 | Text Harmony chat + raw completions; auto/none function calls and results at 1024 context/two slots; forced tools, 120B and long contexts pending |
 | GPT-2 | Original GPT-2 | NVIDIA A2, Apple M4 | Learned positions; FP32, raw completions |
 | GPT-NeoX | Pythia-160M | NVIDIA A2, Apple M4 | Partial rotary / parallel residual; FP32 |
 | BLOOM | BLOOM-560m | NVIDIA A2, Apple M4 | ALiBi; FP32, 2048 context |

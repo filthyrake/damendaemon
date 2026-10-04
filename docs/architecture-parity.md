@@ -1213,8 +1213,8 @@ The native token-framed parser recognizes checkpoint control IDs, separates
 `analysis` into `reasoning_content`, and emits final/commentary text as `content`.
 It never treats header strings as answer text. Alias spellings are validated
 against the tokenizer because this pin uses `<|channel|>` / `<|return|>` where
-some Harmony examples use older names. Function handoffs and non-text control
-frames fail explicitly; this is not general Harmony tool/multimodal support.
+some Harmony examples use older names. At this text-only qualification stage function handoffs and non-text control
+frames failed explicitly; function-call qualification is recorded below.
 
 Nineteen CPU checks match exact prompt token IDs with Transformers 5.18 and
 streamed text channels with the official `openai-harmony` 0.0.8 Rust parser,
@@ -1234,7 +1234,44 @@ a returned message. These are protocol/smoke examples, not a model-quality suite
 `reasoning_effort=low|medium|high` is GPT-OSS-only; the template default remains
 medium. CLI `--reasoning-effort` uses the same validation and prints final text.
 All generated control/body tokens count toward the completion limit and usage.
-Stop strings match content, not analysis. GPT-OSS tool calls, JSON constraints,
-chat logprobs and chat `ignore_eos` remain unsupported. Raw completion behavior
+Stop strings match content, not analysis. At this stage GPT-OSS tool calls were
+unsupported; JSON constraints, chat logprobs and chat `ignore_eos` remain unsupported. Raw completion behavior
 is preserved. See [Harmony evidence](evidence/gpt-oss/harmony/); 231 CPU/HTTP
 regressions pass alongside the hardware and independent-format checks.
+
+
+### GPT-OSS Harmony function handoffs
+
+The independent token parser now recognizes declared `functions.NAME` recipients
+on the commentary channel, buffers arguments, and publishes one structured call
+only after the handoff marker and complete JSON validation. Duplicate keys,
+nonfinite values, non-object arguments, unknown functions and malformed framing
+fail explicitly. Incomplete arguments at the completion limit are suppressed,
+with `finish_reason=length`; no partial call is published. Function bodies never
+become answer text. Literal Qwen-style envelopes in ordinary Harmony content
+remain literal text, even when tools are enabled.
+
+Actual A2 HTTP proof at context 1024/two slots produced `weather(city="Paris")`,
+returned `finish_reason=tool_calls`, then consumed a supplied result and answered
+with 19°C. No external function was executed by the runtime or this test.
+Streaming/nonstream content, reasoning, arguments and usage matched; call IDs
+were independently generated. Header/argument caps, `none` choice, concurrent
+requests and disconnect recovery passed. Twelve CPU checks independently matched
+HF Transformers 5.18 prompt IDs (including returned reasoning/tool-result history)
+and the official Rust Harmony parser 0.0.8 (including captured generated tokens,
+Unicode arguments and alternate header ordering). Neither is a serving dependency.
+
+History adapts JSON argument strings to objects, null content to empty text, and
+`reasoning_content` to the checkpoint template's `thinking` field. The pinned
+template assumes one function per assistant message; extra calls are rejected
+rather than silently dropped. History containing both commentary content and
+reasoning is explicitly unsupported by this template integration. Auto/none only:
+forced/named/strict calls, built-in Python/browser tools, multimodal control frames
+and structured chat constraints remain unsupported. Tool schemas guide generation;
+auto calls are checked for valid JSON, not full schema conformance.
+
+Scripts: `verify_harmony_tools.py`, `verify_harmony_tool_format.py`, and the
+updated `verify_harmony_service.py`. Evidence is in
+[Harmony function-call checks](evidence/gpt-oss/harmony-tools/). The local CPU/HTTP
+suite passes 235 tests. These are protocol/correctness checks, not a comparative
+throughput or model-quality benchmark.

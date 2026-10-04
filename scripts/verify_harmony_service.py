@@ -84,7 +84,7 @@ def main():
         for result in concurrent:equal(result,reference)
         assert max(result['dllm_timing']['max_batch_size'] for result in concurrent)==2
         for invalid in ({**base,'logprobs':True},{**base,'response_format':{'type':'json_object'}},
-            {**base,'tools':[{'type':'function','function':{'name':'test','parameters':{'type':'object'}}}]},
+            {**base,'tool_choice':'required','tools':[{'type':'function','function':{'name':'test','parameters':{'type':'object'}}}]},
             {**base,'reasoning_effort':'maximum'},{**base,'chat_template_kwargs':{'enable_thinking':True}}):
             try:post(invalid)
             except HTTPError as error:assert error.code==400
@@ -97,7 +97,7 @@ def main():
         restored=post(base);equal(restored,reference);assert restored['dllm_timing']['source_tier']=='host'
         result={'passed':True,'gpu':torch.cuda.get_device_name(),'context':512,'batch_size':2,'rows':rows,
             'disconnect_during_analysis_recovery':True,'concurrent_channel_isolation':True,
-            'unsupported_tools_schema_scores_rejected':True,'swap_graph_reclaimed':True,'host_restore_equivalent':True}
+            'unsupported_forced_tools_schema_scores_rejected':True,'swap_graph_reclaimed':True,'host_restore_equivalent':True}
         Path(args.output).write_text(json.dumps(result,indent=2)+'\n');print(json.dumps({'passed':True,'output':args.output}))
     finally:
         server.shutdown();server.server_close();thread.join();runtime.close()

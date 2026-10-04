@@ -115,9 +115,11 @@ def validate_messages(messages):
             del pending[call_id]
         elif role=='assistant' and message.get('tool_calls') not in (None,[]):
             calls=message['tool_calls']
-            if (set(message)-{'role','content','tool_calls'} or content is not None and not isinstance(content,str)
+            if (set(message)-{'role','content','tool_calls','reasoning_content'} or content is not None and not isinstance(content,str)
                     or not isinstance(calls,list) or not 1<=len(calls)<=64):
                 raise ValueError('invalid assistant tool calls')
+            if message.get('reasoning_content') is not None and not isinstance(message['reasoning_content'],str):
+                raise ValueError('assistant reasoning history must be text or null')
             for call in calls:
                 if not isinstance(call,dict) or set(call)!={'id','type','function'} or call['type']!='function':
                     raise ValueError('invalid historical tool call')
@@ -144,7 +146,7 @@ def template_messages(messages):
     result=validate_messages(messages)
     for message in result:
         for call in message.get('tool_calls') or []:
-            call['function']['arguments']=_json_object(call['function']['arguments'])
+            call['function']={**call['function'],'arguments':_json_object(call['function']['arguments'])}
     return result
 
 

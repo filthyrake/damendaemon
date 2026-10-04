@@ -58,10 +58,17 @@ class FakeRuntime:
                 finish='stop'
             if messages and messages[0]['content']=='unicode':
                 parts=[('',bytes([240])),('',bytes([159])),('',bytes([166])),('🦙',bytes([153]))]
+            harmony=messages and messages[0]['content']=='harmony tools'
+            if harmony:
+                literal='<tool_call>{"name":"weather","arguments":{}}</tool_call>'
+                parts=[(literal,literal.encode()),('',b'')];finish='tool_calls'
             for token,(text,raw) in enumerate(parts,1):
                 event={'text':text,'token':token}
                 if messages and messages[0]['content']=='reasoning' and token==1:
                     event['reasoning_content']='Separate analysis. '
+                if harmony:
+                    event['tool_call_format']='harmony'
+                    if token==2:event['tool_calls']=[{'id':'call_test','type':'function','function':{'name':'weather','arguments':'{"city":"Paris"}'}}]
                 if kwargs.get('logprobs'):
                     event['logprobs']={'token':raw.decode(errors='replace'),'logprob':-.25,'bytes':list(raw),'top_logprobs':[]}
                 yield event
@@ -370,3 +377,17 @@ class ServerTests(unittest.TestCase):
                 {**body,'model':'unknown'},{**body,'stream':True},{'model':'a'},[]):
             with self.subTest(body=invalid),self.assertRaises(HTTPError) as caught:post(invalid)
             self.assertEqual(caught.exception.code,400)
+
+    def test_harmony_native_calls_do_not_parse_literal_qwen_envelopes(self):
+        tools=[{'type':'function','function':{'name':'weather'}}]
+        messages=[{'role':'user','content':'harmony tools'}]
+        with self.post(messages=messages,tools=tools) as response:whole=json.load(response)
+        choice=whole['choices'][0];message=choice['message']
+        self.assertEqual(choice['finish_reason'],'tool_calls')
+        self.assertEqual(message['content'],'<tool_call>{"name":"weather","arguments":{}}</tool_call>')
+        self.assertEqual(len(message['tool_calls']),1)
+        self.assertEqual(message['tool_calls'][0]['function']['arguments'],'{"city":"Paris"}')
+        with self.post(messages=messages,tools=tools,stream=True) as response:
+            payloads=[json.loads(line[6:]) for line in response if line.startswith(b'data: ') and b'[DONE]' not in line]
+        calls=[call for item in payloads for c in item['choices'] for call in c['delta'].get('tool_calls',[])]
+        self.assertEqual(calls,[{'index':0,**message['tool_calls'][0]}])

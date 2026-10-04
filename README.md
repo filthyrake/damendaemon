@@ -701,7 +701,7 @@ the tested Qwen3/Llama cases, with independent reference and exact-output gates.
 
 ### GPT-OSS (CUDA)
 
-The pinned 20B checkpoint supports text Harmony chat and raw completions, with
+The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
 independent layer/logit, format and HTTP lifecycle qualification on A2. Prepare
 the exact HF-format shards with `scripts/prepare_gpt_oss.py`. Its prepared host
 weights occupy 12.83 GiB; use a suitable host budget, for example:
@@ -722,6 +722,11 @@ Custom stop strings apply to answer/commentary text, not analysis or headers.
 Keep conversion policy `none`: the checkpoint already contains native MXFP4,
 reported accurately in response timing metadata. Grouped expert prefill is the
 default for prompts of at least 16 tokens. Qualified text-chat scope is A2,
-512 context and two slots; GPT-OSS tools, structured chat output, chat logprobs,
-120B and longer contexts remain unqualified and unsupported combinations fail
+512 context and two slots, plus 1024-context auto-function round trips. Function
+calls support `tool_choice="auto"` or `"none"`; complete declared calls appear as
+`tool_calls` with JSON arguments, and tool-result history is accepted. A call
+truncated by the token limit is not published. Forced/named/strict calls, multiple
+calls in one historical assistant message, and tool history containing both
+commentary content and reasoning are not yet supported. Structured chat output,
+chat logprobs, 120B and longer contexts remain unqualified; unsupported combinations fail
 explicitly. See [architecture evidence](docs/architecture-parity.md#gpt-oss-20b-packed-raw-execution).

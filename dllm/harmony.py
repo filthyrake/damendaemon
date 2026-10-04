@@ -1,9 +1,11 @@
 """Token-framed text Harmony output; channels never become answer text.
 
-This parser handles assistant analysis/final/commentary messages. Function
-handoffs and other modalities require their own qualified serving paths.
+This parser handles assistant analysis/final/commentary messages. Declared function handoffs are buffered until complete JSON is available.
 """
+import json
+import uuid
 from .stopping import text_delta
+from .tool_calls import _json_object,validate_tools
 
 
 _MARKERS={
@@ -19,7 +21,7 @@ _MARKERS={
 
 
 class TextStream:
-    def __init__(self,tokenizer,stops=()):
+    def __init__(self,tokenizer,stops=(),tools=None):
         for kind,(expected,names) in _MARKERS.items():
             if not any(tokenizer.token_to_id(name)==expected for name in names):
                 raise ValueError(f'unsupported Harmony tokenizer marker: {kind}')
@@ -29,6 +31,8 @@ class TextStream:
         self.field='role';self.header_count=0;self.channel=None;self.body=[]
         self.completed={'content':'','analysis':''};self.emitted={'content':'','analysis':''}
         self.closed=False
+        self.names={t["function"]["name"] for t in validate_tools(tools) or []}
+        self.recipient=None;self.calls=[]
 
     def _decode(self,tokens):
         return self.tokenizer.decode(tokens,skip_special_tokens=False)
@@ -37,15 +41,26 @@ class TextStream:
         role=(self.prefix+self._decode(self.header['role'])).split()
         channel=self._decode(self.header.get('channel',[])).split()
         formatting=self._decode(self.header.get('format',[])).strip()
-        if (not role or role[0]!='assistant' or any(x!='to=all' for x in role[1:])
-                or any(x!='to=all' for x in channel[1:])):
-            raise ValueError('Harmony text output cannot address a tool or another role')
+        fields=role[1:]+channel[1:]
+        recipients=[x[3:] for x in fields if x.startswith('to=')]
+        if (not role or role[0]!='assistant' or len(recipients)>1
+                or any(x!='json' and not x.startswith('to=') for x in fields)):
+            raise ValueError('invalid Harmony assistant header')
+        recipient=recipients[0] if recipients else 'all'
+        self.recipient=None
+        if recipient!='all':
+            if not recipient.startswith('functions.') or recipient[10:] not in self.names:
+                raise ValueError('Harmony function recipient is not declared')
+            self.recipient=recipient[10:]
         self.channel=channel[0] if channel else 'final'
         if self.channel not in ('analysis','final','commentary') or formatting not in ('','json'):
             raise ValueError('unsupported Harmony output channel or format')
+        if self.recipient and self.channel!='commentary':
+            raise ValueError('Harmony function calls require the commentary channel')
         self.phase='body';self.body=[]
 
     def _commit_body(self):
+        if self.recipient:raise ValueError('Harmony function call requires a handoff marker')
         key='analysis' if self.channel=='analysis' else 'content'
         self.completed[key]+=self._decode(self.body)
         self.body=[]
@@ -70,7 +85,12 @@ class TextStream:
             elif marker=='return':raise ValueError('Harmony return without a message body')
             self.phase='after';terminal=True
         elif marker=='call':
-            raise ValueError('Harmony function handoffs are not qualified for text chat')
+            if self.phase!='body' or not self.recipient:
+                raise ValueError('Harmony handoff requires a declared function body')
+            arguments=_json_object(self._decode(self.body))
+            self.calls.append({'id':'call_'+uuid.uuid4().hex,'type':'function','function':{
+                'name':self.recipient,'arguments':json.dumps(arguments,ensure_ascii=False,allow_nan=False)}})
+            self.body=[];self.phase='after';terminal=True
         elif token>=199998:
             raise ValueError('unsupported non-text Harmony control token')
         elif self.phase=='header':
@@ -81,7 +101,7 @@ class TextStream:
             self.body.append(token)
         else:raise ValueError('Harmony content outside a message')
         decoded=dict(self.completed)
-        if self.phase=='body':
+        if self.phase=='body' and not self.recipient:
             key='analysis' if self.channel=='analysis' else 'content'
             decoded[key]+=self._decode(self.body)
         content,self.emitted['content'],stopped=text_delta(decoded['content'],self.emitted['content'],
@@ -91,8 +111,8 @@ class TextStream:
         return content,reasoning,terminal or stopped
 
 
-def output_stream(model,raw_prompt,stops=(),schema=None,logprobs=None,ignore_eos=False):
+def output_stream(model,raw_prompt,stops=(),schema=None,logprobs=None,ignore_eos=False,tools=None):
     if raw_prompt is not None or getattr(model,'config',{}).get('model_type')!='gpt_oss':return None
     if schema is not None or logprobs is not None or ignore_eos:
         raise ValueError('Harmony text chat does not yet support structured output, logprobs or ignoring EOS')
-    return TextStream(model.tokenizer,stops)
+    return TextStream(model.tokenizer,stops,tools)

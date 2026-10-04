@@ -70,3 +70,61 @@ class HarmonyTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.parse([3]*257)
         tokenizer=Tokenizer();tokenizer.special.pop('<|start|>')
         with self.assertRaises(ValueError):TextStream(tokenizer)
+
+    def test_declared_handoff_is_buffered_and_complete(self):
+        import json
+        tokenizer=Tokenizer();tokenizer.parts.update({16:b' to=functions.weather',17:b'{"city":"caf\xc3',18:b'\xa9", "literal":"<tool_call> }"}'})
+        tools=[{'type':'function','function':{'name':'weather'}}]
+        tokenizer.parts[19]=b' json'
+        for header in ([16,CHANNEL,7],[CHANNEL,7,16],[16,CHANNEL,7,19]):
+            parser=TextStream(tokenizer,tools=tools)
+            for token in header+[MESSAGE,17,18]:
+                self.assertEqual(parser.feed(token),('','',False));self.assertEqual(parser.calls,[])
+            self.assertEqual(parser.feed(CALL),('','',True))
+            self.assertEqual(parser.calls[0]['function']['name'],'weather')
+            self.assertEqual(json.loads(parser.calls[0]['function']['arguments']),{'city':'café','literal':'<tool_call> }'})
+
+    def test_invalid_tool_json_and_framing_never_publish_calls(self):
+        tokenizer=Tokenizer();tokenizer.parts[16]=b' to=functions.weather'
+        tools=[{'type':'function','function':{'name':'weather'}}]
+        for body in (b'{',b'[]',b'{"x":1,"x":2}',b'{"x":NaN}',b'{"x":1e999}'):
+            tokenizer.parts[17]=body;parser=TextStream(tokenizer,tools=tools)
+            for token in [16,CHANNEL,7,MESSAGE,17]:parser.feed(token)
+            with self.assertRaises(ValueError):parser.feed(CALL)
+            self.assertEqual(parser.calls,[])
+        tokenizer.parts[17]=b'{}'
+        for end in (END,RETURN,199999):
+            parser=TextStream(tokenizer,tools=tools)
+            for token in [16,CHANNEL,7,MESSAGE,17]:parser.feed(token)
+            with self.assertRaises(ValueError):parser.feed(end)
+        parser=TextStream(tokenizer,tools=tools)
+        for token in [16,CHANNEL,7,MESSAGE]:parser.feed(token)
+        self.assertEqual(parser.feed(17,final=True),('','',False));self.assertEqual(parser.calls,[])
+        for header in ([16,CHANNEL,1],[16,16,CHANNEL,7],[6,CHANNEL,7]):
+            parser=TextStream(tokenizer,tools=tools)
+            with self.assertRaises(ValueError):
+                for token in header+[MESSAGE]:parser.feed(token)
+
+    def test_tool_history_normalization_and_unsupported_shapes(self):
+        from types import SimpleNamespace
+        from dllm.qwen2 import ModelWeights
+        from dllm.tool_calls import validate_messages
+        class Template:
+            def render(self,**kwargs):self.arguments=kwargs;return 'rendered'
+        template=Template();model=SimpleNamespace(template=template,config={'model_type':'gpt_oss'},
+            supports_tool_calls=True,special_tokens={},tokenizer=SimpleNamespace(encode=lambda *a,**k:SimpleNamespace(ids=[1])))
+        call={'id':'call_a','type':'function','function':{'name':'weather','arguments':'{"city":"Paris"}'}}
+        history=[{'role':'assistant','content':None,'reasoning_content':'Need weather.','tool_calls':[call]},
+            {'role':'tool','tool_call_id':'call_a','content':'Sunny'}]
+        tools=[{'type':'function','function':{'name':'weather'}}]
+        self.assertEqual(ModelWeights.chat_tokens(model,history,tools=tools),[1])
+        normalized=template.arguments['messages'][0]
+        self.assertEqual(normalized['content'],'');self.assertEqual(normalized['thinking'],'Need weather.')
+        self.assertEqual(normalized['tool_calls'][0]['function']['arguments'],{'city':'Paris'})
+        self.assertIsNone(history[0]['content']);self.assertNotIn('thinking',history[0])
+        self.assertNotIn('description',tools[0]['function'])
+        with self.assertRaisesRegex(ValueError,'auto or none'):ModelWeights.chat_tokens(model,history,tools=tools,tool_json=True)
+        with self.assertRaises(ValueError):validate_messages([{**history[0],'reasoning_content':[]},history[1]])
+        second={**call,'id':'call_b'}
+        multiple=[{**history[0],'tool_calls':[call,second]},history[1],{'role':'tool','tool_call_id':'call_b','content':'Sunny'}]
+        with self.assertRaisesRegex(ValueError,'one call'):ModelWeights.chat_tokens(model,multiple,tools=tools)

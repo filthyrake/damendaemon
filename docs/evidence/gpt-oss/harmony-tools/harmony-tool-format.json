@@ -1,0 +1,99 @@
+{
+  "passed": true,
+  "checks": 12,
+  "transformers": "5.18.0",
+  "openai_harmony": "0.0.8",
+  "rows": [
+    {
+      "case": "tool_prompt",
+      "messages": 1,
+      "effort": "low",
+      "tokens": 131,
+      "exact": true
+    },
+    {
+      "case": "tool_prompt",
+      "messages": 1,
+      "effort": "medium",
+      "tokens": 131,
+      "exact": true
+    },
+    {
+      "case": "tool_prompt",
+      "messages": 1,
+      "effort": "high",
+      "tokens": 131,
+      "exact": true
+    },
+    {
+      "case": "tool_prompt",
+      "messages": 3,
+      "effort": "low",
+      "tokens": 183,
+      "exact": true
+    },
+    {
+      "case": "tool_prompt",
+      "messages": 3,
+      "effort": "medium",
+      "tokens": 183,
+      "exact": true
+    },
+    {
+      "case": "tool_prompt",
+      "messages": 3,
+      "effort": "high",
+      "tokens": 183,
+      "exact": true
+    },
+    {
+      "case": "tool_prompt",
+      "messages": 5,
+      "effort": "low",
+      "tokens": 190,
+      "exact": true
+    },
+    {
+      "case": "tool_prompt",
+      "messages": 5,
+      "effort": "medium",
+      "tokens": 190,
+      "exact": true
+    },
+    {
+      "case": "tool_prompt",
+      "messages": 5,
+      "effort": "high",
+      "tokens": 190,
+      "exact": true
+    },
+    {
+      "case": "official_handoff",
+      "tokens": 30,
+      "exact": true,
+      "function": {
+        "name": "weather",
+        "arguments": "{\"city\": \"Paris\"}"
+      }
+    },
+    {
+      "case": "official_handoff",
+      "tokens": 28,
+      "exact": true,
+      "function": {
+        "name": "weather",
+        "arguments": "{\"city\": \"caf\u00e9 \ud83d\udc08\", \"literal\": \"<tool_call> }\"}"
+      }
+    },
+    {
+      "case": "official_handoff",
+      "tokens": 14,
+      "exact": true,
+      "function": {
+        "name": "weather",
+        "arguments": "{\"city\": \"Tokyo\"}"
+      }
+    }
+  ],
+  "scope": "CPU format comparisons; not a performance benchmark."
+}

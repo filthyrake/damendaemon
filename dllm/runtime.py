@@ -296,7 +296,7 @@ class Runtime:
         with self.session(alias) as (executor, tier, load_seconds):
             model = executor.model
             from .harmony import output_stream
-            output_decoder=output_stream(model,raw_prompt,stops,schema,sampler.logprobs_top,ignore_eos)
+            output_decoder=output_stream(model,raw_prompt,stops,schema,sampler.logprobs_top,ignore_eos,tools)
             if sampler.logprobs_top is not None:
                 sampler.token_decoder=decoder_for(model)
             from .prompts import encode,validate_lengths,decoder_prefix
@@ -331,12 +331,15 @@ class Runtime:
                         delta, emitted, text_stop = text_delta(decoded, emitted, stops, stop or index == max_tokens-1)
                     stop = stop or text_stop
                     event={"token": token, "text": delta}
+                    if output_decoder is not None:
+                        event['tool_call_format']='harmony'
+                        if output_decoder.calls:event['tool_calls']=output_decoder.calls
                     if reasoning:event['reasoning_content']=reasoning
                     if sampler.logprobs_top is not None and token not in model.eos:
                         event['logprobs']=sampler.token_decoder.format(sampler.last_logprobs)
                     yield event
                     if stop:
-                        finish = "stop"
+                        finish = "tool_calls" if output_decoder is not None and output_decoder.calls else "stop"
                         break
                     if index + 1 < max_tokens:
                         logits, next_token = executor.decode(token)

@@ -173,10 +173,12 @@ def handler_for(runtime):
                 reasoning_text = ""
                 tool_parser=(JsonToolCallStream(tool_schema) if tool_schema is not None
                     else ToolCallStream(selected_tools) if selected_tools else None)
+                native_calls=[]
                 token_scores=[]
                 final = None
                 with closing(runtime.generate(alias, messages, max_tokens, **template_options, **sampling)) as generation:
                     for event in generation:
+                        if event.get("tool_call_format")=="harmony":tool_parser=None
                         if stream and not started:
                             self.send_response(200)
                             self.send_header("Content-Type", "text/event-stream")
@@ -209,6 +211,9 @@ def handler_for(runtime):
                             reasoning_text+=reasoning
                             if stream and reasoning:send_event(chunk({'reasoning_content':reasoning}))
                             deltas=tool_parser.feed(event['text']) if tool_parser else [{'content':event['text']}]
+                            if event.get('tool_calls'):
+                                native_calls.extend(event['tool_calls'])
+                                deltas.append({'tool_calls':[{'index':i,**call} for i,call in enumerate(event['tool_calls'])]})
                             for delta in deltas:
                                 text+=delta.get('content','')
                                 if stream and (delta.get('content') or delta.get('tool_calls') or score is not None):
@@ -221,6 +226,8 @@ def handler_for(runtime):
                     if not raw and reasoning_text:choice['message']['reasoning_content']=reasoning_text
                     if tool_parser and tool_parser.calls:
                         choice['message'].update(content=text or None,tool_calls=tool_parser.calls)
+                    if native_calls:
+                        choice['message'].update(content=text or None,tool_calls=native_calls)
                     if report_scores:
                         choice['logprobs']={'content':token_scores}
                     self.send_json(200, {"id": request_id, "object": "text_completion" if raw else "chat.completion",
