@@ -1,0 +1,18 @@
+0.00.115.486 I srv  llama_server: initializing ...
+0.00.115.571 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.116.688 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.122.041 I srv    load_model: loading model 'baselines/flan-t5-small-f32.gguf'
+0.00.556.761 W load: model vocab missing newline token, using special_pad_id instead
+0.00.732.210 I cmn          init: llama threadpool init, n_threads = 16
+0.00.883.124 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 512, kv_unified = 'false'
+0.00.883.251 W srv          init: --cache-idle-slots requires --cache-ram, disabling
+0.00.887.966 I srv  llama_server: model loaded
+0.00.887.984 I srv  llama_server: listening on http://127.0.0.1:41667
+0.01.056.498 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.01.056.747 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.01.109.947 I slot print_timing: id  0 | task 0 | prompt eval time =      47.76 ms /    19 tokens (    2.51 ms per token,   397.80 tokens per second)
+0.01.109.955 I slot print_timing: id  0 | task 0 |        eval time =       5.33 ms /     2 tokens (    5.33 ms per token,   187.79 tokens per second)
+0.01.109.956 I slot print_timing: id  0 | task 0 |       total time =      53.09 ms /    21 tokens
+0.01.109.963 I slot print_timing: id  0 | task 0 |    graphs reused =          0
+0.01.110.029 I slot      release: id  0 | task 0 | stop processing: n_tokens = 20, truncated = 0
+0.01.159.689 I srv    operator(): operator(): cleaning up before exit...

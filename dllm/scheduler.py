@@ -251,18 +251,17 @@ class BatchedRuntime:
         return None
 
     def _prepare(self,request,executor):
-        from .prompts import encode
+        from .prompts import encode,validate_lengths,decoder_prefix
         thinking=request.enable_thinking
         if request.schema is not None and request.raw_prompt is None and executor.model.config['model_type'] in ('qwen3','qwen3_5_text'):
             thinking=False
         tokens=encode(executor.model,request.messages,request.raw_prompt,thinking)
-        if len(tokens)+request.max_tokens>executor.context:
-            raise ValueError('prompt plus max_tokens exceeds configured context')
+        validate_lengths(executor,len(tokens),request.max_tokens)
         if request.schema is not None:
             from .structured import Constraint
             request.sampler.constraint=Constraint(executor.model,request.schema)
         if request.sampler.has_adjustments:
-            request.sampler.prepare(tokens,executor.model.config['vocab_size'])
+            request.sampler.prepare(decoder_prefix(executor,tokens),executor.model.config['vocab_size'])
         if request.sampler.logprobs_top is not None:
             from .logprobs import decoder_for
             request.sampler.token_decoder=decoder_for(executor.model)
@@ -496,6 +495,8 @@ class BatchedRuntime:
                 executor.release_request(slot)
 
     def _group(self, first, executor, tier, activation):
+        if getattr(executor,'is_encoder_decoder',False) and (self.prefill_chunk_size or self.prefix_cache_tokens):
+            raise ValueError('T5 does not yet support prompt chunking or prefix snapshots')
         if hasattr(executor,'reserve_request'):
             return self._paged_group(first,executor,tier,activation)
         if (self.prefill_chunk_size or self.prefix_cache_tokens) and getattr(executor,'supports_chunked_prefill',False):

@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "device": "NVIDIA A2",
+  "checks": [
+    {
+      "dtype": "torch.float16",
+      "dim": 64,
+      "max_error": 0.00048828125
+    },
+    {
+      "dtype": "torch.float16",
+      "dim": 96,
+      "max_error": 0.0009765625
+    },
+    {
+      "dtype": "torch.float16",
+      "dim": 128,
+      "max_error": 0.0001220703125
+    },
+    {
+      "dtype": "torch.float32",
+      "dim": 64,
+      "max_error": 3.5762786865234375e-06
+    },
+    {
+      "dtype": "torch.float32",
+      "dim": 96,
+      "max_error": 4.0531158447265625e-06
+    },
+    {
+      "dtype": "torch.float32",
+      "dim": 128,
+      "max_error": 7.778406143188477e-06
+    }
+  ]
+}

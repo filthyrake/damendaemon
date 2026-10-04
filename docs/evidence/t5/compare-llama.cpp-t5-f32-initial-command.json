@@ -1,0 +1,40 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/baselines/llama-cuda-build/bin/llama-server",
+    "-m",
+    "baselines/flan-t5-small-f32.gguf",
+    "--alias",
+    "a",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "48401",
+    "-ngl",
+    "99",
+    "-c",
+    "2048",
+    "-np",
+    "4",
+    "--kv-unified-per-slot",
+    "512",
+    "--cache-type-k",
+    "f32",
+    "--cache-type-v",
+    "f32",
+    "--flash-attn",
+    "on",
+    "--cache-ram",
+    "0",
+    "--jinja"
+  ],
+  "model": {
+    "repo": "google/flan-t5-small",
+    "revision": "0fc9ddf78a1e988dac52e2dac162b0ede4fd74ab",
+    "path": "/home/damen/dllm-dev/models/flan-t5-small"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_QUANTIZATION": "none",
+    "DLLM_DEVICE": "cuda"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "device": "mps",
+  "model": "results/models/flan-t5-small",
+  "other_model": "results/models/qwen2",
+  "text_and_token_prompts_equal": true,
+  "stream_and_nonstream_equal": true,
+  "concurrent_isolation": true,
+  "full_encoder_context_with_output": true,
+  "oversized_requests_rejected": true,
+  "chat_rejected": true,
+  "cancellation_recovery": true,
+  "decoder_only_switch_and_host_restore": true,
+  "sample": {
+    "id": "cmpl-b8a526057951429fba82924005f1f342",
+    "object": "text_completion",
+    "created": 1791117783,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": "Die Blue Bird flies \u00fcber das",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 19,
+      "completion_tokens": 8,
+      "total_tokens": 27
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 0.21562933397945017,
+      "cached_prompt_tokens": 0,
+      "kernel_backend": "metal",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 0.2563698749872856,
+      "total_seconds": 0.36851829197257757,
+      "decode_tokens_per_second": 62.417287628037
+    }
+  },
+  "unsupported_cache_options_rejected": true
+}

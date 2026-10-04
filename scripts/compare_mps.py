@@ -26,6 +26,7 @@ def main():
     p.add_argument('--raw', action='store_true')
     p.add_argument('--llama-override-kv', action='append', default=[], help='explicit GGUF metadata override KEY=TYPE:VALUE')
     p.add_argument('--prompt-token-ids')
+    p.add_argument('--max-tokens',type=int,default=64)
     args = p.parse_args()
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
@@ -68,6 +69,7 @@ def main():
                     with (output / f'compare-mps-{engine}-c{concurrency}.json').open('w') as out:
                         subprocess.run([sys.executable, 'scripts/compare_llama.py', base+'/v1',
                             '--engine', engine, '--concurrency', str(concurrency),
+                            '--max-tokens',str(args.max_tokens),
                             *(['--raw'] if args.raw else []),
                             *(['--prompt-token-ids',args.prompt_token_ids] if args.prompt_token_ids else [])], env=env,
                             stdout=out, check=True, timeout=300)

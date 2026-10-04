@@ -534,3 +534,19 @@ These are raw model log probabilities before sampling filters, bias, penalties
 or grammar constraints. Custom text stops combined with scores, raw-completion
 logprobs and prompt scoring are currently rejected. See the independent A2/M4
 proof and measured overhead in [logprob evidence](docs/evidence/logprobs/README.md).
+
+### T5 text encoder-decoder
+
+Pinned FLAN-T5-small runs independently on CUDA and Apple Silicon, with separate
+encoder and decoder context lengths, native GPU projections, and CUDA graph
+replay. Use raw completions and `--context 512`, for example:
+
+```sh
+dllm run google/flan-t5-small --raw --context 512 --max-tokens 32 \
+  --prompt 'translate English to German: How old are you?'
+```
+
+Both GPUs pass 198 independent reference-logit checks and real streaming,
+concurrency, cancellation and model-switching proofs. Initial storage/compute is
+FP32. T5 quantization, chat templates, paged KV, prefix snapshots and chunked
+prefill are not supported. [Evidence and measured performance](docs/evidence/t5/README.md).

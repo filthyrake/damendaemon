@@ -1,6 +1,21 @@
 """Shared raw-prompt validation and chat/raw dispatch."""
 
 
+def validate_lengths(executor,prompt_tokens,max_tokens):
+    if getattr(executor,'is_encoder_decoder',False):
+        if prompt_tokens>executor.context or max_tokens>executor.context:
+            raise ValueError('encoder prompt or decoder output exceeds configured context')
+    elif prompt_tokens+max_tokens>executor.context:
+        raise ValueError('prompt plus max_tokens exceeds configured context')
+
+
+def decoder_prefix(executor,prompt):
+    """Repetition penalties apply to decoder history, not encoder input."""
+    if getattr(executor,'is_encoder_decoder',False):
+        return [executor.model.config['decoder_start_token_id']]
+    return prompt
+
+
 def validate_raw(prompt):
     if isinstance(prompt, str):
         return prompt

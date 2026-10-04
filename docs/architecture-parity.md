@@ -1021,3 +1021,17 @@ The M4 binary reports build 11381 at that commit; the A2 archive-built binary
 reports commit unknown, so its provenance relies on the existing pinned source
 archive/build record. Comparator commands and raw trials are committed. The A30
 workload was left running; all NVIDIA inference work selected the A2 UUID.
+
+## T5 encoder-decoder (issue #29)
+
+FLAN-T5-small adds independently implemented text encoder-decoder inference on
+A2 and M4: bidirectional relative encoder attention, causal relative decoder
+attention, cached cross-attention and gated GELU. Separate context accounting
+allows a full encoder input plus decoder output. CUDA uses native attention and
+graph replay; Apple uses native projection/norm kernels with SDPA attention.
+
+[Qualification, limitations and initial timing evidence](evidence/t5/README.md)
+include 198 independent FP32 logit checks per GPU plus real API and residency
+proof. FLAN-T5-small is the qualified checkpoint; configuration acceptance alone
+does not qualify other T5 variants. The current llama.cpp server baseline fails
+startup or matched output validation, so no comparative speed claim is made.

@@ -8,6 +8,7 @@ intermediates before storing FP16 inputs for the next matrix operation.
 Decode attention uses a live-length mask and splits long contexts into blocks.
 """
 import torch
+import math
 import triton as tr
 import triton.language as tl
 
@@ -102,6 +103,7 @@ def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, q_norm=None, k
 
 @tr.jit
 def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE, ALIBI, HAS_ALIBI: tl.constexpr,
+               REL, REL_BUCKETS: tl.constexpr, REL_DENOM: tl.constexpr,
                PAGES, PAGED: tl.constexpr, PAGE_SIZE: tl.constexpr, MAX_PAGES: tl.constexpr,
                H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr,
                C: tl.constexpr, SPLITS: tl.constexpr, BLOCK: tl.constexpr, SLOTTED: tl.constexpr, WINDOW: tl.constexpr, SCALE: tl.constexpr, BD: tl.constexpr):
@@ -127,6 +129,12 @@ def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE, ALIBI, HAS_ALIBI: tl.constex
         logits = tl.sum(k * q[None, :], 1) * SCALE
         if HAS_ALIBI:
             logits += tl.load(ALIBI + head) * times
+        if REL_BUCKETS:
+            distance=tl.maximum(position-times,0)
+            exact=REL_BUCKETS//2
+            large=exact+(tl.log(tl.maximum(distance,exact).to(tl.float32)/exact)/REL_DENOM*(REL_BUCKETS-exact)).to(tl.int32)
+            bucket=tl.where(distance<exact,distance,tl.minimum(large,REL_BUCKETS-1)).to(tl.int32)
+            logits+=tl.load(REL+head*REL_BUCKETS+bucket)
         logits = tl.where(valid, logits, -float("inf"))
         maximum = tl.max(logits, 0)
         weights = tl.exp(logits - maximum)
@@ -157,11 +165,20 @@ def _merge(PART, LSE, OUT, D: tl.constexpr, S: tl.constexpr, BLOCK: tl.constexpr
     tl.store(OUT + head * D + cols, tl.sum(partial * weights[:, None], 0), cols < D)
 
 
-def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=None, alibi=None, page_table=None):
+def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=None, alibi=None, page_table=None,
+              relative_bias=None,relative_max_distance=128):
     batch, heads, _, dim = query.shape
     if alibi is not None and (alibi.shape != (heads,) or alibi.dtype != torch.float32
                               or alibi.device != query.device or not alibi.is_contiguous()):
         raise ValueError('ALiBi needs one contiguous FP32 slope per query head on the same device')
+    buckets=0
+    if relative_bias is not None:
+        if (relative_bias.ndim!=2 or relative_bias.shape[0]!=heads or relative_bias.shape[1]<2
+                or relative_bias.shape[1]%2 or relative_bias.dtype!=torch.float32
+                or relative_bias.device!=query.device or not relative_bias.is_contiguous()
+                or type(relative_max_distance) is not int or relative_max_distance<=relative_bias.shape[1]//2):
+            raise ValueError('invalid relative attention bias')
+        buckets=relative_bias.shape[1]
     _, kv_heads, context, _ = cache_k.shape
     page_size = context
     max_pages = 0 if page_table is None else page_table.shape[1]
@@ -175,6 +192,8 @@ def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=No
     _attention[(batch * heads, splits)](query, cache_k, cache_v, positions,
                                positions if slots is None else slots, out, partial, lse,
                                positions if alibi is None else alibi, alibi is not None,
+                               positions if relative_bias is None else relative_bias,buckets,
+                               math.log(relative_max_distance/(buckets//2)) if buckets else 1.,
                                positions if page_table is None else page_table, page_table is not None, page_size, max_pages,
                                heads, kv_heads, dim, context, splits, block, slots is not None, window, dim ** -.5 if scale is None else scale, tr.next_power_of_2(dim), num_warps=4)
     if splits > 1:

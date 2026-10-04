@@ -31,6 +31,10 @@ def main():
     parser.add_argument('--llama-override-kv', action='append', default=[], help='explicit GGUF metadata override KEY=TYPE:VALUE')
     parser.add_argument('--prompt-token-ids')
     parser.add_argument('--top-logprobs',type=int,choices=range(21),default=None)
+    parser.add_argument('--max-tokens',type=int,default=64)
+    parser.add_argument('--llama-flash-attn',choices=('on','off','auto'),default='on')
+    parser.add_argument('--batch-size',type=int,choices=range(1,9),default=4)
+    parser.add_argument('--concurrencies',nargs='+',type=int,choices=range(1,9),default=[1,2,4])
     parser.add_argument('--host-gib', type=float, default=8)
     parser.add_argument('--dtype', choices=('half','float'), default='half', help='vLLM model arithmetic/storage precision')
     args = parser.parse_args()
@@ -52,20 +56,20 @@ def main():
         env = dict(os.environ)
         if engine == 'dllm':
             command = [sys.executable, '-m', 'dllm', 'serve', '--port', str(port), '--context', str(args.context),
-                       '--batch-size', '4', '--host-gib', str(args.host_gib), '--model', 'a=' + model['path']]
+                       '--batch-size', str(args.batch_size), '--host-gib', str(args.host_gib), '--model', 'a=' + model['path']]
         elif engine == 'llama.cpp':
             command = [str(root / 'baselines/llama-cuda-build/bin/llama-server'),
                        '-m', args.gguf, '--alias', 'a', '--host', '127.0.0.1', '--port', str(port),
-                       '-ngl', '99', '-c', str(args.context*4), '-np', '4',
+                       '-ngl', '99', '-c', str(args.context*args.batch_size), '-np', str(args.batch_size),
                        '--kv-unified-per-slot', str(args.context),
                        '--cache-type-k', args.llama_kv_dtype, '--cache-type-v', args.llama_kv_dtype,
-                       '--flash-attn', 'on', '--cache-ram', '0', '--jinja',
+                       '--flash-attn', args.llama_flash_attn, '--cache-ram', '0', '--jinja',
                        *[part for value in args.llama_override_kv for part in ('--override-kv',value)]]
         else:
             venv = root / 'baselines/vllm-venv/bin'
             command = [str(venv / 'vllm'), 'serve', model['path'], '--served-model-name', 'a',
                        '--host', '127.0.0.1', '--port', str(port), '--dtype', args.dtype,
-                       '--max-model-len', str(args.context), '--max-num-seqs', '4', '--gpu-memory-utilization', str(args.gpu_memory_utilization),
+                       '--max-model-len', str(args.context), '--max-num-seqs', str(args.batch_size), '--gpu-memory-utilization', str(args.gpu_memory_utilization),
                        '--no-enable-prefix-caching', '--generation-config', 'vllm']
             config = json.loads((Path(model['path']) / 'config.json').read_text())
             if config.get('vision_config') is not None:
@@ -96,11 +100,12 @@ def main():
                     raise TimeoutError(f'{engine} startup timed out')
                 if engine == 'llama.cpp':
                     (root / f'compare-{engine}-{args.label}-context.json').write_text(json.dumps(llama_context(base, args.context), indent=2))
-                for concurrency in (1, 2, 4):
+                for concurrency in args.concurrencies:
                     name = f'compare-{engine}-{args.label}-c{concurrency}.json'
                     with (root / name).open('w') as out:
                         subprocess.run([sys.executable, 'scripts/compare_llama.py', base + '/v1',
                                         '--engine', engine, '--concurrency', str(concurrency), '--thinking', args.thinking,
+                                        '--max-tokens',str(args.max_tokens),
                                         *(['--raw'] if args.raw else []),
                                         *(['--top-logprobs',str(args.top_logprobs)] if args.top_logprobs is not None else []),
                                         *(['--prompt-token-ids', args.prompt_token_ids] if args.prompt_token_ids else [])],

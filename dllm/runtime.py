@@ -246,16 +246,15 @@ class Runtime:
             model = executor.model
             if sampler.logprobs_top is not None:
                 sampler.token_decoder=decoder_for(model)
-            from .prompts import encode
+            from .prompts import encode,validate_lengths,decoder_prefix
             if schema is not None and raw_prompt is None and model.config["model_type"] in ("qwen3", "qwen3_5_text"):
                 enable_thinking = False
             prompt = encode(model, messages, raw_prompt, enable_thinking)
-            if len(prompt) + max_tokens > self.context:
-                raise ValueError("prompt plus max_tokens exceeds configured context")
+            validate_lengths(executor,len(prompt),max_tokens)
             if schema is not None:
                 sampler.constraint = Constraint(model, schema)
             if sampler.has_adjustments:
-                sampler.prepare(prompt,model.config['vocab_size'])
+                sampler.prepare(decoder_prefix(executor,prompt),model.config['vocab_size'])
             with request_kv(executor, len(prompt)+max_tokens):
                 first = sampler.select(executor.prefill(prompt).squeeze(0)).item()
                 output = []
@@ -310,6 +309,9 @@ def make_executor(model, use_graph=True, max_batch=None, **kwargs):
         if kwargs.pop('fuse_projections',True) is False:
             raise ValueError('paged KV requires fused projections')
         return PagedExecutor(model,use_graph,max_batch or 1,cache_tokens=int(budget),**kwargs)
+    if model.config['model_type']=='t5':
+        from .t5 import T5Executor
+        return T5Executor(model,use_graph,max_batch or 1,**kwargs)
     if model.config['model_type'] == 'bloom':
         from .bloom import BloomExecutor
         if kwargs.pop('fuse_projections', True) is False:
