@@ -1,0 +1,30 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/venv/bin/python",
+    "-m",
+    "dllm",
+    "serve",
+    "--port",
+    "34855",
+    "--context",
+    "2048",
+    "--batch-size",
+    "4",
+    "--host-gib",
+    "8",
+    "--model",
+    "a=/home/damen/.cache/huggingface/hub/models--unsloth--Llama-3.2-1B-Instruct/snapshots/5a8abab4a5d6f164389b1079fb721cfab8d7126c"
+  ],
+  "model": {
+    "path": "/home/damen/.cache/huggingface/hub/models--unsloth--Llama-3.2-1B-Instruct/snapshots/5a8abab4a5d6f164389b1079fb721cfab8d7126c",
+    "revision": "5a8abab4a5d6f164389b1079fb721cfab8d7126c"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_LLAMA_PRECISION": "standard",
+    "DLLM_KV_CACHE_TOKENS": "8192",
+    "DLLM_QUANTIZATION": "q4_0",
+    "DLLM_DEVICE": "cuda",
+    "DLLM_WEIGHT_CACHE": "/home/damen/dllm-dev/baselines/prepared-weight-cache"
+  }
+}

@@ -141,3 +141,31 @@ Outputs match across cache modes, concurrent requests and model eviction/host
 restore. These are warmed prompt-reuse results, not improvements to uncached
 model throughput. The physical pool only fits one of these long reservations
 at a time, so concurrent hits also exercise capacity deferral.
+
+Accurate Qwen3 Q4 also passes all 48 independent prefix checks (maximum relative
+RMS 4.85e-6). The separate live 512-token-pool test with both 128-token chunks
+and 512-token prefix snapshots passes cancellation, pressure, model switching
+and zero remaining ownership (`paged-prefix-pressure.json`).
+
+## Llama mixed residual precision
+
+`DLLM_LLAMA_PRECISION=mixed` retains FP16 weights, projections and KV but uses
+FP32 residual accumulation and precise normalization/rotary/activation
+arithmetic. The default standard policy is unchanged during qualification.
+The 82-check Llama Q4 trace now passes with graph replay for full paged prefill,
+128-token paged chunks and 128-token fixed-cache chunks. Maximum relative RMS
+is 0.004702 for full paged prefill and 0.008202 for either chunked path, below
+the unchanged 0.01 gate. The earlier failed standard-policy traces are retained.
+
+Matched A2 serving, same Llama checkpoint/Q4 weights, 2048 context, 8192-token
+physical pool, 64 requested outputs and five warm rounds:
+
+| Concurrent requests | Standard tokens/s | Mixed tokens/s | Standard TTFT ms | Mixed TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 102.41 | 101.20 | 32.25 | 32.72 |
+| 2 | 182.90 | 187.10 | 57.88 | 47.28 |
+| 4 | 335.17 | 331.98 | 103.61 | 103.72 |
+
+The roughly 1% throughput differences at concurrency 1/4 and improvement at 2
+do not establish a speedup. The change addresses numerical accuracy with a
+small measured cost; broader 8K/prefix qualification continues.
