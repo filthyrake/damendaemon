@@ -1,0 +1,73 @@
+{
+  "device": "NVIDIA A2",
+  "model_path": "/home/damen/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/snapshots/1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "torch_version": "2.6.0+cu124",
+  "rounds": 30,
+  "compute_dtype": "torch.float16",
+  "scope": "warmed encoder; includes input upload and vector download; excludes tokenization and HTTP",
+  "results": [
+    {
+      "batch": 1,
+      "tokens_per_input": 32,
+      "median_ms": 0.6673764983133879,
+      "p95_ms": 0.6887959971209057,
+      "inputs_per_second": 1498.40457751693
+    },
+    {
+      "batch": 8,
+      "tokens_per_input": 32,
+      "median_ms": 1.542338497529272,
+      "p95_ms": 1.6133839963003993,
+      "inputs_per_second": 5186.928818035399
+    },
+    {
+      "batch": 32,
+      "tokens_per_input": 32,
+      "median_ms": 5.137400999956299,
+      "p95_ms": 5.16412499564467,
+      "inputs_per_second": 6228.830492358336
+    },
+    {
+      "batch": 1,
+      "tokens_per_input": 128,
+      "median_ms": 1.0327165000489913,
+      "p95_ms": 1.0544690012466162,
+      "inputs_per_second": 968.3199599818157
+    },
+    {
+      "batch": 8,
+      "tokens_per_input": 128,
+      "median_ms": 4.96462150113075,
+      "p95_ms": 5.016578004870098,
+      "inputs_per_second": 1611.401795318718
+    },
+    {
+      "batch": 32,
+      "tokens_per_input": 128,
+      "median_ms": 18.464313499862328,
+      "p95_ms": 18.534488997829612,
+      "inputs_per_second": 1733.0728272263464
+    },
+    {
+      "batch": 1,
+      "tokens_per_input": 256,
+      "median_ms": 1.6632709994155448,
+      "p95_ms": 1.7128939944086596,
+      "inputs_per_second": 601.2249358952264
+    },
+    {
+      "batch": 8,
+      "tokens_per_input": 256,
+      "median_ms": 10.263398497045273,
+      "p95_ms": 10.313280996342655,
+      "inputs_per_second": 779.4689061623319
+    },
+    {
+      "batch": 32,
+      "tokens_per_input": 256,
+      "median_ms": 38.83863250302966,
+      "p95_ms": 39.89626299880911,
+      "inputs_per_second": 823.9219029532978
+    }
+  ]
+}

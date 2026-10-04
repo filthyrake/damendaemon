@@ -558,8 +558,18 @@ claim is made. CUDA and Apple arithmetic and PyTorch versions differ. Full
 measurements, reference checks, and API checks are in `evidence/embeddings/`;
 `scripts/benchmark_encoder.py` reproduces the warmed workload.
 
-Remaining limits: no embedding CUDA graphs or request coalescing, no shortening
+Remaining limits: no request coalescing, no shortening
 of vectors, quantized encoders, reranking, general encoder-decoder generation,
 or arbitrary SentenceTransformers pooling modules. Each HTTP request executes
 its own input batch; generation groups drain before an embedding request.
 The global quantization setting must remain `none` when serving this encoder.
+
+CUDA graph follow-up: bounded LRU reuse (four batch/length shapes, batches up to
+8) reduces 32-token input latency from 3.06 to **0.67 ms** at batch1, and from
+3.66 to **1.54 ms** at batch8 (1498 and 5187 inputs/s respectively). At 256 tokens,
+batch1 improves from 3.26 to **1.66 ms**; larger compute-bound batches change
+little. First use of a shape pays warmup/capture cost; these are warm medians,
+not cold request latency. `--no-graphs` disables reuse. The expanded numerical
+proof also exercises replay with changed data, graph cache eviction, and
+retained output tensors. Live HTTP/model-switching checks pass with graphs.
+Request coalescing remains unimplemented. See `minilm-a2-graphs-*.json`.

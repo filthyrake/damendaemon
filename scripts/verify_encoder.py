@@ -56,6 +56,18 @@ def main():
     seed=tokenizer.encode('blue',add_special_tokens=False)[0]
     check([[tokenizer.cls_token_id]+[seed]*(length-2)+[tokenizer.sep_token_id] for length in (2,127,255,256)])
     assert torch.dot(mixed[0],mixed[1])>torch.dot(mixed[0],mixed[2])
+    # Replay with different input data and churn the bounded cache. Returned
+    # device vectors must remain valid even when a subsequent replay completes.
+    if executor.use_graph:
+        first_tokens=model.encode([texts[0]])
+        retained=executor.embed(first_tokens)
+        snapshot=retained.clone()
+        executor.embed([[tokenizer.cls_token_id]+[seed]*(len(first_tokens[0])-2)+[tokenizer.sep_token_id]])
+        assert torch.equal(retained,snapshot), 'graph replay mutated returned vectors'
+        for length in (3,7,15,31,63,127):
+            check([[tokenizer.cls_token_id]+[seed]*(length-2)+[tokenizer.sep_token_id]])
+            assert len(executor.graphs)<=4
+        check([texts[0]])
     for bad in ([[seed]*257],[[model.config['vocab_size']]],[[True]],[[1.5]],[]):
         try:model.encode(bad);raise AssertionError('invalid encoder input accepted')
         except ValueError:pass

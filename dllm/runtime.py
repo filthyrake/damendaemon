@@ -270,7 +270,7 @@ def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     """Choose an execution path from the validated architecture, not the model name."""
     if model.config.get('task') == 'embedding':
         from .encoder import EncoderExecutor
-        return EncoderExecutor(model)
+        return EncoderExecutor(model,use_graph=use_graph)
     if model.config['model_type'] == 'olmoe':
         from .moe import OlmoeExecutor
         if kwargs.pop('fuse_projections', True) is False:

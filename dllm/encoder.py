@@ -1,4 +1,5 @@
 """Independent BERT sentence encoder with masked mean pooling and L2 normalization."""
+from collections import OrderedDict
 import json
 import math
 from pathlib import Path
@@ -120,12 +121,14 @@ class EncoderWeights:
 
 
 class EncoderExecutor:
-    def __init__(self,model,**kwargs):
+    def __init__(self,model,use_graph=True,**kwargs):
         self.model,self.context = model,model.max_context
         self.device = selected_device()
         self.compute_dtype = torch.float16 if self.device == 'cuda' else torch.float32
         self.residual_dtype = torch.float32
         self.kernel_backend = 'torch-'+self.device+'-bert'
+        self.use_graph = use_graph and self.device == 'cuda'
+        self.graphs = OrderedDict()
         empty_cache()
         def dtype(name):
             return torch.float32 if name in ('embed','position','type') or 'norm' in name else self.compute_dtype
@@ -142,6 +145,35 @@ class EncoderExecutor:
                            device=self.device,dtype=torch.long)
         lengths = torch.tensor([len(values) for values in tokens],device=self.device)
         mask = torch.arange(length,device=self.device)[None,:] < lengths[:,None]
+        # Bound retained graph allocations and avoid capturing large padded batches.
+        if self.use_graph and batch <= 8:
+            key = (batch,length)
+            if key not in self.graphs:
+                if len(self.graphs) >= 4:
+                    torch.cuda.synchronize()
+                    self.graphs.popitem(last=False)
+                stream = torch.cuda.Stream()
+                stream.wait_stream(torch.cuda.current_stream())
+                with torch.cuda.stream(stream):
+                    for _ in range(3):
+                        self._forward(ids,mask)
+                torch.cuda.current_stream().wait_stream(stream)
+                graph = torch.cuda.CUDAGraph()
+                with torch.cuda.graph(graph):
+                    output = self._forward(ids,mask)
+                self.graphs[key] = (graph,ids,mask,output)
+            graph,static_ids,static_mask,output = self.graphs[key]
+            static_ids.copy_(ids)
+            static_mask.copy_(mask)
+            graph.replay()
+            self.graphs.move_to_end(key)
+            # Do not expose a buffer overwritten by a later request's replay.
+            return output.clone()
+        return self._forward(ids,mask)
+
+    def _forward(self,ids,mask):
+        w,c = self.w,self.model.config
+        batch,length = ids.shape
         def norm(value,name):
             return F.layer_norm(value,(c['hidden_size'],),w[name+'.weight'],w[name+'.bias'],c['layer_norm_eps'])
         def linear(value,name):return F.linear(value.to(self.compute_dtype),w[name+'.weight'],w[name+'.bias'])
