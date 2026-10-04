@@ -34,7 +34,8 @@ def main():
         from dllm.quantized_kernels import linear
         require_gpu()
         for rows,width,outputs in ((1,896,151936),(2,3072,32064),(4,8192,3072),(3,96,113),(7,96,113),
-                                   (33,896,1024),(64,4096,3072)):
+                                   (17,96,113),(23,4096,3072),(33,896,1024),(64,4096,3072),
+                                   (65,96,113),(92,14336,4096),(128,96,113),(129,96,113)):
             weight = torch.randn(outputs,width) * .02
             data, scales = quantize(weight)
             data, scales = data.cuda(), scales.cuda()

@@ -42,9 +42,14 @@ def _matmul(X, W, S, BIAS, Y, M: tl.constexpr, N: tl.constexpr, K: tl.constexpr,
 
 def matmul(x, weight, scales, bias=None):
     result = torch.empty((x.shape[0],weight.shape[0]),device=x.device,dtype=x.dtype)
-    _matmul[(tr.cdiv(x.shape[0],16),tr.cdiv(weight.shape[0],64))](x,weight,scales,
+    # A2 measurements favor wider row tiles for short prompt batches.
+    rows = x.shape[0]
+    bm = 16 if rows <= 16 else tr.next_power_of_2(rows)
+    bk = 128 if rows <= 16 else 64
+    warps = 8 if bm == 128 else 4
+    _matmul[(tr.cdiv(rows,bm),tr.cdiv(weight.shape[0],64))](x,weight,scales,
         weight if bias is None else bias,result,x.shape[0],weight.shape[0],weight.shape[1],
-        16,64,128,bias is not None,num_warps=4,num_stages=3)
+        bm,64,bk,bias is not None,num_warps=warps,num_stages=3)
     return result
 
 
@@ -71,7 +76,7 @@ def _linear(X, W, S, BIAS, Y, K: tl.constexpr, N: tl.constexpr,
 def linear(x, weight, scales, bias=None):
     shape = x.shape[:-1]
     x = x.reshape(-1,x.shape[-1]).contiguous()
-    if x.dtype == torch.float16 and 2 <= x.shape[0] <= 16:
+    if x.dtype == torch.float16 and 2 <= x.shape[0] <= 128:
         result = matmul(x,weight,scales,bias)
     elif x.shape[0] > 4:
         result = torch.nn.functional.linear(x, expand(weight, scales, x.dtype), bias)

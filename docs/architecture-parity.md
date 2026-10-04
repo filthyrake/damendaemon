@@ -371,3 +371,22 @@ model switching and concurrency. Reports are `olmoe-q8-replay.json` and
 This qualifies execution against independently quantized weights; original
 checkpoint task quality, longer contexts and comparative MoE performance remain
 open measurements.
+
+## Q8 short-prefill latency
+
+Fused dequantization/Tensor Core multiplication now handles 2–128 FP16 rows;
+larger prompts and FP32 input retain the existing path. A2 measurements select
+32/64/128-row tiles for short prefills. Twenty-six native matrix cases and all
+82 Qwen2, 84 Qwen3.5 and 97 Mistral reference checks pass.
+
+Repeating the identical-token Mistral comparison above after this change gives:
+
+| Concurrency | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 20.56 | 20.71 | 84.3 | 89.4 |
+| 2 | 31.50 | 39.63 | 150.9 | 100.5 |
+| 4 | 59.63 | 61.78 | 309.2 | 143.6 |
+
+Single-request prompt latency improves 2.76x. Batch-two decode and batched
+prefill remain gaps; these results do not establish universal engine parity.
+Reports use the `mistral-q8-prefill` label in `evidence/quantization`.
