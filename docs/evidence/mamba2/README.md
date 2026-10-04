@@ -53,10 +53,13 @@ tokens and five warm rounds. llama.cpp pinned commit remains
 |---|---:|---:|---:|---|
 | A2 dllm | 224.76 | 293.30 | 508.05 | 20.50 / 22.85 / 45.00 |
 | A2 llama.cpp | 149.07 | 206.48 | 301.26 | 32.69 / 53.12 / 100.79 |
+| A2 vLLM | 188.64 | 229.48 | 412.85 | 58.47 / 118.05 / 127.87 |
 | M4 dllm | 39.37 | 78.37 | 201.08 | 34.68 / 47.09 / 60.17 |
 | M4 llama.cpp | 79.43 | 85.41 | 114.85 | 33.00 / 69.88 / 85.07 |
 
 Apple single-request performance remains behind; laptop trials vary materially.
 The host profile distinguishes dispatch/readback durations but does not equate
 GPU waits inside a host call with pure Python overhead. These are narrow initial
-measurements, not broad parity claims. vLLM comparison is being measured separately.
+measurements, not broad parity claims. vLLM 0.30 runs with torch 2.13 and FP32
+model dtype; dllm uses torch 2.6 on the A2. This measures the recorded installed
+configurations, not a claim that upstream has been exhaustively tuned.
