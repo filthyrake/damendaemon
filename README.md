@@ -430,8 +430,8 @@ LongRoPE remain unsupported.
 ### GPT-NeoX base models
 
 The independent GPT-NeoX decoder supports partial rotary embeddings and parallel
-residual blocks. Pinned Pythia-160M is qualified on Apple M4 through 2048 context
-and the raw completions API; CUDA qualification is in progress. It uses FP32
+residual blocks. Pinned Pythia-160M is qualified on A2 and Apple M4 through 2048 context
+and the raw completions API. It uses FP32
 storage/arithmetic/KV. Use `dllm run PATH --raw --prompt 'Once upon a time'` or
 `/v1/completions`; the base checkpoint has no chat template. Quantization,
 chunked prefill and prefix reuse are not yet supported for this architecture.

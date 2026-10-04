@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "model_path": "/home/damen/dllm-dev/models/pythia160m",
+  "device": "cuda",
+  "raw_text_equals_token_ids": true,
+  "stream_matches_nonstream": true,
+  "concurrent_batch": 4,
+  "seed_and_stop_passed": true,
+  "base_checkpoint_without_template": true,
+  "rejection_recovery": true,
+  "sample": {
+    "id": "cmpl-0da3b7ad99e34d0982bcadba1d0a3f48",
+    "object": "text_completion",
+    "created": 1791099834,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": "\"\"\"\n    Search a binary search tree with a given value.\n    \"\"\"\n    if isinstance(values, dict",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 11,
+      "completion_tokens": 24,
+      "total_tokens": 35
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 2.9580002879956737,
+      "cached_prompt_tokens": 0,
+      "kernel_backend": "triton",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 3.0882063069948344,
+      "total_seconds": 3.1763097910006763,
+      "decode_tokens_per_second": 261.05664559729485
+    }
+  }
+}

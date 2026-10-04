@@ -856,7 +856,8 @@ On Apple M4, all 82 independent CPU FP32 eager-reference checks pass through
 0.00001517, maximum absolute error 0.01184). Raw text/token-ID completions,
 streaming, concurrent requests, sampling/stops and invalid-request recovery pass.
 The 119-test suite includes geometry rejection and explicit QKV row mapping.
-A2 qualification is still pending; acceptance is not a CUDA checkpoint claim.
+A2 also passes 82/82 checks against the same reference (worst relative RMS
+0.00002888), and its live raw API suite passes.
 
 Matched M4 HTTP comparison: identical checkpoint converted to FP32 GGUF,
 identical explicit prompt IDs, FP32 KV, 2048 context, 64 output tokens, five
