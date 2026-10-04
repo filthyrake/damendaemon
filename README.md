@@ -567,6 +567,14 @@ FP32 runs on both devices; CUDA also supports Q8 matrix weights with FP32
 embeddings and recurrent state. Optional chunked prefill interleaves long prompts
 with decoding; prefix caching restores complete recurrent snapshots (it cannot
 rewind to shorter prefixes). [Latency and correctness evidence](docs/evidence/mamba/chunks/README.md).
-Mamba2 and Falcon hybrids are separate architectures.
+Mamba-2 is separately qualified below; Falcon hybrids remain unsupported.
 [Matched benchmarks and qualification](docs/evidence/mamba/README.md) include
 remaining performance gaps, especially on Apple.
+
+### Mamba-2
+
+The pinned `state-spaces/mamba2-130m` checkpoint runs independently on CUDA and
+Metal after offline safetensors preparation. This adds head-wise recurrence and
+gated normalization, with FP32 state, raw completions, chunking, prefix snapshots
+and model switching through context 2048. Single-group models only; Codestral
+and Falcon hybrids are not covered. [Preparation and real GPU evidence](docs/evidence/mamba2/README.md).

@@ -17,7 +17,8 @@ def main():
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,args.context);executor=make_executor(model,max_batch=4)
     assert model.quantization==args.reference_quantization
-    reference=load_reference(args.model,reference_quantization=args.reference_quantization,local_files_only=True,torch_dtype=torch.float32).eval()
+    reference=load_reference(args.model,reference_quantization=args.reference_quantization,local_files_only=True,torch_dtype=torch.float32,
+        **({'chunk_size':16} if model.config['model_type']=='mamba2' else {})).eval()
     corpus=model.raw_tokens('The blue bird flew over the green field while a dog slept under a tree. '*200)
     states={};checks=[]
     def compare(actual,target,slot,phase):
@@ -28,7 +29,7 @@ def main():
             'greedy_match':match,'passed':relative<.001 and absolute<.03 and match})
     def state_check(slot,cache):
         for layer in (0,model.config['num_hidden_layers']//2,model.config['num_hidden_layers']-1):
-            expected=cache.ssm_states[layer][0].float();actual=executor.state[layer][slot].cpu()
+            actual=executor.state[layer][slot].cpu();expected=cache.ssm_states[layer][0].float().reshape_as(actual)
             relative=((actual-expected).square().mean()/expected.square().mean().clamp_min(1.e-12)).sqrt().item()
             assert relative<.001,(slot,layer,relative)
             torch.testing.assert_close(executor.conv[layer][slot].cpu(),cache.conv_states[layer][0],atol=.001,rtol=.001)
@@ -76,7 +77,9 @@ def main():
         'checks':checks,'recurrent_state_checks':True,
         'slot_reuse':True,'generated_ids':generated,'generated_text':model.tokenizer.decode(generated),
         'reference_quantization':args.reference_quantization,
-        'reference':'CPU FP32 Transformers Mamba eager recurrence; independent GGUF quantization when selected'},indent=2))
+        'architecture':model.config['model_type'],
+        'reference_chunk_size':16 if model.config['model_type']=='mamba2' else None,
+        'reference':'CPU FP32 Transformers; independent GGUF quantization when selected'},indent=2))
     if not passed:raise SystemExit(1)
 
 

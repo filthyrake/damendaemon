@@ -1054,3 +1054,11 @@ GPUs, including CUDA Q8. No rewind to shorter/divergent prefixes is permitted.
 [Qualification and latency tradeoffs](evidence/mamba/chunks/README.md): A2
 128-token chunks reduce the measured active-stream gap from 162 to 23 ms,
 while increasing incoming request time from 206 to 278 ms.
+
+## Mamba-2 (issue #31)
+
+Pinned original 130M weights are independently loaded and executed on CUDA/Metal
+after lossless offline FP32 safetensors preparation. Both GPUs pass 139 reference
+checks plus state, chunk/prefix and real HTTP/residency qualification through
+2048 context. [Evidence and measured gaps](evidence/mamba2/README.md).
+Single-group pure Mamba-2 only; no claim for Codestral or attention hybrids.

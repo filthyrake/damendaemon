@@ -148,7 +148,8 @@ class MambaExecutor:
                 from . import mamba_metal as recurrent
             self.kernels=native;self.recurrent=recurrent
         empty_cache()
-        state_bytes=c['num_hidden_layers']*max_batch*c['intermediate_size']*(c['state_size']+c['conv_kernel'])*4
+        conv_dim=c.get('conv_dim',c['intermediate_size'])
+        state_bytes=c['num_hidden_layers']*max_batch*(c['intermediate_size']*c['state_size']+conv_dim*c['conv_kernel'])*4
         if model.bytes+state_bytes+512*1024**2>available_memory():raise MemoryError('insufficient GPU memory for Mamba')
         copies={};self.w={}
         for name,value in model.weights.items():
@@ -157,7 +158,7 @@ class MambaExecutor:
         if model.scales:
             from .quantization import Linear
             self.linear=Linear(self.w,model.scales,self.device,self.linear)
-        self.conv=[torch.zeros((max_batch,c['intermediate_size'],c['conv_kernel']),device=self.device) for _ in range(c['num_hidden_layers'])]
+        self.conv=[torch.zeros((max_batch,conv_dim,c['conv_kernel']),device=self.device) for _ in range(c['num_hidden_layers'])]
         self.state=[torch.zeros((max_batch,c['intermediate_size'],c['state_size']),device=self.device) for _ in range(c['num_hidden_layers'])]
         self.lengths=[0]*max_batch;self.length=0;self.batch_graphs={}
         self.kernel_backend=('triton' if self.device=='cuda' else 'metal') if self.kernels else 'torch'

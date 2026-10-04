@@ -5,6 +5,9 @@ from pathlib import Path
 
 def config(path):
     value = json.loads((Path(path)/'config.json').read_text())
+    if value.get('model_type')=='mamba2':
+        from .mamba2 import config as mamba_config
+        return mamba_config(path)
     if value.get('model_type')=='mamba':
         from .mamba import config as mamba_config
         return mamba_config(path)
@@ -19,7 +22,9 @@ def config(path):
 
 
 def weight_bytes(path,quantization=None):
-    if config(path).get('model_type')=='mamba':
+    if config(path).get('model_type')=='mamba2':
+        from .mamba2 import weight_bytes as estimate
+    elif config(path).get('model_type')=='mamba':
         from .mamba import weight_bytes as estimate
     elif config(path).get('model_type')=='t5':
         from .t5 import weight_bytes as estimate
@@ -31,6 +36,9 @@ def weight_bytes(path,quantization=None):
 
 
 def load(path,context,quantization=None):
+    if config(path).get('model_type')=='mamba2':
+        from .mamba2 import Mamba2Weights
+        return Mamba2Weights(path,context,quantization=quantization)
     if config(path).get('model_type')=='mamba':
         from .mamba import MambaWeights
         return MambaWeights(path,context,quantization=quantization)

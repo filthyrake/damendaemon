@@ -19,7 +19,8 @@ def main():
     model=load(args.model,2048,quantization=args.quantization)
     executor=make_executor(model,max_batch=4)
     reference=load_reference(args.model,reference_quantization=args.quantization,
-        local_files_only=True,torch_dtype=torch.float32).eval()
+        local_files_only=True,torch_dtype=torch.float32,
+        **({'chunk_size':16} if model.config['model_type']=='mamba2' else {})).eval()
     corpus=model.raw_tokens('The blue bird flew over the green field while a dog slept under a tree. '*200)
     checks=[]
     def check(ids,slot,logits,label):
@@ -29,7 +30,7 @@ def main():
         assert relative<.001 and (actual-expected).abs().max()<.03,(label,relative)
         assert actual.argmax()==expected.argmax(),label
         for layer in (0,model.config['num_hidden_layers']//2,model.config['num_hidden_layers']-1):
-            target=ref.cache_params.ssm_states[layer][0].float()
+            target=ref.cache_params.ssm_states[layer][0].float().reshape_as(executor.state[layer][slot])
             value=executor.state[layer][slot].cpu()
             ratio=((value-target).square().mean()/target.square().mean().clamp_min(1.e-12)).sqrt()
             assert ratio<.001,(label,layer,ratio.item())
@@ -82,6 +83,8 @@ def main():
         'quantization':args.quantization,'checks':checks,'state_checks':True,
         'prefix_no_rewind':True,'independent_snapshot':True,'invalid_state_rejected':True,
         'snapshot_bytes':executor.prefix_state_bytes(len(prompt)),
+        'architecture':model.config['model_type'],
+        'reference_chunk_size':16 if model.config['model_type']=='mamba2' else None,
         'reference':'CPU full prompt recomputation; independently quantized matrices when selected'},indent=2))
 
 

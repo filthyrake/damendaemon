@@ -309,6 +309,9 @@ def make_executor(model, use_graph=True, max_batch=None, **kwargs):
         if kwargs.pop('fuse_projections',True) is False:
             raise ValueError('paged KV requires fused projections')
         return PagedExecutor(model,use_graph,max_batch or 1,cache_tokens=int(budget),**kwargs)
+    if model.config['model_type']=='mamba2':
+        from .mamba2 import Mamba2Executor
+        return Mamba2Executor(model,use_graph=use_graph,max_batch=max_batch or 1,**kwargs)
     if model.config['model_type']=='mamba':
         from .mamba import MambaExecutor
         return MambaExecutor(model,use_graph,max_batch or 1,**kwargs)

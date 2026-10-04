@@ -1,0 +1,273 @@
+{
+  "model": "results/models/mamba2-130m",
+  "device": "Apple MPS",
+  "torch": "2.13.0",
+  "backend": "metal",
+  "context": 512,
+  "batch": 1,
+  "steps": 32,
+  "cuda_graphs": false,
+  "unprofiled_rounds": [
+    {
+      "seconds": 0.5220174579881132,
+      "aggregate_tokens_per_second": 61.3006318281575,
+      "dispatch_median_seconds": 0.0036051660135854036,
+      "readback_median_seconds": 0.013001541985431686
+    },
+    {
+      "seconds": 0.5822760839946568,
+      "aggregate_tokens_per_second": 54.95674797506134,
+      "dispatch_median_seconds": 0.0031457710138056427,
+      "readback_median_seconds": 0.014414833509363234
+    },
+    {
+      "seconds": 0.6536130839958787,
+      "aggregate_tokens_per_second": 48.95862825200386,
+      "dispatch_median_seconds": 0.005092125007649884,
+      "readback_median_seconds": 0.01536912500159815
+    }
+  ],
+  "host_calls": [
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'cpu' of 'torch._C.TensorBase' objects>",
+      "calls": 33,
+      "self_seconds": 0.367945999,
+      "cumulative_seconds": 0.367945999
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.tensor>",
+      "calls": 98,
+      "self_seconds": 0.036913079,
+      "cumulative_seconds": 0.036913079
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/mamba2.py",
+      "line": 98,
+      "function": "run",
+      "calls": 33,
+      "self_seconds": 0.007236203,
+      "cumulative_seconds": 0.044944507
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/metal_kernels.py",
+      "line": 195,
+      "function": "linear",
+      "calls": 1617,
+      "self_seconds": 0.00596685,
+      "cumulative_seconds": 0.009423373
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/metal_kernels.py",
+      "line": 181,
+      "function": "rms",
+      "calls": 1617,
+      "self_seconds": 0.0059327880000000005,
+      "cumulative_seconds": 0.007588101000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.embedding>",
+      "calls": 33,
+      "self_seconds": 0.005258462,
+      "cumulative_seconds": 0.005258462
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/mamba_metal.py",
+      "line": 96,
+      "function": "conv",
+      "calls": 792,
+      "self_seconds": 0.0036951700000000002,
+      "cumulative_seconds": 0.004629317
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/mamba2_metal.py",
+      "line": 53,
+      "function": "scan",
+      "calls": 792,
+      "self_seconds": 0.003525699,
+      "cumulative_seconds": 0.004103665
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.empty>",
+      "calls": 2361,
+      "self_seconds": 0.002827869,
+      "cumulative_seconds": 0.002827869
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.empty_like>",
+      "calls": 2409,
+      "self_seconds": 0.0016057040000000001,
+      "cumulative_seconds": 0.0016057040000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'reshape' of 'torch._C.TensorBase' objects>",
+      "calls": 3234,
+      "self_seconds": 0.001557371,
+      "cumulative_seconds": 0.001557371
+    },
+    {
+      "file": "/Users/damenknight/dllm/.venv-metal/lib/python3.12/site-packages/torch/_tensor.py",
+      "line": 1044,
+      "function": "split",
+      "calls": 792,
+      "self_seconds": 0.0014588230000000002,
+      "cumulative_seconds": 0.0028854410000000003
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._nn.linear>",
+      "calls": 48,
+      "self_seconds": 0.001363911,
+      "cumulative_seconds": 0.001363911
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'contiguous' of 'torch._C.TensorBase' objects>",
+      "calls": 4026,
+      "self_seconds": 0.001156972,
+      "cumulative_seconds": 0.001156972
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.split_with_sizes>",
+      "calls": 792,
+      "self_seconds": 0.0009200650000000001,
+      "cumulative_seconds": 0.0009200650000000001
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/mamba.py",
+      "line": 167,
+      "function": "linear",
+      "calls": 1617,
+      "self_seconds": 0.000591871,
+      "cumulative_seconds": 0.010015244000000001
+    },
+    {
+      "file": "/Users/damenknight/dllm/.venv-metal/lib/python3.12/site-packages/torch/autograd/grad_mode.py",
+      "line": 290,
+      "function": "__enter__",
+      "calls": 66,
+      "self_seconds": 0.00046471200000000005,
+      "cumulative_seconds": 0.000968918
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/mamba.py",
+      "line": 174,
+      "function": "norm",
+      "calls": 1617,
+      "self_seconds": 0.00042065,
+      "cumulative_seconds": 0.008008751
+    },
+    {
+      "file": "/Users/damenknight/dllm/.venv-metal/lib/python3.12/site-packages/torch/autograd/grad_mode.py",
+      "line": 294,
+      "function": "__exit__",
+      "calls": 33,
+      "self_seconds": 0.00040970000000000004,
+      "cumulative_seconds": 0.011227166
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/mamba.py",
+      "line": 226,
+      "function": "forward_batch",
+      "calls": 32,
+      "self_seconds": 0.000324495,
+      "cumulative_seconds": 0.039708668
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'argmax' of 'torch._C.TensorBase' objects>",
+      "calls": 33,
+      "self_seconds": 0.000285624,
+      "cumulative_seconds": 0.000285624
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'get' of 'dict' objects>",
+      "calls": 1584,
+      "self_seconds": 0.00027360000000000004,
+      "cumulative_seconds": 0.00027360000000000004
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'numel' of 'torch._C.TensorBase' objects>",
+      "calls": 1617,
+      "self_seconds": 0.000224061,
+      "cumulative_seconds": 0.000224061
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.isinstance>",
+      "calls": 1651,
+      "self_seconds": 0.00018788000000000002,
+      "cumulative_seconds": 0.00018788000000000002
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/metal_kernels.py",
+      "line": 174,
+      "function": "library",
+      "calls": 3186,
+      "self_seconds": 0.000178829,
+      "cumulative_seconds": 0.000178829
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'tolist' of 'torch._C.TensorBase' objects>",
+      "calls": 33,
+      "self_seconds": 0.000174166,
+      "cumulative_seconds": 0.000174166
+    },
+    {
+      "file": "/Users/damenknight/dllm/.venv-metal/lib/python3.12/site-packages/torch/_VF.py",
+      "line": 27,
+      "function": "__getattr__",
+      "calls": 792,
+      "self_seconds": 0.000168972,
+      "cumulative_seconds": 0.000264735
+    },
+    {
+      "file": "/Users/damenknight/dllm/.venv-metal/lib/python3.12/site-packages/torch/autograd/grad_mode.py",
+      "line": 280,
+      "function": "__init__",
+      "calls": 66,
+      "self_seconds": 0.00015354,
+      "cumulative_seconds": 0.00016258400000000001
+    },
+    {
+      "file": "/Users/damenknight/dllm/.venv-metal/lib/python3.12/site-packages/torch/autograd/grad_mode.py",
+      "line": 297,
+      "function": "clone",
+      "calls": 66,
+      "self_seconds": 0.000144997,
+      "cumulative_seconds": 0.000504206
+    },
+    {
+      "file": "/Users/damenknight/dllm/.venv-metal/lib/python3.12/site-packages/torch/autograd/grad_mode.py",
+      "line": 285,
+      "function": "__new__",
+      "calls": 66,
+      "self_seconds": 0.0001417,
+      "cumulative_seconds": 0.00019662500000000002
+    }
+  ],
+  "interpretation": "Host API time may include GPU waits; not a measurement of pure Python overhead. Profiled calls include prefill; unprofiled timing measures decode only."
+}
