@@ -94,3 +94,42 @@ Reproduction scripts: `verify_speculative_service.py`,
 prototype. Raw trials, exact outputs, fallback modes and graph memory evidence
 are in `serving/`. No multi-GPU, recurrent, stochastic or quantized speculation
 claim is made by these results.
+
+## Two-block buffering supersedes the first serving measurements
+
+The initial eight-event queue forced extra single-token steps while a consumer
+was still draining the previous verified block. Eligible requests now retain
+room for two blocks: at most16 events for width8, while ordinary/ineligible
+requests retain eight. The existing queue object is resized under its lock
+before the first event, avoiding a consumer switching between queue objects.
+Proposal count remains bounded by currently free capacity; no unbounded buffer
+or forced client-speed assumption is introduced.
+
+A related pre-existing completion race is fixed: a producer can enqueue its
+last block and finish after a consumer's empty observation but before its done
+check. The consumer now drains any queued events before yielding completion.
+A deterministic unit test injects exactly this interleaving and proves the last
+token is delivered before the final event.
+
+The same six-round alternating A/B HTTP suite passes again. New measurements:
+
+| Model/workload | Ordinary ms | Speculative ms | Ordinary output tokens/s | Speculative output tokens/s |
+|---|---:|---:|---:|---:|
+| Qwen2 repeated sentence | 462.351 | 104.388 | 138.42 | 613.10 |
+| Qwen2 explanation | 465.309 | 448.621 | 137.54 | 142.66 |
+| Qwen2 code/list | 466.083 | 303.487 | 137.31 | 210.88 |
+| Qwen3 repeated sentence | 565.613 | 242.901 | 113.15 | 263.48 |
+| Qwen3 explanation | 564.664 | 566.247 | 113.34 | 113.02 |
+| Qwen3 code/list | 566.080 | 423.617 | 113.06 | 151.08 |
+
+This yields4.43× /1.54× on the Qwen2 repetition/code cases and2.33× /1.34×
+on Qwen3. All prior workload/precision limits still apply; prose remains roughly
+unchanged. The earlier eight-event results stay preserved as historical evidence.
+
+`verify_speculative_backpressure.py` deliberately reaches all16 occupied events
+on each GPU-qualified model, proves a second request finishes while the first
+consumer is blocked, then checks exact token draining. Closing a full stream
+finishes cancellation and a subsequent request produces the reference output.
+The repeated full HTTP suite also passes streaming, concurrency, fallback and
+model lifecycle checks. Updated regression suite:215 tests pass. Raw reports
+are the `sixteen-events` and `backpressure` files under `serving/`.

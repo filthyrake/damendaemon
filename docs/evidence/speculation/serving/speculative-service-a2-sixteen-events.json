@@ -1,0 +1,486 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "speculative_width": 8,
+  "reports": [
+    {
+      "model": "qwen2",
+      "rows": [
+        {
+          "case": "repetition",
+          "baseline_ms": [
+            460.709548991872,
+            462.9202020005323,
+            461.21677999326494,
+            462.83130200754385,
+            461.8716539989691,
+            463.69768599106465
+          ],
+          "speculative_ms": [
+            104.65431299235206,
+            105.64241900283378,
+            111.45346199919004,
+            104.12185000313912,
+            103.83153200382367,
+            103.88039500685409
+          ],
+          "median_baseline_ms": 462.3514780032565,
+          "median_speculative_ms": 104.38808149774559,
+          "example": {
+            "id": "chatcmpl-3791fada3dbe4275bca502445ccdaca1",
+            "object": "chat.completion",
+            "created": 1791134973,
+            "model": "qwen2",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox"
+                },
+                "finish_reason": "length"
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 51,
+              "completion_tokens": 64,
+              "total_tokens": 115
+            },
+            "dllm_timing": {
+              "source_tier": "gpu",
+              "activation_seconds": 2.89799936581403e-06,
+              "cached_prompt_tokens": 0,
+              "speculative_blocks": 9,
+              "speculative_proposed_drafts": 60,
+              "speculative_matched_drafts": 53,
+              "kernel_backend": "triton",
+              "weight_quantization": "none",
+              "max_batch_size": 1,
+              "residual_dtype": "float16",
+              "first_token_seconds": 0.02050683498964645,
+              "total_seconds": 0.10045048099709675,
+              "decode_tokens_per_second": 788.0551256585014
+            }
+          },
+          "exact_response": true
+        },
+        {
+          "case": "explanation",
+          "baseline_ms": [
+            460.0780879991362,
+            472.323702997528,
+            463.50603199971374,
+            467.11272800166626,
+            460.8361800055718,
+            467.24141600134317
+          ],
+          "speculative_ms": [
+            448.246542000561,
+            448.9958499907516,
+            447.75717399897985,
+            446.96498100529425,
+            454.81258899962995,
+            457.12767700024415
+          ],
+          "median_baseline_ms": 465.30938000069,
+          "median_speculative_ms": 448.6211959956563,
+          "example": {
+            "id": "chatcmpl-a4309038d7bf468f98827f2d29179efc",
+            "object": "chat.completion",
+            "created": 1791134977,
+            "model": "qwen2",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "The sky appears blue because it reflects sunlight. When sunlight enters the Earth's atmosphere, it is scattered and scattered again, creating a colorful spectrum of colors. The blue light is scattered the most, which is why the sky appears blue. The other colors of light are scattered less, so they appear as white or gray."
+                },
+                "finish_reason": "length"
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 40,
+              "completion_tokens": 64,
+              "total_tokens": 104
+            },
+            "dllm_timing": {
+              "source_tier": "gpu",
+              "activation_seconds": 2.6610068744048476e-06,
+              "cached_prompt_tokens": 0,
+              "speculative_blocks": 12,
+              "speculative_proposed_drafts": 83,
+              "speculative_matched_drafts": 4,
+              "kernel_backend": "triton",
+              "weight_quantization": "none",
+              "max_batch_size": 1,
+              "residual_dtype": "float16",
+              "first_token_seconds": 0.02017937299387995,
+              "total_seconds": 0.4424219779903069,
+              "decode_tokens_per_second": 149.20332352660884
+            }
+          },
+          "exact_response": true
+        },
+        {
+          "case": "code",
+          "baseline_ms": [
+            460.127830010606,
+            460.09355899877846,
+            466.99604199966416,
+            471.9018729956588,
+            467.2540719911922,
+            465.1697639928898
+          ],
+          "speculative_ms": [
+            304.5325970015256,
+            302.4412489903625,
+            305.8403759932844,
+            306.589267012896,
+            300.6034910067683,
+            300.1790309936041
+          ],
+          "median_baseline_ms": 466.08290299627697,
+          "median_speculative_ms": 303.48692299594404,
+          "example": {
+            "id": "chatcmpl-e00ee03793ba4b35be50f5c4f1cd3bc9",
+            "object": "chat.completion",
+            "created": 1791134983,
+            "model": "qwen2",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "Certainly! Here's a Python function that returns a list containing the integers from 1 to 30, written out explicitly:\n\n```python\ndef print_numbers():\n    \"\"\"\n    This function prints the numbers from 1 to 30, written out explicitly.\n    \"\"\"\n    for i in range(1, "
+                },
+                "finish_reason": "length"
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 52,
+              "completion_tokens": 64,
+              "total_tokens": 116
+            },
+            "dllm_timing": {
+              "source_tier": "gpu",
+              "activation_seconds": 3.2480020308867097e-06,
+              "cached_prompt_tokens": 0,
+              "speculative_blocks": 10,
+              "speculative_proposed_drafts": 59,
+              "speculative_matched_drafts": 25,
+              "kernel_backend": "triton",
+              "weight_quantization": "none",
+              "max_batch_size": 1,
+              "residual_dtype": "float16",
+              "first_token_seconds": 0.025387978996150196,
+              "total_seconds": 0.3012558030022774,
+              "decode_tokens_per_second": 228.37023573506974
+            }
+          },
+          "exact_response": true
+        }
+      ],
+      "fallback": [
+        {
+          "options": {
+            "temperature": 0.7,
+            "seed": 123
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "frequency_penalty": 0.5
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "logprobs": true,
+            "top_logprobs": 0
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "stop": [
+              "brown"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "response_format": {
+              "type": "json_schema",
+              "json_schema": {
+                "name": "answer",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "answer": {
+                      "type": "string",
+                      "const": "ok"
+                    }
+                  },
+                  "required": [
+                    "answer"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "passed": true
+        }
+      ],
+      "stream_equivalence": true,
+      "disconnect_recovery": true,
+      "backpressure": true,
+      "concurrent_equivalence": true,
+      "graph_reclaimed_on_unload": true,
+      "host_restore": true
+    },
+    {
+      "model": "qwen3",
+      "rows": [
+        {
+          "case": "repetition",
+          "baseline_ms": [
+            566.2415150000015,
+            567.7040009904886,
+            564.8574630031362,
+            564.1908209945541,
+            564.9836789962137,
+            567.1797170070931
+          ],
+          "speculative_ms": [
+            246.44332999014296,
+            243.56203799834475,
+            243.79677600518335,
+            241.91494900151156,
+            242.23983199044596,
+            241.71073599427473
+          ],
+          "median_baseline_ms": 565.6125969981076,
+          "median_speculative_ms": 242.90093499439536,
+          "example": {
+            "id": "chatcmpl-036a3d6b8aa14f338802f8eab5f242dd",
+            "object": "chat.completion",
+            "created": 1791135000,
+            "model": "qwen3",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "1. The quick brown fox jumps over the lazy dog.  \n2. The quick brown fox jumps over the lazy dog.  \n3. The quick brown fox jumps over the lazy dog.  \n4. The quick brown fox jumps over the lazy dog.  \n5. The quick brown fox jumps over the lazy dog."
+                },
+                "finish_reason": "length"
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 34,
+              "completion_tokens": 64,
+              "total_tokens": 98
+            },
+            "dllm_timing": {
+              "source_tier": "gpu",
+              "activation_seconds": 2.688000677153468e-06,
+              "cached_prompt_tokens": 0,
+              "speculative_blocks": 14,
+              "speculative_proposed_drafts": 82,
+              "speculative_matched_drafts": 42,
+              "kernel_backend": "triton",
+              "weight_quantization": "none",
+              "max_batch_size": 1,
+              "residual_dtype": "float32",
+              "first_token_seconds": 0.02435369299200829,
+              "total_seconds": 0.23807964198931586,
+              "decode_tokens_per_second": 294.77000942358035
+            }
+          },
+          "exact_response": true
+        },
+        {
+          "case": "explanation",
+          "baseline_ms": [
+            566.5098399913404,
+            565.7616210082779,
+            573.2401429995662,
+            563.5673640063033,
+            561.6815370012773,
+            561.5037099923939
+          ],
+          "speculative_ms": [
+            574.6948029991472,
+            571.2320269958582,
+            568.4246290038573,
+            564.069168001879,
+            562.5194829917746,
+            562.0871520077344
+          ],
+          "median_baseline_ms": 564.6644925072906,
+          "median_speculative_ms": 566.2468985028681,
+          "example": {
+            "id": "chatcmpl-dcd8703c6c4e4ae9ab2a67cda73ff311",
+            "object": "chat.completion",
+            "created": 1791135006,
+            "model": "qwen3",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "The sky looks blue because of **air molecules** in the atmosphere. When sunlight hits the Earth's atmosphere, it gets scattered by these molecules. The blue light is scattered the most, while the red and orange light are scattered less. So, even though the sun is bright, the blue light we see in the sky"
+                },
+                "finish_reason": "length"
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 23,
+              "completion_tokens": 64,
+              "total_tokens": 87
+            },
+            "dllm_timing": {
+              "source_tier": "gpu",
+              "activation_seconds": 2.8819922590628266e-06,
+              "cached_prompt_tokens": 0,
+              "speculative_blocks": 10,
+              "speculative_proposed_drafts": 61,
+              "speculative_matched_drafts": 3,
+              "kernel_backend": "triton",
+              "weight_quantization": "none",
+              "max_batch_size": 1,
+              "residual_dtype": "float32",
+              "first_token_seconds": 0.023844673007261008,
+              "total_seconds": 0.5633764130034251,
+              "decode_tokens_per_second": 116.76792175460875
+            }
+          },
+          "exact_response": true
+        },
+        {
+          "case": "code",
+          "baseline_ms": [
+            563.9003749965923,
+            568.9877620025072,
+            565.9650989982765,
+            566.3676890108036,
+            566.1953119997634,
+            563.9581730065402
+          ],
+          "speculative_ms": [
+            424.3590620026225,
+            422.61795299418736,
+            424.0019790013321,
+            423.2320500013884,
+            422.31031799747143,
+            425.86680500244256
+          ],
+          "median_baseline_ms": 566.0802054990199,
+          "median_speculative_ms": 423.61701450136025,
+          "example": {
+            "id": "chatcmpl-af86c71264de4eb990f9efe979e2124b",
+            "object": "chat.completion",
+            "created": 1791135014,
+            "model": "qwen3",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "Here's a Python function that returns a list containing the integers from 1 to 30, written out explicitly:\n\n```python\ndef generate_integers():\n    return [str(i) for i in range(1, 31)]\n\n# Example usage:\nresult = generate_integers()\nprint(result)\n```\n\n"
+                },
+                "finish_reason": "length"
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 35,
+              "completion_tokens": 64,
+              "total_tokens": 99
+            },
+            "dllm_timing": {
+              "source_tier": "gpu",
+              "activation_seconds": 2.676999429240823e-06,
+              "cached_prompt_tokens": 0,
+              "speculative_blocks": 7,
+              "speculative_proposed_drafts": 49,
+              "speculative_matched_drafts": 19,
+              "kernel_backend": "triton",
+              "weight_quantization": "none",
+              "max_batch_size": 1,
+              "residual_dtype": "float32",
+              "first_token_seconds": 0.026842346997000277,
+              "total_seconds": 0.4206946979975328,
+              "decode_tokens_per_second": 159.9584205602846
+            }
+          },
+          "exact_response": true
+        }
+      ],
+      "fallback": [
+        {
+          "options": {
+            "temperature": 0.7,
+            "seed": 123
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "frequency_penalty": 0.5
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "logprobs": true,
+            "top_logprobs": 0
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "stop": [
+              "brown"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "response_format": {
+              "type": "json_schema",
+              "json_schema": {
+                "name": "answer",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "answer": {
+                      "type": "string",
+                      "const": "ok"
+                    }
+                  },
+                  "required": [
+                    "answer"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "passed": true
+        }
+      ],
+      "stream_equivalence": true,
+      "disconnect_recovery": true,
+      "backpressure": true,
+      "concurrent_equivalence": true,
+      "graph_reclaimed_on_unload": true,
+      "host_restore": true
+    }
+  ],
+  "timing": "Same server and resident model, six alternating A/B measured rounds after warmup; complete loopback HTTP"
+}

@@ -181,6 +181,9 @@ class BatchedRuntime:
                     event = request.events.get_nowait()
                 except queue.Empty:
                     if request.done.is_set():
+                        # A producer can enqueue its last block and finish
+                        # between get_nowait() observing empty and this check.
+                        if not request.events.empty():continue
                         if request.error:
                             raise request.error
                         if request.final:
@@ -299,7 +302,13 @@ class BatchedRuntime:
             request.sampler.token_decoder=decoder_for(executor.model)
         if getattr(executor,'speculative_verifier',None) is not None:
             from .speculative import eligible
-            if eligible(request):request.speculative_prompt=tuple(tokens[-1024:])
+            if eligible(request) and not self.prefill_chunk_size and not self.prefix_cache_tokens:
+                request.speculative_prompt=tuple(tokens[-1024:])
+                # Room for two verification blocks overlaps GPU work with the
+                # consumer draining the previous block. Keep the same queue
+                # object because the consumer may already be waiting on it.
+                with request.events.mutex:
+                    request.events.maxsize=max(8,2*executor.speculative_verifier.width)
         return tokens
 
     def _speculate(self,ready,active,executor):

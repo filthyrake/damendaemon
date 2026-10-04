@@ -457,3 +457,30 @@ class PagedChunkedSchedulerTests(ChunkedSchedulerTests):
             with self.assertRaisesRegex(ValueError,'bad snapshot'):
                 self.generate('ab',2)
             self.assertEqual(self.generate('ab',2)[-1]['usage']['completion_tokens'],2)
+
+
+class CompletionRaceTests(unittest.TestCase):
+    def test_final_block_arriving_after_empty_observation_is_drained(self):
+        from collections import deque
+        import queue
+        from dllm.scheduler import Pending
+        runtime=BatchedRuntime.__new__(BatchedRuntime)
+        runtime.models={'a':'model'};runtime.admission=threading.BoundedSemaphore(1)
+        runtime.condition=threading.Condition();runtime.pending=deque();runtime.requests=set();runtime.closed=False
+        request=Pending('a',[],1)
+        class RacingQueue(queue.Queue):
+            raced=False
+            def get_nowait(self):
+                if not self.raced:
+                    self.raced=True
+                    # Simulate the producer finishing after the consumer's
+                    # failed nonblocking read but before it checks done.
+                    self.put_nowait({'token':17,'text':'x'})
+                    request.final={'finish_reason':'length'}
+                    request.done.set();request.ready.set()
+                    raise queue.Empty
+                return super().get_nowait()
+        request.events=RacingQueue(maxsize=8)
+        with patch('dllm.scheduler.Pending',return_value=request):
+            events=list(runtime.generate('a',[{'role':'user','content':'x'}],1))
+        self.assertEqual(events,[{'token':17,'text':'x'},{'finish_reason':'length'}])
