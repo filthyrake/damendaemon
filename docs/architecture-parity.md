@@ -27,3 +27,21 @@ The shared loader now accepts scalar or list EOS IDs, merges generation-config
 EOS IDs, and supplies standard date/error helpers to sandboxed templates. This
 closes real checkpoint compatibility gaps rather than aliasing an unsupported
 model family to an existing decoder.
+
+The 2048-context Apple M4 test also passes all 82 reference checks using native
+Metal kernels, FP16 weight storage and FP32 arithmetic/KV, against a CPU FP32
+reference (worst relative RMS 0.0007453%). Mixed-model A2 service tests pass.
+
+A2 HTTP comparison, identical pinned FP16 checkpoint, 2048 context, 64 output
+tokens, five measured rounds after warmup:
+
+| Concurrent requests | dllm output tokens/s | vLLM output tokens/s | dllm TTFT ms | vLLM TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 61.40 | 63.24 | 29.28 | 40.97 |
+| 2 | 109.33 | 116.67 | 47.25 | 55.44 |
+| 4 | 205.03 | 225.74 | 91.04 | 86.72 |
+
+Values are medians; throughput includes prompt processing. This narrow test
+shows a 3–9% throughput gap, not general performance parity. Serving environments
+use torch 2.6/dllm and torch 2.13/vLLM 0.30, respectively. Raw trials are stored
+alongside the qualification evidence.
