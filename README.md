@@ -294,3 +294,7 @@ This retains compact FP16 matrix storage but uses FP32 operations and KV; it
 clears the Qwen3-0.6B long-context numerical gate. The default `standard` path
 remains faster for batched decoding but retains that checkpoint's documented
 accuracy qualification gap. See the measurements in the architecture report.
+The accurate Qwen3 mode uses compensated Tensor Core products for small batches:
+FP32 activations are split into scaled high/residual FP16 components, with FP32
+accumulation. Both tested Qwen3 sizes pass independent FP32-reference gates;
+this is qualified numerical approximation, not bitwise FP32 equivalence.

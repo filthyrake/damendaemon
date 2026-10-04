@@ -447,3 +447,23 @@ matrix-kernel work. The FP32 vLLM run gives 66.23 / 92.86 / 174.26 tokens/sec an
 in FP16, whereas this vLLM run stores FP32 weights. This is explicitly a storage
 policy difference, not a matched-storage engine comparison. Reports and the
 layerwise diagnostic are under `evidence/models`.
+
+### Compensated Tensor Core optimization
+
+The accurate CUDA Qwen3 mode now uses scaled high/residual FP16 components for
+3–128-row matrix inputs. Each component is multiplied by the stored FP16
+weights; products and sums accumulate in FP32. This approximates FP32 arithmetic
+rather than asserting bitwise equivalence to IEEE FP32 matrix multiplication.
+Input/output tensors, normalization, residuals and KV remain FP32. One/two-row
+work keeps native FP32 GEMV; large prefills use the prior FP32 matrix path.
+
+All 35 matrix gates (zero, small, ordinary and very large finite activations),
+84 Qwen3-0.6B and 84 Qwen3-1.7B reference checks pass. The plain tensor fallback
+also passes all 84 small-model checks. The unchanged 1%/0.5 logit limits and exact
+greedy checks remain the qualification criteria.
+
+A2 small-model medians at concurrency 1/2/4 are now 107.23 / 170.68 / 271.50
+tokens/sec, with TTFT 45.5 / 74.2 / 125.8 ms. Four-request throughput improves
+26.7% over the first accurate path; it still trails the faster, numerically
+provisional standard path. The accurate path remains opt-in. Reports use the
+`qwen3-small-staged` label in `evidence/models`.

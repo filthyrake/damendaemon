@@ -332,6 +332,10 @@ class Executor:
         self.length = 0
 
     def qwen3_linear(self, x, weight, bias=None):
+        if self.kernels and weight.dtype == torch.float16 and 3 <= x.shape[0] <= 128:
+            from .precise_matmul import linear
+            result = linear(x.float(), weight)
+            return result if bias is None else result + bias.float()
         if self.kernels:
             result = self.kernels.linear_fp32(x.float(), weight)
             return result if bias is None else result + bias.float()
