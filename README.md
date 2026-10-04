@@ -39,7 +39,9 @@ dllm run Qwen/Qwen2.5-0.5B-Instruct --prompt 'Explain CUDA graphs in one paragra
 `run` downloads the model if needed. `dllm pull OWNER/REPOSITORY` downloads
 without requiring a GPU and prints the resolved immutable revision and local
 snapshot path. Use that path for offline runs, or `run --revision SHA` to pin a
-repository revision.
+repository revision. Pull selects the shards named by the root safetensors index
+(or the root `model.safetensors`) and preserves model metadata and licenses;
+alternate weight copies elsewhere in the repository are not downloaded.
 
 `DLLM_KERNELS=auto` (default) selects fused Triton kernels when available and
 falls back to PyTorch if its import or compiler setup is unavailable. Set

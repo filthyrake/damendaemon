@@ -7,10 +7,17 @@ import sys
 
 
 def download(repository, revision="main"):
-    from huggingface_hub import HfApi, snapshot_download
-    revision = HfApi().model_info(repository, revision=revision).sha
+    from huggingface_hub import HfApi, hf_hub_download, snapshot_download
+    from .download import INDEX, snapshot_files
+    info = HfApi().model_info(repository, revision=revision)
+    revision = info.sha
+    if not revision:raise ValueError("repository revision could not be resolved")
+    filenames = [entry.rfilename for entry in info.siblings or []]
+    index = None
+    if INDEX in filenames:
+        index = json.loads(Path(hf_hub_download(repository, INDEX, revision=revision)).read_text())
     path = snapshot_download(repository, revision=revision,
-        allow_patterns=["*.json", "*.safetensors", "LICENSE*", "README.md", "*.jinja"])
+        allow_patterns=snapshot_files(filenames, index))
     return {"repository": repository, "revision": revision, "path": path}
 
 
