@@ -37,17 +37,36 @@ def weight_files(path):
 
 
 def weight_bytes(path):
-    """Conservative FP16 weight estimate from headers, before loading tensors."""
-    total = 0
+    """Estimate host weight storage from headers before loading tensors."""
+    from .quantization import mode
+    quantized = mode() == 'q8_0'
+    total, embedding, has_head = 0, None, False
     for file in weight_files(path):
         with safe_open(str(file), framework="pt", device="cpu") as reader:
             for key in reader.keys():
-                total += 2 * math.prod(reader.get_slice(key).get_shape())
+                shape = reader.get_slice(key).get_shape()
+                is_embedding = key.endswith('embed_tokens.weight')
+                if is_embedding:
+                    embedding = shape
+                has_head = has_head or key == 'lm_head.weight'
+                if quantized and len(shape) == 2 and not is_embedding and shape[1] % 32 == 0:
+                    total += math.prod(shape) + 2 * shape[0] * (shape[1] // 32)
+                else:
+                    total += 2 * math.prod(shape)
+    if quantized and embedding is not None and not has_head:
+        config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
+        if config.get('tie_word_embeddings'):
+            total += math.prod(embedding) + 2 * embedding[0] * (embedding[1] // 32)
     return total
+
 
 
 class ModelWeights:
     def __init__(self, path, max_context):
+        from .quantization import mode
+        self.quantization = mode()
+        if self.quantization != 'none' and selected_device() != 'cuda':
+            raise ValueError('Q8_0 execution currently requires CUDA')
         self.path = Path(path).resolve()
         self.config = decoder_config(json.loads((self.path / "config.json").read_text()))
         c = self.config
@@ -88,9 +107,7 @@ class ModelWeights:
                 from .gemma import load_weights
             else:
                 from .hybrid import load_weights
-            self.weights = load_weights(state, c)
-            self.bytes = sum(t.numel() * t.element_size() for t in
-                             {id(t): t for t in self.weights.values()}.values())
+            self.finalize_weights(load_weights(state, c))
             return
         weights = {}
         def take(key):
@@ -122,8 +139,14 @@ class ModelWeights:
             weights[f"{i}.norm2"] = take(prefix + "post_attention_layernorm.weight")
         # Keep host backing pageable: pinning whole multi-GB models can harm the
         # machine. Transfers are synchronous in this first executor.
+        self.finalize_weights(weights)
+
+    def finalize_weights(self, weights):
+        from .quantization import prepare
+        self.scales = prepare(weights, self.quantization)
         self.weights = weights
-        self.bytes = sum(t.numel() * t.element_size() for t in {id(t): t for t in weights.values()}.values())
+        self.bytes = sum(t.numel() * t.element_size() for t in
+                         {id(t):t for t in (*weights.values(), *self.scales.values())}.values())
 
     def chat_tokens(self, messages, enable_thinking=None):
         if not messages:
@@ -189,6 +212,8 @@ class Executor:
                 except ImportError:
                     if selected == "triton":
                         raise
+        if model.scales and self.kernels is None:
+            raise ValueError('Q8_0 requires native CUDA kernels')
         self.linear = self.kernels.linear if self.device == 'mps' and self.kernels else F.linear
         half_metal_weights = False
         if self.device == 'mps':
@@ -209,28 +234,34 @@ class Executor:
         # after its traceback is released. Return those before querying free VRAM.
         empty_cache()
         free = available_memory()
-        device_weight_bytes = model.bytes
-        if self.device == "cuda" and c["model_type"] == "gemma3_text":
-            device_weight_bytes = sum(t.numel() * (2 if half_gemma_weights and t.ndim == 2 else 4)
-                for t in {id(t):t for t in model.weights.values()}.values())
-        if self.device == 'mps':
-            device_weight_bytes = sum(t.numel() * (2 if half_metal_weights and t.ndim == 2 else 4)
-                for t in {id(t):t for t in model.weights.values()}.values())
-        if self.device == "mps" and half_metal_weights and c["model_type"] == "gemma3_text":
-            device_weight_bytes += sum(t.numel() * 2 for name, t in model.weights.items() if name.endswith(".down"))
+        def device_dtype(name, tensor):
+            if tensor.dtype == torch.int8:
+                return torch.int8
+            if c['model_type'] == 'phi3' and name == 'norm':
+                return torch.float32
+            if c['model_type'] == 'gemma3_text' and (tensor.ndim == 1 or (self.device == 'mps' and name.endswith('.down'))):
+                return torch.float32
+            if (half_metal_weights or half_gemma_weights) and tensor.ndim == 2:
+                return torch.float16
+            return self.compute_dtype
+        storage = {id(t): (t, device_dtype(name, t)) for name, t in model.weights.items()}
+        device_weight_bytes = sum(t.numel() * torch.empty((), dtype=dtype).element_size()
+                                  for t, dtype in storage.values())
+        device_weight_bytes += sum(t.numel() * t.element_size() for t in model.scales.values())
         if device_weight_bytes + kv_bytes + 512 * 1024**2 > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         self.w = {}
         copies = {}
         for name, tensor in model.weights.items():
             if id(tensor) not in copies:
-                dtype = torch.float16 if (half_metal_weights or half_gemma_weights) and tensor.ndim == 2 else self.compute_dtype
-                if c["model_type"] == "gemma3_text" and (tensor.ndim == 1 or (self.device == "mps" and name.endswith(".down"))):
-                    dtype = torch.float32
-                if c["model_type"] == "phi3" and name == "norm":
-                    dtype = torch.float32
+                dtype = device_dtype(name, tensor)
                 copies[id(tensor)] = tensor.to(device=self.device, dtype=dtype)
             self.w[name] = copies[id(tensor)]
+        self.quant_linear = None
+        if model.scales:
+            from .quantization import Linear
+            self.quant_linear = Linear(self.w, model.scales, self.device, self.linear)
+            self.linear = self.quant_linear
         self.kv = [torch.zeros((2, max_batch, self.kv_heads, self.context, self.dim),
                                dtype=self.compute_dtype, device=self.device)
                    for _ in range(c["num_hidden_layers"])]
@@ -259,6 +290,8 @@ class Executor:
             torch.cuda.current_stream().wait_stream(stream)
             torch.cuda.synchronize()
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
+        if model.scales:
+            self.kernel_backend += '+q8_0'
         if use_graph:
             self.graph = torch.cuda.CUDAGraph()
             with torch.cuda.graph(self.graph), torch.inference_mode():
@@ -301,6 +334,8 @@ class Executor:
     def output_logits(self, x):
         normalized = self.norm(x, self.w['norm'])
         if self.c['model_type'] == 'phi3' and self.device == 'cuda':
+            if self.w['head'].dtype == torch.int8:
+                return self.quant_linear(normalized.float(), self.w['head'])
             if self.kernels:
                 return self.kernels.linear_fp32(normalized.float(), self.w['head'])
             return F.linear(normalized.float(), self.w['head'].float())

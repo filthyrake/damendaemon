@@ -21,6 +21,7 @@ def main():
     parser.add_argument('path')
     parser.add_argument('--context', type=int, default=2048)
     parser.add_argument("--reference-dtype", choices=("float16", "bfloat16", "float32"), default="float16")
+    parser.add_argument('--reference-quantization', choices=('none', 'q8_0'), default='none')
     parser.add_argument('--reference-only', action='store_true', help='generate a reference trace without a dllm GPU executor')
     parser.add_argument('--golden-output', help='save teacher-forced inputs and FP32 reference logits for cross-environment replay')
     parser.add_argument('--reference-attention', choices=('sdpa', 'eager'), default='sdpa')
@@ -42,7 +43,7 @@ def main():
             tokenizer.apply_chat_template(messages, return_dict=False, add_generation_prompt=True, **options))
     else:
         model = ModelWeights(args.path, args.context)
-    reference = load_reference(args.path, local_files_only=True,
+    reference = load_reference(args.path, reference_quantization=args.reference_quantization, local_files_only=True,
         trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype), attn_implementation=args.reference_attention).to(reference_device).eval()
     executor = None if args.reference_only else make_executor(model, max_batch=4)
     cache_lengths = executor.lengths if executor else [0]*4
@@ -153,11 +154,12 @@ def main():
     decode([next(iter(states))], 1)
     if args.golden_output:
         torch.save({'path': args.path, 'context': args.context, 'reference_dtype': args.reference_dtype,
-                    'reference_torch': str(torch.__version__), 'reference_attention': args.reference_attention, 'trace': trace}, args.golden_output)
+                    'reference_torch': str(torch.__version__), 'reference_quantization': args.reference_quantization, 'reference_attention': args.reference_attention, 'trace': trace}, args.golden_output)
     print(json.dumps({'model_path': args.path, 'reference_dtype': args.reference_dtype, 'reference_attention': args.reference_attention, 'architecture': model.config['model_type'],
         'device': device_name(), 'torch': str(torch.__version__), 'reference_device': reference_device,
         'weight_dtype': str(executor.w['head'].dtype) if executor else None,
-        'reference_only': args.reference_only,
+        'reference_only': args.reference_only, 'reference_quantization': args.reference_quantization,
+        'weight_quantization': model.quantization if executor else None,
         'context': args.context, 'backend': executor.kernel_backend if executor else None, 'checks': checks,
         'template_checks': template_checks, 'timings': timings,
         'passed': all(row['passed'] for row in checks) if executor else None}, indent=2))

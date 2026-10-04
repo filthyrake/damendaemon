@@ -162,6 +162,7 @@ class Runtime:
                 "prompt_tokens": len(prompt), "completion_tokens": len(output),
                 "total_tokens": len(prompt) + len(output),
             }, "timing": {"source_tier": tier, "kernel_backend": executor.kernel_backend,
+                          "weight_quantization": model.quantization,
                           "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
                           "activation_seconds": load_seconds,
                           "first_token_seconds": first_time, "total_seconds": elapsed,

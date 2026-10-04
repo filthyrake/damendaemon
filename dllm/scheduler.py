@@ -134,7 +134,8 @@ class BatchedRuntime:
                 "prompt_tokens": prompt_count, "completion_tokens": count,
                 "total_tokens": prompt_count + count}, "timing": {
                 "source_tier": request.tier, "activation_seconds": request.activation,
-                "kernel_backend": executor.kernel_backend, "max_batch_size": request.max_batch_seen,
+                "kernel_backend": executor.kernel_backend,
+                "weight_quantization": getattr(executor.model, "quantization", "none"), "max_batch_size": request.max_batch_seen,
                 "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
                 "first_token_seconds": request.first_time, "total_seconds": elapsed,
                 "decode_tokens_per_second": (count-1)/(elapsed-request.first_time)

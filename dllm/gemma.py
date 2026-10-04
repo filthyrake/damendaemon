@@ -37,6 +37,8 @@ class GemmaExecutor(BatchExecutor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.kernel_backend = (("metal" if self.device == "mps" else "triton") if self.kernels else "torch") + "-gemma"
+        if self.model.scales:
+            self.kernel_backend += "+q8_0"
 
     def _tables(self):
         # Base construction warms virtual forward before batch graph capture.
@@ -51,6 +53,8 @@ class GemmaExecutor(BatchExecutor):
         self.embed_scale = torch.tensor(math.sqrt(self.c['hidden_size']), device=self.device, dtype=self.compute_dtype)
 
     def _linear(self, x, weight):
+        if weight.dtype == torch.int8:
+            return self.quant_linear(x, weight)
         if self.kernels:
             return self.kernels.linear_fp32(x, weight)
         return F.linear(x.float(), weight.float())

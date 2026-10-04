@@ -187,3 +187,43 @@ vLLM uses its standard `--dtype half` path, version 0.30 / torch 2.13; dllm uses
 torch 2.6. vLLM receives a 90% A2 memory budget to fit this checkpoint, and the
 engines run sequentially. Throughput is within roughly 1–5% on this workload;
 batched first-token latency remains worse. This is not blanket engine parity.
+
+The rendered responses differ in leading whitespace but agree after stripping
+outer whitespace. Every measured request has 17 prompt tokens and 64 output
+tokens. Independent numerical qualification uses the saved reference traces
+described above.
+
+## Experimental Q8_0 weight execution
+
+Issue #10. `DLLM_QUANTIZATION=q8_0` quantizes supported safetensors matrices
+on host load. CUDA/Triton only; the default remains unquantized. This is not a
+GGUF, GPTQ, or AWQ importer. Embeddings, norms, convolution and recurrent state
+retain their original storage policy. A tied output head becomes a separate
+quantized matrix, so weight savings can be modest on vocabulary-heavy models.
+Small-batch decode reads INT8 weights and FP16 scales directly; larger prefill
+temporarily expands one matrix at a time. Broad quality evaluation is pending.
+
+The native format matches upstream llama.cpp Q8_0 byte-for-byte in four format
+cases. Ten native CUDA matrix cases pass against independently dequantized
+matrix multiplication (worst relative RMS 0.00784%). Independent Transformers
+references use upstream gguf-py's quantizer, not dllm's quantization code.
+At context 2048, Qwen2.5-0.5B passes 82/82 checks with worst relative RMS
+0.6711%; Qwen3.5-0.8B passes 84/84 at 0.2653%. Both retain exact greedy agreement
+with their quantized references. Qwen2 host weights occupy 797,246,208 bytes;
+Qwen3.5 occupies 1,308,556,544 bytes.
+
+Against the original unquantized Qwen2 reference, all 82 sampled greedy tokens
+agree, but median/worst relative logit RMS is 2.4415% / 6.2877%. That report
+correctly fails the unquantized numerical threshold: quantization changes the
+model. This small teacher-forced trace does not establish task-quality parity.
+
+Qwen2, Qwen3.5, and Llama 3.2 pass mixed-model HTTP switching, residency at
+capacities one and three, concurrent requests, reasoning controls, disconnect
+recovery, and long-chat checks with Q8 enabled. Shared-storage integration also
+passes all 97 unquantized Gemma Apple checks and the 67-test CPU suite.
+
+The first A2 Qwen2 implementation measures only 34.1 / 58.0 / 95.6 tokens/s
+at concurrency 1 / 2 / 4 (2048 context, 64 output tokens). It is experimental,
+not recommended for speed. Profiling and a matching-precision comparator are
+in progress; no cross-engine performance win is claimed. Raw evidence is under
+`docs/evidence/quantization/`.

@@ -82,7 +82,11 @@ class HybridExecutor:
             except ImportError:
                 if selected == 'triton':
                     raise
+        if model.scales and self.fused is None:
+            raise ValueError('Q8_0 requires native CUDA kernels')
         self.kernel_backend = 'triton-hybrid' if self.fused else 'torch-hybrid'
+        if model.scales:
+            self.kernel_backend += '+q8_0'
         self.chunk_scan = None
         prefill_backend = os.environ.get('DLLM_HYBRID_PREFILL', 'scan')
         if prefill_backend not in ('scan', 'fla'):
@@ -110,6 +114,10 @@ class HybridExecutor:
             if id(value) not in copies:
                 copies[id(value)] = value.to(self.device)
             self.w[key] = copies[id(value)]
+        self.linear = F.linear
+        if model.scales:
+            from .quantization import Linear
+            self.linear = Linear(self.w, model.scales, self.device, F.linear)
         self.kv, self.conv, self.state = {}, {}, {}
         for i, kind in enumerate(c['layer_types']):
             if kind == 'full_attention':
@@ -182,10 +190,10 @@ class HybridExecutor:
     def linear_attention(self, x, i, slots, prefill):
         w = self.w
         n, length, _ = x.shape
-        qkv = F.linear(x, w[f'{i}.qkv'])
-        z = F.linear(x, w[f'{i}.z']).view(n, length, self.lv, self.dv)
-        beta = F.linear(x, w[f'{i}.b']).float().sigmoid()
-        decay = -w[f'{i}.A'].exp()*F.softplus(F.linear(x, w[f'{i}.a']).float()+w[f'{i}.dt'])
+        qkv = self.linear(x, w[f'{i}.qkv'])
+        z = self.linear(x, w[f'{i}.z']).view(n, length, self.lv, self.dv)
+        beta = self.linear(x, w[f'{i}.b']).float().sigmoid()
+        decay = -w[f'{i}.A'].exp()*F.softplus(self.linear(x, w[f'{i}.a']).float()+w[f'{i}.dt'])
         if prefill:
             history = qkv.transpose(1, 2).contiguous()
             width = self.c['linear_conv_kernel_dim']
@@ -228,12 +236,12 @@ class HybridExecutor:
             out = self.fused.norm(out, w[f'{i}.gated_norm'], self.eps, torch.float16, gate=z)
         else:
             out = self.norm(out, w[f'{i}.gated_norm'], torch.float32) * F.silu(z.float())
-        return F.linear(out.reshape(n, length, -1).half(), w[f'{i}.out'])
+        return self.linear(out.reshape(n, length, -1).half(), w[f'{i}.out'])
 
     def attention(self, x, i, positions, slots, prefill):
         n, length, _ = x.shape
         w = self.w
-        q, k, v = F.linear(x, w[f'{i}.qkv']).split((2*self.heads*self.dim, self.kh*self.dim, self.kh*self.dim), -1)
+        q, k, v = self.linear(x, w[f'{i}.qkv']).split((2*self.heads*self.dim, self.kh*self.dim, self.kh*self.dim), -1)
         q, gate = q.view(n, length, self.heads, 2*self.dim).chunk(2, -1)
         k, v = [a.view(n, length, self.kh, self.dim) for a in (k, v)]
         q = self.rotate(self.norm(q, w[f'{i}.q_norm'], torch.float32), positions)
@@ -251,7 +259,7 @@ class HybridExecutor:
             out = scaled_attention(q.transpose(1, 2), ck.index_select(0, slots), cv.index_select(0, slots),
                                                  attn_mask=mask, enable_gqa=True)
         out = out.transpose(1, 2).float()*gate.float().sigmoid()
-        return F.linear(out.reshape(n, length, -1).half(), w[f'{i}.o'])
+        return self.linear(out.reshape(n, length, -1).half(), w[f'{i}.o'])
 
     @torch.inference_mode()
     def forward(self, ids, positions, slots, prefill):
@@ -260,15 +268,17 @@ class HybridExecutor:
             h = self.norm(x, self.w[f'{i}.norm1'])
             x = x + (self.linear_attention(h, i, slots, prefill) if kind == 'linear_attention'
                      else self.attention(h, i, positions, slots, prefill))
-            gate_up = F.linear(self.norm(x, self.w[f'{i}.norm2']), self.w[f'{i}.gate_up'])
+            gate_up = self.linear(self.norm(x, self.w[f'{i}.norm2']), self.w[f'{i}.gate_up'])
             if self.fused:
                 activated = self.dense_fused.swiglu(gate_up.reshape(-1, gate_up.shape[-1]), True)
                 activated = activated.view(*gate_up.shape[:-1], -1)
             else:
                 gate, up = gate_up.chunk(2, -1)
                 activated = (F.silu(gate.float())*up.float()).half()
-            x = x + F.linear(activated, self.w[f'{i}.down'])
+            x = x + self.linear(activated, self.w[f'{i}.down'])
         normalized = self.norm(x[:, -1], self.w['norm'])
+        if self.w['head'].dtype == torch.int8:
+            return self.linear(normalized.float(), self.w['head'])
         if self.fused:
             return self.fused.output_head(normalized, self.w['head'])
         return F.linear(normalized.float(), self.w['head'].float())

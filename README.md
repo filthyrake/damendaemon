@@ -10,6 +10,10 @@ GPU/host model residency. PyTorch/cuBLAS and dllm's fused Triton kernels provide
 GPU execution; dllm does not depend on vLLM, llama.cpp, Ollama,
 or Transformers generation. Transformers is only a validation dependency.
 
+Additional qualified checkpoints include Llama 3.2, Gemma 3 text, and Phi-3
+mini. Exact revisions, numerical gates, and remaining limits are recorded in
+[architecture evidence](docs/architecture-parity.md).
+
 The server selects models from each request without restarting. GPU-resident
 models retain their execution graphs; evicted models restore from the host cache.
 This remains an early runtime with deliberately narrow model support.

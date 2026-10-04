@@ -57,7 +57,8 @@ def main():
                        TORCHINDUCTOR_CACHE_DIR=str(root / 'baselines/inductor-cache'),
                        TORCHINDUCTOR_COMPILE_THREADS='2', MAX_JOBS='2')
         (root / f'compare-{engine}-{args.label}-command.json').write_text(json.dumps({
-            'command': command, 'model': model, 'gpu_uuid': uuid}, indent=2))
+            'command': command, 'model': model, 'gpu_uuid': uuid,
+            'runtime_environment': {key:value for key,value in env.items() if key.startswith('DLLM_')}}, indent=2))
         with (root / f'compare-{engine}-{args.label}.log').open('w') as log:
             process = subprocess.Popen(command, env=env, stdout=log, stderr=log, start_new_session=True)
             try:
