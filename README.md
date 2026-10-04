@@ -559,7 +559,7 @@ cost, memory bounds and separate core/HTTP measurements.
 
 ### Mamba state-space models
 
-Pinned `state-spaces/mamba-130m-hf` now runs independently on A2 and Apple M4,
+Pinned `state-spaces/mamba-130m-hf` and `mamba-370m-hf` run independently on A2 and Apple M4,
 with native GPU causal convolution and recurrent-state kernels. Use raw
 completions with context up to 2048. Both devices pass independent logits/state
 checks and real streaming, concurrent, cancellation and model-switching tests.

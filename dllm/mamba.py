@@ -112,6 +112,9 @@ class MambaExecutor:
         self.device=selected_device();self.max_batch=max_batch
         self.compute_dtype=self.residual_dtype=torch.float32
         selected=kernels or os.environ.get('DLLM_KERNELS','auto')
+        fuse=os.environ.get('DLLM_MAMBA_FUSED_DT','0')
+        if fuse not in ('0','1'):raise ValueError('Mamba time-step fusion must be 0 or 1')
+        self.fuse_time_step=fuse=='1'
         if selected not in ('auto','torch','triton','metal'):raise ValueError('invalid Mamba kernel policy')
         self.kernels=self.recurrent=None
         if selected!='torch':
@@ -169,20 +172,26 @@ class MambaExecutor:
         for layer in range(self.c['num_hidden_layers']):
             p=f'{layer}.'
             projected=self.linear(self.norm(x,self.w[p+'norm']),self.w[p+'in_proj'],self.w.get(p+'in_bias'))
-            signal,gate=[v.reshape(batch,length,i).contiguous() for v in projected.chunk(2,-1)]
             if self.recurrent:
+                # Both kernels read the packed projection directly, avoiding
+                # two materialized signal/gate copies per layer and token.
+                signal=gate=projected.reshape(batch,length,2*i)
                 signal=self.recurrent.conv(signal,self.w[p+'conv'],self.w[p+'conv_bias'],self.conv[layer],slots,reset)
-            elif reset:
-                self.conv[layer].index_copy_(0,slots,F.pad(signal.transpose(1,2),(self.c['conv_kernel']-length,0)))
-                signal=F.silu(F.conv1d(signal.transpose(1,2),self.w[p+'conv'][:,None],self.w[p+'conv_bias'],padding=self.c['conv_kernel']-1,groups=i)[:,:,:length]).transpose(1,2).contiguous()
             else:
-                history=self.conv[layer].index_select(0,slots).roll(-1,-1);history[:,:,-1]=signal[:,0]
-                self.conv[layer].index_copy_(0,slots,history)
-                signal=F.silu((history*self.w[p+'conv']).sum(-1)+self.w[p+'conv_bias'])[:,None]
+                signal,gate=[v.reshape(batch,length,i).contiguous() for v in projected.chunk(2,-1)]
+                if reset:
+                    self.conv[layer].index_copy_(0,slots,F.pad(signal.transpose(1,2),(self.c['conv_kernel']-length,0)))
+                    signal=F.silu(F.conv1d(signal.transpose(1,2),self.w[p+'conv'][:,None],self.w[p+'conv_bias'],padding=self.c['conv_kernel']-1,groups=i)[:,:,:length]).transpose(1,2).contiguous()
+                else:
+                    history=self.conv[layer].index_select(0,slots).roll(-1,-1);history[:,:,-1]=signal[:,0]
+                    self.conv[layer].index_copy_(0,slots,history)
+                    signal=F.silu((history*self.w[p+'conv']).sum(-1)+self.w[p+'conv_bias'])[:,None]
             params=self.linear(signal.reshape(batch*length,i),self.w[p+'x_proj']).reshape(batch,length,-1)
-            dt=self.linear(params[:,:,:r].contiguous().reshape(batch*length,r),self.w[p+'dt_proj']).reshape(batch,length,i)
+            fused_dt=self.fuse_time_step and self.recurrent is not None and self.device=='mps' and length==1
+            dt=None if fused_dt else self.linear(params[:,:,:r].contiguous().reshape(batch*length,r),self.w[p+'dt_proj']).reshape(batch,length,i)
             if self.recurrent:
-                output=self.recurrent.scan(signal,gate,params,dt,self.w[p+'dt_bias'],self.w[p+'A'],self.w[p+'D'],self.state[layer],slots,reset)
+                output=self.recurrent.scan(signal,gate,params,dt,self.w[p+'dt_bias'],self.w[p+'A'],self.w[p+'D'],self.state[layer],slots,reset,
+                    **({'dt_weight':self.w[p+'dt_proj']} if fused_dt else {}))
             else:output=self.tensor_recurrence(signal,gate,params,dt,layer,slots,reset)
             x=x+self.linear(output.reshape(batch*length,i),self.w[p+'out_proj'],self.w.get(p+'out_bias'))
         x=x.reshape(batch,length,-1)[:,-1].contiguous()

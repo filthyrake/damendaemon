@@ -23,6 +23,8 @@ def main():
         for reset,steps in ((True,length),(False,1),(False,1)):
             x=torch.randn(batch,steps,inner);gate=torch.randn_like(x)
             params=torch.randn(batch,steps,rank+2*state_size);dt=torch.randn_like(x)
+            dt_weight=torch.randn(inner,rank)
+            if device=='mps' and steps==1:dt=F.linear(params[:,:,:rank],dt_weight)
             expected_conv=[];expected_scan=[]
             for row,slot in enumerate(slots.tolist()):
                 if reset:
@@ -40,6 +42,7 @@ def main():
                     state[slot]=torch.exp(step*a)*state[slot]+(step*b)*conv[t,:,None]
                     output.append(((state[slot]*c).sum(-1)+d*conv[t])*F.silu(gate[row,t]))
                 expected_scan.append(torch.stack(output))
+            packed_history,packed_state=gh.clone(),gs.clone()
             actual_conv=native.conv(x.to(device),weight.to(device),bias.to(device),gh,slots.to(device),reset)
             actual=native.scan(actual_conv,gate.to(device),params.to(device),dt.to(device),dt_bias.to(device),a.to(device),d.to(device),gs,slots.to(device),reset)
             expected=torch.stack(expected_scan)
@@ -47,9 +50,18 @@ def main():
             torch.testing.assert_close(gh.cpu(),history,atol=0,rtol=0)
             torch.testing.assert_close(actual.cpu(),expected,atol=.003,rtol=.0005)
             torch.testing.assert_close(gs.cpu(),state,atol=.003,rtol=.0005)
+            packed=torch.cat((x,gate),-1).to(device)
+            pc=native.conv(packed,weight.to(device),bias.to(device),packed_history,slots.to(device),reset)
+            fused=device=='mps' and steps==1
+            ps=native.scan(pc,packed,params.to(device),None if fused else dt.to(device),dt_bias.to(device),
+                a.to(device),d.to(device),packed_state,slots.to(device),reset,
+                **({'dt_weight':dt_weight.to(device)} if fused else {}))
+            torch.testing.assert_close(ps.cpu(),expected,atol=.003,rtol=.0005)
+            torch.testing.assert_close(packed_state.cpu(),state,atol=.003,rtol=.0005)
+            torch.testing.assert_close(packed_history.cpu(),history,atol=0,rtol=0)
             checks.append({'inner':inner,'state':state_size,'conv':width,'length':steps,'reset':reset,
                 'max_output_error':(actual.cpu()-expected).abs().max().item()})
-    print(json.dumps({'passed':True,'device':device,'checks':checks},indent=2))
+    print(json.dumps({'passed':True,'device':device,'checks':checks,'packed_projection':True,'fused_time_step':device=='mps'},indent=2))
 
 
 if __name__=='__main__':main()

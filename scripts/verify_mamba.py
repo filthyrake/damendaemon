@@ -69,7 +69,8 @@ def main():
     assert generated==expected,(generated,expected)
     passed=all(c['passed'] for c in checks)
     print(json.dumps({'passed':passed,'model':args.model,'device':args.device,'context':args.context,
-        'kernel_backend':executor.kernel_backend,'checks':checks,'recurrent_state_checks':True,
+        'kernel_backend':executor.kernel_backend,'fused_time_step':executor.fuse_time_step,
+        'checks':checks,'recurrent_state_checks':True,
         'slot_reuse':True,'generated_ids':generated,'generated_text':model.tokenizer.decode(generated),
         'reference':'CPU FP32 Transformers Mamba eager recurrence'},indent=2))
     if not passed:raise SystemExit(1)

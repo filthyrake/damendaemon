@@ -62,11 +62,13 @@ def main():
         post({'model':'b','prompt':'The blue bird','max_tokens':8,'temperature':0})
         restored=post(body())
         assert restored['choices'][0]['text']==expected['choices'][0]['text']
+        assert restored['dllm_timing']['source_tier']=='host',restored
         report={'passed':True,'device':args.device,'model':args.model,'other_model':args.other_model,
             'text_and_token_prompts_equal':True,'stream_and_nonstream_equal':True,'concurrent_isolation':True,
             'context_boundary_with_output':True,'encoder_decoder':encoder_decoder,
             'oversized_requests_rejected':True,'chat_rejected':True,
             'cancellation_recovery':True,'decoder_only_switch_and_host_restore':True,
+            'restore_timing':restored['dllm_timing'],
             'sample':expected}
     finally:
         server.shutdown();server.server_close();worker.join();runtime.close()

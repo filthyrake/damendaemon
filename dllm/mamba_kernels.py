@@ -6,20 +6,20 @@ from triton.language.extra.cuda import libdevice
 
 
 @tr.jit
-def _conv(X,W,BIAS,HISTORY,SLOTS,Y,I:tl.constexpr,T:tl.constexpr,C:tl.constexpr,RESET:tl.constexpr,BLOCK:tl.constexpr):
+def _conv(X,W,BIAS,HISTORY,SLOTS,Y,I:tl.constexpr,T:tl.constexpr,C:tl.constexpr,STRIDE:tl.constexpr,RESET:tl.constexpr,BLOCK:tl.constexpr):
     row,block,t=tl.program_id(0),tl.program_id(1),tl.program_id(2)
     channels=block*BLOCK+tl.arange(0,BLOCK);valid=channels<I
     slot=tl.load(SLOTS+row);acc=tl.load(BIAS+channels,valid,other=0)
     for j in tl.static_range(C):
         if RESET:
             source=t+j-C+1
-            value=tl.load(X+(row*T+source)*I+channels,valid&(source>=0),other=0)
+            value=tl.load(X+(row*T+source)*STRIDE+channels,valid&(source>=0),other=0)
         else:
             if j<C-1:
                 value=tl.load(HISTORY+(slot*I+channels)*C+j+1,valid,other=0)
                 tl.store(HISTORY+(slot*I+channels)*C+j,value,valid)
             else:
-                value=tl.load(X+row*I+channels,valid,other=0)
+                value=tl.load(X+row*STRIDE+channels,valid,other=0)
                 tl.store(HISTORY+(slot*I+channels)*C+j,value,valid)
         acc+=value*tl.load(W+channels*C+j,valid,other=0)
     tl.store(Y+(row*T+t)*I+channels,acc/(1+tl.exp(-acc)),valid)
@@ -27,21 +27,21 @@ def _conv(X,W,BIAS,HISTORY,SLOTS,Y,I:tl.constexpr,T:tl.constexpr,C:tl.constexpr,
         if t==T-1:
             for j in tl.static_range(C):
                 source=T-C+j
-                value=tl.load(X+(row*T+source)*I+channels,valid&(source>=0),other=0)
+                value=tl.load(X+(row*T+source)*STRIDE+channels,valid&(source>=0),other=0)
                 tl.store(HISTORY+(slot*I+channels)*C+j,value,valid)
 
 
 def conv(x,weight,bias,history,slots,reset):
-    batch,length,inner=x.shape
+    batch,length,stride=x.shape;inner=history.shape[1]
     if not reset and length!=1:raise ValueError('Mamba decode convolution needs one token')
-    out=torch.empty_like(x)
-    _conv[(batch,tr.cdiv(inner,128),length)](x,weight,bias,history,slots,out,inner,length,weight.shape[-1],reset,128,enable_fp_fusion=False)
+    out=torch.empty((batch,length,inner),device=x.device,dtype=x.dtype)
+    _conv[(batch,tr.cdiv(inner,128),length)](x,weight,bias,history,slots,out,inner,length,weight.shape[-1],stride,reset,128,enable_fp_fusion=False)
     return out
 
 
 @tr.jit
 def _scan(X,G,P,DT,BIAS,A,D,STATE,SLOTS,Y,I:tl.constexpr,T:tl.constexpr,S:tl.constexpr,R:tl.constexpr,
-          RESET:tl.constexpr,BC:tl.constexpr,BS:tl.constexpr):
+          GSTRIDE:tl.constexpr,RESET:tl.constexpr,BC:tl.constexpr,BS:tl.constexpr):
     row,block=tl.program_id(0),tl.program_id(1)
     channels=block*BC+tl.arange(0,BC);states=tl.arange(0,BS)
     slot=tl.load(SLOTS+row);mask=(channels[:,None]<I)&(states[None,:]<S)
@@ -58,7 +58,7 @@ def _scan(X,G,P,DT,BIAS,A,D,STATE,SLOTS,Y,I:tl.constexpr,T:tl.constexpr,S:tl.con
         c=tl.load(P+(row*T+t)*(R+2*S)+R+S+states,states<S,other=0)
         value=tl.exp(dt[:,None]*decay)*value+(dt[:,None]*b[None,:])*signal[:,None]
         result=tl.sum(value*c[None,:],1)+skip*signal
-        gate=tl.load(G+source,channels<I,other=0)
+        gate=tl.load(G+(row*T+t)*GSTRIDE+GSTRIDE-I+channels,channels<I,other=0)
         tl.store(Y+source,result*(gate/(1+tl.exp(-gate))),channels<I)
     tl.store(ptr,value,mask)
 
@@ -66,5 +66,5 @@ def _scan(X,G,P,DT,BIAS,A,D,STATE,SLOTS,Y,I:tl.constexpr,T:tl.constexpr,S:tl.con
 def scan(x,gate,params,dt,bias,a,d,state,slots,reset):
     batch,length,inner=x.shape;s=state.shape[-1];rank=params.shape[-1]-2*s
     out=torch.empty_like(x)
-    _scan[(batch,tr.cdiv(inner,16))](x,gate,params,dt,bias,a,d,state,slots,out,inner,length,s,rank,reset,16,tr.next_power_of_2(s),num_warps=4,enable_fp_fusion=False)
+    _scan[(batch,tr.cdiv(inner,16))](x,gate,params,dt,bias,a,d,state,slots,out,inner,length,s,rank,gate.shape[-1],reset,16,tr.next_power_of_2(s),num_warps=4,enable_fp_fusion=False)
     return out
