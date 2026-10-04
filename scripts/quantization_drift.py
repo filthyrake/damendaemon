@@ -3,6 +3,7 @@ import argparse
 import gc
 import json
 import math
+from pathlib import Path
 import torch
 from transformers import AutoTokenizer
 from reference_model import load_reference
@@ -26,14 +27,17 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument('model')
     p.add_argument('--format',choices=('q8_0','q4_0'),default='q4_0')
+    p.add_argument('--weight-dtype',choices=('float16','float32'),default='float16')
     args=p.parse_args()
     torch.set_num_threads(4)
     tokenizer=AutoTokenizer.from_pretrained(args.model,local_files_only=True,trust_remote_code=False)
     inputs=[torch.tensor([tokenizer.encode(text,add_special_tokens=True)]) for text in TEXTS]
     baseline=[];reports=[]
+    kind=json.loads((Path(args.model)/'config.json').read_text())['model_type']
     for quantization in ('none',args.format):
         model=load_reference(args.model,reference_quantization=quantization,local_files_only=True,
-            trust_remote_code=False,torch_dtype=torch.float16,attn_implementation='eager').float().eval()
+            trust_remote_code=False,torch_dtype=getattr(torch,args.weight_dtype),attn_implementation='eager',
+            **({'chunk_size':16} if kind=='mamba2' else {})).float().eval()
         nll=0.;tokens=0;matches=0;relative=[]
         for index,ids in enumerate(inputs):
             logits=model(ids,use_cache=False).logits[:,:-1].float()
@@ -48,7 +52,7 @@ def main():
             'perplexity':math.exp(nll/tokens),'teacher_forced_top1_agreement':matches/tokens if quantization!='none' else None,
             'per_text_relative_logit_rms':relative})
         del model;gc.collect()
-    print(json.dumps({'model':args.model,'device':'cpu','arithmetic':'float32','weight_conversion_dtype':'float16','texts':TEXTS,
+    print(json.dumps({'model':args.model,'device':'cpu','arithmetic':'float32','weight_conversion_dtype':args.weight_dtype,'texts':TEXTS,
         'scope':'small authored corpus; measures quantization drift, not broad task quality or GPU performance',
         'results':reports},indent=2))
 

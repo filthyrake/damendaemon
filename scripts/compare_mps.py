@@ -45,7 +45,10 @@ def main():
                        '--no-cache-prompt', '--cache-ram', '0', '-t', '4',
                        *[part for value in args.llama_override_kv for part in ('--override-kv',value)]]
         (output / f'compare-mps-{engine}-command.json').write_text(json.dumps({
-            'command': command, 'device': 'Apple M4 GPU', 'weights': args.weight_dtype, 'kv': 'float32',
+            'command': command, 'device': 'Apple M4 GPU',
+            'weights':env.get('DLLM_QUANTIZATION','none') if env.get('DLLM_QUANTIZATION','none')!='none' else args.weight_dtype,
+            'unquantized_weight_dtype':args.weight_dtype,'kv': 'float32',
+            'runtime_environment':{k:v for k,v in env.items() if k.startswith('DLLM_')},
             'context_per_slot': args.context, 'cpu_threads': 4, 'dllm_backend': env.get('DLLM_KERNELS', 'auto')}, indent=2))
         with (output / f'compare-mps-{engine}.log').open('w') as log:
             process = subprocess.Popen(command, env=env, stdout=log, stderr=log, start_new_session=True)

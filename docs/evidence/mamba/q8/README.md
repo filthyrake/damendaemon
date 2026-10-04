@@ -5,7 +5,7 @@ Same pinned 130M/370M checkpoints as the parent evidence, A2 GPU, context 512,
 aligned projection/output matrices. Input embeddings, convolution, normalization,
 SSM parameters and activations remain FP32. The 130M rank-48 time projection
 remains FP32; the 370M rank-64 projection is packed. Tied output weights get a
-separate packed copy. Metal Q8 and Mamba Q4 are explicitly unsupported.
+separate packed copy. Mamba Q4 remains unsupported. The later Metal qualification is recorded below.
 
 Both checkpoints pass 139 reference logits checks plus state checks through
 2048 tokens against CPU Transformers with independently gguf-py-quantized weights.
@@ -39,3 +39,22 @@ Raw commands, samples, timing trials and tensor/storage checks accompany this
 file. Real HTTP checks cover streaming, concurrent requests, cancellation,
 context boundaries and 130M/370M switching, including restoration from host RAM.
 The A30 was not used. No Q8 vLLM comparison was run.
+
+## Native Metal Q8
+
+Mamba-130M and 370M each pass 139 independent quantized-reference logits checks
+plus recurrent state through 2048 on M4. The 14-case native projection oracle
+uses CPU FP64, signed extreme values, zero scales, bias, odd dimensions, prompt
+rows and activations above FP16 range. Mamba-2/Mamba-1 Q8 hot-switching, chunks,
+prefix snapshots and real HTTP proof are in the Mamba-2 Q8 evidence.
+
+Matched 130M M4 Q8 context512/32-output/five-round throughput c1/c2/c4:
+dllm 58.63/114.09/272.00 tokens/s; llama.cpp 158.09/302.56/333.84. First text:
+dllm 28.09/45.84/57.42 ms; llama.cpp 22.80/28.85/62.14 ms. All Apple trial text
+agrees and matches dllm CUDA Q8. Apple still trails; these results do not imply
+parity. Raw results are under `metal/`.
+
+Separate ten-passage CPU drift study (192 predicted tokens) versus FP32:
+130M perplexity 23.76786 -> 24.20444, top-1 agreement 92.19%;
+370M perplexity 16.99595 -> 17.14334, agreement 97.40%.
+This is a small authored drift probe, not a broad model-quality benchmark.

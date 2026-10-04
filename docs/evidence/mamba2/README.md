@@ -24,7 +24,7 @@ offline preparation step, not an inference dependency.
 Initial scope: pure single-group Mamba-2 with FP32 weights/activations/state,
 context up to 2048, raw completions, graph decode on CUDA, slot isolation,
 model residency, optional chunked prefill and complete-prefix snapshots.
-Multi-group variants, Codestral, Falcon-H1 hybrids, quantized execution,
+Multi-group variants, Codestral, Falcon-H1 hybrids,
 speculative decoding and longer contexts are not qualified. No fabricated chat
 template is supplied. Registration requires the prepared safetensors directory.
 
@@ -63,3 +63,6 @@ GPU waits inside a host call with pure Python overhead. These are narrow initial
 measurements, not broad parity claims. vLLM 0.30 runs with torch 2.13 and FP32
 model dtype; dllm uses torch 2.6 on the A2. This measures the recorded installed
 configurations, not a claim that upstream has been exhaustively tuned.
+
+[Later Q8 qualification](q8/README.md) adds CUDA/Metal packed matrix execution,
+with separate numerical, memory, serving and quantization-drift evidence.

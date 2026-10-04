@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from safetensors import safe_open
 from tokenizers import Tokenizer
 from .config import eos_ids
-from .mamba import MambaWeights,MambaExecutor
+from .mamba import MambaWeights,MambaExecutor,packable
 from .device import selected_device
 
 
@@ -37,11 +37,17 @@ def config(path):
 def weight_bytes(path,quantization=None):
     from .quantization import mode
     from .qwen2 import weight_files
-    if mode(quantization)!='none':raise ValueError('Mamba-2 currently requires FP32 weights')
-    config(path);total=0
+    quantization=mode(quantization)
+    if quantization not in ('none','q8_0'):raise ValueError('Mamba-2 supports none or q8_0 weight precision')
+    c=config(path);total=0;has_head=False
     for file in weight_files(path):
         with safe_open(str(file),framework='pt',device='cpu') as reader:
-            total+=sum(math.prod(reader.get_slice(name).get_shape())*4 for name in reader.keys())
+            for name in reader.keys():
+                shape=reader.get_slice(name).get_shape();count=math.prod(shape)
+                total+=count+count//32*2 if quantization=='q8_0' and packable(name,shape) else count*4
+                has_head=has_head or name=='lm_head.weight'
+    if quantization=='q8_0' and c['tie_word_embeddings'] and not has_head and c['hidden_size']%32==0:
+        count=c['vocab_size']*c['hidden_size'];total+=count+count//32*2
     return total
 
 
@@ -49,7 +55,8 @@ class Mamba2Weights(MambaWeights):
     def __init__(self,path,max_context,quantization=None):
         from .quantization import mode
         from .qwen2 import weight_files
-        if mode(quantization)!='none':raise ValueError('Mamba-2 currently requires FP32 weights')
+        self.quantization=mode(quantization)
+        if self.quantization not in ('none','q8_0'):raise ValueError('Mamba-2 supports none or q8_0 weight precision')
         self.path=Path(path).resolve();self.config=c=config(path)
         if type(max_context) is not int or not 1<=max_context<=2048:raise ValueError('Mamba-2 context must be 1..2048')
         self.max_context=max_context;self.eos=eos_ids(c['eos_token_id']);self.scales={}
@@ -85,7 +92,12 @@ class Mamba2Weights(MambaWeights):
                 w[target+'in_bias']=take(prefix+'in_proj.bias',(i+cd+n,))
                 w[target+'out_bias']=take(prefix+'out_proj.bias',(h,))
         if state:raise ValueError('unexpected Mamba-2 tensors: '+', '.join(state))
-        self.bytes=sum(v.numel()*v.element_size() for v in {id(v):v for v in w.values()}.values())
+        if self.quantization=='q8_0':
+            from .quantization import quantize
+            for name,value in list(w.items()):
+                if packable(name,value.shape):w[name],self.scales[name]=quantize(value)
+        tensors=list(w.values())+list(self.scales.values())
+        self.bytes=sum(v.numel()*v.element_size() for v in {id(v):v for v in tensors}.values())
 
 
 class Mamba2Executor(MambaExecutor):

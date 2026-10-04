@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "model": "models/mamba2-130m",
+  "other_model": "models/mamba-130m",
+  "text_and_token_prompts_equal": true,
+  "stream_and_nonstream_equal": true,
+  "concurrent_isolation": true,
+  "context_boundary_with_output": true,
+  "encoder_decoder": false,
+  "oversized_requests_rejected": true,
+  "chat_rejected": true,
+  "cancellation_recovery": true,
+  "decoder_only_switch_and_host_restore": true,
+  "restore_timing": {
+    "source_tier": "host",
+    "activation_seconds": 0.9619462230039062,
+    "cached_prompt_tokens": 0,
+    "kernel_backend": "triton",
+    "weight_quantization": "q8_0",
+    "max_batch_size": 1,
+    "residual_dtype": "float32",
+    "first_token_seconds": 0.9834657609899295,
+    "total_seconds": 0.9955566429998726,
+    "decode_tokens_per_second": 578.9486651382011
+  },
+  "prefill_chunk_size": 31,
+  "prefix_cache_tokens": 1024,
+  "sample": {
+    "id": "cmpl-10cb5162a7344f14a9efa71848adc232",
+    "object": "text_completion",
+    "created": 1791123656,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": "\n\nThe blue bird flies over the",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 11,
+      "completion_tokens": 8,
+      "total_tokens": 19
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 3.1455049569922267,
+      "cached_prompt_tokens": 0,
+      "kernel_backend": "triton",
+      "weight_quantization": "q8_0",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 3.2942039290064713,
+      "total_seconds": 3.3070224240073003,
+      "decode_tokens_per_second": 546.0859484321132
+    }
+  },
+  "unsupported_cache_options_rejected": false
+}

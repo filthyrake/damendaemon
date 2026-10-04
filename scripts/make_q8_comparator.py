@@ -23,7 +23,7 @@ def main():
         parser.error('destination already exists')
     reader = gguf.GGUFReader(args.source)
     architecture=reader.fields['general.architecture'].contents()
-    dtype=getattr(np,args.matrix_dtype or ('float32' if architecture=='mamba' else 'float16'))
+    dtype=getattr(np,args.matrix_dtype or ('float32' if architecture in ('mamba','mamba2') else 'float16'))
     for tensor in reader.tensors:
         if tensor.tensor_type not in (gguf.GGMLQuantizationType.F16, gguf.GGMLQuantizationType.F32):
             parser.error('source must contain only unquantized F16/F32 tensors')
@@ -42,7 +42,7 @@ def main():
         tensors['output.weight'] = tensors['token_embd.weight']
     for name, data in tensors.items():
         selected=data.ndim==2 and name!='token_embd.weight'
-        if architecture=='mamba':
+        if architecture in ('mamba','mamba2'):
             selected=selected and data.shape[1]%32==0 and (name=='output.weight' or
                 name.endswith(('ssm_in.weight','ssm_x.weight','ssm_dt.weight','ssm_out.weight')))
         if selected:

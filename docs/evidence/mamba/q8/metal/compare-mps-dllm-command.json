@@ -1,0 +1,30 @@
+{
+  "command": [
+    "/Users/damenknight/dllm/.venv-metal/bin/python",
+    "-m",
+    "dllm",
+    "serve",
+    "--device",
+    "mps",
+    "--context",
+    "512",
+    "--port",
+    "64768",
+    "--batch-size",
+    "4",
+    "--model",
+    "a=results/models/mamba-130m"
+  ],
+  "device": "Apple M4 GPU",
+  "weights": "q8_0",
+  "unquantized_weight_dtype": "float32",
+  "kv": "float32",
+  "runtime_environment": {
+    "DLLM_QUANTIZATION": "q8_0",
+    "DLLM_DEVICE": "mps",
+    "DLLM_METAL_WEIGHT_DTYPE": "float32"
+  },
+  "context_per_slot": 512,
+  "cpu_threads": 4,
+  "dllm_backend": "auto"
+}

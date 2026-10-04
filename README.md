@@ -563,7 +563,7 @@ Pinned `state-spaces/mamba-130m-hf` and `mamba-370m-hf` run independently on A2 
 with native GPU causal convolution and recurrent-state kernels. Use raw
 completions with context up to 2048. Both devices pass independent logits/state
 checks and real streaming, concurrent, cancellation and model-switching tests.
-FP32 runs on both devices; CUDA also supports Q8 matrix weights with FP32
+Both devices support FP32 and native Q8 matrix weights with FP32
 embeddings and recurrent state. Optional chunked prefill interleaves long prompts
 with decoding; prefix caching restores complete recurrent snapshots (it cannot
 rewind to shorter prefixes). [Latency and correctness evidence](docs/evidence/mamba/chunks/README.md).
@@ -575,6 +575,7 @@ remaining performance gaps, especially on Apple.
 
 The pinned `state-spaces/mamba2-130m` checkpoint runs independently on CUDA and
 Metal after offline safetensors preparation. This adds head-wise recurrence and
-gated normalization, with FP32 state, raw completions, chunking, prefix snapshots
+gated normalization, with FP32 state and FP32 or Q8 matrix weights, raw completions,
+chunking, prefix snapshots
 and model switching through context 2048. Single-group models only; Codestral
 and Falcon hybrids are not covered. [Preparation and real GPU evidence](docs/evidence/mamba2/README.md).

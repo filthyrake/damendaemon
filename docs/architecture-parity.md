@@ -1062,3 +1062,7 @@ after lossless offline FP32 safetensors preparation. Both GPUs pass 139 referenc
 checks plus state, chunk/prefix and real HTTP/residency qualification through
 2048 context. [Evidence and measured gaps](evidence/mamba2/README.md).
 Single-group pure Mamba-2 only; no claim for Codestral or attention hybrids.
+
+Mamba-1/2 now support native Metal Q8 matrix projections as well as CUDA Q8.
+FP32 activations/state remain unchanged; quantization is opt-in and measured
+model drift is nonzero. [Q8 qualification and performance gaps](evidence/mamba2/q8/README.md).

@@ -129,7 +129,6 @@ class MambaExecutor:
         if not 1<=max_batch<=16:raise ValueError('batch capacity must be 1..16')
         self.model=model;self.c=c=model.config;self.context=model.max_context
         self.device=selected_device();self.max_batch=max_batch
-        if model.quantization!='none' and self.device!='cuda':raise ValueError('Mamba Q8 requires CUDA')
         self.compute_dtype=self.residual_dtype=torch.float32
         selected=kernels or os.environ.get('DLLM_KERNELS','auto')
         fuse=os.environ.get('DLLM_MAMBA_FUSED_DT','0')

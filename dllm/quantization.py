@@ -94,5 +94,8 @@ class Linear:
             return linear(x,weight,self.scales[id(weight)],bias)
         if weight.dtype != torch.int8:
             return self.fallback(x, weight, bias)
+        if x.device.type=='mps':
+            from .quantized_metal import linear
+            return linear(x,weight,self.scales[id(weight)],bias)
         from .quantized_kernels import linear
         return linear(x, weight, self.scales[id(weight)], bias)
