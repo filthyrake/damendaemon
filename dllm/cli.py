@@ -39,6 +39,7 @@ def main():
     run.add_argument("--prompt", required=True)
     run.add_argument('--raw', action='store_true', help='use the prompt directly without a chat template')
     run.add_argument("--max-tokens", type=int, default=128)
+    run.add_argument("--reasoning-effort",choices=("low","medium","high"),help="GPT-OSS Harmony reasoning effort")
     run.add_argument("--thinking", choices=("auto", "on", "off"), default="auto",
                      help="Qwen3 thinking mode; auto uses the model template default")
     server = commands.add_parser("serve", help="serve named local models on loopback")
@@ -125,7 +126,7 @@ def main():
     else:
         for event in runtime.generate("model", None if args.raw else [{"role": "user", "content": args.prompt}], args.max_tokens,
                                       enable_thinking=None if args.thinking == "auto" else args.thinking == "on",
-                                      raw_prompt=args.prompt if args.raw else None):
+                                      raw_prompt=args.prompt if args.raw else None,reasoning_effort=args.reasoning_effort):
             if "text" in event:
                 print(event["text"], end="", flush=True)
             else:

@@ -1,0 +1,116 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "rows": [
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "What is 2 + 2? Answer briefly."
+        }
+      ],
+      "reasoning_effort": "low",
+      "tokens": [
+        200005,
+        35644,
+        200008,
+        17958,
+        13,
+        200007,
+        200006,
+        173781,
+        200005,
+        17196,
+        200008,
+        19,
+        200002
+      ],
+      "content": "4",
+      "reasoning_content": "Simple.",
+      "final": {
+        "finish_reason": "stop",
+        "usage": {
+          "prompt_tokens": 78,
+          "completion_tokens": 13,
+          "total_tokens": 91
+        },
+        "timing": {
+          "source_tier": "disk",
+          "activation_seconds": 25.643148426999687,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 28.963825288010412,
+          "total_seconds": 29.710886345012113,
+          "decode_tokens_per_second": 16.062944102803993
+        }
+      }
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "My name is Ada."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello, Ada."
+        },
+        {
+          "role": "user",
+          "content": "What is my name? Answer briefly."
+        }
+      ],
+      "reasoning_effort": "low",
+      "tokens": [
+        200005,
+        35644,
+        200008,
+        1844,
+        5003,
+        1308,
+        71568,
+        13,
+        200007,
+        200006,
+        173781,
+        200005,
+        17196,
+        200008,
+        139151,
+        13,
+        200002
+      ],
+      "content": "Ada.",
+      "reasoning_content": "User says name Ada.",
+      "final": {
+        "finish_reason": "stop",
+        "usage": {
+          "prompt_tokens": 94,
+          "completion_tokens": 17,
+          "total_tokens": 111
+        },
+        "timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 2.077099634334445e-05,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 2.7527193629939575,
+          "total_seconds": 3.7393484369968064,
+          "decode_tokens_per_second": 16.216834088505482
+        }
+      }
+    }
+  ]
+}

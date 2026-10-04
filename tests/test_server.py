@@ -60,6 +60,8 @@ class FakeRuntime:
                 parts=[('',bytes([240])),('',bytes([159])),('',bytes([166])),('🦙',bytes([153]))]
             for token,(text,raw) in enumerate(parts,1):
                 event={'text':text,'token':token}
+                if messages and messages[0]['content']=='reasoning' and token==1:
+                    event['reasoning_content']='Separate analysis. '
                 if kwargs.get('logprobs'):
                     event['logprobs']={'token':raw.decode(errors='replace'),'logprob':-.25,'bytes':list(raw),'top_logprobs':[]}
                 yield event
@@ -96,6 +98,24 @@ class ServerTests(unittest.TestCase):
             data = json.load(response)
         self.assertEqual(data["choices"][0]["message"]["content"], "Hello world")
         self.assertEqual(data["usage"]["completion_tokens"], 2)
+
+    def test_reasoning_stays_separate_in_stream_and_nonstream(self):
+        messages=[{'role':'user','content':'reasoning'}]
+        with self.post(messages=messages,reasoning_effort='low') as response:whole=json.load(response)
+        self.assertEqual(self.runtime.last_options['reasoning_effort'],'low')
+        self.assertEqual(whole['choices'][0]['message'],{'role':'assistant','content':'Hello world',
+            'reasoning_content':'Separate analysis. '})
+        with self.post(messages=messages,reasoning_effort='low',stream=True) as response:
+            chunks=[json.loads(value) for value in events(response) if value!='[DONE]']
+        content='';reasoning=''
+        for chunk in chunks:
+            for choice in chunk.get('choices',[]):
+                content+=choice.get('delta',{}).get('content','')
+                reasoning+=choice.get('delta',{}).get('reasoning_content','')
+        self.assertEqual(content,'Hello world');self.assertEqual(reasoning,'Separate analysis. ')
+        for invalid in (True,[],{},'maximum'):
+            with self.subTest(invalid=invalid),self.assertRaises(HTTPError) as caught:self.post(reasoning_effort=invalid)
+            self.assertEqual(caught.exception.code,400)
 
     def test_tool_call_stream_and_nonstream_with_result_history(self):
         tools=[{'type':'function','function':{'name':'weather','parameters':{'type':'object'}}}]

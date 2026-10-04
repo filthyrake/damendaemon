@@ -1126,8 +1126,9 @@ Raw HTTP completions pass streaming/non-streaming equivalence, disconnect
 recovery, two simultaneous requests, actual GPU swapping to Qwen2 and back,
 graph/executor reclamation, and explicit unload/host restoration. Response
 metadata identifies native `mxfp4` weights rather than mislabeling them as
-unquantized. Harmony chat/tool handling remains unqualified and the chat route
-is explicitly rejected. Raw text continuation is not a chat-quality assessment.
+unquantized. At this initial stage Harmony chat/tools were unqualified and the
+chat route was rejected; subsequent text-chat qualification is recorded below.
+Raw text continuation is not a chat-quality assessment.
 
 Initial A2 measurements: approximately 90.4 ms per graph decode step (~11 tokens/s)
 for a short raw prompt; 10.98 seconds for a 129-token prefill. The latter is a
@@ -1204,3 +1205,36 @@ internal matched A/B, not vLLM/llama.cpp parity. Evidence and individual samples
 [decode qualification](evidence/gpt-oss/decode/). Reproduce with
 `scripts/probe_mxfp4_chunks.py`, `scripts/replay_gpt_oss.py`, and
 `scripts/benchmark_gpt_oss_decode.py`.
+
+### GPT-OSS text Harmony chat
+
+Text chat is now qualified separately from the earlier raw-completion gates.
+The native token-framed parser recognizes checkpoint control IDs, separates
+`analysis` into `reasoning_content`, and emits final/commentary text as `content`.
+It never treats header strings as answer text. Alias spellings are validated
+against the tokenizer because this pin uses `<|channel|>` / `<|return|>` where
+some Harmony examples use older names. Function handoffs and non-text control
+frames fail explicitly; this is not general Harmony tool/multimodal support.
+
+Nineteen CPU checks match exact prompt token IDs with Transformers 5.18 and
+streamed text channels with the official `openai-harmony` 0.0.8 Rust parser,
+including captured output from the actual native model. The reference library
+is used only in validation; production keeps its existing tokenizer and native
+executor. The [official format repository](https://github.com/openai/harmony)
+and the pinned checkpoint template are the protocol sources.
+
+Real A2 HTTP checks at 512 context/two slots pass ordinary and Unicode answers,
+prior-turn recall, reuse of the returned assistant message (including its
+reasoning field), SSE/non-stream equivalence, token caps inside headers and
+analysis, final-text stopping, disconnect during analysis, concurrent channel
+isolation, GPU graph reclamation on model swap, and equivalent host restoration.
+Generated answer examples include `4`, `Ada.`, `café 🐈`, and `5` after continuing
+a returned message. These are protocol/smoke examples, not a model-quality suite.
+
+`reasoning_effort=low|medium|high` is GPT-OSS-only; the template default remains
+medium. CLI `--reasoning-effort` uses the same validation and prints final text.
+All generated control/body tokens count toward the completion limit and usage.
+Stop strings match content, not analysis. GPT-OSS tool calls, JSON constraints,
+chat logprobs and chat `ignore_eos` remain unsupported. Raw completion behavior
+is preserved. See [Harmony evidence](evidence/gpt-oss/harmony/); 231 CPU/HTTP
+regressions pass alongside the hardware and independent-format checks.

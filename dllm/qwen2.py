@@ -201,9 +201,7 @@ class ModelWeights:
         self.bytes = sum(t.numel() * t.element_size() for t in
                          {id(t):t for t in (*weights.values(), *self.scales.values())}.values())
 
-    def chat_tokens(self, messages, enable_thinking=None, tools=None, tool_json=False):
-        if getattr(self,'config',{}).get('model_type')=='gpt_oss':
-            raise ValueError('GPT-OSS Harmony chat is not yet qualified; use raw completions')
+    def chat_tokens(self, messages, enable_thinking=None, tools=None, tool_json=False, reasoning_effort=None):
         if self.template is None:
             raise ValueError('model has no chat template; use raw completions')
         from .tool_calls import template_messages,validate_tools
@@ -214,6 +212,11 @@ class ModelWeights:
                 raise ValueError('tool chat requires a qualified Qwen2 or Qwen3 JSON-call template')
         if tool_json and not tools:raise ValueError('forced tool prefix requires tools')
         options = {}
+        if reasoning_effort is not None:
+            if (self.config['model_type']!='gpt_oss' or not isinstance(reasoning_effort,str)
+                    or reasoning_effort not in ('low','medium','high')):
+                raise ValueError('reasoning_effort requires GPT-OSS and low, medium or high')
+            options['reasoning_effort']=reasoning_effort
         if enable_thinking is not None:
             if type(enable_thinking) is not bool or self.config["model_type"] not in ("qwen3", "qwen3_5_text"):
                 raise ValueError("enable_thinking is a boolean option for Qwen3/Qwen3.5 models only")

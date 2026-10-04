@@ -130,8 +130,10 @@ def validate_messages(messages):
                 _json_object(function['arguments'])
                 seen.add(call_id);pending[call_id]=function['name']
         elif role in ('system','user','assistant'):
-            allowed={'role','content'}|({'tool_calls'} if role=='assistant' else set())
+            allowed={'role','content'}|({'tool_calls','reasoning_content'} if role=='assistant' else set())
             if set(message)-allowed or not isinstance(content,str):raise ValueError('chat content must be text')
+            if message.get('reasoning_content') is not None and not isinstance(message['reasoning_content'],str):
+                raise ValueError('assistant reasoning history must be text or null')
         else:raise ValueError('unsupported message role')
     if pending:raise ValueError('tool calls need results before generation')
     return copy.deepcopy(messages)

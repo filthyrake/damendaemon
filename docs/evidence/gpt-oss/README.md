@@ -1,7 +1,8 @@
 # GPT-OSS primitive qualification
 
 Tracking: [#39](https://github.com/filthyrake/dllm/issues/39). The initial reports below qualify primitives. Subsequent full-model and raw
-HTTP qualification is recorded separately at the end; Harmony remains unqualified.
+HTTP qualification is recorded separately at the end. Text Harmony chat is
+now qualified in `harmony/`; function handoffs remain unqualified.
 
 Checkpoint: `openai/gpt-oss-20b` at
 `6cee5e81ee83917806bbde320786a8fb61efebee`, HF-format root shards,
@@ -71,3 +72,10 @@ compiler register counts, exact format and matrix checks, 72 independent model
 checks, and alternating full HTTP requests using separate baseline/optimized
 CUDA graph sets. Reduction order changes, so numerical reference gates and
 exact generated-response checks are both retained.
+
+The `harmony/` reports qualify text chat separately: exact prompt IDs against
+Transformers, streaming channels against the official Rust Harmony parser,
+actual native conversations, Unicode, token caps, stop strings, response-history
+round trips, concurrent requests, cancellation and host/GPU swapping. No runtime
+dependency on the reference parser was added. Tools, structured chat and chat
+logprobs remain rejected.

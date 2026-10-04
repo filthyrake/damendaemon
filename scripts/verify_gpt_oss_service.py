@@ -64,10 +64,11 @@ def main():
         for result in concurrent:equal(result,reference)
         assert max(r['dllm_timing']['max_batch_size'] for r in concurrent)==2
         try:
-            post({'model':'oss','messages':[{'role':'user','content':'Hello'}],'max_tokens':4},'/v1/chat/completions')
+            post({'model':'oss','messages':[{'role':'user','content':'Hello'}],'max_tokens':4,
+                'tools':[{'type':'function','function':{'name':'unqualified','parameters':{'type':'object'}}}]},'/v1/chat/completions')
         except HTTPError as error:
             message=error.read().decode();assert error.code==400 and 'error' in json.loads(message),message
-        else:raise AssertionError('unqualified Harmony route accepted')
+        else:raise AssertionError('unqualified Harmony tools accepted')
         with runtime.runtime.session('oss') as (executor,_,_):
             old=weakref.ref(executor);graph=weakref.ref(executor.batch_graphs[1][4])
         del executor
@@ -81,7 +82,7 @@ def main():
             'context':256,'batch_size':2,'prefill_mode':os.environ.get('DLLM_GPT_OSS_PREFILL','default'),'reference':reference,'warm':warm,'cold_http_seconds':cold,
             'warm_http_seconds':warm_seconds,'host_restore_http_seconds':restore_seconds,
             'stream_equivalence':True,'disconnect_recovery':True,'concurrent_equivalence':True,
-            'unqualified_harmony_rejected':True,'graph_executor_reclaimed_on_swap':True,
+            'unsupported_harmony_tools_rejected':True,'graph_executor_reclaimed_on_swap':True,
             'host_swap_restore_equivalence':True,'explicit_unload_restore':True,'native_format_reported':True},indent=2))
     finally:
         server.shutdown();server.server_close();thread.join();runtime.close()

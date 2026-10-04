@@ -52,6 +52,8 @@ class Pending:
     speculative_matched: int = 0
     speculative_misses: int = 0
     speculative_cooldown: int = 0
+    reasoning_effort: str | None = None
+    output_decoder: object | None = None
 
 
 class BatchedRuntime:
@@ -139,7 +141,7 @@ class BatchedRuntime:
     def generate(self, alias, messages, max_tokens=128, enable_thinking=None,
                  temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None,
                  presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None,
-                 logprobs=False,top_logprobs=0,tools=None,tool_choice=None):
+                 logprobs=False,top_logprobs=0,tools=None,tool_choice=None,reasoning_effort=None):
         if alias not in self.models:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
@@ -157,7 +159,7 @@ class BatchedRuntime:
         if raw_prompt is not None:
             from .prompts import validate_raw
             raw_prompt = validate_raw(raw_prompt)
-            if messages is not None or enable_thinking is not None:
+            if messages is not None or enable_thinking is not None or reasoning_effort is not None:
                 raise ValueError('raw prompts cannot include chat messages or template options')
         from .structured import prepare_options
         schema, enable_thinking = prepare_options(response_format, stops, enable_thinking)
@@ -167,7 +169,7 @@ class BatchedRuntime:
             schema=tool_schema
         if not self.admission.acquire(blocking=False):
             raise BusyError("request queue is full")
-        request = Pending(alias, copy.deepcopy(messages), max_tokens, enable_thinking, sampler, stops, raw_prompt, schema,tools=tools,tool_json=tool_schema is not None)
+        request = Pending(alias, copy.deepcopy(messages), max_tokens, enable_thinking, sampler, stops, raw_prompt, schema,tools=tools,tool_json=tool_schema is not None,reasoning_effort=reasoning_effort)
         try:
             with self.condition:
                 if self.closed:
@@ -240,11 +242,16 @@ class BatchedRuntime:
         request.last_progress = time.monotonic()
         stop = token in executor.model.eos
         finished = stop or len(request.output) >= request.max_tokens
-        decoded = executor.model.tokenizer.decode(request.output, skip_special_tokens=True)
-        delta, request.emitted, text_stop = text_delta(decoded, request.emitted, request.stops, finished)
+        reasoning=''
+        if request.output_decoder is not None:
+            delta,reasoning,text_stop=request.output_decoder.feed(token,final=finished)
+        else:
+            decoded = executor.model.tokenizer.decode(request.output, skip_special_tokens=True)
+            delta, request.emitted, text_stop = text_delta(decoded, request.emitted, request.stops, finished)
         stop = stop or text_stop
         finished = finished or text_stop
         event={"token": token, "text": delta}
+        if reasoning:event['reasoning_content']=reasoning
         if request.sampler.logprobs_top is not None and token not in executor.model.eos:
             event['logprobs']=request.sampler.token_decoder.format(request.sampler.last_logprobs)
         request.events.put_nowait(event)
@@ -290,8 +297,11 @@ class BatchedRuntime:
         thinking=request.enable_thinking
         if request.schema is not None and request.raw_prompt is None and executor.model.config['model_type'] in ('qwen3','qwen3_5_text'):
             thinking=False
-        tokens=encode(executor.model,request.messages,request.raw_prompt,thinking,request.tools,request.tool_json)
+        tokens=encode(executor.model,request.messages,request.raw_prompt,thinking,request.tools,request.tool_json,request.reasoning_effort)
         validate_lengths(executor,len(tokens),request.max_tokens)
+        from .harmony import output_stream
+        request.output_decoder=output_stream(executor.model,request.raw_prompt,request.stops,
+            request.schema,request.sampler.logprobs_top)
         if request.schema is not None:
             from .structured import Constraint
             request.sampler.constraint=Constraint(executor.model,request.schema)

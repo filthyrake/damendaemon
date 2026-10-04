@@ -1,0 +1,374 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "context": 512,
+  "batch_size": 2,
+  "rows": [
+    {
+      "case": "chat_stream_equivalence",
+      "response": {
+        "id": "chatcmpl-96221ff948ab498f8e31b81eab5a3850",
+        "object": "chat.completion",
+        "created": 1791143596,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "4",
+              "reasoning_content": "Simple."
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 78,
+          "completion_tokens": 13,
+          "total_tokens": 91
+        },
+        "dllm_timing": {
+          "source_tier": "disk",
+          "activation_seconds": 17.726675550002255,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 18.967974387996946,
+          "total_seconds": 19.70917774399277,
+          "decode_tokens_per_second": 16.189888919050773
+        }
+      }
+    },
+    {
+      "case": "chat_stream_equivalence",
+      "response": {
+        "id": "chatcmpl-f1878544dd5e40ceafa7ed12bf5da850",
+        "object": "chat.completion",
+        "created": 1791143617,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "Ada.",
+              "reasoning_content": "User says name Ada."
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 94,
+          "completion_tokens": 17,
+          "total_tokens": 111
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 7.64899596106261e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.9413056320045143,
+          "total_seconds": 1.9276956190005876,
+          "decode_tokens_per_second": 16.220764820135685
+        }
+      }
+    },
+    {
+      "case": "chat_stream_equivalence",
+      "response": {
+        "id": "chatcmpl-9db7245655b34843ae94ef0d1ac46044",
+        "object": "chat.completion",
+        "created": 1791143621,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "caf\u00e9 \ud83d\udc08",
+              "reasoning_content": "User wants exact text."
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 77,
+          "completion_tokens": 20,
+          "total_tokens": 97
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 7.824011845514178e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.9231822809961159,
+          "total_seconds": 2.0929056070017396,
+          "decode_tokens_per_second": 16.243157315569043
+        }
+      }
+    },
+    {
+      "case": "response_message_history_roundtrip",
+      "response": {
+        "id": "chatcmpl-bc725ef345a1458dbb067b234e8c652f",
+        "object": "chat.completion",
+        "created": 1791143625,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "5",
+              "reasoning_content": "Add one to 4 =>5."
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 99,
+          "completion_tokens": 19,
+          "total_tokens": 118
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 7.648006430827081e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 2.0309475980029674,
+          "total_seconds": 3.141569060011534,
+          "decode_tokens_per_second": 16.207142231383568
+        }
+      }
+    },
+    {
+      "case": "header_or_analysis_token_cap",
+      "cap": 1,
+      "response": {
+        "id": "chatcmpl-9a6828bfff664390a71ef1b18cf2bd41",
+        "object": "chat.completion",
+        "created": 1791143628,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": ""
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 78,
+          "completion_tokens": 1,
+          "total_tokens": 79
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 8.795992471277714e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.9177122969995253,
+          "total_seconds": 0.9178020810068119,
+          "decode_tokens_per_second": null
+        }
+      }
+    },
+    {
+      "case": "header_or_analysis_token_cap",
+      "cap": 2,
+      "response": {
+        "id": "chatcmpl-78025068e32a482984a97cba1bceac45",
+        "object": "chat.completion",
+        "created": 1791143630,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": ""
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 78,
+          "completion_tokens": 2,
+          "total_tokens": 80
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 6.477988790720701e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.919192100991495,
+          "total_seconds": 0.9806998849962838,
+          "decode_tokens_per_second": 16.25810482657191
+        }
+      }
+    },
+    {
+      "case": "header_or_analysis_token_cap",
+      "cap": 3,
+      "response": {
+        "id": "chatcmpl-c9cc39b1082d4ca9bba4c90e52c978af",
+        "object": "chat.completion",
+        "created": 1791143632,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": ""
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 78,
+          "completion_tokens": 3,
+          "total_tokens": 81
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 6.629008566960692e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.9216137180046644,
+          "total_seconds": 1.0446561720018508,
+          "decode_tokens_per_second": 16.254552270598683
+        }
+      }
+    },
+    {
+      "case": "header_or_analysis_token_cap",
+      "cap": 4,
+      "response": {
+        "id": "chatcmpl-0c96e7816276445c911368e75013ce30",
+        "object": "chat.completion",
+        "created": 1791143634,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "",
+              "reasoning_content": "Simple"
+            },
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 78,
+          "completion_tokens": 4,
+          "total_tokens": 82
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 8.103001164272428e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.914429796001059,
+          "total_seconds": 1.098787593000452,
+          "decode_tokens_per_second": 16.272704755795477
+        }
+      }
+    },
+    {
+      "case": "final_content_stop",
+      "response": {
+        "id": "chatcmpl-eeb00c67366c4b3185955880461aacc2",
+        "object": "chat.completion",
+        "created": 1791143637,
+        "model": "oss",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "",
+              "reasoning_content": "Simple."
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 78,
+          "completion_tokens": 12,
+          "total_tokens": 90
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 5.837006028741598e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-mxfp4",
+          "weight_quantization": "mxfp4",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.948627153004054,
+          "total_seconds": 1.6262088299990864,
+          "decode_tokens_per_second": 16.23420522346953
+        }
+      }
+    }
+  ],
+  "disconnect_during_analysis_recovery": true,
+  "concurrent_channel_isolation": true,
+  "unsupported_tools_schema_scores_rejected": true,
+  "swap_graph_reclaimed": true,
+  "host_restore_equivalent": true
+}

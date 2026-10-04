@@ -11,7 +11,7 @@ GPU execution; dllm does not depend on vLLM, llama.cpp, Ollama,
 or Transformers generation. Transformers is used for validation and optional structured-output tokenizer adaptation; model execution remains independent.
 
 Additional qualified checkpoints include Llama 3.2, Gemma 3 text, Phi-3
-mini, Mistral 7B, StarCoder2 3B, GPT-2, Pythia (GPT-NeoX), BLOOM, MiniLM sentence embeddings, CUDA OLMoE, and raw GPT-OSS-20B with native packed MXFP4 experts. Exact revisions, numerical gates, and remaining limits are recorded in
+mini, Mistral 7B, StarCoder2 3B, GPT-2, Pythia (GPT-NeoX), BLOOM, MiniLM sentence embeddings, CUDA OLMoE, and GPT-OSS-20B text chat with native packed MXFP4 experts. Exact revisions, numerical gates, and remaining limits are recorded in
 [architecture evidence](docs/architecture-parity.md). The [current support matrix](docs/support.md) summarizes architecture and serving boundaries.
 
 The server selects models from each request without restarting. GPU-resident
@@ -699,14 +699,29 @@ for longer prompts. Measured complete HTTP latency drops a further 19–31% on
 the tested Qwen3/Llama cases, with independent reference and exact-output gates.
 [Projection accuracy, memory and full-request measurements](docs/evidence/precise-prefill/README.md).
 
-### GPT-OSS raw completions (CUDA)
+### GPT-OSS (CUDA)
 
-The pinned 20B checkpoint now passes independent FP32 layer/logit and raw HTTP
-lifecycle checks on A2. Harmony chat and tools are not yet qualified. Prepare
-the exact HF-format shards with `scripts/prepare_gpt_oss.py`, then serve the
-local directory with a host budget large enough for its 12.83 GiB prepared
-weights (for example, `--host-gib 18 --context 256 --batch-size 2`). Use
-`/v1/completions`; `/v1/chat/completions` is rejected for this model. Keep the
-conversion policy at `none`: the checkpoint already contains native MXFP4.
-Grouped expert prefill accelerates prompts of at least 16 tokens; see measured boundaries in
-[architecture evidence](docs/architecture-parity.md#gpt-oss-20b-packed-raw-execution).
+The pinned 20B checkpoint supports text Harmony chat and raw completions, with
+independent layer/logit, format and HTTP lifecycle qualification on A2. Prepare
+the exact HF-format shards with `scripts/prepare_gpt_oss.py`. Its prepared host
+weights occupy 12.83 GiB; use a suitable host budget, for example:
+
+```sh
+dllm run models/gpt-oss-20b --context 512 --host-gib 18 \
+  --reasoning-effort low --prompt 'What is 2 + 2? Answer briefly.'
+```
+
+`/v1/chat/completions` accepts `reasoning_effort` (`low`, `medium`, `high`);
+the checkpoint defaults to medium. Final answer text is returned as `content`,
+analysis separately as `reasoning_content`, including SSE deltas. CLI output
+prints the final answer. Assistant responses can be reused as message history;
+the checkpoint template discards prior analysis. Token limits count all generated
+protocol and analysis tokens, so a small limit can end before answer text begins.
+Custom stop strings apply to answer/commentary text, not analysis or headers.
+
+Keep conversion policy `none`: the checkpoint already contains native MXFP4,
+reported accurately in response timing metadata. Grouped expert prefill is the
+default for prompts of at least 16 tokens. Qualified text-chat scope is A2,
+512 context and two slots; GPT-OSS tools, structured chat output, chat logprobs,
+120B and longer contexts remain unqualified and unsupported combinations fail
+explicitly. See [architecture evidence](docs/architecture-parity.md#gpt-oss-20b-packed-raw-execution).

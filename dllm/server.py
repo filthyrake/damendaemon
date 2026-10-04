@@ -98,7 +98,7 @@ def handler_for(runtime):
                 if raw:
                     allowed = (allowed - {'messages', 'chat_template_kwargs', 'max_completion_tokens'}) | {'prompt'}
                 else:
-                    allowed |= {'logprobs','top_logprobs','tools','tool_choice'}
+                    allowed |= {'logprobs','top_logprobs','tools','tool_choice','reasoning_effort'}
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
                 from .tool_calls import prepare_tools,validate_messages,ToolCallStream,JsonToolCallStream
@@ -150,6 +150,10 @@ def handler_for(runtime):
                     raise ValueError("chat_template_kwargs supports only boolean enable_thinking")
                 if tool_schema is not None and template_options.get('enable_thinking') is True:
                     raise ValueError('forced tool calls cannot use thinking')
+                if 'reasoning_effort' in body:
+                    if not isinstance(body['reasoning_effort'],str) or body['reasoning_effort'] not in ('low','medium','high'):
+                        raise ValueError('reasoning_effort must be low, medium or high')
+                    template_options={**template_options,'reasoning_effort':body['reasoning_effort']}
                 stream = body.get("stream", False)
                 alias = body["model"]
                 request_id = ("cmpl-" if raw else "chatcmpl-") + uuid.uuid4().hex
@@ -166,6 +170,7 @@ def handler_for(runtime):
                     self.wfile.write(("data: " + json.dumps(payload) + "\n\n").encode())
                     self.wfile.flush()
                 text = ""
+                reasoning_text = ""
                 tool_parser=(JsonToolCallStream(tool_schema) if tool_schema is not None
                     else ToolCallStream(selected_tools) if selected_tools else None)
                 token_scores=[]
@@ -200,6 +205,9 @@ def handler_for(runtime):
                             score=event.get('logprobs')
                             if score is not None and not stream:
                                 token_scores.append(score)
+                            reasoning=event.get('reasoning_content','')
+                            reasoning_text+=reasoning
+                            if stream and reasoning:send_event(chunk({'reasoning_content':reasoning}))
                             deltas=tool_parser.feed(event['text']) if tool_parser else [{'content':event['text']}]
                             for delta in deltas:
                                 text+=delta.get('content','')
@@ -210,6 +218,7 @@ def handler_for(runtime):
                     self.wfile.flush()
                 else:
                     choice = {'text': text, 'logprobs': None} if raw else {'message': {'role': 'assistant', 'content': text}}
+                    if not raw and reasoning_text:choice['message']['reasoning_content']=reasoning_text
                     if tool_parser and tool_parser.calls:
                         choice['message'].update(content=text or None,tool_calls=tool_parser.calls)
                     if report_scores:

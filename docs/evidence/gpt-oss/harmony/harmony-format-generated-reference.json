@@ -1,0 +1,275 @@
+{
+  "passed": true,
+  "model": "models/gpt-oss-20b",
+  "reference_transformers": "5.18.0",
+  "reference_openai_harmony": "0.0.8",
+  "rows": [
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What is 2 + 2?"
+        }
+      ],
+      "reasoning_effort": null,
+      "tokens": 75,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What is 2 + 2?"
+        }
+      ],
+      "reasoning_effort": "low",
+      "tokens": 75,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What is 2 + 2?"
+        }
+      ],
+      "reasoning_effort": "medium",
+      "tokens": 75,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What is 2 + 2?"
+        }
+      ],
+      "reasoning_effort": "high",
+      "tokens": 75,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Answer briefly in French."
+        },
+        {
+          "role": "user",
+          "content": "Bonjour, caf\u00e9 \ud83d\udc08."
+        }
+      ],
+      "reasoning_effort": null,
+      "tokens": 86,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Answer briefly in French."
+        },
+        {
+          "role": "user",
+          "content": "Bonjour, caf\u00e9 \ud83d\udc08."
+        }
+      ],
+      "reasoning_effort": "low",
+      "tokens": 86,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Answer briefly in French."
+        },
+        {
+          "role": "user",
+          "content": "Bonjour, caf\u00e9 \ud83d\udc08."
+        }
+      ],
+      "reasoning_effort": "medium",
+      "tokens": 86,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "system",
+          "content": "Answer briefly in French."
+        },
+        {
+          "role": "user",
+          "content": "Bonjour, caf\u00e9 \ud83d\udc08."
+        }
+      ],
+      "reasoning_effort": "high",
+      "tokens": 86,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "user",
+          "content": "My name is Ada."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello, Ada.",
+          "reasoning_content": "Greet Ada."
+        },
+        {
+          "role": "user",
+          "content": "What is my name?"
+        }
+      ],
+      "reasoning_effort": null,
+      "tokens": 91,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "user",
+          "content": "My name is Ada."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello, Ada.",
+          "reasoning_content": "Greet Ada."
+        },
+        {
+          "role": "user",
+          "content": "What is my name?"
+        }
+      ],
+      "reasoning_effort": "low",
+      "tokens": 91,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "user",
+          "content": "My name is Ada."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello, Ada.",
+          "reasoning_content": "Greet Ada."
+        },
+        {
+          "role": "user",
+          "content": "What is my name?"
+        }
+      ],
+      "reasoning_effort": "medium",
+      "tokens": 91,
+      "exact": true
+    },
+    {
+      "case": "prompt",
+      "messages": [
+        {
+          "role": "user",
+          "content": "My name is Ada."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello, Ada.",
+          "reasoning_content": "Greet Ada."
+        },
+        {
+          "role": "user",
+          "content": "What is my name?"
+        }
+      ],
+      "reasoning_effort": "high",
+      "tokens": 91,
+      "exact": true
+    },
+    {
+      "case": "official_stream",
+      "index": 0,
+      "tokens": 6,
+      "exact": true,
+      "result": {
+        "content": "A plain answer.",
+        "analysis": ""
+      }
+    },
+    {
+      "case": "official_stream",
+      "index": 1,
+      "tokens": 31,
+      "exact": true,
+      "result": {
+        "content": "The answer is 42. \ud83d\udc08",
+        "analysis": "Let me think: caf\u00e9, \u6771\u4eac, \ud83d\udc08."
+      }
+    },
+    {
+      "case": "official_stream",
+      "index": 2,
+      "tokens": 19,
+      "exact": true,
+      "result": {
+        "content": "Here is the result. Done.",
+        "analysis": ""
+      }
+    },
+    {
+      "case": "official_stream",
+      "index": 3,
+      "tokens": 10,
+      "exact": true,
+      "result": {
+        "content": "{\"result\":\"caf\u00e9\"}",
+        "analysis": ""
+      }
+    },
+    {
+      "case": "official_stream",
+      "index": 4,
+      "tokens": 653,
+      "exact": true,
+      "result": {
+        "content": "Finished.",
+        "analysis": "A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. A longer trace with Unicode caf\u00e9 \ud83d\udc08. "
+      }
+    },
+    {
+      "case": "official_stream",
+      "index": 5,
+      "tokens": 13,
+      "exact": true,
+      "result": {
+        "content": "4",
+        "analysis": "Simple."
+      }
+    },
+    {
+      "case": "official_stream",
+      "index": 6,
+      "tokens": 17,
+      "exact": true,
+      "result": {
+        "content": "Ada.",
+        "analysis": "User says name Ada."
+      }
+    }
+  ],
+  "scope": "CPU format checks only; no GPU chat-quality or tool-call qualification follows."
+}

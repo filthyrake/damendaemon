@@ -266,7 +266,7 @@ class Runtime:
     def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None,
                  temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None,
                  presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None,
-                 logprobs=False,top_logprobs=0,tools=None,tool_choice=None):
+                 logprobs=False,top_logprobs=0,tools=None,tool_choice=None,reasoning_effort=None):
         """Yield token IDs/text deltas plus a final usage/timing event.
 
         Closing this generator releases its model lease, including on client
@@ -295,12 +295,14 @@ class Runtime:
         start = time.perf_counter()
         with self.session(alias) as (executor, tier, load_seconds):
             model = executor.model
+            from .harmony import output_stream
+            output_decoder=output_stream(model,raw_prompt,stops,schema,sampler.logprobs_top,ignore_eos)
             if sampler.logprobs_top is not None:
                 sampler.token_decoder=decoder_for(model)
             from .prompts import encode,validate_lengths,decoder_prefix
             if schema is not None and raw_prompt is None and model.config["model_type"] in ("qwen3", "qwen3_5_text"):
                 enable_thinking = False
-            prompt = encode(model, messages, raw_prompt, enable_thinking,tools,tool_schema is not None)
+            prompt = encode(model, messages, raw_prompt, enable_thinking,tools,tool_schema is not None,reasoning_effort)
             validate_lengths(executor,len(prompt),max_tokens)
             if schema is not None:
                 sampler.constraint = Constraint(model, schema)
@@ -321,10 +323,15 @@ class Runtime:
                     if first_time is None:
                         first_time = time.perf_counter() - start
                     stop = not ignore_eos and token in model.eos
-                    decoded = model.tokenizer.decode(output, skip_special_tokens=True)
-                    delta, emitted, text_stop = text_delta(decoded, emitted, stops, stop or index == max_tokens-1)
+                    reasoning=''
+                    if output_decoder is not None:
+                        delta,reasoning,text_stop=output_decoder.feed(token,final=stop or index==max_tokens-1)
+                    else:
+                        decoded = model.tokenizer.decode(output, skip_special_tokens=True)
+                        delta, emitted, text_stop = text_delta(decoded, emitted, stops, stop or index == max_tokens-1)
                     stop = stop or text_stop
                     event={"token": token, "text": delta}
+                    if reasoning:event['reasoning_content']=reasoning
                     if sampler.logprobs_top is not None and token not in model.eos:
                         event['logprobs']=sampler.token_decoder.format(sampler.last_logprobs)
                     yield event
