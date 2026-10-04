@@ -363,8 +363,8 @@ dllm add chat /path/to/chat/snapshot --quantization q8_0
 dllm add encoder /path/to/minilm/snapshot --quantization none
 ```
 
-`POST /v1/models/register` accepts the same `quantization` field (`none` or
-`q8_0`), and `/v1/models/status` reports each alias's policy. Omission uses the
+`POST /v1/models/register` accepts the same `quantization` field (`none`,
+`q8_0`, or `q4_0`), and `/v1/models/status` reports each alias's policy. Omission uses the
 server's `DLLM_QUANTIZATION` default captured at startup. Policies are part of
 alias identity and remain stable across eviction/reload; register another alias
 for a different precision. Q8 still requires CUDA. A Q8 decoder and an
@@ -399,3 +399,18 @@ all input tokens. The default is disabled. This uses additional GPU memory and
 copies; it is not paged KV or zero-copy sharing. Under memory pressure, caching
 is skipped while ordinary inference continues. Numerical qualification and
 latency measurements are in the architecture evidence.
+
+### Experimental packed four-bit weights
+
+`dllm add compact /path/to/snapshot --quantization q4_0` enables native CUDA
+Q4_0 projection weights with FP16 block scales. Input embeddings and norms keep
+their existing precision. `DLLM_QUANTIZATION=q4_0` sets the startup default;
+per-model policies can mix Q4, Q8 and unquantized models in the same server.
+
+The first independent model gate passes Qwen2.5-0.5B on A2. The loader currently
+allows dense Qwen2/Qwen3/Llama/Phi-3/Mistral only; acceptance alone is not a
+checkpoint qualification. Four-bit quantization is lossy: on our small authored
+171-token Qwen2 corpus, next-token agreement with the original weights was
+74.3% for Q4 versus 95.3% for Q8. This is not a broad quality evaluation.
+Q4 remains opt-in and CUDA-only. This is on-load conversion from safetensors;
+GGUF, AWQ and GPTQ checkpoint import are still unsupported.

@@ -1,0 +1,48 @@
+{
+  "model": "results/models/qwen2",
+  "device": "cpu",
+  "arithmetic": "float32",
+  "weight_conversion_dtype": "float16",
+  "texts": [
+    "The Earth travels around the Sun once every year. The Moon travels around the Earth.",
+    "A binary search repeatedly divides a sorted list in half until it finds the requested value.",
+    "Water freezes at zero degrees Celsius under ordinary atmospheric pressure.",
+    "A gardener planted tomato seeds in spring and watered them every morning.",
+    "The sum of seven and five is twelve. Multiplying three by four also gives twelve.",
+    "In Python, a dictionary maps keys to values, while a list stores an ordered sequence of elements.",
+    "The train left the station at noon and arrived in the next city two hours later.",
+    "Bonjour, comment allez-vous? Je voudrais un caf\u00e9 et un verre d\u2019eau, s\u2019il vous pla\u00eet.",
+    "\u6771\u4eac\u306f\u65e5\u672c\u306e\u9996\u90fd\u3067\u3059\u3002\u4eca\u65e5\u306f\u7a7a\u304c\u9752\u304f\u3001\u7a4f\u3084\u304b\u306a\u98a8\u304c\u5439\u3044\u3066\u3044\u307e\u3059\u3002",
+    "A reliable program validates its inputs, handles errors, and keeps unrelated requests isolated."
+  ],
+  "scope": "small authored corpus; measures quantization drift, not broad task quality or GPU performance",
+  "results": [
+    {
+      "weight_quantization": "none",
+      "tokens": 171,
+      "mean_nll": 2.874166075946295,
+      "perplexity": 17.710648625601607,
+      "teacher_forced_top1_agreement": null,
+      "per_text_relative_logit_rms": []
+    },
+    {
+      "weight_quantization": "q8_0",
+      "tokens": 171,
+      "mean_nll": 2.8623997983876723,
+      "perplexity": 17.503481401762883,
+      "teacher_forced_top1_agreement": 0.9532163742690059,
+      "per_text_relative_logit_rms": [
+        0.028656061738729477,
+        0.03746352717280388,
+        0.05288698151707649,
+        0.030583279207348824,
+        0.037493932992219925,
+        0.037195466458797455,
+        0.028978755697607994,
+        0.029299739748239517,
+        0.036528121680021286,
+        0.03273116052150726
+      ]
+    }
+  ]
+}

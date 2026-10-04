@@ -1,0 +1,48 @@
+{
+  "model": "results/models/qwen2",
+  "device": "cpu",
+  "arithmetic": "float32",
+  "weight_conversion_dtype": "float16",
+  "texts": [
+    "The Earth travels around the Sun once every year. The Moon travels around the Earth.",
+    "A binary search repeatedly divides a sorted list in half until it finds the requested value.",
+    "Water freezes at zero degrees Celsius under ordinary atmospheric pressure.",
+    "A gardener planted tomato seeds in spring and watered them every morning.",
+    "The sum of seven and five is twelve. Multiplying three by four also gives twelve.",
+    "In Python, a dictionary maps keys to values, while a list stores an ordered sequence of elements.",
+    "The train left the station at noon and arrived in the next city two hours later.",
+    "Bonjour, comment allez-vous? Je voudrais un caf\u00e9 et un verre d\u2019eau, s\u2019il vous pla\u00eet.",
+    "\u6771\u4eac\u306f\u65e5\u672c\u306e\u9996\u90fd\u3067\u3059\u3002\u4eca\u65e5\u306f\u7a7a\u304c\u9752\u304f\u3001\u7a4f\u3084\u304b\u306a\u98a8\u304c\u5439\u3044\u3066\u3044\u307e\u3059\u3002",
+    "A reliable program validates its inputs, handles errors, and keeps unrelated requests isolated."
+  ],
+  "scope": "small authored corpus; measures quantization drift, not broad task quality or GPU performance",
+  "results": [
+    {
+      "weight_quantization": "none",
+      "tokens": 171,
+      "mean_nll": 2.874166075946295,
+      "perplexity": 17.710648625601607,
+      "teacher_forced_top1_agreement": null,
+      "per_text_relative_logit_rms": []
+    },
+    {
+      "weight_quantization": "q4_0",
+      "tokens": 171,
+      "mean_nll": 3.291906100267555,
+      "perplexity": 26.894077639482962,
+      "teacher_forced_top1_agreement": 0.7426900584795322,
+      "per_text_relative_logit_rms": [
+        0.31638142466545105,
+        0.43377724289894104,
+        0.38110098242759705,
+        0.3925352990627289,
+        0.4037630259990692,
+        0.4331386387348175,
+        0.3118699789047241,
+        0.273377388715744,
+        0.35356229543685913,
+        0.389521986246109
+      ]
+    }
+  ]
+}

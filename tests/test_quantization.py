@@ -32,3 +32,29 @@ class QuantizationTests(unittest.TestCase):
                 quantize(value)
         with patch.dict(os.environ, {'DLLM_QUANTIZATION':'q4'}), self.assertRaises(ValueError):
             mode()
+
+    def test_q4_blocks_signed_scales_and_nibble_order(self):
+        from dllm.quantization import quantize_q4,dequantize_q4
+        weight=torch.arange(-8,8,dtype=torch.float32).repeat(2).reshape(1,32)
+        data,scales=quantize_q4(weight)
+        self.assertEqual(data.tolist(),[[i|(i<<4) for i in range(16)]])
+        self.assertTrue(torch.equal(dequantize_q4(data,scales),weight))
+        positive=-weight
+        data,scales=quantize_q4(positive)
+        self.assertEqual(scales.item(),-1)
+        self.assertTrue(torch.equal(dequantize_q4(data,scales),positive))
+        data,scales=quantize_q4(torch.zeros(2,64))
+        self.assertTrue(torch.equal(dequantize_q4(data,scales),torch.zeros(2,64)))
+
+    def test_q4_tied_head_and_invalid_weights(self):
+        from dllm.quantization import quantize_q4
+        embedding=torch.randn(64,96).half()
+        weights={'embed':embedding,'head':embedding,'norm':torch.ones(96)}
+        scales=prepare(weights,'q4_0')
+        self.assertIs(weights['embed'],embedding)
+        self.assertEqual(weights['head'].dtype,torch.uint8)
+        self.assertEqual(weights['head'].shape,(64,48))
+        self.assertEqual(scales['head'].shape,(64,3))
+        for value in (torch.zeros(1,31),torch.zeros(32),torch.full((1,32),float('nan')),
+                      torch.full((1,32),1.e20)):
+            with self.assertRaises(ValueError):quantize_q4(value)

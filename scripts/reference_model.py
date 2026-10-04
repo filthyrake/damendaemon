@@ -12,7 +12,7 @@ def load_reference(path, reference_quantization='none', **kwargs):
         from transformers import AutoModelForCausalLM
         cls = AutoModelForCausalLM
     model = cls.from_pretrained(path, **kwargs)
-    if reference_quantization == 'q8_0':
+    if reference_quantization in ('q8_0','q4_0'):
         import torch
         from gguf.quants import quantize, dequantize
         from gguf.constants import GGMLQuantizationType
@@ -21,8 +21,8 @@ def load_reference(path, reference_quantization='none', **kwargs):
         for module in model.modules():
             if isinstance(module, torch.nn.Linear):
                 weight = module.weight.detach().float().cpu().numpy()
-                packed = quantize(weight, GGMLQuantizationType.Q8_0)
-                restored = dequantize(packed, GGMLQuantizationType.Q8_0)
+                packed = quantize(weight, getattr(GGMLQuantizationType,reference_quantization.upper()))
+                restored = dequantize(packed, getattr(GGMLQuantizationType,reference_quantization.upper()))
                 module.weight = torch.nn.Parameter(torch.from_numpy(restored).to(module.weight.dtype), requires_grad=False)
     elif reference_quantization != 'none':
         raise ValueError('unsupported reference quantization')

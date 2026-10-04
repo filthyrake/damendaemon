@@ -62,7 +62,7 @@ def main():
         if name == 'add':
             management.add_argument('path', help='local snapshot or Hugging Face repository on this host')
             management.add_argument('--revision', default='main')
-            management.add_argument('--quantization', choices=('none','q8_0'))
+            management.add_argument('--quantization', choices=('none','q8_0','q4_0'))
         if name == 'unload':
             management.add_argument('--release-host', action='store_true')
     args = parser.parse_args()

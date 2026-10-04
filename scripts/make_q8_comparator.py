@@ -1,4 +1,4 @@
-"""Benchmark-only GGUF conversion matching dllm's Q8 matrix storage policy.
+"""Benchmark-only GGUF conversion matching dllm's quantized matrix storage policy.
 
 Requires upstream gguf-py on PYTHONPATH. Input must be an unquantized GGUF
 converted from the same pinned checkpoint; this is not a dllm model importer.
@@ -14,7 +14,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('source', type=Path)
     parser.add_argument('destination', type=Path)
+    parser.add_argument('--format', choices=('q8_0', 'q4_0'), default='q8_0')
     args = parser.parse_args()
+    quantization_type = getattr(gguf.GGMLQuantizationType, args.format.upper())
     if args.destination.exists():
         parser.error('destination already exists')
     reader = gguf.GGUFReader(args.source)
@@ -29,7 +31,7 @@ def main():
         kind = field.types[0]
         writer.add_key_value(name, field.contents(), kind,
             sub_type=field.types[-1] if kind == gguf.GGUFValueType.ARRAY else None)
-    writer.add_file_type(gguf.LlamaFileType.MOSTLY_Q8_0)
+    writer.add_file_type(getattr(gguf.LlamaFileType, 'MOSTLY_'+args.format.upper()))
     writer.add_quantization_version(gguf.GGML_QUANT_VERSION)
     tensors = {tensor.name: tensor.data for tensor in reader.tensors}
     if 'output.weight' not in tensors:
@@ -37,8 +39,8 @@ def main():
     for name, data in tensors.items():
         if data.ndim == 2 and name != 'token_embd.weight':
             # dllm loads projection matrices into FP16 before quantizing.
-            data = quantize(data.astype(np.float16).astype(np.float32), gguf.GGMLQuantizationType.Q8_0)
-            writer.add_tensor(name, data, raw_dtype=gguf.GGMLQuantizationType.Q8_0)
+            data = quantize(data.astype(np.float16).astype(np.float32), quantization_type)
+            writer.add_tensor(name, data, raw_dtype=quantization_type)
         else:
             writer.add_tensor(name, data)
     writer.write_header_to_file()

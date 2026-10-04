@@ -47,9 +47,9 @@ def main():
             if args.prefill_chunk_size:
                 outputs=[]
                 for prompt,slot in zip(event['prompts'],event['slots']):
-                    for start in range(0,len(prompt),args.prefill_chunk_size):
-                        logits=executor.prefill_chunk(prompt[start:start+args.prefill_chunk_size],slot,start,
-                            final=start+args.prefill_chunk_size>=len(prompt))
+                    for chunk_start in range(0,len(prompt),args.prefill_chunk_size):
+                        logits=executor.prefill_chunk(prompt[chunk_start:chunk_start+args.prefill_chunk_size],slot,chunk_start,
+                            final=chunk_start+args.prefill_chunk_size>=len(prompt))
                     outputs.append(logits)
                 actual=torch.cat(outputs)
             else:

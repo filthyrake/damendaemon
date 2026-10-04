@@ -39,8 +39,11 @@ def weight_files(path):
 def weight_bytes(path,quantization=None):
     """Estimate host weight storage from headers before loading tensors."""
     from .quantization import mode
-    quantized = mode(quantization) == 'q8_0'
+    quantization=mode(quantization)
+    quantized = quantization != 'none'
     config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
+    if quantization=='q4_0' and config['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
+        raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
     if config['model_type'] == 'gpt2' and quantized:
         raise ValueError('GPT-2 quantization is not implemented')
     element_bytes = 4 if config['model_type'] in ('starcoder2','gpt2') else 2
@@ -56,12 +59,12 @@ def weight_bytes(path,quantization=None):
                     embedding = shape
                 has_head = has_head or key == 'lm_head.weight'
                 if quantized and len(shape) == 2 and not is_embedding and shape[1] % 32 == 0:
-                    total += math.prod(shape) + 2 * shape[0] * (shape[1] // 32)
+                    total += math.prod(shape)//(2 if quantization=='q4_0' else 1) + 2 * shape[0] * (shape[1] // 32)
                 else:
                     total += element_bytes * math.prod(shape)
     if quantized and embedding is not None and not has_head:
         if config.get('tie_word_embeddings'):
-            total += math.prod(embedding) + 2 * embedding[0] * (embedding[1] // 32)
+            total += math.prod(embedding)//(2 if quantization=='q4_0' else 1) + 2 * embedding[0] * (embedding[1] // 32)
     return total
 
 
@@ -71,10 +74,12 @@ class ModelWeights:
         from .quantization import mode
         self.quantization = mode(quantization)
         if self.quantization != 'none' and selected_device() != 'cuda':
-            raise ValueError('Q8_0 execution currently requires CUDA')
+            raise ValueError('quantized execution currently requires CUDA')
         self.path = Path(path).resolve()
         self.config = decoder_config(json.loads((self.path / "config.json").read_text()))
         c = self.config
+        if self.quantization=='q4_0' and c['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
+            raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
         if c['model_type']=='gpt2' and self.quantization!='none':
             raise ValueError('GPT-2 quantization is not implemented')
         if not 1 <= max_context <= c["max_position_embeddings"]:
@@ -245,7 +250,7 @@ class Executor:
                     if selected == "triton":
                         raise
         if model.scales and self.kernels is None:
-            raise ValueError('Q8_0 requires native CUDA kernels')
+            raise ValueError('quantized weights require native CUDA kernels')
         self.linear = self.kernels.linear if self.device == 'mps' and self.kernels else F.linear
         half_metal_weights = False
         if self.device == 'mps':
@@ -267,8 +272,8 @@ class Executor:
         empty_cache()
         free = available_memory()
         def device_dtype(name, tensor):
-            if tensor.dtype == torch.int8:
-                return torch.int8
+            if tensor.dtype in (torch.int8,torch.uint8):
+                return tensor.dtype
             if self.qwen3_precision != 'standard' and tensor.ndim == 2:
                 return torch.float16
             if c['model_type'] == 'olmoe' and tensor.ndim == 2:
@@ -331,7 +336,7 @@ class Executor:
             torch.cuda.synchronize()
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if model.scales:
-            self.kernel_backend += '+q8_0'
+            self.kernel_backend += '+'+model.quantization
         if use_graph:
             self.graph = torch.cuda.CUDAGraph()
             with torch.cuda.graph(self.graph), torch.inference_mode():
@@ -384,7 +389,7 @@ class Executor:
     def output_logits(self, x):
         normalized = self.norm(x, self.w['norm'])
         if self.c['model_type'] == 'phi3' and self.device == 'cuda':
-            if self.w['head'].dtype == torch.int8:
+            if self.w['head'].dtype in (torch.int8,torch.uint8):
                 return self.quant_linear(normalized.float(), self.w['head'])
             if self.kernels:
                 return self.kernels.linear_fp32(normalized.float(), self.w['head'])

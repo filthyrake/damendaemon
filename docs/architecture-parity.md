@@ -753,3 +753,32 @@ exposed a one-second lazy PyTorch attention import; optional offset-attention
 support now initializes before the server advertises readiness. That startup
 cost is moved, not eliminated. Both the original result and final evidence are
 retained in `evidence/prefix/`.
+
+## Native Q4_0 weight execution
+
+Issue #23. Packed projection rows use two four-bit values per byte and one FP16
+signed scale per 32 values; embeddings/norms retain their original execution
+precision. The CUDA path reads nibbles directly for decode and short-prefill
+matrix products; longer prefill temporarily expands one projection at a time.
+The latter workspace cost still applies despite smaller resident weights.
+
+Four independent upstream gguf-py format cases are bit-exact. Twenty-six A2
+matrix cases pass against independently dequantized values (worst relative RMS
+0.0003833). Qwen2.5-0.5B passes its 2048-context model gate against independently
+Q4-quantized Transformers weights, including reordered/reused slots. These
+checks establish execution correctness for the quantized weights, not fidelity
+to the unquantized model. The full 116-test suite passes.
+
+The separate CPU FP32 drift script uses FP16 weight conversion followed by
+independent upstream Q4/Q8 dequantization and ten published authored passages:
+171 teacher-forced tokens, original perplexity 17.71, Q8 17.50, Q4 26.89;
+next-token agreement 95.32% for Q8 and 74.27% for Q4. A tiny corpus can move
+perplexity in either direction and cannot establish general task quality.
+The input corpus and raw results are in `evidence/quantization/`.
+
+The format reference is llama.cpp/gguf-py at
+`836d57176dc699a726c55418e4f96b8ca628e1bf`. The optional comparator generator now
+accepts `--format q4_0`; it starts from unquantized same-checkpoint GGUF weights,
+retains unquantized embeddings and quantizes an independent output head.
+Broader model and matched serving qualification are still in progress. No
+four-bit throughput improvement is claimed from kernel or CPU checks alone.

@@ -5,8 +5,8 @@ def quantization_mode(value=None):
     if value is None:
         import os
         value = os.environ.get('DLLM_QUANTIZATION','none')
-    if value not in ('none','q8_0'):
-        raise ValueError('quantization must be none or q8_0')
+    if value not in ('none','q8_0','q4_0'):
+        raise ValueError('quantization must be none, q8_0 or q4_0')
     return value
 
 

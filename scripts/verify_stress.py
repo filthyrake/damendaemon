@@ -22,7 +22,7 @@ def main():
     parser.add_argument('path')
     parser.add_argument('--context', type=int, default=2048)
     parser.add_argument("--reference-dtype", choices=("float16", "bfloat16", "float32"), default="float16")
-    parser.add_argument('--reference-quantization', choices=('none', 'q8_0'), default='none')
+    parser.add_argument('--reference-quantization', choices=('none', 'q8_0','q4_0'), default='none')
     parser.add_argument('--prefill-chunk-size',type=int,default=0)
     parser.add_argument('--reference-only', action='store_true', help='generate a reference trace without a dllm GPU executor')
     parser.add_argument('--golden-output', help='save teacher-forced inputs and FP32 reference logits for cross-environment replay')

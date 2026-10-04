@@ -1,7 +1,7 @@
-"""Opt-in 32-value symmetric INT8 blocks with FP16 scales.
+"""Opt-in Q8_0 and packed Q4_0 blocks with FP16 scales.
 
-The scale and round-away-from-zero convention follows the published Q8_0
-representation. This module does not parse GGUF files or delegate inference.
+The conversion conventions follow the published Q8_0 and Q4_0
+representations. This module does not parse GGUF files or delegate inference.
 """
 import os
 import torch
@@ -41,16 +41,45 @@ def dequantize(data, scales, dtype=torch.float32):
     return (data.reshape(*scales.shape, GROUP).float() * scales.float().unsqueeze(-1)).reshape(data.shape).to(dtype)
 
 
+@torch.inference_mode()
+def quantize_q4(weight):
+    """Q4_0: signed scale from the first absolute maximum; paired nibbles."""
+    if weight.ndim!=2 or weight.shape[1]%GROUP:
+        raise ValueError('Q4_0 requires matrix rows divisible by 32')
+    rows,width=weight.shape
+    data=torch.empty((rows,width//2),device=weight.device,dtype=torch.uint8)
+    scales=torch.empty((rows,width//GROUP),device=weight.device,dtype=torch.float16)
+    for start in range(0,rows,128):
+        block=weight[start:start+128].float().reshape(-1,GROUP)
+        if not torch.isfinite(block).all().item():raise ValueError('cannot quantize non-finite weights')
+        indices=block.abs().argmax(-1,keepdim=True)
+        scale=block.gather(-1,indices)/-8
+        if (scale.abs()>torch.finfo(torch.float16).max).any().item():raise ValueError('Q4_0 scale exceeds FP16 range')
+        inverse=torch.where(scale==0,0,scale.reciprocal())
+        values=torch.trunc(block*inverse+8.5).clamp(0,15).to(torch.uint8)
+        packed=values[:,:16] | (values[:,16:]<<4)
+        data[start:start+128]=packed.reshape(-1,width//2)
+        scales[start:start+128]=scale.reshape(-1,width//GROUP)
+    return data,scales
+
+
+def dequantize_q4(data,scales,dtype=torch.float32):
+    blocks=data.reshape(-1,16)
+    values=torch.cat((blocks & 15,blocks>>4),dim=-1).float()-8
+    return (values*scales.float().reshape(-1,1)).reshape(data.shape[0],data.shape[1]*2).to(dtype)
+
+
 def prepare(weights, quantization=None):
     scales = {}
     if quantization is None:
         quantization = mode()
-    if quantization not in ('none', 'q8_0'):
+    if quantization not in ('none', 'q8_0','q4_0'):
         raise ValueError('unsupported weight quantization')
-    if quantization == 'q8_0':
+    if quantization in ('q8_0','q4_0'):
+        pack=quantize if quantization=='q8_0' else quantize_q4
         for name, weight in list(weights.items()):
             if weight.ndim == 2 and name != 'embed':
-                weights[name], scales[name] = quantize(weight)
+                weights[name], scales[name] = pack(weight)
     return scales
 
 
@@ -60,6 +89,9 @@ class Linear:
         self.fallback = fallback
 
     def __call__(self, x, weight, bias=None):
+        if weight.dtype == torch.uint8:
+            from .quantized_kernels_q4 import linear
+            return linear(x,weight,self.scales[id(weight)],bias)
         if weight.dtype != torch.int8:
             return self.fallback(x, weight, bias)
         from .quantized_kernels import linear
