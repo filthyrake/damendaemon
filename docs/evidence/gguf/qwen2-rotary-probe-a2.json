@@ -1,0 +1,827 @@
+{
+  "device": "NVIDIA A2",
+  "gguf": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct-GGUF/snapshots/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q8_0.gguf",
+  "reference": "fixed-token HF FP32 eager over independently dequantized FP16 weights",
+  "results": [
+    {
+      "policy": "baseline",
+      "cases": [
+        {
+          "prompt_tokens": 42,
+          "errors": [
+            {
+              "max_absolute": 0.12888526916503906,
+              "relative_rms": 0.0060059684328734875
+            },
+            {
+              "max_absolute": 0.09497594833374023,
+              "relative_rms": 0.005125829018652439
+            },
+            {
+              "max_absolute": 0.13311481475830078,
+              "relative_rms": 0.010314525105059147
+            },
+            {
+              "max_absolute": 0.08350110054016113,
+              "relative_rms": 0.004865603521466255
+            },
+            {
+              "max_absolute": 0.029352664947509766,
+              "relative_rms": 0.002105721738189459
+            },
+            {
+              "max_absolute": 0.18445968627929688,
+              "relative_rms": 0.011101717129349709
+            },
+            {
+              "max_absolute": 0.07528018951416016,
+              "relative_rms": 0.004133314359933138
+            },
+            {
+              "max_absolute": 0.04176664352416992,
+              "relative_rms": 0.002291060984134674
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 39,
+          "errors": [
+            {
+              "max_absolute": 0.0323789119720459,
+              "relative_rms": 0.0018969650845974684
+            },
+            {
+              "max_absolute": 0.04281330108642578,
+              "relative_rms": 0.0016602820251137018
+            },
+            {
+              "max_absolute": 0.03907203674316406,
+              "relative_rms": 0.0018432580400258303
+            },
+            {
+              "max_absolute": 0.03808772563934326,
+              "relative_rms": 0.0017411747248843312
+            },
+            {
+              "max_absolute": 0.03630185127258301,
+              "relative_rms": 0.0015268692513927817
+            },
+            {
+              "max_absolute": 0.08535385131835938,
+              "relative_rms": 0.00207115663215518
+            },
+            {
+              "max_absolute": 0.0706324577331543,
+              "relative_rms": 0.003406380768865347
+            },
+            {
+              "max_absolute": 0.13580322265625,
+              "relative_rms": 0.008928388357162476
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 129,
+          "errors": [
+            {
+              "max_absolute": 0.06159830093383789,
+              "relative_rms": 0.004429000895470381
+            },
+            {
+              "max_absolute": 0.061606407165527344,
+              "relative_rms": 0.004452348221093416
+            },
+            {
+              "max_absolute": 0.037213802337646484,
+              "relative_rms": 0.002711860928684473
+            },
+            {
+              "max_absolute": 0.04075467586517334,
+              "relative_rms": 0.0029032209422439337
+            },
+            {
+              "max_absolute": 0.03880596160888672,
+              "relative_rms": 0.0027628117240965366
+            },
+            {
+              "max_absolute": 0.03740811347961426,
+              "relative_rms": 0.002494530286639929
+            },
+            {
+              "max_absolute": 0.06704998016357422,
+              "relative_rms": 0.0061494940891861916
+            },
+            {
+              "max_absolute": 0.06305122375488281,
+              "relative_rms": 0.003880132921040058
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 505,
+          "errors": [
+            {
+              "max_absolute": 0.04990541934967041,
+              "relative_rms": 0.004922079388052225
+            },
+            {
+              "max_absolute": 0.04696321487426758,
+              "relative_rms": 0.003641653573140502
+            },
+            {
+              "max_absolute": 0.046892404556274414,
+              "relative_rms": 0.0036284562665969133
+            },
+            {
+              "max_absolute": 0.05008125305175781,
+              "relative_rms": 0.0039211963303387165
+            },
+            {
+              "max_absolute": 0.03575325012207031,
+              "relative_rms": 0.0026660640724003315
+            },
+            {
+              "max_absolute": 0.037980079650878906,
+              "relative_rms": 0.0032877607736736536
+            },
+            {
+              "max_absolute": 0.04487180709838867,
+              "relative_rms": 0.0029197135008871555
+            },
+            {
+              "max_absolute": 0.05342596769332886,
+              "relative_rms": 0.00498573761433363
+            }
+          ],
+          "greedy_mismatches": []
+        }
+      ],
+      "eager_seconds": [
+        0.22411597101017833,
+        0.19000860898813698,
+        0.19035984000947792
+      ],
+      "eager_median": 0.19035984000947792,
+      "passed": false
+    },
+    {
+      "policy": "rotary",
+      "cases": [
+        {
+          "prompt_tokens": 42,
+          "errors": [
+            {
+              "max_absolute": 0.0878944844007492,
+              "relative_rms": 0.006073663476854563
+            },
+            {
+              "max_absolute": 0.11139726638793945,
+              "relative_rms": 0.00522927101701498
+            },
+            {
+              "max_absolute": 0.11304259300231934,
+              "relative_rms": 0.00845510046929121
+            },
+            {
+              "max_absolute": 0.08360719680786133,
+              "relative_rms": 0.00492261815816164
+            },
+            {
+              "max_absolute": 0.031139492988586426,
+              "relative_rms": 0.0018721194937825203
+            },
+            {
+              "max_absolute": 0.20399093627929688,
+              "relative_rms": 0.010899471119046211
+            },
+            {
+              "max_absolute": 0.060077548027038574,
+              "relative_rms": 0.003850000211969018
+            },
+            {
+              "max_absolute": 0.041899681091308594,
+              "relative_rms": 0.0023845923133194447
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 39,
+          "errors": [
+            {
+              "max_absolute": 0.038776278495788574,
+              "relative_rms": 0.00213534664362669
+            },
+            {
+              "max_absolute": 0.043242454528808594,
+              "relative_rms": 0.0018356875516474247
+            },
+            {
+              "max_absolute": 0.04733991622924805,
+              "relative_rms": 0.0019737400580197573
+            },
+            {
+              "max_absolute": 0.047959327697753906,
+              "relative_rms": 0.002203741343691945
+            },
+            {
+              "max_absolute": 0.03791189193725586,
+              "relative_rms": 0.0016329011414200068
+            },
+            {
+              "max_absolute": 0.0819091796875,
+              "relative_rms": 0.002161650685593486
+            },
+            {
+              "max_absolute": 0.07159423828125,
+              "relative_rms": 0.0033482809085398912
+            },
+            {
+              "max_absolute": 0.13108062744140625,
+              "relative_rms": 0.008112489245831966
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 129,
+          "errors": [
+            {
+              "max_absolute": 0.0600733757019043,
+              "relative_rms": 0.00444096140563488
+            },
+            {
+              "max_absolute": 0.05500221252441406,
+              "relative_rms": 0.004483784548938274
+            },
+            {
+              "max_absolute": 0.033214569091796875,
+              "relative_rms": 0.002505062846466899
+            },
+            {
+              "max_absolute": 0.03902113437652588,
+              "relative_rms": 0.002962365048006177
+            },
+            {
+              "max_absolute": 0.040392398834228516,
+              "relative_rms": 0.0035108730662614107
+            },
+            {
+              "max_absolute": 0.05162811279296875,
+              "relative_rms": 0.003950874786823988
+            },
+            {
+              "max_absolute": 0.06314373016357422,
+              "relative_rms": 0.005394148174673319
+            },
+            {
+              "max_absolute": 0.06793403625488281,
+              "relative_rms": 0.0037713537458330393
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 505,
+          "errors": [
+            {
+              "max_absolute": 0.04864859580993652,
+              "relative_rms": 0.004772747866809368
+            },
+            {
+              "max_absolute": 0.05086946487426758,
+              "relative_rms": 0.0036385003477334976
+            },
+            {
+              "max_absolute": 0.04776263236999512,
+              "relative_rms": 0.003650164930149913
+            },
+            {
+              "max_absolute": 0.04002666473388672,
+              "relative_rms": 0.0027072241064161062
+            },
+            {
+              "max_absolute": 0.06044197082519531,
+              "relative_rms": 0.005250849761068821
+            },
+            {
+              "max_absolute": 0.05178499221801758,
+              "relative_rms": 0.0037745744921267033
+            },
+            {
+              "max_absolute": 0.0425877571105957,
+              "relative_rms": 0.0032789851538836956
+            },
+            {
+              "max_absolute": 0.05525922775268555,
+              "relative_rms": 0.005325978621840477
+            }
+          ],
+          "greedy_mismatches": []
+        }
+      ],
+      "eager_seconds": [
+        0.19380485999863595,
+        0.19459294000989757,
+        0.1941254819976166
+      ],
+      "eager_median": 0.1941254819976166,
+      "passed": false
+    },
+    {
+      "policy": "residual_rotary",
+      "cases": [
+        {
+          "prompt_tokens": 42,
+          "errors": [
+            {
+              "max_absolute": 0.05857276916503906,
+              "relative_rms": 0.0037630251608788967
+            },
+            {
+              "max_absolute": 0.03860950469970703,
+              "relative_rms": 0.0023188383784145117
+            },
+            {
+              "max_absolute": 0.07661712169647217,
+              "relative_rms": 0.004731191322207451
+            },
+            {
+              "max_absolute": 0.0986173152923584,
+              "relative_rms": 0.005055901128798723
+            },
+            {
+              "max_absolute": 0.025997042655944824,
+              "relative_rms": 0.0019612510222941637
+            },
+            {
+              "max_absolute": 0.16305828094482422,
+              "relative_rms": 0.010079995729029179
+            },
+            {
+              "max_absolute": 0.07119941711425781,
+              "relative_rms": 0.004116518422961235
+            },
+            {
+              "max_absolute": 0.045805931091308594,
+              "relative_rms": 0.002615121891722083
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 39,
+          "errors": [
+            {
+              "max_absolute": 0.025119781494140625,
+              "relative_rms": 0.0015898218844085932
+            },
+            {
+              "max_absolute": 0.034125328063964844,
+              "relative_rms": 0.0015399974072352052
+            },
+            {
+              "max_absolute": 0.03491973876953125,
+              "relative_rms": 0.0017750379629433155
+            },
+            {
+              "max_absolute": 0.029144287109375,
+              "relative_rms": 0.0013770516961812973
+            },
+            {
+              "max_absolute": 0.033383846282958984,
+              "relative_rms": 0.001491543254815042
+            },
+            {
+              "max_absolute": 0.048714637756347656,
+              "relative_rms": 0.0014075767248868942
+            },
+            {
+              "max_absolute": 0.028825759887695312,
+              "relative_rms": 0.0014057051157578826
+            },
+            {
+              "max_absolute": 0.0760345458984375,
+              "relative_rms": 0.004284245427697897
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 129,
+          "errors": [
+            {
+              "max_absolute": 0.04006671905517578,
+              "relative_rms": 0.002770652761682868
+            },
+            {
+              "max_absolute": 0.028247416019439697,
+              "relative_rms": 0.002352961339056492
+            },
+            {
+              "max_absolute": 0.024339675903320312,
+              "relative_rms": 0.0015426325844600797
+            },
+            {
+              "max_absolute": 0.02441883087158203,
+              "relative_rms": 0.0017668092623353004
+            },
+            {
+              "max_absolute": 0.02632451057434082,
+              "relative_rms": 0.002124435268342495
+            },
+            {
+              "max_absolute": 0.02870655059814453,
+              "relative_rms": 0.001985112437978387
+            },
+            {
+              "max_absolute": 0.04486656188964844,
+              "relative_rms": 0.0033216793090105057
+            },
+            {
+              "max_absolute": 0.04076433181762695,
+              "relative_rms": 0.0022970426362007856
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 505,
+          "errors": [
+            {
+              "max_absolute": 0.032242417335510254,
+              "relative_rms": 0.0028956334572285414
+            },
+            {
+              "max_absolute": 0.03726041316986084,
+              "relative_rms": 0.002871112897992134
+            },
+            {
+              "max_absolute": 0.03586125373840332,
+              "relative_rms": 0.002623428590595722
+            },
+            {
+              "max_absolute": 0.02256488800048828,
+              "relative_rms": 0.0014642142923548818
+            },
+            {
+              "max_absolute": 0.021503448486328125,
+              "relative_rms": 0.0014262300683185458
+            },
+            {
+              "max_absolute": 0.02878856658935547,
+              "relative_rms": 0.0020355298183858395
+            },
+            {
+              "max_absolute": 0.025461912155151367,
+              "relative_rms": 0.0018618176691234112
+            },
+            {
+              "max_absolute": 0.03466439247131348,
+              "relative_rms": 0.0029421949293464422
+            }
+          ],
+          "greedy_mismatches": []
+        }
+      ],
+      "eager_seconds": [
+        0.1956228429917246,
+        0.19621589400048833,
+        0.20031814400863368
+      ],
+      "eager_median": 0.19621589400048833,
+      "passed": false
+    },
+    {
+      "policy": "nonlinear_rotary",
+      "cases": [
+        {
+          "prompt_tokens": 42,
+          "errors": [
+            {
+              "max_absolute": 0.0745888203382492,
+              "relative_rms": 0.004860530607402325
+            },
+            {
+              "max_absolute": 0.09577226638793945,
+              "relative_rms": 0.005032594781368971
+            },
+            {
+              "max_absolute": 0.12280821800231934,
+              "relative_rms": 0.00849550124257803
+            },
+            {
+              "max_absolute": 0.10471057891845703,
+              "relative_rms": 0.0052006058394908905
+            },
+            {
+              "max_absolute": 0.025296688079833984,
+              "relative_rms": 0.0018856785027310252
+            },
+            {
+              "max_absolute": 0.18445968627929688,
+              "relative_rms": 0.01139569841325283
+            },
+            {
+              "max_absolute": 0.09146475791931152,
+              "relative_rms": 0.005180451087653637
+            },
+            {
+              "max_absolute": 0.08352279663085938,
+              "relative_rms": 0.004577572923153639
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 39,
+          "errors": [
+            {
+              "max_absolute": 0.03362226486206055,
+              "relative_rms": 0.0019960564095526934
+            },
+            {
+              "max_absolute": 0.04347944259643555,
+              "relative_rms": 0.0018579359166324139
+            },
+            {
+              "max_absolute": 0.0396120548248291,
+              "relative_rms": 0.0016612453619018197
+            },
+            {
+              "max_absolute": 0.03517436981201172,
+              "relative_rms": 0.001540495315566659
+            },
+            {
+              "max_absolute": 0.034789085388183594,
+              "relative_rms": 0.0013869309332221746
+            },
+            {
+              "max_absolute": 0.06522822380065918,
+              "relative_rms": 0.0017152794171124697
+            },
+            {
+              "max_absolute": 0.07159423828125,
+              "relative_rms": 0.0029398095794022083
+            },
+            {
+              "max_absolute": 0.14361572265625,
+              "relative_rms": 0.008233776316046715
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 129,
+          "errors": [
+            {
+              "max_absolute": 0.1069483757019043,
+              "relative_rms": 0.007630418986082077
+            },
+            {
+              "max_absolute": 0.08806753158569336,
+              "relative_rms": 0.006947337184101343
+            },
+            {
+              "max_absolute": 0.03412473201751709,
+              "relative_rms": 0.002574821002781391
+            },
+            {
+              "max_absolute": 0.05262744426727295,
+              "relative_rms": 0.0036794603802263737
+            },
+            {
+              "max_absolute": 0.06487536430358887,
+              "relative_rms": 0.004637444857507944
+            },
+            {
+              "max_absolute": 0.07796287536621094,
+              "relative_rms": 0.004659134428948164
+            },
+            {
+              "max_absolute": 0.10657072067260742,
+              "relative_rms": 0.009244544431567192
+            },
+            {
+              "max_absolute": 0.10682839155197144,
+              "relative_rms": 0.00616614893078804
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 505,
+          "errors": [
+            {
+              "max_absolute": 0.07379961013793945,
+              "relative_rms": 0.006454854272305965
+            },
+            {
+              "max_absolute": 0.07094797492027283,
+              "relative_rms": 0.005198984406888485
+            },
+            {
+              "max_absolute": 0.0830535888671875,
+              "relative_rms": 0.005051680840551853
+            },
+            {
+              "max_absolute": 0.0537409782409668,
+              "relative_rms": 0.0030414462089538574
+            },
+            {
+              "max_absolute": 0.06644392013549805,
+              "relative_rms": 0.004808488301932812
+            },
+            {
+              "max_absolute": 0.07103633880615234,
+              "relative_rms": 0.005482196807861328
+            },
+            {
+              "max_absolute": 0.07221555709838867,
+              "relative_rms": 0.004486776888370514
+            },
+            {
+              "max_absolute": 0.07312315702438354,
+              "relative_rms": 0.005875702481716871
+            }
+          ],
+          "greedy_mismatches": []
+        }
+      ],
+      "eager_seconds": [
+        0.20787084099720232,
+        0.22817653199308552,
+        0.23146896999969613
+      ],
+      "eager_median": 0.22817653199308552,
+      "passed": false
+    },
+    {
+      "policy": "mixed_all",
+      "cases": [
+        {
+          "prompt_tokens": 42,
+          "errors": [
+            {
+              "max_absolute": 0.055054664611816406,
+              "relative_rms": 0.0035369195975363255
+            },
+            {
+              "max_absolute": 0.050054073333740234,
+              "relative_rms": 0.002764925127848983
+            },
+            {
+              "max_absolute": 0.07539939880371094,
+              "relative_rms": 0.005295308772474527
+            },
+            {
+              "max_absolute": 0.05605316162109375,
+              "relative_rms": 0.0038725296035408974
+            },
+            {
+              "max_absolute": 0.030694007873535156,
+              "relative_rms": 0.0020579425618052483
+            },
+            {
+              "max_absolute": 0.16696453094482422,
+              "relative_rms": 0.009412985295057297
+            },
+            {
+              "max_absolute": 0.05826163291931152,
+              "relative_rms": 0.003378767753019929
+            },
+            {
+              "max_absolute": 0.041899681091308594,
+              "relative_rms": 0.0022457840386778116
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 39,
+          "errors": [
+            {
+              "max_absolute": 0.02910614013671875,
+              "relative_rms": 0.001592234126292169
+            },
+            {
+              "max_absolute": 0.042077064514160156,
+              "relative_rms": 0.0013870095135644078
+            },
+            {
+              "max_absolute": 0.032649993896484375,
+              "relative_rms": 0.001350041595287621
+            },
+            {
+              "max_absolute": 0.027475357055664062,
+              "relative_rms": 0.0011215874692425132
+            },
+            {
+              "max_absolute": 0.031043052673339844,
+              "relative_rms": 0.0013217288069427013
+            },
+            {
+              "max_absolute": 0.059496402740478516,
+              "relative_rms": 0.0014986866153776646
+            },
+            {
+              "max_absolute": 0.03702712059020996,
+              "relative_rms": 0.0015744440024718642
+            },
+            {
+              "max_absolute": 0.08111572265625,
+              "relative_rms": 0.0047012679278850555
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 129,
+          "errors": [
+            {
+              "max_absolute": 0.027163267135620117,
+              "relative_rms": 0.001614893670193851
+            },
+            {
+              "max_absolute": 0.024037837982177734,
+              "relative_rms": 0.0021476163528859615
+            },
+            {
+              "max_absolute": 0.021004676818847656,
+              "relative_rms": 0.0015827766619622707
+            },
+            {
+              "max_absolute": 0.030422687530517578,
+              "relative_rms": 0.002265730407088995
+            },
+            {
+              "max_absolute": 0.019719600677490234,
+              "relative_rms": 0.0012901586014777422
+            },
+            {
+              "max_absolute": 0.021866798400878906,
+              "relative_rms": 0.001439692685380578
+            },
+            {
+              "max_absolute": 0.03164958953857422,
+              "relative_rms": 0.0022853007540106773
+            },
+            {
+              "max_absolute": 0.02995765209197998,
+              "relative_rms": 0.002078027231618762
+            }
+          ],
+          "greedy_mismatches": []
+        },
+        {
+          "prompt_tokens": 505,
+          "errors": [
+            {
+              "max_absolute": 0.03469085693359375,
+              "relative_rms": 0.0030370221938937902
+            },
+            {
+              "max_absolute": 0.03271293640136719,
+              "relative_rms": 0.0023681099992245436
+            },
+            {
+              "max_absolute": 0.0410919189453125,
+              "relative_rms": 0.002424478530883789
+            },
+            {
+              "max_absolute": 0.0348052978515625,
+              "relative_rms": 0.0024524652399122715
+            },
+            {
+              "max_absolute": 0.027709484100341797,
+              "relative_rms": 0.002165399258956313
+            },
+            {
+              "max_absolute": 0.03186225891113281,
+              "relative_rms": 0.002111604204401374
+            },
+            {
+              "max_absolute": 0.041441917419433594,
+              "relative_rms": 0.002709663473069668
+            },
+            {
+              "max_absolute": 0.033153533935546875,
+              "relative_rms": 0.002872152952477336
+            }
+          ],
+          "greedy_mismatches": []
+        }
+      ],
+      "eager_seconds": [
+        0.24179426999762654,
+        0.19308951900165994,
+        0.19384256799821742
+      ],
+      "eager_median": 0.19384256799821742,
+      "passed": true
+    }
+  ]
+}

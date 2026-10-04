@@ -1,0 +1,20 @@
+diff --git a/dllm/qwen2.py b/dllm/qwen2.py
+index 6733e20..9fa5a9e 100644
+--- a/dllm/qwen2.py
++++ b/dllm/qwen2.py
+@@ -283,6 +283,15 @@ class Executor:
+         self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
+         if c["model_type"] in ("gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom"):
+             self.compute_dtype = torch.float32
++        self.qwen2_precision = 'standard'
++        if self.device == 'cuda' and c['model_type'] == 'qwen2':
++            self.qwen2_precision = os.environ.get('DLLM_QWEN2_PRECISION', 'standard')
++            if self.qwen2_precision not in ('standard', 'mixed'):
++                raise ValueError('DLLM_QWEN2_PRECISION must be standard or mixed')
++            if self.qwen2_precision == 'mixed':
++                # Keep FP16 projections and KV; avoid repeated half rounding
++                # in residuals, normalization, SwiGLU and rotary arithmetic.
++                self.precise = self.rotary_precise = True
+         self.qwen3_precision = 'standard'
+         if self.device == 'cuda' and c['model_type'] == 'qwen3':
+             self.qwen3_precision = os.environ.get('DLLM_QWEN3_PRECISION', 'standard')

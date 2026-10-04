@@ -50,6 +50,7 @@ def main():
     p = argparse.ArgumentParser(); p.add_argument('gguf'); p.add_argument('hf_config'); p.add_argument('--output', required=True)
     p.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
+    p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
     args = p.parse_args(); torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32 = False
     teacher = json.loads(Path(args.teacher_trace).read_text()) if args.teacher_trace else None
@@ -66,9 +67,20 @@ def main():
                ('What is 2 + 2? Answer with one number.', 'Reply in French: Hello, how are you?')]
     base = source.raw_tokens('The ocean influences coastal weather. Explain the process in detail. ')
     for length in (129, 505): prompts.append((base * ((length+len(base)-1)//len(base)))[:length])
+    if args.extended:
+        prompts = [source.chat_tokens(messages) for messages in (
+            [{'role':'system','content':'Answer briefly.'}, {'role':'user','content':'What is 17 + 25? Just the number.'}],
+            [{'role':'user','content':'Remember the code ZX-914.'}, {'role':'assistant','content':'The code is ZX-914.'},
+             {'role':'user','content':'Repeat only the code.'}],
+            [{'role':'user','content':'Translate into Spanish: The café opens at eight. 👋'}],
+            [{'role':'user','content':'Write a Python function that returns the largest number in a list.'}])]
+        corpus = source.raw_tokens('Library record 73 is in cabinet 7. Record 85 is in cabinet 8. Locate the requested record. ')
+        for length in (257, 385): prompts.append((corpus * ((length+len(corpus)-1)//len(corpus)))[:length])
     with torch.inference_mode():
         for graph in (False, True):
             executor = make_executor(source, use_graph=graph)
+            precision = dict(matrix_dtype=str(executor.compute_dtype), residual_dtype=str(executor.residual_dtype),
+                             nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise)
             for index, ids in enumerate(prompts):
                 expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
                 actual = executor.prefill(ids)
@@ -96,6 +108,7 @@ def main():
     with Path(args.gguf).open('rb') as file: sha = hashlib.file_digest(file, 'sha256').hexdigest()
     passed = all(not c['greedy_mismatches'] and all(e['max_absolute'] < .5 and e['relative_rms'] < .01 for e in c['errors']) for c in cases)
     report = dict(passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
+                  precision=precision, suite="extended" if args.extended else "initial",
                   reference='independent gguf.quants dequantization into HF eager Qwen execution', reference_dtype=args.reference_dtype,
                   weight_rounding='float16', tf32=False, formats=formats, embedding_type=embedding_type,
                   teacher_trace=args.teacher_trace,

@@ -151,3 +151,59 @@ precision experiments are tracked under the existing Q8 quality issue #10 and
 GGUF issue #43. Reproduction: `scripts/verify_gguf_reference.py` (use
 `--reference-dtype float32 --teacher-trace <FP16-report>` for the fixed-input
 control). The validation script exits unsuccessfully when its full gate fails.
+
+
+## Rejected mixed-precision experiment
+
+The [component probe](qwen2-precision-probe-a2.json) and
+[rotary controls](qwen2-rotary-probe-a2.json) tested FP32 residuals, nonlinear
+intermediates and rotary operations while retaining FP16 projections/KV and
+packed Q8 weights. Only the combined policy passed the initial four-case trace.
+Its [actual graph qualification](gguf-official-qwen2-q8-mixed-reference-a2.json)
+passed all 64 comparisons, with maximum 0.167 absolute / 0.941% RMS error.
+
+However, the [additional six cases](gguf-official-qwen2-q8-mixed-extended-a2.json)
+found another post-EOS failure at 1.298% RMS. On exactly those token inputs,
+[unchanged standard arithmetic](gguf-official-qwen2-q8-standard-extended-a2.json)
+passes all 96 comparisons, with maximum 0.148 absolute / 0.9944% RMS error.
+Both policies preserve every measured greedy choice. The mixed policy repairs
+one stress case but regresses another; it is not a general numerical repair.
+
+[Six alternating warm HTTP rounds](gguf-official-qwen2-precision-http-a2.json),
+identical responses and 16 output tokens:
+
+| Input tokens | Concurrent requests | Standard | Experimental mixed |
+|---:|---:|---:|---:|
+| 16 | 1 | 94.74 ms | 95.65 ms |
+| 129 | 1 | 101.37 ms | 103.57 ms |
+| 400 | 1 | 111.94 ms | 113.37 ms |
+| 129 | 2 | 161.14 ms | 162.06 ms |
+
+The 0.6–2.2% latency cost and the additional-case regression do not justify
+adding this policy. **The candidate was removed from production; there is no
+`DLLM_QWEN2_PRECISION` runtime option.** The [experimental patch](experimental-qwen2-mixed.patch)
+is retained for reproduction against commit `c935d6e` in an isolated checkout.
+`scripts/benchmark_qwen2_precision.py` requires that patch and fails explicitly
+without it. `scripts/probe_gguf_precision.py` is a diagnostic using eager
+executor-field changes, not a production arithmetic policy.
+
+## Published tool-template discrepancy
+
+The official Qwen2 GGUF's embedded template includes doubled outer braces in
+its function-call JSON example. The pinned HF template uses single braces.
+Independent rendering confirms the two-token difference. On A2 the published
+GGUF followed the malformed example and produced:
+
+```text
+<tool_call>
+{{"name": "get_weather", "arguments": {"city": "Paris", "unit": "celsius"}}}
+</tool_call>
+```
+
+The existing parser correctly keeps this malformed call as text. This is not
+claimed as a successful tool round trip, and the importer does not silently
+rewrite the embedded template. Explicit per-model template overrides are
+tracked separately so a caller can select a canonical template. Tool reference
+checks now read the actual GGUF template with the upstream reader and render
+it independently through Transformers; they do not assume a different HF
+snapshot has identical template text.
