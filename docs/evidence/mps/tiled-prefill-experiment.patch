@@ -1,0 +1,69 @@
+diff --git a/dllm/metal_kernels.py b/dllm/metal_kernels.py
+index f4cfe1f..1956361 100644
+--- a/dllm/metal_kernels.py
++++ b/dllm/metal_kernels.py
+@@ -81,6 +81,50 @@ kernel void linear_half(device const float* x, device const half* w, device cons
+     linear_impl(x,w,bias,y,m,n,k,has_bias,id,lane);
+ }
+ 
++// Tiled FP32 matrix arithmetic reads FP16 weights directly. Each SIMD group
++// computes two 8x8 output tiles; bounds are zero-padded in shared memory.
++kernel void prefill_half(device const float* x, device const half* w, device const float* bias,
++                         device float* y, constant long& m, constant long& n, constant long& k,
++                         constant long& has_bias, uint2 group [[threadgroup_position_in_grid]],
++                         uint tid [[thread_index_in_threadgroup]],
++                         uint sid [[simdgroup_index_in_threadgroup]]) {
++    threadgroup float xt[16*32];
++    threadgroup float wt[32*33];
++    threadgroup float result[16*32];
++    uint row = group.y*16, col = group.x*32;
++    uint sr = (sid/2)*8, sc = (sid%2)*16;
++    simdgroup_float8x8 acc0 = make_filled_simdgroup_matrix<float,8>(0.f);
++    simdgroup_float8x8 acc1 = make_filled_simdgroup_matrix<float,8>(0.f);
++    for (uint base=0; base<k; base+=32) {
++        for (uint index=tid; index<16*32; index+=128) {
++            uint r=index/32, inner=index%32;
++            xt[index] = row+r<m && base+inner<k ? x[(row+r)*k+base+inner] : 0.f;
++        }
++        for (uint index=tid; index<32*32; index+=128) {
++            uint c=index/32, inner=index%32;
++            wt[inner*33+c] = col+c<n && base+inner<k ? float(w[(col+c)*k+base+inner]) : 0.f;
++        }
++        threadgroup_barrier(mem_flags::mem_threadgroup);
++        for (uint offset=0; offset<32; offset+=8) {
++            simdgroup_float8x8 a,b0,b1;
++            simdgroup_load(a,xt+sr*32+offset,32);
++            simdgroup_load(b0,wt+offset*33+sc,33);
++            simdgroup_load(b1,wt+offset*33+sc+8,33);
++            simdgroup_multiply_accumulate(acc0,a,b0,acc0);
++            simdgroup_multiply_accumulate(acc1,a,b1,acc1);
++        }
++        threadgroup_barrier(mem_flags::mem_threadgroup);
++    }
++    simdgroup_store(acc0,result+sr*32+sc,32);
++    simdgroup_store(acc1,result+sr*32+sc+8,32);
++    threadgroup_barrier(mem_flags::mem_threadgroup);
++    for (uint index=tid; index<16*32; index+=128) {
++        uint r=index/32,c=index%32;
++        if (row+r<m && col+c<n)
++            y[(row+r)*n+col+c] = result[index] + (has_bias ? bias[col+c] : 0.f);
++    }
++}
++
+ kernel void rope(device const float* x, device const float* cosine, device const float* sine,
+                  device const long* positions, device const long* slots, device float* q,
+                  device float* cache_k, device float* cache_v,
+@@ -183,6 +227,13 @@ def swiglu(gate_up, precise=False):
+ 
+ def linear(x, weight, bias=None):
+     if x.shape[0] > 4:
++        if weight.dtype == torch.float16 and x.shape[0] <= 256:
++            x = x.contiguous()
++            out = torch.empty((x.shape[0],weight.shape[0]),device='mps',dtype=torch.float32)
++            library().prefill_half(x,weight,bias if bias is not None else x,out,
++                x.shape[0],weight.shape[0],weight.shape[1],int(bias is not None),
++                threads=(((weight.shape[0]+31)//32)*128,(x.shape[0]+15)//16),group_size=(128,1))
++            return out
+         return F.linear(x, weight.float(), bias)
+     out = torch.empty((x.shape[0], weight.shape[0]), device='mps', dtype=torch.float32)
+     kernel = library().linear_half if weight.dtype == torch.float16 else library().linear

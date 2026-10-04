@@ -207,6 +207,14 @@ llama.cpp still leads single-request throughput and every first-output latency.
 This narrow SmolLM2 result is not general engine parity. The FP32-storage table
 above predates this vectorization and is retained as a historical baseline.
 
+A subsequent tiled SIMD-group prefill experiment read half weights directly
+and accumulated in FP32, avoiding full weight expansion for up to 256 tokens.
+It passed the kernel and Qwen3 reference checks but measured first-output
+latencies of 50.4 / 81.5 / 193.5 ms and throughput of 70.7 / 125.5 / 200.2
+tokens/s. It was not retained: removing conversion did not outweigh this
+implementation's matrix execution cost. Its patch and measurements remain in
+`evidence/mps`. Production prefill still uses the documented tensor path.
+
 Commands, complete trial records, model output, and correctness measurements
 are stored under [evidence/mps](evidence/mps) and [evidence/hybrid](evidence/hybrid).
 Reproduce with `scripts/compare_mps.py`, `scripts/verify_metal_kernels.py`,
