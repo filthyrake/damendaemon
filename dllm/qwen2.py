@@ -80,7 +80,7 @@ class ModelWeights:
         template = tokenizer_config.get("chat_template")
         if template is None and (self.path / "chat_template.jinja").exists():
             template = (self.path / "chat_template.jinja").read_text()
-        if not isinstance(template, str):
+        if template is not None and not isinstance(template, str):
             raise ValueError("model needs one text chat template")
         environment = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True,
                                                      extensions=['jinja2.ext.loopcontrols'])
@@ -88,7 +88,7 @@ class ModelWeights:
             raise ValueError(message)
         environment.globals.update(raise_exception=raise_exception,
                                    strftime_now=lambda fmt: datetime.now().strftime(fmt))
-        self.template = environment.from_string(template)
+        self.template = environment.from_string(template) if template is not None else None
         self.special_tokens = {key: tokenizer_config.get(key) for key in ("bos_token", "eos_token")}
         self.eos = eos_ids(c.get('eos_token_id'))
         generation = self.path / "generation_config.json"
@@ -149,6 +149,8 @@ class ModelWeights:
                          {id(t):t for t in (*weights.values(), *self.scales.values())}.values())
 
     def chat_tokens(self, messages, enable_thinking=None):
+        if self.template is None:
+            raise ValueError('model has no chat template; use raw completions')
         if not messages:
             raise ValueError("at least one message is required")
         for message in messages:
@@ -166,6 +168,16 @@ class ModelWeights:
             raise ValueError("multimodal input is not supported by the text executor")
         return ids
 
+    def raw_tokens(self, prompt):
+        from .prompts import validate_raw
+        prompt = validate_raw(prompt)
+        ids = self.tokenizer.encode(prompt, add_special_tokens=True).ids if isinstance(prompt, str) else prompt
+        if not ids or any(token >= self.config['vocab_size'] for token in ids):
+            raise ValueError('raw prompt must contain valid vocabulary token IDs')
+        if set(ids) & set(self.config.get('multimodal_token_ids', [])):
+            raise ValueError('multimodal input is not supported by the text executor')
+        return ids
+
 
 class Executor:
     def __init__(self, model, use_graph=True, fuse_projections=True, kernels=None, max_batch=1):
@@ -181,7 +193,7 @@ class Executor:
         self.kv_heads = c["num_key_value_heads"]
         self.dim = c["head_dim"]
         self.eps = c["rms_norm_eps"]
-        self.window = c.get("sliding_window") if c["model_type"] == "phi3" else None
+        self.window = c.get("sliding_window") if c["model_type"] in ("phi3", "mistral") else None
         self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3")
         self.rotary_precise = c["model_type"] == "qwen3"
         self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16

@@ -98,6 +98,20 @@ curl http://127.0.0.1:8088/v1/chat/completions \
   -d '{"model":"small","messages":[{"role":"user","content":"What is 2+2?"}],"temperature":0,"max_tokens":32,"stream":true}'
 ```
 
+For raw text or code generation, `/v1/completions` accepts `prompt` as a string
+or a nonempty array of token IDs. It shares sampling, stop sequences, streaming,
+batching, and model switching with chat. Supported base checkpoints can load
+without a chat template; chat requests to those models are rejected. Text prompts
+use the tokenizer's normal special-token processing; token-ID prompts are used
+exactly as supplied. One prompt/completion per request is supported; prompt
+batches, echo, and logprobs are not yet implemented.
+
+```sh
+curl http://127.0.0.1:8088/v1/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"small","prompt":"def binary_search(values, target):\n    ","max_tokens":64,"stream":true}'
+```
+
 Qwen3 and Qwen3.5 thinking default to their model templates. Use `dllm run Qwen/Qwen3-1.7B
 --thinking off --prompt 'What is 7 times 8?'`, or pass
 `"chat_template_kwargs": {"enable_thinking": false}` in the API request to disable

@@ -11,6 +11,7 @@ import uuid
 from .runtime import BusyError
 from .sampling import Sampling
 from .stopping import stop_sequences
+from .prompts import validate_raw
 
 
 def handler_for(runtime):
@@ -46,10 +47,11 @@ def handler_for(runtime):
                 self.send_json(404, {"error": "not found"})
 
         def do_POST(self):
-            if self.path != "/v1/chat/completions":
+            if self.path not in ("/v1/chat/completions", "/v1/completions"):
                 self.send_json(404, {"error": "not found"})
                 return
             started = False
+            raw = self.path == '/v1/completions'
             try:
                 if self.headers.get_content_type() != "application/json":
                     raise ValueError("Content-Type must be application/json")
@@ -58,6 +60,8 @@ def handler_for(runtime):
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
                 allowed = {"model", "messages", "max_tokens", "max_completion_tokens", "stop", "temperature", "top_p", "top_k", "seed", "stream", "stream_options", "chat_template_kwargs"}
+                if raw:
+                    allowed = (allowed - {'messages', 'chat_template_kwargs', 'max_completion_tokens'}) | {'prompt'}
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
                 sampling = {key: body[key] for key in ("temperature", "top_p", "top_k", "seed") if key in body}
@@ -75,7 +79,9 @@ def handler_for(runtime):
                 if "stream" in body and type(body["stream"]) is not bool:
                     raise ValueError("stream must be a boolean")
                 messages = body.get("messages")
-                if not isinstance(messages, list) or not messages or any(
+                if raw:
+                    sampling['raw_prompt'] = validate_raw(body.get('prompt'))
+                elif not isinstance(messages, list) or not messages or any(
                     not isinstance(m, dict) or set(m) != {"role", "content"}
                     or m["role"] not in ("system", "user", "assistant")
                     or not isinstance(m["content"], str) for m in messages
@@ -94,12 +100,14 @@ def handler_for(runtime):
                     raise ValueError("chat_template_kwargs supports only boolean enable_thinking")
                 stream = body.get("stream", False)
                 alias = body["model"]
-                request_id = "chatcmpl-" + uuid.uuid4().hex
+                request_id = ("cmpl-" if raw else "chatcmpl-") + uuid.uuid4().hex
                 created = int(time.time())
+                stream_object = 'text_completion' if raw else 'chat.completion.chunk'
                 def chunk(delta, finish=None):
-                    return {"id": request_id, "object": "chat.completion.chunk",
+                    choice = {'text': delta.get('content', ''), 'logprobs': None} if raw else {'delta': delta}
+                    return {"id": request_id, "object": stream_object,
                             "created": created, "model": alias,
-                            "choices": [{"index": 0, "delta": delta, "finish_reason": finish}]}
+                            "choices": [{"index": 0, **choice, "finish_reason": finish}]}
                 def send_event(payload):
                     self.wfile.write(("data: " + json.dumps(payload) + "\n\n").encode())
                     self.wfile.flush()
@@ -115,13 +123,14 @@ def handler_for(runtime):
                             self.end_headers()
                             self.close_connection = True
                             started = True
-                            send_event(chunk({"role": "assistant"}))
+                            if not raw:
+                                send_event(chunk({"role": "assistant"}))
                         if "finish_reason" in event:
                             final = event
                             if stream:
                                 send_event(chunk({}, event["finish_reason"]))
                                 if include_usage:
-                                    send_event({"id": request_id, "object": "chat.completion.chunk",
+                                    send_event({"id": request_id, "object": stream_object,
                                                 "created": created, "model": alias, "choices": [],
                                                 "usage": event["usage"]})
                         else:
@@ -132,9 +141,10 @@ def handler_for(runtime):
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 else:
-                    self.send_json(200, {"id": request_id, "object": "chat.completion",
+                    choice = {'text': text, 'logprobs': None} if raw else {'message': {'role': 'assistant', 'content': text}}
+                    self.send_json(200, {"id": request_id, "object": "text_completion" if raw else "chat.completion",
                         "created": created, "model": alias,
-                        "choices": [{"index": 0, "message": {"role": "assistant", "content": text},
+                        "choices": [{"index": 0, **choice,
                                      "finish_reason": final["finish_reason"]}],
                         "usage": final["usage"], "dllm_timing": final["timing"]})
             except (BrokenPipeError, ConnectionResetError, TimeoutError):

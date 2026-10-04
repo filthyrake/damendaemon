@@ -117,7 +117,7 @@ class Runtime:
             self.admission.release()
 
     def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None,
-                 temperature=0, top_p=1, top_k=0, seed=None, stop=None):
+                 temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None):
         """Yield token IDs/text deltas plus a final usage/timing event.
 
         Closing this generator releases its model lease, including on client
@@ -132,7 +132,8 @@ class Runtime:
         start = time.perf_counter()
         with self.session(alias) as (executor, tier, load_seconds):
             model = executor.model
-            prompt = model.chat_tokens(messages, **({"enable_thinking": enable_thinking} if enable_thinking is not None else {}))
+            from .prompts import encode
+            prompt = encode(model, messages, raw_prompt, enable_thinking)
             if len(prompt) + max_tokens > self.context:
                 raise ValueError("prompt plus max_tokens exceeds configured context")
             first = sampler.select(executor.prefill(prompt).squeeze(0)).item()

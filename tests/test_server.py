@@ -58,6 +58,34 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(data["choices"][0]["message"]["content"], "Hello world")
         self.assertEqual(data["usage"]["completion_tokens"], 2)
 
+    def raw_post(self, **changes):
+        body = {'model': 'a', 'prompt': 'hello', **changes}
+        return urlopen(Request(self.url + '/v1/completions', data=json.dumps(body).encode(),
+                              headers={'Content-Type': 'application/json'}), timeout=5)
+
+    def test_raw_completion_protocol(self):
+        with self.raw_post(prompt=[1, 2]) as response:
+            data = json.load(response)
+        self.assertEqual(data['object'], 'text_completion')
+        self.assertEqual(data['choices'][0]['text'], 'Hello world')
+        self.assertNotIn('message', data['choices'][0])
+        self.assertEqual(self.runtime.last_options, {'raw_prompt': [1, 2]})
+        with self.raw_post(stream=True, stream_options={'include_usage': True}) as response:
+            chunks = list(events(response))
+        self.assertEqual(chunks[-1], '[DONE]')
+        chunks = [json.loads(value) for value in chunks[:-1]]
+        self.assertTrue(all(value['object'] == 'text_completion' for value in chunks))
+        self.assertEqual(''.join(c['text'] for value in chunks for c in value['choices']), 'Hello world')
+        self.assertEqual(chunks[-1]['usage']['completion_tokens'], 2)
+
+    def test_raw_completion_rejects_invalid_or_chat_fields(self):
+        for change in ({'prompt':None}, {'prompt':[]}, {'prompt':[True]}, {'prompt':['a','b']},
+                       {'messages':[]}, {'chat_template_kwargs':{}}, {'max_completion_tokens':3}):
+            with self.subTest(change=change), self.assertRaises(HTTPError) as error:
+                self.raw_post(**change)
+            self.assertEqual(error.exception.code, 400)
+            error.exception.close()
+
     def test_stream_protocol_usage_and_generator_cleanup(self):
         before = self.runtime.closed
         with self.post(stream=True, stream_options={"include_usage": True}) as response:

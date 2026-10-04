@@ -138,7 +138,7 @@ def main():
     decode([2, 0, 1, 3], 8)
     decode([0], 4)
     decode([3, 1], 3)
-    window = model.config.get('sliding_window') if model.config['model_type'] in ('gemma3_text', 'phi3') else None
+    window = model.config.get('sliding_window') if model.config['model_type'] in ('gemma3_text', 'phi3', 'mistral') else None
     if window and window + 8 < args.context:
         states.clear()
         prefill([window-1, window, window+1], [2, 0, 3])

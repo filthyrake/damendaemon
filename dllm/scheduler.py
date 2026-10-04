@@ -23,6 +23,7 @@ class Pending:
     enable_thinking: bool | None = None
     sampler: Sampler = field(default_factory=lambda: Sampler(Sampling()))
     stops: tuple = ()
+    raw_prompt: str | list | None = None
     start: float = field(default_factory=time.perf_counter)
     events: queue.Queue = field(default_factory=lambda: queue.Queue(maxsize=8))
     done: threading.Event = field(default_factory=threading.Event)
@@ -57,16 +58,21 @@ class BatchedRuntime:
         self.worker.start()
 
     def generate(self, alias, messages, max_tokens=128, enable_thinking=None,
-                 temperature=0, top_p=1, top_k=0, seed=None, stop=None):
+                 temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None):
         if alias not in self.models:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be positive")
         sampler = Sampler(Sampling(temperature, top_p, top_k, seed))
         stops = stop_sequences(stop)
+        if raw_prompt is not None:
+            from .prompts import validate_raw
+            raw_prompt = validate_raw(raw_prompt)
+            if messages is not None or enable_thinking is not None:
+                raise ValueError('raw prompts cannot include chat messages or template options')
         if not self.admission.acquire(blocking=False):
             raise BusyError("request queue is full")
-        request = Pending(alias, messages, max_tokens, enable_thinking, sampler, stops)
+        request = Pending(alias, messages, max_tokens, enable_thinking, sampler, stops, raw_prompt)
         try:
             with self.condition:
                 if self.closed:
@@ -181,8 +187,8 @@ class BatchedRuntime:
                             if request.cancelled.is_set():
                                 self._finish(request)
                                 continue
-                            tokens = executor.model.chat_tokens(request.messages, **(
-                                {"enable_thinking": request.enable_thinking} if request.enable_thinking is not None else {}))
+                            from .prompts import encode
+                            tokens = encode(executor.model, request.messages, request.raw_prompt, request.enable_thinking)
                             if len(tokens) + request.max_tokens > executor.context:
                                 raise ValueError("prompt plus max_tokens exceeds configured context")
                             request.slot = next(free_slots)

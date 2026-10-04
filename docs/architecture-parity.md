@@ -257,3 +257,28 @@ Quantized weights and cache precision match, but kernel arithmetic differs;
 generated texts diverge. Independent quantized-reference logits, rather than
 cross-engine text equality, provide the numerical gate. Neither these numbers
 nor sampled logit agreement establish broad task-quality or engine parity.
+
+## Raw completions and base checkpoints
+
+Issue #12. `/v1/completions` accepts a raw text prompt or explicit token IDs and
+emits the text-completion response/stream schema. Shared admission, batching,
+sampling, stopping, usage, and cancellation apply to both API routes. Missing
+chat templates no longer prevent weight loading; chat rejects those checkpoints
+explicitly. Raw IDs are checked against the vocabulary and excluded multimodal
+IDs before GPU execution. Prompt batches, multiple completions, echo and logprobs
+remain unsupported and rejected.
+
+Live A2 Q8 and M4 unquantized Qwen2 checks both pass with a temporary checkpoint
+whose chat metadata is removed: text/token-ID equivalence, stream/nonstream
+agreement, exact usage, batch four, seeded sampling, stop sequences, and recovery
+after invalid token IDs, oversized input and missing-template chat requests.
+The CPU/API suite passes 73 tests.
+
+## Mistral qualification in progress
+
+Issue #11. The shared dense executor now recognizes Mistral and applies its
+configured sliding window. Official Mistral-7B-Instruct-v0.1 revision
+`ec5deb64f2c6e6fa90c1abf74a91d5c93a9669ca` passes Q8 A2 mixed-model service at
+residency capacities one and three alongside Qwen2 and Qwen3.5. The independent
+4352-context reference, including the 4096-token window boundary, is still
+running; numerical qualification is not yet claimed.

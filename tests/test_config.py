@@ -18,6 +18,14 @@ class ConfigTests(unittest.TestCase):
         del config['head_dim']
         self.assertEqual(decoder_config(config)['head_dim'], 64)
 
+    def test_mistral_window_validation(self):
+        for window in (None, 4096):
+            config = self.config(model_type='mistral', sliding_window=window)
+            self.assertEqual(decoder_config(config)['sliding_window'], window)
+        for window in (0, -1, True, 1.5):
+            with self.assertRaises(ValueError):
+                decoder_config(self.config(model_type='mistral', sliding_window=window))
+
     def test_unsupported_variants_fail_before_weight_loading(self):
         for changes in ({'model_type': 'qwen3_5'}, {'model_type': 'qwen3_moe'},
                         {'rope_scaling': {'type': 'yarn', 'factor': 2}},
