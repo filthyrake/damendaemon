@@ -51,9 +51,10 @@ not implemented. Q/K/V and gate/up fused components must each use compatible
 formats; distinct projections may use different supported formats.
 
 Floating weights follow the existing FP16 decoder-weight policy, including
-F32 vectors. GGUF import is not an all-FP32 execution mode. Packed embeddings
-expand to FP16 for lookup in bounded row chunks; a tied packed output head
-retains its original packed storage. The metadata cache holds at most two
+F32 vectors. GGUF import is not an all-FP32 execution mode. CUDA packed embeddings now retain their original storage and dequantize only
+selected token rows, rounding products to FP16 before any residual widening.
+The Metal fallback expands Q8 embeddings to FP16 in bounded row chunks. Tied
+packed heads share both values and scales with their CUDA embeddings. The metadata cache holds at most two
 plans keyed by file identity, never mmap weight views. File changes invalidate
 plans, and final host storage must match the preflight byte estimate.
 
@@ -223,3 +224,54 @@ passed. The maximum observed batch was four. No external tool was executed.
 The report predates the proof script's additional malformed/conflicting HTTP
 registration checks; those are covered by CPU/runtime/HTTP regression tests.
 The complete local suite passed 268 tests after the override changes.
+
+## CUDA packed embedding lookup
+
+The loader now retains Q4_0/Q8_0 embedding values and scales on CUDA. A Triton
+lookup reads only selected token rows and rounds each dequantized product to
+FP16 before widening, preserving the previous expanded-embedding arithmetic.
+Tied output heads share packed values and scales. Large embedding scales use a
+bounded exact finiteness check; normal scales use a conservative range bound.
+Metal's Q8 fallback keeps its existing FP16 expansion.
+
+A2 proof:
+
+- `packed-embedding-qwen2-controlled-a2.json`: official Qwen2.5 Q8 checkpoint,
+  SHA-256 recorded in the report. Host weights fall from 797,246,208 to
+  669,619,968 bytes (127,626,240 bytes / 121.7 MiB saved). GPU allocations for the
+  measured four-slot graph executor fall by 127,806,464 bytes / 121.9 MiB.
+- `packed-embedding-q4-a2.json` and `packed-embedding-qwen3-a2.json`: local
+  Qwen2.5 Q4 and Qwen3 Q8 exports with quantized embeddings. Source HF revisions
+  are the same pinned snapshots used above. These exports are generated with
+  `make_q8_comparator.py --quantize-embedding`; they are not byte-matched to the
+  ordinary HF path, which retains unquantized embeddings.
+- Each report includes 60 bitwise kernel cases, changed-ID graph replay,
+  128 bitwise full-model logit comparisons at prompt lengths 1/17/129/505 across
+  fixed/paged KV and graph on/off, plus four-request decode and chunked prefill.
+  The full-model comparator expands only the same stored embedding blocks;
+  weights, quantization, context, tokens and arithmetic otherwise match.
+
+Four alternating loading rounds, with the first round excluded from loading
+medians, produced the following controlled Qwen2.5 Q8 measurements. Metadata,
+filesystem and compiler caches are warm; these are not cold-machine startup
+measurements. Activation includes host loading and a ready four-slot CUDA graph
+executor. Warm generation is direct execution with 128 input / 16 output tokens,
+not HTTP or post-first-token-only throughput.
+
+| Median | Previous expanded embeddings | Packed embeddings |
+|---|---:|---:|
+| Host load | 1.665 s | 1.249 s |
+| Activation | 2.839 s | 2.393 s |
+| Warm generation | 83.99 ms | 84.15 ms |
+
+Host load improved about 25%, activation about 16%; warm generation was
+essentially unchanged. `packed-embedding-initial-a2.json` preserves the initial
+run, whose loading measurements overlapped CPU fixture preparation and are
+superseded by the controlled report. The local CPU/HTTP suite passes 270 tests.
+
+`packed-embedding-tools-a2.json` additionally passes actual HTTP tool calls and
+history, SSE equality, four-way concurrent unique IDs, cancellation recovery,
+host restoration and disk reload for both packed Qwen3 Q8 and official Qwen2.5
+Q8. Malformed and conflicting template registrations return HTTP 400 without
+changing registry/residency state. This also completes the added negative HTTP
+checks described in the template section above.

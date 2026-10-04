@@ -52,7 +52,7 @@ class BatchExecutor(Executor):
     def forward_batch(self, ids, positions, slots):
         batch = ids.shape[0]
         w = self.w
-        x = F.embedding(ids, w["embed"]).to(self.residual_dtype)
+        x = self.embedding(ids)
         if not self.kernels:
             cos = self.cos[positions].view(batch, 1, 1, self.dim)
             sin = self.sin[positions].view(batch, 1, 1, self.dim)
@@ -132,7 +132,7 @@ class BatchExecutor(Executor):
         positions = torch.tensor([i for length,start in zip(lengths,starts) for i in range(start,start+length)], device=self.device)
         slot_ids = torch.tensor([slot for slot, length in zip(slots, lengths) for _ in range(length)], device=self.device)
         w = self.w
-        x = F.embedding(ids, w["embed"]).to(self.residual_dtype)
+        x = self.embedding(ids)
         if not self.kernels:
             cos = self.cos[positions].view(-1, 1, 1, self.dim)
             sin = self.sin[positions].view(-1, 1, 1, self.dim)

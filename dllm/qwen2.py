@@ -366,7 +366,7 @@ class Executor:
         storage = {id(t): (t, device_dtype(name, t)) for name, t in model.weights.items()}
         device_weight_bytes = sum(t.numel() * torch.empty((), dtype=dtype).element_size()
                                   for t, dtype in storage.values())
-        device_weight_bytes += sum(t.numel() * t.element_size() for t in model.scales.values())
+        device_weight_bytes += sum(t.numel() * t.element_size() for t in {id(t):t for t in model.scales.values()}.values())
         if device_weight_bytes + kv_bytes + 512 * 1024**2 > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         self.w = {}
@@ -436,6 +436,13 @@ class Executor:
         return [torch.zeros((2, self.max_batch, self.kv_heads, self.context, self.dim),
                             dtype=self.compute_dtype, device=self.device)
                 for _ in range(self.c['num_hidden_layers'])]
+
+    def embedding(self, ids):
+        weight = self.w['embed']
+        if weight.dtype in (torch.int8, torch.uint8):
+            from .quantized_embedding import embedding
+            return embedding(ids, weight, self.quant_linear.scales[id(weight)], self.residual_dtype)
+        return F.embedding(ids, weight).to(self.residual_dtype)
 
     def dense_linear(self, x, weight, bias=None):
         # Reuse compensated products at prefill sizes instead of expanding
@@ -559,7 +566,7 @@ class Executor:
     @torch.inference_mode()
     def forward(self, ids, positions, prefill, slot=0):
         w = self.w
-        x = F.embedding(ids, w["embed"]).to(self.residual_dtype)
+        x = self.embedding(ids)
         count = ids.shape[0]
         if not self.kernels or not self.fuse_projections:
             cos = self.cos[positions].view(1, 1, count, self.dim)

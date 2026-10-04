@@ -39,7 +39,7 @@ Model licenses remain those of their respective publishers.
 | Capability | Current behavior |
 |---|---|
 | GPU execution | Independent forward passes; CUDA/Triton/native optional CUDA C++; Apple MPS/Metal |
-| Model lifecycle | Download pinned snapshots; register/load/unload aliases; GPU and host residency; request-selected switching |
+| Model lifecycle | Download pinned snapshots or exact GGUF files; register/load/unload aliases; GPU and host residency; request-selected switching |
 | Persistent prepared weights | Opt-in safetensors cache for dense Q4/Q8; source identity and layout checks; no automatic disk eviction |
 | HTTP generation | Text chat and raw text/token-ID completions; streaming SSE; usage and timing; bounded admission and cancellation |
 | Sampling | Greedy or request-seeded temperature/top-p/top-k; repetition, frequency and presence penalties; token bias; text stops |
@@ -54,12 +54,13 @@ Model licenses remain those of their respective publishers.
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
 | Reranking | Bounded query/document lists, raw relevance scores, stable top_n ranking and optional returned text; no silent truncation |
 | Embeddings | Text/token-ID inputs, float/base64 output for the qualified BERT sentence encoder |
-| Weight formats | Hugging Face safetensors; own on-load Q8_0/Q4_0 conversion where supported; checkpoint-native GPT-OSS MXFP4 |
+| Weight formats | Hugging Face safetensors; standalone dense Qwen2/Qwen3 GGUF F16/F32/Q4_0/Q8_0; own on-load Q8_0/Q4_0 conversion where supported; checkpoint-native GPT-OSS MXFP4 |
+| Chat templates | Checkpoint defaults or explicit per-model sandboxed UTF-8 overrides; stable through eviction/reload |
 | Position schemes | Standard/linear/Llama3 RoPE, fixture-qualified static YaRN; learned positions; partial rotary; ALiBi |
 
 The runtime does **not** currently provide general vLLM/llama.cpp parity.
 Missing major capabilities include paged KV for other architectures/devices, shared prefix pages, KV quantization,
-multi-GPU tensor/pipeline parallelism, adapters, GGUF/AWQ/GPTQ checkpoint import,
+multi-GPU tensor/pipeline parallelism, adapters, broader GGUF architectures and K/IQ quantization, AWQ/GPTQ checkpoint import,
 multimodal inference, additional tool-call formats, prompt/raw-completion token log-probabilities,
 trained decision-head checkpoints, and a CPU inference backend. Model registration is
 process-local. The HTTP API is a supported subset, not full OpenAI or Ollama API
@@ -71,7 +72,7 @@ wins; a passing numerical gate is not a claim of throughput parity. In particula
 Mistral Q4 single-request decoding still trails llama.cpp, and several concurrent
 workloads still trail vLLM. See the raw trials accompanying each comparison.
 
-Recent evidence: [T5](evidence/t5/), [Mamba](evidence/mamba/),
+Recent evidence: [GGUF import and templates](evidence/gguf/), [T5](evidence/t5/), [Mamba](evidence/mamba/),
 [Mamba-2](evidence/mamba2/), [function tools](evidence/tools/),
 [direct token choices](evidence/scoring/), [trained reranking](evidence/reranking/),
 [speculative decoding](evidence/speculation/) and [upstream research](upstream-inference-research.md).

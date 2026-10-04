@@ -74,8 +74,11 @@ class GgufTests(unittest.TestCase):
                 with self.subTest(kind=kind, tied=tied), tempfile.TemporaryDirectory() as folder:
                     path = Path(folder)/'model.gguf'; fixture(path, kind, tied=tied, packed_embedding=True)
                     model = GgufWeights(path, 64, 'none')
-                    self.assertEqual(model.weights['embed'].dtype, torch.float16)
-                    self.assertNotIn('embed', model.scales)
+                    self.assertEqual(model.weights['embed'].dtype, torch.uint8 if kind==2 else torch.int8)
+                    self.assertIn('embed', model.scales)
+                    if tied:
+                        self.assertIs(model.weights['embed'], model.weights['head'])
+                        self.assertIs(model.scales['embed'], model.scales['head'])
                     self.assertIn('head', model.scales)
                     self.assertEqual(model.bytes, weight_bytes(path, 'none'))
 
@@ -156,6 +159,41 @@ class GgufTests(unittest.TestCase):
             data = bytearray(original); struct.pack_into('<H', data, weight_offset, 0x7c00)
             path.write_bytes(data)
             with self.assertRaisesRegex(ValueError, 'non-finite scales'): GgufWeights(path, 64, 'none')
+
+
+    def test_embedding_storage_estimate_tracks_backend_without_stale_plan(self):
+        from unittest.mock import patch
+        from dllm.quantization import dequantize
+        for tied in (False, True):
+            with tempfile.TemporaryDirectory() as folder:
+                path = Path(folder)/'model.gguf'; fixture(path, tied=tied, packed_embedding=True)
+                with patch('dllm.gguf_model.selected_device', return_value='cuda'):
+                    packed = GgufWeights(path, 64, 'none')
+                    self.assertEqual(packed.bytes, weight_bytes(path, 'none'))
+                with patch('dllm.gguf_model.selected_device', return_value='mps'):
+                    expanded = GgufWeights(path, 64, 'none')
+                    self.assertEqual(expanded.bytes, weight_bytes(path, 'none'))
+                self.assertLess(packed.bytes, expanded.bytes)
+                self.assertTrue(torch.equal(expanded.weights['embed'],
+                    dequantize(packed.weights['embed'], packed.scales['embed'], torch.float16)))
+                self.assertNotIn('embed', expanded.scales)
+
+    def test_packed_embedding_extreme_scale_checks_actual_values(self):
+        from unittest.mock import patch
+        from dllm.gguf_model import read_tensor
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/'model.gguf'; fixture(path, packed_embedding=True)
+            def altered(file, info, nonzero=False):
+                data, scales = read_tensor(file, info)
+                if info.name == 'token_embd.weight':
+                    data.zero_(); data[0,0] = 127 if nonzero else 0
+                    scales.fill_(65504)
+                return data, scales
+            with patch('dllm.gguf_model.read_tensor', side_effect=altered):
+                GgufWeights(path, 64, 'none')  # Large scales with zero values are finite.
+            with patch('dllm.gguf_model.read_tensor', side_effect=lambda f,i:altered(f,i,True)):
+                with self.assertRaisesRegex(ValueError, 'finite FP16'):
+                    GgufWeights(path, 64, 'none')
 
 
 if __name__ == '__main__': unittest.main()

@@ -83,7 +83,7 @@ class PagedExecutor(BatchExecutor):
     def _forward(self, ids, positions, slots, prefill_lengths=None, assigned=None, starts=None, return_logits=True):
         w = self.w
         current_kv = prefill_lengths is not None and (starts is None or 0 in starts)
-        x = F.embedding(ids, w['embed']).to(self.residual_dtype)
+        x = self.embedding(ids)
         for layer in range(self.c['num_hidden_layers']):
             qkv = self.linear(self.norm(x,w[f'{layer}.norm1']), w[f'{layer}.qkv.weight'], w.get(f'{layer}.qkv.bias'))
             ck, cv = self.kv[layer].unbind(0)

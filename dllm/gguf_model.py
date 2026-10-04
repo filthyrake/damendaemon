@@ -215,7 +215,9 @@ def _plan(path, version):
 def weight_bytes(path, quantization=None):
     if mode(quantization) != 'none':
         raise ValueError('GGUF preserves checkpoint quantization; requested conversion is unsupported')
-    return plan(path).host_bytes
+    source = plan(path)
+    return (sum(t.host_bytes for t in source.tensors.values())
+            if selected_device() == 'cuda' else source.host_bytes)
 
 
 def read_tensor(file, tensor):
@@ -241,7 +243,7 @@ def read_tensor(file, tensor):
 
 class GgufWeights(ModelWeights):
     def __init__(self, path, max_context, quantization=None):
-        weight_bytes(path, quantization)
+        estimated = weight_bytes(path, quantization)
         source = plan(path)
         self.path, self.config = source.path, dict(source.config)
         self.quantization = source.quantization
@@ -269,17 +271,27 @@ class GgufWeights(ModelWeights):
                 scales['head'] = scales['embed']
         if 'embed' in scales:
             unpack = dequantize_q4 if weights['embed'].dtype == torch.uint8 else dequantize
-            # Bound temporary expansion by rows rather than making a FP32 copy
-            # of the entire vocabulary matrix.
-            packed, step = weights['embed'], scales.pop('embed')
-            embedding = torch.empty(source.tensors['token_embd.weight'].shape, dtype=torch.float16)
-            for first in range(0, len(embedding), 128):
-                embedding[first:first+128] = unpack(packed[first:first+128], step[first:first+128], torch.float16)
-            if not torch.isfinite(embedding).all():
-                raise ValueError('GGUF embedding exceeds finite FP16 range')
-            weights['embed'] = embedding
+            packed, step = weights['embed'], scales['embed']
+            if selected_device() == 'cuda':
+                # Preserve the existing FP16 lookup values without expanding the
+                # vocabulary. Normal scales prove finiteness with a cheap bound;
+                # extreme scales need a bounded exact check, including zero blocks.
+                bound = 8 if packed.dtype == torch.uint8 else 128
+                if step.abs().amax().item() > torch.finfo(torch.float16).max / bound:
+                    for first in range(0, len(packed), 128):
+                        values = unpack(packed[first:first+128], step[first:first+128], torch.float16)
+                        if not torch.isfinite(values).all():
+                            raise ValueError('GGUF embedding exceeds finite FP16 range')
+            else:
+                embedding = torch.empty(source.tensors['token_embd.weight'].shape, dtype=torch.float16)
+                for first in range(0, len(embedding), 128):
+                    embedding[first:first+128] = unpack(packed[first:first+128], step[first:first+128], torch.float16)
+                if not torch.isfinite(embedding).all():
+                    raise ValueError('GGUF embedding exceeds finite FP16 range')
+                weights['embed'] = embedding
+                del scales['embed']
         if identity(self.path) != source.identity:
             raise ValueError('GGUF file changed while loading weights')
         self.finalize_weights(weights, scales)
-        if self.bytes != source.host_bytes:
+        if self.bytes != estimated:
             raise ValueError('GGUF loaded storage disagrees with preflight estimate')

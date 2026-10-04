@@ -85,7 +85,8 @@ def prepare(weights, quantization=None):
 
 class Linear:
     def __init__(self, weights, host_scales, device, fallback):
-        self.scales = {id(weights[name]): value.to(device) for name, value in host_scales.items()}
+        copies = {key: value.to(device) for key, value in {id(t):t for t in host_scales.values()}.items()}
+        self.scales = {id(weights[name]): copies[id(value)] for name, value in host_scales.items()}
         self.fallback = fallback
 
     def __call__(self, x, weight, bias=None):

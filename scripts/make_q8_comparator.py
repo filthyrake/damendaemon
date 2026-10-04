@@ -14,6 +14,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('source', type=Path)
     parser.add_argument('destination', type=Path)
+    parser.add_argument('--quantize-embedding', action='store_true',
+        help='also quantize embedding rows for packed-lookup qualification; not a value-matched HF comparator')
     parser.add_argument('--format', choices=('q8_0', 'q4_0'), default='q8_0')
     parser.add_argument('--matrix-dtype',choices=('float16','float32'),
         help='pre-quantization precision; defaults to float32 for Mamba, float16 otherwise')
@@ -43,7 +45,7 @@ def main():
     if 'output.weight' not in tensors:
         tensors['output.weight'] = tensors['token_embd.weight']
     for name, data in tensors.items():
-        selected=data.ndim==2 and name!='token_embd.weight'
+        selected=data.ndim==2 and (name!='token_embd.weight' or args.quantize_embedding)
         if architecture in ('mamba','mamba2'):
             selected=selected and data.shape[1]%32==0 and (name=='output.weight' or
                 name.endswith(('ssm_in.weight','ssm_x.weight','ssm_dt.weight','ssm_out.weight')))
