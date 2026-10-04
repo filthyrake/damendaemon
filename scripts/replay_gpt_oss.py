@@ -13,6 +13,7 @@ from dllm.gpt_oss import GptOssExecutor
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('model');parser.add_argument('reference')
     parser.add_argument('--output',required=True);parser.add_argument('--no-graph',action='store_true')
+    parser.add_argument('--scalar',action='store_true',help='exercise direct single-request decode in slot zero')
     args=parser.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
@@ -32,7 +33,7 @@ def main():
         if not passed:print(json.dumps(checks[-1]),flush=True)
     with torch.inference_mode():
         for index,case in enumerate(reference['cases']):
-            ids=case['ids'];count=len(ids);split=case['split'];slot=index%2
+            ids=case['ids'];count=len(ids);split=case['split'];slot=0 if args.scalar else index%2
             positions=torch.arange(count,device='cuda');slots=torch.full_like(positions,slot)
             x=torch.nn.functional.embedding(torch.tensor(ids,device='cuda'),executor.w['embed']).float()
             start=time.perf_counter()
@@ -49,7 +50,7 @@ def main():
             timings.append({'case':index,'kind':'prefill','tokens':split,'seconds':time.perf_counter()-start})
             compare(logits[0],case['logits'][0],'prefix',case=index)
             for step,token in enumerate(ids[split:]):
-                start=time.perf_counter();logits,_=executor.decode_batch([token],[slot]);torch.cuda.synchronize()
+                start=time.perf_counter();logits,_=executor.decode(token) if args.scalar else executor.decode_batch([token],[slot]);torch.cuda.synchronize()
                 timings.append({'case':index,'kind':'decode','step':step,'seconds':time.perf_counter()-start})
                 compare(logits[0],case['logits'][step+1],'decode',case=index,step=step)
             isolated=all(torch.equal(cache[:,other],saved) for cache,saved in zip(executor.kv,untouched))
@@ -65,7 +66,7 @@ def main():
         'repository':reference['repository'],'revision':reference['revision'],
         'reference':reference['reference'],'reference_transformers':reference['transformers'],
         'reference_torch':reference['torch'],'reference_dtype':reference['dtype'],'torch':str(torch.__version__),
-        'graph':not args.no_graph,'prefill_mode':executor.grouped_prefill,'chunked_experts':executor.chunked_experts,'compute_dtype':str(executor.compute_dtype),'kernel_backend':executor.kernel_backend,
+        'graph':not args.no_graph,'scalar':args.scalar,'prefill_mode':executor.grouped_prefill,'chunked_experts':executor.chunked_experts,'compute_dtype':str(executor.compute_dtype),'kernel_backend':executor.kernel_backend,
         'context':executor.context,'max_batch':executor.max_batch,'host_weight_bytes':model.bytes,
         'allocated_bytes':torch.cuda.memory_allocated(),'peak_allocated_bytes':torch.cuda.max_memory_allocated(),
         'checks':checks,'timings':timings}

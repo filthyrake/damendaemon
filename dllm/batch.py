@@ -88,6 +88,15 @@ class BatchExecutor(Executor):
         self.lengths[slot] = len(tokens)
         return result
 
+    def decode(self, token):
+        # The base scalar graph is deliberately disabled in this constructor.
+        # Reuse the captured one-row batch graph for direct/CLI callers too.
+        if 1 not in self.batch_graphs:
+            return super().decode(token)
+        result = self.decode_batch([token], [0])
+        self.length = self.lengths[0]
+        return result
+
     @property
     def supports_chunked_prefill(self):
         return self.c['model_type'] in ('qwen2','qwen3','llama','mistral')

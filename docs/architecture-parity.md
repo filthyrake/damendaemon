@@ -1275,3 +1275,17 @@ updated `verify_harmony_service.py`. Evidence is in
 [Harmony function-call checks](evidence/gpt-oss/harmony-tools/). The local CPU/HTTP
 suite passes 235 tests. These are protocol/correctness checks, not a comparative
 throughput or model-quality benchmark.
+
+
+### Direct scalar CUDA graph dispatch
+
+Direct `Runtime.generate`/CLI calls now reuse the batch executor's captured
+one-row graph instead of bypassing it through the disabled base scalar graph.
+The existing HTTP scheduler path is unchanged. On the A2, matched six-round
+32-step decode trials show 2.52–3.02× gains for Qwen3-0.6B with explicit FP32
+policy and about 1.02× for native MXFP4 GPT-OSS-20B. All logits and free-running
+tokens match exactly in these comparisons. Independent scalar reference replays
+pass 25 Qwen3 checks and 72 GPT-OSS checks; 237 CPU/HTTP regressions pass.
+No-graph/non-CUDA fallback remains unchanged, as do existing Gemma/paged scalar
+overrides. See [measurements and methodology](evidence/scalar-decode/README.md)
+and GitHub issue #40. These gains exclude load/prefill and are not HTTP speedups.

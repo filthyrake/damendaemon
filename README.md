@@ -730,3 +730,9 @@ calls in one historical assistant message, and tool history containing both
 commentary content and reasoning are not yet supported. Structured chat output,
 chat logprobs, 120B and longer contexts remain unqualified; unsupported combinations fail
 explicitly. See [architecture evidence](docs/architecture-parity.md#gpt-oss-20b-packed-raw-execution).
+
+
+Direct CUDA generation (`dllm run` and `Runtime.generate`) reuses the native
+one-request decode graph. A2 measurements show 2.5–3.0× faster Qwen3-0.6B FP32
+decode and about 2% faster GPT-OSS decode versus the previous scalar dispatch;
+HTTP batching already used these graphs. [Scope and evidence](docs/evidence/scalar-decode/README.md).

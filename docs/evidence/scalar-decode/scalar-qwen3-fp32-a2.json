@@ -1,0 +1,204 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+  "context": 512,
+  "compute_dtype": "torch.float32",
+  "residual_dtype": "torch.float32",
+  "weight_format": "none",
+  "rows": [
+    {
+      "prompt_tokens": 5,
+      "decode_steps": 32,
+      "relative_rms": 0.0,
+      "max_absolute_error": 0.0,
+      "teacher_forced_greedy_exact": true,
+      "free_running_tokens_exact": true,
+      "other_slot_unchanged": true,
+      "median_decode_seconds": {
+        "False": 0.7993824994991883,
+        "True": 0.2648961864906596
+      },
+      "speedup": 3.017719922998495,
+      "measurements": [
+        {
+          "graph": false,
+          "seconds": 0.7909582360007335
+        },
+        {
+          "graph": true,
+          "seconds": 0.2653636729955906
+        },
+        {
+          "graph": true,
+          "seconds": 0.2652479479875183
+        },
+        {
+          "graph": false,
+          "seconds": 0.8246389470004942
+        },
+        {
+          "graph": false,
+          "seconds": 0.7874880940071307
+        },
+        {
+          "graph": true,
+          "seconds": 0.268039222995867
+        },
+        {
+          "graph": true,
+          "seconds": 0.2637503750011092
+        },
+        {
+          "graph": false,
+          "seconds": 0.8116030199889792
+        },
+        {
+          "graph": false,
+          "seconds": 0.8078067629976431
+        },
+        {
+          "graph": true,
+          "seconds": 0.26454442499380093
+        },
+        {
+          "graph": true,
+          "seconds": 0.2634436530061066
+        },
+        {
+          "graph": false,
+          "seconds": 0.7700347089994466
+        }
+      ]
+    },
+    {
+      "prompt_tokens": 64,
+      "decode_steps": 32,
+      "relative_rms": 0.0,
+      "max_absolute_error": 0.0,
+      "teacher_forced_greedy_exact": true,
+      "free_running_tokens_exact": true,
+      "other_slot_unchanged": true,
+      "median_decode_seconds": {
+        "False": 0.7621859504943131,
+        "True": 0.27039720750326524
+      },
+      "speedup": 2.81876413418622,
+      "measurements": [
+        {
+          "graph": false,
+          "seconds": 0.8063599620072637
+        },
+        {
+          "graph": true,
+          "seconds": 0.2711640469933627
+        },
+        {
+          "graph": true,
+          "seconds": 0.2718381480081007
+        },
+        {
+          "graph": false,
+          "seconds": 0.7780988140002592
+        },
+        {
+          "graph": false,
+          "seconds": 0.7532086999999592
+        },
+        {
+          "graph": true,
+          "seconds": 0.26934514100139495
+        },
+        {
+          "graph": true,
+          "seconds": 0.26915233200998046
+        },
+        {
+          "graph": false,
+          "seconds": 0.7527223220095038
+        },
+        {
+          "graph": false,
+          "seconds": 0.7592354649968911
+        },
+        {
+          "graph": true,
+          "seconds": 0.2703705570020247
+        },
+        {
+          "graph": true,
+          "seconds": 0.27042385800450575
+        },
+        {
+          "graph": false,
+          "seconds": 0.7651364359917352
+        }
+      ]
+    },
+    {
+      "prompt_tokens": 256,
+      "decode_steps": 32,
+      "relative_rms": 0.0,
+      "max_absolute_error": 0.0,
+      "teacher_forced_greedy_exact": true,
+      "free_running_tokens_exact": true,
+      "other_slot_unchanged": true,
+      "median_decode_seconds": {
+        "False": 0.7719377425019047,
+        "True": 0.30588656599866226
+      },
+      "speedup": 2.5236078609129917,
+      "measurements": [
+        {
+          "graph": false,
+          "seconds": 0.7703404700005194
+        },
+        {
+          "graph": true,
+          "seconds": 0.3057934370008297
+        },
+        {
+          "graph": true,
+          "seconds": 0.3067357490072027
+        },
+        {
+          "graph": false,
+          "seconds": 0.7682593689969508
+        },
+        {
+          "graph": false,
+          "seconds": 0.77353501500329
+        },
+        {
+          "graph": true,
+          "seconds": 0.30581101999268867
+        },
+        {
+          "graph": true,
+          "seconds": 0.30576961299811956
+        },
+        {
+          "graph": false,
+          "seconds": 0.7859132330049761
+        },
+        {
+          "graph": false,
+          "seconds": 0.7508100190025289
+        },
+        {
+          "graph": true,
+          "seconds": 0.3062333379930351
+        },
+        {
+          "graph": true,
+          "seconds": 0.30596211200463586
+        },
+        {
+          "graph": false,
+          "seconds": 0.7756143509905087
+        }
+      ]
+    }
+  ],
+  "method": "One resident checkpoint, fixed context and precision. 32 greedy decode steps after untimed prefill, six alternating warmed pairs, synchronization through next-token read as in direct runtime. Teacher-forced full-logit correctness measured separately. Excludes load, prefill, HTTP and chat parsing."
+}
