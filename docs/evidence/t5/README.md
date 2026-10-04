@@ -71,3 +71,45 @@ Two native serving runs, same workload as above, yield 228.96/278.06/660.90 and
 introduce run variation, especially at concurrency two; both runs improve over
 the initial gathered-SDPA measurements. Raw runs are in metal-native/ and
 metal-native-repeat/. No llama.cpp speedup claim is made.
+
+## Original T5 and A2 projection dispatch
+
+Pinned google-t5/t5-small `df1b051c49625cf57a3d0d8d3863ed4d13564fe4`
+qualifies the ReLU feed-forward, eight-head and tied-embedding/output paths.
+Both GPUs pass 573 independent checks through decoder position 511, plus cache
+exhaustion rejection and the real HTTP/model-switching suite. Original snapshots
+contain one obsolete cross-attention relative-bias tensor; the loader validates
+and discards exactly that key, matching Transformers' explicit ignore list.
+Other unexpected tensors still fail loading.
+
+Profiling the A2 FLAN-T5 four-row decoder attributes about 81% of GPU time to
+FP32 projections. Geometry and tensor-core experiments are retained in the probe
+scripts/evidence. cuBLAS already recovers most of the measured batched advantage,
+so T5 now uses it for multiple rows while retaining the faster native vector
+kernel for one row. No weight/activation precision change is made. Both T5
+checkpoints pass 573 reference checks after this change, including reordered
+batches and full decoder context (max relative RMS below 0.000001734).
+
+Updated FLAN-T5 A2 HTTP throughput at concurrency 1/2/4:
+258.83 / 290.84 / 527.93 tokens/s; first text 20.57 / 32.95 / 39.19 ms.
+These short-output results include encoder work; the profile is not a serving
+benchmark. The custom tensor-core prototype remains outside runtime dispatch.
+
+## Valid standalone llama.cpp comparison
+
+The public llama.cpp API supports encoder-decoder execution even though the
+server path above fails. `scripts/bench_t5_llama.cpp` is an independent adapter
+outside the upstream checkout, compiled against pinned llama.cpp. It calls
+`llama_encode` followed by decoder-start and greedy `llama_decode` steps.
+Compare `scripts/bench_t5_executor.py`; both use the exact 19 encoder IDs,
+8 outputs, FP32 weights/KV, context 512, one slot, A2 only and five warm trials.
+All output IDs agree. Timings exclude model load and HTTP/tokenizer overhead.
+
+| Core inference | First token ms | Total for 8 outputs ms | Subsequent token ms |
+|---|---:|---:|---:|
+| dllm | 16.426 | 25.800 | 1.339 |
+| llama.cpp | 6.155 | 26.806 | 2.950 |
+
+Dllm has substantially slower encoder/prefill latency in this workload, while
+its decoder is faster. Total times are close; this is not a universal win or an
+HTTP comparison. Raw core trials and llama.cpp initialization log are retained.

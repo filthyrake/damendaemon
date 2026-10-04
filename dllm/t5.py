@@ -102,6 +102,10 @@ class T5Weights:
             if 'lm_head.weight' in state and not torch.equal(take('lm_head.weight',w['embed'].shape),w['head']):
                 raise ValueError('T5 tied output weights disagree')
         else:w['head']=take('lm_head.weight',(c['vocab_size'],h))
+        # Original T5 snapshots carry this obsolete tensor. Cross-attention has
+        # no relative bias; Transformers explicitly ignores the same legacy key.
+        legacy='decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight'
+        if legacy in state:take(legacy,(c['relative_attention_num_buckets'],c['num_heads']))
         for stack,layers in (('encoder',c['num_layers']),('decoder',c['num_decoder_layers'])):
             w[stack+'.norm']=take(stack+'.final_layer_norm.weight',(h,))
             for i in range(layers):
@@ -202,6 +206,9 @@ class T5Executor:
     def linear(self,x,weight):
         if self.kernels:
             if self.device=='mps':return self.kernels.linear(x,weight)
+            # cuBLAS reuses FP32 weights across decoder rows more efficiently
+            # than the small-vector kernel on the qualified A2 shapes.
+            if x.shape[0]>1:return F.linear(x,weight)
             return self.kernels.linear_fp32(x,weight)
         return F.linear(x,weight)
 

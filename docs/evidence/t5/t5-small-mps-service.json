@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "device": "mps",
+  "model": "results/models/t5-small",
+  "other_model": "results/models/qwen2",
+  "text_and_token_prompts_equal": true,
+  "stream_and_nonstream_equal": true,
+  "concurrent_isolation": true,
+  "full_encoder_context_with_output": true,
+  "oversized_requests_rejected": true,
+  "chat_rejected": true,
+  "cancellation_recovery": true,
+  "decoder_only_switch_and_host_restore": true,
+  "sample": {
+    "id": "cmpl-1f05dfa4cab2499db6a8803a8c834d5d",
+    "object": "text_completion",
+    "created": 1791118381,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": "Der blaue Vogel flie",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 19,
+      "completion_tokens": 8,
+      "total_tokens": 27
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 0.18236874998547137,
+      "cached_prompt_tokens": 0,
+      "kernel_backend": "metal",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 0.20023858302738518,
+      "total_seconds": 0.2318517499952577,
+      "decode_tokens_per_second": 221.42672409612996
+    }
+  },
+  "unsupported_cache_options_rejected": true
+}

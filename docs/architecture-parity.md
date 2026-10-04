@@ -1032,6 +1032,8 @@ graph replay; Apple uses native projection, norm and relative decoder-attention 
 
 [Qualification, limitations and initial timing evidence](evidence/t5/README.md)
 include 198 independent FP32 logit checks per GPU plus real API and residency
-proof. FLAN-T5-small is the qualified checkpoint; configuration acceptance alone
-does not qualify other T5 variants. The current llama.cpp server baseline fails
-startup or matched output validation, so no comparative speed claim is made.
+proof. Original T5-small additionally qualifies tied embeddings and ReLU, with
+573 checks through the full decoder context on both GPUs. The llama.cpp server
+baseline fails startup or matched output validation; a separate public-API core
+comparison produces identical token IDs and exposes dllm's slower encoder but
+faster decoder. Core timings and HTTP throughput are reported separately.

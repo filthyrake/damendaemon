@@ -13,6 +13,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('model')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     p.add_argument('--context',type=int,default=512)
+    p.add_argument('--full-decoder',action='store_true')
     args=p.parse_args();os.environ['DLLM_DEVICE']=args.device
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,args.context)
@@ -50,6 +51,11 @@ def main():
     prefill([1,15,17,127],[3,0,2,1]);decode([2,3,1,0],8)
     prefill([args.context,31],[0,1]);decode([1,2,0,3],8)
     decode([0],128)
+    if args.full_decoder:
+        decode([0],args.context-executor.lengths[0])
+        try:executor.decode_batch([states[0][2]],[0])
+        except ValueError:pass
+        else:raise AssertionError('exhausted decoder cache accepted')
     before=list(executor.lengths)
     try:executor.prefill_batch([[1]*(args.context+1)],[0])
     except ValueError:pass
@@ -67,6 +73,7 @@ def main():
     print(json.dumps({'passed':passed,'model':args.model,'device':args.device,'context':args.context,
         'kernel_backend':executor.kernel_backend,'compute_dtype':str(executor.compute_dtype),
         'checks':checks,'encoder_decoder_lengths_independent':True,'slot_reuse':True,
+        'full_decoder_boundary':args.full_decoder,
         'generated_ids':generated,'generated_text':model.tokenizer.decode(generated,skip_special_tokens=True),
         'reference_dtype':'float32','reference':'Transformers T5ForConditionalGeneration on CPU'},indent=2))
     if not passed:raise SystemExit(1)

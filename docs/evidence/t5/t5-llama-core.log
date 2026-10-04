@@ -1,0 +1,875 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 14964 MiB):
+  Device 0: NVIDIA A2, compute capability 8.6, VMM: yes, VRAM: 14964 MiB
+llama_model_loader: loaded meta data with 52 key-value pairs and 190 tensors from baselines/flan-t5-small-f32.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = t5
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                               general.name str              = Flan T5 Small
+llama_model_loader: - kv   3:                           general.basename str              = flan-t5
+llama_model_loader: - kv   4:                         general.size_label str              = small
+llama_model_loader: - kv   5:                            general.license str              = apache-2.0
+llama_model_loader: - kv   6:                      general.dataset.count u32              = 10
+llama_model_loader: - kv   7:                     general.dataset.0.name str              = Qrecc
+llama_model_loader: - kv   8:             general.dataset.0.organization str              = Svakulenk0
+llama_model_loader: - kv   9:                 general.dataset.0.repo_url str              = https://huggingface.co/svakulenk0/qrecc
+llama_model_loader: - kv  10:                     general.dataset.1.name str              = Taskmaster2
+llama_model_loader: - kv  11:                     general.dataset.2.name str              = Wiki_Dialog
+llama_model_loader: - kv  12:             general.dataset.2.organization str              = Djaym7
+llama_model_loader: - kv  13:                 general.dataset.2.repo_url str              = https://huggingface.co/djaym7/wiki_di...
+llama_model_loader: - kv  14:                     general.dataset.3.name str              = Code_Contests
+llama_model_loader: - kv  15:             general.dataset.3.organization str              = Deepmind
+llama_model_loader: - kv  16:                 general.dataset.3.repo_url str              = https://huggingface.co/deepmind/code_...
+llama_model_loader: - kv  17:                     general.dataset.4.name str              = Lambada
+llama_model_loader: - kv  18:                     general.dataset.5.name str              = Gsm8K
+llama_model_loader: - kv  19:                     general.dataset.6.name str              = Aqua_Rat
+llama_model_loader: - kv  20:                     general.dataset.7.name str              = Esnli
+llama_model_loader: - kv  21:                     general.dataset.8.name str              = Quasc
+llama_model_loader: - kv  22:                     general.dataset.9.name str              = Qed
+llama_model_loader: - kv  23:                               general.tags arr[str,1]       = ["text2text-generation"]
+llama_model_loader: - kv  24:                          general.languages arr[str,5]       = ["en", "fr", "ro", "de", "multilingual"]
+llama_model_loader: - kv  25:                          t5.context_length u32              = 512
+llama_model_loader: - kv  26:                        t5.embedding_length u32              = 512
+llama_model_loader: - kv  27:                     t5.feed_forward_length u32              = 1024
+llama_model_loader: - kv  28:                             t5.block_count u32              = 8
+llama_model_loader: - kv  29:                     t5.decoder_block_count u32              = 8
+llama_model_loader: - kv  30:                    t5.attention.head_count u32              = 6
+llama_model_loader: - kv  31:                    t5.attention.key_length u32              = 64
+llama_model_loader: - kv  32:                  t5.attention.value_length u32              = 64
+llama_model_loader: - kv  33:            t5.attention.layer_norm_epsilon f32              = 0.000001
+llama_model_loader: - kv  34:        t5.attention.relative_buckets_count u32              = 32
+llama_model_loader: - kv  35:        t5.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  36:                  t5.decoder_start_token_id u32              = 0
+llama_model_loader: - kv  37:                          general.file_type u32              = 0
+llama_model_loader: - kv  38:               general.quantization_version u32              = 2
+llama_model_loader: - kv  39:                       tokenizer.ggml.model str              = t5
+llama_model_loader: - kv  40:                         tokenizer.ggml.pre str              = default
+llama_model_loader: - kv  41:                      tokenizer.ggml.tokens arr[str,32128]   = ["<pad>", "</s>", "<unk>", "▁", "X"...
+llama_model_loader: - kv  42:                      tokenizer.ggml.scores arr[f32,32128]   = [0.000000, 0.000000, 0.000000, -2.012...
+llama_model_loader: - kv  43:                  tokenizer.ggml.token_type arr[i32,32128]   = [3, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  44:            tokenizer.ggml.add_space_prefix bool             = true
+llama_model_loader: - kv  45:    tokenizer.ggml.remove_extra_whitespaces bool             = true
+llama_model_loader: - kv  46:        tokenizer.ggml.precompiled_charsmap arr[u8,237539]   = [0, 180, 2, 0, 0, 132, 0, 0, 0, 0, 0,...
+llama_model_loader: - kv  47:                tokenizer.ggml.eos_token_id u32              = 1
+llama_model_loader: - kv  48:            tokenizer.ggml.unknown_token_id u32              = 2
+llama_model_loader: - kv  49:            tokenizer.ggml.padding_token_id u32              = 0
+llama_model_loader: - kv  50:               tokenizer.ggml.add_eos_token bool             = true
+llama_model_loader: - kv  51:               tokenizer.ggml.add_sep_token bool             = false
+llama_model_loader: - type  f32:  190 tensors
+print_info: file format = GGUF V3 (latest)
+print_info: file type   = all F32
+print_info: file size   = 293.58 MiB (32.00 BPW) 
+llama_prepare_model_devices: using device CUDA0 (NVIDIA A2) (0000:02:00.0) - 14902 MiB free
+init_tokenizer: initializing tokenizer for type 4
+load: model vocab missing newline token, using special_pad_id instead
+load: 0 unused tokens
+load: control token:      0 '<pad>' is not marked as EOG
+load: printing all EOG tokens:
+load:   - 1 ('</s>')
+load: special tokens cache size = 3
+load: token to piece cache size = 0.2111 MB
+print_info: arch                  = t5
+print_info: vocab_only            = 0
+print_info: no_alloc              = 0
+print_info: n_ctx_train           = 512
+print_info: n_embd_inp            = 512
+print_info: n_embd                = 512
+print_info: n_embd_out            = 512
+print_info: n_layer               = 8
+print_info: n_layer_all           = 8
+print_info: n_head                = 6
+print_info: n_head_kv             = 6
+print_info: n_rot                 = 64
+print_info: n_swa                 = 0
+print_info: is_swa_any            = 0
+print_info: non_causal_type       = 0
+print_info: n_embd_head_k         = 64
+print_info: n_embd_head_v         = 64
+print_info: n_gqa                 = 1
+print_info: n_embd_k_gqa          = 384
+print_info: n_embd_v_gqa          = 384
+print_info: f_norm_eps            = 0.0e+00
+print_info: f_norm_rms_eps        = 1.0e-06
+print_info: f_clamp_kqv           = 0.0e+00
+print_info: f_max_alibi_bias      = 0.0e+00
+print_info: f_logit_scale         = 0.0e+00
+print_info: f_attn_scale          = 0.0e+00
+print_info: f_attn_value_scale    = 0.0000
+print_info: n_ff                  = 1024
+print_info: n_expert              = 0
+print_info: n_expert_used         = 0
+print_info: n_expert_groups       = 0
+print_info: n_group_used          = 0
+print_info: causal attn           = 1
+print_info: pooling type          = -1
+print_info: rope type             = -1
+print_info: rope scaling          = linear
+print_info: freq_base_train       = 10000.0
+print_info: freq_scale_train      = 1
+print_info: n_ctx_orig_yarn       = 512
+print_info: rope_yarn_log_mul     = 0.0000
+print_info: rope_finetuned        = unknown
+print_info: model type            = 80M
+print_info: model params          = 76.96 M
+print_info: general.name          = Flan T5 Small
+print_info: vocab type            = UGM
+print_info: n_vocab               = 32128
+print_info: n_merges              = 0
+print_info: EOS token             = 1 '</s>'
+print_info: UNK token             = 2 '<unk>'
+print_info: PAD token             = 0 '<pad>'
+print_info: LF token              = 0 '<pad>'
+print_info: EOG token             = 1 '</s>'
+print_info: max token length      = 20
+load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+load_tensors: layer   0 assigned to device CUDA0, is_swa = 0
+load_tensors: layer   1 assigned to device CUDA0, is_swa = 0
+load_tensors: layer   2 assigned to device CUDA0, is_swa = 0
+load_tensors: layer   3 assigned to device CUDA0, is_swa = 0
+load_tensors: layer   4 assigned to device CUDA0, is_swa = 0
+load_tensors: layer   5 assigned to device CUDA0, is_swa = 0
+load_tensors: layer   6 assigned to device CUDA0, is_swa = 0
+load_tensors: layer   7 assigned to device CUDA0, is_swa = 0
+load_tensors: layer   8 assigned to device CUDA0, is_swa = 0
+create_tensor: loading tensor token_embd.weight
+create_tensor: loading tensor enc.output_norm.weight
+create_tensor: loading tensor dec.output_norm.weight
+create_tensor: loading tensor output.weight
+create_tensor: loading tensor enc.blk.0.attn_norm.weight
+create_tensor: loading tensor enc.blk.0.attn_rel_b.weight
+create_tensor: loading tensor enc.blk.0.attn_q.weight
+create_tensor: loading tensor enc.blk.0.attn_k.weight
+create_tensor: loading tensor enc.blk.0.attn_v.weight
+create_tensor: loading tensor enc.blk.0.attn_o.weight
+create_tensor: loading tensor enc.blk.0.ffn_norm.weight
+create_tensor: loading tensor enc.blk.0.ffn_gate.weight
+create_tensor: loading tensor enc.blk.0.ffn_down.weight
+create_tensor: loading tensor enc.blk.0.ffn_up.weight
+create_tensor: loading tensor enc.blk.1.attn_norm.weight
+create_tensor: loading tensor enc.blk.1.attn_rel_b.weight
+create_tensor: loading tensor enc.blk.1.attn_q.weight
+create_tensor: loading tensor enc.blk.1.attn_k.weight
+create_tensor: loading tensor enc.blk.1.attn_v.weight
+create_tensor: loading tensor enc.blk.1.attn_o.weight
+create_tensor: loading tensor enc.blk.1.ffn_norm.weight
+create_tensor: loading tensor enc.blk.1.ffn_gate.weight
+create_tensor: loading tensor enc.blk.1.ffn_down.weight
+create_tensor: loading tensor enc.blk.1.ffn_up.weight
+create_tensor: loading tensor enc.blk.2.attn_norm.weight
+create_tensor: loading tensor enc.blk.2.attn_rel_b.weight
+create_tensor: loading tensor enc.blk.2.attn_q.weight
+create_tensor: loading tensor enc.blk.2.attn_k.weight
+create_tensor: loading tensor enc.blk.2.attn_v.weight
+create_tensor: loading tensor enc.blk.2.attn_o.weight
+create_tensor: loading tensor enc.blk.2.ffn_norm.weight
+create_tensor: loading tensor enc.blk.2.ffn_gate.weight
+create_tensor: loading tensor enc.blk.2.ffn_down.weight
+create_tensor: loading tensor enc.blk.2.ffn_up.weight
+create_tensor: loading tensor enc.blk.3.attn_norm.weight
+create_tensor: loading tensor enc.blk.3.attn_rel_b.weight
+create_tensor: loading tensor enc.blk.3.attn_q.weight
+create_tensor: loading tensor enc.blk.3.attn_k.weight
+create_tensor: loading tensor enc.blk.3.attn_v.weight
+create_tensor: loading tensor enc.blk.3.attn_o.weight
+create_tensor: loading tensor enc.blk.3.ffn_norm.weight
+create_tensor: loading tensor enc.blk.3.ffn_gate.weight
+create_tensor: loading tensor enc.blk.3.ffn_down.weight
+create_tensor: loading tensor enc.blk.3.ffn_up.weight
+create_tensor: loading tensor enc.blk.4.attn_norm.weight
+create_tensor: loading tensor enc.blk.4.attn_rel_b.weight
+create_tensor: loading tensor enc.blk.4.attn_q.weight
+create_tensor: loading tensor enc.blk.4.attn_k.weight
+create_tensor: loading tensor enc.blk.4.attn_v.weight
+create_tensor: loading tensor enc.blk.4.attn_o.weight
+create_tensor: loading tensor enc.blk.4.ffn_norm.weight
+create_tensor: loading tensor enc.blk.4.ffn_gate.weight
+create_tensor: loading tensor enc.blk.4.ffn_down.weight
+create_tensor: loading tensor enc.blk.4.ffn_up.weight
+create_tensor: loading tensor enc.blk.5.attn_norm.weight
+create_tensor: loading tensor enc.blk.5.attn_rel_b.weight
+create_tensor: loading tensor enc.blk.5.attn_q.weight
+create_tensor: loading tensor enc.blk.5.attn_k.weight
+create_tensor: loading tensor enc.blk.5.attn_v.weight
+create_tensor: loading tensor enc.blk.5.attn_o.weight
+create_tensor: loading tensor enc.blk.5.ffn_norm.weight
+create_tensor: loading tensor enc.blk.5.ffn_gate.weight
+create_tensor: loading tensor enc.blk.5.ffn_down.weight
+create_tensor: loading tensor enc.blk.5.ffn_up.weight
+create_tensor: loading tensor enc.blk.6.attn_norm.weight
+create_tensor: loading tensor enc.blk.6.attn_rel_b.weight
+create_tensor: loading tensor enc.blk.6.attn_q.weight
+create_tensor: loading tensor enc.blk.6.attn_k.weight
+create_tensor: loading tensor enc.blk.6.attn_v.weight
+create_tensor: loading tensor enc.blk.6.attn_o.weight
+create_tensor: loading tensor enc.blk.6.ffn_norm.weight
+create_tensor: loading tensor enc.blk.6.ffn_gate.weight
+create_tensor: loading tensor enc.blk.6.ffn_down.weight
+create_tensor: loading tensor enc.blk.6.ffn_up.weight
+create_tensor: loading tensor enc.blk.7.attn_norm.weight
+create_tensor: loading tensor enc.blk.7.attn_rel_b.weight
+create_tensor: loading tensor enc.blk.7.attn_q.weight
+create_tensor: loading tensor enc.blk.7.attn_k.weight
+create_tensor: loading tensor enc.blk.7.attn_v.weight
+create_tensor: loading tensor enc.blk.7.attn_o.weight
+create_tensor: loading tensor enc.blk.7.ffn_norm.weight
+create_tensor: loading tensor enc.blk.7.ffn_gate.weight
+create_tensor: loading tensor enc.blk.7.ffn_down.weight
+create_tensor: loading tensor enc.blk.7.ffn_up.weight
+create_tensor: loading tensor dec.blk.0.attn_norm.weight
+create_tensor: loading tensor dec.blk.0.attn_rel_b.weight
+create_tensor: loading tensor dec.blk.0.attn_q.weight
+create_tensor: loading tensor dec.blk.0.attn_k.weight
+create_tensor: loading tensor dec.blk.0.attn_v.weight
+create_tensor: loading tensor dec.blk.0.attn_o.weight
+create_tensor: loading tensor dec.blk.0.cross_attn_norm.weight
+create_tensor: loading tensor dec.blk.0.cross_attn_rel_b.weight
+create_tensor: loading tensor dec.blk.0.cross_attn_q.weight
+create_tensor: loading tensor dec.blk.0.cross_attn_k.weight
+create_tensor: loading tensor dec.blk.0.cross_attn_v.weight
+create_tensor: loading tensor dec.blk.0.cross_attn_o.weight
+create_tensor: loading tensor dec.blk.0.ffn_norm.weight
+create_tensor: loading tensor dec.blk.0.ffn_gate.weight
+create_tensor: loading tensor dec.blk.0.ffn_down.weight
+create_tensor: loading tensor dec.blk.0.ffn_up.weight
+create_tensor: loading tensor dec.blk.1.attn_norm.weight
+create_tensor: loading tensor dec.blk.1.attn_rel_b.weight
+create_tensor: loading tensor dec.blk.1.attn_q.weight
+create_tensor: loading tensor dec.blk.1.attn_k.weight
+create_tensor: loading tensor dec.blk.1.attn_v.weight
+create_tensor: loading tensor dec.blk.1.attn_o.weight
+create_tensor: loading tensor dec.blk.1.cross_attn_norm.weight
+create_tensor: loading tensor dec.blk.1.cross_attn_rel_b.weight
+create_tensor: loading tensor dec.blk.1.cross_attn_q.weight
+create_tensor: loading tensor dec.blk.1.cross_attn_k.weight
+create_tensor: loading tensor dec.blk.1.cross_attn_v.weight
+create_tensor: loading tensor dec.blk.1.cross_attn_o.weight
+create_tensor: loading tensor dec.blk.1.ffn_norm.weight
+create_tensor: loading tensor dec.blk.1.ffn_gate.weight
+create_tensor: loading tensor dec.blk.1.ffn_down.weight
+create_tensor: loading tensor dec.blk.1.ffn_up.weight
+create_tensor: loading tensor dec.blk.2.attn_norm.weight
+create_tensor: loading tensor dec.blk.2.attn_rel_b.weight
+create_tensor: loading tensor dec.blk.2.attn_q.weight
+create_tensor: loading tensor dec.blk.2.attn_k.weight
+create_tensor: loading tensor dec.blk.2.attn_v.weight
+create_tensor: loading tensor dec.blk.2.attn_o.weight
+create_tensor: loading tensor dec.blk.2.cross_attn_norm.weight
+create_tensor: loading tensor dec.blk.2.cross_attn_rel_b.weight
+create_tensor: loading tensor dec.blk.2.cross_attn_q.weight
+create_tensor: loading tensor dec.blk.2.cross_attn_k.weight
+create_tensor: loading tensor dec.blk.2.cross_attn_v.weight
+create_tensor: loading tensor dec.blk.2.cross_attn_o.weight
+create_tensor: loading tensor dec.blk.2.ffn_norm.weight
+create_tensor: loading tensor dec.blk.2.ffn_gate.weight
+create_tensor: loading tensor dec.blk.2.ffn_down.weight
+create_tensor: loading tensor dec.blk.2.ffn_up.weight
+create_tensor: loading tensor dec.blk.3.attn_norm.weight
+create_tensor: loading tensor dec.blk.3.attn_rel_b.weight
+create_tensor: loading tensor dec.blk.3.attn_q.weight
+create_tensor: loading tensor dec.blk.3.attn_k.weight
+create_tensor: loading tensor dec.blk.3.attn_v.weight
+create_tensor: loading tensor dec.blk.3.attn_o.weight
+create_tensor: loading tensor dec.blk.3.cross_attn_norm.weight
+create_tensor: loading tensor dec.blk.3.cross_attn_rel_b.weight
+create_tensor: loading tensor dec.blk.3.cross_attn_q.weight
+create_tensor: loading tensor dec.blk.3.cross_attn_k.weight
+create_tensor: loading tensor dec.blk.3.cross_attn_v.weight
+create_tensor: loading tensor dec.blk.3.cross_attn_o.weight
+create_tensor: loading tensor dec.blk.3.ffn_norm.weight
+create_tensor: loading tensor dec.blk.3.ffn_gate.weight
+create_tensor: loading tensor dec.blk.3.ffn_down.weight
+create_tensor: loading tensor dec.blk.3.ffn_up.weight
+create_tensor: loading tensor dec.blk.4.attn_norm.weight
+create_tensor: loading tensor dec.blk.4.attn_rel_b.weight
+create_tensor: loading tensor dec.blk.4.attn_q.weight
+create_tensor: loading tensor dec.blk.4.attn_k.weight
+create_tensor: loading tensor dec.blk.4.attn_v.weight
+create_tensor: loading tensor dec.blk.4.attn_o.weight
+create_tensor: loading tensor dec.blk.4.cross_attn_norm.weight
+create_tensor: loading tensor dec.blk.4.cross_attn_rel_b.weight
+create_tensor: loading tensor dec.blk.4.cross_attn_q.weight
+create_tensor: loading tensor dec.blk.4.cross_attn_k.weight
+create_tensor: loading tensor dec.blk.4.cross_attn_v.weight
+create_tensor: loading tensor dec.blk.4.cross_attn_o.weight
+create_tensor: loading tensor dec.blk.4.ffn_norm.weight
+create_tensor: loading tensor dec.blk.4.ffn_gate.weight
+create_tensor: loading tensor dec.blk.4.ffn_down.weight
+create_tensor: loading tensor dec.blk.4.ffn_up.weight
+create_tensor: loading tensor dec.blk.5.attn_norm.weight
+create_tensor: loading tensor dec.blk.5.attn_rel_b.weight
+create_tensor: loading tensor dec.blk.5.attn_q.weight
+create_tensor: loading tensor dec.blk.5.attn_k.weight
+create_tensor: loading tensor dec.blk.5.attn_v.weight
+create_tensor: loading tensor dec.blk.5.attn_o.weight
+create_tensor: loading tensor dec.blk.5.cross_attn_norm.weight
+create_tensor: loading tensor dec.blk.5.cross_attn_rel_b.weight
+create_tensor: loading tensor dec.blk.5.cross_attn_q.weight
+create_tensor: loading tensor dec.blk.5.cross_attn_k.weight
+create_tensor: loading tensor dec.blk.5.cross_attn_v.weight
+create_tensor: loading tensor dec.blk.5.cross_attn_o.weight
+create_tensor: loading tensor dec.blk.5.ffn_norm.weight
+create_tensor: loading tensor dec.blk.5.ffn_gate.weight
+create_tensor: loading tensor dec.blk.5.ffn_down.weight
+create_tensor: loading tensor dec.blk.5.ffn_up.weight
+create_tensor: loading tensor dec.blk.6.attn_norm.weight
+create_tensor: loading tensor dec.blk.6.attn_rel_b.weight
+create_tensor: loading tensor dec.blk.6.attn_q.weight
+create_tensor: loading tensor dec.blk.6.attn_k.weight
+create_tensor: loading tensor dec.blk.6.attn_v.weight
+create_tensor: loading tensor dec.blk.6.attn_o.weight
+create_tensor: loading tensor dec.blk.6.cross_attn_norm.weight
+create_tensor: loading tensor dec.blk.6.cross_attn_rel_b.weight
+create_tensor: loading tensor dec.blk.6.cross_attn_q.weight
+create_tensor: loading tensor dec.blk.6.cross_attn_k.weight
+create_tensor: loading tensor dec.blk.6.cross_attn_v.weight
+create_tensor: loading tensor dec.blk.6.cross_attn_o.weight
+create_tensor: loading tensor dec.blk.6.ffn_norm.weight
+create_tensor: loading tensor dec.blk.6.ffn_gate.weight
+create_tensor: loading tensor dec.blk.6.ffn_down.weight
+create_tensor: loading tensor dec.blk.6.ffn_up.weight
+create_tensor: loading tensor dec.blk.7.attn_norm.weight
+create_tensor: loading tensor dec.blk.7.attn_rel_b.weight
+create_tensor: loading tensor dec.blk.7.attn_q.weight
+create_tensor: loading tensor dec.blk.7.attn_k.weight
+create_tensor: loading tensor dec.blk.7.attn_v.weight
+create_tensor: loading tensor dec.blk.7.attn_o.weight
+create_tensor: loading tensor dec.blk.7.cross_attn_norm.weight
+create_tensor: loading tensor dec.blk.7.cross_attn_rel_b.weight
+create_tensor: loading tensor dec.blk.7.cross_attn_q.weight
+create_tensor: loading tensor dec.blk.7.cross_attn_k.weight
+create_tensor: loading tensor dec.blk.7.cross_attn_v.weight
+create_tensor: loading tensor dec.blk.7.cross_attn_o.weight
+create_tensor: loading tensor dec.blk.7.ffn_norm.weight
+create_tensor: loading tensor dec.blk.7.ffn_gate.weight
+create_tensor: loading tensor dec.blk.7.ffn_down.weight
+create_tensor: loading tensor dec.blk.7.ffn_up.weight
+create_tensor: loading tensor blk.0.attn_q.scale
+create_tensor: loading tensor blk.0.attn_k.scale
+create_tensor: loading tensor blk.0.attn_v.scale
+create_tensor: loading tensor blk.0.attn_output.scale
+create_tensor: loading tensor blk.0.ffn_gate.scale
+create_tensor: loading tensor blk.0.ffn_down.scale
+create_tensor: loading tensor blk.0.ffn_up.scale
+create_tensor: loading tensor blk.0.attn_q.input_scale
+create_tensor: loading tensor blk.0.attn_k.input_scale
+create_tensor: loading tensor blk.0.attn_v.input_scale
+create_tensor: loading tensor blk.0.attn_output.input_scale
+create_tensor: loading tensor blk.0.ffn_gate.input_scale
+create_tensor: loading tensor blk.0.ffn_down.input_scale
+create_tensor: loading tensor blk.0.ffn_up.input_scale
+create_tensor: loading tensor blk.1.attn_q.scale
+create_tensor: loading tensor blk.1.attn_k.scale
+create_tensor: loading tensor blk.1.attn_v.scale
+create_tensor: loading tensor blk.1.attn_output.scale
+create_tensor: loading tensor blk.1.ffn_gate.scale
+create_tensor: loading tensor blk.1.ffn_down.scale
+create_tensor: loading tensor blk.1.ffn_up.scale
+create_tensor: loading tensor blk.1.attn_q.input_scale
+create_tensor: loading tensor blk.1.attn_k.input_scale
+create_tensor: loading tensor blk.1.attn_v.input_scale
+create_tensor: loading tensor blk.1.attn_output.input_scale
+create_tensor: loading tensor blk.1.ffn_gate.input_scale
+create_tensor: loading tensor blk.1.ffn_down.input_scale
+create_tensor: loading tensor blk.1.ffn_up.input_scale
+create_tensor: loading tensor blk.2.attn_q.scale
+create_tensor: loading tensor blk.2.attn_k.scale
+create_tensor: loading tensor blk.2.attn_v.scale
+create_tensor: loading tensor blk.2.attn_output.scale
+create_tensor: loading tensor blk.2.ffn_gate.scale
+create_tensor: loading tensor blk.2.ffn_down.scale
+create_tensor: loading tensor blk.2.ffn_up.scale
+create_tensor: loading tensor blk.2.attn_q.input_scale
+create_tensor: loading tensor blk.2.attn_k.input_scale
+create_tensor: loading tensor blk.2.attn_v.input_scale
+create_tensor: loading tensor blk.2.attn_output.input_scale
+create_tensor: loading tensor blk.2.ffn_gate.input_scale
+create_tensor: loading tensor blk.2.ffn_down.input_scale
+create_tensor: loading tensor blk.2.ffn_up.input_scale
+create_tensor: loading tensor blk.3.attn_q.scale
+create_tensor: loading tensor blk.3.attn_k.scale
+create_tensor: loading tensor blk.3.attn_v.scale
+create_tensor: loading tensor blk.3.attn_output.scale
+create_tensor: loading tensor blk.3.ffn_gate.scale
+create_tensor: loading tensor blk.3.ffn_down.scale
+create_tensor: loading tensor blk.3.ffn_up.scale
+create_tensor: loading tensor blk.3.attn_q.input_scale
+create_tensor: loading tensor blk.3.attn_k.input_scale
+create_tensor: loading tensor blk.3.attn_v.input_scale
+create_tensor: loading tensor blk.3.attn_output.input_scale
+create_tensor: loading tensor blk.3.ffn_gate.input_scale
+create_tensor: loading tensor blk.3.ffn_down.input_scale
+create_tensor: loading tensor blk.3.ffn_up.input_scale
+create_tensor: loading tensor blk.4.attn_q.scale
+create_tensor: loading tensor blk.4.attn_k.scale
+create_tensor: loading tensor blk.4.attn_v.scale
+create_tensor: loading tensor blk.4.attn_output.scale
+create_tensor: loading tensor blk.4.ffn_gate.scale
+create_tensor: loading tensor blk.4.ffn_down.scale
+create_tensor: loading tensor blk.4.ffn_up.scale
+create_tensor: loading tensor blk.4.attn_q.input_scale
+create_tensor: loading tensor blk.4.attn_k.input_scale
+create_tensor: loading tensor blk.4.attn_v.input_scale
+create_tensor: loading tensor blk.4.attn_output.input_scale
+create_tensor: loading tensor blk.4.ffn_gate.input_scale
+create_tensor: loading tensor blk.4.ffn_down.input_scale
+create_tensor: loading tensor blk.4.ffn_up.input_scale
+create_tensor: loading tensor blk.5.attn_q.scale
+create_tensor: loading tensor blk.5.attn_k.scale
+create_tensor: loading tensor blk.5.attn_v.scale
+create_tensor: loading tensor blk.5.attn_output.scale
+create_tensor: loading tensor blk.5.ffn_gate.scale
+create_tensor: loading tensor blk.5.ffn_down.scale
+create_tensor: loading tensor blk.5.ffn_up.scale
+create_tensor: loading tensor blk.5.attn_q.input_scale
+create_tensor: loading tensor blk.5.attn_k.input_scale
+create_tensor: loading tensor blk.5.attn_v.input_scale
+create_tensor: loading tensor blk.5.attn_output.input_scale
+create_tensor: loading tensor blk.5.ffn_gate.input_scale
+create_tensor: loading tensor blk.5.ffn_down.input_scale
+create_tensor: loading tensor blk.5.ffn_up.input_scale
+create_tensor: loading tensor blk.6.attn_q.scale
+create_tensor: loading tensor blk.6.attn_k.scale
+create_tensor: loading tensor blk.6.attn_v.scale
+create_tensor: loading tensor blk.6.attn_output.scale
+create_tensor: loading tensor blk.6.ffn_gate.scale
+create_tensor: loading tensor blk.6.ffn_down.scale
+create_tensor: loading tensor blk.6.ffn_up.scale
+create_tensor: loading tensor blk.6.attn_q.input_scale
+create_tensor: loading tensor blk.6.attn_k.input_scale
+create_tensor: loading tensor blk.6.attn_v.input_scale
+create_tensor: loading tensor blk.6.attn_output.input_scale
+create_tensor: loading tensor blk.6.ffn_gate.input_scale
+create_tensor: loading tensor blk.6.ffn_down.input_scale
+create_tensor: loading tensor blk.6.ffn_up.input_scale
+create_tensor: loading tensor blk.7.attn_q.scale
+create_tensor: loading tensor blk.7.attn_k.scale
+create_tensor: loading tensor blk.7.attn_v.scale
+create_tensor: loading tensor blk.7.attn_output.scale
+create_tensor: loading tensor blk.7.ffn_gate.scale
+create_tensor: loading tensor blk.7.ffn_down.scale
+create_tensor: loading tensor blk.7.ffn_up.scale
+create_tensor: loading tensor blk.7.attn_q.input_scale
+create_tensor: loading tensor blk.7.attn_k.input_scale
+create_tensor: loading tensor blk.7.attn_v.input_scale
+create_tensor: loading tensor blk.7.attn_output.input_scale
+create_tensor: loading tensor blk.7.ffn_gate.input_scale
+create_tensor: loading tensor blk.7.ffn_down.input_scale
+create_tensor: loading tensor blk.7.ffn_up.input_scale
+done_getting_tensors: tensor 'token_embd.weight' (f32) (and 0 others) cannot be used with preferred buffer type CUDA_Host, using CPU instead
+load_tensors: offloading output layer to GPU
+load_tensors: offloading 7 repeating layers to GPU
+load_tensors: offloaded 9/9 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =    62.75 MiB
+load_tensors:        CUDA0 model buffer size =   230.83 MiB
+............................................................
+llama_context: constructing llama_context
+llama_context: n_seq_max             = 1
+llama_context: n_ctx                 = 512
+llama_context: n_ctx_seq             = 512
+llama_context: n_batch               = 512
+llama_context: n_ubatch              = 512
+llama_context: causal_attn           = 1
+llama_context: flash_attn            = disabled
+llama_context: kv_unified            = false
+llama_context: freq_base             = 10000.0
+llama_context: freq_scale            = 1
+llama_context: n_rs_seq              = 0
+llama_context: n_outputs_max         = 512
+llama_context: n_outputs_max_per_seq = 1
+set_abort_callback: call
+llama_context:  CUDA_Host  output buffer size =     0.12 MiB
+llama_kv_cache: layer   0: dev = CUDA0
+llama_kv_cache: layer   1: dev = CUDA0
+llama_kv_cache: layer   2: dev = CUDA0
+llama_kv_cache: layer   3: dev = CUDA0
+llama_kv_cache: layer   4: dev = CUDA0
+llama_kv_cache: layer   5: dev = CUDA0
+llama_kv_cache: layer   6: dev = CUDA0
+llama_kv_cache: layer   7: dev = CUDA0
+llama_kv_cache:      CUDA0 KV buffer size =    12.00 MiB
+llama_kv_cache: size =   12.00 MiB (   512 cells,   8 layers,  1/1 seqs), K (f32):    6.00 MiB, V (f32):    6.00 MiB
+llama_kv_cache: attn_rot_k = 0, n_embd_head_k_all = 64
+llama_kv_cache: attn_rot_v = 0, n_embd_head_k_all = 64
+llama_context: enumerating backends
+llama_context: backend_ptrs.size() = 2
+sched_reserve: reserving ...
+sched_reserve: max_nodes = 1520
+sched_reserve: reserving full memory module
+sched_reserve: worst-case: n_tokens = 512, n_seqs = 1, n_outputs = 1
+resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_481' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_482' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l0 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l1 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l2 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l3 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l4 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l5 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l6 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l7 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l0 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l1 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l2 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l3 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l4 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l5 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l6 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l7 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                      inp_tokens' [i32, ne = {     1,     1,     1,     1 }] is used by node 'embd' (GET_ROWS)
+resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_481' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_482' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l0 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l1 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l2 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l3 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l4 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l5 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l6 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l7 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l0 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l1 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l2 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l3 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l4 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l5 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l6 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l7 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                      inp_tokens' [i32, ne = {     1,     1,     1,     1 }] is used by node 'embd' (GET_ROWS)
+resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_481' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_482' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l0 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l1 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l2 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l3 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l4 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l5 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l6 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l7 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l0 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l1 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l2 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l3 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l4 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l5 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l6 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l7 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                      inp_tokens' [i32, ne = {     1,     1,     1,     1 }] is used by node 'embd' (GET_ROWS)
+resolve_fused_ops: fused DeepSeek V4 HC post enabled
+graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =  512
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {   512,     1,     1,     1 }] is used by node 'node_481' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {   512,     1,     1,     1 }] is used by node 'node_482' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l0 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l1 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l2 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l3 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l4 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l5 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l6 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l7 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l0 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l1 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l2 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l3 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l4 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l5 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l6 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l7 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                      inp_tokens' [i32, ne = {   512,     1,     1,     1 }] is used by node 'embd' (GET_ROWS)
+graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_481' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {     1,     1,     1,     1 }] is used by node 'node_482' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,     1,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,     1,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l0 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l1 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l2 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l3 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l4 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l5 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l6 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = {   384,     1,     1,     1 }] is used by node 'cache_v_l7 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l0 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l1 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l2 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l3 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l4 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l5 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l6 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {     1,     1,     1,     1 }] is used by node 'cache_k_l7 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                      inp_tokens' [i32, ne = {     1,     1,     1,     1 }] is used by node 'embd' (GET_ROWS)
+graph_reserve: reserving a graph for ubatch with n_tokens =  512, n_seqs =  1, n_outputs =  512
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {   512,     1,     1,     1 }] is used by node 'node_481' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         out_ids' [i32, ne = {   512,     1,     1,     1 }] is used by node 'node_482' (GET_ROWS)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                         leaf_20' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-0' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-1' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-2' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-3' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-4' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-5' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-6' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Kcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                      cross_embd' [f32, ne = {   512,   512,     1,     1 }] is used by node 'Vcur-7' (MUL_MAT)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-0' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-1' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-2' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-3' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-4' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-5' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-6' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                attn_inp_kq_mask' [f32, ne = {   512,   512,     1,     1 }] is used by node 'kq_soft_max-7' (SOFT_MAX)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                  pos_bucket_dec' [i32, ne = {   512,   512,     1,     1 }] is used by node 'pos_bucket_1d' (RESHAPE)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l0 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l1 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l2 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l3 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l4 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l5 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l6 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_v_idxs' [i64, ne = { 196608,     1,     1,     1 }] is used by node 'cache_v_l7 (reshaped) (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l0 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l1 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l2 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l3 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l4 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l5 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l6 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                 attn_inp_k_idxs' [i64, ne = {   512,     1,     1,     1 }] is used by node 'cache_k_l7 (view)' (SET_ROWS)
+llama_graph_n_input_tensors: input tensor '                      inp_tokens' [i32, ne = {   512,     1,     1,     1 }] is used by node 'embd' (GET_ROWS)
+sched_reserve:      CUDA0 compute buffer size =    68.25 MiB
+sched_reserve:  CUDA_Host compute buffer size =     7.51 MiB
+sched_reserve: graph: nodes = 494, splits = 2, input objects = 6, input tensors = 8
+sched_reserve: reserve took 10.62 ms, sched copies = 1
+init: embeddings required but some input tokens were not marked as outputs -> overriding
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+init: embeddings required but some input tokens were not marked as outputs -> overriding
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+init: embeddings required but some input tokens were not marked as outputs -> overriding
+init: embeddings required but some input tokens were not marked as outputs -> overriding
+init: embeddings required but some input tokens were not marked as outputs -> overriding
+init: embeddings required but some input tokens were not marked as outputs -> overriding
+~llama_context:      CUDA0 compute buffer size is  68.2500 MiB, matches expectation of  68.2500 MiB
+~llama_context:  CUDA_Host compute buffer size is   7.5078 MiB, matches expectation of   7.5078 MiB

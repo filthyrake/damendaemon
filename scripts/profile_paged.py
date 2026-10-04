@@ -4,17 +4,18 @@ from collections import defaultdict
 import json
 import torch
 from dllm.runtime import require_gpu,make_executor
-from dllm.qwen2 import ModelWeights
+from dllm.models import load
 
 
 @torch.inference_mode()
 def main():
     p=argparse.ArgumentParser()
     p.add_argument('path')
+    p.add_argument('--context',type=int,default=2048)
     args=p.parse_args()
     require_gpu()
     torch.set_num_threads(4)
-    model=ModelWeights(args.path,2048)
+    model=load(args.path,args.context)
     executor=make_executor(model,max_batch=4)
     seed=model.raw_tokens('Explain how computers store information. ')
     prompts=[(seed*20)[:32] for _ in range(4)]
