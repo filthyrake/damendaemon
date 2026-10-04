@@ -18,11 +18,13 @@ def main():
             gate,up=x.chunk(2,-1)
             torch.testing.assert_close(metal.swiglu(x.to('mps')).cpu(),F.silu(gate)*up,atol=2.e-5,rtol=2.e-5)
             checks.append({'op':'norm_and_activation','rows':rows,'dim':dim})
-    for rows in (1,2,3,4):
+    for rows in (1,2,3,4,5,8):
         x=torch.randn(rows,1024);w=torch.randn(129,1024);b=torch.randn(129)
-        for bias in (None,b):
-            actual=metal.linear(x.to('mps'),w.to('mps'),None if bias is None else bias.to('mps')).cpu()
-            torch.testing.assert_close(actual,F.linear(x,w,bias),atol=1.e-4,rtol=1.e-4)
+        for dtype in (torch.float32,torch.float16):
+            weight=w.to(dtype)
+            for bias in (None,b):
+                actual=metal.linear(x.to('mps'),weight.to('mps'),None if bias is None else bias.to('mps')).cpu()
+                torch.testing.assert_close(actual,F.linear(x,weight.float(),bias),atol=1.e-4,rtol=1.e-4)
         checks.append({'op':'linear','rows':rows})
     for dim in (64,96,128):
         h,kh,context=8,2,512

@@ -1,4 +1,4 @@
-"""Native Metal kernels with FP32 arithmetic and storage for dense decoding.
+"""Native Metal kernels with FP32 arithmetic and optional FP16 weight storage.
 
 Requires torch.mps.compile_shader. No CPU fallback or Triton dependency.
 """
@@ -31,10 +31,10 @@ kernel void swiglu(device const float* x, device float* y, constant long& count,
     y[id] = gate/(1.0f+exp(-gate))*x[offset+width];
 }
 
-kernel void linear(device const float* x, device const float* w, device const float* bias,
-                   device float* y, constant long& m, constant long& n, constant long& k,
-                   constant long& has_bias, uint2 id [[thread_position_in_grid]],
-                   uint lane [[thread_index_in_simdgroup]]) {
+template <typename Weight>
+inline void linear_impl(device const float* x, device const Weight* w, device const float* bias,
+                        device float* y, long m, long n, long k, long has_bias,
+                        uint2 id, uint lane) {
     uint row = id.x/32, batch = id.y*4;
     if (row >= n) return;
     float4 sums = 0;
@@ -53,6 +53,20 @@ kernel void linear(device const float* x, device const float* w, device const fl
         if (batch+2 < m) y[(batch+2)*n+row] = sums.z;
         if (batch+3 < m) y[(batch+3)*n+row] = sums.w;
     }
+}
+
+kernel void linear(device const float* x, device const float* w, device const float* bias,
+                   device float* y, constant long& m, constant long& n, constant long& k,
+                   constant long& has_bias, uint2 id [[thread_position_in_grid]],
+                   uint lane [[thread_index_in_simdgroup]]) {
+    linear_impl(x,w,bias,y,m,n,k,has_bias,id,lane);
+}
+
+kernel void linear_half(device const float* x, device const half* w, device const float* bias,
+                        device float* y, constant long& m, constant long& n, constant long& k,
+                        constant long& has_bias, uint2 id [[thread_position_in_grid]],
+                        uint lane [[thread_index_in_simdgroup]]) {
+    linear_impl(x,w,bias,y,m,n,k,has_bias,id,lane);
 }
 
 kernel void rope(device const float* x, device const float* cosine, device const float* sine,
@@ -157,9 +171,10 @@ def swiglu(gate_up, precise=False):
 
 def linear(x, weight, bias=None):
     if x.shape[0] > 4:
-        return F.linear(x, weight, bias)
+        return F.linear(x, weight.float(), bias)
     out = torch.empty((x.shape[0], weight.shape[0]), device='mps', dtype=torch.float32)
-    library().linear(x, weight, bias if bias is not None else weight, out,
+    kernel = library().linear_half if weight.dtype == torch.float16 else library().linear
+    kernel(x, weight, bias if bias is not None else x, out,
         x.shape[0], weight.shape[0], weight.shape[1], int(bias is not None),
         threads=(((weight.shape[0]+7)//8)*256, (x.shape[0]+3)//4), group_size=(256,1))
     return out

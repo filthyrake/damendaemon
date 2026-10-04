@@ -157,6 +157,37 @@ only against that baseline would incorrectly attribute the dependency upgrade
 to custom kernels. llama.cpp still leads throughput and first-output latency.
 These FP32 results do not predict quantized-model performance or larger models.
 
+### Optional FP16 weight storage with FP32 arithmetic
+
+`DLLM_METAL_WEIGHT_DTYPE=float16` stores two-dimensional weight tensors in FP16,
+while keeping normalization weights, arithmetic, residuals, and KV in FP32.
+The native matrix-vector kernel promotes loaded half weights before multiplying
+and accumulating. This does not enable the FP16-compute path that failed the
+earlier numerical gate. The option requires native Metal kernels and remains
+opt-in; FP32 storage is the default. Memory admission accounts for the selected
+weight storage, with the existing workspace reserve.
+
+The same SmolLM2 comparison with an independently converted F16 GGUF and FP32
+KV gives:
+
+| Concurrent requests | dllm aggregate tokens/s | llama.cpp aggregate tokens/s | dllm first output | llama.cpp first output |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 61.5 | 92.2 | 47.5 ms | 22.4 ms |
+| 2 | 105.6 | 147.3 | 77.5 ms | 32.7 ms |
+| 4 | 158.2 | 172.8 | 136.1 ms | 58.7 ms |
+
+The selected storage improves dllm decode throughput and reduces retained
+weight memory, but prefill currently expands matrix weights to FP32 for native
+tensor matrix operations. That temporary conversion worsens first-output
+latency. It does not make dllm faster than the matching llama.cpp path.
+SmolLM2 and Qwen3 pass all 82 and 84 long-context reference checks respectively,
+with the same worst errors as their FP32-storage runs. Kernel checks cover
+both storage types, biased/unbiased projections, and larger-batch tensor fallback.
+Qwen2.5-0.5B also passes its expanded reference checks. The FP16-storage live
+service passes the same three-model switching, concurrency, cancellation, and
+recovery scenarios, including capacity-one eviction and resident model reuse.
+Reproduce with `compare_mps.py --weight-dtype float16` and a matching F16 GGUF.
+
 Commands, complete trial records, model output, and correctness measurements
 are stored under [evidence/mps](evidence/mps) and [evidence/hybrid](evidence/hybrid).
 Reproduce with `scripts/compare_mps.py`, `scripts/verify_metal_kernels.py`,

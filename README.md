@@ -71,6 +71,12 @@ baseline. CUDA graphs and Triton are disabled on MPS. Execution stays on the
 Apple GPU, with no automatic CPU fallback. Metal performance parity remains open. The same scheduler and model residency interface apply. Hybrid MPS
 execution is not yet qualified. See [hardware-specific evidence](docs/hybrid-and-mps.md).
 
+For lower device-weight memory and faster decoding, set
+`DLLM_METAL_WEIGHT_DTYPE=float16` with the native Metal backend. Arithmetic and
+KV remain FP32; this differs from the unqualified FP16-compute tensor path.
+Prefill currently expands matrix weights to FP32 temporarily, which increases
+first-output latency. FP32 weight storage remains the default.
+
 ## Serve and switch models
 
 ```sh

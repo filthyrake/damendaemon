@@ -18,12 +18,14 @@ def main():
     p.add_argument('--llama-server', required=True)
     p.add_argument('--output', default='results')
     p.add_argument('--context', type=int, default=512)
+    p.add_argument('--weight-dtype', choices=('float32', 'float16'), default='float32',
+                   help='device weight storage; the supplied GGUF must use the matching type')
     p.add_argument('--engines', nargs='+', choices=('dllm', 'llama.cpp'), default=['dllm', 'llama.cpp'])
     p.add_argument('--concurrencies', nargs='+', type=int, choices=range(1,9), default=[1,2,4])
     args = p.parse_args()
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, DLLM_DEVICE='mps', OMP_NUM_THREADS='4')
+    env = dict(os.environ, DLLM_DEVICE='mps', OMP_NUM_THREADS='4', DLLM_METAL_WEIGHT_DTYPE=args.weight_dtype)
     for engine in args.engines:
         with socket.socket() as s:
             s.bind(('127.0.0.1', 0))
@@ -37,7 +39,7 @@ def main():
                        '--kv-unified-per-slot', str(args.context), '-ctk', 'f32', '-ctv', 'f32',
                        '--no-cache-prompt', '--cache-ram', '0', '-t', '4']
         (output / f'compare-mps-{engine}-command.json').write_text(json.dumps({
-            'command': command, 'device': 'Apple M4 GPU', 'weights': 'float32', 'kv': 'float32',
+            'command': command, 'device': 'Apple M4 GPU', 'weights': args.weight_dtype, 'kv': 'float32',
             'context_per_slot': args.context, 'cpu_threads': 4, 'dllm_backend': env.get('DLLM_KERNELS', 'auto')}, indent=2))
         with (output / f'compare-mps-{engine}.log').open('w') as log:
             process = subprocess.Popen(command, env=env, stdout=log, stderr=log, start_new_session=True)

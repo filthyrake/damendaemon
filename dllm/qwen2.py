@@ -170,18 +170,31 @@ class Executor:
                     if selected == "triton":
                         raise
         self.linear = self.kernels.linear if self.device == 'mps' and self.kernels else F.linear
+        half_metal_weights = False
+        if self.device == 'mps':
+            storage = os.environ.get('DLLM_METAL_WEIGHT_DTYPE', 'float32')
+            if storage not in ('float16', 'float32'):
+                raise ValueError('DLLM_METAL_WEIGHT_DTYPE must be float16 or float32')
+            half_metal_weights = storage == 'float16'
+            if half_metal_weights and self.kernels is None:
+                raise ValueError('FP16 MPS weight storage requires native Metal kernels')
         kv_bytes = 2 * c["num_hidden_layers"] * max_batch * self.kv_heads * self.context * self.dim * (4 if self.device == "mps" else 2)
         # A prior failed construction can leave unused allocator blocks cached
         # after its traceback is released. Return those before querying free VRAM.
         empty_cache()
         free = available_memory()
-        if model.bytes * (2 if self.device == "mps" else 1) + kv_bytes + 512 * 1024**2 > free:
+        device_weight_bytes = model.bytes
+        if self.device == 'mps':
+            device_weight_bytes = sum(t.numel() * (2 if half_metal_weights and t.ndim == 2 else 4)
+                for t in {id(t):t for t in model.weights.values()}.values())
+        if device_weight_bytes + kv_bytes + 512 * 1024**2 > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         self.w = {}
         copies = {}
         for name, tensor in model.weights.items():
             if id(tensor) not in copies:
-                copies[id(tensor)] = tensor.to(device=self.device, dtype=self.compute_dtype)
+                dtype = torch.float16 if half_metal_weights and tensor.ndim == 2 else self.compute_dtype
+                copies[id(tensor)] = tensor.to(device=self.device, dtype=dtype)
             self.w[name] = copies[id(tensor)]
         self.kv = [torch.zeros((2, max_batch, self.kv_heads, self.context, self.dim),
                                dtype=self.compute_dtype, device=self.device)

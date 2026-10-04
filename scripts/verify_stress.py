@@ -120,6 +120,8 @@ def main():
         torch.save({'path': args.path, 'context': args.context, 'reference_dtype': args.reference_dtype,
                     'reference_torch': str(torch.__version__), 'trace': trace}, args.golden_output)
     print(json.dumps({'model_path': args.path, 'reference_dtype': args.reference_dtype, 'architecture': model.config['model_type'],
+        'device': device_name(), 'torch': str(torch.__version__), 'reference_device': reference_device,
+        'weight_dtype': str(executor.w['head'].dtype),
         'context': args.context, 'backend': executor.kernel_backend, 'checks': checks,
         'template_checks': template_checks, 'timings': timings,
         'passed': all(row['passed'] for row in checks)}, indent=2))

@@ -1,0 +1,135 @@
+{
+  "passed": true,
+  "torch": "2.13.0",
+  "checks": [
+    {
+      "op": "norm_and_activation",
+      "rows": 1,
+      "dim": 64
+    },
+    {
+      "op": "norm_and_activation",
+      "rows": 1,
+      "dim": 1024
+    },
+    {
+      "op": "norm_and_activation",
+      "rows": 1,
+      "dim": 1536
+    },
+    {
+      "op": "norm_and_activation",
+      "rows": 3,
+      "dim": 64
+    },
+    {
+      "op": "norm_and_activation",
+      "rows": 3,
+      "dim": 1024
+    },
+    {
+      "op": "norm_and_activation",
+      "rows": 3,
+      "dim": 1536
+    },
+    {
+      "op": "norm_and_activation",
+      "rows": 17,
+      "dim": 64
+    },
+    {
+      "op": "norm_and_activation",
+      "rows": 17,
+      "dim": 1024
+    },
+    {
+      "op": "norm_and_activation",
+      "rows": 17,
+      "dim": 1536
+    },
+    {
+      "op": "linear",
+      "rows": 1
+    },
+    {
+      "op": "linear",
+      "rows": 2
+    },
+    {
+      "op": "linear",
+      "rows": 3
+    },
+    {
+      "op": "linear",
+      "rows": 4
+    },
+    {
+      "op": "linear",
+      "rows": 5
+    },
+    {
+      "op": "linear",
+      "rows": 8
+    },
+    {
+      "op": "rope_cache_attention",
+      "dim": 64,
+      "qk_norm": false
+    },
+    {
+      "op": "rope_cache_attention",
+      "dim": 64,
+      "qk_norm": true
+    },
+    {
+      "op": "rope_cache_attention",
+      "dim": 96,
+      "qk_norm": false
+    },
+    {
+      "op": "rope_cache_attention",
+      "dim": 96,
+      "qk_norm": true
+    },
+    {
+      "op": "rope_cache_attention",
+      "dim": 128,
+      "qk_norm": false
+    },
+    {
+      "op": "rope_cache_attention",
+      "dim": 128,
+      "qk_norm": true
+    },
+    {
+      "op": "attention_boundary",
+      "context": 2048,
+      "single": false
+    },
+    {
+      "op": "attention_boundary",
+      "context": 2048,
+      "single": true
+    },
+    {
+      "op": "attention_boundary",
+      "context": 4096,
+      "single": false
+    },
+    {
+      "op": "attention_boundary",
+      "context": 4096,
+      "single": true
+    },
+    {
+      "op": "attention_boundary",
+      "context": 4097,
+      "single": false
+    },
+    {
+      "op": "attention_boundary",
+      "context": 4097,
+      "single": true
+    }
+  ]
+}
