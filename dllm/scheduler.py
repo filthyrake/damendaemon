@@ -46,6 +46,12 @@ class Pending:
     tier: str = "gpu"
     activation: float = 0
     cached_tokens: int = 0
+    speculative_prompt: tuple = ()
+    speculative_blocks: int = 0
+    speculative_proposed: int = 0
+    speculative_matched: int = 0
+    speculative_misses: int = 0
+    speculative_cooldown: int = 0
 
 
 class BatchedRuntime:
@@ -248,6 +254,9 @@ class BatchedRuntime:
                 "total_tokens": prompt_count + count}, "timing": {
                 "source_tier": request.tier, "activation_seconds": request.activation,
                 "cached_prompt_tokens":request.cached_tokens,
+                "speculative_blocks":request.speculative_blocks,
+                "speculative_proposed_drafts":request.speculative_proposed,
+                "speculative_matched_drafts":request.speculative_matched,
                 "kernel_backend": executor.kernel_backend,
                 "weight_quantization": getattr(executor.model, "quantization", "none"), "max_batch_size": request.max_batch_seen,
                 "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
@@ -288,7 +297,46 @@ class BatchedRuntime:
         if request.sampler.logprobs_top is not None:
             from .logprobs import decoder_for
             request.sampler.token_decoder=decoder_for(executor.model)
+        if getattr(executor,'speculative_verifier',None) is not None:
+            from .speculative import eligible
+            if eligible(request):request.speculative_prompt=tuple(tokens[-1024:])
         return tokens
+
+    def _speculate(self,ready,active,executor):
+        verifier=getattr(executor,'speculative_verifier',None)
+        if verifier is None or len(active)!=1 or len(ready)!=1:return False
+        slot,request,prompt_count=ready[0]
+        if not request.speculative_prompt:return False
+        if request.speculative_cooldown:
+            request.speculative_cooldown-=1
+            return False
+        remaining=request.max_tokens-len(request.output)
+        start=executor.lengths[slot]
+        capacity=request.events.maxsize-request.events.qsize()
+        limit=min(verifier.width-1,remaining-1,capacity-1)
+        if limit<1 or start+verifier.width>executor.context:
+            return False
+        from .speculative import propose
+        history=(list(request.speculative_prompt)+request.output[-1024:])[-1024:]
+        drafts=propose(history,limit)
+        if not drafts:return False
+        tokens,matched=verifier.verify(request.output[-1],drafts,start,slot)
+        request.speculative_blocks+=1;request.speculative_proposed+=len(drafts)
+        request.speculative_matched+=matched
+        request.speculative_misses=0 if matched else request.speculative_misses+1
+        if request.speculative_misses>=2:
+            request.speculative_cooldown=8;request.speculative_misses=0
+        previous=len(request.output)
+        try:
+            for token in tokens:
+                if self._emit(request,token,executor,prompt_count):
+                    del active[slot]
+                    break
+        finally:
+            # The last emitted token remains the next decode input. Rejected,
+            # filler and post-EOS positions cannot extend the committed prefix.
+            executor.lengths[slot]=start+len(request.output)-previous
+        return True
 
     def _chunked_group(self,first,executor,tier,activation):
         first.tier,first.activation=tier,activation
@@ -572,7 +620,7 @@ class BatchedRuntime:
                         del active[slot]
                 ready = [(slot, request, length) for slot, (request, length) in active.items()
                          if not request.events.full()]
-                if ready:
+                if ready and not self._speculate(ready,active,executor):
                     logits, next_tokens = executor.decode_batch([r.output[-1] for _, r, _ in ready],
                                                            [slot for slot, _, _ in ready])
                     selected = sample_rows(logits, [r.sampler for _, r, _ in ready], next_tokens)

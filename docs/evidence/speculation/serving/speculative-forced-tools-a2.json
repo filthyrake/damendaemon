@@ -1,0 +1,140 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "reports": [
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "choice": "required",
+      "call": {
+        "name": "weather",
+        "arguments": "{\"city\":\"Paris\"}"
+      },
+      "usage": {
+        "prompt_tokens": 256,
+        "completion_tokens": 17,
+        "total_tokens": 273
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 9.372000931762159e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 2.1425557420006953,
+        "total_seconds": 2.2712406270002248,
+        "decode_tokens_per_second": 124.33472664686691
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    },
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "call": {
+        "name": "translate",
+        "arguments": "{\"phrase\":\"bonjour\"}"
+      },
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 17,
+        "total_tokens": 202
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 4.903995431959629e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.035442791995592415,
+        "total_seconds": 0.16094492000411265,
+        "decode_tokens_per_second": 127.4878781251723
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    },
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+      "choice": "required",
+      "call": {
+        "name": "weather",
+        "arguments": "{\"city\":\"Paris\"}"
+      },
+      "usage": {
+        "prompt_tokens": 244,
+        "completion_tokens": 16,
+        "total_tokens": 260
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 1.2723001418635249e-05,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 2.054034885004512,
+        "total_seconds": 2.201259958004812,
+        "decode_tokens_per_second": 101.8848195780447
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    },
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "call": {
+        "name": "translate",
+        "arguments": "{\"phrase\":\"bonjour\"}"
+      },
+      "usage": {
+        "prompt_tokens": 173,
+        "completion_tokens": 18,
+        "total_tokens": 191
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 4.785004421137273e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.2551519169937819,
+        "total_seconds": 0.4182125259976601,
+        "decode_tokens_per_second": 104.25571266936502
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    }
+  ],
+  "max_batch": 4,
+  "host_restore": true,
+  "disconnect_recovery": true,
+  "truncation_preserved": true
+}

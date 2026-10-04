@@ -1,0 +1,71 @@
+import os
+import threading
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch
+from dllm.sampling import Sampling,Sampler
+from dllm.scheduler import BatchedRuntime,Pending
+from dllm.speculative import configured_width,eligible,propose
+
+
+class SpeculativeTests(unittest.TestCase):
+    def test_configuration_and_bounded_proposals(self):
+        for value in ('0','2','4','8'):
+            with patch.dict(os.environ,{'DLLM_SPECULATIVE_TOKENS':value}):self.assertEqual(configured_width(),int(value))
+        for value in ('1','3','9','-1','garbage'):
+            with patch.dict(os.environ,{'DLLM_SPECULATIVE_TOKENS':value}),self.assertRaises(ValueError):configured_width()
+        self.assertEqual(propose([1,2,3,4,1,2],2),[3,4])
+        self.assertEqual(propose([1,2,3,4],3),[])
+        self.assertEqual(propose([1,2,3]+[8]*1024+[1,2],3),[])
+
+    def test_sampling_constraints_and_tools_are_ineligible(self):
+        r=Pending('a',[],16);self.assertTrue(eligible(r))
+        for kwargs in ({'temperature':.5},{'frequency_penalty':1},{'logit_bias':{1:1}}):
+            r.sampler=Sampler(Sampling(**kwargs));self.assertFalse(eligible(r))
+        r.sampler=Sampler(Sampling())
+        for field,value in (('tools',[{}]),('tool_json',True),('schema','json'),('stops',('stop',))):
+            previous=getattr(r,field);setattr(r,field,value);self.assertFalse(eligible(r));setattr(r,field,previous)
+        r.sampler.logprobs_top=0;self.assertFalse(eligible(r))
+        r.sampler.logprobs_top=None;r.sampler.constraint=object();self.assertFalse(eligible(r))
+        r.sampler.constraint=None;r.messages=[{'role':'tool','content':'result'}];self.assertFalse(eligible(r))
+
+    def setup_step(self):
+        runtime=BatchedRuntime.__new__(BatchedRuntime);runtime.condition=threading.Condition();runtime.requests=set()
+        request=Pending('a',[],16);request.output=[2];request.speculative_prompt=(1,2,3,1)
+        verifier=SimpleNamespace(width=4,verify=lambda *args:([9,8,7],2))
+        executor=SimpleNamespace(speculative_verifier=verifier,lengths=[5],context=128,kernel_backend='test',
+            residual_dtype='float16',model=SimpleNamespace(eos={9},tokenizer=SimpleNamespace(decode=lambda tokens,**kw:''.join(map(str,tokens)))))
+        active={0:(request,4)};ready=[(0,request,4)]
+        return runtime,request,executor,active,ready
+
+    def test_eos_trims_committed_cache_and_emits_no_later_drafts(self):
+        runtime,r,executor,active,ready=self.setup_step()
+        self.assertTrue(runtime._speculate(ready,active,executor))
+        self.assertEqual(r.output,[2,9]);self.assertEqual(executor.lengths,[6]);self.assertEqual(active,{})
+        self.assertEqual(r.events.qsize(),1);self.assertEqual(r.final['finish_reason'],'stop')
+
+    def test_cancelled_emission_does_not_commit_verifier_cache(self):
+        runtime,r,executor,active,ready=self.setup_step();r.cancelled.set()
+        self.assertTrue(runtime._speculate(ready,active,executor))
+        self.assertEqual(r.output,[2]);self.assertEqual(executor.lengths,[5]);self.assertEqual(active,{})
+
+    def test_backpressure_concurrency_and_context_fall_back(self):
+        runtime,r,executor,active,ready=self.setup_step()
+        for _ in range(7):r.events.put_nowait({})
+        self.assertFalse(runtime._speculate(ready,active,executor))
+        while not r.events.empty():r.events.get_nowait()
+        active[1]=(Pending('a',[],16),4)
+        self.assertFalse(runtime._speculate(ready,active,executor));del active[1]
+        executor.lengths[0]=126;self.assertFalse(runtime._speculate(ready,active,executor))
+        self.assertEqual(r.output,[2])
+
+    def test_partial_queue_capacity_bounds_the_proposal(self):
+        runtime,r,executor,active,ready=self.setup_step()
+        for _ in range(5):r.events.put_nowait({})
+        def verify(current,drafts,start,slot):
+            self.assertLessEqual(len(drafts),2)
+            return [3]*(len(drafts)+1),len(drafts)
+        executor.speculative_verifier.verify=verify
+        self.assertTrue(runtime._speculate(ready,active,executor))
+        self.assertEqual(r.events.qsize(),8)
+        self.assertEqual(executor.lengths,[8])

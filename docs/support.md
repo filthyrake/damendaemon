@@ -49,6 +49,7 @@ Model licenses remain those of their respective publishers.
 | Batching | Continuous decode, up to 16 slots; CUDA graph replay; opt-in bounded CUDA dense paged KV with admission reservations |
 | Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state |
 | Prompt graph reuse | Opt-in bounded Qwen2/Qwen3 CUDA single-prefill and candidate-scoring graphs; cold capture cost, exact shape/slot/choice keys |
+| Speculative decoding | Opt-in Qwen2/Qwen3 dense CUDA greedy n-gram proposals with full-target verification; one active request, ordinary-path fallbacks |
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
 | Reranking | Bounded query/document lists, raw relevance scores, stable top_n ranking and optional returned text; no silent truncation |
 | Embeddings | Text/token-ID inputs, float/base64 output for the qualified BERT sentence encoder |
@@ -71,4 +72,5 @@ workloads still trail vLLM. See the raw trials accompanying each comparison.
 
 Recent evidence: [T5](evidence/t5/), [Mamba](evidence/mamba/),
 [Mamba-2](evidence/mamba2/), [function tools](evidence/tools/),
-[direct token choices](evidence/scoring/), [trained reranking](evidence/reranking/) and [upstream research](upstream-inference-research.md).
+[direct token choices](evidence/scoring/), [trained reranking](evidence/reranking/),
+[speculative decoding](evidence/speculation/) and [upstream research](upstream-inference-research.md).

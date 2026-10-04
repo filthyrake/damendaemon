@@ -667,3 +667,18 @@ are rejected rather than silently truncated.
 Mixed-length reranking automatically avoids excessive padding when length
 partitioning halves the work. Original document indices and usage are preserved;
 [measured A2/M4 gains and limits](docs/evidence/reranking/README.md#mixed-length-padding-reduction).
+
+### Optional n-gram speculative decoding
+
+`DLLM_SPECULATIVE_TOKENS=8` enables bounded full-target CUDA verification for
+qualified unquantized Qwen2/Qwen3 greedy requests;2/4 are also supported and0
+(the default) disables it. It reuses repeated prompt/output fragments as draft
+proposals and verifies every accepted token with the full target vocabulary.
+
+The serving path falls back for multiple active requests, sampling, constraints,
+tools, penalties, logprobs, text stops and unsupported memory/device paths.
+Cold graph preparation costs about0.17 seconds and8.13MiB in the A2 probe.
+Measured complete HTTP gains reach roughly3× on the tested Qwen2 repetition
+case and1.4× on its code case; ordinary prose is approximately unchanged and
+poor proposals can regress. [Exact-output, fallback, lifecycle and performance
+evidence](docs/evidence/speculation/README.md).

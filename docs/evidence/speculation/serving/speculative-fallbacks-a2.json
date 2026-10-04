@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "rows": [
+    {
+      "case": "paged",
+      "verifier_allocated": false,
+      "zero_speculative_blocks": true,
+      "repeated_tokens_equal": true,
+      "cached_prompt_tokens": 0
+    },
+    {
+      "case": "chunked",
+      "verifier_allocated": true,
+      "zero_speculative_blocks": true,
+      "repeated_tokens_equal": true,
+      "cached_prompt_tokens": 0
+    },
+    {
+      "case": "prefix",
+      "verifier_allocated": true,
+      "zero_speculative_blocks": true,
+      "repeated_tokens_equal": true,
+      "cached_prompt_tokens": 16
+    },
+    {
+      "case": "quantized",
+      "verifier_allocated": false,
+      "zero_speculative_blocks": true,
+      "repeated_tokens_equal": true,
+      "cached_prompt_tokens": 0
+    },
+    {
+      "case": "graphs_disabled",
+      "verifier_allocated": false,
+      "zero_speculative_blocks": true,
+      "repeated_tokens_equal": true,
+      "cached_prompt_tokens": 0
+    }
+  ]
+}

@@ -19,6 +19,8 @@ class BatchExecutor(Executor):
         self.configure_prefill_graphs(use_graph)
         if use_graph and self.device == "cuda":
             self.capture_graphs()
+        from .speculative import create
+        self.speculative_verifier=create(self,use_graph)
 
     def capture_graphs(self):
         """Capture decode against executor-owned stable metadata and cache buffers."""

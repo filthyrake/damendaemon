@@ -37,3 +37,11 @@ References at the inspected NInfer pin:
 - [Model and proposal head](https://github.com/Neroued/ninfer/blob/c772812b7f6f0cf893663b19971f49b6d9ce0e6e/docs/maintainer/qwen3_5-model.md)
 - [Finite-precision recurrent replay](https://github.com/Neroued/ninfer/blob/c772812b7f6f0cf893663b19971f49b6d9ce0e6e/docs/maintainer/replayssm-gdn.md)
 - [Resource scheduling and context cache](https://github.com/Neroued/ninfer/blob/c772812b7f6f0cf893663b19971f49b6d9ce0e6e/docs/maintainer/resource-scheduling-and-context-cache.md)
+
+Subsequent independent work now includes trained BERT and multilingual
+XLM-RoBERTa rerankers (#35/#36), distinct from proprietary Jev decision models,
+and [full-target greedy n-gram speculation](evidence/speculation/) (#37).
+The latter verifies complete-vocabulary target logits, preserves only the
+accepted cache prefix, and qualifies rejection/EOS/slot/lifecycle behavior on
+A2. Its proposal source is repeated token sequences, not NInfer's trained
+MTP/DFlash components, and no recurrent or stochastic acceptance claim is made.
