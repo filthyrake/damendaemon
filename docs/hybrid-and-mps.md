@@ -94,6 +94,14 @@ unchanged 1% limit, with exact greedy-token agreement and the same absolute
 error limit. Isolated kernel checks cover gated/ungated normalization and both
 FP16 and FP32 outputs. The PyTorch fallback remains available.
 
+After fusion, the same profile measures 682 launches per token (48% fewer).
+The matched HTTP rerun reaches 85.9 / 139.0 / 239.7 aggregate tokens/s at
+concurrency 1 / 2 / 4, improvements of approximately 10% / 14% / 10% over the
+pre-fusion run. Median first-output latency is 41.1 / 66.3 / 156.5 ms. These
+results compare dllm revisions, not dllm against vLLM. Optional FLA prefill with
+the fused executor also passes 84/84 reference comparisons for both models;
+worst relative RMS errors are 0.2535% and 0.4108%.
+
 ## Apple M4, 32 GiB unified memory
 
 The dense backend is explicitly selected with `--device mps`. It uses FP32
