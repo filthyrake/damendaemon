@@ -58,3 +58,11 @@ Separate ten-passage CPU drift study (192 predicted tokens) versus FP32:
 130M perplexity 23.76786 -> 24.20444, top-1 agreement 92.19%;
 370M perplexity 16.99595 -> 17.14334, agreement 97.40%.
 This is a small authored drift probe, not a broad model-quality benchmark.
+
+Counterbalanced same-weight Metal projection probe (`q8-metal-projection-profile`)
+repeats individual projections, so its cache behavior differs from a full model.
+For one row, FP32/Q8 medians are 0.122/0.168 ms (3336x768), 0.063/0.075 ms
+(768x1536), and 1.548/1.365 ms (50288x768). Four-row medians are
+0.153/0.202, 0.072/0.092, and 1.561/1.681 ms. Q8 is not a universal kernel win;
+full serving and memory savings must be measured separately. Both representations
+are resident only for this comparison, and output values agree.
