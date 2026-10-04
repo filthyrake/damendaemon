@@ -2,7 +2,7 @@ import copy
 import json
 import unittest
 from types import SimpleNamespace
-from dllm.tool_calls import ToolCallStream,select_tools,validate_tools,validate_messages,template_messages
+from dllm.tool_calls import JsonToolCallStream,prepare_tools,ToolCallStream,select_tools,validate_tools,validate_messages,template_messages
 
 TOOLS=[{'type':'function','function':{'name':'weather','description':'Get weather',
     'parameters':{'type':'object','properties':{'city':{'type':'string'}}}}}]
@@ -86,11 +86,10 @@ class ToolCallTests(unittest.TestCase):
         self.assertEqual(TOOLS[0]['function']['name'],'weather')
         self.assertIsNone(select_tools(TOOLS,'none'))
         self.assertIsNone(select_tools(None))
-        for tools,choice in ((None,'auto'),(TOOLS,'required'),(TOOLS,{'type':'function','function':{'name':'weather'}})):
+        for tools,choice in ((None,'auto'),(TOOLS,'invalid'),(TOOLS,{'type':'function','function':{'name':'unknown'}})):
             with self.assertRaises(ValueError):select_tools(tools,choice)
         for invalid in ([TOOLS[0],TOOLS[0]], [{'type':'custom','function':{}}],
                 [{'type':'function','function':{'name':'bad name'}}],
-                [{'type':'function','function':{'name':'weather','strict':True}}],
                 [{'type':'function','function':{'name':'weather','strict':0}}],
                 [{'type':'function','function':{'name':'weather','parameters':[]}}]):
             with self.subTest(invalid=invalid),self.assertRaises(ValueError):validate_tools(invalid)
@@ -110,3 +109,54 @@ class ToolCallTests(unittest.TestCase):
         invalid=copy.deepcopy(history);invalid[1]['tool_calls'][0]['function']['arguments']='[]';cases.append(invalid)
         for value in cases:
             with self.subTest(value=value),self.assertRaises(ValueError):validate_messages(value)
+
+
+class ForcedToolTests(unittest.TestCase):
+    def setUp(self):
+        self.tools=[{'type':'function','function':{'name':name,'strict':True,'parameters':{
+            'type':'object','properties':{'value':{'type':kind}},'required':['value'],
+            'additionalProperties':False}}} for name,kind in [('text','string'),('number','integer')]]
+
+    def test_correlated_union_and_named_choice(self):
+        from dllm.structured import matches_schema
+        selected,encoded=prepare_tools(self.tools,'required');schema=json.loads(encoded)
+        self.assertEqual(len(selected),2)
+        for value,expected in [({'name':'text','arguments':{'value':'yes'}},True),
+                ({'name':'number','arguments':{'value':3}},True),
+                ({'name':'number','arguments':{'value':'yes'}},False),
+                ({'name':'number','arguments':{'value':True}},False),
+                ({'name':'text','arguments':{}},False),
+                ({'name':'text','arguments':{'value':'yes','extra':1}},False),
+                ({'name':'missing','arguments':{'value':'yes'}},False)]:
+            self.assertEqual(matches_schema(value,schema),expected,value)
+        selected,encoded=prepare_tools(self.tools,{'type':'function','function':{'name':'number'}})
+        self.assertEqual([t['function']['name'] for t in selected],['number'])
+        self.assertEqual(json.loads(encoded)['properties']['name']['const'],'number')
+        with self.assertRaises(ValueError):prepare_tools(self.tools,'auto')
+        self.assertEqual(prepare_tools(self.tools,'none'),(None,None))
+
+    def test_forced_stream_validates_before_emitting(self):
+        _,schema=prepare_tools(self.tools,'required')
+        value='{"name":"text","arguments":{"value":"Zürich </tool_call>"}}'
+        for cut in range(len(value)+1):
+            parser=JsonToolCallStream(schema)
+            self.assertEqual(parser.feed(value[:cut]),[])
+            self.assertEqual(parser.feed(value[cut:]),[])
+            result=parser.finish('stop')
+            self.assertEqual(json.loads(result[0]['tool_calls'][0]['function']['arguments']),
+                {'value':'Zürich </tool_call>'})
+            self.assertEqual(len(parser.calls),1)
+        for invalid in (value[:-3],'{"name":"number","arguments":{"value":"bad"}}',
+                '{"name":"text","name":"text","arguments":{"value":"bad"}}'):
+            parser=JsonToolCallStream(schema);parser.feed(invalid)
+            with self.assertRaises(RuntimeError):parser.finish('stop')
+            parser=JsonToolCallStream(schema);parser.feed(invalid)
+            self.assertEqual(parser.finish('length'),[{'content':invalid}])
+            self.assertEqual(parser.calls,[])
+
+    def test_invalid_choice_and_schema_rejected(self):
+        for choice in ({},[],1,{'type':'function','function':{'name':'text','extra':1}},
+                {'type':'function','function':{'name':'unknown'}}):
+            with self.subTest(choice=choice),self.assertRaises(ValueError):prepare_tools(self.tools,choice)
+        self.tools[0]['function']['parameters']['properties']['value']['pattern']='x'
+        with self.assertRaises(ValueError):prepare_tools(self.tools,'required')

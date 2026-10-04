@@ -50,3 +50,12 @@ class StructuredTests(unittest.TestCase):
             logits=torch.tensor([[10.,1.,0.],[10.,1.,0.]])
             self.assertEqual(sample_rows(logits,[constrained,plain],greedy=torch.tensor([0,0])),[1,0])
             self.assertEqual(logits[0,0].item(),10.)
+
+
+class UnionTests(unittest.TestCase):
+    def test_bounded_unions(self):
+        schema={'anyOf':[{'type':'string','const':'ok'},{'type':'null'}]}
+        self.assertEqual(json.loads(response_schema(format_for(schema))),schema)
+        for value in ({'anyOf':[]},{'anyOf':{}},{'anyOf':[{'type':'string'}]*65},
+                {'anyOf':[{'type':'string'}],'type':'string'},{'anyOf':[{'$ref':'#/x'}]}):
+            with self.assertRaises(ValueError):response_schema(format_for(value))

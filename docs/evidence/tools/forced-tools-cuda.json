@@ -1,0 +1,128 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "reports": [
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "choice": "required",
+      "call": {
+        "name": "weather",
+        "arguments": "{\"city\":\"Paris\"}"
+      },
+      "usage": {
+        "prompt_tokens": 256,
+        "completion_tokens": 17,
+        "total_tokens": 273
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 9.701994713395834e-06,
+        "cached_prompt_tokens": 0,
+        "kernel_backend": "triton",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 2.351286887002061,
+        "total_seconds": 2.475764506001724,
+        "decode_tokens_per_second": 128.53716297419973
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    },
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "call": {
+        "name": "translate",
+        "arguments": "{\"phrase\":\"bonjour\"}"
+      },
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 17,
+        "total_tokens": 202
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 6.596004823222756e-06,
+        "cached_prompt_tokens": 0,
+        "kernel_backend": "triton",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.17143661400768906,
+        "total_seconds": 0.29026202601380646,
+        "decode_tokens_per_second": 134.65133198255845
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    },
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+      "choice": "required",
+      "call": {
+        "name": "weather",
+        "arguments": "{\"city\":\"Paris\"}"
+      },
+      "usage": {
+        "prompt_tokens": 244,
+        "completion_tokens": 16,
+        "total_tokens": 260
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 1.1347990948706865e-05,
+        "cached_prompt_tokens": 0,
+        "kernel_backend": "triton",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 2.4840043959993636,
+        "total_seconds": 2.6322181720024673,
+        "decode_tokens_per_second": 101.20516732321758
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    },
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "call": {
+        "name": "translate",
+        "arguments": "{\"phrase\":\"bonjour\"}"
+      },
+      "usage": {
+        "prompt_tokens": 173,
+        "completion_tokens": 18,
+        "total_tokens": 191
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 6.043992470949888e-06,
+        "cached_prompt_tokens": 0,
+        "kernel_backend": "triton",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.32787985300819855,
+        "total_seconds": 0.491877355001634,
+        "decode_tokens_per_second": 103.66011551005505
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    }
+  ],
+  "max_batch": 4,
+  "host_restore": true,
+  "disconnect_recovery": true,
+  "truncation_preserved": true
+}

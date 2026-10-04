@@ -1,0 +1,128 @@
+{
+  "passed": true,
+  "device": "mps",
+  "reports": [
+    {
+      "model": "results/models/qwen2",
+      "choice": "required",
+      "call": {
+        "name": "weather",
+        "arguments": "{\"city\":\"Paris\"}"
+      },
+      "usage": {
+        "prompt_tokens": 256,
+        "completion_tokens": 17,
+        "total_tokens": 273
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 1.5420373529195786e-06,
+        "cached_prompt_tokens": 0,
+        "kernel_backend": "metal",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.5379127080086619,
+        "total_seconds": 0.9905419999849983,
+        "decode_tokens_per_second": 35.34901581410795
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    },
+    {
+      "model": "results/models/qwen2",
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "call": {
+        "name": "translate",
+        "arguments": "{\"phrase\":\"bonjour\"}"
+      },
+      "usage": {
+        "prompt_tokens": 185,
+        "completion_tokens": 17,
+        "total_tokens": 202
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 9.579816833138466e-07,
+        "cached_prompt_tokens": 0,
+        "kernel_backend": "metal",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.08599058398976922,
+        "total_seconds": 0.5458116249646991,
+        "decode_tokens_per_second": 34.79614583551069
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    },
+    {
+      "model": "results/models/qwen3",
+      "choice": "required",
+      "call": {
+        "name": "weather",
+        "arguments": "{\"city\":\"Paris\"}"
+      },
+      "usage": {
+        "prompt_tokens": 244,
+        "completion_tokens": 16,
+        "total_tokens": 260
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 1.292035449296236e-06,
+        "cached_prompt_tokens": 0,
+        "kernel_backend": "metal",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.5060628750361502,
+        "total_seconds": 1.0394728330429643,
+        "decode_tokens_per_second": 28.120959826191285
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    },
+    {
+      "model": "results/models/qwen3",
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "call": {
+        "name": "translate",
+        "arguments": "{\"phrase\":\"bonjour\"}"
+      },
+      "usage": {
+        "prompt_tokens": 173,
+        "completion_tokens": 18,
+        "total_tokens": 191
+      },
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 1.6669509932398796e-06,
+        "cached_prompt_tokens": 0,
+        "kernel_backend": "metal",
+        "weight_quantization": "none",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.10288575000595301,
+        "total_seconds": 0.6905759170185775,
+        "decode_tokens_per_second": 28.926806937089378
+      },
+      "stream_equal": true,
+      "template_ids_equal": true
+    }
+  ],
+  "max_batch": 4,
+  "host_restore": true,
+  "disconnect_recovery": true,
+  "truncation_preserved": true
+}

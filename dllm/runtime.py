@@ -223,7 +223,7 @@ class Runtime:
     def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None,
                  temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None,
                  presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None,
-                 logprobs=False,top_logprobs=0,tools=None):
+                 logprobs=False,top_logprobs=0,tools=None,tool_choice=None):
         """Yield token IDs/text deltas plus a final usage/timing event.
 
         Closing this generator releases its model lease, including on client
@@ -234,8 +234,8 @@ class Runtime:
         from .sampling import Sampling, Sampler
         from .stopping import stop_sequences, text_delta
         stops = stop_sequences(stop)
-        from .tool_calls import validate_tools
-        tools=validate_tools(tools)
+        from .tool_calls import prepare_tools
+        tools,tool_schema=prepare_tools(tools,tool_choice)
         if tools and (raw_prompt is not None or response_format is not None or logprobs or stops):
             raise ValueError('tool calls cannot combine with raw prompts, structured output, scores or custom stops')
         sampler = Sampler(Sampling(temperature, top_p, top_k, seed, presence_penalty, frequency_penalty, repetition_penalty, logit_bias))
@@ -245,6 +245,10 @@ class Runtime:
             raise ValueError('logprobs with custom text stops is not yet supported')
         from .structured import prepare_options, Constraint
         schema, enable_thinking = prepare_options(response_format, stops, enable_thinking, ignore_eos)
+        if tool_schema is not None:
+            if enable_thinking is True or ignore_eos:
+                raise ValueError('forced tool calls cannot use thinking or ignore_eos')
+            schema=tool_schema
         start = time.perf_counter()
         with self.session(alias) as (executor, tier, load_seconds):
             model = executor.model
@@ -253,7 +257,7 @@ class Runtime:
             from .prompts import encode,validate_lengths,decoder_prefix
             if schema is not None and raw_prompt is None and model.config["model_type"] in ("qwen3", "qwen3_5_text"):
                 enable_thinking = False
-            prompt = encode(model, messages, raw_prompt, enable_thinking,tools)
+            prompt = encode(model, messages, raw_prompt, enable_thinking,tools,tool_schema is not None)
             validate_lengths(executor,len(prompt),max_tokens)
             if schema is not None:
                 sampler.constraint = Constraint(model, schema)

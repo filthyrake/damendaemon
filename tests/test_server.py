@@ -42,6 +42,9 @@ class FakeRuntime:
                 fragments=['<tool','_call>\n{"name":"weather","arguments":',
                     '{"city":"Paris","literal":"</tool_call>"}}\n</tool','_call>']
                 parts=[(part,part.encode()) for part in fragments];finish='stop'
+            if messages and messages[0]['content']=='forced':
+                parts=[(part,part.encode()) for part in ['{"name":"weather",','"arguments":{}}']]
+                finish='stop'
             if messages and messages[0]['content']=='unicode':
                 parts=[('',bytes([240])),('',bytes([159])),('',bytes([166])),('🦙',bytes([153]))]
             for token,(text,raw) in enumerate(parts,1):
@@ -112,7 +115,7 @@ class ServerTests(unittest.TestCase):
         self.assertIn('<tool_call>',result['choices'][0]['message']['content'])
         self.assertNotIn('tool_calls',result['choices'][0]['message'])
         self.assertNotIn('tools',self.runtime.last_options)
-        for options in ({'tool_choice':'required'},{'stop':'stop'},{'logprobs':True},
+        for options in ({'tool_choice':'invalid'},{'stop':'stop'},{'logprobs':True},
                 {'response_format':{'type':'json_object'}}):
             with self.subTest(options=options),self.assertRaises(HTTPError) as error:
                 self.post(tools=tools,**options)
@@ -299,3 +302,15 @@ class ServerTests(unittest.TestCase):
                     post(**bad)
                 self.assertEqual(error.exception.code,400)
                 error.exception.close()
+
+    def test_forced_tool_protocol(self):
+        tools=[{'type':'function','function':{'name':'weather','strict':True,'parameters':{'type':'object'}}}]
+        for choice in ('required',{'type':'function','function':{'name':'weather'}}):
+            with self.post(messages=[{'role':'user','content':'forced'}],tools=tools,tool_choice=choice) as response:
+                item=json.load(response)['choices'][0]
+            self.assertEqual(item['finish_reason'],'tool_calls')
+            self.assertEqual(item['message']['tool_calls'][0]['function'],{'name':'weather','arguments':'{}'})
+            self.assertEqual(self.runtime.last_options['tool_choice'],choice)
+        with self.assertRaises(HTTPError) as caught:
+            self.post(tools=tools,tool_choice='required',chat_template_kwargs={'enable_thinking':True})
+        self.assertEqual(caught.exception.code,400)

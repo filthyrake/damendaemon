@@ -605,7 +605,14 @@ validated. dllm describes calls; your application executes them and returns resu
 }
 ```
 
-Auto mode does not enforce argument schemas. Strict/forced calls, other tool
-formats, and combining active tools with scores, custom stops or structured
+Auto mode does not enforce argument schemas. Other tool formats and
+combining active tools with scores, custom stops or structured
 response formats remain unsupported. Malformed/truncated calls stay text.
 [A2/M4 tool-call and history evidence](docs/evidence/tools/README.md).
+
+Required/named tools use the optional structured-output dependencies. Set
+`"tool_choice":"required"` to select one declared function, or
+`"tool_choice":{"type":"function","function":{"name":"get_weather"}}`
+to force one function. These modes constrain arguments to the supported bounded
+JSON-schema subset and accept `strict:true`; explicit thinking is incompatible.
+Automatic strict tool selection and multiple forced calls are not supported.

@@ -32,6 +32,14 @@ def response_schema(value):
         count += 1
         if depth > 16 or count > 256 or not isinstance(node, dict):
             raise ValueError('schema is too complex or not an object')
+        if 'anyOf' in node:
+            branches=node['anyOf']
+            if (set(node)-{'anyOf','description','title'} or not isinstance(branches,list)
+                    or not 1<=len(branches)<=64
+                    or any(not isinstance(node[k],str) for k in ('description','title') if k in node)):
+                raise ValueError('invalid anyOf schema')
+            for branch in branches:visit(branch,depth+1)
+            return
         kind = node.get('type')
         if kind not in ('object', 'array', 'string', 'integer', 'number', 'boolean', 'null'):
             raise ValueError('schema requires one supported type')
@@ -65,6 +73,24 @@ def response_schema(value):
             raise ValueError('unsupported schema keyword')
     visit(schema)
     return encoded
+
+
+def matches_schema(value,schema):
+    """Independent final-value check for the already validated bounded subset."""
+    if 'anyOf' in schema:return any(matches_schema(value,branch) for branch in schema['anyOf'])
+    kind=schema['type']
+    valid={'object':isinstance(value,dict),'array':isinstance(value,list),
+        'string':isinstance(value,str),'integer':type(value) is int,
+        'number':type(value) in (int,float) and (type(value) is int or math.isfinite(value)),
+        'boolean':type(value) is bool,'null':value is None}[kind]
+    if not valid:return False
+    if kind=='object':
+        props=schema.get('properties',{})
+        return (set(schema.get('required',[]))<=set(value)
+            and (schema.get('additionalProperties',False) or not set(value)-set(props))
+            and all(matches_schema(item,props[key]) for key,item in value.items() if key in props))
+    if kind=='array':return all(matches_schema(item,schema['items']) for item in value)
+    return ('const' not in schema or value==schema['const']) and ('enum' not in schema or value in schema['enum'])
 
 
 def prepare_options(response_format, stops, thinking, ignore_eos=False):

@@ -24,13 +24,14 @@ def validate_raw(prompt):
     raise ValueError('prompt must be text or a nonempty list of token IDs')
 
 
-def encode(model, messages, raw_prompt=None, enable_thinking=None, tools=None):
+def encode(model, messages, raw_prompt=None, enable_thinking=None, tools=None, tool_json=False):
     if getattr(model, "task", "generation") != "generation":
         raise ValueError("this model supports embeddings, not generation")
     if raw_prompt is not None:
-        if messages is not None or enable_thinking is not None or tools is not None:
+        if messages is not None or enable_thinking is not None or tools is not None or tool_json:
             raise ValueError('raw prompts cannot include chat messages or template options')
         return model.raw_tokens(raw_prompt)
     options={'enable_thinking':enable_thinking} if enable_thinking is not None else {}
     if tools is not None:options['tools']=tools
+    if tool_json:options['tool_json']=True
     return model.chat_tokens(messages,**options)

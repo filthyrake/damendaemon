@@ -58,18 +58,46 @@ def validate_tools(tools):
         schema=function.get('parameters',{'type':'object'})
         if not isinstance(schema,dict) or schema.get('type','object')!='object':
             raise ValueError('function parameters must describe an object')
-        if 'strict' in function and (type(function['strict']) is not bool or function['strict']):
-            raise ValueError('strict tool schemas are not yet supported')
+        if 'strict' in function and type(function['strict']) is not bool:
+            raise ValueError('strict must be boolean')
     if len(json.dumps(tools,allow_nan=False))>256*1024:raise ValueError('tool definitions are too large')
     return copy.deepcopy(tools)
 
 
-def select_tools(tools,choice=None):
+def prepare_tools(tools,choice=None):
+    """Select prompt definitions and an optional single-call JSON grammar."""
     tools=validate_tools(tools)
     if choice is None:choice='auto' if tools else 'none'
-    if choice not in ('auto','none'):raise ValueError('tool_choice supports auto or none')
-    if choice=='auto' and not tools:raise ValueError('auto tool choice requires function definitions')
-    return tools if choice=='auto' else None
+    if choice=='none':return None,None
+    if not tools:raise ValueError('tool choice requires function definitions')
+    if choice=='auto':
+        if any(t['function'].get('strict',False) for t in tools):
+            raise ValueError('strict tools require required or named tool_choice')
+        return tools,None
+    if isinstance(choice,dict):
+        function=choice.get('function')
+        if (set(choice)!={'type','function'} or choice['type']!='function'
+                or not isinstance(function,dict) or set(function)!={'name'} or not _name(function['name'])):
+            raise ValueError('invalid named tool choice')
+        tools=[t for t in tools if t['function']['name']==function['name']]
+        if not tools:raise ValueError('named tool choice is not declared')
+    elif choice!='required':raise ValueError('unsupported tool_choice')
+    branches=[]
+    for tool in tools:
+        function=tool['function']
+        parameters=copy.deepcopy(function.get('parameters',{'type':'object'}))
+        parameters.setdefault('type','object')
+        branches.append({'type':'object','properties':{
+            'name':{'type':'string','const':function['name']},'arguments':parameters},
+            'required':['name','arguments'],'additionalProperties':False})
+    from .structured import response_schema
+    schema=branches[0] if len(branches)==1 else {'anyOf':branches}
+    encoded=response_schema({'type':'json_schema','json_schema':{'name':'tool_call','schema':schema}})
+    return tools,encoded
+
+
+def select_tools(tools,choice=None):
+    return prepare_tools(tools,choice)[0]
 
 
 def validate_messages(messages):
@@ -174,6 +202,9 @@ class ToolCallStream:
         if final:return len(self.buffer),{'content':self.buffer}
         return None
 
+    def finish(self,reason):
+        return self.feed(final=True)
+
     def feed(self,text='',final=False):
         self.buffer+=text;deltas=[]
         while self.buffer:
@@ -201,3 +232,28 @@ class ToolCallStream:
             if emit:deltas.append({'content':self.buffer[:emit]});self.buffer=self.buffer[emit:]
             break
         return deltas
+
+
+class JsonToolCallStream:
+    """Expose a forced call only after a complete, independently checked value."""
+    def __init__(self,schema):
+        self.schema=json.loads(schema);self.parts=[];self.calls=[]
+
+    def feed(self,text):
+        self.parts.append(text)
+        return []
+
+    def finish(self,reason):
+        from .structured import matches_schema
+        text=''.join(self.parts);self.parts.clear()
+        try:
+            value=_json_object(text)
+            if not matches_schema(value,self.schema):raise ValueError('call violates tool schema')
+        except (ValueError,TypeError,RecursionError) as error:
+            if reason=='length':return [{'content':text}] if text else []
+            raise RuntimeError('incomplete or invalid constrained tool call') from error
+        call={'id':'call_'+uuid.uuid4().hex,'type':'function','function':{
+            'name':value['name'],'arguments':json.dumps(value['arguments'],ensure_ascii=False,
+                separators=(',',':'),allow_nan=False)}}
+        self.calls.append(call)
+        return [{'tool_calls':[{'index':0,**call}]}]

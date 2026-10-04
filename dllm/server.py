@@ -86,8 +86,8 @@ def handler_for(runtime):
                     allowed |= {'logprobs','top_logprobs','tools','tool_choice'}
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
-                from .tool_calls import select_tools,validate_messages,ToolCallStream
-                selected_tools=select_tools(body.get('tools'),body.get('tool_choice'))
+                from .tool_calls import prepare_tools,validate_messages,ToolCallStream,JsonToolCallStream
+                selected_tools,tool_schema=prepare_tools(body.get('tools'),body.get('tool_choice'))
                 sampling = {key: body[key] for key in ("temperature", "top_p", "top_k", "seed", "presence_penalty", "frequency_penalty", "repetition_penalty", "logit_bias") if key in body}
                 Sampling(**sampling)
                 from .logprobs import options as score_options
@@ -107,6 +107,7 @@ def handler_for(runtime):
                     if report_scores or body.get('response_format') is not None or sampling.get('stop'):
                         raise ValueError('tool calls cannot combine with structured output, scores or custom stops')
                     sampling['tools']=selected_tools
+                    sampling['tool_choice']=body.get('tool_choice')
                 if 'max_tokens' in body and 'max_completion_tokens' in body:
                     raise ValueError('specify only one completion token limit')
                 max_tokens = body.get('max_completion_tokens', body.get('max_tokens', 128))
@@ -132,6 +133,8 @@ def handler_for(runtime):
                         or set(template_options) - {"enable_thinking"}
                         or any(type(value) is not bool for value in template_options.values())):
                     raise ValueError("chat_template_kwargs supports only boolean enable_thinking")
+                if tool_schema is not None and template_options.get('enable_thinking') is True:
+                    raise ValueError('forced tool calls cannot use thinking')
                 stream = body.get("stream", False)
                 alias = body["model"]
                 request_id = ("cmpl-" if raw else "chatcmpl-") + uuid.uuid4().hex
@@ -148,7 +151,8 @@ def handler_for(runtime):
                     self.wfile.write(("data: " + json.dumps(payload) + "\n\n").encode())
                     self.wfile.flush()
                 text = ""
-                tool_parser=ToolCallStream(selected_tools) if selected_tools else None
+                tool_parser=(JsonToolCallStream(tool_schema) if tool_schema is not None
+                    else ToolCallStream(selected_tools) if selected_tools else None)
                 token_scores=[]
                 final = None
                 with closing(runtime.generate(alias, messages, max_tokens, **template_options, **sampling)) as generation:
@@ -166,7 +170,7 @@ def handler_for(runtime):
                         if "finish_reason" in event:
                             final = dict(event)
                             if tool_parser:
-                                for delta in tool_parser.feed(final=True):
+                                for delta in tool_parser.finish(final['finish_reason']):
                                     text+=delta.get('content','')
                                     if stream:send_event(chunk(delta))
                                 if tool_parser.calls and final['finish_reason']=='stop':

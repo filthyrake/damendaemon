@@ -1,0 +1,199 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "choice": "required",
+      "value": {
+        "name": "weather",
+        "arguments": {
+          "city": "Paris"
+        }
+      },
+      "accepted": true
+    },
+    {
+      "choice": "required",
+      "value": {
+        "name": "translate",
+        "arguments": {
+          "phrase": "bonjour"
+        }
+      },
+      "accepted": true
+    },
+    {
+      "choice": "required",
+      "value": {
+        "name": "weather",
+        "arguments": {
+          "phrase": "bonjour"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "choice": "required",
+      "value": {
+        "name": "translate",
+        "arguments": {
+          "city": "Paris"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "choice": "required",
+      "value": {
+        "name": "unknown",
+        "arguments": {}
+      },
+      "accepted": false
+    },
+    {
+      "choice": "required",
+      "value": {
+        "name": "weather",
+        "arguments": {
+          "city": "London"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "choice": "required",
+      "value": {
+        "name": "weather",
+        "arguments": {}
+      },
+      "accepted": false
+    },
+    {
+      "choice": "required",
+      "value": {
+        "name": "weather",
+        "arguments": {
+          "city": "Paris",
+          "extra": true
+        }
+      },
+      "accepted": false
+    },
+    {
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "value": {
+        "name": "weather",
+        "arguments": {
+          "city": "Paris"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "value": {
+        "name": "translate",
+        "arguments": {
+          "phrase": "bonjour"
+        }
+      },
+      "accepted": true
+    },
+    {
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "value": {
+        "name": "weather",
+        "arguments": {
+          "phrase": "bonjour"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "value": {
+        "name": "translate",
+        "arguments": {
+          "city": "Paris"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "value": {
+        "name": "unknown",
+        "arguments": {}
+      },
+      "accepted": false
+    },
+    {
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "value": {
+        "name": "weather",
+        "arguments": {
+          "city": "London"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "value": {
+        "name": "weather",
+        "arguments": {}
+      },
+      "accepted": false
+    },
+    {
+      "choice": {
+        "type": "function",
+        "function": {
+          "name": "translate"
+        }
+      },
+      "value": {
+        "name": "weather",
+        "arguments": {
+          "city": "Paris",
+          "extra": true
+        }
+      },
+      "accepted": false
+    }
+  ]
+}
