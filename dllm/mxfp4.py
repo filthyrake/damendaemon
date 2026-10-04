@@ -15,6 +15,13 @@ def validate(blocks,scales):
     return (*blocks.shape[:-2],blocks.shape[-2]*32)
 
 
+def scale_capabilities(scales):
+    """Check immutable checkpoint scales once, without replay-time GPU scans."""
+    minimum,maximum=torch.aminmax(scales)
+    low,high=int(minimum),int(maximum)
+    return 104<=low and high<=140, 2<=low and high<=252
+
+
 def unpack(blocks,scales,dtype=torch.float32):
     """Native CUDA unpacking for diagnostics and bounded per-expert preparation."""
     shape=validate(blocks,scales)
@@ -24,8 +31,12 @@ def unpack(blocks,scales,dtype=torch.float32):
     return native(blocks,scales,shape,dtype)
 
 
-def routed_linear(x,blocks,scales,selected,bias=None,shared_input=True,*,chunked=True):
-    """Project only GPU-selected experts; never expand the complete model."""
+def routed_linear(x,blocks,scales,selected,bias=None,shared_input=True,*,chunked=True,normal_scales=False):
+    """Project GPU-selected experts without expanding the complete model.
+
+    Internal normal_scales acceleration requires scales prevalidated in [2,252].
+    Validation belongs at immutable checkpoint activation, outside graph replay.
+    """
     shape=validate(blocks,scales)
     if (len(shape)!=3 or x.device.type!='cuda' or x.ndim!=2 or x.dtype!=torch.float32
             or x.device!=blocks.device or not x.is_contiguous() or x.shape[1]!=shape[2]
@@ -37,4 +48,4 @@ def routed_linear(x,blocks,scales,selected,bias=None,shared_input=True,*,chunked
             or bias.device!=x.device or not bias.is_contiguous()):
         raise ValueError('MXFP4 expert bias must be contiguous FP32 [experts,outputs]')
     from .mxfp4_kernels import routed_linear as native
-    return native(x,blocks,scales,selected,bias,shared_input,chunked)
+    return native(x,blocks,scales,selected,bias,shared_input,chunked,normal_scales)

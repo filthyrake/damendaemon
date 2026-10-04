@@ -66,7 +66,8 @@ def main():
         'repository':reference['repository'],'revision':reference['revision'],
         'reference':reference['reference'],'reference_transformers':reference['transformers'],
         'reference_torch':reference['torch'],'reference_dtype':reference['dtype'],'torch':str(torch.__version__),
-        'graph':not args.no_graph,'scalar':args.scalar,'prefill_mode':executor.grouped_prefill,'chunked_experts':executor.chunked_experts,'compute_dtype':str(executor.compute_dtype),'kernel_backend':executor.kernel_backend,
+        'graph':not args.no_graph,'scalar':args.scalar,'prefill_mode':executor.grouped_prefill,'chunked_experts':executor.chunked_experts,'normal_experts':executor.normal_experts,
+        'normal_scale_projections':sum(executor.expert_normal.values()),'compute_dtype':str(executor.compute_dtype),'kernel_backend':executor.kernel_backend,
         'context':executor.context,'max_batch':executor.max_batch,'host_weight_bytes':model.bytes,
         'allocated_bytes':torch.cuda.memory_allocated(),'peak_allocated_bytes':torch.cuda.max_memory_allocated(),
         'checks':checks,'timings':timings}

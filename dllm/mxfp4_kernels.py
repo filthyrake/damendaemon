@@ -21,6 +21,17 @@ def _value(code,scale):
 
 
 @tr.jit
+def _value_normal(code,scale):
+    # Caller proves scales in [2,252] once, before graph capture. Every nonzero
+    # E2M1 value is then a finite normal FP32 number; construct its bits directly.
+    unsigned=code & 7
+    exponent=scale+(unsigned>>1)-1
+    fraction=tl.where(unsigned>=2,unsigned & 1,0)<<22
+    bits=tl.where(unsigned==0,0,(exponent<<23)|fraction) | ((code & 8)<<28)
+    return bits.to(tl.float32,bitcast=True)
+
+
+@tr.jit
 def _unpack(W,S,Y,N:tl.constexpr,BLOCK:tl.constexpr):
     index=tl.program_id(0)*BLOCK+tl.arange(0,BLOCK)
     packed=tl.load(W+index//2,index<N,other=0).to(tl.int32)
@@ -38,7 +49,7 @@ def unpack(blocks,scales,shape,dtype):
 
 @tr.jit
 def _routed(X,W,S,EXPERTS,BIAS,Y,E:tl.constexpr,K:tl.constexpr,N:tl.constexpr,TOP:tl.constexpr,
-            SHARED:tl.constexpr,HAS_BIAS:tl.constexpr,BK:tl.constexpr,BN:tl.constexpr):
+            SHARED:tl.constexpr,HAS_BIAS:tl.constexpr,BK:tl.constexpr,BN:tl.constexpr,NORMAL_SCALES:tl.constexpr=False):
     route=tl.program_id(1)
     expert=tl.load(EXPERTS+route)
     valid_expert=(expert>=0)&(expert<E)
@@ -52,8 +63,12 @@ def _routed(X,W,S,EXPERTS,BIAS,Y,E:tl.constexpr,K:tl.constexpr,N:tl.constexpr,TO
         valid=valid_expert & (outputs[:,None]<N) & (pairs[None,:]<K//2)
         packed=tl.load(W+row*(K//2)+pairs[None,:],valid,other=0).to(tl.int32)
         scale=tl.load(S+row*(K//32)+pairs[None,:]//16,valid,other=127).to(tl.int32)
-        low=_value(packed & 15,scale)
-        high=_value(packed >> 4,scale)
+        if NORMAL_SCALES:
+            low=_value_normal(packed & 15,scale)
+            high=_value_normal(packed >> 4,scale)
+        else:
+            low=_value(packed & 15,scale)
+            high=_value(packed >> 4,scale)
         even=tl.load(X+source*K+2*pairs,pairs<K//2,other=0).to(tl.float32)
         odd=tl.load(X+source*K+2*pairs+1,pairs<K//2,other=0).to(tl.float32)
         accumulator+=low*even[None,:]+high*odd[None,:]
@@ -66,7 +81,7 @@ def _routed(X,W,S,EXPERTS,BIAS,Y,E:tl.constexpr,K:tl.constexpr,N:tl.constexpr,TO
     tl.store(Y+route*N+outputs,result,outputs<N)
 
 
-def routed_linear(x,blocks,scales,selected,bias,shared_input,chunked=True):
+def routed_linear(x,blocks,scales,selected,bias,shared_input,chunked=True,normal_scales=False):
     experts,outputs=blocks.shape[:2]
     result=torch.empty((selected.numel(),outputs),device=x.device,dtype=torch.float32)
     block=tr.next_power_of_2(x.shape[-1])
@@ -76,7 +91,7 @@ def routed_linear(x,blocks,scales,selected,bias,shared_input,chunked=True):
         tile=4 if shared_input else 8
     _routed[(tr.cdiv(outputs,tile),selected.numel())](x,blocks,scales,selected,
         x if bias is None else bias,result,experts,x.shape[-1],outputs,selected.shape[1],
-        shared_input,bias is not None,block,tile,num_warps=4,enable_fp_fusion=False)
+        shared_input,bias is not None,block,tile,normal_scales,num_warps=4,enable_fp_fusion=False)
     return result
 
 

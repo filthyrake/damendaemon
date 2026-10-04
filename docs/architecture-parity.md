@@ -1289,3 +1289,15 @@ pass 25 Qwen3 checks and 72 GPT-OSS checks; 237 CPU/HTTP regressions pass.
 No-graph/non-CUDA fallback remains unchanged, as do existing Gemma/paged scalar
 overrides. See [measurements and methodology](evidence/scalar-decode/README.md)
 and GitHub issue #40. These gains exclude load/prefill and are not HTTP speedups.
+
+### Exact normal-scale expert decode
+
+GPT-OSS now selects an exact bit-construction path when a checkpoint projection's
+scales all lie in [2,252], retaining generic MXFP4 handling otherwise. All 4,016
+normal code/scale values match independent reference bits, and all 72 model
+reference checks pass. Matched A2 production HTTP trials improve single-request
+decode about 2.2–2.4% (16.22–16.29 to 16.58–16.67 tokens/s), with 1.2–2.4% lower
+wall time in the recorded run. This is a small optimization, not a new precision
+policy. 238 CPU/HTTP tests pass. An alternative compensated Tensor Core route
+layout was measured and rejected as slower; it is excluded from runtime selection.
+See [full proof, limits and rejected experiment](evidence/gpt-oss/normal-scales/README.md).

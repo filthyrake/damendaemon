@@ -100,18 +100,19 @@ class GptOssExecutor(BatchExecutor):
         if selected_device()!='cuda' or (kernels or os.environ.get('DLLM_KERNELS','auto'))=='torch':
             raise ValueError('GPT-OSS requires native CUDA kernels')
         from . import mxfp4_kernels,moe_kernels
-        from .mxfp4 import routed_linear
+        from .mxfp4 import routed_linear,scale_capabilities
         self.grouped_prefill=os.environ.get('DLLM_GPT_OSS_PREFILL','grouped')
         if self.grouped_prefill not in ('routed','grouped'):
             raise ValueError('DLLM_GPT_OSS_PREFILL must be routed or grouped')
-        self.expert_half={}
+        self.expert_half={};self.expert_normal={}
         for i in range(model.config['num_hidden_layers']):
             for projection in ('up','down'):
                 scales=model.weights[f'{i}.{projection}.scales']
                 # Every possible E2M1 code is exactly representable in FP16
                 # within this scale range, including FP16 subnormals.
-                self.expert_half[i,projection]=bool(((scales>=104)&(scales<=140)).all())
+                self.expert_half[i,projection],self.expert_normal[i,projection]=scale_capabilities(scales)
         self.chunked_experts=True
+        self.normal_experts=True
         self.expert_linear=routed_linear
         self.expert_activation=mxfp4_kernels.swiglu
         self.combine=moe_kernels.combine
@@ -126,10 +127,12 @@ class GptOssExecutor(BatchExecutor):
         probabilities=logits.softmax(-1)
         if prefill and self.grouped_prefill=='grouped' and x.shape[0]>=16:
             return self.grouped_experts(x,i,selected,probabilities)
-        up=self.expert_linear(x,w[f'{i}.up.blocks'],w[f'{i}.up.scales'],selected,w[f'{i}.up.bias'],chunked=self.chunked_experts)
+        up=self.expert_linear(x,w[f'{i}.up.blocks'],w[f'{i}.up.scales'],selected,w[f'{i}.up.bias'],chunked=self.chunked_experts,
+            normal_scales=self.normal_experts and self.expert_normal[i,'up'])
         activation=self.expert_activation(up,self.c['swiglu_limit'])
         down=self.expert_linear(activation,w[f'{i}.down.blocks'],w[f'{i}.down.scales'],selected,
-            w[f'{i}.down.bias'],False,chunked=self.chunked_experts)
+            w[f'{i}.down.bias'],False,chunked=self.chunked_experts,
+            normal_scales=self.normal_experts and self.expert_normal[i,'down'])
         return self.combine(down,probabilities)
 
     def grouped_experts(self,x,i,selected,probabilities):

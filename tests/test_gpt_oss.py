@@ -83,3 +83,13 @@ class GptOssTests(unittest.TestCase):
                 ('model.layers.0.self_attn.sinks',torch.ones(3)),('unexpected',torch.zeros(1))]:
             state=tensors(c);state[name]=replacement
             with self.subTest(name=name),self.assertRaises(ValueError):load_weights(state,c)
+
+
+    def test_expert_scale_fast_paths_require_the_entire_tensor_in_range(self):
+        from dllm.mxfp4 import scale_capabilities
+        for low,high,half,normal in ((104,140,True,True),(2,252,False,True),
+            (1,140,False,False),(104,253,False,False),(0,0,False,False),
+            (127,127,True,True),(103,141,False,True),(254,254,False,False)):
+            with self.subTest(low=low,high=high):
+                values=torch.full((3,7),127,dtype=torch.uint8);values[0,0]=low;values[-1,-1]=high
+                self.assertEqual(scale_capabilities(values),(half,normal))
