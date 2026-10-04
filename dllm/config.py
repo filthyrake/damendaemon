@@ -1,4 +1,43 @@
 """Validate supported dense decoder variants before loading weight tensors."""
+import math
+
+
+def rotary_scaling(value):
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError('rotary scaling must be an object')
+    kind = value.get('rope_type', value.get('type'))
+    if kind not in ('linear', 'llama3'):
+        raise ValueError('supported rotary scaling types are linear and llama3')
+    common = {'rope_type', 'type', 'factor'}
+    extra = {'low_freq_factor', 'high_freq_factor', 'original_max_position_embeddings'}
+    if set(value) - (common | (extra if kind == 'llama3' else set())):
+        raise ValueError('unsupported rotary scaling fields')
+    if 'type' in value and value['type'] != kind:
+        raise ValueError('conflicting rotary scaling types')
+    for name in ('factor',) + (('low_freq_factor', 'high_freq_factor') if kind == 'llama3' else ()):
+        number = value.get(name)
+        if type(number) not in (int,float) or not math.isfinite(number) or number <= 0:
+            raise ValueError(f'{name} must be finite and positive')
+    if value['factor'] < 1:
+        raise ValueError('rotary scaling factor must be at least one')
+    if kind == 'llama3':
+        if value['high_freq_factor'] <= value['low_freq_factor']:
+            raise ValueError('rotary frequency bounds must be ordered')
+        original = value.get('original_max_position_embeddings')
+        if type(original) is not int or original <= 0:
+            raise ValueError('original context must be a positive integer')
+    return {**value, 'rope_type':kind}
+
+
+def eos_ids(value):
+    if value is None:
+        return set()
+    values = value if isinstance(value,list) else [value]
+    if not values or any(type(x) is not int or x < 0 for x in values):
+        raise ValueError('EOS must be a token ID or nonempty list of token IDs')
+    return set(values)
 
 def decoder_config(config):
     if config.get('model_type') in ('qwen3_5', 'qwen3_5_text'):
@@ -7,7 +46,7 @@ def decoder_config(config):
     kind = c.get('model_type')
     if kind not in ('qwen2', 'qwen3', 'llama'):
         raise ValueError(f'unsupported model architecture: {kind}; expected qwen2, qwen3, or llama')
-    if (c.get('quantization_config') or c.get('rope_scaling') or c.get('rope_parameters')
+    if (c.get('quantization_config') or c.get('rope_parameters')
             or c.get('use_sliding_window', False) or c.get('hidden_act') != 'silu'
             or c.get('partial_rotary_factor', 1) != 1 or c.get('mlp_bias', False)
             or any(layer != 'full_attention' for layer in c.get('layer_types', []))):
@@ -27,6 +66,7 @@ def decoder_config(config):
     if type(c['head_dim']) is not int or c['head_dim'] <= 0 or c['head_dim'] % 2:
         raise ValueError('head_dim must be a positive even integer')
     c.setdefault('rope_theta', 10000.0)
+    c['rope_scaling'] = rotary_scaling(c.get('rope_scaling'))
     if c['rope_theta'] <= 0 or c.get('rms_norm_eps', 0) <= 0:
         raise ValueError('RoPE base and normalization epsilon must be positive')
     return c

@@ -33,10 +33,14 @@ def main():
     executor = make_executor(model, max_batch=4)
     checks, template_checks, states, timings = [], [], {}, []
     trace = []
-    documents = [
-        'Record %d: The parcel is stored in cabinet %d, drawer %d.\n' % (i, i % 11, i % 7)
-        for i in range(200)]
-    corpus = tokenizer.encode(''.join(documents), add_special_tokens=False)
+    records = 200
+    while True:
+        documents = ['Record %d: The parcel is stored in cabinet %d, drawer %d.\n' %
+                     (i, i % 11, i % 7) for i in range(records)]
+        corpus = tokenizer.encode(''.join(documents), add_special_tokens=False)
+        if len(corpus) >= args.context + 64:
+            break
+        records *= 2
 
     def compare(actual, target, phase, slot):
         actual, target = actual.float().to(target.device), target.float()

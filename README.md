@@ -119,6 +119,9 @@ unsupported. Qwen3.5 checkpoint qualification does not imply all newer Qwen
 variants are supported. See the [model validation matrix](docs/model-matrix.md):
 Qwen3-1.7B and SmolLM2-360M pass the expanded tests; Qwen3-0.6B remains provisional
 because two long-context positions exceed the logit-error limit.
+Static linear and Llama 3 rotary scaling are now supported; dynamic/YaRN/LongRoPE
+variants remain unsupported. The pinned Llama 3.2 1B checkpoint passes the A2
+8192-context gate. See [architecture qualification](docs/architecture-parity.md).
 Prompt plus requested output must fit `--context`. KV memory is reserved per
 slot at that capacity. Fused attention reads the live prefix and skips unused
 context blocks; larger configured contexts still add launch/merge overhead.

@@ -11,6 +11,7 @@ import math
 import os
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -21,7 +22,8 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 from jinja2.sandbox import ImmutableSandboxedEnvironment
 
-from .config import decoder_config
+from .config import decoder_config, eos_ids
+from .rotary import inverse_frequencies
 
 
 def weight_files(path):
@@ -61,13 +63,20 @@ class ModelWeights:
             template = (self.path / "chat_template.jinja").read_text()
         if not isinstance(template, str):
             raise ValueError("model needs one text chat template")
-        self.template = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True).from_string(template)
+        environment = ImmutableSandboxedEnvironment(trim_blocks=True, lstrip_blocks=True,
+                                                     extensions=['jinja2.ext.loopcontrols'])
+        def raise_exception(message):
+            raise ValueError(message)
+        environment.globals.update(raise_exception=raise_exception,
+                                   strftime_now=lambda fmt: datetime.now().strftime(fmt))
+        self.template = environment.from_string(template)
         self.special_tokens = {key: tokenizer_config.get(key) for key in ("bos_token", "eos_token")}
-        self.eos = {c["eos_token_id"]}
+        self.eos = eos_ids(c.get('eos_token_id'))
         generation = self.path / "generation_config.json"
         if generation.exists():
-            eos = json.loads(generation.read_text()).get("eos_token_id", [])
-            self.eos.update(eos if isinstance(eos, list) else [eos])
+            self.eos.update(eos_ids(json.loads(generation.read_text()).get('eos_token_id')))
+        if not self.eos:
+            raise ValueError('model needs at least one EOS token ID')
         state = {}
         for candidate in weight_files(self.path):
             with safe_open(str(candidate), framework="pt", device="cpu") as reader:
@@ -199,7 +208,7 @@ class Executor:
         self.kv = [torch.zeros((2, max_batch, self.kv_heads, self.context, self.dim),
                                dtype=self.compute_dtype, device=self.device)
                    for _ in range(c["num_hidden_layers"])]
-        inv = 1.0 / (c["rope_theta"] ** (torch.arange(0, self.dim, 2, device=self.device, dtype=torch.float32) / self.dim))
+        inv = inverse_frequencies(c, self.device)
         angles = torch.outer(torch.arange(self.context, device=self.device, dtype=torch.float32), inv)
         angles = torch.cat((angles, angles), dim=-1)
         self.cos, self.sin = angles.cos().to(self.residual_dtype), angles.sin().to(self.residual_dtype)

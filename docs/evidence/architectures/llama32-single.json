@@ -1,0 +1,119 @@
+{
+  "model_path": "/home/damen/.cache/huggingface/hub/models--unsloth--Llama-3.2-1B-Instruct/snapshots/5a8abab4a5d6f164389b1079fb721cfab8d7126c",
+  "reference_dtype": "float16",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "context": 256,
+  "correctness": [
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.1015625,
+      "max_relative_rms_error": 0.006514842621982098,
+      "max_mean_logit_error": 0.018285388126969337,
+      "text": "2assistant\n\nThere is no need to provide a calculation. The"
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.0390625,
+      "max_relative_rms_error": 0.0027442218270152807,
+      "max_mean_logit_error": 0.005557436030358076,
+      "text": "The sky appears blue because of a phenomenon called Rayleigh scattering, in which shorter"
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.05078125,
+      "max_relative_rms_error": 0.003949289675801992,
+      "max_mean_logit_error": 0.007151554338634014,
+      "text": "Bonjour, je vais bien, merci. Comment allez-vous?"
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "prompt": "What is 2 + 2? Answer with one number.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.1015625,
+      "max_relative_rms_error": 0.006514842621982098,
+      "max_mean_logit_error": 0.018285388126969337,
+      "text": "2assistant\n\nThere is no need to provide a calculation. The"
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "prompt": "Explain why the sky looks blue in one sentence.",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.0390625,
+      "max_relative_rms_error": 0.0027442218270152807,
+      "max_mean_logit_error": 0.005557436030358076,
+      "text": "The sky appears blue because of a phenomenon called Rayleigh scattering, in which shorter"
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "prompt": "Reply in French: Hello, how are you?",
+      "matched_greedy_steps": 16,
+      "greedy_mismatch_steps": [],
+      "max_logit_error": 0.05078125,
+      "max_relative_rms_error": 0.003949289675801992,
+      "max_mean_logit_error": 0.007151554338634014,
+      "text": "Bonjour, je vais bien, merci. Comment allez-vous?"
+    }
+  ],
+  "timings": [
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 0,
+      "first_token_seconds": 0.16133328099749633,
+      "decode_tokens_per_second": 61.06071345050312
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 1,
+      "first_token_seconds": 0.03673796799921547,
+      "decode_tokens_per_second": 62.533563152944794
+    },
+    {
+      "graph": false,
+      "graph_requested": false,
+      "trial": 2,
+      "first_token_seconds": 0.020820467001612997,
+      "decode_tokens_per_second": 62.447922088286425
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "trial": 0,
+      "first_token_seconds": 0.02078446400264511,
+      "decode_tokens_per_second": 65.5309725429425
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "trial": 1,
+      "first_token_seconds": 0.021065462999104057,
+      "decode_tokens_per_second": 65.42876135614473
+    },
+    {
+      "graph": true,
+      "graph_requested": true,
+      "trial": 2,
+      "first_token_seconds": 0.021211265000601998,
+      "decode_tokens_per_second": 65.42959465208378
+    }
+  ]
+}

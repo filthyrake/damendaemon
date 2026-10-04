@@ -1,4 +1,5 @@
 import unittest
+from dllm.config import rotary_scaling, eos_ids
 from dllm.config import decoder_config
 
 
@@ -19,7 +20,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_unsupported_variants_fail_before_weight_loading(self):
         for changes in ({'model_type': 'qwen3_5'}, {'model_type': 'qwen3_moe'},
-                        {'rope_scaling': {'type': 'linear', 'factor': 2}},
+                        {'rope_scaling': {'type': 'yarn', 'factor': 2}},
                         {'partial_rotary_factor': .25}, {'mlp_bias': True},
                         {'attention_bias': True}, {'layer_types': ['linear_attention']},
                         {'use_sliding_window': True}, {'num_key_value_heads': 3},
@@ -61,3 +62,24 @@ class HybridConfigTests(unittest.TestCase):
         c['quantization_config'] = {'bits': 4}
         with self.assertRaises(ValueError):
             decoder_config(c)
+
+
+class RotaryConfigTests(unittest.TestCase):
+    def test_static_schedules_and_eos_lists(self):
+        self.assertEqual(rotary_scaling({'type':'linear','factor':2})['rope_type'],'linear')
+        self.assertEqual(eos_ids([1,2,1]),{1,2})
+        self.assertEqual(eos_ids(3),{3})
+        self.assertEqual(eos_ids(None),set())
+
+    def test_invalid_schedules_fail_before_loading(self):
+        base={'rope_type':'llama3','factor':32,'low_freq_factor':1,'high_freq_factor':4,
+              'original_max_position_embeddings':8192}
+        self.assertEqual(rotary_scaling(base),base)
+        for change in ({'factor':float('nan')},{'factor':True},{'factor':.5},
+                       {'high_freq_factor':1},{'original_max_position_embeddings':0},
+                       {'type':'linear'},{'attention_factor':2}):
+            with self.subTest(change=change),self.assertRaises(ValueError):
+                rotary_scaling({**base,**change})
+        for value in ([],[True],[-1],'2'):
+            with self.subTest(value=value),self.assertRaises(ValueError):
+                eos_ids(value)

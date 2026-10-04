@@ -1,0 +1,696 @@
+{
+  "model_path": "/home/damen/.cache/huggingface/hub/models--unsloth--Llama-3.2-1B-Instruct/snapshots/5a8abab4a5d6f164389b1079fb721cfab8d7126c",
+  "reference_dtype": "float16",
+  "architecture": "llama",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "reference_device": "cuda",
+  "weight_dtype": "torch.float16",
+  "context": 8192,
+  "backend": "triton",
+  "checks": [
+    {
+      "phase": "template:None",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.003008610336109996,
+      "max_absolute": 0.03515625,
+      "passed": true
+    },
+    {
+      "phase": "prefill:31",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0005353278829716146,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "prefill:255",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.001456886064261198,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "prefill:257",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0007679678383283317,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "prefill:1023",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0016745633911341429,
+      "max_absolute": 0.02734375,
+      "passed": true
+    },
+    {
+      "phase": "decode:32",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0012032559607177973,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:256",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0016851245891302824,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:258",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0018730532610788941,
+      "max_absolute": 0.0279541015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:1024",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0015376587398350239,
+      "max_absolute": 0.01806640625,
+      "passed": true
+    },
+    {
+      "phase": "decode:33",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0010529974242672324,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:257",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.001018380280584097,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:259",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.002335650846362114,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:1025",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0012946934439241886,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:34",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0025642099790275097,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:258",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0011993173975497484,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:260",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0010105397086590528,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:1026",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.001699597924016416,
+      "max_absolute": 0.021484375,
+      "passed": true
+    },
+    {
+      "phase": "decode:35",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0013151047751307487,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:259",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0011594740208238363,
+      "max_absolute": 0.017578125,
+      "passed": true
+    },
+    {
+      "phase": "decode:261",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0009532441035844386,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:1027",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0013267304748296738,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:36",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0008569449419155717,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:260",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.001178526203148067,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:262",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0009805685840547085,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:1028",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0009118797606788576,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:37",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.001015585963614285,
+      "max_absolute": 0.01611328125,
+      "passed": true
+    },
+    {
+      "phase": "decode:261",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.001186799956485629,
+      "max_absolute": 0.0159912109375,
+      "passed": true
+    },
+    {
+      "phase": "decode:263",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0011397029738873243,
+      "max_absolute": 0.013671875,
+      "passed": true
+    },
+    {
+      "phase": "decode:1029",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0035183632280677557,
+      "max_absolute": 0.02783203125,
+      "passed": true
+    },
+    {
+      "phase": "decode:38",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0014677912695333362,
+      "max_absolute": 0.0166015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:262",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.001686889911070466,
+      "max_absolute": 0.021484375,
+      "passed": true
+    },
+    {
+      "phase": "decode:264",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0011394466273486614,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:1030",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0024269376881420612,
+      "max_absolute": 0.0244140625,
+      "passed": true
+    },
+    {
+      "phase": "decode:39",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0016690216725692153,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:263",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0009784590220078826,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:265",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.001014607260003686,
+      "max_absolute": 0.017578125,
+      "passed": true
+    },
+    {
+      "phase": "decode:1031",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0020211059600114822,
+      "max_absolute": 0.02001953125,
+      "passed": true
+    },
+    {
+      "phase": "prefill:8176",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0008200673619285226,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "prefill:65",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0011322451755404472,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:266",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0009106952929869294,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:8177",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.002754107117652893,
+      "max_absolute": 0.0244140625,
+      "passed": true
+    },
+    {
+      "phase": "decode:66",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.000718864961527288,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:40",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0006130024557933211,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:267",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0010465284576639533,
+      "max_absolute": 0.0185546875,
+      "passed": true
+    },
+    {
+      "phase": "decode:8178",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0015594303840771317,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:67",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0010311473160982132,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:41",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0009970060782507062,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:268",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0012411592761054635,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:8179",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0022824639454483986,
+      "max_absolute": 0.03125,
+      "passed": true
+    },
+    {
+      "phase": "decode:68",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0014254060806706548,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:42",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0011969683691859245,
+      "max_absolute": 0.017578125,
+      "passed": true
+    },
+    {
+      "phase": "decode:269",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0010150483576580882,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:8180",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0013187025906518102,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:69",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0012218081392347813,
+      "max_absolute": 0.017822265625,
+      "passed": true
+    },
+    {
+      "phase": "decode:43",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0009335560025647283,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:270",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0013515310129150748,
+      "max_absolute": 0.017578125,
+      "passed": true
+    },
+    {
+      "phase": "decode:8181",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0011174494866281748,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:70",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0006797425448894501,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:44",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0008231187821365893,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:271",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0022029143292456865,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:8182",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.002781505696475506,
+      "max_absolute": 0.02734375,
+      "passed": true
+    },
+    {
+      "phase": "decode:71",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.000879164319485426,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:45",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0007857520249672234,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:272",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0011942737037315965,
+      "max_absolute": 0.021484375,
+      "passed": true
+    },
+    {
+      "phase": "decode:8183",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0012142405612394214,
+      "max_absolute": 0.017578125,
+      "passed": true
+    },
+    {
+      "phase": "decode:72",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.001118766376748681,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:46",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0017366261454299092,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:273",
+      "slot": 2,
+      "greedy_match": true,
+      "relative_rms": 0.0009090075618587434,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:8184",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0016404114430770278,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:73",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0011703602503985167,
+      "max_absolute": 0.0234375,
+      "passed": true
+    },
+    {
+      "phase": "decode:47",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0012366912560537457,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:8185",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0010680577252060175,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:8186",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0011497657978907228,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:8187",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.000885163783095777,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:8188",
+      "slot": 0,
+      "greedy_match": true,
+      "relative_rms": 0.0011158649576827884,
+      "max_absolute": 0.017578125,
+      "passed": true
+    },
+    {
+      "phase": "decode:48",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0008036986109800637,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:74",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0006894122925586998,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:49",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.001125546870753169,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:75",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.001797898905351758,
+      "max_absolute": 0.01953125,
+      "passed": true
+    },
+    {
+      "phase": "decode:50",
+      "slot": 3,
+      "greedy_match": true,
+      "relative_rms": 0.0009837110992521048,
+      "max_absolute": 0.0157470703125,
+      "passed": true
+    },
+    {
+      "phase": "decode:76",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.0008863505208864808,
+      "max_absolute": 0.015625,
+      "passed": true
+    },
+    {
+      "phase": "decode:77",
+      "slot": 1,
+      "greedy_match": true,
+      "relative_rms": 0.002687112893909216,
+      "max_absolute": 0.0205078125,
+      "passed": true
+    }
+  ],
+  "template_checks": [
+    {
+      "enable_thinking": null,
+      "tokens": 70
+    }
+  ],
+  "timings": [
+    {
+      "kind": "batched_prefill",
+      "lengths": [
+        31,
+        255,
+        257,
+        1023
+      ],
+      "seconds": 0.2415429110005789
+    },
+    {
+      "kind": "batched_prefill",
+      "lengths": [
+        8176,
+        65
+      ],
+      "seconds": 1.4932654530020955
+    }
+  ],
+  "passed": true
+}
