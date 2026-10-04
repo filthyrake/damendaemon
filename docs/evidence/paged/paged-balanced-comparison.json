@@ -1,0 +1,113 @@
+{
+  "context": 2048,
+  "pool_tokens": 2048,
+  "order": [
+    "fixed",
+    "paged",
+    "paged",
+    "fixed"
+  ],
+  "runtime_environment": {
+    "DLLM_QUANTIZATION": "q4_0",
+    "DLLM_DEVICE": "cuda",
+    "DLLM_WEIGHT_CACHE": "/home/damen/dllm-dev/baselines/prepared-weight-cache"
+  },
+  "measurements": [
+    {
+      "order": 0,
+      "layout": "fixed",
+      "concurrency": 1,
+      "evidence": "compare-dllm-qwen2-balanced-paging-0-fixed-c1.json",
+      "median_tokens_per_second": 204.86528614131964,
+      "median_ttft_ms": 28.989471997192595
+    },
+    {
+      "order": 0,
+      "layout": "fixed",
+      "concurrency": 2,
+      "evidence": "compare-dllm-qwen2-balanced-paging-0-fixed-c2.json",
+      "median_tokens_per_second": 345.54586453957774,
+      "median_ttft_ms": 50.552345001051435
+    },
+    {
+      "order": 0,
+      "layout": "fixed",
+      "concurrency": 4,
+      "evidence": "compare-dllm-qwen2-balanced-paging-0-fixed-c4.json",
+      "median_tokens_per_second": 636.6419603646469,
+      "median_ttft_ms": 70.6794819998322
+    },
+    {
+      "order": 1,
+      "layout": "paged",
+      "concurrency": 1,
+      "evidence": "compare-dllm-qwen2-balanced-paging-1-paged-c1.json",
+      "median_tokens_per_second": 206.39969738358704,
+      "median_ttft_ms": 27.410151000367478
+    },
+    {
+      "order": 1,
+      "layout": "paged",
+      "concurrency": 2,
+      "evidence": "compare-dllm-qwen2-balanced-paging-1-paged-c2.json",
+      "median_tokens_per_second": 362.1468146930803,
+      "median_ttft_ms": 46.679120998305734
+    },
+    {
+      "order": 1,
+      "layout": "paged",
+      "concurrency": 4,
+      "evidence": "compare-dllm-qwen2-balanced-paging-1-paged-c4.json",
+      "median_tokens_per_second": 640.3066332479636,
+      "median_ttft_ms": 63.119270496827085
+    },
+    {
+      "order": 2,
+      "layout": "paged",
+      "concurrency": 1,
+      "evidence": "compare-dllm-qwen2-balanced-paging-2-paged-c1.json",
+      "median_tokens_per_second": 199.66630457120354,
+      "median_ttft_ms": 31.74236899940297
+    },
+    {
+      "order": 2,
+      "layout": "paged",
+      "concurrency": 2,
+      "evidence": "compare-dllm-qwen2-balanced-paging-2-paged-c2.json",
+      "median_tokens_per_second": 354.3928261581967,
+      "median_ttft_ms": 46.94070100231329
+    },
+    {
+      "order": 2,
+      "layout": "paged",
+      "concurrency": 4,
+      "evidence": "compare-dllm-qwen2-balanced-paging-2-paged-c4.json",
+      "median_tokens_per_second": 628.466702732074,
+      "median_ttft_ms": 73.51927049967344
+    },
+    {
+      "order": 3,
+      "layout": "fixed",
+      "concurrency": 1,
+      "evidence": "compare-dllm-qwen2-balanced-paging-3-fixed-c1.json",
+      "median_tokens_per_second": 197.15543279372156,
+      "median_ttft_ms": 30.52465800283244
+    },
+    {
+      "order": 3,
+      "layout": "fixed",
+      "concurrency": 2,
+      "evidence": "compare-dllm-qwen2-balanced-paging-3-fixed-c2.json",
+      "median_tokens_per_second": 344.9490655220195,
+      "median_ttft_ms": 47.82401349802967
+    },
+    {
+      "order": 3,
+      "layout": "fixed",
+      "concurrency": 4,
+      "evidence": "compare-dllm-qwen2-balanced-paging-3-fixed-c4.json",
+      "median_tokens_per_second": 592.481410434119,
+      "median_ttft_ms": 77.55285550229019
+    }
+  ]
+}

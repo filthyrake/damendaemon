@@ -177,3 +177,22 @@ The 8K runs use a 16384-token physical pool; prefix proof uses 2048 tokens.
 With these gates complete, mixed precision is now the CUDA Llama default.
 `DLLM_LLAMA_PRECISION=standard` retains the old policy for explicit comparisons.
 Apple precision is unchanged.
+
+## Counterbalanced paging comparison
+
+After the optimizations, the same Qwen2 Q4 HTTP workload was rerun in fixed,
+paged, paged, fixed order (`paged-balanced-comparison.json`), with five warm
+rounds per concurrency in each process:
+
+| Run | Layout | c1 tokens/s | c2 tokens/s | c4 tokens/s |
+|---|---|---:|---:|---:|
+| 0 | fixed | 204.87 | 345.55 | 636.64 |
+| 1 | paged | 206.40 | 362.15 | 640.31 |
+| 2 | paged | 199.67 | 354.39 | 628.47 |
+| 3 | fixed | 197.16 | 344.95 | 592.48 |
+
+The current paged path falls within the measured fixed-run throughput range at
+c1/c4 and exceeds it at c2. The fixed runs themselves vary by about 7% at c4;
+the earlier single-pair 7% loss is not a stable estimate of current paging
+overhead. These results support comparable performance on this workload, not a
+universal speedup. All raw trials and TTFT measurements are retained.
