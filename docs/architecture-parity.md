@@ -569,7 +569,34 @@ CUDA graph follow-up: bounded LRU reuse (four batch/length shapes, batches up to
 3.66 to **1.54 ms** at batch8 (1498 and 5187 inputs/s respectively). At 256 tokens,
 batch1 improves from 3.26 to **1.66 ms**; larger compute-bound batches change
 little. First use of a shape pays warmup/capture cost; these are warm medians,
-not cold request latency. `--no-graphs` disables reuse. The expanded numerical
+not cold request latency. `--no-graph` disables reuse. The expanded numerical
 proof also exercises replay with changed data, graph cache eviction, and
 retained output tensors. Live HTTP/model-switching checks pass with graphs.
 Request coalescing remains unimplemented. See `minilm-a2-graphs-*.json`.
+
+
+## Token control qualification
+
+Issue #19. Presence/frequency/repetition penalties and logit bias pass nine
+independent scalar-oracle cases on CUDA and MPS, including negative logits,
+negative penalties and repeated history. Real Qwen2.5-0.5B checks compare eight
+successive token choices to independent scalar arithmetic in the serial
+runtime and the HTTP batched runtime. Chat/raw/SSE routes, mixed default/biased
+concurrent requests, and invalid-vocabulary recovery pass on both devices.
+99 unit tests pass. No request may mutate reusable graph logits.
+
+Matched A2 default-request regression check against commit `23fc857`, same
+Qwen2.5-0.5B revision, FP16 weights, context256, 43 prompt tokens, 64 output
+tokens and five measured rounds after warmup:
+
+| Concurrency | Before tokens/s | After tokens/s | Before TTFT ms | After TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 138.56 | 137.97 | 26.85 | 26.58 |
+| 2 | 234.20 | 235.24 | 40.92 | 40.49 |
+| 4 | 432.54 | 444.16 | 63.58 | 61.53 |
+
+Throughput changes range from -0.4% to +2.7% in this sequential A/B run; this
+supports no material default-path regression, not a speedup claim. The optional
+penalty path uses sparse device tensor updates and additional launches; its
+performance under long histories/high concurrency remains an optimization
+follow-up. Raw evidence is in `evidence/sampling/`.

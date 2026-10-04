@@ -103,12 +103,13 @@ class BatchedRuntime:
             self.admission.release()
 
     def generate(self, alias, messages, max_tokens=128, enable_thinking=None,
-                 temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None):
+                 temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None,
+                 presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None):
         if alias not in self.models:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be positive")
-        sampler = Sampler(Sampling(temperature, top_p, top_k, seed))
+        sampler = Sampler(Sampling(temperature, top_p, top_k, seed, presence_penalty, frequency_penalty, repetition_penalty, logit_bias))
         stops = stop_sequences(stop)
         if raw_prompt is not None:
             from .prompts import validate_raw
@@ -181,6 +182,7 @@ class BatchedRuntime:
             return True
         if request.sampler.constraint is not None:
             request.sampler.constraint.accept(token)
+        request.sampler.observe(token)
         request.output.append(token)
         now = time.perf_counter()
         if request.first_time is None:
@@ -258,6 +260,8 @@ class BatchedRuntime:
                             if request.schema is not None:
                                 from .structured import Constraint
                                 request.sampler.constraint = Constraint(executor.model, request.schema)
+                            if request.sampler.has_adjustments:
+                                request.sampler.prepare(tokens,executor.model.config['vocab_size'])
                             request.slot = next(free_slots)
                             prepared.append((request, tokens))
                         except Exception as error:

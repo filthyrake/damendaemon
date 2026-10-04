@@ -343,3 +343,14 @@ not all SentenceTransformers models. Encoder quantization is unsupported; use
 the model-residency scheduler with chat and completion workloads. See
 [encoder evidence](docs/architecture-parity.md#sentence-embeddings) for precision,
 performance, and current batching limits.
+
+Both completion routes accept `presence_penalty` and `frequency_penalty` in
+[-2, 2], positive `repetition_penalty` (default 1), and `logit_bias` mapping up to
+1024 token IDs to finite biases in [-100, 100]. Bias IDs must belong to the
+selected model's vocabulary. Presence/frequency penalties count generated
+tokens only; repetition considers the prompt and generated tokens. Processing
+order is repetition, frequency/presence, bias, grammar mask, then temperature
+and top-k/top-p filtering. These controls apply to greedy requests too. Request
+histories are isolated; default requests retain batched argmax and do not track
+penalty counts. Optional controls currently use device tensor operations and
+incur extra launches rather than a fused penalty kernel.

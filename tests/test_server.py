@@ -205,3 +205,17 @@ class ServerTests(unittest.TestCase):
         for body in ({'model':'a','input':[True]}, {'model':'a','input':'x','stream':True}, {'input':'x'}):
             with self.assertRaises(HTTPError) as error:post(body)
             self.assertEqual(error.exception.code,400);error.exception.close()
+
+    def test_token_controls_on_both_completion_routes(self):
+        options={'presence_penalty':.5,'frequency_penalty':-.5,
+                 'repetition_penalty':1.2,'logit_bias':{'1':-100}}
+        for post in (self.post,self.raw_post):
+            with post(**options) as response:
+                self.assertEqual(response.status,200)
+            for key,value in options.items():
+                self.assertEqual(self.runtime.last_options[key],value)
+            for bad in ({'presence_penalty':3},{'logit_bias':{'x':1}},{'frequency_penalty':True}):
+                with self.assertRaises(HTTPError) as error:
+                    post(**bad)
+                self.assertEqual(error.exception.code,400)
+                error.exception.close()

@@ -204,7 +204,8 @@ class Runtime:
                         'compute_dtype':str(executor.compute_dtype).removeprefix('torch.')}}
 
     def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None,
-                 temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None):
+                 temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None,
+                 presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None):
         """Yield token IDs/text deltas plus a final usage/timing event.
 
         Closing this generator releases its model lease, including on client
@@ -215,7 +216,7 @@ class Runtime:
         from .sampling import Sampling, Sampler
         from .stopping import stop_sequences, text_delta
         stops = stop_sequences(stop)
-        sampler = Sampler(Sampling(temperature, top_p, top_k, seed))
+        sampler = Sampler(Sampling(temperature, top_p, top_k, seed, presence_penalty, frequency_penalty, repetition_penalty, logit_bias))
         from .structured import prepare_options, Constraint
         schema, enable_thinking = prepare_options(response_format, stops, enable_thinking, ignore_eos)
         start = time.perf_counter()
@@ -229,6 +230,8 @@ class Runtime:
                 raise ValueError("prompt plus max_tokens exceeds configured context")
             if schema is not None:
                 sampler.constraint = Constraint(model, schema)
+            if sampler.has_adjustments:
+                sampler.prepare(prompt,model.config['vocab_size'])
             first = sampler.select(executor.prefill(prompt).squeeze(0)).item()
             output = []
             emitted = ""
@@ -238,6 +241,7 @@ class Runtime:
             for index in range(max_tokens):
                 if sampler.constraint is not None:
                     sampler.constraint.accept(token)
+                sampler.observe(token)
                 output.append(token)
                 if first_time is None:
                     first_time = time.perf_counter() - start
@@ -252,7 +256,7 @@ class Runtime:
                 if index + 1 < max_tokens:
                     logits, next_token = executor.decode(token)
                     token = (sampler.select(logits.squeeze(0)).item()
-                             if temperature or sampler.constraint is not None else next_token.item())
+                             if temperature or sampler.constraint is not None or sampler.has_adjustments else next_token.item())
             elapsed = time.perf_counter() - start
             yield {"finish_reason": finish, "usage": {
                 "prompt_tokens": len(prompt), "completion_tokens": len(output),
