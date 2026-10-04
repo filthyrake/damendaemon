@@ -44,16 +44,20 @@ def _routed(X,W,S,EXPERTS,BIAS,Y,E:tl.constexpr,K:tl.constexpr,N:tl.constexpr,TO
     valid_expert=(expert>=0)&(expert<E)
     source=route//TOP if SHARED else route
     outputs=tl.program_id(0)*BN+tl.arange(0,BN)
-    pairs=tl.arange(0,BK//2)
+    local=tl.arange(0,BK//2)
     row=expert*N+outputs[:,None]
-    valid=valid_expert & (outputs[:,None]<N) & (pairs[None,:]<K//2)
-    packed=tl.load(W+row*(K//2)+pairs[None,:],valid,other=0).to(tl.int32)
-    scale=tl.load(S+row*(K//32)+pairs[None,:]//16,valid,other=127).to(tl.int32)
-    low=_value(packed & 15,scale)
-    high=_value(packed >> 4,scale)
-    even=tl.load(X+source*K+2*pairs,pairs<K//2,other=0).to(tl.float32)
-    odd=tl.load(X+source*K+2*pairs+1,pairs<K//2,other=0).to(tl.float32)
-    result=tl.sum(low*even[None,:]+high*odd[None,:],1)
+    accumulator=tl.full((BN,BK//2),0,tl.float32)
+    for offset in range(tl.cdiv(K,BK)):
+        pairs=offset*(BK//2)+local
+        valid=valid_expert & (outputs[:,None]<N) & (pairs[None,:]<K//2)
+        packed=tl.load(W+row*(K//2)+pairs[None,:],valid,other=0).to(tl.int32)
+        scale=tl.load(S+row*(K//32)+pairs[None,:]//16,valid,other=127).to(tl.int32)
+        low=_value(packed & 15,scale)
+        high=_value(packed >> 4,scale)
+        even=tl.load(X+source*K+2*pairs,pairs<K//2,other=0).to(tl.float32)
+        odd=tl.load(X+source*K+2*pairs+1,pairs<K//2,other=0).to(tl.float32)
+        accumulator+=low*even[None,:]+high*odd[None,:]
+    result=tl.sum(accumulator,1)
     if HAS_BIAS:
         result+=tl.load(BIAS+expert*N+outputs,valid_expert & (outputs<N),other=0)
     # Internal router indices are bounded by topk; retain memory safety if a
@@ -62,13 +66,17 @@ def _routed(X,W,S,EXPERTS,BIAS,Y,E:tl.constexpr,K:tl.constexpr,N:tl.constexpr,TO
     tl.store(Y+route*N+outputs,result,outputs<N)
 
 
-def routed_linear(x,blocks,scales,selected,bias,shared_input):
+def routed_linear(x,blocks,scales,selected,bias,shared_input,chunked=True):
     experts,outputs=blocks.shape[:2]
     result=torch.empty((selected.numel(),outputs),device=x.device,dtype=torch.float32)
     block=tr.next_power_of_2(x.shape[-1])
-    _routed[(tr.cdiv(outputs,4),selected.numel())](x,blocks,scales,selected,
+    tile=4
+    if chunked and x.shape[-1]>=2048:
+        block=512
+        tile=4 if shared_input else 8
+    _routed[(tr.cdiv(outputs,tile),selected.numel())](x,blocks,scales,selected,
         x if bias is None else bias,result,experts,x.shape[-1],outputs,selected.shape[1],
-        shared_input,bias is not None,block,4,num_warps=4,enable_fp_fusion=False)
+        shared_input,bias is not None,block,tile,num_warps=4,enable_fp_fusion=False)
     return result
 
 

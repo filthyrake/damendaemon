@@ -24,7 +24,7 @@ def unpack(blocks,scales,dtype=torch.float32):
     return native(blocks,scales,shape,dtype)
 
 
-def routed_linear(x,blocks,scales,selected,bias=None,shared_input=True):
+def routed_linear(x,blocks,scales,selected,bias=None,shared_input=True,*,chunked=True):
     """Project only GPU-selected experts; never expand the complete model."""
     shape=validate(blocks,scales)
     if (len(shape)!=3 or x.device.type!='cuda' or x.ndim!=2 or x.dtype!=torch.float32
@@ -37,4 +37,4 @@ def routed_linear(x,blocks,scales,selected,bias=None,shared_input=True):
             or bias.device!=x.device or not bias.is_contiguous()):
         raise ValueError('MXFP4 expert bias must be contiguous FP32 [experts,outputs]')
     from .mxfp4_kernels import routed_linear as native
-    return native(x,blocks,scales,selected,bias,shared_input)
+    return native(x,blocks,scales,selected,bias,shared_input,chunked)

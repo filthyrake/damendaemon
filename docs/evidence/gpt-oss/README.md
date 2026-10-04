@@ -65,3 +65,9 @@ prompts through streaming, cancellation, batching and hot swapping). Exact FP16
 unpacking across all format values and compensated products at safe-range
 boundaries are recorded in `mxfp4-fp16-matrix-a2.json`. These supersede the
 initial routed-prefill performance, while preserving that baseline for comparison.
+
+The `decode/` reports qualify the subsequent smaller packed reduction tiles:
+compiler register counts, exact format and matrix checks, 72 independent model
+checks, and alternating full HTTP requests using separate baseline/optimized
+CUDA graph sets. Reduction order changes, so numerical reference gates and
+exact generated-response checks are both retained.

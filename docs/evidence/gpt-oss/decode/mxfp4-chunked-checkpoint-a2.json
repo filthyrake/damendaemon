@@ -1,0 +1,126 @@
+{
+  "passed": true,
+  "repository": "openai/gpt-oss-20b",
+  "revision": "6cee5e81ee83917806bbde320786a8fb61efebee",
+  "gpu": "NVIDIA A2",
+  "rows": [
+    {
+      "layer": 0,
+      "projection": "gate_up_proj",
+      "checkpoint_experts": [
+        0,
+        31
+      ],
+      "scale_min": 118,
+      "scale_max": 125,
+      "max_absolute_error": 1.0728836059570312e-06,
+      "relative_rms": 9.92269733046669e-08,
+      "passed": true
+    },
+    {
+      "layer": 0,
+      "projection": "down_proj",
+      "checkpoint_experts": [
+        0,
+        31
+      ],
+      "scale_min": 117,
+      "scale_max": 128,
+      "max_absolute_error": 5.7220458984375e-06,
+      "relative_rms": 1.1943869537844876e-07,
+      "passed": true
+    },
+    {
+      "layer": 11,
+      "projection": "gate_up_proj",
+      "checkpoint_experts": [
+        0,
+        31
+      ],
+      "scale_min": 115,
+      "scale_max": 125,
+      "max_absolute_error": 9.5367431640625e-07,
+      "relative_rms": 9.027140634998432e-08,
+      "passed": true
+    },
+    {
+      "layer": 11,
+      "projection": "down_proj",
+      "checkpoint_experts": [
+        0,
+        31
+      ],
+      "scale_min": 119,
+      "scale_max": 133,
+      "max_absolute_error": 7.62939453125e-05,
+      "relative_rms": 1.1238853403483517e-07,
+      "passed": true
+    },
+    {
+      "layer": 23,
+      "projection": "gate_up_proj",
+      "checkpoint_experts": [
+        0,
+        31
+      ],
+      "scale_min": 116,
+      "scale_max": 125,
+      "max_absolute_error": 1.9073486328125e-06,
+      "relative_rms": 9.805195588796778e-08,
+      "passed": true
+    },
+    {
+      "layer": 23,
+      "projection": "down_proj",
+      "checkpoint_experts": [
+        0,
+        31
+      ],
+      "scale_min": 126,
+      "scale_max": 134,
+      "max_absolute_error": 0.000244140625,
+      "relative_rms": 1.1090211415876183e-07,
+      "passed": true
+    }
+  ],
+  "timings": {
+    "packed_native": {
+      "median_ms": 1.4402234883164056,
+      "milliseconds": [
+        1.6331759979948401,
+        1.551498004118912,
+        1.4514309877995402,
+        1.4048699958948418,
+        1.4020380040165037,
+        1.5591359988320619,
+        1.4845669938949868,
+        1.4615170075558126,
+        1.429015988833271,
+        1.411245990311727,
+        1.3952879962744191,
+        1.387458003591746
+      ]
+    },
+    "preselected_fp32": {
+      "median_ms": 1.6447489979327656,
+      "milliseconds": [
+        1.6537269984837621,
+        1.6461640043416992,
+        1.6452279960503802,
+        1.6548660059925169,
+        1.6418410086771473,
+        1.6439500031992793,
+        1.6407600051024929,
+        1.6506579995620996,
+        1.6417790029663593,
+        1.6377819993067533,
+        1.6538169875275344,
+        1.644269999815151
+      ]
+    },
+    "packed_full_expert_bank_bytes": 282009600,
+    "expanded_only_four_experts_bytes": 265420800,
+    "note": "One actual first-layer gate projection, one input and four routes. Baseline already has only selected FP32 expert weights resident; no model-generation speed claim."
+  },
+  "reference": "Independent CPU float64 format decoding and products on real checkpoint tensors"
+}

@@ -1169,3 +1169,38 @@ prefill and bounded token-count buckets. `DLLM_GPT_OSS_PREFILL=routed` retains t
 baseline for diagnosis. This comparison changes expert execution arithmetic
 from FP32 reductions to compensated products; it is not a bitwise-logit claim,
 and it is not a comparison with another engine.
+
+### GPT-OSS packed decode reductions
+
+The default routed kernel now reduces 512 input columns at a time for widths
+of at least 2048, using four output rows for shared gate inputs and eight for
+per-route down inputs. The original full-width path remains available internally
+for controlled comparisons. A2 compiler measurements show 188–189 registers
+for the full-width tile versus 80/128 for the selected smaller tiles, with zero
+spills in either case. Narrowing byte offsets did not provide consistent gains
+and was not retained. The actual first-layer packed gate projection improves
+from 2.217 ms to 1.440 ms; its preselected expanded FP32 baseline is 1.645 ms.
+
+All exhaustive format/activation checks, real checkpoint projection checks and
+72 full-model CPU reference checks pass after changing the reduction order.
+Out-of-range int64 expert IDs remain masked, including values that would wrap
+into valid indices if narrowed. CPU/HTTP regression suite: 222 passing tests.
+
+Matched A2 complete HTTP requests, same resident model, grouped prefill,
+32 output tokens, four alternating warmed rounds. Each path has its own CUDA
+capture; both graph sets share the same weights/KV. Responses and usage match:
+
+| Prompt tokens | Concurrent requests | Full reduction seconds | Smaller reduction seconds |
+|---|---:|---:|---:|
+| 5 | 1 | 3.228 | 2.149 |
+| 32 | 1 | 3.547 | 2.614 |
+| 129 | 1 | 3.766 | 2.835 |
+| 32 | 2 | 6.659 | 4.813 |
+
+Seconds measure wall time until all requests complete. Single-request decode
+increases from approximately 10.9–11.0 to 16.3 tokens/s; this excludes prompt
+processing. Full-request latency decreases 25–33% in these cases. This is an
+internal matched A/B, not vLLM/llama.cpp parity. Evidence and individual samples:
+[decode qualification](evidence/gpt-oss/decode/). Reproduce with
+`scripts/probe_mxfp4_chunks.py`, `scripts/replay_gpt_oss.py`, and
+`scripts/benchmark_gpt_oss_decode.py`.

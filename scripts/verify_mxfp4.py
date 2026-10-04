@@ -85,6 +85,9 @@ def main():
         bad=selected.clone();bad[0,0]=-1;bad[0,1]=experts
         invalid=routed_linear(xb,wb,sb,bad.cuda(),bb,False)
         assert torch.isnan(invalid[:2]).all()
+        bad[0,0]=1<<32;bad[0,1]=-(1<<32)
+        invalid=routed_linear(xb,wb,sb,bad.cuda(),bb,False)
+        assert torch.isnan(invalid[:2]).all()
         rows.append({'case':'graph_and_invalid_route_bounds','live_expert_replay':True,'invalid_routes_nan':True})
     print(json.dumps({'passed':True,'gpu':torch.cuda.get_device_name(),'torch':str(torch.__version__),
         'rows':rows,'reference':'Independent CPU float64 E2M1 table/ldexp and matrix products; no inference runtime'},indent=2))
