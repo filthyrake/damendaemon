@@ -1,0 +1,252 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-1.7B/snapshots/70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+  "gpu": "NVIDIA A2",
+  "context": 4096,
+  "optimization": "projection",
+  "rows": [
+    {
+      "prompt_tokens": 512,
+      "completion_tokens": 32,
+      "ordinary_ms": [
+        1422.4865860014688,
+        1430.0820720090996,
+        1435.306685991236,
+        1427.7381879946915
+      ],
+      "optimized_ms": [
+        1076.1565110005904,
+        1075.927279991447,
+        1080.02771800966,
+        1077.5240900111385
+      ],
+      "median_ordinary_ms": 1428.9101300018956,
+      "median_optimized_ms": 1076.8403005058644,
+      "first_token": [
+        {
+          "optimized": false,
+          "seconds": 0.6705179450073047
+        },
+        {
+          "optimized": true,
+          "seconds": 0.32410989100753795
+        },
+        {
+          "optimized": true,
+          "seconds": 0.3247738189966185
+        },
+        {
+          "optimized": false,
+          "seconds": 0.6741878259927034
+        },
+        {
+          "optimized": false,
+          "seconds": 0.67487623100169
+        },
+        {
+          "optimized": true,
+          "seconds": 0.32606445500277914
+        },
+        {
+          "optimized": true,
+          "seconds": 0.32535114299389534
+        },
+        {
+          "optimized": false,
+          "seconds": 0.6766513210022822
+        }
+      ],
+      "peak_allocations": [
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 7407600640
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 7311133696
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 7311133696
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 7407600640
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 7407600640
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 7311133696
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 7311133696
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 7407600640
+        }
+      ],
+      "exact_response": true,
+      "example": {
+        "id": "cmpl-f29b9ca3be1a4a6fba027ada16d1c96b",
+        "object": "text_completion",
+        "created": 1791137406,
+        "model": "a",
+        "choices": [
+          {
+            "index": 0,
+            "text": " 8, drawer 2.\nRecord 31: The parcel is in cabinet 9, drawer 3.\nRecord 32: The parcel is",
+            "logprobs": null,
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 512,
+          "completion_tokens": 32,
+          "total_tokens": 544
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 3.4349941415712237e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.6766513210022822,
+          "total_seconds": 1.4236959200061392,
+          "decode_tokens_per_second": 41.49685312140239
+        }
+      }
+    },
+    {
+      "prompt_tokens": 2048,
+      "completion_tokens": 32,
+      "ordinary_ms": [
+        3632.7685330034,
+        3635.444732994074,
+        3632.200350999483,
+        3640.192828999716
+      ],
+      "optimized_ms": [
+        2598.8950629980536,
+        2597.4003139999695,
+        2600.3564940037904,
+        2601.353714009747
+      ],
+      "median_ordinary_ms": 3634.106632998737,
+      "median_optimized_ms": 2599.625778500922,
+      "first_token": [
+        {
+          "optimized": false,
+          "seconds": 2.6523484970093705
+        },
+        {
+          "optimized": true,
+          "seconds": 1.621727418008959
+        },
+        {
+          "optimized": true,
+          "seconds": 1.6231799080123892
+        },
+        {
+          "optimized": false,
+          "seconds": 2.65504237600544
+        },
+        {
+          "optimized": false,
+          "seconds": 2.6565432689967565
+        },
+        {
+          "optimized": true,
+          "seconds": 1.6258268609963125
+        },
+        {
+          "optimized": true,
+          "seconds": 1.6240029740001773
+        },
+        {
+          "optimized": false,
+          "seconds": 2.6610750179970637
+        }
+      ],
+      "peak_allocations": [
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 7671866368
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 7587988480
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 7587988480
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 7671866368
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 7671866368
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 7587988480
+        },
+        {
+          "optimized": true,
+          "peak_allocated_bytes": 7587988480
+        },
+        {
+          "optimized": false,
+          "peak_allocated_bytes": 7671866368
+        }
+      ],
+      "exact_response": true,
+      "example": {
+        "id": "cmpl-82fd26ff537843a6a8afe7bc4e2287e1",
+        "object": "text_completion",
+        "created": 1791137437,
+        "model": "a",
+        "choices": [
+          {
+            "index": 0,
+            "text": " The parcel is in cabinet 9, drawer 0.\nRecord 120: The parcel is in cabinet 10, drawer 1.\nRecord",
+            "logprobs": null,
+            "finish_reason": "length"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 2048,
+          "completion_tokens": 32,
+          "total_tokens": 2080
+        },
+        "dllm_timing": {
+          "source_tier": "gpu",
+          "activation_seconds": 3.3849937608465552e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton",
+          "weight_quantization": "none",
+          "max_batch_size": 1,
+          "residual_dtype": "float32",
+          "first_token_seconds": 2.6610750179970637,
+          "total_seconds": 3.63548768099281,
+          "decode_tokens_per_second": 31.814036472692397
+        }
+      }
+    }
+  ],
+  "method": "Same resident FP32 policy and FP16 stored matrices; four alternating full HTTP rounds after warmup. Projection compares compensated arithmetic with FP32 weight expansion. Attention above 2048 prompt tokens is optimized only because original full 8K math attention exhausted A2 memory."
+}

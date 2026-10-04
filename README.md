@@ -295,7 +295,8 @@ This retains compact FP16 matrix storage but uses FP32 operations and KV; it
 clears the Qwen3-0.6B long-context numerical gate. The default `standard` path
 remains faster for batched decoding but retains that checkpoint's documented
 accuracy qualification gap. See the measurements in the architecture report.
-The accurate Qwen3 mode uses compensated Tensor Core products for small batches:
+The accurate Qwen3 mode uses compensated Tensor Core products for decode batches
+and longer prompts:
 FP32 activations are split into scaled high/residual FP16 components, with FP32
 accumulation. Both tested Qwen3 sizes pass independent FP32-reference gates;
 this is qualified numerical approximation, not bitwise FP32 equivalence.
@@ -692,3 +693,8 @@ Long CUDA FP32 prompts use fused grouped-query attention to avoid quadratic
 temporary storage. Full 8K Llama prefill now fits the A2; at 2K, measured complete
 HTTP latency drops 23% at the same precision.
 [Reference, memory and request-level evidence](docs/evidence/fp32-attention/README.md).
+
+The higher-precision dense path also uses compensated Tensor Core projections
+for longer prompts. Measured complete HTTP latency drops a further 19–31% on
+the tested Qwen3/Llama cases, with independent reference and exact-output gates.
+[Projection accuracy, memory and full-request measurements](docs/evidence/precise-prefill/README.md).

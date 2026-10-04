@@ -12,11 +12,13 @@ from dllm.speculative import Verifier
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--context',type=int,default=256)
+    p.add_argument('--prompt-tokens',type=int,default=0);args=p.parse_args()
+    if args.prompt_tokens<0 or args.prompt_tokens+32>args.context:p.error('prompt and output must fit context')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
     os.environ['DLLM_DEVICE']='cuda';os.environ['DLLM_SPECULATIVE_TOKENS']='0';torch.set_num_threads(4)
-    runtime=Runtime({'a':args.model},context=256,batch_size=4)
+    runtime=Runtime({'a':args.model},context=args.context,batch_size=4)
     rows=[]
     @torch.inference_mode()
     def baseline(executor,prompt,slot):
@@ -27,6 +29,10 @@ def main():
         with runtime.session('a') as (executor,_,_):
             prompt=executor.model.chat_tokens([{'role':'user','content':'Repeat red blue green ten times.'}],
                 enable_thinking=False if executor.c['model_type']=='qwen3' else None)
+            if args.prompt_tokens:
+                text=''.join(f'Record {i}: The parcel is in cabinet {i%11}, drawer {i%7}.\n' for i in range(args.prompt_tokens))
+                prompt=executor.model.raw_tokens(text)[:args.prompt_tokens]
+                assert len(prompt)==args.prompt_tokens
             for width in (2,4,8):
                 torch.cuda.synchronize();before=torch.cuda.memory_allocated();started=time.perf_counter()
                 verifier=Verifier(executor,width);torch.cuda.synchronize();setup=time.perf_counter()-started
@@ -59,7 +65,11 @@ def main():
                 assert graph_ref() is None and ref() is None
             passed=all(row['exact_tokens'] and (row['mode']!='reject' or row['matched']==0) for row in rows)
             print(json.dumps({'passed':passed,'model':args.model,'gpu':'NVIDIA A2',
-                'compute_dtype':str(executor.compute_dtype),'graph_reclamation':True,'rows':rows},indent=2))
+                'compute_dtype':str(executor.compute_dtype),'residual_dtype':str(executor.residual_dtype),
+                'kv_dtype':str(executor.kv[0].dtype),'matrix_storage_dtype':str(executor.w['head'].dtype),
+                'qwen3_precision':executor.qwen3_precision,'llama_precision':executor.llama_precision,
+                'dense_precision':executor.dense_precision,'context':args.context,'prompt_tokens':len(prompt),
+                'input_kind':'raw' if args.prompt_tokens else 'chat','graph_reclamation':True,'rows':rows},indent=2))
             if not passed:raise SystemExit(1)
     finally:runtime.manage('unload',model='a',release_host=True)
 

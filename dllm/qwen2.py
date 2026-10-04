@@ -408,7 +408,9 @@ class Executor:
                 for _ in range(self.c['num_hidden_layers'])]
 
     def dense_linear(self, x, weight, bias=None):
-        if self.kernels and weight.dtype == torch.float16 and 3 <= x.shape[0] <= 128:
+        # Reuse compensated products at prefill sizes instead of expanding
+        # every stored FP16 matrix to FP32 for each layer.
+        if self.kernels and weight.dtype == torch.float16 and x.shape[0] >= 3:
             from .precise_matmul import linear
             result = linear(x.float(), weight)
             return result if bias is None else result + bias.float()
