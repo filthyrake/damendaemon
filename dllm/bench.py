@@ -15,6 +15,17 @@ from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 
+def llama_context(base_url, expected):
+    """Fail before timing if the comparator silently capped its KV slot context."""
+    with urlopen(base_url.rstrip('/') + '/props', timeout=10) as response:
+        props = json.load(response)
+    actual = props.get('default_generation_settings', {}).get('n_ctx')
+    if type(actual) is not int or actual != expected:
+        raise RuntimeError(f'llama.cpp slot context mismatch: requested {expected}, actual {actual}')
+    return {'requested_context': expected, 'actual_context': actual,
+            'total_slots': props.get('total_slots'), 'model_ftype': props.get('model_ftype')}
+
+
 @dataclass
 class Result:
     index: int

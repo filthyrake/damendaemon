@@ -1,0 +1,41 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/baselines/llama-cuda-build/bin/llama-server",
+    "-m",
+    "baselines/bloom560m-f32.gguf",
+    "--alias",
+    "a",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "43169",
+    "-ngl",
+    "99",
+    "-c",
+    "8192",
+    "-np",
+    "4",
+    "--kv-unified-per-slot",
+    "2048",
+    "--cache-type-k",
+    "f32",
+    "--cache-type-v",
+    "f32",
+    "--flash-attn",
+    "on",
+    "--cache-ram",
+    "0",
+    "--jinja",
+    "--override-kv",
+    "bloom.context_length=int:2048"
+  ],
+  "model": {
+    "revision": "ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971",
+    "path": "/home/damen/dllm-dev/models/bloom560m",
+    "repo_id": "bigscience/bloom-560m"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_DEVICE": "cuda"
+  }
+}

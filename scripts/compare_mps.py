@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 from urllib.request import urlopen
+from dllm.bench import llama_context
 
 
 def main():
@@ -23,6 +24,7 @@ def main():
     p.add_argument('--engines', nargs='+', choices=('dllm', 'llama.cpp'), default=['dllm', 'llama.cpp'])
     p.add_argument('--concurrencies', nargs='+', type=int, choices=range(1,9), default=[1,2,4])
     p.add_argument('--raw', action='store_true')
+    p.add_argument('--llama-override-kv', action='append', default=[], help='explicit GGUF metadata override KEY=TYPE:VALUE')
     p.add_argument('--prompt-token-ids')
     args = p.parse_args()
     output = Path(args.output)
@@ -39,7 +41,8 @@ def main():
             command = [args.llama_server, '-m', args.gguf, '--alias', 'a', '--host', '127.0.0.1',
                        '--port', str(port), '-ngl', '999', '-np', '4', '-c', str(args.context*4),
                        '--kv-unified-per-slot', str(args.context), '-ctk', 'f32', '-ctv', 'f32',
-                       '--no-cache-prompt', '--cache-ram', '0', '-t', '4']
+                       '--no-cache-prompt', '--cache-ram', '0', '-t', '4',
+                       *[part for value in args.llama_override_kv for part in ('--override-kv',value)]]
         (output / f'compare-mps-{engine}-command.json').write_text(json.dumps({
             'command': command, 'device': 'Apple M4 GPU', 'weights': args.weight_dtype, 'kv': 'float32',
             'context_per_slot': args.context, 'cpu_threads': 4, 'dllm_backend': env.get('DLLM_KERNELS', 'auto')}, indent=2))
@@ -59,6 +62,8 @@ def main():
                         time.sleep(.25)
                 else:
                     raise TimeoutError(f'{engine} startup timed out')
+                if engine == 'llama.cpp':
+                    (output / f'compare-mps-{engine}-context.json').write_text(json.dumps(llama_context(base, args.context), indent=2))
                 for concurrency in args.concurrencies:
                     with (output / f'compare-mps-{engine}-c{concurrency}.json').open('w') as out:
                         subprocess.run([sys.executable, 'scripts/compare_llama.py', base+'/v1',

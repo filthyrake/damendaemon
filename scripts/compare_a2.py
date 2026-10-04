@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 from urllib.request import urlopen
+from dllm.bench import llama_context
 
 
 def main():
@@ -24,8 +25,10 @@ def main():
     parser.add_argument('--startup-timeout', type=int, default=900)
     parser.add_argument('--engines', nargs='+', choices=('dllm', 'vllm', 'llama.cpp'), default=['dllm', 'vllm'])
     parser.add_argument('--gguf', help='matching checkpoint and precision for llama.cpp')
+    parser.add_argument('--llama-kv-dtype', choices=('f16','f32'), default='f16', help='match the selected runtime KV precision')
     parser.add_argument('--thinking', choices=('auto', 'on', 'off'), default='auto')
     parser.add_argument('--raw', action='store_true')
+    parser.add_argument('--llama-override-kv', action='append', default=[], help='explicit GGUF metadata override KEY=TYPE:VALUE')
     parser.add_argument('--prompt-token-ids')
     parser.add_argument('--host-gib', type=float, default=8)
     parser.add_argument('--dtype', choices=('half','float'), default='half', help='vLLM model arithmetic/storage precision')
@@ -54,8 +57,9 @@ def main():
                        '-m', args.gguf, '--alias', 'a', '--host', '127.0.0.1', '--port', str(port),
                        '-ngl', '99', '-c', str(args.context*4), '-np', '4',
                        '--kv-unified-per-slot', str(args.context),
-                       '--cache-type-k', 'f16', '--cache-type-v', 'f16',
-                       '--flash-attn', 'on', '--cache-ram', '0', '--jinja']
+                       '--cache-type-k', args.llama_kv_dtype, '--cache-type-v', args.llama_kv_dtype,
+                       '--flash-attn', 'on', '--cache-ram', '0', '--jinja',
+                       *[part for value in args.llama_override_kv for part in ('--override-kv',value)]]
         else:
             venv = root / 'baselines/vllm-venv/bin'
             command = [str(venv / 'vllm'), 'serve', model['path'], '--served-model-name', 'a',
@@ -89,6 +93,8 @@ def main():
                         time.sleep(.5)
                 else:
                     raise TimeoutError(f'{engine} startup timed out')
+                if engine == 'llama.cpp':
+                    (root / f'compare-{engine}-{args.label}-context.json').write_text(json.dumps(llama_context(base, args.context), indent=2))
                 for concurrency in (1, 2, 4):
                     name = f'compare-{engine}-{args.label}-c{concurrency}.json'
                     with (root / name).open('w') as out:

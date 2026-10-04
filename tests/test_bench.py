@@ -5,12 +5,19 @@ import sys
 import threading
 import unittest
 
-from dllm.bench import Result, events, request_one, summarize
+from dllm.bench import Result, events, request_one, summarize, llama_context
 
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
+
+    def do_GET(self):
+        body = json.dumps({'default_generation_settings': {'n_ctx': 1024}, 'total_slots': 4}).encode()
+        self.send_response(200)
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def do_POST(self):
         request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
@@ -50,6 +57,12 @@ class BenchTests(unittest.TestCase):
 
     def request(self, model):
         return request_one(self.url, model, "hello", 8, 5, 0)
+
+    def test_comparator_context_is_verified_not_assumed(self):
+        base = self.url.removesuffix('/v1')
+        self.assertEqual(llama_context(base, 1024)['actual_context'], 1024)
+        with self.assertRaisesRegex(RuntimeError, 'requested 2048, actual 1024'):
+            llama_context(base, 2048)
 
     def test_stream_usage_is_not_chunk_count(self):
         result = self.request("normal")

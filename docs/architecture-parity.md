@@ -960,8 +960,10 @@ pass on A2 and Apple M4. Quantization, prefix caching and interleaved prefill re
 unsupported. The default 2048 context when absent from the legacy configuration
 is a conservative qualification boundary, not a claim of length extrapolation.
 
-Matched BLOOM M4 FP32 comparison: same pinned checkpoint and explicit token IDs,
-2048 context, FP32 KV, 64 output tokens and five measured warm rounds. The
+Initial BLOOM M4 FP32 comparison: same pinned checkpoint and explicit token IDs,
+FP32 KV, 64 output tokens and five measured warm rounds. **This initial comparison
+is not context-matched:** dllm used 2048 slots, but llama.cpp silently capped its
+slots at 1024 based on converter metadata. Corrected measurements follow separately. The
 llama.cpp build is the existing pinned comparator; the GGUF is an FP32 conversion
 of the same safetensors checkpoint. Throughput includes prompt processing.
 
@@ -982,5 +984,40 @@ cache slots separate, bounds total temporary tokens to one configured context,
 and computes the vocabulary projection only for each sequence's last row.
 Prefill attention consumes current K/V views directly, avoiding full-cache copies.
 This cuts four-request TTFT from the native-attention-only 253.84 ms to 102.30 ms,
-but still trails llama.cpp's 58.64 ms. These are matched observations, not a
-claim of general parity. The packed-prefill A2 recheck follows separately.
+but still trails llama.cpp's 58.64 ms. These initial observations do not establish matched performance parity.
+The packed-prefill A2 recheck passes 84/84 independent checks (worst relative
+RMS 0.000008169), and its live completion-service proof also passes.
+
+Corrected, **context-matched** BLOOM comparisons supersede the initial
+llama.cpp numbers above. Both servers' startup logs confirm four slots with
+2048 tokens each. The explicit GGUF metadata override is
+`bloom.context_length=int:2048`; no weights or tokenizer were modified. The
+converter's default used hidden size when `seq_length` was absent. Both benchmark
+launchers now query `/props` and fail before timing if actual slot context differs
+from the requested value, with a regression test for the observed 1024/2048 case.
+
+Same pinned FP32 weights, FP32 KV, ten explicit prompt token IDs, 64 output
+tokens, five warm measured rounds, isolated GPU runs:
+
+| GPU | Concurrent requests | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+|---|---:|---:|---:|---:|---:|
+| M4 | 1 | 37.07 | 36.50 | 32.92 | 34.44 |
+| M4 | 2 | 70.49 | 57.13 | 42.61 | 42.55 |
+| M4 | 4 | 120.56 | 82.55 | 102.30 | 58.79 |
+| A2 | 1 | 69.13 | 46.84 | 28.14 | 25.62 |
+| A2 | 2 | 121.93 | 74.15 | 36.55 | 33.25 |
+| A2 | 4 | 213.81 | 123.63 | 79.84 | 90.07 |
+
+These results establish useful throughput for this checkpoint/workload, while
+preserving the remaining M4 four-request first-token latency deficit. A2 packed
+prefill improves TTFT from 33.40/61.12/130.05 ms to 28.14/36.55/79.84 ms. The
+A2 vLLM 0.30 FP32 baseline never became ready: its engine stayed GPU-busy with
+no new progress after warmup for roughly ten minutes. Only that owned process
+group was stopped, and its startup log/command/incomplete-result record are
+preserved. There is **no valid vLLM BLOOM throughput result**.
+
+The llama.cpp source pin is `836d57176dc699a726c55418e4f96b8ca628e1bf`.
+The M4 binary reports build 11381 at that commit; the A2 archive-built binary
+reports commit unknown, so its provenance relies on the existing pinned source
+archive/build record. Comparator commands and raw trials are committed. The A30
+workload was left running; all NVIDIA inference work selected the A2 UUID.
