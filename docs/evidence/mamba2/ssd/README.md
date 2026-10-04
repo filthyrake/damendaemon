@@ -6,7 +6,7 @@ chunks of at least 128 tokens with the qualified 130M geometry (inner1536,
 head64, state128). Short prompts, decode and other shapes retain recurrent scan.
 The default remains disabled while further performance work continues.
 
-The independent kernel computes causal interactions within 16-token blocks and
+The independent kernel computes causal interactions within 32-token blocks (initial evidence below used 16) and
 carries FP32 state between blocks. Inputs, state and accumulation remain FP32;
 matrix products use Triton's `tf32x3` decomposition. This is a declared arithmetic
 change, not a claim of bitwise equality with the serial operation order. It does
@@ -54,3 +54,18 @@ versus 1.50 ms. Counterbalanced initial measurements also favored cuBLAS. These
 are isolated, repeated-matrix device tests, not additional serving benchmarks.
 The measurements are retained under `projections/` to avoid repeating a failed
 optimization or treating use of Tensor Cores as evidence of improved performance.
+
+
+## 32-token block qualification
+
+The selected SSD block is now32 tokens. A64-token experiment exceeded A2 shared
+memory (163840 bytes required,101376 available), so it is not used. The32-token
+kernel passes the same closed-form/random/state checks; both FP32 and Q8 pass139
+full-reference checks through2048, plus chunk256/prefix and HTTP restoration.
+Evidence is in `block32/`. No correctness threshold changed.
+
+On the same pinned FP32,1536-input,32-output,context2048 serving workload,
+c1/c2/c4 throughput is90.99/99.54/113.62 tokens/s and median first text
+232.19/349.66/921.05 ms. Every trial's text agrees with the16-token run and
+upstream comparisons above. This is another5-6% throughput improvement; the
+long-prompt vLLM gap remains. Independent GPU jobs were serialized on A2.

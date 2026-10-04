@@ -44,6 +44,6 @@ def scan(x,gate,dt,bias,a,d,state,slots,head_dim,reset):
         from .mamba2_kernels import scan as recurrent
         return recurrent(x,gate,dt,bias,a,d,state,slots,head_dim,reset)
     out=torch.empty_like(gate)
-    _ssd[(batch,inner//head_dim)](x,gate,dt,bias,a,d,state,slots,out,inner,length,128,64,reset,16,
+    _ssd[(batch,inner//head_dim)](x,gate,dt,bias,a,d,state,slots,out,inner,length,128,64,reset,32,
         num_warps=4,num_stages=1,enable_fp_fusion=False)
     return out
