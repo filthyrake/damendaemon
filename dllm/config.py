@@ -8,11 +8,12 @@ def rotary_scaling(value):
     if not isinstance(value, dict):
         raise ValueError('rotary scaling must be an object')
     kind = value.get('rope_type', value.get('type'))
-    if kind not in ('linear', 'llama3'):
-        raise ValueError('supported rotary scaling types are linear and llama3')
+    if kind not in ('linear', 'llama3', 'yarn'):
+        raise ValueError('supported rotary scaling types are linear, llama3 and yarn')
     common = {'rope_type', 'type', 'factor'}
     extra = {'low_freq_factor', 'high_freq_factor', 'original_max_position_embeddings'}
-    if set(value) - (common | (extra if kind == 'llama3' else set())):
+    yarn_fields = {'original_max_position_embeddings', 'attention_factor', 'beta_fast', 'beta_slow'}
+    if set(value) - (common | (extra if kind == 'llama3' else yarn_fields if kind == 'yarn' else set())):
         raise ValueError('unsupported rotary scaling fields')
     if 'type' in value and value['type'] != kind:
         raise ValueError('conflicting rotary scaling types')
@@ -28,6 +29,16 @@ def rotary_scaling(value):
         original = value.get('original_max_position_embeddings')
         if type(original) is not int or original <= 0:
             raise ValueError('original context must be a positive integer')
+    if kind == 'yarn':
+        for name in ('attention_factor', 'beta_fast', 'beta_slow'):
+            number = value.get(name, 1)
+            if type(number) not in (int, float) or not math.isfinite(number) or number <= 0:
+                raise ValueError(f'{name} must be finite and positive')
+        if value.get('beta_fast', 32) < value.get('beta_slow', 1):
+            raise ValueError('YaRN fast rotation bound must not be below slow bound')
+        original = value.get('original_max_position_embeddings')
+        if 'original_max_position_embeddings' in value and (type(original) is not int or original <= 0):
+            raise ValueError('original context must be a positive integer')
     return {**value, 'rope_type':kind}
 
 
@@ -40,6 +51,10 @@ def eos_ids(value):
     return set(values)
 
 def decoder_config(config):
+    scaling = config.get('rope_scaling')
+    if (isinstance(scaling, dict) and scaling.get('rope_type', scaling.get('type')) == 'yarn'
+            and config.get('model_type') not in ('qwen2', 'qwen3', 'llama', 'mistral')):
+        raise ValueError('YaRN is currently supported only for Qwen2/Qwen3/Llama/Mistral')
     if config.get('model_type') == 'gpt2':
         return gpt2_config(config)
     if config.get('model_type') == 'olmoe':
@@ -77,7 +92,15 @@ def decoder_config(config):
     if type(c['head_dim']) is not int or c['head_dim'] <= 0 or c['head_dim'] % 2:
         raise ValueError('head_dim must be a positive even integer')
     c.setdefault('rope_theta', 10000.0)
+    for name in ('rope_theta', 'rms_norm_eps'):
+        number = c.get(name)
+        if type(number) not in (int, float) or not math.isfinite(number) or number <= 0:
+            raise ValueError(f'{name} must be finite and positive')
     c['rope_scaling'] = rotary_scaling(c.get('rope_scaling'))
+    scaling = c['rope_scaling']
+    if scaling and scaling['rope_type'] == 'yarn':
+        if c['rope_theta'] <= 1 or scaling.get('original_max_position_embeddings', 1) > c['max_position_embeddings']:
+            raise ValueError('YaRN needs a base above one and an original context no larger than the maximum')
     if c['rope_theta'] <= 0 or c.get('rms_norm_eps', 0) <= 0:
         raise ValueError('RoPE base and normalization epsilon must be positive')
     return c

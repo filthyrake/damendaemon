@@ -415,3 +415,14 @@ checkpoint qualification. Four-bit quantization is lossy: on our small authored
 74.3% for Q4 versus 95.3% for Q8. This is not a broad quality evaluation.
 Q4 remains opt-in and CUDA-only. This is on-load conversion from safetensors;
 GGUF, AWQ and GPTQ checkpoint import are still unsupported.
+
+### Static YaRN configurations
+
+Dense Qwen2/Qwen3/Llama/Mistral checkpoints may use static `rope_scaling` with
+`rope_type: yarn`, `factor`, and optional `original_max_position_embeddings`,
+`beta_fast`, `beta_slow` and `attention_factor`. On CUDA this selects FP32
+arithmetic/KV with FP16 stored matrices to meet the numerical gate, so budget
+for the larger KV cache. MPS retains its FP32 execution policy. Full and chunked
+model execution is verified on A2/M4 using an explicit Qwen2 configuration
+fixture; this does not establish trained 128K-context quality. Dynamic NTK and
+LongRoPE remain unsupported.

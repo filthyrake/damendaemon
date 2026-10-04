@@ -10,8 +10,8 @@ Checkpoint: `unsloth/Llama-3.2-1B-Instruct`, immutable revision
 qualification applies to that exact checkpoint and its template.
 
 The shared executor now implements standard, linear-scaled, and Llama 3
-piecewise rotary frequencies. Unsupported dynamic, YaRN, and LongRoPE schedules
-still fail before loading weights. The frequency implementation has independent
+piecewise rotary frequencies. Dynamic and LongRoPE schedules still fail before loading weights; static
+YaRN support and its separate precision policy are qualified below. The frequency implementation has independent
 Transformers checks for head sizes 64/96/128 and positions through 131071;
 that frequency check does not establish end-to-end 128K inference support.
 
@@ -791,3 +791,35 @@ resident models, mixed concurrent aliases, four-request same-model batching,
 reasoning-template controls, streaming disconnect recovery and long prompts.
 These results qualify execution of independently quantized weights; they do
 not replace the original-weight drift study or pending Mistral timing results.
+
+## Static YaRN rotary scaling
+
+Issue #5. Dense Qwen2/Qwen3/Llama/Mistral configuration now accepts static YaRN
+frequency interpolation and attention scaling, including explicit original
+context, fast/slow rotation bounds and attention factor. The method is described
+by [Peng et al., YaRN](https://arxiv.org/abs/2309.00071). The serving implementation
+is independent; Transformers is used only for validation. Dynamic NTK,
+LongRoPE, partial-head YaRN and custom mscale variants remain unsupported.
+
+Twenty-one table cases on CPU and M4 cover head dimensions 64/96/128, standard,
+linear, Llama3 and four YaRN configurations, with positions through 131071.
+Both frequencies and attention-scaled sine/cosine tables match Transformers.
+These table checks alone are not a 128K model qualification.
+
+The full execution fixture uses unchanged pinned Qwen2.5-0.5B weights with a
+separate configuration: original context 512, maximum 2048, YaRN factor 4.
+`scripts/make_yarn_fixture.py` reproduces it without modifying source weights.
+This deliberately exercises the scaling boundary with small memory; it is not
+a pretrained long-context checkpoint or a long-context quality claim.
+
+A2 and M4 each pass 82/82 independent CPU FP32 eager-reference checks, in both
+full prefill and 127-token chunks, with greedy agreement, RMS below 1%, and
+absolute error below 0.5. Worst RMS is 0.00001745 on A2 and 0.00001680 on M4.
+A2 YaRN uses FP32 arithmetic/KV and FP16 matrices through the existing split
+Tensor Core/native GEMV path. M4 retains its existing FP32 execution policy.
+
+The initial CUDA FP16 path failed the unchanged gate: worst RMS 0.01019 against
+FP32 and 0.01357 against matched FP16 eager execution. Both failed reports are
+retained alongside successful evidence in `evidence/rotary/`. That path is not
+enabled for YaRN. The accuracy policy has memory/performance costs; no YaRN
+throughput parity or trained long-context quality claim is made here.

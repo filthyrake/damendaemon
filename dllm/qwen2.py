@@ -23,7 +23,7 @@ from tokenizers import Tokenizer
 from jinja2.sandbox import ImmutableSandboxedEnvironment
 
 from .config import decoder_config, eos_ids
-from .rotary import inverse_frequencies
+from .rotary import inverse_frequencies, attention_factor
 
 
 def weight_files(path):
@@ -224,6 +224,13 @@ class Executor:
                 raise ValueError('DLLM_QWEN3_PRECISION must be standard or float32')
             if self.qwen3_precision != 'standard':
                 self.compute_dtype = torch.float32
+        self.dense_precision = self.qwen3_precision
+        if self.device == 'cuda' and (c.get('rope_scaling') or {}).get('rope_type') == 'yarn':
+            # The FP16 YaRN path fails the independent logit gate. Reuse the
+            # qualified FP32 arithmetic path while retaining FP16 matrices.
+            self.dense_precision = 'float32'
+            self.compute_dtype = torch.float32
+            self.precise = self.rotary_precise = True
         self.residual_dtype = torch.float32 if self.precise else self.compute_dtype
         selected = kernels or os.environ.get("DLLM_KERNELS", "auto")
         if selected not in ("auto", "torch", "triton", "metal"):
@@ -274,7 +281,7 @@ class Executor:
         def device_dtype(name, tensor):
             if tensor.dtype in (torch.int8,torch.uint8):
                 return tensor.dtype
-            if self.qwen3_precision != 'standard' and tensor.ndim == 2:
+            if self.dense_precision != 'standard' and tensor.ndim == 2:
                 return torch.float16
             if c['model_type'] == 'olmoe' and tensor.ndim == 2:
                 return torch.float16
@@ -300,8 +307,8 @@ class Executor:
                 dtype = device_dtype(name, tensor)
                 copies[id(tensor)] = tensor.to(device=self.device, dtype=dtype)
             self.w[name] = copies[id(tensor)]
-        if self.qwen3_precision != 'standard':
-            self.linear = self.qwen3_linear
+        if self.dense_precision != 'standard':
+            self.linear = self.dense_linear
         self.quant_linear = None
         if model.scales:
             from .quantization import Linear
@@ -313,7 +320,8 @@ class Executor:
         inv = inverse_frequencies(c, self.device)
         angles = torch.outer(torch.arange(self.context, device=self.device, dtype=torch.float32), inv)
         angles = torch.cat((angles, angles), dim=-1)
-        self.cos, self.sin = angles.cos().to(self.residual_dtype), angles.sin().to(self.residual_dtype)
+        scale = attention_factor(c)
+        self.cos, self.sin = (angles.cos()*scale).to(self.residual_dtype), (angles.sin()*scale).to(self.residual_dtype)
         self.arange = torch.arange(self.context, device=self.device)
         self.token = torch.zeros(1, dtype=torch.long, device=self.device)
         self.position = torch.zeros(1, dtype=torch.long, device=self.device)
@@ -344,7 +352,7 @@ class Executor:
                 self.graph_next = self.graph_logits.argmax(dim=-1)
         self.length = 0
 
-    def qwen3_linear(self, x, weight, bias=None):
+    def dense_linear(self, x, weight, bias=None):
         if self.kernels and weight.dtype == torch.float16 and 3 <= x.shape[0] <= 128:
             from .precise_matmul import linear
             result = linear(x.float(), weight)

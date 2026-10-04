@@ -48,7 +48,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_unsupported_variants_fail_before_weight_loading(self):
         for changes in ({'model_type': 'qwen3_5'}, {'model_type': 'qwen3_moe'},
-                        {'rope_scaling': {'type': 'yarn', 'factor': 2}},
+                        {'rope_scaling': {'type': 'dynamic', 'factor': 2}},
                         {'partial_rotary_factor': .25}, {'mlp_bias': True},
                         {'attention_bias': True}, {'layer_types': ['linear_attention']},
                         {'use_sliding_window': True}, {'num_key_value_heads': 3},
@@ -167,3 +167,18 @@ class Gpt2ConfigTests(unittest.TestCase):
                        {'layer_norm_epsilon':float('nan')},{'architectures':['GPT2Model']}):
             with self.subTest(change=change),self.assertRaises(ValueError):
                 decoder_config(self.config(**change))
+
+
+class YarnConfigTests(unittest.TestCase):
+    def test_yarn_validation_and_attention_scaling(self):
+        from dllm.rotary import attention_factor
+        config = ConfigTests().config(rope_scaling={'type':'yarn', 'factor':4})
+        parsed = decoder_config(config)
+        self.assertGreater(attention_factor(parsed), 1)
+        self.assertEqual(attention_factor({**parsed, 'rope_scaling':{**parsed['rope_scaling'], 'attention_factor':1.2}}), 1.2)
+        for change in ({'factor':0}, {'beta_fast':0}, {'beta_slow':64}, {'attention_factor':float('nan')},
+                       {'original_max_position_embeddings':False}, {'original_max_position_embeddings':None}, {'mscale':1}, {'truncate':True}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                decoder_config({**config, 'rope_scaling':{**config['rope_scaling'], **change}})
+        for change in ({'rope_theta':float('nan')}, {'rope_theta':True}, {'rope_theta':1}, {'max_position_embeddings':16, 'rope_scaling':{'type':'yarn', 'factor':2, 'original_max_position_embeddings':32}}):
+            with self.assertRaises(ValueError):decoder_config({**config, **change})
