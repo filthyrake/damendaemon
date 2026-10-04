@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 from dllm.sampling import Sampling,Sampler
 from dllm.scheduler import BatchedRuntime,Pending
-from dllm.speculative import configured_width,eligible,propose
+from dllm.speculative import configured_width,eligible,propose,create
 
 
 class SpeculativeTests(unittest.TestCase):
@@ -17,6 +17,25 @@ class SpeculativeTests(unittest.TestCase):
         self.assertEqual(propose([1,2,3,4,1,2],2),[3,4])
         self.assertEqual(propose([1,2,3,4],3),[])
         self.assertEqual(propose([1,2,3]+[8]*1024+[1,2],3),[])
+
+    def test_llama_verifier_requires_explicit_qualified_precision(self):
+        executor=SimpleNamespace(device='cuda',kernels=object(),c={'model_type':'llama'},
+            llama_precision='mixed',model=SimpleNamespace(scales={}),context=128)
+        with patch.dict(os.environ,{'DLLM_SPECULATIVE_TOKENS':'8'}),patch('dllm.speculative.Verifier') as verifier:
+            for policy in ('standard','mixed'):
+                executor.llama_precision=policy
+                self.assertIsNone(create(executor,True))
+            verifier.assert_not_called()
+            executor.llama_precision='float32'
+            self.assertIs(create(executor,True),verifier.return_value)
+            verifier.assert_called_once_with(executor,8)
+            verifier.reset_mock()
+            executor.pool=object()
+            self.assertIsNone(create(executor,True))
+            del executor.pool
+            executor.model.scales={'weight':1}
+            self.assertIsNone(create(executor,True))
+            verifier.assert_not_called()
 
     def test_sampling_constraints_and_tools_are_ineligible(self):
         r=Pending('a',[],16);self.assertTrue(eligible(r))

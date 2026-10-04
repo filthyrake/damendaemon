@@ -1,0 +1,296 @@
+{
+  "model": "/home/damen/.cache/huggingface/hub/models--unsloth--Llama-3.2-1B-Instruct/snapshots/5a8abab4a5d6f164389b1079fb721cfab8d7126c",
+  "gpu": "NVIDIA A2",
+  "context": 512,
+  "reports": [
+    {
+      "precision": "mixed",
+      "speculative_width": 0,
+      "rows": [
+        {
+          "case": "repetition",
+          "prompt": "Write the following sentence exactly ten times, with no introduction: The quick brown fox jumps over the lazy dog.",
+          "milliseconds": [
+            1030.6434279918903,
+            1026.459810003871,
+            1029.2748880019644,
+            1030.3328890004195,
+            1030.344838000019,
+            1034.8977219982771
+          ],
+          "median_ms": 1030.3388635002193,
+          "completion_tokens": 64,
+          "output": "The quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox",
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 3.182998625561595e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.023575739993248135,
+            "total_seconds": 1.0315493829984916,
+            "decode_tokens_per_second": 62.50163428099903
+          }
+        },
+        {
+          "case": "explanation",
+          "prompt": "Explain why the sky looks blue in simple language.",
+          "milliseconds": [
+            1028.2553280121647,
+            1029.740864993073,
+            1030.6617099995492,
+            1029.0736360038863,
+            1032.5759510014905,
+            1028.938884002855
+          ],
+          "median_ms": 1029.4072504984797,
+          "completion_tokens": 64,
+          "output": "The sky looks blue because of a phenomenon called Rayleigh scattering. Here's a simple explanation:\n\nWhen sunlight enters Earth's atmosphere, it encounters tiny molecules of gases like nitrogen and oxygen. These molecules scatter the light in all directions, but they scatter shorter (blue) wavelengths more than longer (red) wavelengths.\n\nThink of",
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 3.3810065360739827e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.022587126994039863,
+            "total_seconds": 1.0256269109959248,
+            "decode_tokens_per_second": 62.80907398173711
+          }
+        },
+        {
+          "case": "code",
+          "prompt": "Write a Python function that returns a list containing the integers from 1 to 30, written out explicitly.",
+          "milliseconds": [
+            1032.6885410031537,
+            1034.7458379983436,
+            1031.7708549991949,
+            1033.6559389979811,
+            1036.9880960060982,
+            1038.4965059929527
+          ],
+          "median_ms": 1034.2008884981624,
+          "completion_tokens": 64,
+          "output": "## Explicitly Written Numbers from 1 to 30\n\nHere's a Python function that returns a list containing the integers from 1 to 30, written out explicitly.\n\n```python\ndef explicitly_written_numbers():\n    \"\"\"\n    Returns a list containing the integers from 1 to 30, written out explicitly.\n   ",
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 6.873990059830248e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.023652869000216015,
+            "total_seconds": 1.033548367995536,
+            "decode_tokens_per_second": 62.38269213267576
+          }
+        }
+      ]
+    },
+    {
+      "precision": "float32",
+      "speculative_width": 0,
+      "rows": [
+        {
+          "case": "repetition",
+          "prompt": "Write the following sentence exactly ten times, with no introduction: The quick brown fox jumps over the lazy dog.",
+          "milliseconds": [
+            1211.5426530072,
+            1227.5294330029283,
+            1207.660385989584,
+            1214.2004299967084,
+            1220.6729629979236,
+            1208.1896390009206
+          ],
+          "median_ms": 1212.8715415019542,
+          "completion_tokens": 64,
+          "output": "The quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox",
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 2.582004526630044e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.0320321809995221,
+            "total_seconds": 1.2052418270031922,
+            "decode_tokens_per_second": 53.698842499802396
+          }
+        },
+        {
+          "case": "explanation",
+          "prompt": "Explain why the sky looks blue in simple language.",
+          "milliseconds": [
+            1210.9262500016484,
+            1213.452880998375,
+            1211.125207002624,
+            1210.9085630072514,
+            1223.952457003179,
+            1211.3980559952324
+          ],
+          "median_ms": 1211.2616314989282,
+          "completion_tokens": 64,
+          "output": "The sky looks blue because of a phenomenon called scattering. Here's a simple explanation:\n\nWhen sunlight enters Earth's atmosphere, it encounters tiny molecules of gases like nitrogen and oxygen. These molecules scatter the light in all directions, but they scatter shorter (blue) wavelengths more than longer (red) wavelengths.\n\nThink of it like",
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 3.4449913073331118e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.030927323998184875,
+            "total_seconds": 1.2076867899886565,
+            "decode_tokens_per_second": 53.53685423467001
+          }
+        },
+        {
+          "case": "code",
+          "prompt": "Write a Python function that returns a list containing the integers from 1 to 30, written out explicitly.",
+          "milliseconds": [
+            1214.6673219976947,
+            1215.823485996225,
+            1224.1682480089366,
+            1225.6608689931454,
+            1211.66184800677,
+            1212.9875460086623
+          ],
+          "median_ms": 1215.2454039969598,
+          "completion_tokens": 64,
+          "output": "## Explicitly Written Numbers from 1 to 30\n\nHere's a Python function that returns a list containing the integers from 1 to 30, written out explicitly.\n\n```python\ndef explicitly_written_numbers():\n    \"\"\"\n    Returns a list containing the integers from 1 to 30, written out explicitly.\n   ",
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 2.435001078993082e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.03177270900050644,
+            "total_seconds": 1.2097428459965158,
+            "decode_tokens_per_second": 53.48183117838532
+          }
+        }
+      ]
+    },
+    {
+      "precision": "float32",
+      "speculative_width": 8,
+      "rows": [
+        {
+          "case": "repetition",
+          "prompt": "Write the following sentence exactly ten times, with no introduction: The quick brown fox jumps over the lazy dog.",
+          "milliseconds": [
+            214.84407999378163,
+            223.3024849992944,
+            219.69264499784913,
+            216.22230499633588,
+            223.2155930105364,
+            215.4392319935141
+          ],
+          "median_ms": 217.9574749970925,
+          "completion_tokens": 64,
+          "output": "The quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox",
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 3.0670053092762828e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 8,
+            "speculative_proposed_drafts": 53,
+            "speculative_matched_drafts": 53,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.031536315989797004,
+            "total_seconds": 0.21123516399529763,
+            "decode_tokens_per_second": 350.58655466768244
+          }
+        },
+        {
+          "case": "explanation",
+          "prompt": "Explain why the sky looks blue in simple language.",
+          "milliseconds": [
+            1153.4239049942698,
+            1165.3954359935597,
+            1158.7730439932784,
+            1149.9070189893246,
+            1151.8035360059002,
+            1153.6544760019751
+          ],
+          "median_ms": 1153.5391904981225,
+          "completion_tokens": 64,
+          "output": "The sky looks blue because of a phenomenon called scattering. Here's a simple explanation:\n\nWhen sunlight enters Earth's atmosphere, it encounters tiny molecules of gases like nitrogen and oxygen. These molecules scatter the light in all directions, but they scatter shorter (blue) wavelengths more than longer (red) wavelengths.\n\nThink of it like",
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 2.125001628883183e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 10,
+            "speculative_proposed_drafts": 62,
+            "speculative_matched_drafts": 3,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.03136948599421885,
+            "total_seconds": 1.1495597989996895,
+            "decode_tokens_per_second": 56.341035391970685
+          }
+        },
+        {
+          "case": "code",
+          "prompt": "Write a Python function that returns a list containing the integers from 1 to 30, written out explicitly.",
+          "milliseconds": [
+            729.6450870053377,
+            720.4759390006075,
+            724.9338880064897,
+            728.8395970099373,
+            736.9340020086383,
+            722.6450879970798
+          ],
+          "median_ms": 726.8867425082135,
+          "completion_tokens": 64,
+          "output": "## Explicitly Written Numbers from 1 to 30\n\nHere's a Python function that returns a list containing the integers from 1 to 30, written out explicitly.\n\n```python\ndef explicitly_written_numbers():\n    \"\"\"\n    Returns a list containing the integers from 1 to 30, written out explicitly.\n   ",
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 2.2500025806948543e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 9,
+            "speculative_proposed_drafts": 61,
+            "speculative_matched_drafts": 26,
+            "kernel_backend": "triton",
+            "weight_quantization": "none",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.033007540012476966,
+            "total_seconds": 0.7184980820020428,
+            "decode_tokens_per_second": 91.90498794797223
+          }
+        }
+      ]
+    }
+  ],
+  "method": "Sequential modes, one warmup and six measured HTTP requests per case. Precision changes can change outputs; this is a policy tradeoff, not a matched-precision speedup."
+}

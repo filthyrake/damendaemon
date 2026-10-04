@@ -674,6 +674,11 @@ partitioning halves the work. Original document indices and usage are preserved;
 qualified unquantized Qwen2/Qwen3 greedy requests;2/4 are also supported and0
 (the default) disables it. It reuses repeated prompt/output fragments as draft
 proposals and verifies every accepted token with the full target vocabulary.
+Llama3.2-1B additionally requires explicit `DLLM_LLAMA_PRECISION=float32`;
+its default mixed precision fails the exact-token gate and remains excluded.
+The higher-precision policy retains FP16 stored matrices but uses FP32 KV and
+residual arithmetic. It adds cost on ordinary prose; see the measured
+[precision tradeoff and numerical evidence](docs/evidence/speculation/llama/README.md).
 
 The serving path falls back for multiple active requests, sampling, constraints,
 tools, penalties, logprobs, text stops and unsupported memory/device paths.

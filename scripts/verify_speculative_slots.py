@@ -46,17 +46,21 @@ def main():
                             tokens,accepted=verifier.verify(output[-1],drafts,start,slot)
                             output.extend(tokens);executor.lengths[slot]=start+len(tokens)
                             blocks+=1;matched+=accepted
-                        assert output==expected,(width,slot,mode)
                         assert all(torch.equal(kv[:,0],saved) for kv,saved in zip(executor.kv,sentinel))
-                        if mode=='reject':assert matched==0
-                        rows.append({'width':width,'slot':slot,'mode':mode,'exact_tokens':True,
+                        # Once greedy paths diverge, a baseline-derived wrong draft may match
+                        # the new target path; report it instead of masking the original failure.
+                        rows.append({'width':width,'slot':slot,'mode':mode,'exact_tokens':output==expected,
+                            'expected':expected,'actual':output,
+                            'first_mismatch':next((i for i,(a,b) in enumerate(zip(expected,output)) if a!=b),None),
                             'other_slot_unchanged':True,'blocks':blocks,'matched':matched,
                             'setup_seconds':setup,'retained_allocated_bytes':retained})
                 graph_ref=weakref.ref(verifier.graph);ref=weakref.ref(verifier)
                 del verifier;gc.collect();torch.cuda.synchronize()
                 assert graph_ref() is None and ref() is None
-            print(json.dumps({'passed':True,'model':args.model,'gpu':'NVIDIA A2',
+            passed=all(row['exact_tokens'] and (row['mode']!='reject' or row['matched']==0) for row in rows)
+            print(json.dumps({'passed':passed,'model':args.model,'gpu':'NVIDIA A2',
                 'compute_dtype':str(executor.compute_dtype),'graph_reclamation':True,'rows':rows},indent=2))
+            if not passed:raise SystemExit(1)
     finally:runtime.manage('unload',model='a',release_host=True)
 
 

@@ -13,6 +13,9 @@ eligible executor; default0 keeps ordinary decoding. Qualified pinned models:
 Qwen2.5-0.5B-Instruct (`7ae557604adf67be50417f59c2c2f167def9a775`) and
 Qwen3-0.6B (`c1899de289a04d12100db370d81485cdf75e47ca`) on A2. Qwen2 uses its
 existing FP16 policy; Qwen3 keeps its qualified FP32 arithmetic policy.
+Qwen3-1.7B is also qualified below. Llama3.2-1B requires explicit
+`DLLM_LLAMA_PRECISION=float32`; its default mixed policy remains excluded.
+See the [Llama precision gate and cost](llama/README.md).
 
 The HTTP scheduler uses speculation only for one active greedy request with
 unquantized dense contiguous KV. It falls back for stochastic sampling,

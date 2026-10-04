@@ -255,12 +255,15 @@ class Executor:
         self.llama_precision = 'standard'
         if self.device == 'cuda' and c['model_type'] == 'llama':
             self.llama_precision = os.environ.get('DLLM_LLAMA_PRECISION','mixed')
-            if self.llama_precision not in ('standard','mixed'):
-                raise ValueError('DLLM_LLAMA_PRECISION must be standard or mixed')
-            if self.llama_precision == 'mixed':
-                # Keep Tensor Core projections and FP16 KV while avoiding
-                # repeated FP16 residual accumulation across deep blocks.
+            if self.llama_precision not in ('standard','mixed','float32'):
+                raise ValueError('DLLM_LLAMA_PRECISION must be standard, mixed or float32')
+            if self.llama_precision in ('mixed','float32'):
+                # Both policies avoid repeated FP16 residual accumulation.
+                # Mixed retains Tensor Core projections and FP16 KV.
                 self.precise = self.rotary_precise = True
+            if self.llama_precision == 'float32':
+                self.dense_precision = 'float32'
+                self.compute_dtype = torch.float32
         if self.device == 'cuda' and (c.get('rope_scaling') or {}).get('rope_type') == 'yarn':
             # The FP16 YaRN path fails the independent logit gate. Reuse the
             # qualified FP32 arithmetic path while retaining FP16 matrices.
