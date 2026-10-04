@@ -53,7 +53,7 @@ def main():
                 for _ in range(2):
                     cold=manage('unload',model='a',release_host=True)
                     assert tier(cold)=='disk' and cold['host_cached_bytes']==0
-                assert (args.a/'config.json').is_file()
+                assert args.a.is_file() or (args.a/'config.json').is_file()
                 manage('load',model='a')
                 with post('/v1/chat/completions',{**prompt,'stream':True,'stream_options':{'include_usage':True}}) as response:
                     stream=events(response)

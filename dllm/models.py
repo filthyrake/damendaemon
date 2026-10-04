@@ -3,8 +3,19 @@ import json
 from pathlib import Path
 
 
+def is_gguf(path):
+    """HF cache symlinks resolve to extensionless blobs: inspect file magic too."""
+    path = Path(path)
+    if not path.is_file():
+        return False
+    if path.suffix.lower() == '.gguf':
+        return True
+    with path.open('rb') as file:
+        return file.read(4) == b'GGUF'
+
+
 def config(path):
-    if Path(path).suffix.lower() == ".gguf":
+    if is_gguf(path):
         from .gguf_model import plan
         return dict(plan(path).config)
     value = json.loads((Path(path)/'config.json').read_text())
@@ -25,7 +36,7 @@ def config(path):
 
 
 def weight_bytes(path,quantization=None):
-    if Path(path).suffix.lower() == ".gguf":
+    if is_gguf(path):
         from .gguf_model import weight_bytes as estimate
         return estimate(path, quantization)
     if config(path).get('model_type')=='mamba2':
@@ -42,7 +53,7 @@ def weight_bytes(path,quantization=None):
 
 
 def load(path,context,quantization=None):
-    if Path(path).suffix.lower() == ".gguf":
+    if is_gguf(path):
         from .gguf_model import GgufWeights
         return GgufWeights(path, context, quantization)
     if config(path).get('model_type')=='mamba2':

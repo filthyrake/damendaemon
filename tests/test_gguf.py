@@ -100,6 +100,20 @@ class GgufTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'incompatible'):
                 plan(path)
 
+    def test_cache_blob_symlinks_remain_gguf_after_resolution(self):
+        from dllm.cli import resolve_model
+        from dllm.models import config, load, is_gguf
+        with tempfile.TemporaryDirectory() as folder:
+            blob = Path(folder)/'hash-without-extension'; fixture(blob)
+            link = Path(folder)/'model.gguf'; link.symlink_to(blob)
+            resolved = resolve_model(str(link))
+            self.assertEqual(resolved, blob.resolve())
+            self.assertTrue(is_gguf(resolved))
+            self.assertEqual(config(resolved)['model_type'], 'qwen2')
+            self.assertEqual(load(resolved, 64, 'none').weight_format, 'gguf_q8_0')
+            other = Path(folder)/'unknown'; other.write_bytes(b'not a model')
+            self.assertFalse(is_gguf(other))
+
     def test_cache_invalidates_when_file_changes(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'model.gguf'; fixture(path, kind=8)

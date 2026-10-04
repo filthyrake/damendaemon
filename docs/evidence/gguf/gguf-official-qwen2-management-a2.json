@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "models": {
+    "a": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct-GGUF/blobs/ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e",
+    "b": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775"
+  },
+  "empty_registry": true,
+  "idempotent_registration": true,
+  "host_and_gpu_unload": true,
+  "active_stream_unload": true,
+  "cli_management": true,
+  "error_recovery": true,
+  "disk_preserved": true,
+  "final_status": {
+    "models": [
+      {
+        "id": "a",
+        "quantization": "none",
+        "residency": "gpu",
+        "host_weight_bytes": 797246208
+      },
+      {
+        "id": "b",
+        "quantization": "none",
+        "residency": "host",
+        "host_weight_bytes": 988065536
+      }
+    ],
+    "device": "cuda",
+    "context": 512,
+    "host_cached_bytes": 1785311744,
+    "host_budget_bytes": 8589934592,
+    "gpu_model_limit": 1,
+    "host_model_limit": 2,
+    "source_tier": "disk",
+    "activation_seconds": 2.64579695899738
+  }
+}

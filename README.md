@@ -766,6 +766,11 @@ between projections, but Q/K/V and gate/up components must each have compatible
 formats. Unsupported architectures, split files, scaled RoPE, packed formats,
 or malformed tensors fail explicitly. Q4 requires CUDA.
 
+For a Hugging Face GGUF repository, `pull`, `run`, and `add` accept
+`--filename EXACT_FILE.gguf` and optional `--revision`. Only that file is fetched
+at an immutable resolved revision; other quantization variants are not downloaded.
+Resolved HF cache symlinks work even when their backing blob has no extension.
+
 The embedded Qwen2 BPE tokenizer and chat template need no HF sidecar files.
 GGUF tokenization follows llama.cpp's Qwen2 behavior, including preserving
 combining marks; some HF tokenizers normalize those inputs to NFC and produce

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import patch
-from dllm.download import INDEX,snapshot_files
+from dllm.download import INDEX,snapshot_files,gguf_file
 from dllm.cli import download
 
 
@@ -51,3 +51,32 @@ class DownloadTests(unittest.TestCase):
                 api.return_value.model_info.return_value=info
                 with self.assertRaises(ValueError):download('owner/model')
                 snapshot.assert_not_called()
+
+
+class GgufDownloadTests(unittest.TestCase):
+    def test_pins_and_fetches_only_the_selected_gguf(self):
+        name = 'quantized/model.Q8_0.gguf'
+        info = SimpleNamespace(sha='pinned-sha', siblings=[SimpleNamespace(rfilename=n)
+            for n in (name, 'model.Q4_K_M.gguf', INDEX, 'part.safetensors')])
+        with patch('huggingface_hub.HfApi') as api, patch('huggingface_hub.hf_hub_download', return_value='/cache/snapshot/model.Q8_0.gguf') as fetch, patch('huggingface_hub.snapshot_download') as snapshot:
+            api.return_value.model_info.return_value = info
+            result = download('owner/model', 'moving-revision', name)
+            api.return_value.model_info.assert_called_once_with('owner/model', revision='moving-revision')
+            fetch.assert_called_once_with('owner/model', name, revision='pinned-sha')
+            snapshot.assert_not_called()
+            self.assertEqual(result['revision'], 'pinned-sha')
+            self.assertEqual(result['filename'], name)
+
+    def test_gguf_selection_rejects_globs_escapes_and_missing_files(self):
+        for name in ('../a.gguf', '/a.gguf', './a.gguf', 'a//b.gguf', 'a/../b.gguf',
+                     'a\\b.gguf', '*.gguf', 'a?.gguf', 'a[1].gguf', 'a\x00.gguf', 'model.bin', '', None):
+            with self.subTest(name=name), self.assertRaises(ValueError): gguf_file([name], name)
+        with self.assertRaises(ValueError): gguf_file(['a.gguf'], 'b.gguf')
+        self.assertEqual(gguf_file(['folder/a.GGUF'], 'folder/a.GGUF'), 'folder/a.GGUF')
+
+    def test_missing_file_never_starts_a_weight_download(self):
+        info = SimpleNamespace(sha='sha', siblings=[SimpleNamespace(rfilename='other.gguf')])
+        with patch('huggingface_hub.HfApi') as api, patch('huggingface_hub.hf_hub_download') as fetch, patch('huggingface_hub.snapshot_download') as snapshot:
+            api.return_value.model_info.return_value = info
+            with self.assertRaises(ValueError): download('owner/model', filename='missing.gguf')
+            fetch.assert_not_called(); snapshot.assert_not_called()

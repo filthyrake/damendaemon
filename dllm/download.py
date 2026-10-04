@@ -32,3 +32,16 @@ def snapshot_files(filenames, index=None):
     if any(any(c in name for c in '*?[]') for name in metadata):
         raise ValueError('repository metadata paths cannot contain glob metacharacters')
     return sorted(weights|metadata)
+
+
+def gguf_file(filenames, filename):
+    """Select one exact repository file, never an entire GGUF variant family."""
+    if not isinstance(filename, str):
+        raise ValueError('GGUF filename must be a repository-relative path')
+    path = PurePosixPath(filename)
+    if (path.is_absolute() or any(part in ('', '.', '..') for part in filename.split('/'))
+            or any(c in filename for c in '\\*?[]\x00') or not filename.lower().endswith('.gguf')):
+        raise ValueError('GGUF filename must be an exact repository-relative .gguf path')
+    if filename not in set(filenames):
+        raise ValueError(f'GGUF file missing from repository: {filename}')
+    return filename

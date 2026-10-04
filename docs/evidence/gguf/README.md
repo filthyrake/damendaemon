@@ -110,3 +110,44 @@ plans, tensor descriptors, and serialized tokenizers match exactly. This is
 **CPU model-loading work**, not GPU throughput or complete activation latency.
 Reproduce with `scripts/benchmark_gguf_metadata.py` and the reader from commit
 `1e5d2c1`. All 257 CPU regressions still pass after the optimization.
+
+
+## Published checkpoint and exact-file downloads
+
+`dllm pull`, `run`, and `add` accept `--filename` for one exact GGUF file within
+a Hugging Face repository. The repository revision is resolved before fetching
+the file; other quantization variants and safetensors copies are not downloaded.
+GGUF file magic is recognized after symlink resolution, so HF cache blobs do
+not need a filename extension. 263 CPU regressions pass, including the cache
+symlink case and exact-download selection/rejection checks.
+
+The real CLI downloaded official `Qwen/Qwen2.5-0.5B-Instruct-GGUF` at revision
+`9217f5db79a29953eb74d5343926648285ec7e67`, selecting only
+`qwen2.5-0.5b-instruct-q8_0.gguf`. Its SHA-256 is
+`ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e`.
+[Download result](gguf-official-qwen2-download.json).
+
+[Actual A2 management proof](gguf-official-qwen2-management-a2.json) passes
+registration from the resolved extensionless cache blob, disk/host/GPU loading,
+active-stream unload, CLI management, model swapping, invalid-command recovery,
+and preservation of the downloaded file. This published file contains a packed
+Q8 embedding, unlike the value-matched comparator exports above.
+
+The stronger numerical test independently dequantizes its GGUF tensors with
+`gguf.quants`, maps them into the HF Qwen implementation, and compares complete
+logits at each step. [FP16-reference report](gguf-official-qwen2-q8-reference-a2.json)
+and [fixed-token FP32 control](gguf-official-qwen2-q8-fp32-reference-a2.json)
+preserve all 64 greedy choices, but **both full stress gates fail after EOS**.
+The math prompt produces `4` then an end-of-turn token; forcing continuation
+past that stop reveals the discrepancy. All compared steps up to and including
+the first EOS, and the two raw long-prompt traces, remain within the existing
+0.5 absolute / 1% relative RMS gates.
+
+The full FP16 comparison reaches 0.914 absolute / 5.43% RMS error. On exactly
+the same token inputs, the FP32 reference reduces this to 0.184 absolute / 1.11%
+RMS; the remaining RMS error still fails the unchanged gate. This is not claimed
+as complete numerical qualification, and no threshold was relaxed. Follow-up
+precision experiments are tracked under the existing Q8 quality issue #10 and
+GGUF issue #43. Reproduction: `scripts/verify_gguf_reference.py` (use
+`--reference-dtype float32 --teacher-trace <FP16-report>` for the fixed-input
+control). The validation script exits unsuccessfully when its full gate fails.

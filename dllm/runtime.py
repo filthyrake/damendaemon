@@ -89,7 +89,7 @@ class Runtime:
                 import json
                 from pathlib import Path
                 from tokenizers import Tokenizer
-                from .models import config as read_config, weight_bytes
+                from .models import config as read_config, weight_bytes, is_gguf
                 candidate = Path(path).expanduser().resolve()
                 policy = self.default_quantization if quantization is None else quantization
                 with self.registry_lock:
@@ -100,7 +100,7 @@ class Runtime:
                         return self._status()
                 try:
                     config = read_config(candidate)
-                    if candidate.suffix.lower() != '.gguf':
+                    if not is_gguf(candidate):
                         Tokenizer.from_file(str(candidate/'tokenizer.json'))
                         json.loads((candidate/'tokenizer_config.json').read_text())
                     estimated = weight_bytes(candidate,quantization=policy)

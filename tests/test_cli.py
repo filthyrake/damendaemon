@@ -21,3 +21,13 @@ class CliTests(unittest.TestCase):
         with patch("dllm.cli.download") as download, self.assertRaises(ValueError):
             resolve_model("/missing-dllm-test-directory")
         download.assert_not_called()
+
+
+    def test_repository_can_select_one_gguf_file(self):
+        with patch('dllm.cli.download', return_value={'path':'/cache/model.gguf'}) as download:
+            self.assertEqual(resolve_model('owner/model', 'revision', 'model.gguf'), Path('/cache/model.gguf'))
+            download.assert_called_once_with('owner/model', 'revision', filename='model.gguf')
+
+    def test_local_path_cannot_silently_ignore_filename(self):
+        with tempfile.TemporaryDirectory() as directory, self.assertRaises(ValueError):
+            resolve_model(directory, filename='model.gguf')

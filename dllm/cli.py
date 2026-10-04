@@ -6,13 +6,17 @@ import re
 import sys
 
 
-def download(repository, revision="main"):
+def download(repository, revision="main", filename=None):
     from huggingface_hub import HfApi, hf_hub_download, snapshot_download
-    from .download import INDEX, snapshot_files
+    from .download import INDEX, snapshot_files, gguf_file
     info = HfApi().model_info(repository, revision=revision)
     revision = info.sha
     if not revision:raise ValueError("repository revision could not be resolved")
     filenames = [entry.rfilename for entry in info.siblings or []]
+    if filename is not None:
+        filename = gguf_file(filenames, filename)
+        path = hf_hub_download(repository, filename, revision=revision)
+        return {"repository": repository, "revision": revision, "filename": filename, "path": path}
     index = None
     if INDEX in filenames:
         index = json.loads(Path(hf_hub_download(repository, INDEX, revision=revision)).read_text())
@@ -21,12 +25,16 @@ def download(repository, revision="main"):
     return {"repository": repository, "revision": revision, "path": path}
 
 
-def resolve_model(value, revision="main"):
+def resolve_model(value, revision="main", filename=None):
+    from .models import is_gguf
     path = Path(value).expanduser()
-    if path.is_dir() or (path.is_file() and path.suffix.lower() == ".gguf"):
+    if path.is_dir() or is_gguf(path):
+        if filename is not None:
+            raise ValueError('--filename applies to a Hugging Face repository, not a local path')
         return path.resolve()
     if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*", str(value)):
-        return Path(download(str(value), revision)["path"])
+        result = download(str(value), revision) if filename is None else download(str(value), revision, filename=filename)
+        return Path(result["path"])
     raise ValueError("model must be a local directory, GGUF file or a Hugging Face owner/repository")
 
 
@@ -37,12 +45,14 @@ def main():
     parser = argparse.ArgumentParser(description="dllm: independent GPU inference runtime")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("bench", help="benchmark a streaming HTTP endpoint")
-    pull = commands.add_parser("pull", help="download a safetensors model from Hugging Face")
+    pull = commands.add_parser("pull", help="download a safetensors snapshot or one GGUF file from Hugging Face")
     pull.add_argument("repository")
     pull.add_argument("--revision", default="main")
+    pull.add_argument("--filename", help="exact GGUF filename within the repository")
     run = commands.add_parser("run", help="generate using a supported dense model name or local path")
     run.add_argument("path", help="local model directory, GGUF file or Hugging Face owner/repository")
     run.add_argument("--revision", default="main")
+    run.add_argument("--filename", help="exact GGUF filename within the repository")
     run.add_argument("--prompt", required=True)
     run.add_argument('--raw', action='store_true', help='use the prompt directly without a chat template')
     run.add_argument("--max-tokens", type=int, default=128)
@@ -71,6 +81,7 @@ def main():
         if name == 'add':
             management.add_argument('path', help='local snapshot or Hugging Face repository on this host')
             management.add_argument('--revision', default='main')
+            management.add_argument('--filename', help='exact GGUF filename within the repository')
             management.add_argument('--quantization', choices=('none','q8_0','q4_0'))
         if name == 'unload':
             management.add_argument('--release-host', action='store_true')
@@ -80,7 +91,7 @@ def main():
         action = {'models':'status', 'add':'register'}.get(args.command, args.command)
         body = None if action == 'status' else {'model': args.model}
         if action == 'register':
-            body['path'] = str(resolve_model(args.path, args.revision))
+            body['path'] = str(resolve_model(args.path, args.revision, args.filename))
             if args.quantization is not None:
                 body['quantization'] = args.quantization
         if action == 'unload':
@@ -95,7 +106,7 @@ def main():
         parser.error('--raw cannot use chat thinking controls')
     if args.command == "pull":
         # Resolve the revision before downloading; report its immutable identity.
-        print(json.dumps(download(args.repository, args.revision)))
+        print(json.dumps(download(args.repository, args.revision, args.filename)))
         return
     os.environ["DLLM_DEVICE"] = args.device
     if args.kv_cache_tokens is not None:
@@ -107,7 +118,7 @@ def main():
             os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
     from .runtime import Runtime
     if args.command == "run":
-        models = {"model": resolve_model(args.path, args.revision)}
+        models = {"model": resolve_model(args.path, args.revision, args.filename)}
     else:
         models = {}
         for entry in args.model or []:
