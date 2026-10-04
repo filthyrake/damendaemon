@@ -69,6 +69,26 @@ def main():
                                                   v[slot:slot+1, :, :position+1], enable_gqa=True)
         torch.testing.assert_close(actual[row:row+1], expected, atol=.003, rtol=.01)
         checks += 1
+    # Local attention must skip fully expired splits and never read their NaNs.
+    for dtype in (torch.float16, torch.float32):
+        for window in (1, 127, 256, 512):
+            dim, heads, context = 256, 4, 2048
+            k = torch.randn((4, 1, context, dim), device='cuda', dtype=dtype)
+            v = torch.randn_like(k)
+            q = torch.randn((4, heads, 1, dim), device='cuda', dtype=dtype)
+            slots = torch.tensor([3, 0, 2, 1], device='cuda')
+            positions = torch.tensor([0, 511, 512, 2047], device='cuda')
+            expected = []
+            for row, (slot, position) in enumerate(zip(slots.tolist(), positions.tolist())):
+                start = max(0, position-window+1)
+                expected.append(F.scaled_dot_product_attention(q[row:row+1],
+                    k[slot:slot+1, :, start:position+1], v[slot:slot+1, :, start:position+1],
+                    enable_gqa=True, scale=.07))
+                k[slot, :, :start] = v[slot, :, :start] = float('nan')
+                k[slot, :, position+1:] = v[slot, :, position+1:] = float('nan')
+            actual = kernels.attention(q, k, v, positions, slots, window=window, scale=.07)
+            torch.testing.assert_close(actual, torch.cat(expected), atol=.003, rtol=.01)
+            checks += 1
     # Qwen3 normalizes each Q/K head before RoPE; values must remain untouched.
     for dim in (64, 128):
         batch, heads, kv_heads, context = 4, 16, 8, 1024

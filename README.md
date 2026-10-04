@@ -123,8 +123,9 @@ Vision, MoE, dynamic rotary scaling, and quantization remain unsupported.
 Gemma 3 text has a separate full-precision correctness path with alternating
 sliding/full attention, GELU gating and its own normalization; the pinned 270M
 checkpoint passes CUDA and Metal reference replay, including 511/512/513-token
-window boundaries. Its CUDA weights, arithmetic and KV are FP32; performance
-optimization remains open. This does not imply support for multimodal Gemma. Qwen3.5 checkpoint qualification does not imply all newer Qwen
+window boundaries. CUDA uses FP16 weight storage with native FP32 matrix-vector
+arithmetic and windowed decode attention; arithmetic and KV remain FP32.
+`DLLM_GEMMA_WEIGHT_DTYPE=float32` selects full storage. Prefill optimization remains open. This does not imply support for multimodal Gemma. Qwen3.5 checkpoint qualification does not imply all newer Qwen
 variants are supported. See the [model validation matrix](docs/model-matrix.md):
 Qwen3-1.7B and SmolLM2-360M pass the expanded tests; Qwen3-0.6B remains provisional
 because two long-context positions exceed the logit-error limit.

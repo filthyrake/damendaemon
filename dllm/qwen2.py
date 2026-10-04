@@ -192,6 +192,12 @@ class Executor:
             half_metal_weights = storage == 'float16'
             if half_metal_weights and self.kernels is None:
                 raise ValueError('FP16 MPS weight storage requires native Metal kernels')
+        half_gemma_weights = False
+        if self.device == 'cuda' and c['model_type'] == 'gemma3_text':
+            storage = os.environ.get('DLLM_GEMMA_WEIGHT_DTYPE', 'float16' if self.kernels else 'float32')
+            if storage not in ('float16', 'float32'):
+                raise ValueError('DLLM_GEMMA_WEIGHT_DTYPE must be float16 or float32')
+            half_gemma_weights = storage == 'float16'
         kv_bytes = 2 * c["num_hidden_layers"] * max_batch * self.kv_heads * self.context * self.dim * (4 if self.compute_dtype == torch.float32 else 2)
         # A prior failed construction can leave unused allocator blocks cached
         # after its traceback is released. Return those before querying free VRAM.
@@ -199,7 +205,8 @@ class Executor:
         free = available_memory()
         device_weight_bytes = model.bytes
         if self.device == "cuda" and c["model_type"] == "gemma3_text":
-            device_weight_bytes = sum(t.numel() * 4 for t in {id(t):t for t in model.weights.values()}.values())
+            device_weight_bytes = sum(t.numel() * (2 if half_gemma_weights and t.ndim == 2 else 4)
+                for t in {id(t):t for t in model.weights.values()}.values())
         if self.device == 'mps':
             device_weight_bytes = sum(t.numel() * (2 if half_metal_weights and t.ndim == 2 else 4)
                 for t in {id(t):t for t in model.weights.values()}.values())
@@ -211,8 +218,8 @@ class Executor:
         copies = {}
         for name, tensor in model.weights.items():
             if id(tensor) not in copies:
-                dtype = torch.float16 if half_metal_weights and tensor.ndim == 2 else self.compute_dtype
-                if c["model_type"] == "gemma3_text" and (tensor.ndim == 1 or name.endswith(".down")):
+                dtype = torch.float16 if (half_metal_weights or half_gemma_weights) and tensor.ndim == 2 else self.compute_dtype
+                if c["model_type"] == "gemma3_text" and (tensor.ndim == 1 or (self.device == "mps" and name.endswith(".down"))):
                     dtype = torch.float32
                 copies[id(tensor)] = tensor.to(device=self.device, dtype=dtype)
             self.w[name] = copies[id(tensor)]

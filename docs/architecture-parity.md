@@ -90,3 +90,28 @@ stream/nonstream equivalence, four concurrent seeded requests, and variation
 across different seeds. Unit tests independently check probability frequencies,
 nucleus boundary inclusion, RNG isolation, malformed controls and tiny positive
 temperatures. These tests do not promise cross-hardware bitwise reproducibility.
+
+### Gemma native CUDA optimization
+
+The retained CUDA path adds fused FP32 normalization, native small-batch GEMV
+with weight reuse across rows, and native windowed decode attention that skips
+expired/unused cache blocks. FP16 weight storage is now the default when native
+CUDA kernels are available; `DLLM_GEMMA_WEIGHT_DTYPE=float32` retains full storage.
+Arithmetic, residuals, norms and KV remain FP32. The exact BF16 checkpoint values
+are representable in FP16 storage; this does not enable FP16 arithmetic. The
+97-check gate still passes (worst relative RMS 0.00465%), and independent matrix
+checks include non-power-of-two widths and activations outside FP16's range.
+
+| Concurrent requests | Initial FP32 path tokens/s | Native path tokens/s | Initial TTFT ms | Native TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 55.3 | 119.7 | 37.2 | 41.1 |
+| 2 | 68.8 | 174.3 | 65.8 | 64.5 |
+| 4 | 86.2 | 206.1 | 136.7 | 159.2 |
+
+A2, same pinned checkpoint, context 2048, 64 output tokens, median of five warm
+HTTP rounds. This compares two dllm implementations, not another engine.
+Throughput improves 2.2–2.5x; first-token latency is still worse at concurrency
+four. Prefill still converts stored weights for dense FP32 matrix operations,
+and prompts are processed separately. These remain performance gaps. The first
+GEMV version regressed batched throughput; sharing weight loads across rows and
+removing full-context attention copies resolved that regression.

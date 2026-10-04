@@ -1,4 +1,7 @@
-"""Small inference kernels. Matmuls remain with cuBLAS; reductions use FP32.
+"""Inference kernels with FP32 reductions and optional small-batch GEMV.
+
+Dense FP16 matrix operations use cuBLAS. Gemma can retain FP32 arithmetic
+while reading FP16 weights directly in its decode matrix-vector kernel.
 
 Qwen2/Llama preserve FP16 rounding points. Qwen3 retains FP32 elementwise
 intermediates before storing FP16 inputs for the next matrix operation.
@@ -99,20 +102,22 @@ def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, q_norm=None, k
 @tr.jit
 def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE,
                H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr,
-               C: tl.constexpr, SPLITS: tl.constexpr, BLOCK: tl.constexpr, SLOTTED: tl.constexpr):
+               C: tl.constexpr, SPLITS: tl.constexpr, BLOCK: tl.constexpr, SLOTTED: tl.constexpr, WINDOW: tl.constexpr, SCALE: tl.constexpr):
     bh, split = tl.program_id(0), tl.program_id(1)
     batch, head = bh // H, bh % H
     position = tl.load(POS + batch)
     slot = tl.load(SLOTS + batch) if SLOTTED else 0
     cols = tl.arange(0, D)
-    if split * BLOCK <= position:
+    if split * BLOCK <= position and (WINDOW == 0 or (split + 1) * BLOCK > position - WINDOW + 1):
         times = split * BLOCK + tl.arange(0, BLOCK)
         valid = (times <= position) & (times < C)
+        if WINDOW:
+            valid = valid & (times > position - WINDOW)
         q = tl.load(Q + bh * D + cols).to(tl.float32)
         kh = slot * KH + head // (H // KH)
         offsets = (kh * C + times[:, None]) * D + cols[None, :]
         k = tl.load(K + offsets, valid[:, None], other=0).to(tl.float32)
-        logits = tl.sum(k * q[None, :], 1) * (D ** -0.5)
+        logits = tl.sum(k * q[None, :], 1) * SCALE
         logits = tl.where(valid, logits, -float("inf"))
         maximum = tl.max(logits, 0)
         weights = tl.exp(logits - maximum)
@@ -143,7 +148,7 @@ def _merge(PART, LSE, OUT, D: tl.constexpr, S: tl.constexpr, BLOCK: tl.constexpr
     tl.store(OUT + head * D + cols, tl.sum(partial * weights[:, None], 0))
 
 
-def attention(query, cache_k, cache_v, positions, slots=None):
+def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=None):
     batch, heads, _, dim = query.shape
     _, kv_heads, context, _ = cache_k.shape
     block = min(256, tr.next_power_of_2(context))
@@ -153,7 +158,7 @@ def attention(query, cache_k, cache_v, positions, slots=None):
     lse = torch.empty((batch * heads, splits), device=query.device, dtype=torch.float32)
     _attention[(batch * heads, splits)](query, cache_k, cache_v, positions,
                                positions if slots is None else slots, out, partial, lse,
-                               heads, kv_heads, dim, context, splits, block, slots is not None, num_warps=4)
+                               heads, kv_heads, dim, context, splits, block, slots is not None, window, dim ** -.5 if scale is None else scale, num_warps=4)
     if splits > 1:
         _merge[(batch * heads,)](partial, lse, out, dim, splits, tr.next_power_of_2(splits))
     return out
@@ -202,3 +207,28 @@ def rope_batch(qkv, cos, sin, positions, slots, cache_k, cache_v, heads, q_norm=
         qkv if q_norm is None else q_norm, qkv if k_norm is None else k_norm,
         q_norm is not None, eps, heads, kv_heads, dim, context, enable_fp_fusion=False)
     return query
+
+
+@tr.jit
+def _linear_fp32(X, W, Y, K: tl.constexpr, N: tl.constexpr,
+                 BK: tl.constexpr, BN: tl.constexpr, ROWS: tl.constexpr):
+    outputs = tl.program_id(0) * BN + tl.arange(0, BN)
+    columns = tl.arange(0, BK)
+    weight = tl.load(W + outputs[:, None] * K + columns[None, :],
+                     (outputs[:, None] < N) & (columns[None, :] < K), other=0).to(tl.float32)
+    for row in range(ROWS):
+        x = tl.load(X + row * K + columns, columns < K, other=0).to(tl.float32)
+        value = tl.sum(weight * x[None, :], 1)
+        tl.store(Y + row * N + outputs, value, outputs < N)
+
+
+def linear_fp32(x, weight):
+    """Small-batch FP32 arithmetic directly over FP16/FP32 stored weights."""
+    rows, width = x.shape
+    if rows > 4:
+        return torch.nn.functional.linear(x.float(), weight.float())
+    out = torch.empty((rows, weight.shape[0]), device=x.device, dtype=torch.float32)
+    _linear_fp32[(tr.cdiv(weight.shape[0], 8),)](
+        x, weight, out, width, weight.shape[0], tr.next_power_of_2(width), 8, rows,
+        num_warps=4, enable_fp_fusion=False)
+    return out

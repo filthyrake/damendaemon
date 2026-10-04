@@ -1,8 +1,8 @@
 """Independent Gemma 3 text decoder with local/global attention.
 
 Shares residency, cache slots and CUDA graph replay with the dense executor.
-Attention initially uses SDPA; Gemma normalization preserves the reference's
-rounding boundary before rotary application.
+Prefill uses SDPA; CUDA decode uses live-prefix/window attention. Matrix
+operations preserve FP32 arithmetic while optionally reading FP16 weights.
 """
 import math
 import torch
@@ -36,19 +36,28 @@ def load_weights(state, config):
 class GemmaExecutor(BatchExecutor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.kernel_backend = ("metal" if self.device == "mps" and self.kernels else "torch") + "-gemma-sdpa"
+        self.kernel_backend = (("metal" if self.device == "mps" else "triton") if self.kernels else "torch") + "-gemma"
 
     def _tables(self):
         # Base construction warms virtual forward before batch graph capture.
         if hasattr(self, 'local_cos'):
             return
+        if self.device == 'cuda':
+            self.linear = self._linear
         inv = inverse_frequencies({**self.c, 'rope_theta': self.c['rope_local_base_freq']}, self.device)
         angles = torch.outer(self.arange.float(), inv)
         angles = torch.cat((angles, angles), -1)
         self.local_cos, self.local_sin = angles.cos().to(self.residual_dtype), angles.sin().to(self.residual_dtype)
         self.embed_scale = torch.tensor(math.sqrt(self.c['hidden_size']), device=self.device, dtype=self.compute_dtype)
 
+    def _linear(self, x, weight):
+        if self.kernels:
+            return self.kernels.linear_fp32(x, weight)
+        return F.linear(x.float(), weight.float())
+
     def norm(self, x, weight):
+        if self.kernels:
+            return self.kernels.rms(x.contiguous(), weight, self.eps, True)
         value = x.float()
         value = value * torch.rsqrt(value.square().mean(-1, keepdim=True) + self.eps)
         return (value * weight).to(self.compute_dtype)
@@ -88,6 +97,10 @@ class GemmaExecutor(BatchExecutor):
                     v.transpose(0,1).unsqueeze(0), attn_mask=selected_mask, enable_gqa=True,
                     scale=self.c['query_pre_attn_scalar'] ** -.5)
                 attended = attended.squeeze(0).transpose(0,1).reshape(n, -1)
+            elif self.device == 'cuda' and self.kernels:
+                attended = self.kernels.attention(q.unsqueeze(2).contiguous(), cache_k, cache_v,
+                    positions, slots, window=self.c['sliding_window'] if local else 0,
+                    scale=self.c['query_pre_attn_scalar'] ** -.5).reshape(n, -1)
             else:
                 attended = attention(q.unsqueeze(2), cache_k.index_select(0, slots), cache_v.index_select(0, slots),
                     attn_mask=selected_mask[:,None,None,:], enable_gqa=True,
