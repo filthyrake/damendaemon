@@ -1,0 +1,33 @@
+diff --git a/dllm/hybrid.py b/dllm/hybrid.py
+index ef141e0..0337af6 100644
+--- a/dllm/hybrid.py
++++ b/dllm/hybrid.py
+@@ -38,8 +38,10 @@ def load_weights(state, config):
+             for name in ('q', 'k'):
+                 w[f'{i}.{name}_norm'] = take(layer+f'self_attn.{name}_norm.weight', torch.float32) + 1
+         else:
+-            for name in ('qkv', 'z', 'b', 'a'):
+-                w[f'{i}.{name}'] = take(layer+f'linear_attn.in_proj_{name}.weight')
++            w[f'{i}.in'] = torch.cat([take(layer+f'linear_attn.in_proj_{name}.weight')
++                                     for name in ('qkv', 'z')])
++            w[f'{i}.rates'] = torch.cat([take(layer+f'linear_attn.in_proj_{name}.weight')
++                                        for name in ('b', 'a')])
+             for dest, name in (('conv', 'conv1d.weight'), ('out', 'out_proj.weight')):
+                 w[f'{i}.{dest}'] = take(layer+'linear_attn.'+name)
+             for dest, name in (('dt', 'dt_bias'), ('A', 'A_log'), ('gated_norm', 'norm.weight')):
+@@ -182,10 +184,11 @@ class HybridExecutor:
+     def linear_attention(self, x, i, slots, prefill):
+         w = self.w
+         n, length, _ = x.shape
+-        qkv = F.linear(x, w[f'{i}.qkv'])
+-        z = F.linear(x, w[f'{i}.z']).view(n, length, self.lv, self.dv)
+-        beta = F.linear(x, w[f'{i}.b']).float().sigmoid()
+-        decay = -w[f'{i}.A'].exp()*F.softplus(F.linear(x, w[f'{i}.a']).float()+w[f'{i}.dt'])
++        qkv, z = F.linear(x, w[f'{i}.in']).split((self.conv_width, self.lv*self.dv), -1)
++        b, a = F.linear(x, w[f'{i}.rates']).chunk(2, -1)
++        z = z.view(n, length, self.lv, self.dv)
++        beta = b.float().sigmoid()
++        decay = -w[f'{i}.A'].exp()*F.softplus(a.float()+w[f'{i}.dt'])
+         if prefill:
+             history = qkv.transpose(1, 2).contiguous()
+             width = self.c['linear_conv_kernel_dim']

@@ -102,6 +102,14 @@ results compare dllm revisions, not dllm against vLLM. Optional FLA prefill with
 the fused executor also passes 84/84 reference comparisons for both models;
 worst relative RMS errors are 0.2535% and 0.4108%.
 
+Combining the four linear-attention input projections into one matrix operation
+passed both correctness replays but reduced throughput to 84.7 / 129.6 / 221.0
+tokens/s. Keeping the large projection aligned and separating the two small
+gates reached 85.7 / 137.1 / 232.6, still below the fused baseline. Neither
+packing change is retained. The aligned experiment patch and both sets of
+measurements are saved under `evidence/hybrid`; fewer matrix calls alone did
+not improve this A2 workload.
+
 ## Apple M4, 32 GiB unified memory
 
 The dense backend is explicitly selected with `--device mps`. It uses FP32
