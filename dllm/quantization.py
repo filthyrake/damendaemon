@@ -9,11 +9,9 @@ import torch
 GROUP = 32
 
 
-def mode():
-    value = os.environ.get('DLLM_QUANTIZATION', 'none')
-    if value not in ('none', 'q8_0'):
-        raise ValueError('DLLM_QUANTIZATION must be none or q8_0')
-    return value
+def mode(value=None):
+    from .management import quantization_mode
+    return quantization_mode(value)
 
 
 @torch.inference_mode()

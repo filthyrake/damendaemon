@@ -12,17 +12,17 @@ def config(path):
     return decoder_config(value)
 
 
-def weight_bytes(path):
+def weight_bytes(path,quantization=None):
     if config(path).get('task') == 'embedding':
         from .encoder import weight_bytes as estimate
     else:
         from .qwen2 import weight_bytes as estimate
-    return estimate(path)
+    return estimate(path,quantization=quantization)
 
 
-def load(path,context):
+def load(path,context,quantization=None):
     if config(path).get('task') == 'embedding':
         from .encoder import EncoderWeights
-        return EncoderWeights(path,context)
+        return EncoderWeights(path,context,quantization=quantization)
     from .qwen2 import ModelWeights
-    return ModelWeights(path,context)
+    return ModelWeights(path,context,quantization=quantization)

@@ -1,7 +1,16 @@
 """Validation for dllm's local model-management extensions."""
 
 
-def command(action, model=None, path=None, release_host=False):
+def quantization_mode(value=None):
+    if value is None:
+        import os
+        value = os.environ.get('DLLM_QUANTIZATION','none')
+    if value not in ('none','q8_0'):
+        raise ValueError('quantization must be none or q8_0')
+    return value
+
+
+def command(action, model=None, path=None, release_host=False, quantization=None):
     if action not in ('status', 'register', 'load', 'unload'):
         raise ValueError('unknown model management action')
     if type(release_host) is not bool:
@@ -18,4 +27,9 @@ def command(action, model=None, path=None, release_host=False):
         raise ValueError('path is only supported by register')
     if release_host and action != 'unload':
         raise ValueError('release_host is only supported by unload')
-    return {'action': action, 'model': model, 'path': path, 'release_host': release_host}
+    result = {'action': action, 'model': model, 'path': path, 'release_host': release_host}
+    if quantization is not None:
+        if action != 'register':
+            raise ValueError('quantization is only supported by register')
+        result['quantization'] = quantization_mode(quantization)
+    return result

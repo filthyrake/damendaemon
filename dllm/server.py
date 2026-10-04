@@ -74,7 +74,7 @@ def handler_for(runtime):
                     return
                 if self.path in management:
                     action = management[self.path]
-                    fields = {'model'} | ({'path'} if action == 'register' else {'release_host'} if action == 'unload' else set())
+                    fields = {'model'} | ({'path','quantization'} if action == 'register' else {'release_host'} if action == 'unload' else set())
                     if not isinstance(body, dict) or set(body) - fields:
                         raise ValueError('unsupported model management fields')
                     self.send_json(200, runtime.manage(action, **body))

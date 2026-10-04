@@ -64,9 +64,9 @@ class BatchedRuntime:
     def model_ids(self):
         return self.runtime.model_ids()
 
-    def manage(self, action, model=None, path=None, release_host=False):
+    def manage(self, action, model=None, path=None, release_host=False, quantization=None):
         from .management import command
-        return self._submit(command(action, model, path, release_host))
+        return self._submit(command(action, model, path, release_host, quantization))
 
     def embed(self, alias, inputs, encoding_format="float", dimensions=None):
         from .embeddings import options

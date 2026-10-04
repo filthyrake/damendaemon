@@ -6,7 +6,7 @@ from dllm.runtime import Runtime, BusyError
 
 
 class Weights:
-    def __init__(self, path, context):
+    def __init__(self, path, context, quantization=None):
         self.path, self.bytes = path, 100
         self.config = {"model_type": "qwen2"}
 
@@ -25,7 +25,7 @@ class RuntimeTests(unittest.TestCase):
         self.modules = patch.dict("sys.modules", {
             "torch": SimpleNamespace(cuda=SimpleNamespace(
                 synchronize=lambda: None, empty_cache=lambda: None)),
-            "dllm.models": SimpleNamespace(load=Weights,weight_bytes=lambda _:100,config=lambda _: {"max_position_embeddings":2048}),
+            "dllm.models": SimpleNamespace(load=Weights,weight_bytes=lambda _,**kwargs:100,config=lambda _: {"max_position_embeddings":2048}),
             "dllm.qwen2": SimpleNamespace(ModelWeights=Weights, Executor=Executor,
                                           weight_bytes=lambda _: 100),
         })
@@ -131,3 +131,28 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.model_ids(),['a'])
             self.assertEqual(runtime.host,{})
             self.assertEqual(runtime.gpu,{})
+
+    def test_model_quantization_is_stable_and_used_for_reload(self):
+        import tempfile
+        from pathlib import Path
+        from tokenizers import Tokenizer,models
+        with patch.dict('os.environ',{'DLLM_QUANTIZATION':'q8_0'}):
+            runtime=Runtime({'initial':'initial'})
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'config.json').write_text('{}')
+            (root/'tokenizer_config.json').write_text('{}')
+            Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
+            runtime.manage('register','plain',str(root),quantization='none')
+            runtime.manage('register','packed',str(root),quantization='q8_0')
+            with self.assertRaises(ValueError):
+                runtime.manage('register','plain',str(root),quantization='q8_0')
+            self.assertEqual(runtime.quantizations,{'initial':'q8_0','plain':'none','packed':'q8_0'})
+            with patch('dllm.models.load',side_effect=Weights) as load:
+                runtime.manage('load','plain')
+                self.assertEqual(load.call_args.kwargs,{'quantization':'none'})
+                runtime.manage('unload','plain',release_host=True)
+                runtime.manage('load','plain')
+                self.assertEqual(load.call_args.kwargs,{'quantization':'none'})
+                runtime.manage('load','packed')
+                self.assertEqual(load.call_args.kwargs,{'quantization':'q8_0'})

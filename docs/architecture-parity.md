@@ -562,7 +562,7 @@ Remaining limits: no request coalescing, no shortening
 of vectors, quantized encoders, reranking, general encoder-decoder generation,
 or arbitrary SentenceTransformers pooling modules. Each HTTP request executes
 its own input batch; generation groups drain before an embedding request.
-The global quantization setting must remain `none` when serving this encoder.
+Register the encoder with `quantization: "none"` if the server default is Q8.
 
 CUDA graph follow-up: bounded LRU reuse (four batch/length shapes, batches up to
 8) reduces 32-token input latency from 3.06 to **0.67 ms** at batch1, and from
@@ -600,3 +600,20 @@ supports no material default-path regression, not a speedup claim. The optional
 penalty path uses sparse device tensor updates and additional launches; its
 performance under long histories/high concurrency remains an optimization
 follow-up. Raw evidence is in `evidence/sampling/`.
+
+
+## Per-model quantization residency
+
+Issues #10 and #18. Registration now fixes quantization per alias; memory
+estimation and loading use that explicit policy. Re-registering an existing
+alias with a different policy is rejected. Unloading and reloading retain it.
+The environment supplies only the server-startup default, avoiding global
+policy mutation during mixed requests.
+
+A2 live proof switches between a Q8 Qwen2.5-0.5B decoder and an unquantized
+MiniLM encoder with one GPU-resident model and two host-resident models. Both
+restore from host with identical results and correct reported precision;
+encoder text/token/base64, concurrent requests, alias-conflict rejection, and
+invalid-task recovery pass. The 101-test unit suite covers independent alias
+policies and policy retention through full unload/reload. See
+`evidence/embeddings/minilm-a2-q8-mixed-service.json`.

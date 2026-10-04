@@ -60,6 +60,7 @@ def main():
         if name == 'add':
             management.add_argument('path', help='local snapshot or Hugging Face repository on this host')
             management.add_argument('--revision', default='main')
+            management.add_argument('--quantization', choices=('none','q8_0'))
         if name == 'unload':
             management.add_argument('--release-host', action='store_true')
     args = parser.parse_args()
@@ -69,6 +70,8 @@ def main():
         body = None if action == 'status' else {'model': args.model}
         if action == 'register':
             body['path'] = str(resolve_model(args.path, args.revision))
+            if args.quantization is not None:
+                body['quantization'] = args.quantization
         if action == 'unload':
             body['release_host'] = args.release_host
         request = Request(args.server.rstrip('/')+'/v1/models/'+action,

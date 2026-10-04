@@ -338,8 +338,8 @@ explicit token-ID sequences, with up to 64 inputs per request. Float and
 little-endian FP32 base64 output are supported. `dimensions`, if supplied, must
 be 384. Inputs exceeding 256 tokens (including special tokens) are rejected,
 not silently truncated. This is qualification of the pinned MiniLM checkpoint,
-not all SentenceTransformers models. Encoder quantization is unsupported; use
-`DLLM_QUANTIZATION=none` for a server that includes this encoder. Requests share
+not all SentenceTransformers models. Encoder quantization is unsupported; register this encoder with
+`--quantization none` when the server default is Q8. Requests share
 the model-residency scheduler with chat and completion workloads. See
 [encoder evidence](docs/architecture-parity.md#sentence-embeddings) for precision,
 performance, and current batching limits.
@@ -354,3 +354,18 @@ and top-k/top-p filtering. These controls apply to greedy requests too. Request
 histories are isolated; default requests retain batched argmax and do not track
 penalty counts. Optional controls currently use device tensor operations and
 incur extra launches rather than a fused penalty kernel.
+
+
+Quantization can be selected per alias at registration:
+
+```sh
+dllm add chat /path/to/chat/snapshot --quantization q8_0
+dllm add encoder /path/to/minilm/snapshot --quantization none
+```
+
+`POST /v1/models/register` accepts the same `quantization` field (`none` or
+`q8_0`), and `/v1/models/status` reports each alias's policy. Omission uses the
+server's `DLLM_QUANTIZATION` default captured at startup. Policies are part of
+alias identity and remain stable across eviction/reload; register another alias
+for a different precision. Q8 still requires CUDA. A Q8 decoder and an
+unquantized encoder can share one server and its GPU/host residency budgets.

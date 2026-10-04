@@ -36,10 +36,10 @@ def weight_files(path):
     return [path / name for name in names]
 
 
-def weight_bytes(path):
+def weight_bytes(path,quantization=None):
     """Estimate host weight storage from headers before loading tensors."""
     from .quantization import mode
-    quantized = mode() == 'q8_0'
+    quantized = mode(quantization) == 'q8_0'
     config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
     element_bytes = 4 if config['model_type'] == 'starcoder2' else 2
     total, embedding, has_head = 0, None, False
@@ -63,9 +63,9 @@ def weight_bytes(path):
 
 
 class ModelWeights:
-    def __init__(self, path, max_context):
+    def __init__(self, path, max_context, quantization=None):
         from .quantization import mode
-        self.quantization = mode()
+        self.quantization = mode(quantization)
         if self.quantization != 'none' and selected_device() != 'cuda':
             raise ValueError('Q8_0 execution currently requires CUDA')
         self.path = Path(path).resolve()

@@ -36,7 +36,10 @@ class Runtime:
                 or host_models < gpu_models or host_gib <= 0 or queue_timeout <= 0):
             raise ValueError("invalid model, residency, context, or queue limits")
         require_gpu()
+        from .management import quantization_mode
+        self.default_quantization = quantization_mode()
         self.models = dict(models)
+        self.quantizations = {alias:self.default_quantization for alias in self.models}
         self.registry_lock = threading.RLock()
         self.context = context
         self.gpu_limit, self.host_limit = gpu_models, host_models
@@ -55,7 +58,7 @@ class Runtime:
 
     def _status(self):
         with self.registry_lock:
-            models = [{'id': alias, 'residency': 'gpu' if alias in self.gpu else 'host' if alias in self.host else 'disk',
+            models = [{'id': alias, 'quantization':self.quantizations[alias], 'residency': 'gpu' if alias in self.gpu else 'host' if alias in self.host else 'disk',
                        'host_weight_bytes': self.host[alias].bytes if alias in self.host else None}
                       for alias in self.models]
         return {'models': models, 'device': selected_device(), 'context': self.context,
@@ -63,10 +66,10 @@ class Runtime:
                 'host_budget_bytes': self.host_bytes, 'gpu_model_limit': self.gpu_limit,
                 'host_model_limit': self.host_limit}
 
-    def manage(self, action, model=None, path=None, release_host=False):
+    def manage(self, action, model=None, path=None, release_host=False, quantization=None):
         """Called by the GPU worker between request groups, or under this lock."""
         from .management import command
-        command(action, model, path, release_host)
+        command(action, model, path, release_host, quantization)
         if not self.lock.acquire(timeout=self.queue_timeout):
             raise BusyError('model management timeout')
         try:
@@ -76,17 +79,18 @@ class Runtime:
                 from tokenizers import Tokenizer
                 from .models import config as read_config, weight_bytes
                 candidate = Path(path).expanduser().resolve()
+                policy = self.default_quantization if quantization is None else quantization
                 with self.registry_lock:
                     existing = self.models.get(model)
                     if existing is not None:
-                        if Path(existing).expanduser().resolve() != candidate:
-                            raise ValueError('alias already refers to another snapshot')
+                        if Path(existing).expanduser().resolve() != candidate or self.quantizations[model] != policy:
+                            raise ValueError('alias already refers to another snapshot or quantization')
                         return self._status()
                 try:
                     config = read_config(candidate)
                     Tokenizer.from_file(str(candidate/'tokenizer.json'))
                     json.loads((candidate/'tokenizer_config.json').read_text())
-                    estimated = weight_bytes(candidate)
+                    estimated = weight_bytes(candidate,quantization=policy)
                 except Exception as error:
                     raise ValueError('invalid local model snapshot') from error
                 if ((config.get('task') != 'embedding' and self.context > config['max_position_embeddings'])
@@ -94,6 +98,7 @@ class Runtime:
                     raise ValueError('model exceeds configured context or host capacity')
                 with self.registry_lock:
                     self.models[model] = candidate
+                    self.quantizations[model] = policy
             elif action != 'status':
                 if model not in self.models:
                     raise ValueError('unknown model')
@@ -127,7 +132,7 @@ class Runtime:
             return self.gpu[alias], "gpu", time.perf_counter() - start
         tier = "host" if alias in self.host else "disk"
         if alias not in self.host:
-            estimated = weight_bytes(self.models[alias])
+            estimated = weight_bytes(self.models[alias],quantization=self.quantizations[alias])
             if estimated > self.host_bytes:
                 raise MemoryError("model exceeds configured host weight budget")
             # Evict host entries only when their GPU executors are also idle;
@@ -138,7 +143,7 @@ class Runtime:
                 if victim in self.gpu:
                     self._evict(victim)
                 del self.host[victim]
-            model = load(self.models[alias], self.context)
+            model = load(self.models[alias], self.context,quantization=self.quantizations[alias])
             if model.bytes > self.host_bytes:
                 raise MemoryError("model exceeds configured host weight budget")
             while sum(m.bytes for m in self.host.values()) + model.bytes > self.host_bytes:

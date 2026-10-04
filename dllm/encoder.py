@@ -54,7 +54,10 @@ def used_tensor(name):
     return name not in ('embeddings.position_ids','embeddings.token_type_ids') and not name.startswith('pooler.')
 
 
-def weight_bytes(path):
+def weight_bytes(path,quantization=None):
+    from .management import quantization_mode
+    if quantization_mode(quantization) != 'none':
+        raise ValueError('sentence encoder quantization is not implemented')
     from .qwen2 import weight_files
     config(path)
     total = 0
@@ -68,10 +71,10 @@ class EncoderWeights:
     task = 'embedding'
     quantization = 'none'
 
-    def __init__(self,path,max_context):
+    def __init__(self,path,max_context,quantization=None):
         from .qwen2 import weight_files
         from .quantization import mode
-        if mode() != 'none':
+        if mode(quantization) != 'none':
             raise ValueError('sentence encoder quantization is not implemented')
         self.path = Path(path).resolve()
         self.config = config(self.path)
