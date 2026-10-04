@@ -1,0 +1,30 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/baselines/vllm-venv/bin/vllm",
+    "serve",
+    "/home/damen/.cache/huggingface/hub/models--microsoft--Phi-3-mini-4k-instruct/snapshots/f39ac1d28e925b323eae81227eaba4464caced4e",
+    "--served-model-name",
+    "a",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "45387",
+    "--dtype",
+    "half",
+    "--max-model-len",
+    "2048",
+    "--max-num-seqs",
+    "4",
+    "--gpu-memory-utilization",
+    "0.9",
+    "--no-enable-prefix-caching",
+    "--generation-config",
+    "vllm"
+  ],
+  "model": {
+    "repository": "microsoft/Phi-3-mini-4k-instruct",
+    "revision": "f39ac1d28e925b323eae81227eaba4464caced4e",
+    "path": "/home/damen/.cache/huggingface/hub/models--microsoft--Phi-3-mini-4k-instruct/snapshots/f39ac1d28e925b323eae81227eaba4464caced4e"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283"
+}

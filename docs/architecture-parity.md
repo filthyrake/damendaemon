@@ -167,3 +167,23 @@ reference-only report explicitly has `passed: null` and performs no dllm
 qualification. This permits sequential GPU reference/runtime validation without
 two resident model copies. `replay_reference.py --slot N` can isolate one original
 slot for memory-constrained hardware; the report records that reduced scope.
+
+### Phi-3 serving comparison
+
+Mixed-model service passes at GPU residency capacities one and three, with a
+12 GiB host weight budget for the larger checkpoint. The stop-sequence API
+regression also passes on A2. A matched 2048-context, 64-output-token A2 HTTP
+comparison uses the same pinned checkpoint and FP16 weight/KV precision:
+
+| Concurrent requests | dllm tokens/s | vLLM tokens/s | dllm TTFT ms | vLLM TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 21.4 | 21.6 | 58.7 | 72.6 |
+| 2 | 38.0 | 39.3 | 110.4 | 101.4 |
+| 4 | 72.2 | 76.2 | 177.8 | 143.9 |
+
+Medians of five warm rounds. dllm's declared FP32 residual/output accumulation
+is part of its numerical policy; this does not mean all operations are FP16.
+vLLM uses its standard `--dtype half` path, version 0.30 / torch 2.13; dllm uses
+torch 2.6. vLLM receives a 90% A2 memory budget to fit this checkpoint, and the
+engines run sequentially. Throughput is within roughly 1–5% on this workload;
+batched first-token latency remains worse. This is not blanket engine parity.
