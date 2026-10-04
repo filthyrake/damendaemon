@@ -17,6 +17,8 @@ def main():
     parser.add_argument('--format', choices=('q8_0', 'q4_0'), default='q8_0')
     parser.add_argument('--matrix-dtype',choices=('float16','float32'),
         help='pre-quantization precision; defaults to float32 for Mamba, float16 otherwise')
+    parser.add_argument('--unquantized-dtype',choices=('source','float16','float32'),default='source',
+        help='round retained tensors to this dtype; vectors are stored as FP32; source preserves converter output')
     args = parser.parse_args()
     quantization_type = getattr(gguf.GGMLQuantizationType, args.format.upper())
     if args.destination.exists():
@@ -49,6 +51,11 @@ def main():
             data = quantize(data.astype(dtype).astype(np.float32), quantization_type)
             writer.add_tensor(name, data, raw_dtype=quantization_type)
         else:
+            if args.unquantized_dtype!='source':
+                data=data.astype(getattr(np,args.unquantized_dtype))
+                # llama.cpp normalization/bias kernels expect FP32 vectors.
+                # Widening after rounding preserves dllm's exact values.
+                if data.ndim==1:data=data.astype(np.float32)
             writer.add_tensor(name, data)
     writer.write_header_to_file()
     writer.write_kv_data_to_file()

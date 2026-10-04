@@ -1,0 +1,139 @@
+{
+  "passed": true,
+  "model": "results/models/qwen2",
+  "device": "mps",
+  "runtime_environment": {
+    "DLLM_DEVICE": "mps",
+    "DLLM_QUANTIZATION": "q8_0"
+  },
+  "reference_quantization": "q8_0",
+  "reference_dtype": "float32",
+  "reference_attention": "eager",
+  "checks": [
+    {
+      "token": 16246,
+      "selected_logprob_abs_error": 0.0001233220100402832,
+      "top5_match": true
+    },
+    {
+      "token": 279,
+      "selected_logprob_abs_error": 9.03615728020668e-06,
+      "top5_match": true
+    },
+    {
+      "token": 14311,
+      "selected_logprob_abs_error": 5.2616000175476074e-05,
+      "top5_match": true
+    },
+    {
+      "token": 3403,
+      "selected_logprob_abs_error": 1.8061138689517975e-05,
+      "top5_match": true
+    },
+    {
+      "token": 11,
+      "selected_logprob_abs_error": 1.1920883480343036e-07,
+      "top5_match": true
+    },
+    {
+      "token": 6923,
+      "selected_logprob_abs_error": 0.0001575946807861328,
+      "top5_match": true
+    },
+    {
+      "token": 264,
+      "selected_logprob_abs_error": 0.0,
+      "top5_match": true
+    },
+    {
+      "token": 4226,
+      "selected_logprob_abs_error": 0.00013169646263122559,
+      "top5_match": true
+    },
+    {
+      "token": 16246,
+      "selected_logprob_abs_error": 0.0001233220100402832,
+      "top5_match": true
+    },
+    {
+      "token": 279,
+      "selected_logprob_abs_error": 9.03615728020668e-06,
+      "top5_match": true
+    },
+    {
+      "token": 14311,
+      "selected_logprob_abs_error": 5.2616000175476074e-05,
+      "top5_match": true
+    },
+    {
+      "token": 3403,
+      "selected_logprob_abs_error": 1.8061138689517975e-05,
+      "top5_match": true
+    },
+    {
+      "token": 11,
+      "selected_logprob_abs_error": 1.1920883480343036e-07,
+      "top5_match": true
+    },
+    {
+      "token": 10542,
+      "selected_logprob_abs_error": 0.00015354156494140625,
+      "top5_match": true
+    },
+    {
+      "token": 279,
+      "selected_logprob_abs_error": 0.0,
+      "top5_match": true
+    },
+    {
+      "token": 19819,
+      "selected_logprob_abs_error": 7.641315460205078e-05,
+      "top5_match": true
+    },
+    {
+      "token": 32,
+      "selected_logprob_abs_error": 0.000102996826171875,
+      "top5_match": true
+    },
+    {
+      "token": 32,
+      "selected_logprob_abs_error": 0.000171661376953125,
+      "top5_match": true
+    },
+    {
+      "token": 32,
+      "selected_logprob_abs_error": 8.58306884765625e-05,
+      "top5_match": true
+    },
+    {
+      "token": 32,
+      "selected_logprob_abs_error": 7.82012939453125e-05,
+      "top5_match": true
+    },
+    {
+      "token": 32,
+      "selected_logprob_abs_error": 0.00010204315185546875,
+      "top5_match": true
+    },
+    {
+      "token": 32,
+      "selected_logprob_abs_error": 0.0001392364501953125,
+      "top5_match": true
+    },
+    {
+      "token": 32,
+      "selected_logprob_abs_error": 9.202957153320312e-05,
+      "top5_match": true
+    },
+    {
+      "token": 32,
+      "selected_logprob_abs_error": 0.0001125335693359375,
+      "top5_match": true
+    }
+  ],
+  "stream_and_nonstream_scores_equal": true,
+  "scoring_preserves_output": true,
+  "concurrent_request_isolation": true,
+  "prefix_hits_and_chunking": true,
+  "cancellation_recovery": true
+}

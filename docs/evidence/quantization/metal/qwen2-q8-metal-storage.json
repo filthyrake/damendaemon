@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "model": "results/models/qwen2",
+  "device": "mps",
+  "reports": [
+    {
+      "quantization": "none",
+      "host_bytes": 988065536,
+      "preflight_bytes": 988065536,
+      "resident_weight_and_scale_bytes": 988208640,
+      "packed_projections": 0,
+      "embedding_dtype": "torch.float16",
+      "head_dtype": "torch.float16",
+      "compute_dtype": "torch.float32"
+    },
+    {
+      "quantization": "q8_0",
+      "host_bytes": 797246208,
+      "preflight_bytes": 797246208,
+      "resident_weight_and_scale_bytes": 797389312,
+      "packed_projections": 97,
+      "embedding_dtype": "torch.float16",
+      "head_dtype": "torch.int8",
+      "compute_dtype": "torch.float32"
+    }
+  ]
+}

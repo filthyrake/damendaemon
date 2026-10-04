@@ -1,0 +1,30 @@
+{
+  "command": [
+    "/Users/damenknight/dllm/.venv-metal/bin/python",
+    "-m",
+    "dllm",
+    "serve",
+    "--device",
+    "mps",
+    "--context",
+    "512",
+    "--port",
+    "54715",
+    "--batch-size",
+    "4",
+    "--model",
+    "a=results/models/qwen2"
+  ],
+  "device": "Apple M4 GPU",
+  "weights": "float16",
+  "unquantized_weight_dtype": "float16",
+  "kv": "float32",
+  "runtime_environment": {
+    "DLLM_QUANTIZATION": "none",
+    "DLLM_DEVICE": "mps",
+    "DLLM_METAL_WEIGHT_DTYPE": "float16"
+  },
+  "context_per_slot": 512,
+  "cpu_threads": 4,
+  "dllm_backend": "auto"
+}

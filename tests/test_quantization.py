@@ -1,11 +1,24 @@
 import os
 import unittest
 from unittest.mock import patch
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import torch
 from dllm.quantization import quantize, dequantize, prepare, mode
 
 
 class QuantizationTests(unittest.TestCase):
+    def test_metal_quantization_rejects_unqualified_formats_and_architectures(self):
+        from dllm.qwen2 import ModelWeights
+        with TemporaryDirectory() as directory:
+            (Path(directory)/'config.json').write_text('{}')
+            for family,quantization in (('qwen2','q4_0'),('gemma3_text','q8_0'),('qwen3_5_text','q8_0')):
+                with self.subTest(family=family,quantization=quantization),\
+                        patch('dllm.qwen2.selected_device',return_value='mps'),\
+                        patch('dllm.qwen2.decoder_config',return_value={'model_type':family}),\
+                        self.assertRaisesRegex(ValueError,'Metal decoder quantization'):
+                    ModelWeights(directory,512,quantization=quantization)
+
     def test_zero_blocks_and_rounding(self):
         x = torch.zeros(2,32)
         q,s = quantize(x)

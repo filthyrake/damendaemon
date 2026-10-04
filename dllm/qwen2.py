@@ -75,11 +75,12 @@ class ModelWeights:
     def __init__(self, path, max_context, quantization=None):
         from .quantization import mode
         self.quantization = mode(quantization)
-        if self.quantization != 'none' and selected_device() != 'cuda':
-            raise ValueError('quantized execution currently requires CUDA')
         self.path = Path(path).resolve()
         self.config = decoder_config(json.loads((self.path / "config.json").read_text()))
         c = self.config
+        if self.quantization != 'none' and selected_device() != 'cuda':
+            if self.quantization!='q8_0' or c['model_type'] not in ('qwen2','qwen3','llama'):
+                raise ValueError('Metal decoder quantization supports Q8 Qwen2, Qwen3 and Llama only')
         if self.quantization=='q4_0' and c['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
             raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
         if c['model_type'] in ('gpt2','gpt_neox','bloom') and self.quantization!='none':
