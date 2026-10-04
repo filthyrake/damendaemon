@@ -103,6 +103,7 @@ def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, q_norm=None, k
 
 @tr.jit
 def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE, ALIBI, HAS_ALIBI: tl.constexpr,
+               SINKS, HAS_SINKS: tl.constexpr,
                REL, REL_BUCKETS: tl.constexpr, REL_DENOM: tl.constexpr,
                PAGES, PAGED: tl.constexpr, PAGE_SIZE: tl.constexpr, MAX_PAGES: tl.constexpr,
                H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr,
@@ -137,8 +138,13 @@ def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE, ALIBI, HAS_ALIBI: tl.constex
             logits+=tl.load(REL+head*REL_BUCKETS+bucket)
         logits = tl.where(valid, logits, -float("inf"))
         maximum = tl.max(logits, 0)
+        if HAS_SINKS and SPLITS == 1:
+            sink = tl.load(SINKS + head)
+            maximum = tl.maximum(maximum, sink)
         weights = tl.exp(logits - maximum)
         denominator = tl.sum(weights, 0)
+        if HAS_SINKS and SPLITS == 1:
+            denominator += tl.exp(sink - maximum)
         v = tl.load(V + offsets, valid[:, None] & (cols[None, :] < D), other=0).to(tl.float32)
         result = tl.sum(v * weights[:, None], 0) / denominator
         if SPLITS == 1:
@@ -153,24 +159,37 @@ def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE, ALIBI, HAS_ALIBI: tl.constex
 
 
 @tr.jit
-def _merge(PART, LSE, OUT, D: tl.constexpr, S: tl.constexpr, BLOCK: tl.constexpr, BD: tl.constexpr):
+def _merge(PART, LSE, OUT, SINKS, HAS_SINKS: tl.constexpr, H: tl.constexpr,
+           D: tl.constexpr, S: tl.constexpr, BLOCK: tl.constexpr, BD: tl.constexpr):
     head = tl.program_id(0)
     splits = tl.arange(0, BLOCK)
     cols = tl.arange(0, BD)
     lse = tl.load(LSE + head * S + splits, splits < S, other=-float("inf"))
-    weights = tl.exp(lse - tl.max(lse, 0))
-    weights = weights / tl.sum(weights, 0)
+    maximum = tl.max(lse, 0)
+    if HAS_SINKS:
+        sink = tl.load(SINKS + head % H)
+        maximum = tl.maximum(maximum, sink)
+    weights = tl.exp(lse - maximum)
+    denominator = tl.sum(weights, 0)
+    if HAS_SINKS:
+        # One extra softmax term globally, not one per context split. Its
+        # value vector is zero, so it only changes the normalization.
+        denominator += tl.exp(sink - maximum)
+    weights = weights / denominator
     partial = tl.load(PART + (head * S + splits[:, None]) * D + cols[None, :],
                       (splits[:, None] < S) & (cols[None, :] < D), other=0)
     tl.store(OUT + head * D + cols, tl.sum(partial * weights[:, None], 0), cols < D)
 
 
 def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=None, alibi=None, page_table=None,
-              relative_bias=None,relative_max_distance=128):
+              relative_bias=None,relative_max_distance=128,sinks=None):
     batch, heads, _, dim = query.shape
     if alibi is not None and (alibi.shape != (heads,) or alibi.dtype != torch.float32
                               or alibi.device != query.device or not alibi.is_contiguous()):
         raise ValueError('ALiBi needs one contiguous FP32 slope per query head on the same device')
+    if sinks is not None and (sinks.shape!=(heads,) or sinks.dtype!=torch.float32
+            or sinks.device!=query.device or not sinks.is_contiguous()):
+        raise ValueError('attention sinks require one contiguous FP32 logit per query head')
     buckets=0
     if relative_bias is not None:
         if (relative_bias.ndim!=2 or relative_bias.shape[0]!=heads or relative_bias.shape[1]<2
@@ -192,12 +211,14 @@ def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=No
     _attention[(batch * heads, splits)](query, cache_k, cache_v, positions,
                                positions if slots is None else slots, out, partial, lse,
                                positions if alibi is None else alibi, alibi is not None,
+                               positions if sinks is None else sinks,sinks is not None,
                                positions if relative_bias is None else relative_bias,buckets,
                                math.log(relative_max_distance/(buckets//2)) if buckets else 1.,
                                positions if page_table is None else page_table, page_table is not None, page_size, max_pages,
                                heads, kv_heads, dim, context, splits, block, slots is not None, window, dim ** -.5 if scale is None else scale, tr.next_power_of_2(dim), num_warps=4)
     if splits > 1:
-        _merge[(batch * heads,)](partial, lse, out, dim, splits, tr.next_power_of_2(splits), tr.next_power_of_2(dim))
+        _merge[(batch * heads,)](partial, lse, out,positions if sinks is None else sinks,
+            sinks is not None,heads,dim,splits,tr.next_power_of_2(splits),tr.next_power_of_2(dim))
     return out
 
 
