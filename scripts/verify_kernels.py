@@ -31,7 +31,7 @@ def main():
                                        (F.silu(gate.float())*up.float()).half(), atol=.002, rtol=.002)
             checks += 2
     attention_checks = []
-    for dim in (64, 128):
+    for dim in (64, 96, 128):
         heads, kv_heads = 14, 2
         for context in (256, 513, 1024):
             k = torch.randn((1, kv_heads, context, dim), dtype=torch.float16, device="cuda")
@@ -90,7 +90,7 @@ def main():
             torch.testing.assert_close(actual, torch.cat(expected), atol=.003, rtol=.01)
             checks += 1
     # Qwen3 normalizes each Q/K head before RoPE; values must remain untouched.
-    for dim in (64, 128):
+    for dim in (64, 96, 128):
         batch, heads, kv_heads, context = 4, 16, 8, 1024
         positions = torch.tensor([0, 255, 256, 1023], device="cuda")
         slots = torch.tensor([3, 1, 2, 0], device="cuda")
