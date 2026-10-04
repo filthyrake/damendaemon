@@ -49,7 +49,7 @@ def main():
         model = ModelWeights(args.path, args.context)
     reference = load_reference(args.path, reference_quantization=args.reference_quantization, local_files_only=True,
         trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype), attn_implementation=args.reference_attention).to(reference_device).eval()
-    logit_options = {} if model.config['model_type']=='gpt2' else {'logits_to_keep':1}
+    logit_options = {} if model.config['model_type'] in ('gpt2','bloom') else {'logits_to_keep':1}
     executor = None if args.reference_only else make_executor(model, max_batch=4)
     def native_prefill(prompts,slots):
         if not args.prefill_chunk_size:
@@ -174,7 +174,7 @@ def main():
         except ValueError:
             assert executor.lengths == before
     decode([next(iter(states))], 1)
-    if model.config['model_type']=='gpt2':
+    if model.config['model_type'] in ('gpt2','bloom'):
         prefill([args.context-1],[1])
         decode([1],1)
         if executor is not None:

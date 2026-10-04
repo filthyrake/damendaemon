@@ -44,9 +44,9 @@ def weight_bytes(path,quantization=None):
     config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
     if quantization=='q4_0' and config['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
         raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
-    if config['model_type'] in ('gpt2','gpt_neox') and quantized:
-        raise ValueError('GPT-2/GPT-NeoX quantization is not implemented')
-    element_bytes = 4 if config['model_type'] in ('starcoder2','gpt2','gpt_neox') else 2
+    if config['model_type'] in ('gpt2','gpt_neox','bloom') and quantized:
+        raise ValueError('GPT-2/GPT-NeoX/BLOOM quantization is not implemented')
+    element_bytes = 4 if config['model_type'] in ('starcoder2','gpt2','gpt_neox','bloom') else 2
     total, embedding, has_head = 0, None, False
     for file in weight_files(path):
         with safe_open(str(file), framework="pt", device="cpu") as reader:
@@ -82,8 +82,8 @@ class ModelWeights:
         c = self.config
         if self.quantization=='q4_0' and c['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
             raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
-        if c['model_type'] in ('gpt2','gpt_neox') and self.quantization!='none':
-            raise ValueError('GPT-2/GPT-NeoX quantization is not implemented')
+        if c['model_type'] in ('gpt2','gpt_neox','bloom') and self.quantization!='none':
+            raise ValueError('GPT-2/GPT-NeoX/BLOOM quantization is not implemented')
         if not 1 <= max_context <= c["max_position_embeddings"]:
             raise ValueError("context exceeds model position limit")
         self.max_context = max_context
@@ -125,8 +125,10 @@ class ModelWeights:
                 for key in reader.keys():
                     if not key.startswith(('model.visual.', 'mtp.')):
                         state[key] = reader.get_tensor(key)
-        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox"):
-            if c['model_type'] == 'gpt_neox':
+        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom"):
+            if c['model_type'] == 'bloom':
+                from .bloom import load_weights
+            elif c['model_type'] == 'gpt_neox':
                 from .neox import load_weights
             elif c['model_type'] == 'gpt2':
                 from .gpt2 import load_weights
@@ -227,10 +229,10 @@ class Executor:
         self.dim = c["head_dim"]
         self.eps = c["rms_norm_eps"]
         self.window = c.get("sliding_window") if c["model_type"] in ("phi3", "mistral", "starcoder2") else None
-        self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3", "starcoder2", "olmoe", "gpt2", "gpt_neox")
+        self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom")
         self.rotary_precise = c["model_type"] in ("qwen3", "starcoder2", "olmoe")
         self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
-        if c["model_type"] in ("gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox"):
+        if c["model_type"] in ("gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom"):
             self.compute_dtype = torch.float32
         self.qwen3_precision = 'standard'
         if self.device == 'cuda' and c['model_type'] == 'qwen3':

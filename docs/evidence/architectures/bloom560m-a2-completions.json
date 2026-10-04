@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "model_path": "/home/damen/dllm-dev/models/bloom560m",
+  "device": "cuda",
+  "raw_text_equals_token_ids": true,
+  "stream_matches_nonstream": true,
+  "concurrent_batch": 4,
+  "seed_and_stop_passed": true,
+  "base_checkpoint_without_template": true,
+  "rejection_recovery": true,
+  "sample": {
+    "id": "cmpl-926502f4e09d486f8b8707819945ae02",
+    "object": "text_completion",
+    "created": 1791103005,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": " \"\"\"\n     Returns a binary search for the given values.\n     \"\"\"\n     if isinstance(values, list):\n         return binary",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 24,
+      "total_tokens": 34
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 11.64273788799619,
+      "cached_prompt_tokens": 0,
+      "kernel_backend": "triton",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 11.809986039996147,
+      "total_seconds": 12.134859735997452,
+      "decode_tokens_per_second": 70.79674434432397
+    }
+  }
+}

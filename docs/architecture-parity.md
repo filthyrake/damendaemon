@@ -932,3 +932,30 @@ model replay remains unchanged numerically. A2 throughput improves to
 The four-request gap to the same vLLM baseline falls to about 8%. MPS retains
 its previously qualified path. Raw measurements are preserved alongside the
 initial baseline, rather than replacing it.
+
+## BLOOM / ALiBi
+
+Issue #26. Pinned [BigScience BLOOM-560m](https://huggingface.co/bigscience/bloom-560m)
+revision `ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971` adds an independent
+ALiBi decoder. The attention-bias method follows
+[Press et al.](https://arxiv.org/abs/2108.12409); Transformers' BLOOM implementation
+is used only as the independent test oracle. dllm implements geometric head
+slopes, head-interleaved QKV reordering, embedding and block LayerNorm,
+tanh GELU, residual connections and tied output weights. CUDA decode adds
+ALiBi inside the shared slotted attention kernel. Prefill uses bounded
+128-query attention tiles; it does not implement scheduler chunking for BLOOM.
+
+Both A2 and M4 pass 84/84 checks through 2048 context, including 2047-prefill
+plus final decode, head/slot permutations and cache reuse. Independent reference:
+CPU FP32 eager Transformers, PyTorch 2.13. Production uses FP32 matrices,
+arithmetic and KV. Worst relative RMS: A2 0.000007259, M4 0.000004620.
+A2 maximum absolute logit error is 0.003022, comfortably inside the existing
+0.5 gate. All selected tokens match. Eighteen separate CUDA attention checks
+cover head counts 1/12/16, dimensions 64/96/128, FP16/FP32, reordered slots and
+NaN-filled unused cache; the existing kernel regression suite also passes.
+
+The checkpoint has no chat template. Raw text/token-ID equality, SSE,
+four-request batching, seeded sampling, stop handling and rejection recovery
+pass on A2 and Apple M4. Quantization, prefix caching and interleaved prefill remain
+unsupported. The default 2048 context when absent from the legacy configuration
+is a conservative qualification boundary, not a claim of length extrapolation.

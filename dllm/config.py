@@ -55,6 +55,8 @@ def decoder_config(config):
     if (isinstance(scaling, dict) and scaling.get('rope_type', scaling.get('type')) == 'yarn'
             and config.get('model_type') not in ('qwen2', 'qwen3', 'llama', 'mistral')):
         raise ValueError('YaRN is currently supported only for Qwen2/Qwen3/Llama/Mistral')
+    if config.get('model_type') == 'bloom':
+        return bloom_config(config)
     if config.get('model_type') == 'gpt_neox':
         return neox_config(config)
     if config.get('model_type') == 'gpt2':
@@ -251,3 +253,34 @@ def neox_config(config):
     return {**c,'head_dim':dim,'num_key_value_heads':c['num_attention_heads'],
             'rotary_dim':int(dim*fraction),'rope_theta':base,'rope_scaling':None,
             'rms_norm_eps':epsilon,'use_parallel_residual':c.get('use_parallel_residual',True)}
+
+
+def bloom_config(config):
+    c = dict(config)
+    h = c.get('hidden_size', c.get('n_embed'))
+    heads = c.get('n_head', c.get('num_attention_heads'))
+    layers = c.get('n_layer', c.get('num_hidden_layers'))
+    context = c.get('max_position_embeddings', 2048)
+    for left, right in (('hidden_size', 'n_embed'), ('n_head', 'num_attention_heads'), ('n_layer', 'num_hidden_layers')):
+        if left in c and right in c and c[left] != c[right]:
+            raise ValueError('conflicting BLOOM dimension aliases')
+    if (c.get('architectures') != ['BloomForCausalLM'] or c.get('quantization_config')
+            or c.get('tie_word_embeddings', True) is not True
+            or type(c.get('pretraining_tp', 1)) is not int or c.get('pretraining_tp', 1) != 1
+            or c.get('slow_but_exact', False)
+            or c.get('rope_scaling') or c.get('rope_parameters')
+            or type(c.get('apply_residual_connection_post_layernorm', False)) is not bool):
+        raise ValueError('unsupported BLOOM configuration or checkpoint format')
+    for value in (h, heads, layers, context, c.get('vocab_size')):
+        if type(value) is not int or value <= 0:
+            raise ValueError('invalid BLOOM dimensions')
+    if h % heads or (h // heads) % 2 or c.get('n_inner') not in (None, 4*h):
+        raise ValueError('unsupported BLOOM head or MLP geometry')
+    epsilon = c.get('layer_norm_epsilon', 1e-5)
+    if type(epsilon) not in (int, float) or not math.isfinite(epsilon) or epsilon <= 0:
+        raise ValueError('invalid BLOOM LayerNorm epsilon')
+    return {**c, 'hidden_size': h, 'num_attention_heads': heads, 'num_key_value_heads': heads,
+            'num_hidden_layers': layers, 'head_dim': h // heads, 'intermediate_size': 4*h,
+            'max_position_embeddings': context, 'rms_norm_eps': epsilon,
+            'tie_word_embeddings': True, 'rope_theta': 10000.0, 'rope_scaling': None,
+            'apply_residual_connection_post_layernorm': c.get('apply_residual_connection_post_layernorm', False)}

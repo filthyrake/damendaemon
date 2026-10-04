@@ -277,6 +277,11 @@ class Runtime:
 
 def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     """Choose an execution path from the validated architecture, not the model name."""
+    if model.config['model_type'] == 'bloom':
+        from .bloom import BloomExecutor
+        if kwargs.pop('fuse_projections', True) is False:
+            raise ValueError('BLOOM requires packed checkpoint projections')
+        return BloomExecutor(model, use_graph, max_batch or 1, **kwargs)
     if model.config['model_type'] == 'gpt_neox':
         from .neox import NeoxExecutor
         if kwargs.pop('fuse_projections',True) is False:

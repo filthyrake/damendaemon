@@ -11,7 +11,7 @@ GPU execution; dllm does not depend on vLLM, llama.cpp, Ollama,
 or Transformers generation. Transformers is used for validation and optional structured-output tokenizer adaptation; model execution remains independent.
 
 Additional qualified checkpoints include Llama 3.2, Gemma 3 text, Phi-3
-mini, Mistral 7B, StarCoder2 3B, GPT-2, MiniLM sentence embeddings, and CUDA OLMoE. Exact revisions, numerical gates, and remaining limits are recorded in
+mini, Mistral 7B, StarCoder2 3B, GPT-2, Pythia (GPT-NeoX), BLOOM, MiniLM sentence embeddings, and CUDA OLMoE. Exact revisions, numerical gates, and remaining limits are recorded in
 [architecture evidence](docs/architecture-parity.md).
 
 The server selects models from each request without restarting. GPU-resident
@@ -470,3 +470,17 @@ Cache write failures warn and leave inference available. Changing a source durin
 loading is an error. There is no automatic disk eviction: budget roughly one
 extra prepared-weight copy per checkpoint and precision, and remove obsolete
 cache files when desired. No files are created unless this option is set.
+
+### BLOOM / ALiBi
+
+Pinned BLOOM-560m is qualified through 2048 context on A2 and Apple M4. Its
+independent decoder implements ALiBi attention, embedding LayerNorm, head-major
+packed QKV and the tied output projection. It uses FP32 weights/arithmetic/KV;
+CUDA decode applies ALiBi directly inside the slotted attention kernel. Prefill
+bounds additive-mask workspace by processing 128 query positions at a time.
+This is internal attention tiling, not scheduler-level chunked prefill.
+
+Use raw completions for the base checkpoint, which has no chat template.
+Quantization, prompt-prefix reuse and interleaved prefill are not yet supported
+for BLOOM. Acceptance of another BLOOM configuration does not qualify its
+checkpoint or an extended context. See [architecture evidence](docs/architecture-parity.md).

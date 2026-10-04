@@ -101,7 +101,7 @@ def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, q_norm=None, k
 
 
 @tr.jit
-def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE,
+def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE, ALIBI, HAS_ALIBI: tl.constexpr,
                H: tl.constexpr, KH: tl.constexpr, D: tl.constexpr,
                C: tl.constexpr, SPLITS: tl.constexpr, BLOCK: tl.constexpr, SLOTTED: tl.constexpr, WINDOW: tl.constexpr, SCALE: tl.constexpr, BD: tl.constexpr):
     bh, split = tl.program_id(0), tl.program_id(1)
@@ -119,6 +119,8 @@ def _attention(Q, K, V, POS, SLOTS, OUT, PART, LSE,
         offsets = (kh * C + times[:, None]) * D + cols[None, :]
         k = tl.load(K + offsets, valid[:, None] & (cols[None, :] < D), other=0).to(tl.float32)
         logits = tl.sum(k * q[None, :], 1) * SCALE
+        if HAS_ALIBI:
+            logits += tl.load(ALIBI + head) * times
         logits = tl.where(valid, logits, -float("inf"))
         maximum = tl.max(logits, 0)
         weights = tl.exp(logits - maximum)
@@ -149,8 +151,11 @@ def _merge(PART, LSE, OUT, D: tl.constexpr, S: tl.constexpr, BLOCK: tl.constexpr
     tl.store(OUT + head * D + cols, tl.sum(partial * weights[:, None], 0), cols < D)
 
 
-def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=None):
+def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=None, alibi=None):
     batch, heads, _, dim = query.shape
+    if alibi is not None and (alibi.shape != (heads,) or alibi.dtype != torch.float32
+                              or alibi.device != query.device or not alibi.is_contiguous()):
+        raise ValueError('ALiBi needs one contiguous FP32 slope per query head on the same device')
     _, kv_heads, context, _ = cache_k.shape
     block = min(256, tr.next_power_of_2(context))
     splits = tr.cdiv(context, block)
@@ -159,6 +164,7 @@ def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=No
     lse = torch.empty((batch * heads, splits), device=query.device, dtype=torch.float32)
     _attention[(batch * heads, splits)](query, cache_k, cache_v, positions,
                                positions if slots is None else slots, out, partial, lse,
+                               positions if alibi is None else alibi, alibi is not None,
                                heads, kv_heads, dim, context, splits, block, slots is not None, window, dim ** -.5 if scale is None else scale, tr.next_power_of_2(dim), num_warps=4)
     if splits > 1:
         _merge[(batch * heads,)](partial, lse, out, dim, splits, tr.next_power_of_2(splits), tr.next_power_of_2(dim))
