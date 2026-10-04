@@ -12,11 +12,11 @@ and zero completion tokens. This is next-token scoring with explicit verbalizers
 not multi-token sequence likelihood, trained classification or calibrated confidence.
 
 Initial scope: unquantized Qwen2/Qwen3, CUDA and Metal. Requests are bounded
-scheduler commands and serialize with generation and model management. This first
-implementation does not batch scoring requests, reuse prompt prefixes or run
-scoring in captured graphs. No persistent extra head is cached. The temporary
-head is cleared even when prefill raises, and ordinary captured decode retains
-its full output head. Q8/Q4 and other families fail explicitly.
+scheduler commands and serialize with generation and model management. Scoring requests are not batched and do not reuse prompt prefixes. The default
+eager path keeps no extra persistent head. With optional CUDA prefill graphs,
+selected heads live only in the bounded graph cache, keyed by exact candidate
+IDs and order as well as prompt length/slot. The temporary executor override is
+cleared even when prefill raises; ordinary captured decode retains its full head. Q8/Q4 and other families fail explicitly.
 
 ## Qualification and timings
 
@@ -60,3 +60,41 @@ and A2 paged KV prove unchanged greedy generation before/after successful and
 invalid scoring requests, interleaved score/generate commands, released pages
 and no residual head override. Unit/API tests cover bounds, copies, malformed
 requests and forced prefill failure cleanup.
+
+## Optional candidate-specific CUDA graphs
+
+`DLLM_PREFILL_GRAPHS=1..8` now also covers scoring, with the same default128-token
+ceiling. Exact ordered candidate IDs are part of the key; a selected head is
+retained with its graph so replay cannot read a freed or different head. A full
+generation head uses a separate key. Candidate heads share the existing entry
+budget, so choice-set churn can evict ordinary prompt graphs and vice versa.
+
+`verify_scoring_graphs.py` passes on both pinned Qwen checkpoints: changed prompt
+IDs, reordered candidates, different same-size choice sets, head eviction/release,
+recapture and full-vocabulary generation. Lifecycle interleaving and failure
+recovery also pass with graphs enabled. Scores match the full-head reference
+within the 5e-5 absolute/relative gate. Graph support remains CUDA-only.
+
+Complete four-choice scoring call, median15 synchronized trials after3 warmups,
+including weight-row extraction and token upload, excluding HTTP/loading:
+
+| A2 model | Tokens | Eager ms | Cached graph ms |
+|---|---:|---:|---:|
+| Qwen2 | 16 | 20.339 | 6.193 |
+| Qwen2 | 128 | 21.931 | 9.860 |
+| Qwen3 FP32 | 16 | 47.505 | 7.977 |
+| Qwen3 FP32 | 128 | 49.268 | 29.350 |
+
+Matched Qwen2 loopback HTTP (`bench_scoring_http.py`), preloaded model, same raw
+prompt and four candidate IDs,15 measured requests following one separate first
+request. First request includes remaining warmup/capture work, not model loading:
+
+| Tokens | Graphs off warm ms | Graphs on warm ms | Off first ms | On first ms |
+|---|---:|---:|---:|---:|
+| 16 | 26.218 | 10.983 | 86.762 | 197.739 |
+| 128 | 25.691 | 14.472 | 34.882 | 189.495 |
+
+The complete score vectors agree. Trials are sequential off-then-on, single
+client, repeated inputs; they are not a broad latency or quality benchmark.
+Capture cost, changing choice sets and graph memory can outweigh warm gains.
+No Jev, vLLM or llama.cpp comparison is claimed.

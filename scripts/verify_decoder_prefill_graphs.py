@@ -44,10 +44,12 @@ def main():
                 checks.append({'count':count,'slot':slot,'value':value,'first_call_ms':first_ms,
                     'max_logit_error':(actual-expected).abs().max().item(),
                     'max_decode_error':(actual_decode-expected_decode).abs().max().item()})
-            # A narrow scoring request must not hit the cached full-vocabulary graph.
+            # A narrow scoring request must use a distinct candidate-keyed graph.
             before=cache.hits
             actual=executor.score_candidates([40]*16,[0,1,100])
             assert actual.shape[-1]==3 and cache.hits==before
+            repeated=executor.score_candidates([40]*16,[0,1,100])
+            assert repeated.shape[-1]==3 and cache.hits==before+1
             rows=[]
             for count in (16,128):
                 prompt=[40]*count
@@ -74,7 +76,7 @@ def main():
         assert executor_ref() is None and graph_ref() is None
         print(json.dumps({'passed':True,'model':args.model,'gpu':torch.cuda.get_device_name(),
             'torch':torch.__version__,'checks':checks,'timings':rows,'cache':stats,'memory':memory,
-            'eviction_frees_graph':True,'unload_frees_executor_and_graph':True,'scoring_bypasses_graph':True,
+            'eviction_frees_graph':True,'unload_frees_executor_and_graph':True,'scoring_uses_distinct_graph':True,
             'timing':'median 15 synchronized complete prefills after 3 warmups, includes prompt tensor creation/copy; loading and HTTP excluded'},indent=2))
     finally:runtime.manage('unload',model='a',release_host=True)
 

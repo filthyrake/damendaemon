@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "gpu": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "checks": [
+    {
+      "tokens": 16,
+      "prompt_id": 40,
+      "candidates": [
+        0,
+        1
+      ],
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 16,
+      "prompt_id": 100,
+      "candidates": [
+        0,
+        1
+      ],
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 16,
+      "prompt_id": 40,
+      "candidates": [
+        1,
+        0
+      ],
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 16,
+      "prompt_id": 40,
+      "candidates": [
+        17,
+        33
+      ],
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 16,
+      "prompt_id": 40,
+      "candidates": [
+        0,
+        1,
+        100
+      ],
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 128,
+      "prompt_id": 40,
+      "candidates": [
+        0,
+        1
+      ],
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 129,
+      "prompt_id": 40,
+      "candidates": [
+        0,
+        1
+      ],
+      "max_logit_error": 0.0
+    }
+  ],
+  "timings": [
+    {
+      "tokens": 16,
+      "candidates": 4,
+      "eager_ms": 20.33873100299388,
+      "graph_ms": 6.193171997438185,
+      "speedup": 3.284057186108674
+    },
+    {
+      "tokens": 128,
+      "candidates": 4,
+      "eager_ms": 21.931404000497423,
+      "graph_ms": 9.860064994427375,
+      "speedup": 2.2242656628422246
+    }
+  ],
+  "cache": {
+    "hits": 35,
+    "captures": 12,
+    "evictions": 9
+  },
+  "eviction_frees_candidate_heads": true,
+  "normal_generation_full_vocabulary": true,
+  "timing": "median 15 synchronized score_candidates calls after 3 warmups; includes candidate weight extraction and prompt upload; HTTP and loading excluded"
+}

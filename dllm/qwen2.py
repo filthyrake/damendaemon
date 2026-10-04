@@ -462,6 +462,7 @@ class Executor:
     def score_candidates(self,tokens,candidates):
         # Runtime owns an exclusive executor lease. Only eager prefill observes
         # this temporary head; captured decode graphs retain the complete head.
+        # Prefill graphs retain selected heads only under their exact candidate key.
         if self.c['model_type'] not in ('qwen2','qwen3') or self.w['head'].dtype not in (torch.float16,torch.float32):
             raise ValueError('direct scoring requires unquantized Qwen2 or Qwen3')
         if any(token>=self.w['head'].shape[0] for token in candidates):
@@ -469,10 +470,12 @@ class Executor:
         if getattr(self,'_candidate_head',None) is not None:raise RuntimeError('nested candidate scoring')
         ids=torch.tensor(candidates,device=self.device,dtype=torch.long)
         self._candidate_head=self.w['head'].index_select(0,ids)
+        self._candidate_ids=tuple(candidates)
         try:
             return self.prefill(tokens).float()
         finally:
             self._candidate_head=None
+            self._candidate_ids=None
 
     def prefill_attention(self, query, key, value, query_start=0):
         if query_start:
@@ -577,9 +580,11 @@ class Executor:
         ids = torch.tensor(tokens, device=self.device, dtype=torch.long)
         self.length = len(tokens)
         cache=self.prefill_graph_cache
+        head=getattr(self,'_candidate_head',None)
+        head_key=getattr(self,'_candidate_ids',None)
         if (cache is not None and len(tokens)<=cache.max_tokens
-                and getattr(self,'_candidate_head',None) is None):
-            return cache.run(ids,slot,self.forward)
+                and (head is None or head_key is not None)):
+            return cache.run(ids,slot,self.forward,head_key=head_key,head=head)
         return self.forward(ids, torch.arange(len(tokens), device=self.device), prefill=True, slot=slot)
 
     @torch.inference_mode()

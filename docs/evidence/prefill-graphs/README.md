@@ -2,13 +2,14 @@
 
 Issue #34. `DLLM_PREFILL_GRAPHS=1..8` enables a per-executor LRU of captured
 single-prompt CUDA forwards. Default is0. `DLLM_PREFILL_GRAPH_MAX_TOKENS` defaults
-to128 and accepts1..512. The cache key is exact prompt length and cache slot;
-input IDs are copied into stable graph-owned storage before each replay.
+to128 and accepts1..512. The cache key includes exact prompt length, cache slot and optional ordered candidate IDs;
+Input IDs are copied into stable graph-owned storage before each replay.
 
 Qualified scope: unquantized Qwen2/Qwen3 on CUDA with graphs enabled. Apple,
-quantized models, other families, paged KV, packed/chunked prefills and direct
-candidate scoring use their existing paths. These exclusions prevent accidental
-capture of incompatible metadata or a temporary output head. Multi-request
+quantized models, other families, paged KV and packed/chunked prefills use their
+existing paths. Candidate scoring has separately qualified graph keys/retained
+heads; see [scoring graph evidence](../scoring/README.md). These boundaries
+prevent accidental capture of incompatible metadata or mismatched output heads. Multi-request
 serving can still benefit when admission performs a qualifying single prefill.
 
 Each cache entry owns its input/position buffers, graph and logits. LRU eviction
@@ -24,7 +25,9 @@ A2 / torch2.6+cu124, pinned Qwen2.5-0.5B-Instruct
 `7ae557604adf67be50417f59c2c2f167def9a775` (standard precision) and Qwen3-0.6B
 `c1899de289a04d12100db370d81485cdf75e47ca` (`DLLM_QWEN3_PRECISION=float32`).
 Both pass changed IDs, cache hit/miss, multiple slots, LRU eviction,128-token
-boundary and129-token fallback, subsequent captured decode, and scoring bypass.
+boundary and129-token fallback and subsequent captured decode. The original
+reports predate candidate-specific graph support and also checked scoring bypass;
+the later scoring evidence qualifies that extension separately.
 All tested prefill and subsequent-decode logits match eager exactly. Weak-reference
 checks prove evicted graphs and unloaded executor/graphs are no longer retained.
 

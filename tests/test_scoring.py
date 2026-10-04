@@ -23,6 +23,7 @@ class ScoringTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'prefill failure'):
             Executor.score_candidates(model,[1,2],[3,7])
         self.assertIsNone(model._candidate_head)
+        self.assertIsNone(model._candidate_ids)
         self.assertIs(model.w['head'],head)
         with self.assertRaisesRegex(ValueError,'vocabulary'):
             Executor.score_candidates(model,[1],[3,10])

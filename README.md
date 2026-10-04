@@ -636,5 +636,6 @@ For repeated short Qwen2/Qwen3 prompts on NVIDIA, opt-in
 `DLLM_PREFILL_GRAPHS=4` caches up to four prompt-length/slot CUDA graphs per
 resident executor. `DLLM_PREFILL_GRAPH_MAX_TOKENS` defaults to128. First captures
 are expensive; dynamic workloads may not amortize them. Quantization, paged KV,
-packed/chunked prefill and direct token scoring retain their existing paths.
+and packed/chunked prefill retain their existing paths. Direct token scoring
+uses separate graph keys for each ordered candidate set, sharing the same cache budget.
 [Correctness, memory release and matched HTTP performance](docs/evidence/prefill-graphs/README.md).

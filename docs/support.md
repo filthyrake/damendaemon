@@ -46,6 +46,7 @@ Model licenses remain those of their respective publishers.
 | Direct choices | Unquantized Qwen2/Qwen3 candidate-token logits/probabilities without answer generation; explicit raw prompts, no calibrated confidence |
 | Batching | Continuous decode, up to 16 slots; CUDA graph replay; opt-in bounded CUDA dense paged KV with admission reservations |
 | Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state |
+| Prompt graph reuse | Opt-in bounded Qwen2/Qwen3 CUDA single-prefill and candidate-scoring graphs; cold capture cost, exact shape/slot/choice keys |
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
 | Embeddings | Text/token-ID inputs, float/base64 output for the qualified BERT sentence encoder |
 | Weight formats | Hugging Face safetensors; own on-load Q8_0/Q4_0 conversion where supported |

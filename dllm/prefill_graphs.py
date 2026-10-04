@@ -18,12 +18,14 @@ class PrefillGraphs:
         self.entries=OrderedDict();self.hits=0;self.captures=0;self.evictions=0
         self.stream=torch.cuda.Stream()
 
-    def run(self,ids,slot,forward):
+    def run(self,ids,slot,forward,head_key=None,head=None):
         import torch
-        key=(ids.numel(),slot)
+        # Candidate identity is part of the graph key. Keep its immutable
+        # selected head alive for every replay; full-head graphs use None.
+        key=(ids.numel(),slot,head_key)
         entry=self.entries.get(key)
         if entry is not None:
-            staged,_,graph,logits=entry
+            staged,_,graph,logits,_=entry
             staged.copy_(ids);graph.replay();self.entries.move_to_end(key);self.hits+=1
             return logits
         # Evict before allocating a new private graph pool. No closures holding
@@ -38,5 +40,5 @@ class PrefillGraphs:
         graph=torch.cuda.CUDAGraph()
         with torch.cuda.graph(graph):logits=forward(staged,positions,prefill=True,slot=slot)
         graph.replay()
-        self.entries[key]=(staged,positions,graph,logits);self.captures+=1
+        self.entries[key]=(staged,positions,graph,logits,head);self.captures+=1
         return logits
