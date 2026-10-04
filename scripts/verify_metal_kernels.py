@@ -26,6 +26,14 @@ def main():
                 actual=metal.linear(x.to('mps'),weight.to('mps'),None if bias is None else bias.to('mps')).cpu()
                 torch.testing.assert_close(actual,F.linear(x,weight.float(),bias),atol=1.e-4,rtol=1.e-4)
         checks.append({'op':'linear','rows':rows})
+    # Odd inner widths use the scalar tail-safe path, including widths < 4.
+    for width in (3,1023):
+        x=torch.randn(3,width);w=torch.randn(65,width)
+        for dtype in (torch.float32,torch.float16):
+            weight=w.to(dtype)
+            actual=metal.linear(x.to('mps'),weight.to('mps')).cpu()
+            torch.testing.assert_close(actual,F.linear(x,weight.float()),atol=1.e-4,rtol=1.e-4)
+        checks.append({'op':'linear_odd_width','width':width})
     for dim in (64,96,128):
         h,kh,context=8,2,512
         slots=torch.tensor([3,0,2]);positions=torch.tensor([5,31,257])

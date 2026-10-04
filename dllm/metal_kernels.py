@@ -38,12 +38,24 @@ inline void linear_impl(device const float* x, device const Weight* w, device co
     uint row = id.x/32, batch = id.y*4;
     if (row >= n) return;
     float4 sums = 0;
-    for (uint d = lane; d < k; d += 32) {
-        float weight = w[row*k+d];
-        sums.x += weight*x[batch*k+d];
-        if (batch+1 < m) sums.y += weight*x[(batch+1)*k+d];
-        if (batch+2 < m) sums.z += weight*x[(batch+2)*k+d];
-        if (batch+3 < m) sums.w += weight*x[(batch+3)*k+d];
+    if (k%4 == 0) {
+        device const vec<Weight,4>* weights = reinterpret_cast<device const vec<Weight,4>*>(w+row*k);
+        device const float4* inputs = reinterpret_cast<device const float4*>(x+batch*k);
+        for (uint d = lane; d < k/4; d += 32) {
+            float4 weight = float4(weights[d]);
+            sums.x += dot(weight,inputs[d]);
+            if (batch+1 < m) sums.y += dot(weight,inputs[k/4+d]);
+            if (batch+2 < m) sums.z += dot(weight,inputs[2*k/4+d]);
+            if (batch+3 < m) sums.w += dot(weight,inputs[3*k/4+d]);
+        }
+    } else {
+        for (uint d = lane; d < k; d += 32) {
+            float weight = w[row*k+d];
+            sums.x += weight*x[batch*k+d];
+            if (batch+1 < m) sums.y += weight*x[(batch+1)*k+d];
+            if (batch+2 < m) sums.z += weight*x[(batch+2)*k+d];
+            if (batch+3 < m) sums.w += weight*x[(batch+3)*k+d];
+        }
     }
     sums = float4(simd_sum(sums.x),simd_sum(sums.y),simd_sum(sums.z),simd_sum(sums.w));
     if (has_bias) sums += bias[row];

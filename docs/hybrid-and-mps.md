@@ -188,6 +188,25 @@ service passes the same three-model switching, concurrency, cancellation, and
 recovery scenarios, including capacity-one eviction and resident model reuse.
 Reproduce with `compare_mps.py --weight-dtype float16` and a matching F16 GGUF.
 
+Vectorized four-element weight/input reads subsequently improve this kernel.
+The odd-width path retains scalar loads and has explicit tests, including
+widths 3 and 1023. The updated kernel passes the full Qwen3 and SmolLM2 FP16
+storage checks, the Qwen2 FP32 storage checks, and the live switching service.
+The fresh paired F16-weight/F32-KV comparison is:
+
+| Concurrent requests | dllm aggregate tokens/s | llama.cpp aggregate tokens/s | dllm first output | llama.cpp first output |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 69.9 | 92.4 | 47.8 ms | 22.6 ms |
+| 2 | 126.4 | 147.0 | 76.4 ms | 33.2 ms |
+| 4 | 222.4 | 184.9 | 135.4 ms | 62.3 ms |
+
+An earlier dllm-only vectorized run measured 69.8 / 123.1 / 196.4 tokens/s;
+both runs are retained, rather than hiding concurrent-throughput variability.
+dllm leads four-request aggregate throughput in the fresh paired run, while
+llama.cpp still leads single-request throughput and every first-output latency.
+This narrow SmolLM2 result is not general engine parity. The FP32-storage table
+above predates this vectorization and is retained as a historical baseline.
+
 Commands, complete trial records, model output, and correctness measurements
 are stored under [evidence/mps](evidence/mps) and [evidence/hybrid](evidence/hybrid).
 Reproduce with `scripts/compare_mps.py`, `scripts/verify_metal_kernels.py`,
