@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "model_path": "/Users/damenknight/dllm/results/models/bloom560m",
+  "device": "mps",
+  "raw_text_equals_token_ids": true,
+  "stream_matches_nonstream": true,
+  "concurrent_batch": 4,
+  "seed_and_stop_passed": true,
+  "base_checkpoint_without_template": true,
+  "rejection_recovery": true,
+  "sample": {
+    "id": "cmpl-c986d8e3b27b4a49ab6385254ce1e257",
+    "object": "text_completion",
+    "created": 1791103409,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": " \"\"\"\n     Returns a binary search for the given values.\n     \"\"\"\n     if isinstance(values, list):\n         return binary",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 24,
+      "total_tokens": 34
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 0.6637590000173077,
+      "cached_prompt_tokens": 0,
+      "kernel_backend": "metal",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 0.7089747080462985,
+      "total_seconds": 1.3298350410186686,
+      "decode_tokens_per_second": 37.045368786708366
+    }
+  }
+}

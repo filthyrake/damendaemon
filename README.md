@@ -12,7 +12,7 @@ or Transformers generation. Transformers is used for validation and optional str
 
 Additional qualified checkpoints include Llama 3.2, Gemma 3 text, Phi-3
 mini, Mistral 7B, StarCoder2 3B, GPT-2, Pythia (GPT-NeoX), BLOOM, MiniLM sentence embeddings, and CUDA OLMoE. Exact revisions, numerical gates, and remaining limits are recorded in
-[architecture evidence](docs/architecture-parity.md).
+[architecture evidence](docs/architecture-parity.md). The [current support matrix](docs/support.md) summarizes architecture and serving boundaries.
 
 The server selects models from each request without restarting. GPU-resident
 models retain their execution graphs; evicted models restore from the host cache.

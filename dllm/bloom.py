@@ -1,8 +1,10 @@
 """Independent BLOOM decoder and ALiBi attention (Press et al., arXiv:2108.12409)."""
+from itertools import accumulate
 import torch
 from torch.nn import functional as F
 from .device import selected_device
 from .starcoder import StarcoderExecutor
+from .prefill import groups
 
 
 def alibi_slopes(heads, device='cpu'):
@@ -60,12 +62,11 @@ class BloomExecutor(StarcoderExecutor):
         super().__init__(model, *args, **kwargs)
 
     def alibi_attention(self, query, ck, cv, positions, slots, prefill):
-        if not prefill and self.device == 'cuda' and self.kernels:
+        if not prefill and self.kernels:
             return self.kernels.attention(query, ck, cv, positions, slots, alibi=self.alibi_slopes)
         if prefill:
             count = positions.numel()
-            keys = ck.index_select(0, slots[:1])[:, :, :count]
-            values = cv.index_select(0, slots[:1])[:, :, :count]
+            keys, values = ck, cv
             # Bound additive mask workspace rather than materializing H*L*L.
             outputs = []
             for start in range(0, count, 128):
@@ -79,7 +80,7 @@ class BloomExecutor(StarcoderExecutor):
         mask = self.alibi_bias[None, :, None, :].masked_fill(~visible[:, None, None, :], -float('inf'))
         return F.scaled_dot_product_attention(query, keys, values, attn_mask=mask)
 
-    def _forward(self, ids, positions, slots, prefill):
+    def _forward(self, ids, positions, slots, prefill, prefill_lengths=None):
         count, w = ids.numel(), self.w
         x = self.layer_norm(F.embedding(ids, w['embed']), 'embed_norm')
         post_norm = self.c['apply_residual_connection_post_layernorm']
@@ -90,9 +91,18 @@ class BloomExecutor(StarcoderExecutor):
             q, k, v = [part.reshape(count, self.heads, self.dim) for part in packed.chunk(3, -1)]
             ck, cv = self.kv[i].unbind(0)
             ck[slots, :, positions, :], cv[slots, :, positions, :] = k, v
-            query = q.transpose(0, 1).unsqueeze(0) if prefill else q.contiguous().unsqueeze(2)
-            attended = self.alibi_attention(query, ck, cv, positions, slots, prefill)
-            attended = attended.transpose(1, 2).reshape(count, -1) if prefill else attended.reshape(count, -1)
+            if prefill:
+                attended, offset = [], 0
+                for length in prefill_lengths or [count]:
+                    end = offset + length
+                    query, keys, values = [part[offset:end].transpose(0, 1).unsqueeze(0) for part in (q,k,v)]
+                    result = self.alibi_attention(query, keys, values, positions[offset:end], slots[offset:end], True)
+                    attended.append(result.transpose(1, 2).reshape(length, -1))
+                    offset = end
+                attended = torch.cat(attended)
+            else:
+                query = q.contiguous().unsqueeze(2)
+                attended = self.alibi_attention(query, ck, cv, positions, slots, False).reshape(count, -1)
             x = residual + self._linear(attended, w[f'{i}.out'], w[f'{i}.out.bias'])
             normalized = self.layer_norm(x, f'{i}.norm2')
             residual = normalized if post_norm else x
@@ -100,5 +110,27 @@ class BloomExecutor(StarcoderExecutor):
             hidden = F.gelu(hidden, approximate='tanh')
             x = residual + self._linear(hidden, w[f'{i}.down'], w[f'{i}.down.bias'])
         if prefill:
-            x = x[-1:]
+            if prefill_lengths is None:
+                x = x[-1:]
+            else:
+                ends = torch.tensor([end-1 for end in accumulate(prefill_lengths)], device=self.device)
+                x = x.index_select(0, ends)
         return self._linear(self.layer_norm(x, 'norm'), w['head'])
+
+    @torch.inference_mode()
+    def prefill_batch(self, prompts, slots):
+        if (not prompts or len(prompts) != len(slots) or len(set(slots)) != len(slots)
+                or any(slot < 0 or slot >= self.max_batch for slot in slots)
+                or any(not ids or len(ids) > self.context for ids in prompts)):
+            raise ValueError('invalid prefill batch')
+        if sum(map(len, prompts)) > self.context:
+            return torch.cat([self.prefill_batch(batch, assigned)
+                              for batch, assigned in groups(prompts, slots, self.context)])
+        lengths = [len(prompt) for prompt in prompts]
+        ids = torch.tensor([token for prompt in prompts for token in prompt], device=self.device)
+        positions = torch.tensor([i for length in lengths for i in range(length)], device=self.device)
+        slot_ids = torch.tensor([slot for slot,length in zip(slots,lengths) for _ in range(length)], device=self.device)
+        logits = self._forward(ids, positions, slot_ids, True, lengths)
+        for slot, length in zip(slots, lengths):
+            self.lengths[slot] = length
+        return logits

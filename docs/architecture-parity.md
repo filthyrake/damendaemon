@@ -959,3 +959,28 @@ four-request batching, seeded sampling, stop handling and rejection recovery
 pass on A2 and Apple M4. Quantization, prefix caching and interleaved prefill remain
 unsupported. The default 2048 context when absent from the legacy configuration
 is a conservative qualification boundary, not a claim of length extrapolation.
+
+Matched BLOOM M4 FP32 comparison: same pinned checkpoint and explicit token IDs,
+2048 context, FP32 KV, 64 output tokens and five measured warm rounds. The
+llama.cpp build is the existing pinned comparator; the GGUF is an FP32 conversion
+of the same safetensors checkpoint. Throughput includes prompt processing.
+
+| Concurrent requests | Initial dllm tokens/s | Native Metal attention | Packed prefill + native attention | llama.cpp tokens/s | Final dllm TTFT ms | llama.cpp TTFT ms |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 | 16.89 | 36.43 | 37.07 | 36.29 | 32.92 | 34.01 |
+| 2 | 26.23 | 68.84 | 70.49 | 57.22 | 42.61 | 41.95 |
+| 4 | 36.93 | 123.42 | 120.56 | 82.15 | 102.30 | 58.64 |
+
+The initial path copied entire KV slots into general tensor attention at each
+decode step. Native Metal attention reads only live positions and applies ALiBi
+inside the kernel. It passes nine dedicated ALiBi cases and all 29 existing
+Metal kernel checks. Native and subsequently packed-prefill versions each pass
+84/84 independent BLOOM checks. The final live completion-service proof passes.
+
+Packed prefill shares projections across prompts while keeping attention and
+cache slots separate, bounds total temporary tokens to one configured context,
+and computes the vocabulary projection only for each sequence's last row.
+Prefill attention consumes current K/V views directly, avoiding full-cache copies.
+This cuts four-request TTFT from the native-attention-only 253.84 ms to 102.30 ms,
+but still trails llama.cpp's 58.64 ms. These are matched observations, not a
+claim of general parity. The packed-prefill A2 recheck follows separately.

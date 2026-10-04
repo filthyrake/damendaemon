@@ -1,0 +1,28 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/venv/bin/python",
+    "-m",
+    "dllm",
+    "serve",
+    "--port",
+    "48479",
+    "--context",
+    "2048",
+    "--batch-size",
+    "4",
+    "--host-gib",
+    "8",
+    "--model",
+    "a=/home/damen/dllm-dev/models/bloom560m"
+  ],
+  "model": {
+    "revision": "ac2ae5fab2ce3f9f40dc79b5ca9f637430d24971",
+    "path": "/home/damen/dllm-dev/models/bloom560m",
+    "repo_id": "bigscience/bloom-560m"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_QUANTIZATION": "none",
+    "DLLM_DEVICE": "cuda"
+  }
+}

@@ -119,6 +119,7 @@ kernel void attention(device const float* q, device const float* k, device const
                       device const long* positions, device const long* slots, device float* out,
                       constant long& heads, constant long& kvheads, constant long& dim,
                       constant long& context, constant long& single,
+                      device const float* slopes, constant long& has_alibi,
                       uint2 group [[threadgroup_position_in_grid]],
                       uint tid [[thread_index_in_threadgroup]]) {
     threadgroup float scores[4096];
@@ -131,7 +132,7 @@ kernel void attention(device const float* q, device const float* k, device const
         float dot=0;
         for (uint d=lane; d<dim; d+=32) dot+=q[qb+d]*k[base+p*dim+d];
         dot=simd_sum(dot);
-        if(lane==0) scores[p]=dot*rsqrt(float(dim));
+        if(lane==0) scores[p]=dot*rsqrt(float(dim))+(has_alibi?slopes[head]*float(p):0.0f);
     }
     threadgroup_barrier(mem_flags::mem_threadgroup);
     float maximum=-INFINITY;
@@ -209,17 +210,24 @@ def rope_store(qkv, cos, sin, positions, cache_k, cache_v, heads, qw=None, kw=No
                       heads, qw, kw, eps, precise=precise, single=True).permute(2,1,0,3)
 
 
-def attention(q, cache_k, cache_v, positions, slots=None):
+def attention(q, cache_k, cache_v, positions, slots=None, alibi=None):
     n, heads, _, dim = q.shape
+    if alibi is not None and (alibi.shape != (heads,) or alibi.dtype != torch.float32
+                              or alibi.device != q.device or not alibi.is_contiguous()):
+        raise ValueError('ALiBi needs one contiguous FP32 slope per query head on the same device')
     kvheads, context = cache_k.shape[1:3]
     if context > 4096:
         from .device import attention as tensor_attention
         actual_slots = slots if slots is not None else torch.zeros_like(positions)
         mask = torch.arange(context, device='mps')[None,None,None,:] <= positions[:,None,None,None]
+        if alibi is not None:
+            bias = alibi[None,:,None,None] * torch.arange(context, device='mps')
+            mask = bias.masked_fill(~mask, -float('inf'))
         return tensor_attention(q, cache_k.index_select(0,actual_slots), cache_v.index_select(0,actual_slots),
                                 attn_mask=mask, enable_gqa=True)
     out = torch.empty_like(q, memory_format=torch.contiguous_format)
     library().attention(q.contiguous(), cache_k, cache_v, positions,
         slots if slots is not None else positions, out, heads, kvheads, dim, context, int(slots is None),
+        q if alibi is None else alibi, int(alibi is not None),
         threads=(heads*256,n), group_size=(256,1))
     return out
