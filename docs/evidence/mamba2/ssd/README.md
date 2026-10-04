@@ -42,3 +42,15 @@ The CUDA profile attributes about 117.6 ms/prompt to SSD and 103.6 ms to the
 two main FP32 matrix-multiply shapes, out of 239.3 ms recorded device work.
 Decode remains dominated by matrix-vector projection (3.13 of 3.53 ms/token).
 Profiling overhead and the HTTP benchmark are distinct measurements.
+
+## Rejected projection replacement
+
+The standalone `scripts/probe_fp32_matmul.py` and `scripts/tune_fp32_matmul.py`
+measure an independent TF32x3 matrix projection; it is not selected by runtime
+code. The six FP64-oracle cases pass, including inputs above FP16 range. A sweep
+of 64 tile/warp/stage configurations per main shape found no useful improvement:
+1536x3336x768 best 3.52 ms versus cuBLAS 3.15 ms, and 1536x768x1536 best 1.59 ms
+versus 1.50 ms. Counterbalanced initial measurements also favored cuBLAS. These
+are isolated, repeated-matrix device tests, not additional serving benchmarks.
+The measurements are retained under `projections/` to avoid repeating a failed
+optimization or treating use of Tensor Cores as evidence of improved performance.
