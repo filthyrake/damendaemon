@@ -96,6 +96,7 @@ def starcoder_config(config):
 
 def olmoe_config(config):
     c = dict(config)
+    c.setdefault('rms_norm_eps',1e-5)
     common = decoder_config({**c, 'model_type':'llama'})
     for name in ('num_experts','num_experts_per_tok'):
         if type(c.get(name)) is not int or c[name]<=0:

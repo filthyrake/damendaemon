@@ -39,6 +39,8 @@ class ConfigTests(unittest.TestCase):
     def test_moe_router_and_projection_dimensions(self):
         config = self.config(model_type='olmoe',head_dim=64,num_experts=64,num_experts_per_tok=8)
         self.assertFalse(decoder_config(config)['norm_topk_prob'])
+        minimal = {key:value for key,value in config.items() if key!='rms_norm_eps'}
+        self.assertEqual(decoder_config(minimal)['rms_norm_eps'],1e-5)
         for change in ({'num_experts':0},{'num_experts_per_tok':65},{'norm_topk_prob':1},
                        {'clip_qkv':-1},{'head_dim':128},{'attention_bias':True}):
             with self.assertRaises(ValueError):
