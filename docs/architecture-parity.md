@@ -887,3 +887,16 @@ output tokens/s at concurrency 1/2/4, with TTFT 81.90/190.06/325.04 ms. This is
 llama.cpp result, especially for one request. The full 119-test suite passes.
 Further native decode work is in progress; this remains an explicit measured
 gap rather than a claim of general four-bit performance parity.
+
+Matched A2 FP32 Pythia-160M comparison, using the same explicit prompt IDs,
+2048 context, 64 output tokens and five warm rounds:
+
+| Concurrent requests | dllm tokens/s | vLLM tokens/s | dllm TTFT ms | vLLM TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 256.08 | 240.87 | 15.16 | 24.24 |
+| 2 | 436.95 | 440.62 | 23.72 | 31.47 |
+| 4 | 695.17 | 807.41 | 57.43 | 43.49 |
+
+The four-request throughput deficit is about 14%; this architecture is
+numerically/API qualified but is not a general performance-parity claim.
+Serving environments remain torch 2.6/dllm versus torch 2.13/vLLM 0.30.
