@@ -1329,3 +1329,12 @@ prefixes and real 4K raw/tool HTTP lifecycle tests. Long-context absolute
 hidden-state failures are retained in issue #41, including the observed
 variation between independent CPU and CUDA references. See the
 [fused-prefill implementation, proof and limits](evidence/gpt-oss/fused-prefill/README.md).
+
+### GPT-OSS stable expert grouping
+
+Grouped prefill now sorts routes once per layer, preserving exact row/route
+order while reducing measured host synchronization calls from 769 to 73.
+Full-model logits are bit-exact through 4000-token prompts. Four alternating
+HTTP rounds show about 7–10% lower short-prompt latency, 2% lower 4K latency and
+11% lower latency for the measured concurrent pair, with identical responses.
+See [routing proof and matched measurements](evidence/gpt-oss/expert-routing/README.md).

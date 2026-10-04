@@ -113,6 +113,7 @@ class GptOssExecutor(BatchExecutor):
                 self.expert_half[i,projection],self.expert_normal[i,projection]=scale_capabilities(scales)
         self.chunked_experts=True
         self.normal_experts=True
+        self.sorted_prefill_routes=True
         self.prefill_attention_bytes=32*1024**2
         attention_mode=os.environ.get('DLLM_GPT_OSS_ATTENTION','fused')
         if attention_mode not in ('native','fused'):
@@ -147,9 +148,16 @@ class GptOssExecutor(BatchExecutor):
         from .mxfp4 import unpack
         w=self.w;top=selected.shape[1]
         projected=torch.empty((selected.numel(),self.c['hidden_size']),device=x.device,dtype=x.dtype)
-        for expert in range(self.c['num_local_experts']):
-            tokens,routes=torch.where(selected==expert)
-            if tokens.numel()==0:continue
+        if self.sorted_prefill_routes:
+            from .expert_routes import grouped_routes
+            groups=grouped_routes(selected,self.c['num_local_experts'])
+        else:
+            def original_groups():
+                for expert in range(self.c['num_local_experts']):
+                    tokens,routes=torch.where(selected==expert)
+                    if tokens.numel():yield expert,tokens,tokens*top+routes
+            groups=original_groups()
+        for expert,tokens,indices in groups:
             hidden=x.index_select(0,tokens)
             # A bounded set of matrix shapes avoids compiling a new kernel
             # for every expert's live token count. Padding rows cannot affect
@@ -168,7 +176,7 @@ class GptOssExecutor(BatchExecutor):
             output=self.dense_linear(activation,weight)
             output.add_(w[f'{i}.down.bias'][expert])
             del weight,activation
-            projected.index_copy_(0,tokens*top+routes,output[:count])
+            projected.index_copy_(0,indices,output[:count])
             del output
         return self.combine(projected,probabilities)
 
