@@ -57,6 +57,56 @@ retains its original packed storage. The metadata cache holds at most two
 plans keyed by file identity, never mmap weight views. File changes invalidate
 plans, and final host storage must match the preflight byte estimate.
 
-Q4 is CUDA-only. Apple Silicon and Qwen3 GGUF runtime qualification are separate
-work; existing native kernel qualification alone is not an import proof.
+Q4 is CUDA-only. Apple Silicon GGUF runtime qualification remains separate work;
+existing native kernel qualification alone is not an import proof.
 Broader import work is tracked in GitHub issue #43.
+
+
+## Q4 and Qwen3 extension
+
+[Qwen2.5 Q4_0](qwen2-q4-a2.json) and [Qwen3-0.6B Q8_0](qwen3-q8-a2.json)
+pass the same 64 complete-logit comparisons and actual HTTP lifecycle checks.
+Qwen3 uses pinned revision `c1899de289a04d12100db370d81485cdf75e47ca`;
+all 227 weight tensors and 113 scale tensors match native HF preparation.
+Its independent head dimension and per-head Q/K normalization are exercised.
+This establishes import/execution equivalence, not new quantization-quality or
+long-context numerical qualification. Existing architecture limitations apply.
+[Qwen3 tokenizer comparison](qwen3-tokenizer.json) also matches all 15 llama.cpp
+cases, including the same two intentional differences from HF NFC normalization.
+
+Fixture SHA-256 values:
+
+- Qwen2.5 Q4: `128a1b5977611868f7756bc917c6bf20239f1abcf33da712cbc1f5a6e29ee217`
+- Qwen3 Q8: `a4b9cf44accf020dbf7ed3fd0d7c8f6110cbee9754547e400b6cc2b39792fb5b`
+
+The initial Q4 short-request check showed 127.58 ms for GGUF versus 104.42 ms
+for HF-prepared Q4. That observation is retained rather than discarded.
+A [controlled follow-up](qwen2-q4-residency-a2.json) uses three warm requests
+before each sample, ten alternating rounds, both one- and two-model GPU
+residency, and both initial loading orders. All responses remain exact:
+
+| GPU models | Initial loading order | GGUF median | HF Q4 median |
+|---|---|---:|---:|
+| 2 | GGUF, HF | 95.31 ms | 93.83 ms |
+| 2 | HF, GGUF | 94.96 ms | 98.58 ms |
+| 1 | GGUF, HF | 94.07 ms | 94.52 ms |
+| 1 | HF, GGUF | 93.50 ms | 92.35 ms |
+
+The original 22% gap did not reproduce across these controlled cases. This
+supports similar steady warm performance; it does not establish the cause of
+the first result, and no kernel optimization was made between the runs. The
+follow-up retains activation timings and GPU clock/power telemetry separately.
+
+## Faster metadata loading
+
+Profiling identified millions of temporary NumPy memmap view objects while
+parsing tokenizer metadata. Bounded reads now create plain read-only ndarray
+views over the same file buffer. All file bounds checks remain in place.
+
+[Four alternating CPU trials](metadata-reader-benchmark.json) on the local Mac,
+with an empty dllm metadata cache and potentially warm filesystem pages, reduce
+median metadata/tokenizer-plan time from 4.363 s to 1.685 s (2.59x). Complete
+plans, tensor descriptors, and serialized tokenizers match exactly. This is
+**CPU model-loading work**, not GPU throughput or complete activation latency.
+Reproduce with `scripts/benchmark_gguf_metadata.py` and the reader from commit
+`1e5d2c1`. All 257 CPU regressions still pass after the optimization.

@@ -1,0 +1,228 @@
+{
+  "gguf": "/home/damen/dllm-dev/baselines/qwen-a-dllm-q4-import.gguf",
+  "hf": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "quantization": "q4_0",
+  "weights_exact": 171,
+  "scales_exact": 97,
+  "cases": [
+    {
+      "graph": false,
+      "prompt_tokens": 1,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        271,
+        40,
+        1079,
+        264,
+        48948,
+        304,
+        13027,
+        323
+      ]
+    },
+    {
+      "graph": false,
+      "prompt_tokens": 17,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": false,
+      "prompt_tokens": 129,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": false,
+      "prompt_tokens": 505,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 1,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        271,
+        40,
+        1079,
+        264,
+        48948,
+        304,
+        13027,
+        323
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 17,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 129,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 505,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    }
+  ],
+  "http": {
+    "registration": true,
+    "exact_chat": true,
+    "stream": true,
+    "concurrency": true,
+    "cancellation_recovery": true,
+    "host_restore": true,
+    "unload": true,
+    "sample": "Certainly! Binary search is a search algorithm that allows you to find a specific element in a sorted list. It works by repeatedly dividing the search range in half and",
+    "warm_raw_trials": [
+      {
+        "model": "gguf",
+        "seconds": 0.1291036280017579,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " Given an array and a target value, write a function to find the index of"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.1015116990020033,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " Given an array and a target value, write a function to find the index of"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.10598480999760795,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " Given an array and a target value, write a function to find the index of"
+      },
+      {
+        "model": "gguf",
+        "seconds": 0.12606163499003742,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " Given an array and a target value, write a function to find the index of"
+      },
+      {
+        "model": "gguf",
+        "seconds": 0.13163313700351864,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " Given an array and a target value, write a function to find the index of"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.10285067399672698,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " Given an array and a target value, write a function to find the index of"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.13403133500833064,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " Given an array and a target value, write a function to find the index of"
+      },
+      {
+        "model": "gguf",
+        "seconds": 0.10275898801046424,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " Given an array and a target value, write a function to find the index of"
+      }
+    ],
+    "warm_medians": {
+      "gguf": 0.12758263149589766,
+      "hf": 0.10441774199716747
+    }
+  },
+  "passed": true
+}

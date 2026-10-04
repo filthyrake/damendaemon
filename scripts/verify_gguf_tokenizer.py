@@ -1,6 +1,7 @@
 """Compare standalone GGUF tokenization with llama.cpp's independent tokenizer."""
 import argparse
 import json
+import os
 from pathlib import Path
 import socket
 import subprocess
@@ -36,7 +37,7 @@ def main():
         with path.open('w') as log:
             process = subprocess.Popen([args.llama_server, '-m', args.gguf, '-ngl', '0',
                 '-c', '512', '-np', '1', '-t', '2', '--port', str(port), '--host', '127.0.0.1',
-                '--no-warmup'], stdout=log, stderr=log)
+                '--no-warmup'], stdout=log, stderr=log, env={**os.environ, 'CUDA_VISIBLE_DEVICES':''})
             try:
                 deadline = time.monotonic() + 120
                 while time.monotonic() < deadline and process.poll() is None:

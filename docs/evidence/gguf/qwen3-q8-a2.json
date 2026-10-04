@@ -1,0 +1,228 @@
+{
+  "gguf": "/home/damen/dllm-dev/baselines/qwen3-small-import-q8.gguf",
+  "hf": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "quantization": "q8_0",
+  "weights_exact": 227,
+  "scales_exact": 113,
+  "cases": [
+    {
+      "graph": false,
+      "prompt_tokens": 1,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        21806,
+        0,
+        358,
+        2776,
+        264,
+        2699,
+        21815,
+        911
+      ]
+    },
+    {
+      "graph": false,
+      "prompt_tokens": 17,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": false,
+      "prompt_tokens": 129,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": false,
+      "prompt_tokens": 505,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 1,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        21806,
+        0,
+        358,
+        2776,
+        264,
+        2699,
+        21815,
+        911
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 17,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 129,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    },
+    {
+      "graph": true,
+      "prompt_tokens": 505,
+      "exact_logit_steps": 8,
+      "output_tokens": [
+        11,
+        1879,
+        0,
+        9707,
+        11,
+        1879,
+        0,
+        9707
+      ]
+    }
+  ],
+  "http": {
+    "registration": true,
+    "exact_chat": true,
+    "stream": true,
+    "concurrency": true,
+    "cancellation_recovery": true,
+    "host_restore": true,
+    "unload": true,
+    "sample": "<think>\nOkay, so I need to explain binary search with a short worked example. Let me start by recalling what binary search is. From what I remember,",
+    "warm_raw_trials": [
+      {
+        "model": "gguf",
+        "seconds": 0.1110583650006447,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " binary search algorithm, binary search algorithm steps, binary search algorithm implementation in Python,"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.11398301599547267,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " binary search algorithm, binary search algorithm steps, binary search algorithm implementation in Python,"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.11336655399645679,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " binary search algorithm, binary search algorithm steps, binary search algorithm implementation in Python,"
+      },
+      {
+        "model": "gguf",
+        "seconds": 0.11146168901177589,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " binary search algorithm, binary search algorithm steps, binary search algorithm implementation in Python,"
+      },
+      {
+        "model": "gguf",
+        "seconds": 0.10934263099625241,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " binary search algorithm, binary search algorithm steps, binary search algorithm implementation in Python,"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.11920912699133623,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " binary search algorithm, binary search algorithm steps, binary search algorithm implementation in Python,"
+      },
+      {
+        "model": "hf",
+        "seconds": 0.11081255099270493,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " binary search algorithm, binary search algorithm steps, binary search algorithm implementation in Python,"
+      },
+      {
+        "model": "gguf",
+        "seconds": 0.111710518001928,
+        "usage": {
+          "prompt_tokens": 8,
+          "completion_tokens": 16,
+          "total_tokens": 24
+        },
+        "text": " binary search algorithm, binary search algorithm steps, binary search algorithm implementation in Python,"
+      }
+    ],
+    "warm_medians": {
+      "gguf": 0.1112600270062103,
+      "hf": 0.11367478499596473
+    }
+  },
+  "passed": true
+}

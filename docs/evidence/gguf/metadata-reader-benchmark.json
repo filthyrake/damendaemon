@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "python": "3.12.6",
+  "scope": "CPU metadata/tokenizer plan; empty metadata cache, filesystem may be warm; no weight loading or GPU inference",
+  "baseline_commit": "1e5d2c1",
+  "exact_plans": true,
+  "trials": [
+    {
+      "implementation": "baseline",
+      "seconds": 4.383299792010803
+    },
+    {
+      "implementation": "optimized",
+      "seconds": 1.6326007909956388
+    },
+    {
+      "implementation": "optimized",
+      "seconds": 1.6932256249710917
+    },
+    {
+      "implementation": "baseline",
+      "seconds": 4.376680957968347
+    },
+    {
+      "implementation": "baseline",
+      "seconds": 4.270284000027459
+    },
+    {
+      "implementation": "optimized",
+      "seconds": 1.9478988330229186
+    },
+    {
+      "implementation": "optimized",
+      "seconds": 1.6758233750006184
+    },
+    {
+      "implementation": "baseline",
+      "seconds": 4.348770832992159
+    }
+  ],
+  "medians": {
+    "baseline": 4.362725895480253,
+    "optimized": 1.684524499985855
+  }
+}

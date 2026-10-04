@@ -43,13 +43,16 @@ class BoundedReader(GGUFReader):
         limit = min(len(self.data), MAX_HEADER) if self._header_phase else len(self.data)
         if offset < 0 or count < 0 or end > limit:
             raise ValueError('GGUF read exceeds file or metadata bounds')
-        return super()._get(offset, dtype, count, override_order)
+        # Plain ndarray views avoid cascading np.memmap slicing/view objects
+        # for every token string. The supported file byte order is little-endian.
+        return np.frombuffer(self.data, dtype=np.dtype(dtype).newbyteorder('<'),
+                             count=count, offset=offset)
 
     def _get_str(self, offset):
         length = int(self._get(offset, np.uint64)[0])
         if length > 16 * 1024 * 1024:
             raise ValueError('GGUF string exceeds supported bounds')
-        return super()._get_str(offset)
+        return self._get(offset, np.uint64), self._get(offset + 8, np.uint8, length)
 
     def _get_field_parts(self, orig_offs, raw_type):
         if raw_type == GGUFValueType.ARRAY:

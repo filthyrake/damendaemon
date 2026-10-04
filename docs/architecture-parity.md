@@ -1338,3 +1338,13 @@ Full-model logits are bit-exact through 4000-token prompts. Four alternating
 HTTP rounds show about 7–10% lower short-prompt latency, 2% lower 4K latency and
 11% lower latency for the measured concurrent pair, with identical responses.
 See [routing proof and matched measurements](evidence/gpt-oss/expert-routing/README.md).
+
+
+## Standalone GGUF checkpoint import
+
+Dense Qwen2/Qwen3 now load standalone GGUF files into dllm's native decoder.
+Qwen2.5 Q4_0/Q8_0 and Qwen3-0.6B Q8_0 import/execution equivalence is qualified
+on A2, including actual HTTP model swapping and the embedded tokenizer/chat
+path. Quantized matrices retain their supplied values and scales. This is
+format coverage; it does not remove existing architecture/precision limits or
+qualify all GGUF formats. See [scope, exact fixtures and measurements](evidence/gguf/README.md).
