@@ -33,15 +33,16 @@ the consumed prefix; rejected/filler/post-EOS KV remains causally invisible and
 is overwritten when needed. This is greedy verification, not a proof of
 stochastic acceptance or recurrent-state rollback.
 
-Proposal count adapts to free capacity in the existing eight-event stream
-queue; no queue limit is removed. Two consecutive blocks without a matching
+Proposal count adapts to free capacity in a bounded stream queue. Eligible
+requests can hold two verification blocks (at most16 events); ordinary requests
+retain eight. Two consecutive blocks without a matching
 draft trigger eight ordinary steps before trying again. Response timing includes
 `speculative_blocks`, `speculative_proposed_drafts` and
 `speculative_matched_drafts`. Matches count verification matches, which can
 include matches after an EOS encountered while emitting the block; they are
 not billed/generated token counts. Usage continues to count emitted tokens.
 
-## Complete HTTP performance
+## Initial complete HTTP performance (eight-event buffer)
 
 A2, same pinned checkpoint per pair,512 context,64 output tokens, one client,
 resident model, six measured alternating baseline/optimized rounds after warmup.
@@ -133,3 +134,21 @@ finishes cancellation and a subsequent request produces the reference output.
 The repeated full HTTP suite also passes streaming, concurrency, fallback and
 model lifecycle checks. Updated regression suite:215 tests pass. Raw reports
 are the `sixteen-events` and `backpressure` files under `serving/`.
+
+## Larger dense Qwen3 qualification
+
+Qwen3-1.7B (`70d244cc86ccca08cf5af4e1e306ecf908b1ad5e`) passes the same
+18 verifier width/slot/acceptance cases and complete HTTP suite on A2, using its
+existing qualified FP32 arithmetic policy. The six-round alternating A/B test
+keeps 512 context, 64 output tokens, thinking disabled and a resident model.
+
+| Workload | Ordinary ms | Speculative ms | Speedup |
+|---|---:|---:|---:|
+| Repeated sentence | 1441.382 | 310.523 | 4.64× |
+| Explanation | 1432.256 | 1426.299 | 1.00× |
+| Code/list | 1449.557 | 1087.017 | 1.33× |
+
+Response text, finish reason and usage match exactly. Streaming, fallback,
+concurrency, disconnect recovery, graph reclamation and host restoration also
+pass. These are the same narrow workloads, not a general speedup or cross-engine
+comparison. Raw reports are the `qwen3-1.7b` files under `serving/`.

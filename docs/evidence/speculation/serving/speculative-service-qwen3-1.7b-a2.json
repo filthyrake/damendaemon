@@ -1,0 +1,251 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "speculative_width": 8,
+  "models": {
+    "qwen2": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+    "qwen3": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-1.7B/snapshots/70d244cc86ccca08cf5af4e1e306ecf908b1ad5e"
+  },
+  "reports": [
+    {
+      "model": "qwen3",
+      "rows": [
+        {
+          "case": "repetition",
+          "baseline_ms": [
+            1460.1476610114332,
+            1454.8839439958101,
+            1434.0757269965252,
+            1446.544576989254,
+            1435.563851002371,
+            1436.2190100073349
+          ],
+          "speculative_ms": [
+            312.1310739952605,
+            326.976939002634,
+            314.1656519874232,
+            308.91520899604075,
+            307.8018989908742,
+            306.0714809980709
+          ],
+          "median_baseline_ms": 1441.3817934982944,
+          "median_speculative_ms": 310.52314149565063,
+          "example": {
+            "id": "chatcmpl-783198e538e34705b7af83f83c7fe270",
+            "object": "chat.completion",
+            "created": 1791135293,
+            "model": "qwen3",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "The quick brown fox jumps over the lazy dog.  \nThe quick brown fox jumps over the lazy dog.  \nThe quick brown fox jumps over the lazy dog.  \nThe quick brown fox jumps over the lazy dog.  \nThe quick brown fox jumps over the lazy dog.  \nThe quick brown fox jumps over the lazy dog"
+                },
+                "finish_reason": "length"
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 34,
+              "completion_tokens": 64,
+              "total_tokens": 98
+            },
+            "dllm_timing": {
+              "source_tier": "gpu",
+              "activation_seconds": 5.916997906751931e-06,
+              "cached_prompt_tokens": 0,
+              "speculative_blocks": 9,
+              "speculative_proposed_drafts": 59,
+              "speculative_matched_drafts": 52,
+              "kernel_backend": "triton",
+              "weight_quantization": "none",
+              "max_batch_size": 1,
+              "residual_dtype": "float32",
+              "first_token_seconds": 0.05191946099512279,
+              "total_seconds": 0.33216963899030816,
+              "decode_tokens_per_second": 224.79914357478955
+            }
+          },
+          "exact_response": true
+        },
+        {
+          "case": "explanation",
+          "baseline_ms": [
+            1433.304831996793,
+            1450.7159250060795,
+            1427.9223609919427,
+            1448.5516879940405,
+            1427.8415159933502,
+            1431.2064510013442
+          ],
+          "speculative_ms": [
+            1420.5224539909977,
+            1426.5982509969035,
+            1459.089825002593,
+            1425.9990580030717,
+            1414.8555129941087,
+            1445.367730993894
+          ],
+          "median_baseline_ms": 1432.2556414990686,
+          "median_speculative_ms": 1426.2986544999876,
+          "example": {
+            "id": "chatcmpl-66455a36b0fa4d599ac2e208a8069590",
+            "object": "chat.completion",
+            "created": 1791135305,
+            "model": "qwen3",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "The sky looks blue because of how sunlight interacts with the Earth's atmosphere. Here's a simple explanation:\n\nWhen the sun shines down, it emits white light, which is made up of all the colors of the rainbow. But when this light travels through the atmosphere, it encounters tiny particles like dust, molecules of nitrogen,"
+                },
+                "finish_reason": "length"
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 23,
+              "completion_tokens": 64,
+              "total_tokens": 87
+            },
+            "dllm_timing": {
+              "source_tier": "gpu",
+              "activation_seconds": 3.6420096876099706e-06,
+              "cached_prompt_tokens": 0,
+              "speculative_blocks": 9,
+              "speculative_proposed_drafts": 51,
+              "speculative_matched_drafts": 2,
+              "kernel_backend": "triton",
+              "weight_quantization": "none",
+              "max_batch_size": 1,
+              "residual_dtype": "float32",
+              "first_token_seconds": 0.028298058998188935,
+              "total_seconds": 1.4120296920009423,
+              "decode_tokens_per_second": 45.529059607669346
+            }
+          },
+          "exact_response": true
+        },
+        {
+          "case": "code",
+          "baseline_ms": [
+            1433.5883029998513,
+            1433.3581489918288,
+            1450.4808740020962,
+            1453.1823370052734,
+            1461.7710399907082,
+            1448.6321899894392
+          ],
+          "speculative_ms": [
+            1085.8288679883117,
+            1092.9049929982284,
+            1085.6848250114126,
+            1088.7847389967646,
+            1088.20444799494,
+            1083.879377998528
+          ],
+          "median_baseline_ms": 1449.5565319957677,
+          "median_speculative_ms": 1087.0166579916258,
+          "example": {
+            "id": "chatcmpl-3839bc5d83b14080b8de04b3268d3541",
+            "object": "chat.completion",
+            "created": 1791135325,
+            "model": "qwen3",
+            "choices": [
+              {
+                "index": 0,
+                "message": {
+                  "role": "assistant",
+                  "content": "Here's a Python function that returns a list containing the integers from 1 to 30, **written out explicitly** as strings:\n\n```python\ndef numbers_to_words():\n    return [str(i) for i in range(1, 31)]\n\n# Example usage:\nresult = numbers_to_words()\nprint"
+                },
+                "finish_reason": "length"
+              }
+            ],
+            "usage": {
+              "prompt_tokens": 35,
+              "completion_tokens": 64,
+              "total_tokens": 99
+            },
+            "dllm_timing": {
+              "source_tier": "gpu",
+              "activation_seconds": 4.083005478605628e-06,
+              "cached_prompt_tokens": 0,
+              "speculative_blocks": 8,
+              "speculative_proposed_drafts": 52,
+              "speculative_matched_drafts": 17,
+              "kernel_backend": "triton",
+              "weight_quantization": "none",
+              "max_batch_size": 1,
+              "residual_dtype": "float32",
+              "first_token_seconds": 0.045191238008555956,
+              "total_seconds": 1.1040076810022583,
+              "decode_tokens_per_second": 59.50039821999129
+            }
+          },
+          "exact_response": true
+        }
+      ],
+      "fallback": [
+        {
+          "options": {
+            "temperature": 0.7,
+            "seed": 123
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "frequency_penalty": 0.5
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "logprobs": true,
+            "top_logprobs": 0
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "stop": [
+              "brown"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "options": {
+            "response_format": {
+              "type": "json_schema",
+              "json_schema": {
+                "name": "answer",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "answer": {
+                      "type": "string",
+                      "const": "ok"
+                    }
+                  },
+                  "required": [
+                    "answer"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "passed": true
+        }
+      ],
+      "stream_equivalence": true,
+      "disconnect_recovery": true,
+      "backpressure": true,
+      "concurrent_equivalence": true,
+      "graph_reclaimed_on_unload": true,
+      "host_restore": true
+    }
+  ],
+  "timing": "Same server and resident model, six alternating A/B measured rounds after warmup; complete loopback HTTP"
+}

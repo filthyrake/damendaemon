@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import gc
 import json
 import os
+from pathlib import Path
 import statistics
 import threading
 import time
@@ -18,18 +19,27 @@ from dllm.server import BoundedHTTPServer,handler_for
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('qwen2');p.add_argument('qwen3');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('first_model');p.add_argument('second_model',nargs='?')
+    p.add_argument('--first-name',default='qwen2');p.add_argument('--second-name',default='qwen3')
+    p.add_argument('--only',nargs='+');args=p.parse_args()
+    models={args.first_name:args.first_model}
+    if args.second_model:
+        if args.second_name in models:p.error('model names must be distinct')
+        models[args.second_name]=args.second_model
+    selected=args.only or list(models)
+    if any(name not in models for name in selected):p.error('unknown selected model name')
+    families={name:json.loads((Path(path)/'config.json').read_text())['model_type'] for name,path in models.items()}
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
     os.environ['DLLM_DEVICE']='cuda';os.environ['DLLM_SPECULATIVE_TOKENS']='8';torch.set_num_threads(4)
-    runtime=BatchedRuntime({'qwen2':args.qwen2,'qwen3':args.qwen3},context=512,batch_size=4,gpu_models=1,host_models=2,host_gib=8)
+    runtime=BatchedRuntime(models,context=512,batch_size=4,gpu_models=1,host_models=2,host_gib=8)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime));thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     url=f'http://127.0.0.1:{server.server_port}/v1/chat/completions'
     repetition='Write the following sentence exactly ten times, with no introduction: The quick brown fox jumps over the lazy dog.'
     reports=[]
     def body(alias,text=repetition,**changes):
         result={'model':alias,'messages':[{'role':'user','content':text}],'max_tokens':64,'temperature':0}
-        if alias=='qwen3':result['chat_template_kwargs']={'enable_thinking':False}
+        if families[alias]=='qwen3':result['chat_template_kwargs']={'enable_thinking':False}
         return {**result,**changes}
     def post(data):
         start=time.perf_counter()
@@ -62,7 +72,7 @@ def main():
                 if disconnect and content:break
         return content
     try:
-        for alias in ('qwen2','qwen3'):
+        for alias in selected:
             rows=[]
             for name,text in [('repetition',repetition),('explanation','Explain why the sky looks blue in simple language.'),
                     ('code','Write a Python function that returns a list containing the integers from 1 to 30, written out explicitly.')]:
@@ -103,7 +113,7 @@ def main():
             # Slow consumption fills the bounded event queue. A later consumer
             # must receive the same tokens rather than overflow or skip drafts.
             messages=[{'role':'user','content':repetition}]
-            kwargs={'enable_thinking':False} if alias=='qwen3' else {}
+            kwargs={'enable_thinking':False} if families[alias]=='qwen3' else {}
             def direct():return runtime.generate(alias,messages,64,**kwargs)
             with baseline(alias):expected=[e['token'] for e in direct() if 'token' in e]
             generator=direct();first=next(generator);time.sleep(.1)
@@ -125,7 +135,8 @@ def main():
             reports.append({'model':alias,'rows':rows,'fallback':fallback,'stream_equivalence':True,
                 'disconnect_recovery':True,'backpressure':True,'concurrent_equivalence':True,
                 'graph_reclaimed_on_unload':True,'host_restore':True})
-        print(json.dumps({'passed':True,'gpu':'NVIDIA A2','speculative_width':8,'reports':reports,
+        print(json.dumps({'passed':True,'gpu':'NVIDIA A2','speculative_width':8,
+            'models':models,'reports':reports,
             'timing':'Same server and resident model, six alternating A/B measured rounds after warmup; complete loopback HTTP'},indent=2))
     finally:
         server.shutdown();server.server_close();thread.join();runtime.close()
