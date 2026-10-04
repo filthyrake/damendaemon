@@ -26,7 +26,7 @@ def validate_raw(prompt):
 
 def encode(model, messages, raw_prompt=None, enable_thinking=None, tools=None, tool_json=False):
     if getattr(model, "task", "generation") != "generation":
-        raise ValueError("this model supports embeddings, not generation")
+        raise ValueError("this model does not support generation")
     if raw_prompt is not None:
         if messages is not None or enable_thinking is not None or tools is not None or tool_json:
             raise ValueError('raw prompts cannot include chat messages or template options')

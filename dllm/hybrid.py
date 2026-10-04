@@ -165,7 +165,7 @@ class HybridExecutor:
                 torch.cuda.current_stream().wait_stream(stream)
                 torch.cuda.synchronize()
                 graph = torch.cuda.CUDAGraph()
-                with torch.cuda.graph(graph), torch.inference_mode():
+                with torch.inference_mode(), torch.cuda.graph(graph):
                     logits = self.forward_batch(ids, positions, slots)
                     next_ids = logits.argmax(-1)
                 self.batch_graphs[size] = (metadata, staging, values, copied, graph, logits, next_ids)

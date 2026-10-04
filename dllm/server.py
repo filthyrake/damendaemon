@@ -53,7 +53,7 @@ def handler_for(runtime):
 
         def do_POST(self):
             management = {'/v1/models/register': 'register', '/v1/models/load': 'load', '/v1/models/unload': 'unload'}
-            if self.path not in ("/v1/chat/completions", "/v1/completions", "/v1/embeddings", "/v1/token-scores") and self.path not in management:
+            if self.path not in ("/v1/chat/completions", "/v1/completions", "/v1/embeddings", "/v1/token-scores", "/v1/rerank") and self.path not in management:
                 self.send_json(404, {"error": "not found"})
                 return
             started = False
@@ -65,6 +65,13 @@ def handler_for(runtime):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
+                if self.path=='/v1/rerank':
+                    if (not isinstance(body,dict) or set(body)-{'model','query','documents','top_n','return_documents'}
+                            or not isinstance(body.get('model'),str)):
+                        raise ValueError('unsupported reranking request')
+                    self.send_json(200,runtime.rerank(body['model'],body.get('query'),body.get('documents'),
+                        body.get('top_n'),body.get('return_documents',False)))
+                    return
                 if self.path=='/v1/token-scores':
                     if (not isinstance(body,dict) or set(body)!={'model','prompt','candidate_token_ids'}
                             or not isinstance(body['model'],str)):

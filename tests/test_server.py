@@ -28,6 +28,12 @@ class FakeRuntime:
         self.last_embedding=(alias,values,encoding_format,dimensions)
         return {'object':'list','data':[{'object':'embedding','index':i,'embedding':[0.,1.]} for i in range(len(values))]}
 
+    def rerank(self,alias,query,documents,top_n=None,return_documents=False):
+        from dllm.reranking import options,ranked
+        query,documents,top_n,return_documents=options(query,documents,top_n,return_documents)
+        if alias!='a':raise ValueError('unknown model')
+        return {'results':ranked([float(i) for i in range(len(documents))],documents,top_n,return_documents)}
+
     def score(self,alias,prompt,candidate_token_ids):
         if alias!='a':raise ValueError('unknown model')
         self.last_scoring=(alias,prompt,candidate_token_ids)
@@ -330,5 +336,17 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(self.runtime.last_scoring,('a',[1,2],[3,4]))
         for invalid in ({**body,'candidate_token_ids':[3,3]},{**body,'candidate_token_ids':[True,4]},
                 {**body,'model':'missing'},{**body,'stream':True},{'model':'a'},[]):
+            with self.subTest(body=invalid),self.assertRaises(HTTPError) as caught:post(invalid)
+            self.assertEqual(caught.exception.code,400)
+
+    def test_rerank_protocol(self):
+        def post(body):
+            return urlopen(Request(self.url+'/v1/rerank',data=json.dumps(body).encode(),
+                headers={'Content-Type':'application/json'}),timeout=5)
+        body={'model':'a','query':'question','documents':['first','second'],'top_n':1,'return_documents':True}
+        with post(body) as response:
+            self.assertEqual(json.load(response)['results'],[{'index':1,'relevance_score':1.,'document':{'text':'second'}}])
+        for invalid in ({**body,'documents':[]},{**body,'top_n':3},{**body,'return_documents':1},
+                {**body,'model':'unknown'},{**body,'stream':True},{'model':'a'},[]):
             with self.subTest(body=invalid),self.assertRaises(HTTPError) as caught:post(invalid)
             self.assertEqual(caught.exception.code,400)

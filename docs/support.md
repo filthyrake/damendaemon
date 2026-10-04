@@ -23,6 +23,7 @@ Configuration acceptance alone is not checkpoint qualification.
 | T5 / FLAN-T5 | Small checkpoints | NVIDIA A2, Apple M4 | FP32 encoder-decoder raw generation; no quantization or prefix reuse |
 | Mamba | 130M, 370M | NVIDIA A2, Apple M4 | FP32/Q8 raw generation; recurrent-state prefix snapshots |
 | Mamba-2 | 130M | NVIDIA A2, Apple M4 | Single-group configuration; optional qualified CUDA SSD/compensated projection paths |
+| BERT cross-encoder | MS MARCO MiniLM-L6-v2 | NVIDIA A2, Apple M4 | FP32 paired query/document relevance; one trained scalar head;512 tokens |
 | BERT sentence encoder | all-MiniLM-L6-v2 | NVIDIA A2, Apple M4 | Specified mean-pooling/L2 pipeline; 384 dimensions, 256 input tokens |
 
 Exact pins, precision, context, correctness gates and comparisons:
@@ -48,6 +49,7 @@ Model licenses remain those of their respective publishers.
 | Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state |
 | Prompt graph reuse | Opt-in bounded Qwen2/Qwen3 CUDA single-prefill and candidate-scoring graphs; cold capture cost, exact shape/slot/choice keys |
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
+| Reranking | Bounded query/document lists, raw relevance scores, stable top_n ranking and optional returned text; no silent truncation |
 | Embeddings | Text/token-ID inputs, float/base64 output for the qualified BERT sentence encoder |
 | Weight formats | Hugging Face safetensors; own on-load Q8_0/Q4_0 conversion where supported |
 | Position schemes | Standard/linear/Llama3 RoPE, fixture-qualified static YaRN; learned positions; partial rotary; ALiBi |
@@ -68,4 +70,4 @@ workloads still trail vLLM. See the raw trials accompanying each comparison.
 
 Recent evidence: [T5](evidence/t5/), [Mamba](evidence/mamba/),
 [Mamba-2](evidence/mamba2/), [function tools](evidence/tools/),
-[direct token choices](evidence/scoring/) and [upstream research](upstream-inference-research.md).
+[direct token choices](evidence/scoring/), [trained reranking](evidence/reranking/) and [upstream research](upstream-inference-research.md).

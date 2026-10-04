@@ -386,7 +386,7 @@ class Executor:
                 self.kernel_backend += '+cuda-gemv'
         if use_graph:
             self.graph = torch.cuda.CUDAGraph()
-            with torch.cuda.graph(self.graph), torch.inference_mode():
+            with torch.inference_mode(), torch.cuda.graph(self.graph):
                 self.graph_logits = self.forward(self.token, self.position, prefill=False)
                 self.graph_next = self.graph_logits.argmax(dim=-1)
         self.length = 0

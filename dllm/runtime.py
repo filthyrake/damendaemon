@@ -105,7 +105,7 @@ class Runtime:
                     estimated = weight_bytes(candidate,quantization=policy)
                 except Exception as error:
                     raise ValueError('invalid local model snapshot') from error
-                if ((config.get('task') != 'embedding' and self.context > config['max_position_embeddings'])
+                if ((config.get('task') not in ('embedding','rerank') and self.context > config['max_position_embeddings'])
                         or estimated > self.host_bytes):
                     raise ValueError('model exceeds configured context or host capacity')
                 with self.registry_lock:
@@ -219,6 +219,22 @@ class Runtime:
                     'dllm_timing':{'source_tier':tier,'activation_seconds':activation,
                         'total_seconds':time.perf_counter()-start,'kernel_backend':executor.kernel_backend,
                         'compute_dtype':str(executor.compute_dtype).removeprefix('torch.')}}
+
+    def rerank(self,alias,query,documents,top_n=None,return_documents=False):
+        from .reranking import options,ranked
+        query,documents,top_n,return_documents=options(query,documents,top_n,return_documents)
+        start=time.perf_counter()
+        with self.session(alias) as (executor,tier,activation):
+            if getattr(executor.model,'task',None)!='rerank':raise ValueError('model does not support reranking')
+            tokens,types=executor.model.encode_pairs(query,documents)
+            scores=executor.rerank(tokens,types).float().cpu().tolist()
+            count=sum(map(len,tokens))
+            return {'model':alias,'results':ranked(scores,documents,top_n,return_documents),
+                'score_type':'raw_relevance','calibrated':False,
+                'usage':{'prompt_tokens':count,'total_tokens':count},
+                'dllm_timing':{'source_tier':tier,'activation_seconds':activation,
+                    'total_seconds':time.perf_counter()-start,'kernel_backend':executor.kernel_backend,
+                    'compute_dtype':str(executor.compute_dtype).removeprefix('torch.')}}
 
     def score(self,alias,prompt,candidate_token_ids):
         import torch
@@ -363,7 +379,7 @@ def make_executor(model, use_graph=True, max_batch=None, **kwargs):
         if kwargs.pop('fuse_projections',True) is False:
             raise ValueError('GPT-NeoX requires packed checkpoint projections')
         return NeoxExecutor(model,use_graph,max_batch or 1,**kwargs)
-    if model.config.get('task') == 'embedding':
+    if model.config.get('task') in ('embedding','rerank'):
         from .encoder import EncoderExecutor
         return EncoderExecutor(model,use_graph=use_graph)
     if model.config['model_type'] == 'gpt2':

@@ -639,3 +639,24 @@ are expensive; dynamic workloads may not amortize them. Quantization, paged KV,
 and packed/chunked prefill retain their existing paths. Direct token scoring
 uses separate graph keys for each ordered candidate set, sharing the same cache budget.
 [Correctness, memory release and matched HTTP performance](docs/evidence/prefill-graphs/README.md).
+
+### Trained document reranking
+
+The pinned MS MARCO MiniLM-L6-v2 BERT cross-encoder runs independently on CUDA
+and Metal. Register it as an alias and call `POST /v1/rerank`:
+
+```json
+{
+  "model": "reranker",
+  "query": "How many people live in Berlin?",
+  "documents": ["Berlin had 3.5 million residents.", "Paris is in France."],
+  "top_n": 2,
+  "return_documents": true
+}
+```
+
+The response gives original document indices and raw relevance scores, not
+confidence probabilities. Up to64 documents are accepted; each query/document
+pair must fit the configured context and512-token model limit. Oversized inputs
+are rejected rather than silently truncated.
+[A2/M4 reference, HTTP and performance evidence](docs/evidence/reranking/README.md).

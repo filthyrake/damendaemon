@@ -28,7 +28,7 @@ def weight_bytes(path,quantization=None):
         from .mamba import weight_bytes as estimate
     elif config(path).get('model_type')=='t5':
         from .t5 import weight_bytes as estimate
-    elif config(path).get('task') == 'embedding':
+    elif config(path).get('task') in ('embedding','rerank'):
         from .encoder import weight_bytes as estimate
     else:
         from .qwen2 import weight_bytes as estimate
@@ -45,7 +45,7 @@ def load(path,context,quantization=None):
     if config(path).get('model_type')=='t5':
         from .t5 import T5Weights
         return T5Weights(path,context,quantization=quantization)
-    if config(path).get('task') == 'embedding':
+    if config(path).get('task') in ('embedding','rerank'):
         from .encoder import EncoderWeights
         return EncoderWeights(path,context,quantization=quantization)
     from .qwen2 import ModelWeights

@@ -91,6 +91,13 @@ class BatchedRuntime:
         return self._submit({"action":"embed", "model":alias, "inputs":inputs,
                              "encoding_format":encoding_format, "dimensions":dimensions})
 
+    def rerank(self,alias,query,documents,top_n=None,return_documents=False):
+        from .reranking import options
+        query,documents,top_n,return_documents=options(query,documents,top_n,return_documents)
+        if not isinstance(alias,str) or alias not in self.models:raise ValueError('unknown model')
+        return self._submit({'action':'rerank','model':alias,'query':query,'documents':documents,
+            'top_n':top_n,'return_documents':return_documents})
+
     def score(self,alias,prompt,candidate_token_ids):
         from .scoring import options
         prompt,candidates=options(prompt,candidate_token_ids)
@@ -600,6 +607,10 @@ class BatchedRuntime:
                         options = first.command
                         first.final = self.runtime.embed(options['model'], options['inputs'],
                                                          options['encoding_format'], options['dimensions'])
+                    elif first.command['action']=='rerank':
+                        options=first.command
+                        first.final=self.runtime.rerank(options['model'],options['query'],options['documents'],
+                            options['top_n'],options['return_documents'])
                     elif first.command['action']=='score':
                         options=first.command
                         first.final=self.runtime.score(options['model'],options['prompt'],options['candidate_token_ids'])
