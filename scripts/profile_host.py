@@ -14,7 +14,7 @@ import time
 import torch
 
 from dllm.device import device_name, synchronize
-from dllm.qwen2 import ModelWeights
+from dllm.models import load
 from dllm.runtime import make_executor, require_gpu
 
 
@@ -25,14 +25,16 @@ def main():
     parser.add_argument('--steps', type=int, default=32)
     parser.add_argument('--batch', type=int, default=1)
     parser.add_argument('--eager', action='store_true')
+    parser.add_argument('--raw',action='store_true')
     args = parser.parse_args()
     if args.steps < 1 or not 1 <= args.batch <= 8:
         parser.error('steps must be positive and batch must be 1..8')
     torch.set_num_threads(4)
     require_gpu()
-    model = ModelWeights(args.path, args.context)
+    model = load(args.path, args.context)
     executor = make_executor(model, max_batch=args.batch, use_graph=not args.eager)
-    prompt = model.chat_tokens([{'role':'user', 'content':'Explain matrix multiplication in detail.'}])
+    prompt = (model.raw_tokens('The blue bird flies over the green field.') if args.raw else
+              model.chat_tokens([{'role':'user', 'content':'Explain matrix multiplication in detail.'}]))
     if len(prompt) + args.steps > args.context:
         parser.error('prompt and decode steps exceed context')
     slots = list(range(args.batch))

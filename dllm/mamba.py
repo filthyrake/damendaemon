@@ -1,0 +1,211 @@
+"""Independent FP32 Mamba-1 loader and slot-owned state-space executor."""
+import json
+import math
+from pathlib import Path
+import torch
+from torch.nn import functional as F
+from safetensors import safe_open
+from tokenizers import Tokenizer
+from .config import eos_ids
+from .device import selected_device,available_memory,empty_cache
+from .batch import BatchExecutor
+
+
+def config(path):
+    c=json.loads((Path(path)/'config.json').read_text())
+    if (c.get('model_type')!='mamba' or c.get('architectures')!=['MambaForCausalLM']
+            or c.get('quantization_config') or c.get('hidden_act','silu')!='silu'
+            or c.get('rms_norm',True) is not True or c.get('residual_in_fp32',True) is not True
+            or c.get('ssm_cfg')):
+        raise ValueError('unsupported Mamba-1 configuration')
+    for key in ('hidden_size','intermediate_size','num_hidden_layers','state_size','conv_kernel','vocab_size','time_step_rank'):
+        if type(c.get(key)) is not int or c[key]<=0:raise ValueError('invalid Mamba dimension: '+key)
+    if c['state_size']>32 or c['conv_kernel']>16:raise ValueError('unsupported Mamba state or convolution width')
+    for key,default in (('use_bias',False),('use_conv_bias',True),('tie_word_embeddings',True)):
+        c.setdefault(key,default)
+        if type(c[key]) is not bool:raise ValueError('invalid Mamba bias/tie policy')
+    eps=c.get('layer_norm_epsilon',1.e-5)
+    if type(eps) not in (int,float) or not math.isfinite(eps) or eps<=0:raise ValueError('invalid Mamba normalization epsilon')
+    if not eos_ids(c.get('eos_token_id')) or any(t>=c['vocab_size'] for t in eos_ids(c['eos_token_id'])):
+        raise ValueError('Mamba requires valid EOS tokens')
+    # Bound initial qualification; absence of rotary positions is not a claim
+    # that arbitrary context lengths have been validated.
+    c['max_position_embeddings']=2048;c['layer_norm_epsilon']=eps
+    return c
+
+
+def weight_bytes(path,quantization=None):
+    from .quantization import mode
+    from .qwen2 import weight_files
+    if mode(quantization)!='none':raise ValueError('Mamba quantization is not implemented')
+    config(path);total=0
+    for file in weight_files(path):
+        with safe_open(str(file),framework='pt',device='cpu') as reader:
+            total+=sum(math.prod(reader.get_slice(name).get_shape())*4 for name in reader.keys())
+    return total
+
+
+class MambaWeights:
+    task='generation';quantization='none';weight_cache_status='disabled'
+
+    def __init__(self,path,max_context,quantization=None):
+        from .quantization import mode
+        from .qwen2 import weight_files
+        if mode(quantization)!='none':raise ValueError('Mamba quantization is not implemented')
+        self.path=Path(path).resolve();self.config=c=config(path)
+        if type(max_context) is not int or not 1<=max_context<=2048:raise ValueError('Mamba context must be 1..2048')
+        self.max_context=max_context;self.eos=eos_ids(c['eos_token_id'])
+        self.tokenizer=Tokenizer.from_file(str(self.path/'tokenizer.json'))
+        self.tokenizer.no_padding();self.tokenizer.no_truncation()
+        state={}
+        for file in weight_files(path):
+            with safe_open(str(file),framework='pt',device='cpu') as reader:
+                for name in reader.keys():state[name]=reader.get_tensor(name).float()
+        def take(name,shape):
+            value=state.pop(name)
+            if tuple(value.shape)!=shape:raise ValueError('Mamba checkpoint shape mismatch: '+name)
+            return value.contiguous()
+        h,i,s,r=c['hidden_size'],c['intermediate_size'],c['state_size'],c['time_step_rank']
+        w=self.weights={'embed':take('backbone.embeddings.weight',(c['vocab_size'],h)),
+            'norm':take('backbone.norm_f.weight',(h,))}
+        if c['tie_word_embeddings']:
+            w['head']=w['embed']
+            if 'lm_head.weight' in state and not torch.equal(take('lm_head.weight',w['embed'].shape),w['head']):
+                raise ValueError('Mamba tied output weights disagree')
+        else:w['head']=take('lm_head.weight',(c['vocab_size'],h))
+        for layer in range(c['num_hidden_layers']):
+            prefix=f'backbone.layers.{layer}.';target=f'{layer}.'
+            w[target+'norm']=take(prefix+'norm.weight',(h,));prefix+='mixer.'
+            for name,shape in (('in_proj',(2*i,h)),('x_proj',(r+2*s,i)),('dt_proj',(i,r)),('out_proj',(h,i))):
+                w[target+name]=take(prefix+name+'.weight',shape)
+            w[target+'dt_bias']=take(prefix+'dt_proj.bias',(i,))
+            w[target+'conv']=take(prefix+'conv1d.weight',(i,1,c['conv_kernel'])).squeeze(1)
+            w[target+'conv_bias']=take(prefix+'conv1d.bias',(i,)) if c['use_conv_bias'] else torch.zeros(i)
+            w[target+'A']=-take(prefix+'A_log',(i,s)).exp()
+            w[target+'D']=take(prefix+'D',(i,))
+            if c['use_bias']:
+                w[target+'in_bias']=take(prefix+'in_proj.bias',(2*i,))
+                w[target+'out_bias']=take(prefix+'out_proj.bias',(h,))
+        if state:raise ValueError('unexpected Mamba checkpoint tensors: '+', '.join(state))
+        self.bytes=sum(x.numel()*x.element_size() for x in {id(x):x for x in w.values()}.values());self.scales={}
+
+    def raw_tokens(self,prompt):
+        tokens=self.tokenizer.encode(prompt,add_special_tokens=True).ids if isinstance(prompt,str) else list(prompt)
+        if not tokens or any(type(t) is not int or not 0<=t<self.config['vocab_size'] for t in tokens):
+            raise ValueError('invalid Mamba prompt tokens')
+        return tokens
+
+    def chat_tokens(self,*args,**kwargs):
+        raise ValueError('Mamba has no chat template; use raw completions')
+
+
+class MambaExecutor:
+    supports_chunked_prefill=False
+    requires_full_prefill=True
+    capture_graphs=BatchExecutor.capture_graphs
+    decode_batch=BatchExecutor.decode_batch
+
+    def __init__(self,model,use_graph=True,max_batch=4,kernels=None):
+        import os
+        if not 1<=max_batch<=16:raise ValueError('batch capacity must be 1..16')
+        self.model=model;self.c=c=model.config;self.context=model.max_context
+        self.device=selected_device();self.max_batch=max_batch
+        self.compute_dtype=self.residual_dtype=torch.float32
+        selected=kernels or os.environ.get('DLLM_KERNELS','auto')
+        if selected not in ('auto','torch','triton','metal'):raise ValueError('invalid Mamba kernel policy')
+        self.kernels=self.recurrent=None
+        if selected!='torch':
+            if self.device=='cuda':
+                if selected=='metal':raise ValueError('Metal requires Apple Silicon')
+                from . import kernels as native
+                from . import mamba_kernels as recurrent
+            else:
+                if selected=='triton':raise ValueError('Triton requires CUDA')
+                from . import metal_kernels as native
+                from . import mamba_metal as recurrent
+            self.kernels=native;self.recurrent=recurrent
+        empty_cache()
+        state_bytes=c['num_hidden_layers']*max_batch*c['intermediate_size']*(c['state_size']+c['conv_kernel'])*4
+        if model.bytes+state_bytes+512*1024**2>available_memory():raise MemoryError('insufficient GPU memory for Mamba')
+        copies={};self.w={}
+        for name,value in model.weights.items():
+            if id(value) not in copies:copies[id(value)]=value.to(self.device)
+            self.w[name]=copies[id(value)]
+        self.conv=[torch.zeros((max_batch,c['intermediate_size'],c['conv_kernel']),device=self.device) for _ in range(c['num_hidden_layers'])]
+        self.state=[torch.zeros((max_batch,c['intermediate_size'],c['state_size']),device=self.device) for _ in range(c['num_hidden_layers'])]
+        self.lengths=[0]*max_batch;self.length=0;self.batch_graphs={}
+        self.kernel_backend=('triton' if self.device=='cuda' else 'metal') if self.kernels else 'torch'
+        if use_graph and self.device=='cuda':self.capture_graphs()
+
+    def linear(self,x,weight,bias=None):
+        if self.kernels and self.device=='mps':return self.kernels.linear(x,weight,bias)
+        if self.kernels and x.shape[0]==1:
+            y=self.kernels.linear_fp32(x,weight)
+            return y if bias is None else y+bias
+        return F.linear(x,weight,bias)
+
+    def norm(self,x,weight):
+        eps=self.c['layer_norm_epsilon']
+        if self.kernels:return self.kernels.rms(x,weight,eps,True)
+        return x*torch.rsqrt(x.square().mean(-1,keepdim=True)+eps)*weight
+
+    def tensor_recurrence(self,x,gate,params,dt,layer,slots,reset):
+        w=self.w;p=f'{layer}.';s=self.c['state_size'];r=self.c['time_step_rank']
+        b,c=params.split((r,s,s),-1)[1:]
+        state=torch.zeros_like(self.state[layer].index_select(0,slots)) if reset else self.state[layer].index_select(0,slots)
+        output=[]
+        dt=F.softplus(dt+w[p+'dt_bias'])
+        for t in range(x.shape[1]):
+            step=dt[:,t,:,None]
+            state=torch.exp(step*w[p+'A'])*state+(step*b[:,t,None,:])*x[:,t,:,None]
+            y=(state*c[:,t,None,:]).sum(-1)+w[p+'D']*x[:,t]
+            output.append(y*F.silu(gate[:,t]))
+        self.state[layer].index_copy_(0,slots,state)
+        return torch.stack(output,1)
+
+    def run(self,ids,slots,reset):
+        batch,length=ids.shape;i=self.c['intermediate_size'];r=self.c['time_step_rank']
+        x=F.embedding(ids,self.w['embed']).reshape(batch*length,-1)
+        for layer in range(self.c['num_hidden_layers']):
+            p=f'{layer}.'
+            projected=self.linear(self.norm(x,self.w[p+'norm']),self.w[p+'in_proj'],self.w.get(p+'in_bias'))
+            signal,gate=[v.reshape(batch,length,i).contiguous() for v in projected.chunk(2,-1)]
+            if self.recurrent:
+                signal=self.recurrent.conv(signal,self.w[p+'conv'],self.w[p+'conv_bias'],self.conv[layer],slots,reset)
+            elif reset:
+                self.conv[layer].index_copy_(0,slots,F.pad(signal.transpose(1,2),(self.c['conv_kernel']-length,0)))
+                signal=F.silu(F.conv1d(signal.transpose(1,2),self.w[p+'conv'][:,None],self.w[p+'conv_bias'],padding=self.c['conv_kernel']-1,groups=i)[:,:,:length]).transpose(1,2).contiguous()
+            else:
+                history=self.conv[layer].index_select(0,slots).roll(-1,-1);history[:,:,-1]=signal[:,0]
+                self.conv[layer].index_copy_(0,slots,history)
+                signal=F.silu((history*self.w[p+'conv']).sum(-1)+self.w[p+'conv_bias'])[:,None]
+            params=self.linear(signal.reshape(batch*length,i),self.w[p+'x_proj']).reshape(batch,length,-1)
+            dt=self.linear(params[:,:,:r].contiguous().reshape(batch*length,r),self.w[p+'dt_proj']).reshape(batch,length,i)
+            if self.recurrent:
+                output=self.recurrent.scan(signal,gate,params,dt,self.w[p+'dt_bias'],self.w[p+'A'],self.w[p+'D'],self.state[layer],slots,reset)
+            else:output=self.tensor_recurrence(signal,gate,params,dt,layer,slots,reset)
+            x=x+self.linear(output.reshape(batch*length,i),self.w[p+'out_proj'],self.w.get(p+'out_bias'))
+        x=x.reshape(batch,length,-1)[:,-1].contiguous()
+        return self.linear(self.norm(x,self.w['norm']),self.w['head'])
+
+    @torch.inference_mode()
+    def forward_batch(self,ids,positions,slots):return self.run(ids[:,None],slots,False)
+
+    @torch.inference_mode()
+    def prefill_batch(self,prompts,slots):
+        if (not prompts or len(prompts)!=len(slots) or len(set(slots))!=len(slots)
+                or any(type(s) is not int or not 0<=s<self.max_batch for s in slots)
+                or any(not p or len(p)>self.context for p in prompts)):
+            raise ValueError('invalid Mamba prompt batch')
+        # Separate sequences avoid padding advancing recurrent state.
+        outputs=[]
+        for prompt,slot in zip(prompts,slots):
+            outputs.append(self.run(torch.tensor([prompt],device=self.device),torch.tensor([slot],device=self.device),True))
+            self.lengths[slot]=len(prompt)
+        return torch.cat(outputs)
+
+    def prefill(self,tokens,slot=0):
+        result=self.prefill_batch([tokens],[slot]);self.length=len(tokens);return result
+
+    def decode(self,token):
+        result=self.decode_batch([token],[0]);self.length=self.lengths[0];return result

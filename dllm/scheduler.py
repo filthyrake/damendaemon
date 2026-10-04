@@ -495,8 +495,8 @@ class BatchedRuntime:
                 executor.release_request(slot)
 
     def _group(self, first, executor, tier, activation):
-        if getattr(executor,'is_encoder_decoder',False) and (self.prefill_chunk_size or self.prefix_cache_tokens):
-            raise ValueError('T5 does not yet support prompt chunking or prefix snapshots')
+        if getattr(executor,'requires_full_prefill',False) and (self.prefill_chunk_size or self.prefix_cache_tokens):
+            raise ValueError('this architecture does not yet support prompt chunking or prefix snapshots')
         if hasattr(executor,'reserve_request'):
             return self._paged_group(first,executor,tier,activation)
         if (self.prefill_chunk_size or self.prefix_cache_tokens) and getattr(executor,'supports_chunked_prefill',False):

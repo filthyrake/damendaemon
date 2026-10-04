@@ -151,6 +151,7 @@ from torch.nn import functional as F
 
 class T5Executor:
     is_encoder_decoder=True
+    requires_full_prefill=True
     supports_chunked_prefill=False
     capture_graphs=BatchExecutor.capture_graphs
     decode_batch=BatchExecutor.decode_batch

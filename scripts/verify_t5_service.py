@@ -1,4 +1,4 @@
-"""Real HTTP qualification for encoder-decoder scheduling and residency."""
+"""Real HTTP qualification for raw T5/Mamba scheduling and residency."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -20,7 +20,9 @@ def main():
     os.environ['DLLM_DEVICE']=args.device
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,512)
-    prompt='translate English to German: The blue bird flies over the green field every morning.'
+    encoder_decoder=model.config.get('is_encoder_decoder',False)
+    prompt='The blue bird flies over the green field every morning.'
+    if encoder_decoder:prompt='translate English to German: '+prompt
     ids=model.raw_tokens(prompt)
     runtime=BatchedRuntime({'a':args.model,'b':args.other_model},context=512,batch_size=4,gpu_models=1)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
@@ -50,8 +52,8 @@ def main():
         serial=[post(body(x)) for x in prompts]
         with ThreadPoolExecutor(4) as pool:parallel=list(pool.map(lambda x:post(body(x)),prompts))
         assert [x['choices'][0]['text'] for x in parallel]==[x['choices'][0]['text'] for x in serial]
-        # A full encoder context still permits output; decoder lengths are independent.
-        post(body((ids*100)[:512],max_tokens=8))
+        # Encoders have independent context; causal models share prompt/output.
+        post(body((ids*100)[:512 if encoder_decoder else 504],max_tokens=8))
         rejected(body([1]*513));rejected(body(max_tokens=513))
         rejected({'model':'a','messages':[{'role':'user','content':'hello'}]},'/v1/chat/completions')
         stream=runtime.generate('a',None,128,raw_prompt=ids)
@@ -62,7 +64,8 @@ def main():
         assert restored['choices'][0]['text']==expected['choices'][0]['text']
         report={'passed':True,'device':args.device,'model':args.model,'other_model':args.other_model,
             'text_and_token_prompts_equal':True,'stream_and_nonstream_equal':True,'concurrent_isolation':True,
-            'full_encoder_context_with_output':True,'oversized_requests_rejected':True,'chat_rejected':True,
+            'context_boundary_with_output':True,'encoder_decoder':encoder_decoder,
+            'oversized_requests_rejected':True,'chat_rejected':True,
             'cancellation_recovery':True,'decoder_only_switch_and_host_restore':True,
             'sample':expected}
     finally:

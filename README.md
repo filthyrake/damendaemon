@@ -556,3 +556,14 @@ bounded prompt graph caching. It recomputes each prompt with its current tokens.
 Warm latency improves, but a new shape incurs capture overhead; default 0 keeps
 it off. `--no-graph` also disables prompt graphs. See the T5 evidence for cold
 cost, memory bounds and separate core/HTTP measurements.
+
+### Mamba state-space models
+
+Pinned `state-spaces/mamba-130m-hf` now runs independently on A2 and Apple M4,
+with native GPU causal convolution and recurrent-state kernels. Use raw
+completions with context up to 2048. Both devices pass independent logits/state
+checks and real streaming, concurrent, cancellation and model-switching tests.
+This initial path uses FP32 and does not support Mamba quantization, prefix
+snapshots or chunked prefill. Mamba2 and Falcon hybrids are separate architectures.
+[Matched benchmarks and qualification](docs/evidence/mamba/README.md) include
+remaining performance gaps, especially on Apple.

@@ -1037,3 +1037,13 @@ proof. Original T5-small additionally qualifies tied embeddings and ReLU, with
 baseline fails startup or matched output validation; a separate public-API core
 comparison produces identical token IDs and exposes dllm's slower encoder but
 faster decoder. Core timings and HTTP throughput are reported separately.
+
+## Mamba-1 recurrent state (issue #30)
+
+Independent Mamba-130m text generation adds causal convolution and selective
+state-space recurrence, with native CUDA/Metal kernels and fixed per-slot state.
+Both A2 and M4 pass independent FP32 logits/state checks through 2048 context and
+real HTTP/residency proof. [Evidence and matched three-engine measurements](evidence/mamba/README.md)
+show A2 throughput competitive with vLLM for this checkpoint; Apple is still
+behind llama.cpp. Other Mamba generations/hybrids and quantized execution are
+not covered by this initial checkpoint qualification.

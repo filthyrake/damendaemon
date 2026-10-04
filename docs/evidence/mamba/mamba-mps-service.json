@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "device": "mps",
+  "model": "results/models/mamba-130m",
+  "other_model": "results/models/qwen2",
+  "text_and_token_prompts_equal": true,
+  "stream_and_nonstream_equal": true,
+  "concurrent_isolation": true,
+  "context_boundary_with_output": true,
+  "encoder_decoder": false,
+  "oversized_requests_rejected": true,
+  "chat_rejected": true,
+  "cancellation_recovery": true,
+  "decoder_only_switch_and_host_restore": true,
+  "sample": {
+    "id": "cmpl-bdbb585ae5eb4b2281ad3656e7e5d23b",
+    "object": "text_completion",
+    "created": 1791119556,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": " It is a beautiful bird, and I",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 11,
+      "completion_tokens": 8,
+      "total_tokens": 19
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 0.20808187499642372,
+      "cached_prompt_tokens": 0,
+      "kernel_backend": "metal",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 0.3584858340327628,
+      "total_seconds": 0.4235724169993773,
+      "decode_tokens_per_second": 107.54904745253837
+    }
+  },
+  "unsupported_cache_options_rejected": true
+}
