@@ -57,3 +57,11 @@ disconnect recovery, graph reclamation and model swapping/host restoration.
 gates. Exact pins, context/precision limits and initial slow-prefill timings
 are described in `docs/architecture-parity.md`. No Harmony or cross-engine
 performance parity claim follows from these checks.
+
+Grouped prefill is qualified in `gpt-oss-grouped-buckets-reference-a2.json`
+(72 checks), `gpt-oss-prefill-http-a2.json` (four alternating full-HTTP rounds,
+16/32/129/224-token prompts), and `gpt-oss-grouped-service-a2.json` (129-token
+prompts through streaming, cancellation, batching and hot swapping). Exact FP16
+unpacking across all format values and compensated products at safe-range
+boundaries are recorded in `mxfp4-fp16-matrix-a2.json`. These supersede the
+initial routed-prefill performance, while preserving that baseline for comparison.

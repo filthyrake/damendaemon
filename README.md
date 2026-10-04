@@ -708,5 +708,5 @@ local directory with a host budget large enough for its 12.83 GiB prepared
 weights (for example, `--host-gib 18 --context 256 --batch-size 2`). Use
 `/v1/completions`; `/v1/chat/completions` is rejected for this model. Keep the
 conversion policy at `none`: the checkpoint already contains native MXFP4.
-Prompt processing is currently slow; see the measured boundaries in
+Grouped expert prefill accelerates prompts of at least 16 tokens; see measured boundaries in
 [architecture evidence](docs/architecture-parity.md#gpt-oss-20b-packed-raw-execution).

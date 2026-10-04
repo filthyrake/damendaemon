@@ -25,13 +25,26 @@ def main():
         codes=torch.arange(16,dtype=torch.uint8).repeat(2)
         packed=(codes[::2] | (codes[1::2]<<4)).repeat(1,scales.numel(),1).contiguous()
         expected=reference(packed,scales)
-        for dtype in (torch.float32,torch.bfloat16):
+        for dtype in (torch.float32,torch.bfloat16,torch.float16):
             actual=unpack(packed.cuda(),scales.cuda(),dtype).cpu()
             target=expected.to(dtype)
             torch.testing.assert_close(actual,target,rtol=0,atol=0,equal_nan=True)
             zeros=(target==0)
             assert torch.equal(torch.signbit(actual[zeros]),torch.signbit(target[zeros]))
             rows.append({'case':'all_codes_all_256_scales','dtype':str(dtype),'exact_values':True,'signed_zero':True})
+        # Exact FP16 expansion must also survive the compensated matrix path,
+        # including the lowest subnormal and largest safe expert scales.
+        from dllm.precise_matmul import linear as precise_linear
+        for exponent in (104,105,140):
+            blocks=torch.randint(0,256,(37,3,16),dtype=torch.uint8)
+            scales=torch.full((37,3),exponent,dtype=torch.uint8)
+            inputs=torch.randn(17,96)
+            target=(inputs.double()@reference(blocks,scales).t()).float()
+            actual=precise_linear(inputs.cuda(),unpack(blocks.cuda(),scales.cuda(),torch.float16)).cpu()
+            error=(actual-target).abs()
+            relative=(error.square().mean().sqrt()/target.square().mean().sqrt()).item()
+            assert relative<2e-6 and error.max().item()<1e-5*max(1e-12,target.abs().max().item())
+            rows.append({'case':'fp16_expansion_compensated_matrix','scale':exponent,'relative_rms':relative})
         for count,experts,outputs,width,top in ((1,5,37,96,3),(3,5,37,96,3),(4,4,257,2880,2)):
             blocks=torch.randint(0,256,(experts,outputs,width//32,16),dtype=torch.uint8)
             scales=torch.randint(119,125,(experts,outputs,width//32),dtype=torch.uint8)

@@ -1111,8 +1111,8 @@ executor with packed MXFP4 experts, GPU-resident top-k routing, biased
 projections, clipped/interleaved SwiGLU, learned attention sinks, alternating
 local/full attention and fractional-boundary YaRN. It does not load an upstream
 inference runtime. Floating checkpoint values are preserved during loading;
-FP16 matrix storage is used only when lossless. Arithmetic, residuals and KV
-are FP32. Prepared host weights occupy 13,775,206,656 bytes.
+FP16 matrix storage is used only when lossless. Residuals, KV and reductions are FP32; larger dense projections use the
+existing compensated Tensor Core path. Prepared host weights occupy 13,775,206,656 bytes.
 
 On A2, 72 checks pass against an independent Transformers 5.18 CPU FP32 eager
 reference with one layer expanded at a time. These include all 24 layer outputs,
@@ -1138,3 +1138,34 @@ cold disk-to-response takes 15.53 seconds and host restoration plus response
 not a matched comparison with another engine. Two-slot reference peak allocated
 memory is 13,930,619,904 bytes. Supporting reports and reproduction scripts are
 linked in [GPT-OSS evidence](evidence/gpt-oss/).
+
+### Grouped GPT-OSS prefill
+
+The following warmed HTTP measurements supersede the initial routed-prefill
+numbers above. Prompts of at least 16 tokens now group token rows by expert.
+Only one expert projection is expanded at a time. FP16 expansion is selected
+only when every value is exactly representable, verified from the checkpoint
+scales; otherwise expansion remains FP32. Compensated Tensor Core projections
+retain FP32 activation/residual/KV/output policy. Decode keeps packed GPU routing.
+Expert token counts use power-of-two buckets to bound compilation variants;
+extra rows are discarded before route combination. This is still ordinary
+monolithic prefill, not interleaved prompt scheduling or a graph-captured router.
+
+A2, same pinned checkpoint/resident server, context 256, two slots, eight output
+tokens, four alternating measured rounds after warmup. Every response and usage
+count matches between the two modes:
+
+| Prompt tokens | Routed HTTP seconds | Grouped HTTP seconds | Routed / grouped first-token seconds |
+|---|---:|---:|---:|
+| 16 | 1.859 | 1.271 | 1.220 / 0.631 |
+| 32 | 3.059 | 1.409 | 2.419 / 0.770 |
+| 129 | 10.375 | 1.601 | 9.732 / 0.959 |
+| 224 | 17.531 | 1.734 | 16.885 / 1.092 |
+
+Complete requests improve 1.46–10.11× on these workloads. First-use compilation
+is excluded. Peak allocated memory in the largest grouped workload is
+13,959,017,984 bytes. All 72 independent CPU reference checks pass with grouped
+prefill and bounded token-count buckets. `DLLM_GPT_OSS_PREFILL=routed` retains the
+baseline for diagnosis. This comparison changes expert execution arithmetic
+from FP32 reductions to compensated products; it is not a bitwise-logit claim,
+and it is not a comparison with another engine.

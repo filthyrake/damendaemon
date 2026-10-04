@@ -1,0 +1,247 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "model": "models/gpt-oss-20b",
+  "context": 256,
+  "batch_size": 2,
+  "rounds": 4,
+  "rows": [
+    {
+      "prompt_tokens": 16,
+      "completion_tokens": 8,
+      "exact_response": true,
+      "measurements": [
+        {
+          "mode": "routed",
+          "http_seconds": 1.858802000992,
+          "first_token_seconds": 1.2198152820055839,
+          "peak_allocated_bytes": 13870021632
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.2696148690010887,
+          "first_token_seconds": 0.629956711010891,
+          "peak_allocated_bytes": 13902806528
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.2721788340131752,
+          "first_token_seconds": 0.6321977890038397,
+          "peak_allocated_bytes": 13902806528
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 1.8588411620003171,
+          "first_token_seconds": 1.2198551100009354,
+          "peak_allocated_bytes": 13870021632
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 1.8609106950025307,
+          "first_token_seconds": 1.2218666920089163,
+          "peak_allocated_bytes": 13870021632
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.3070451880048495,
+          "first_token_seconds": 0.6680555059865583,
+          "peak_allocated_bytes": 13902806528
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.2671024559967918,
+          "first_token_seconds": 0.628374295993126,
+          "peak_allocated_bytes": 13902806528
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 1.8580338659958215,
+          "first_token_seconds": 1.2196026419987902,
+          "peak_allocated_bytes": 13870021632
+        }
+      ],
+      "median_seconds": {
+        "routed": 1.8588215814961586,
+        "grouped": 1.270896851507132
+      }
+    },
+    {
+      "prompt_tokens": 32,
+      "completion_tokens": 8,
+      "exact_response": true,
+      "measurements": [
+        {
+          "mode": "routed",
+          "http_seconds": 3.059544317002292,
+          "first_token_seconds": 2.4193659119919175,
+          "peak_allocated_bytes": 13874595328
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.4142405220045475,
+          "first_token_seconds": 0.7750157370028319,
+          "peak_allocated_bytes": 13906642944
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.4033570729952771,
+          "first_token_seconds": 0.7645758129947353,
+          "peak_allocated_bytes": 13906642944
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 3.0590529659966705,
+          "first_token_seconds": 2.419165207000333,
+          "peak_allocated_bytes": 13874595328
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 3.059446861007018,
+          "first_token_seconds": 2.419201033990248,
+          "peak_allocated_bytes": 13874595328
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.4144030260067666,
+          "first_token_seconds": 0.7752807669894537,
+          "peak_allocated_bytes": 13906642944
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.3901601940015098,
+          "first_token_seconds": 0.7517109489999712,
+          "peak_allocated_bytes": 13906642944
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 3.06049879299826,
+          "first_token_seconds": 2.42170971800806,
+          "peak_allocated_bytes": 13874595328
+        }
+      ],
+      "median_seconds": {
+        "routed": 3.059495589004655,
+        "grouped": 1.4087987974999123
+      }
+    },
+    {
+      "prompt_tokens": 129,
+      "completion_tokens": 8,
+      "exact_response": true,
+      "measurements": [
+        {
+          "mode": "routed",
+          "http_seconds": 10.376661832997343,
+          "first_token_seconds": 9.73215396500018,
+          "peak_allocated_bytes": 13902680576
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.600759578999714,
+          "first_token_seconds": 0.9586720209917985,
+          "peak_allocated_bytes": 13930265600
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.6163189060025616,
+          "first_token_seconds": 0.9760252970008878,
+          "peak_allocated_bytes": 13930265600
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 10.374201803002506,
+          "first_token_seconds": 9.732156352009042,
+          "peak_allocated_bytes": 13902680576
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 10.378269200009527,
+          "first_token_seconds": 9.73262207499647,
+          "peak_allocated_bytes": 13902680576
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.592305663987645,
+          "first_token_seconds": 0.9498975919996155,
+          "peak_allocated_bytes": 13930265600
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.6009244559973013,
+          "first_token_seconds": 0.9594944239943288,
+          "peak_allocated_bytes": 13930265600
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 10.372777401993517,
+          "first_token_seconds": 9.732298540999182,
+          "peak_allocated_bytes": 13902680576
+        }
+      ],
+      "median_seconds": {
+        "routed": 10.375431817999925,
+        "grouped": 1.6008420174985076
+      }
+    },
+    {
+      "prompt_tokens": 224,
+      "completion_tokens": 8,
+      "exact_response": true,
+      "measurements": [
+        {
+          "mode": "routed",
+          "http_seconds": 17.534666767009185,
+          "first_token_seconds": 16.88633553600812,
+          "peak_allocated_bytes": 13932472320
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.7291167749935994,
+          "first_token_seconds": 1.0856842240027618,
+          "peak_allocated_bytes": 13959017984
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.7371236290055094,
+          "first_token_seconds": 1.0941986289981287,
+          "peak_allocated_bytes": 13959017984
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 17.528635298003792,
+          "first_token_seconds": 16.88526037200063,
+          "peak_allocated_bytes": 13932472320
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 17.533092628000304,
+          "first_token_seconds": 16.885178504002397,
+          "peak_allocated_bytes": 13932472320
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.766668108990416,
+          "first_token_seconds": 1.1226657980005257,
+          "peak_allocated_bytes": 13959017984
+        },
+        {
+          "mode": "grouped",
+          "http_seconds": 1.7316997110028751,
+          "first_token_seconds": 1.090061039009015,
+          "peak_allocated_bytes": 13959017984
+        },
+        {
+          "mode": "routed",
+          "http_seconds": 17.527054994992795,
+          "first_token_seconds": 16.885105649998877,
+          "peak_allocated_bytes": 13932472320
+        }
+      ],
+      "median_seconds": {
+        "routed": 17.530863963002048,
+        "grouped": 1.7344116700041923
+      }
+    }
+  ],
+  "method": "Same resident model, FP32 residual/KV/output policy, packed checkpoint and CUDA decode graphs. Grouped experts use lossless FP16 expansion with compensated Tensor Core products; routed experts reduce FP32 products. Alternating warmed full HTTP rounds with identical generated responses."
+}

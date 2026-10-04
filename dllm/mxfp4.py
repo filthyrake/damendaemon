@@ -18,8 +18,8 @@ def validate(blocks,scales):
 def unpack(blocks,scales,dtype=torch.float32):
     """Native CUDA unpacking for diagnostics and bounded per-expert preparation."""
     shape=validate(blocks,scales)
-    if blocks.device.type!='cuda' or dtype not in (torch.float32,torch.bfloat16):
-        raise ValueError('MXFP4 unpacking requires CUDA and FP32 or BF16 output')
+    if blocks.device.type!='cuda' or dtype not in (torch.float32,torch.bfloat16,torch.float16):
+        raise ValueError('MXFP4 unpacking requires CUDA and FP32, BF16 or FP16 output')
     from .mxfp4_kernels import unpack as native
     return native(blocks,scales,shape,dtype)
 

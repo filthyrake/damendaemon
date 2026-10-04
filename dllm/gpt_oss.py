@@ -101,23 +101,60 @@ class GptOssExecutor(BatchExecutor):
             raise ValueError('GPT-OSS requires native CUDA kernels')
         from . import mxfp4_kernels,moe_kernels
         from .mxfp4 import routed_linear
+        self.grouped_prefill=os.environ.get('DLLM_GPT_OSS_PREFILL','grouped')
+        if self.grouped_prefill not in ('routed','grouped'):
+            raise ValueError('DLLM_GPT_OSS_PREFILL must be routed or grouped')
+        self.expert_half={}
+        for i in range(model.config['num_hidden_layers']):
+            for projection in ('up','down'):
+                scales=model.weights[f'{i}.{projection}.scales']
+                # Every possible E2M1 code is exactly representable in FP16
+                # within this scale range, including FP16 subnormals.
+                self.expert_half[i,projection]=bool(((scales>=104)&(scales<=140)).all())
         self.expert_linear=routed_linear
         self.expert_activation=mxfp4_kernels.swiglu
         self.combine=moe_kernels.combine
         super().__init__(model,use_graph,max_batch,kernels)
         self.kernel_backend+='-mxfp4'
 
-    def experts(self,x,i):
+    def experts(self,x,i,prefill=False):
         w=self.w
         router=self.dense_linear(x,w[f'{i}.router'],w[f'{i}.router.bias'])
         # GPT-OSS normalizes only the selected logits, after top-k selection.
         logits,selected=router.topk(self.c['num_experts_per_tok'],dim=-1)
         probabilities=logits.softmax(-1)
+        if prefill and self.grouped_prefill=='grouped' and x.shape[0]>=16:
+            return self.grouped_experts(x,i,selected,probabilities)
         up=self.expert_linear(x,w[f'{i}.up.blocks'],w[f'{i}.up.scales'],selected,w[f'{i}.up.bias'])
         activation=self.expert_activation(up,self.c['swiglu_limit'])
         down=self.expert_linear(activation,w[f'{i}.down.blocks'],w[f'{i}.down.scales'],selected,
             w[f'{i}.down.bias'],False)
         return self.combine(down,probabilities)
+
+    def grouped_experts(self,x,i,selected,probabilities):
+        from .mxfp4 import unpack
+        w=self.w;top=selected.shape[1]
+        projected=torch.empty((selected.numel(),self.c['hidden_size']),device=x.device,dtype=x.dtype)
+        for expert in range(self.c['num_local_experts']):
+            tokens,routes=torch.where(selected==expert)
+            if tokens.numel()==0:continue
+            hidden=x.index_select(0,tokens)
+            # A bounded set of matrix shapes avoids compiling a new kernel
+            # for every expert's live token count. Padding rows cannot affect
+            # real rows; discard their biased outputs before route scatter.
+            count=tokens.numel();bucket=1<<(count-1).bit_length()
+            if bucket!=count:hidden=F.pad(hidden,(0,0,0,bucket-count))
+            weight=unpack(w[f'{i}.up.blocks'][expert],w[f'{i}.up.scales'][expert],
+                torch.float16 if self.expert_half[i,'up'] else torch.float32)
+            up=self.dense_linear(hidden,weight,w[f'{i}.up.bias'][expert])
+            del weight
+            activation=self.expert_activation(up,self.c['swiglu_limit'])
+            weight=unpack(w[f'{i}.down.blocks'][expert],w[f'{i}.down.scales'][expert],
+                torch.float16 if self.expert_half[i,'down'] else torch.float32)
+            output=self.dense_linear(activation,weight,w[f'{i}.down.bias'][expert])
+            projected.index_copy_(0,tokens*top+routes,output[:count])
+            del weight
+        return self.combine(projected,probabilities)
 
     @torch.inference_mode()
     def forward(self,ids,positions,prefill,slot=0):
@@ -127,7 +164,7 @@ class GptOssExecutor(BatchExecutor):
     def forward_batch(self,ids,positions,slots):
         return self._forward(ids,positions,slots,False)
 
-    def layer(self,x,positions,slots,i):
+    def layer(self,x,positions,slots,i,prefill=False):
         w=self.w
         qkv=self.dense_linear(self.norm(x,w[f'{i}.norm1']),w[f'{i}.qkv.weight'],w[f'{i}.qkv.bias'])
         ck,cv=self.kv[i].unbind(0)
@@ -135,11 +172,11 @@ class GptOssExecutor(BatchExecutor):
         window=self.c['sliding_window'] if self.c['layer_types'][i]=='sliding_attention' else 0
         attended=self.kernels.attention(query,ck,cv,positions,slots,window=window,sinks=w[f'{i}.sinks'])
         x=x+self.dense_linear(attended.reshape(x.shape[0],-1),w[f'{i}.out'],w[f'{i}.out.bias'])
-        return x+self.experts(self.norm(x,w[f'{i}.norm2']),i)
+        return x+self.experts(self.norm(x,w[f'{i}.norm2']),i,prefill)
 
     def _forward(self,ids,positions,slots,prefill):
         x=F.embedding(ids,self.w['embed']).float()
-        for i in range(self.c['num_hidden_layers']):x=self.layer(x,positions,slots,i)
+        for i in range(self.c['num_hidden_layers']):x=self.layer(x,positions,slots,i,prefill)
         if prefill:x=x[-1:]
         return self.dense_linear(self.norm(x,self.w['norm']),self.w['head'])
 

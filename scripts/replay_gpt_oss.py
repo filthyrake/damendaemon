@@ -37,11 +37,12 @@ def main():
             x=torch.nn.functional.embedding(torch.tensor(ids,device='cuda'),executor.w['embed']).float()
             start=time.perf_counter()
             for layer in range(model.config['num_hidden_layers']):
-                x=executor.layer(x,positions,slots,layer)
+                x=executor.layer(x,positions,slots,layer,prefill=True)
                 compare(x,case['layers'][layer],'layer',case=index,layer=layer)
             logits=executor.dense_linear(executor.norm(x[-1:],executor.w['norm']),executor.w['head'])
             compare(logits[0],case['logits'][-1],'full_prefill',case=index)
             timings.append({'case':index,'kind':'all_layers_with_checks','seconds':time.perf_counter()-start})
+            print(json.dumps({'phase':'layers_checked','case':index,'seconds':timings[-1]['seconds']}),flush=True)
             other=1-slot;executor.prefill(ids[:3],other)
             untouched=[cache[:,other].clone() for cache in executor.kv]
             start=time.perf_counter();logits=executor.prefill(ids[:split],slot);torch.cuda.synchronize()
@@ -64,7 +65,7 @@ def main():
         'repository':reference['repository'],'revision':reference['revision'],
         'reference':reference['reference'],'reference_transformers':reference['transformers'],
         'reference_torch':reference['torch'],'reference_dtype':reference['dtype'],'torch':str(torch.__version__),
-        'graph':not args.no_graph,'compute_dtype':str(executor.compute_dtype),'kernel_backend':executor.kernel_backend,
+        'graph':not args.no_graph,'prefill_mode':executor.grouped_prefill,'compute_dtype':str(executor.compute_dtype),'kernel_backend':executor.kernel_backend,
         'context':executor.context,'max_batch':executor.max_batch,'host_weight_bytes':model.bytes,
         'allocated_bytes':torch.cuda.memory_allocated(),'peak_allocated_bytes':torch.cuda.max_memory_allocated(),
         'checks':checks,'timings':timings}
