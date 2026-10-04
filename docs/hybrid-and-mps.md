@@ -128,12 +128,16 @@ includes waits for GPU work; this is not a measurement of pure Python overhead.
 The call profile includes prefill; the unprofiled timings exclude it.
 
 The initial profile exposed three small metadata tensor constructions per eager
-decode step. The eager path now packs token IDs, positions, and slot IDs into
-one transfer. This reduces decode tensor constructions from 96 to 32 for a
-32-step run, while CUDA graph metadata staging is unchanged. The updated path
-passes all 82 SmolLM2 long-context checks. Before/after profiles are retained as
-`metal-host-*.json`; short-run timing variability means those profiles alone
-are not an end-to-end speedup claim.
+decode step. An experiment packed token IDs, positions, and slot IDs into one
+transfer, reducing decode tensor constructions from 96 to 32 for a 32-step run.
+It passed all 82 SmolLM2 long-context checks and improved direct-loop timings.
+However, the HTTP rerun reached only 129.1 aggregate tokens/s at concurrency
+four, and a subsequent original/packed comparison measured 146.2 versus 116.8.
+The runtime change was reverted: direct-loop improvements did not establish a
+serving benefit. These short sequential samples do not identify the cause;
+thermal, scheduling, and GPU submission effects need further attribution.
+The profiler and all before/after evidence remain available. CUDA graph
+metadata staging was unchanged throughout.
 
 ## Remaining scope
 

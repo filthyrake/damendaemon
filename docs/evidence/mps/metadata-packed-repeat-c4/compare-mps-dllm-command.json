@@ -1,0 +1,24 @@
+{
+  "command": [
+    "/Users/damenknight/dllm/.venv-metal/bin/python",
+    "-m",
+    "dllm",
+    "serve",
+    "--device",
+    "mps",
+    "--context",
+    "512",
+    "--port",
+    "65393",
+    "--batch-size",
+    "4",
+    "--model",
+    "a=/Users/damenknight/dllm/results/models/smollm2"
+  ],
+  "device": "Apple M4 GPU",
+  "weights": "float32",
+  "kv": "float32",
+  "context_per_slot": 512,
+  "cpu_threads": 4,
+  "dllm_backend": "metal"
+}

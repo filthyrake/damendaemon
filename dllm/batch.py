@@ -151,10 +151,8 @@ class BatchExecutor(Executor):
             copied.record()
             graph.replay()
         else:
-            # Transfer one metadata buffer instead of synchronizing three small
-            # host-to-device tensor constructions on every eager decode step.
-            metadata = torch.tensor([tokens, positions, slots], device=self.device)
-            logits = self.forward_batch(*metadata.unbind(0))
+            logits = self.forward_batch(torch.tensor(tokens, device=self.device),
+                torch.tensor(positions, device=self.device), torch.tensor(slots, device=self.device))
             next_ids = logits.argmax(-1)
         for slot in slots:
             self.lengths[slot] += 1
