@@ -440,6 +440,8 @@ class Executor:
 
     def output_logits(self, x):
         normalized = self.norm(x, self.w['norm'])
+        if getattr(self,'_candidate_head',None) is not None:
+            return self.linear(normalized,self._candidate_head)
         if self.c['model_type'] == 'phi3' and self.device == 'cuda':
             if self.w['head'].dtype in (torch.int8,torch.uint8):
                 return self.quant_linear(normalized.float(), self.w['head'])
@@ -447,6 +449,22 @@ class Executor:
                 return self.kernels.linear_fp32(normalized.float(), self.w['head'])
             return F.linear(normalized.float(), self.w['head'].float())
         return self.linear(normalized, self.w['head'])
+
+    @torch.inference_mode()
+    def score_candidates(self,tokens,candidates):
+        # Runtime owns an exclusive executor lease. Only eager prefill observes
+        # this temporary head; captured decode graphs retain the complete head.
+        if self.c['model_type'] not in ('qwen2','qwen3') or self.w['head'].dtype not in (torch.float16,torch.float32):
+            raise ValueError('direct scoring requires unquantized Qwen2 or Qwen3')
+        if any(token>=self.w['head'].shape[0] for token in candidates):
+            raise ValueError('candidate token is outside the model vocabulary')
+        if getattr(self,'_candidate_head',None) is not None:raise RuntimeError('nested candidate scoring')
+        ids=torch.tensor(candidates,device=self.device,dtype=torch.long)
+        self._candidate_head=self.w['head'].index_select(0,ids)
+        try:
+            return self.prefill(tokens).float()
+        finally:
+            self._candidate_head=None
 
     def prefill_attention(self, query, key, value, query_start=0):
         if query_start:

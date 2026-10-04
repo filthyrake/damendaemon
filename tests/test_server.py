@@ -28,6 +28,11 @@ class FakeRuntime:
         self.last_embedding=(alias,values,encoding_format,dimensions)
         return {'object':'list','data':[{'object':'embedding','index':i,'embedding':[0.,1.]} for i in range(len(values))]}
 
+    def score(self,alias,prompt,candidate_token_ids):
+        if alias!='a':raise ValueError('unknown model')
+        self.last_scoring=(alias,prompt,candidate_token_ids)
+        return {'object':'token_scores','normalization':'candidate_set','calibrated':False}
+
     def generate(self, alias, messages, max_tokens, **kwargs):
         self.last_options = kwargs
         self.last_max_tokens = max_tokens
@@ -314,3 +319,16 @@ class ServerTests(unittest.TestCase):
         with self.assertRaises(HTTPError) as caught:
             self.post(tools=tools,tool_choice='required',chat_template_kwargs={'enable_thinking':True})
         self.assertEqual(caught.exception.code,400)
+
+    def test_direct_scoring_protocol_and_validation(self):
+        def post(body):
+            return urlopen(Request(self.url+'/v1/token-scores',data=json.dumps(body).encode(),
+                headers={'Content-Type':'application/json'}),timeout=5)
+        body={'model':'a','prompt':[1,2],'candidate_token_ids':[3,4]}
+        with post(body) as response:
+            self.assertEqual(json.load(response)['normalization'],'candidate_set')
+        self.assertEqual(self.runtime.last_scoring,('a',[1,2],[3,4]))
+        for invalid in ({**body,'candidate_token_ids':[3,3]},{**body,'candidate_token_ids':[True,4]},
+                {**body,'model':'missing'},{**body,'stream':True},{'model':'a'},[]):
+            with self.subTest(body=invalid),self.assertRaises(HTTPError) as caught:post(invalid)
+            self.assertEqual(caught.exception.code,400)

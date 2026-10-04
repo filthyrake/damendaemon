@@ -53,7 +53,7 @@ def handler_for(runtime):
 
         def do_POST(self):
             management = {'/v1/models/register': 'register', '/v1/models/load': 'load', '/v1/models/unload': 'unload'}
-            if self.path not in ("/v1/chat/completions", "/v1/completions", "/v1/embeddings") and self.path not in management:
+            if self.path not in ("/v1/chat/completions", "/v1/completions", "/v1/embeddings", "/v1/token-scores") and self.path not in management:
                 self.send_json(404, {"error": "not found"})
                 return
             started = False
@@ -65,6 +65,14 @@ def handler_for(runtime):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
+                if self.path=='/v1/token-scores':
+                    if (not isinstance(body,dict) or set(body)!={'model','prompt','candidate_token_ids'}
+                            or not isinstance(body['model'],str)):
+                        raise ValueError('token scoring requires model, prompt and candidate_token_ids')
+                    from .scoring import options
+                    prompt,candidates=options(body['prompt'],body['candidate_token_ids'])
+                    self.send_json(200,runtime.score(body['model'],prompt,candidates))
+                    return
                 if self.path == '/v1/embeddings':
                     if (not isinstance(body, dict) or set(body) - {'model','input','encoding_format','dimensions'}
                             or not isinstance(body.get('model'), str)):

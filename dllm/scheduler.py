@@ -91,6 +91,12 @@ class BatchedRuntime:
         return self._submit({"action":"embed", "model":alias, "inputs":inputs,
                              "encoding_format":encoding_format, "dimensions":dimensions})
 
+    def score(self,alias,prompt,candidate_token_ids):
+        from .scoring import options
+        prompt,candidates=options(prompt,candidate_token_ids)
+        if not isinstance(alias,str) or alias not in self.models:raise ValueError('unknown model')
+        return self._submit({'action':'score','model':alias,'prompt':prompt,'candidate_token_ids':candidates})
+
     def _submit(self, options):
         if not self.admission.acquire(blocking=False):
             raise BusyError('request queue is full')
@@ -594,6 +600,9 @@ class BatchedRuntime:
                         options = first.command
                         first.final = self.runtime.embed(options['model'], options['inputs'],
                                                          options['encoding_format'], options['dimensions'])
+                    elif first.command['action']=='score':
+                        options=first.command
+                        first.final=self.runtime.score(options['model'],options['prompt'],options['candidate_token_ids'])
                     else:
                         first.final = self.runtime.manage(**first.command)
                     self._finish(first)

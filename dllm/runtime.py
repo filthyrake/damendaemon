@@ -220,6 +220,33 @@ class Runtime:
                         'total_seconds':time.perf_counter()-start,'kernel_backend':executor.kernel_backend,
                         'compute_dtype':str(executor.compute_dtype).removeprefix('torch.')}}
 
+    def score(self,alias,prompt,candidate_token_ids):
+        import torch
+        from .scoring import options
+        prompt,candidates=options(prompt,candidate_token_ids)
+        start=time.perf_counter()
+        with self.session(alias) as (executor,tier,activation):
+            if not hasattr(executor,'score_candidates'):
+                raise ValueError('model does not support direct candidate scoring')
+            tokens=executor.model.raw_tokens(prompt)
+            if not tokens or len(tokens)>executor.context:
+                raise ValueError('prompt is empty or exceeds context')
+            with request_kv(executor,len(tokens)):
+                logits=executor.score_candidates(tokens,candidates).reshape(-1)
+                if not torch.isfinite(logits).all().item():raise RuntimeError('non-finite candidate scores')
+                probabilities=logits.softmax(-1).cpu().tolist()
+                values=logits.cpu().tolist()
+            selected=max(range(len(values)),key=values.__getitem__)
+            return {'object':'token_scores','model':alias,'selected_index':selected,
+                'selected_token_id':candidates[selected],
+                'normalization':'candidate_set','calibrated':False,
+                'data':[{'index':i,'token_id':token,'logit':value,'probability':probability}
+                    for i,(token,value,probability) in enumerate(zip(candidates,values,probabilities))],
+                'usage':{'prompt_tokens':len(tokens),'completion_tokens':0,'total_tokens':len(tokens)},
+                'dllm_timing':{'source_tier':tier,'activation_seconds':activation,
+                    'total_seconds':time.perf_counter()-start,'kernel_backend':executor.kernel_backend,
+                    'compute_dtype':str(executor.compute_dtype).removeprefix('torch.')}}
+
     def generate(self, alias, messages, max_tokens=128, ignore_eos=False, enable_thinking=None,
                  temperature=0, top_p=1, top_k=0, seed=None, stop=None, raw_prompt=None, response_format=None,
                  presence_penalty=0, frequency_penalty=0, repetition_penalty=1, logit_bias=None,

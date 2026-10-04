@@ -1,0 +1,257 @@
+{
+  "passed": true,
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "reports": [
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "rows": [
+        {
+          "prompt_tokens": 16,
+          "candidates": 2,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 22.213200994883664,
+          "selected_head_prefill_ms": 20.490576993324794,
+          "speedup": 1.084069082199103
+        },
+        {
+          "prompt_tokens": 16,
+          "candidates": 32,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 22.05483200668823,
+          "selected_head_prefill_ms": 20.41464099602308,
+          "speedup": 1.0803438576747282
+        },
+        {
+          "prompt_tokens": 16,
+          "candidates": 256,
+          "max_logit_error": 1.9073486328125e-06,
+          "full_head_prefill_ms": 22.017424998921342,
+          "selected_head_prefill_ms": 20.330493003712036,
+          "speedup": 1.0829754593211929
+        },
+        {
+          "prompt_tokens": 256,
+          "candidates": 2,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 21.49875499890186,
+          "selected_head_prefill_ms": 20.040602001245134,
+          "speedup": 1.0727599399242662
+        },
+        {
+          "prompt_tokens": 256,
+          "candidates": 32,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 21.807723998790607,
+          "selected_head_prefill_ms": 20.251185007509775,
+          "speedup": 1.0768616251692738
+        },
+        {
+          "prompt_tokens": 256,
+          "candidates": 256,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 21.64613599597942,
+          "selected_head_prefill_ms": 22.137404012028128,
+          "speedup": 0.9778082373262112
+        },
+        {
+          "prompt_tokens": 1024,
+          "candidates": 2,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 72.41643400629982,
+          "selected_head_prefill_ms": 71.0179000016069,
+          "speedup": 1.019692697258878
+        },
+        {
+          "prompt_tokens": 1024,
+          "candidates": 32,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 72.64246299746446,
+          "selected_head_prefill_ms": 70.92122799076606,
+          "speedup": 1.0242696729239165
+        },
+        {
+          "prompt_tokens": 1024,
+          "candidates": 256,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 72.34440399042796,
+          "selected_head_prefill_ms": 70.99520799238235,
+          "speedup": 1.0190040431769758
+        }
+      ],
+      "http_response": {
+        "object": "token_scores",
+        "model": "a",
+        "selected_index": 0,
+        "selected_token_id": 0,
+        "normalization": "candidate_set",
+        "calibrated": false,
+        "data": [
+          {
+            "index": 0,
+            "token_id": 0,
+            "logit": 6.03515625,
+            "probability": 0.9040675759315491
+          },
+          {
+            "index": 1,
+            "token_id": 1,
+            "logit": -4.9375,
+            "probability": 1.551803870825097e-05
+          },
+          {
+            "index": 2,
+            "token_id": 100,
+            "logit": 2.94921875,
+            "probability": 0.041304297745227814
+          },
+          {
+            "index": 3,
+            "token_id": 1000,
+            "logit": 3.228515625,
+            "probability": 0.05461253970861435
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 16,
+          "completion_tokens": 0,
+          "total_tokens": 16
+        },
+        "dllm_timing": {
+          "source_tier": "disk",
+          "activation_seconds": 5.099439487006748,
+          "total_seconds": 5.51722709700698,
+          "kernel_backend": "triton",
+          "compute_dtype": "float16"
+        }
+      }
+    },
+    {
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+      "rows": [
+        {
+          "prompt_tokens": 16,
+          "candidates": 2,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 44.763265002984554,
+          "selected_head_prefill_ms": 43.66719099925831,
+          "speedup": 1.0251006299843024
+        },
+        {
+          "prompt_tokens": 16,
+          "candidates": 32,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 45.714662002865225,
+          "selected_head_prefill_ms": 43.740730005083606,
+          "speedup": 1.045128007638469
+        },
+        {
+          "prompt_tokens": 16,
+          "candidates": 256,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 45.68371000641491,
+          "selected_head_prefill_ms": 44.65627500030678,
+          "speedup": 1.023007628963703
+        },
+        {
+          "prompt_tokens": 256,
+          "candidates": 2,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 132.1916190063348,
+          "selected_head_prefill_ms": 130.63063699519262,
+          "speedup": 1.0119495858479173
+        },
+        {
+          "prompt_tokens": 256,
+          "candidates": 32,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 132.62187999498565,
+          "selected_head_prefill_ms": 131.25687598949298,
+          "speedup": 1.0103994857046723
+        },
+        {
+          "prompt_tokens": 256,
+          "candidates": 256,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 133.05253699945752,
+          "selected_head_prefill_ms": 131.71234200126491,
+          "speedup": 1.0101751664105991
+        },
+        {
+          "prompt_tokens": 1024,
+          "candidates": 2,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 593.3039859955898,
+          "selected_head_prefill_ms": 593.4461569995619,
+          "speedup": 0.9997604315028494
+        },
+        {
+          "prompt_tokens": 1024,
+          "candidates": 32,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 595.7270929939114,
+          "selected_head_prefill_ms": 595.5028160096845,
+          "speedup": 1.0003766178399116
+        },
+        {
+          "prompt_tokens": 1024,
+          "candidates": 256,
+          "max_logit_error": 0.0,
+          "full_head_prefill_ms": 598.8064400007715,
+          "selected_head_prefill_ms": 598.357915005181,
+          "speedup": 1.0007495931520964
+        }
+      ],
+      "http_response": {
+        "object": "token_scores",
+        "model": "b",
+        "selected_index": 0,
+        "selected_token_id": 0,
+        "normalization": "candidate_set",
+        "calibrated": false,
+        "data": [
+          {
+            "index": 0,
+            "token_id": 0,
+            "logit": 7.991608619689941,
+            "probability": 0.9929704070091248
+          },
+          {
+            "index": 1,
+            "token_id": 1,
+            "logit": -5.064184188842773,
+            "probability": 2.122646037605591e-06
+          },
+          {
+            "index": 2,
+            "token_id": 100,
+            "logit": 2.9171128273010254,
+            "probability": 0.006210274528712034
+          },
+          {
+            "index": 3,
+            "token_id": 1000,
+            "logit": 0.8891074657440186,
+            "probability": 0.0008172583184204996
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 16,
+          "completion_tokens": 0,
+          "total_tokens": 16
+        },
+        "dllm_timing": {
+          "source_tier": "disk",
+          "activation_seconds": 2.7539569349901285,
+          "total_seconds": 4.914318376002484,
+          "kernel_backend": "triton",
+          "compute_dtype": "float32"
+        }
+      }
+    }
+  ],
+  "concurrent_isolation": true,
+  "host_restore": true,
+  "generation_after_scoring": true,
+  "timing": "median of 15 synchronized eager prefills after 3 warmups; selected includes row extraction; full includes result gather; no HTTP or loading"
+}

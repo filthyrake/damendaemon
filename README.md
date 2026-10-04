@@ -616,3 +616,18 @@ Required/named tools use the optional structured-output dependencies. Set
 to force one function. These modes constrain arguments to the supported bounded
 JSON-schema subset and accept `strict:true`; explicit thinking is incompatible.
 Automatic strict tool selection and multiple forced calls are not supported.
+
+### Direct token-choice scores
+
+For unquantized Qwen2/Qwen3, `POST /v1/token-scores` takes a raw `prompt` and
+2–256 distinct `candidate_token_ids`. It returns logits, probabilities normalized
+over those candidates, and the selected token without generating an answer.
+
+```json
+{"model":"qwen2","prompt":[40,298,1111,13],"candidate_token_ids":[0,1,100,1000]}
+```
+
+Choose token IDs appropriate to your model and prompt; the IDs above only show
+the request format. Probabilities are **not calibrated confidence**. This is
+single-token choice scoring, not multi-token answer scoring or Jev model support.
+[Real A2/M4 correctness and latency evidence](docs/evidence/scoring/README.md).
