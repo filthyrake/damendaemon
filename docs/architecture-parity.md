@@ -424,3 +424,26 @@ disconnect recovery. Tokenizer-level CPU/device mask equality checks cover
 Qwen2, Phi-3 and Gemma, including nested JSON and padded vocabulary.
 Reports are under `evidence/structured`. No broad schema or tool-call parity
 is claimed.
+
+## Qwen3 accuracy recovery
+
+Issue #2. Layerwise replay reproduces the two Qwen3-0.6B failures at lengths 263
+and 1028. Residual error starts at zero in the embedding and accumulates through
+middle layers to roughly 2–3%; this is not just output-head rounding. Increasing
+only Q/K/V arithmetic precision did not clear the gate.
+
+`DLLM_QWEN3_PRECISION=float32` now enables FP32 matrix/activation/KV arithmetic
+while retaining FP16 matrix storage. The pinned BF16 checkpoint's values are
+exactly representable in this storage. All 84 checks pass against the independent
+FP32 reference, worst relative RMS 0.002080%. The default `standard` path is
+unchanged and retains its previously documented small-model qualification gap.
+
+Initial A2 HTTP medians for the accurate path at concurrency 1/2/4 are
+108.33 / 172.96 / 214.32 tokens/sec, TTFT 49.0 / 76.7 / 140.3 ms. Four-request
+throughput trails the prior standard path (325.7 tokens/sec), motivating further
+matrix-kernel work. The FP32 vLLM run gives 66.23 / 92.86 / 174.26 tokens/sec and
+50.1 / 75.1 / 108.1 ms. Both use the pinned checkpoint, 26 input/64 output tokens,
+2048 context and FP32 arithmetic/KV; dllm stores exact checkpoint matrix values
+in FP16, whereas this vLLM run stores FP32 weights. This is explicitly a storage
+policy difference, not a matched-storage engine comparison. Reports and the
+layerwise diagnostic are under `evidence/models`.

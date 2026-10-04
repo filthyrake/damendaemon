@@ -288,3 +288,9 @@ still executes the model itself. Apple uses a native PyTorch/Metal bitmask path.
 JSON formatting permits at most eight whitespace characters between grammar
 elements, preventing unbounded whitespace-only generation. String contents are
 not subject to this formatting limit.
+
+For accurate CUDA Qwen3 arithmetic, set `DLLM_QWEN3_PRECISION=float32`.
+This retains compact FP16 matrix storage but uses FP32 operations and KV; it
+clears the Qwen3-0.6B long-context numerical gate. The default `standard` path
+remains faster for batched decoding but retains that checkpoint's documented
+accuracy qualification gap. See the measurements in the architecture report.

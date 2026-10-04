@@ -204,6 +204,13 @@ class Executor:
         self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
         if c["model_type"] in ("gemma3_text", "starcoder2", "olmoe"):
             self.compute_dtype = torch.float32
+        self.qwen3_precision = 'standard'
+        if self.device == 'cuda' and c['model_type'] == 'qwen3':
+            self.qwen3_precision = os.environ.get('DLLM_QWEN3_PRECISION', 'standard')
+            if self.qwen3_precision not in ('standard', 'float32'):
+                raise ValueError('DLLM_QWEN3_PRECISION must be standard or float32')
+            if self.qwen3_precision != 'standard':
+                self.compute_dtype = torch.float32
         self.residual_dtype = torch.float32 if self.precise else self.compute_dtype
         selected = kernels or os.environ.get("DLLM_KERNELS", "auto")
         if selected not in ("auto", "torch", "triton", "metal"):
@@ -254,6 +261,8 @@ class Executor:
         def device_dtype(name, tensor):
             if tensor.dtype == torch.int8:
                 return torch.int8
+            if self.qwen3_precision != 'standard' and tensor.ndim == 2:
+                return torch.float16
             if c['model_type'] == 'olmoe' and tensor.ndim == 2:
                 return torch.float16
             if c['model_type'] == 'starcoder2' and 'norm' in name:
@@ -278,6 +287,8 @@ class Executor:
                 dtype = device_dtype(name, tensor)
                 copies[id(tensor)] = tensor.to(device=self.device, dtype=dtype)
             self.w[name] = copies[id(tensor)]
+        if self.qwen3_precision != 'standard':
+            self.linear = self.qwen3_linear
         self.quant_linear = None
         if model.scales:
             from .quantization import Linear
@@ -319,6 +330,12 @@ class Executor:
                 self.graph_logits = self.forward(self.token, self.position, prefill=False)
                 self.graph_next = self.graph_logits.argmax(dim=-1)
         self.length = 0
+
+    def qwen3_linear(self, x, weight, bias=None):
+        if self.kernels:
+            result = self.kernels.linear_fp32(x.float(), weight)
+            return result if bias is None else result + bias.float()
+        return F.linear(x.float(), weight.float(), None if bias is None else bias.float())
 
     def norm(self, x, weight):
         if self.kernels:

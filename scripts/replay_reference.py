@@ -64,7 +64,8 @@ def main():
         'device': device_name(), 'torch': str(torch.__version__), 'reference_dtype': trace['reference_dtype'],
         'reference_torch': trace['reference_torch'], 'reference_quantization': trace.get('reference_quantization','none'),
         'weight_quantization': model.quantization, 'host_weight_bytes': model.bytes, 'reference_attention': trace.get('reference_attention', 'sdpa'), 'graph_requested': not args.no_graph,
-        'kernel_backend': executor.kernel_backend, 'checks': checks, 'timings': timings}, indent=2))
+        'kernel_backend': executor.kernel_backend, 'compute_dtype': str(executor.compute_dtype),
+        'qwen3_precision': getattr(executor, 'qwen3_precision', None), 'checks': checks, 'timings': timings}, indent=2))
     if not passed:
         raise SystemExit(1)
 
