@@ -1,0 +1,264 @@
+{
+  "passed": true,
+  "model": "/home/damen/dllm-dev/models/minilm-reranker",
+  "device": "NVIDIA A2",
+  "compute_dtype": "torch.float32",
+  "reference": "CPU FP32 Transformers eager",
+  "max_input_tokens": 512,
+  "host_weight_bytes": 90854404,
+  "semantic_ordering": true,
+  "pair_tokenization_equal": true,
+  "checks": [
+    {
+      "query": "How many people live in Berlin?",
+      "lengths": [
+        24
+      ],
+      "reference": [
+        8.583603858947754
+      ],
+      "actual": [
+        8.583602905273438
+      ],
+      "max_error": 9.5367431640625e-07
+    },
+    {
+      "query": "How many people live in Berlin?",
+      "lengths": [
+        18
+      ],
+      "reference": [
+        -4.320076942443848
+      ],
+      "actual": [
+        -4.320077419281006
+      ],
+      "max_error": 4.76837158203125e-07
+    },
+    {
+      "query": "How many people live in Berlin?",
+      "lengths": [
+        17
+      ],
+      "reference": [
+        -11.095231056213379
+      ],
+      "actual": [
+        -11.095230102539062
+      ],
+      "max_error": 9.5367431640625e-07
+    },
+    {
+      "query": "How many people live in Berlin?",
+      "lengths": [
+        18
+      ],
+      "reference": [
+        -11.058988571166992
+      ],
+      "actual": [
+        -11.058987617492676
+      ],
+      "max_error": 9.5367431640625e-07
+    },
+    {
+      "query": "How many people live in Berlin?",
+      "lengths": [
+        10
+      ],
+      "reference": [
+        -9.262405395507812
+      ],
+      "actual": [
+        -9.262406349182129
+      ],
+      "max_error": 9.5367431640625e-07
+    },
+    {
+      "query": "How many people live in Berlin?",
+      "lengths": [
+        90
+      ],
+      "reference": [
+        -11.101360321044922
+      ],
+      "actual": [
+        -11.101360321044922
+      ],
+      "max_error": 0.0
+    },
+    {
+      "query": "How many people live in Berlin?",
+      "lengths": [
+        24,
+        18,
+        17,
+        18,
+        10,
+        90
+      ],
+      "reference": [
+        8.583602905273438,
+        -4.320077419281006,
+        -11.095230102539062,
+        -11.058987617492676,
+        -9.262405395507812,
+        -11.101360321044922
+      ],
+      "actual": [
+        8.583602905273438,
+        -4.3200788497924805,
+        -11.095230102539062,
+        -11.058987617492676,
+        -9.262407302856445,
+        -11.101360321044922
+      ],
+      "max_error": 1.9073486328125e-06
+    },
+    {
+      "query": "\u3053\u3093\u306b\u3061\u306f \u2014 caf\u00e9 \ud83e\udd99",
+      "lengths": [
+        91,
+        11,
+        19,
+        18,
+        19,
+        25
+      ],
+      "reference": [
+        -11.157873153686523,
+        -8.438509941101074,
+        8.327577590942383,
+        -10.996392250061035,
+        -11.217761039733887,
+        -11.221631050109863
+      ],
+      "actual": [
+        -11.157872200012207,
+        -8.438509941101074,
+        8.327577590942383,
+        -10.996392250061035,
+        -11.217761993408203,
+        -11.22163200378418
+      ],
+      "max_error": 9.5367431640625e-07
+    },
+    {
+      "query": "hello",
+      "lengths": [
+        512
+      ],
+      "reference": [
+        -3.9600040912628174
+      ],
+      "actual": [
+        -3.9600043296813965
+      ],
+      "max_error": 2.384185791015625e-07
+    },
+    {
+      "query": "one two three",
+      "lengths": [
+        10
+      ],
+      "reference": [
+        -10.007284164428711
+      ],
+      "actual": [
+        -10.007282257080078
+      ],
+      "max_error": 1.9073486328125e-06
+    },
+    {
+      "query": "one",
+      "lengths": [
+        10
+      ],
+      "reference": [
+        -8.403661727905273
+      ],
+      "actual": [
+        -8.403660774230957
+      ],
+      "max_error": 9.5367431640625e-07
+    },
+    {
+      "query": "hello",
+      "lengths": [
+        7
+      ],
+      "reference": [
+        -10.195833206176758
+      ],
+      "actual": [
+        -10.195833206176758
+      ],
+      "max_error": 0.0
+    },
+    {
+      "query": "hello",
+      "lengths": [
+        11
+      ],
+      "reference": [
+        -9.943655967712402
+      ],
+      "actual": [
+        -9.943655014038086
+      ],
+      "max_error": 9.5367431640625e-07
+    },
+    {
+      "query": "hello",
+      "lengths": [
+        19
+      ],
+      "reference": [
+        -9.601357460021973
+      ],
+      "actual": [
+        -9.601356506347656
+      ],
+      "max_error": 9.5367431640625e-07
+    },
+    {
+      "query": "hello",
+      "lengths": [
+        35
+      ],
+      "reference": [
+        -9.304386138916016
+      ],
+      "actual": [
+        -9.304383277893066
+      ],
+      "max_error": 2.86102294921875e-06
+    },
+    {
+      "query": "hello",
+      "lengths": [
+        67
+      ],
+      "reference": [
+        -9.128631591796875
+      ],
+      "actual": [
+        -9.128631591796875
+      ],
+      "max_error": 0.0
+    },
+    {
+      "query": "hello",
+      "lengths": [
+        131
+      ],
+      "reference": [
+        -8.722718238830566
+      ],
+      "actual": [
+        -8.722719192504883
+      ],
+      "max_error": 9.5367431640625e-07
+    }
+  ]
+}

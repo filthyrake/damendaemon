@@ -2,7 +2,7 @@
 
 
 def length_groups(tokens):
-    """Split costly padding only when four length buckets save at least half.
+    """Split costly padding only when power-of-two buckets save at least half.
 
     Return original indices so scoring never changes document order. Small or
     homogeneous requests retain the existing graph-friendly single batch.
@@ -11,7 +11,7 @@ def length_groups(tokens):
     if padded<4096:return None
     buckets={}
     for index,row in enumerate(tokens):
-        bound=next((size for size in (64,128,256) if len(row)<=size),512)
+        bound=max(64,1<<(len(row)-1).bit_length())
         buckets.setdefault(bound,[]).append(index)
     groups=list(buckets.values())
     work=sum(len(group)*max(len(tokens[i]) for i in group) for group in groups)

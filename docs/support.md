@@ -24,6 +24,7 @@ Configuration acceptance alone is not checkpoint qualification.
 | Mamba | 130M, 370M | NVIDIA A2, Apple M4 | FP32/Q8 raw generation; recurrent-state prefix snapshots |
 | Mamba-2 | 130M | NVIDIA A2, Apple M4 | Single-group configuration; optional qualified CUDA SSD/compensated projection paths |
 | BERT cross-encoder | MS MARCO MiniLM-L6-v2 | NVIDIA A2, Apple M4 | FP32 paired query/document relevance; one trained scalar head;512 tokens |
+| XLM-RoBERTa cross-encoder | BGE reranker v2 M3 | NVIDIA A2, Apple M4 | FP32 multilingual scalar relevance; reference-tested through2048 tokens; full8192 limit not GPU-qualified |
 | BERT sentence encoder | all-MiniLM-L6-v2 | NVIDIA A2, Apple M4 | Specified mean-pooling/L2 pipeline; 384 dimensions, 256 input tokens |
 
 Exact pins, precision, context, correctness gates and comparisons:

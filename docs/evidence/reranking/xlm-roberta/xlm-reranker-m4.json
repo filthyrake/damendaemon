@@ -1,0 +1,352 @@
+{
+  "passed": true,
+  "model": "results/models/bge-reranker-v2-m3",
+  "device": "Apple MPS",
+  "compute_dtype": "torch.float32",
+  "host_weight_bytes": 2271023108,
+  "checkpoint_context": 8192,
+  "qualified_context": 2048,
+  "reference": "CPU FP32 Transformers eager",
+  "pair_ids_equal": true,
+  "internal_padding_positions_checked": true,
+  "checks": [
+    {
+      "query": "What is the capital of France?",
+      "documents": [
+        "Paris is the capital of France.",
+        "Berlin is the capital of Germany.",
+        "A puppy is playing in a garden."
+      ],
+      "lengths": [
+        18,
+        18,
+        19
+      ],
+      "reference": [
+        8.781810760498047,
+        -5.464858055114746,
+        -10.969940185546875
+      ],
+      "actual": [
+        8.781821250915527,
+        -5.464850425720215,
+        -10.969938278198242
+      ],
+      "max_error": 1.049041748046875e-05,
+      "first_request_seconds": 0.13330908300122246
+    },
+    {
+      "query": "What is the capital of France?",
+      "documents": [
+        "Paris is the capital of France."
+      ],
+      "lengths": [
+        18
+      ],
+      "reference": [
+        8.781810760498047
+      ],
+      "actual": [
+        8.78182315826416
+      ],
+      "max_error": 1.239776611328125e-05,
+      "first_request_seconds": 0.03147079102927819
+    },
+    {
+      "query": "What is the capital of France?",
+      "documents": [
+        "Berlin is the capital of Germany."
+      ],
+      "lengths": [
+        18
+      ],
+      "reference": [
+        -5.464858055114746
+      ],
+      "actual": [
+        -5.464849472045898
+      ],
+      "max_error": 8.58306884765625e-06,
+      "first_request_seconds": 0.021315833961125463
+    },
+    {
+      "query": "What is the capital of France?",
+      "documents": [
+        "A puppy is playing in a garden."
+      ],
+      "lengths": [
+        19
+      ],
+      "reference": [
+        -10.969940185546875
+      ],
+      "actual": [
+        -10.969938278198242
+      ],
+      "max_error": 1.9073486328125e-06,
+      "first_request_seconds": 0.02907204203074798
+    },
+    {
+      "query": "\u6cd5\u56fd\u7684\u9996\u90fd\u662f\u54ea\u91cc\uff1f",
+      "documents": [
+        "\u6cd5\u56fd\u7684\u9996\u90fd\u662f\u5df4\u9ece\u3002",
+        "\u67cf\u6797\u662f\u5fb7\u56fd\u7684\u9996\u90fd\u3002",
+        "\u4e00\u53ea\u5c0f\u72d7\u5728\u82b1\u56ed\u91cc\u73a9\u800d\u3002"
+      ],
+      "lengths": [
+        18,
+        18,
+        21
+      ],
+      "reference": [
+        8.338565826416016,
+        -3.8048834800720215,
+        -11.040021896362305
+      ],
+      "actual": [
+        8.338573455810547,
+        -3.804882764816284,
+        -11.040021896362305
+      ],
+      "max_error": 7.62939453125e-06,
+      "first_request_seconds": 0.03533349995268509
+    },
+    {
+      "query": "Quelle est la capitale de la France ?",
+      "documents": [
+        "Paris est la capitale de la France.",
+        "Berlin ist die Hauptstadt von Deutschland."
+      ],
+      "lengths": [
+        20,
+        19
+      ],
+      "reference": [
+        8.914135932922363,
+        -6.351312637329102
+      ],
+      "actual": [
+        8.914146423339844,
+        -6.351312637329102
+      ],
+      "max_error": 1.049041748046875e-05,
+      "first_request_seconds": 0.03535508399363607
+    },
+    {
+      "query": "\u65e5\u672c\u306e\u9996\u90fd\u306f\u3069\u3053\u3067\u3059\u304b\uff1f",
+      "documents": [
+        "\u65e5\u672c\u306e\u9996\u90fd\u306f\u6771\u4eac\u3067\u3059\u3002",
+        "\u0628\u0627\u0631\u064a\u0633 \u0647\u064a \u0639\u0627\u0635\u0645\u0629 \u0641\u0631\u0646\u0633\u0627.",
+        "caf\u00e9 \ud83e\udd99 \u2014 Z\u00fcrich"
+      ],
+      "lengths": [
+        18,
+        17,
+        16
+      ],
+      "reference": [
+        10.211095809936523,
+        -10.403552055358887,
+        -11.039445877075195
+      ],
+      "actual": [
+        10.211104393005371,
+        -10.403566360473633,
+        -11.039445877075195
+      ],
+      "max_error": 1.430511474609375e-05,
+      "first_request_seconds": 0.03313445794628933
+    },
+    {
+      "query": "hello",
+      "documents": [
+        "one <pad> two",
+        "one two <pad> three",
+        "<pad> <pad> hello"
+      ],
+      "lengths": [
+        9,
+        10,
+        10
+      ],
+      "reference": [
+        -4.437844276428223,
+        -4.063052654266357,
+        2.252880811691284
+      ],
+      "actual": [
+        -4.4378557205200195,
+        -4.063060283660889,
+        2.252887487411499
+      ],
+      "max_error": 1.1444091796875e-05,
+      "first_request_seconds": 0.031257957976777107
+    },
+    {
+      "query": "hello",
+      "documents": [
+        "<long input>"
+      ],
+      "lengths": [
+        512
+      ],
+      "reference": [
+        -0.19527950882911682
+      ],
+      "actual": [
+        -0.19527070224285126
+      ],
+      "max_error": 8.806586265563965e-06,
+      "first_request_seconds": 0.16039733297657222
+    },
+    {
+      "query": "hello",
+      "documents": [
+        "<long input>"
+      ],
+      "lengths": [
+        1024
+      ],
+      "reference": [
+        1.0839016437530518
+      ],
+      "actual": [
+        1.083897590637207
+      ],
+      "max_error": 4.0531158447265625e-06,
+      "first_request_seconds": 0.32135612500132993
+    },
+    {
+      "query": "hello",
+      "documents": [
+        "<long input>"
+      ],
+      "lengths": [
+        2048
+      ],
+      "reference": [
+        -1.656556248664856
+      ],
+      "actual": [
+        -1.6565688848495483
+      ],
+      "max_error": 1.2636184692382812e-05,
+      "first_request_seconds": 0.7341542919748463
+    },
+    {
+      "query": "hello",
+      "documents": [
+        "<long input>",
+        "<long input>",
+        "<long input>"
+      ],
+      "lengths": [
+        512,
+        26,
+        106
+      ],
+      "reference": [
+        -0.19527946412563324,
+        -4.57072114944458,
+        -4.231320858001709
+      ],
+      "actual": [
+        -0.19527070224285126,
+        -4.570713043212891,
+        -4.231315612792969
+      ],
+      "max_error": 8.761882781982422e-06,
+      "first_request_seconds": 0.4650162089965306
+    },
+    {
+      "query": "hello",
+      "documents": [
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>"
+      ],
+      "lengths": [
+        1024,
+        26,
+        512,
+        26,
+        256,
+        26,
+        26,
+        26
+      ],
+      "reference": [
+        1.0839016437530518,
+        -4.57072114944458,
+        -0.19527946412563324,
+        -4.57072114944458,
+        -1.6091177463531494,
+        -4.57072114944458,
+        -4.57072114944458,
+        -4.57072114944458
+      ],
+      "actual": [
+        1.083897590637207,
+        -4.570713043212891,
+        -0.19527070224285126,
+        -4.570713043212891,
+        -1.6091110706329346,
+        -4.570713043212891,
+        -4.570713043212891,
+        -4.570713043212891
+      ],
+      "max_error": 8.761882781982422e-06,
+      "first_request_seconds": 0.6945994169800542
+    },
+    {
+      "query": "hello",
+      "documents": [
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>",
+        "<long input>"
+      ],
+      "lengths": [
+        26,
+        26,
+        26,
+        256,
+        26,
+        512,
+        26,
+        1024
+      ],
+      "reference": [
+        -4.57072114944458,
+        -4.57072114944458,
+        -4.57072114944458,
+        -1.6091177463531494,
+        -4.57072114944458,
+        -0.19527946412563324,
+        -4.57072114944458,
+        1.0839016437530518
+      ],
+      "actual": [
+        -4.570713043212891,
+        -4.570713043212891,
+        -4.570713043212891,
+        -1.6091110706329346,
+        -4.570713043212891,
+        -0.19527070224285126,
+        -4.570713043212891,
+        1.083897590637207
+      ],
+      "max_error": 8.761882781982422e-06,
+      "first_request_seconds": 0.805968250031583
+    }
+  ]
+}

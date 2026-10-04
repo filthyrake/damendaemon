@@ -16,6 +16,8 @@ class RerankingTests(unittest.TestCase):
         self.assertEqual(len(groups),4)
         self.assertEqual(groups[0],list(range(0,64,8)))
         self.assertLessEqual(sum(len(g)*max(lengths[i] for i in g) for g in groups)*2,64*512)
+        long_groups=length_groups([[0]*n for n in [8192,512,1024]+[24]*13])
+        self.assertEqual(long_groups[:3],[[0],[1],[2]])
 
     def test_options_and_stable_rank(self):
         docs=['first','second','third']
@@ -46,3 +48,18 @@ class RerankingTests(unittest.TestCase):
                     {'sbert_ce_default_activation_function':'torch.nn.Sigmoid'},{'is_decoder':True}):
                 path.write_text(json.dumps({**c,**changed}))
                 with self.assertRaises(ValueError):config(root)
+
+    def test_xlm_roberta_position_offset_and_architecture_dispatch(self):
+        from dllm.models import config as dispatch
+        c={'model_type':'xlm-roberta','architectures':['XLMRobertaForSequenceClassification'],
+            'hidden_size':8,'intermediate_size':16,'num_attention_heads':2,'num_hidden_layers':2,
+            'max_position_embeddings':8194,'vocab_size':32,'type_vocab_size':1,
+            'hidden_act':'gelu','pad_token_id':1,'id2label':{'0':'LABEL_0'}}
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'config.json';path.write_text(json.dumps(c))
+            self.assertEqual(dispatch(root)['embedding_max_length'],8192)
+            self.assertEqual(dispatch(root)['task'],'rerank')
+            for change in ({'architectures':['BertForSequenceClassification']},
+                    {'architectures':['XLMRobertaModel']},{'max_position_embeddings':2}):
+                path.write_text(json.dumps({**c,**change}))
+                with self.assertRaises(ValueError):dispatch(root)

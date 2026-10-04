@@ -1,4 +1,4 @@
-"""Independent BERT sentence embeddings and trained cross-encoder relevance scores."""
+"""Independent BERT embeddings and BERT/XLM-RoBERTa relevance scores."""
 from collections import OrderedDict
 import json
 import math
@@ -13,7 +13,10 @@ from .device import selected_device, available_memory, empty_cache
 def config(path):
     path = Path(path)
     c = json.loads((path/'config.json').read_text())
-    if (c.get('model_type') != 'bert' or c.get('architectures') not in (['BertModel'],['BertForSequenceClassification'])
+    family=c.get('model_type')
+    architectures={'bert':(['BertModel'],['BertForSequenceClassification']),
+        'xlm-roberta':(['XLMRobertaForSequenceClassification'],)}
+    if (not isinstance(family,str) or family not in architectures or c.get('architectures') not in architectures[family]
             or c.get('is_decoder', False) or c.get('add_cross_attention', False)
             or c.get('position_embedding_type', 'absolute') != 'absolute'
             or c.get('hidden_act') != 'gelu' or c.get('quantization_config')):
@@ -29,12 +32,14 @@ def config(path):
         raise ValueError('invalid encoder normalization epsilon')
     if type(c.get('pad_token_id')) is not int or not 0 <= c['pad_token_id'] < c['vocab_size']:
         raise ValueError('encoder requires a valid padding token')
-    if c['architectures']==['BertForSequenceClassification']:
+    if c['architectures']!=['BertModel']:
         labels=c.get('num_labels',len(c.get('id2label',{})))
         if (type(labels) is not int or labels!=1 or c.get('problem_type') not in (None,'regression')
                 or c.get('sbert_ce_default_activation_function','torch.nn.modules.linear.Identity')!='torch.nn.modules.linear.Identity'):
             raise ValueError('reranking requires one raw relevance output')
-        return {**c,'task':'rerank','layer_norm_eps':eps,'embedding_max_length':c['max_position_embeddings']}
+        length=c['max_position_embeddings']-(c['pad_token_id']+1 if family=='xlm-roberta' else 0)
+        if length<=0:raise ValueError('invalid encoder position capacity')
+        return {**c,'task':'rerank','layer_norm_eps':eps,'embedding_max_length':length}
     modules = json.loads((path/'modules.json').read_text())
     kinds = ['Transformer','Pooling','Normalize']
     if (not isinstance(modules,list) or len(modules) != 3
@@ -57,7 +62,8 @@ def config(path):
 
 
 def used_tensor(name,task='embedding'):
-    if task=='rerank':return name not in ('bert.embeddings.position_ids','bert.embeddings.token_type_ids')
+    if task=='rerank':return name not in tuple(prefix+'.embeddings.'+suffix
+        for prefix in ('bert','roberta') for suffix in ('position_ids','token_type_ids'))
     return name not in ('embeddings.position_ids','embeddings.token_type_ids') and not name.startswith('pooler.')
 
 
@@ -95,7 +101,8 @@ class EncoderWeights:
             with safe_open(str(file),framework='pt',device='cpu') as reader:
                 for name in reader.keys():
                     if used_tensor(name,self.task):
-                        key=name.removeprefix('bert.') if self.task=='rerank' else name
+                        prefix='roberta.' if self.config['model_type']=='xlm-roberta' else 'bert.'
+                        key=name.removeprefix(prefix) if self.task=='rerank' else name
                         if key in state:raise ValueError('duplicate encoder checkpoint tensor')
                         state[key] = reader.get_tensor(name).float()
         h,inter = self.config['hidden_size'],self.config['intermediate_size']
@@ -124,7 +131,10 @@ class EncoderWeights:
         if self.task=='rerank':
             for name,shape in (('pooler.dense.weight',(h,h)),('pooler.dense.bias',(h,)),
                     ('classifier.weight',(1,h)),('classifier.bias',(1,))):
-                w[name]=take(name,shape)
+                source=name
+                if self.config['model_type']=='xlm-roberta':
+                    source=name.replace('pooler.dense.','classifier.dense.') if name.startswith('pooler.') else name.replace('classifier.','classifier.out_proj.')
+                w[name]=take(source,shape)
         if state:raise ValueError('unexpected encoder checkpoint tensors')
         self.bytes = sum(t.numel()*t.element_size() for t in w.values())
 
@@ -157,7 +167,7 @@ class EncoderExecutor:
         self.device = selected_device()
         self.compute_dtype = torch.float16 if self.device == 'cuda' and model.task=='embedding' else torch.float32
         self.residual_dtype = torch.float32
-        self.kernel_backend = 'torch-'+self.device+'-bert'+('-rerank' if model.task=='rerank' else '')
+        self.kernel_backend = 'torch-'+self.device+'-'+model.config['model_type']+('-rerank' if model.task=='rerank' else '')
         self.use_graph = use_graph and self.device == 'cuda'
         self.graphs = OrderedDict()
         empty_cache()
@@ -231,7 +241,12 @@ class EncoderExecutor:
             return F.layer_norm(value,(c['hidden_size'],),w[name+'.weight'],w[name+'.bias'],c['layer_norm_eps'])
         def linear(value,name):return F.linear(value.to(self.compute_dtype),w[name+'.weight'],w[name+'.bias'])
         type_embeddings=w['type'][0] if types is None else F.embedding(types,w['type'])
-        x = norm(F.embedding(ids,w['embed'])+w['position'][:length]+type_embeddings,'embed_norm')
+        if c['model_type']=='xlm-roberta':
+            nonpadding=ids.ne(c['pad_token_id']).int()
+            positions=nonpadding.cumsum(1,dtype=torch.int32)*nonpadding+c['pad_token_id']
+            x=norm(F.embedding(ids,w['embed'])+type_embeddings+F.embedding(positions.long(),w['position']),'embed_norm')
+        else:
+            x = norm(F.embedding(ids,w['embed'])+w['position'][:length]+type_embeddings,'embed_norm')
         heads,dim = c['num_attention_heads'],c['hidden_size']//c['num_attention_heads']
         for i in range(c['num_hidden_layers']):
             q,k,v = [value.view(batch,length,heads,dim).transpose(1,2) for value in linear(x,f'{i}.qkv').chunk(3,-1)]

@@ -642,8 +642,9 @@ uses separate graph keys for each ordered candidate set, sharing the same cache 
 
 ### Trained document reranking
 
-The pinned MS MARCO MiniLM-L6-v2 BERT cross-encoder runs independently on CUDA
-and Metal. Register it as an alias and call `POST /v1/rerank`:
+The pinned MS MARCO MiniLM-L6-v2 BERT and multilingual BGE reranker v2 M3
+XLM-RoBERTa cross-encoders run independently on CUDA and Metal. Register one as
+an alias and call `POST /v1/rerank`:
 
 ```json
 {
@@ -657,9 +658,11 @@ and Metal. Register it as an alias and call `POST /v1/rerank`:
 
 The response gives original document indices and raw relevance scores, not
 confidence probabilities. Up to64 documents are accepted; each query/document
-pair must fit the configured context and512-token model limit. Oversized inputs
+pair must fit the configured context and model limit (512 for MiniLM;
+BGE is reference-tested through2048). Oversized inputs
 are rejected rather than silently truncated.
 [A2/M4 reference, HTTP and performance evidence](docs/evidence/reranking/README.md).
+[Multilingual BGE qualification and limits](docs/evidence/reranking/xlm-roberta/README.md).
 
 Mixed-length reranking automatically avoids excessive padding when length
 partitioning halves the work. Original document indices and usage are preserved;

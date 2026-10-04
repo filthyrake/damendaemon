@@ -14,7 +14,7 @@ def config(path):
     if value.get('model_type')=='t5':
         from .t5 import config as t5_config
         return t5_config(path)
-    if value.get('model_type') == 'bert':
+    if value.get('model_type') in ('bert','xlm-roberta'):
         from .encoder import config as encoder_config
         return encoder_config(path)
     from .config import decoder_config

@@ -1091,3 +1091,14 @@ These raw relevance scores are also not calibrated confidence.
 Opt-in bounded CUDA prefill graphs separately improve repeated short Qwen2/Qwen3
 requests, with verified model unload/eviction and matched HTTP measurements.
 [Capture costs, memory and warm latency](evidence/prefill-graphs/README.md).
+
+## Multilingual XLM-RoBERTa relevance
+
+Issue #36 adds independent BGE reranker v2 M3 execution with padding-aware
+absolute positions and its trained scalar classifier. The pinned checkpoint
+passes14 CPU FP32 reference cases per device on A2 and M4 through2048 tokens,
+including multilingual text, internal padding tokens, long length buckets and
+reversed document order. HTTP lifecycle and concurrency checks pass on both.
+[Exact revision, measured latency, arithmetic gates and scope](evidence/reranking/xlm-roberta/README.md).
+The model's8192-token capacity is distinct from the tested2048-token limit;
+quantized reranking and other classifier variants remain unqualified.

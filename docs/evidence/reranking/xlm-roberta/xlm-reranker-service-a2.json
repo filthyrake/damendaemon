@@ -1,0 +1,306 @@
+{
+  "passed": true,
+  "model": "/home/damen/dllm-dev/models/bge-reranker-v2-m3",
+  "device": "cuda",
+  "example": {
+    "model": "rank",
+    "results": [
+      {
+        "index": 0,
+        "relevance_score": 7.009775638580322,
+        "document": {
+          "text": "Berlin had a population of 3,520,031 in 2015."
+        }
+      },
+      {
+        "index": 1,
+        "relevance_score": -8.193227767944336,
+        "document": {
+          "text": "Berlin is well known for its museums."
+        }
+      },
+      {
+        "index": 2,
+        "relevance_score": -11.008443832397461,
+        "document": {
+          "text": "Paris is the capital of France."
+        }
+      },
+      {
+        "index": 3,
+        "relevance_score": -11.029857635498047,
+        "document": {
+          "text": "A puppy is playing in a garden."
+        }
+      }
+    ],
+    "score_type": "raw_relevance",
+    "calibrated": false,
+    "usage": {
+      "prompt_tokens": 79,
+      "total_tokens": 79
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 2.350479857996106,
+      "total_seconds": 2.95769834901148,
+      "kernel_backend": "torch-cuda-xlm-roberta-rerank",
+      "compute_dtype": "float32"
+    }
+  },
+  "host_restore": true,
+  "encoder_decoder_switching": true,
+  "task_errors_recover": true,
+  "concurrent_isolation": true,
+  "benchmarks": [
+    {
+      "pairs": 1,
+      "median_ms": 17.619766003917903,
+      "pairs_per_second": 56.75444269677824,
+      "trials": [
+        {
+          "warmup": true,
+          "seconds": 0.15492680598981678,
+          "pairs_per_second": 6.454660919464958
+        },
+        {
+          "warmup": false,
+          "seconds": 0.01722582599904854,
+          "pairs_per_second": 58.05236858048111
+        },
+        {
+          "warmup": false,
+          "seconds": 0.01792954000120517,
+          "pairs_per_second": 55.773879303807185
+        },
+        {
+          "warmup": false,
+          "seconds": 0.017629328998737037,
+          "pairs_per_second": 56.72365636103563
+        },
+        {
+          "warmup": false,
+          "seconds": 0.017442659998778254,
+          "pairs_per_second": 57.33070529781831
+        },
+        {
+          "warmup": false,
+          "seconds": 0.017552338002133183,
+          "pairs_per_second": 56.97246713676932
+        },
+        {
+          "warmup": false,
+          "seconds": 0.017928647008375265,
+          "pairs_per_second": 55.776657297834895
+        },
+        {
+          "warmup": false,
+          "seconds": 0.01744906700332649,
+          "pairs_per_second": 57.309654425039454
+        },
+        {
+          "warmup": false,
+          "seconds": 0.01766156600206159,
+          "pairs_per_second": 56.620120768638095
+        },
+        {
+          "warmup": false,
+          "seconds": 0.01790259800327476,
+          "pairs_per_second": 55.85781459300371
+        },
+        {
+          "warmup": false,
+          "seconds": 0.017610203009098768,
+          "pairs_per_second": 56.785262468770185
+        }
+      ]
+    },
+    {
+      "pairs": 4,
+      "median_ms": 38.83274699910544,
+      "pairs_per_second": 103.0058471035321,
+      "trials": [
+        {
+          "warmup": true,
+          "seconds": 0.03848372200445738,
+          "pairs_per_second": 103.94005027727567
+        },
+        {
+          "warmup": false,
+          "seconds": 0.038675698000588454,
+          "pairs_per_second": 103.42411919596486
+        },
+        {
+          "warmup": false,
+          "seconds": 0.03872572300315369,
+          "pairs_per_second": 103.29051828610801
+        },
+        {
+          "warmup": false,
+          "seconds": 0.03893977099505719,
+          "pairs_per_second": 102.72274072972178
+        },
+        {
+          "warmup": false,
+          "seconds": 0.038037641992559657,
+          "pairs_per_second": 105.15898963406877
+        },
+        {
+          "warmup": false,
+          "seconds": 0.03808706099516712,
+          "pairs_per_second": 105.02254297089401
+        },
+        {
+          "warmup": false,
+          "seconds": 0.03862825900432654,
+          "pairs_per_second": 103.55113336979495
+        },
+        {
+          "warmup": false,
+          "seconds": 0.03980560100171715,
+          "pairs_per_second": 100.48837096637347
+        },
+        {
+          "warmup": false,
+          "seconds": 0.03960293799173087,
+          "pairs_per_second": 101.00260745390162
+        },
+        {
+          "warmup": false,
+          "seconds": 0.03981588799797464,
+          "pairs_per_second": 100.46240837837077
+        },
+        {
+          "warmup": false,
+          "seconds": 0.03909639100311324,
+          "pairs_per_second": 102.31123378322773
+        }
+      ]
+    },
+    {
+      "pairs": 16,
+      "median_ms": 109.16520750470227,
+      "pairs_per_second": 146.56684456273126,
+      "trials": [
+        {
+          "warmup": true,
+          "seconds": 0.10857971300720237,
+          "pairs_per_second": 147.3571771085698
+        },
+        {
+          "warmup": false,
+          "seconds": 0.11068454400810879,
+          "pairs_per_second": 144.5549615204435
+        },
+        {
+          "warmup": false,
+          "seconds": 0.10769030899973586,
+          "pairs_per_second": 148.57418600256077
+        },
+        {
+          "warmup": false,
+          "seconds": 0.10903940899879672,
+          "pairs_per_second": 146.73593838147605
+        },
+        {
+          "warmup": false,
+          "seconds": 0.10878124499868136,
+          "pairs_per_second": 147.08417797749925
+        },
+        {
+          "warmup": false,
+          "seconds": 0.10912040500261355,
+          "pairs_per_second": 146.62702177119652
+        },
+        {
+          "warmup": false,
+          "seconds": 0.109941988994251,
+          "pairs_per_second": 145.5312946979398
+        },
+        {
+          "warmup": false,
+          "seconds": 0.11007696100568864,
+          "pairs_per_second": 145.35284998623044
+        },
+        {
+          "warmup": false,
+          "seconds": 0.10987712399219163,
+          "pairs_per_second": 145.61720782878368
+        },
+        {
+          "warmup": false,
+          "seconds": 0.10921001000679098,
+          "pairs_per_second": 146.5067167286687
+        },
+        {
+          "warmup": false,
+          "seconds": 0.10773997999785934,
+          "pairs_per_second": 148.50568934872553
+        }
+      ]
+    },
+    {
+      "pairs": 64,
+      "median_ms": 372.3732224898413,
+      "pairs_per_second": 171.87057536540772,
+      "trials": [
+        {
+          "warmup": true,
+          "seconds": 0.37386981600138824,
+          "pairs_per_second": 171.18258083654007
+        },
+        {
+          "warmup": false,
+          "seconds": 0.37254458700772375,
+          "pairs_per_second": 171.79151766516776
+        },
+        {
+          "warmup": false,
+          "seconds": 0.3710108980012592,
+          "pairs_per_second": 172.50167136541307
+        },
+        {
+          "warmup": false,
+          "seconds": 0.3710944000049494,
+          "pairs_per_second": 172.46285581012918
+        },
+        {
+          "warmup": false,
+          "seconds": 0.3722726659907494,
+          "pairs_per_second": 171.91700021722878
+        },
+        {
+          "warmup": false,
+          "seconds": 0.3728866009914782,
+          "pairs_per_second": 171.63394938254334
+        },
+        {
+          "warmup": false,
+          "seconds": 0.37384691800980363,
+          "pairs_per_second": 171.19306570910848
+        },
+        {
+          "warmup": false,
+          "seconds": 0.37309156901028473,
+          "pairs_per_second": 171.53965759605722
+        },
+        {
+          "warmup": false,
+          "seconds": 0.3690440079953987,
+          "pairs_per_second": 173.42105172670344
+        },
+        {
+          "warmup": false,
+          "seconds": 0.3724737789889332,
+          "pairs_per_second": 171.82417558015956
+        },
+        {
+          "warmup": false,
+          "seconds": 0.3711984170076903,
+          "pairs_per_second": 172.41452836980736
+        }
+      ]
+    }
+  ],
+  "timing": "single HTTP client; 10 measured rounds after 1 warmup at each pair count; repeated short texts; no cross-engine comparison"
+}
