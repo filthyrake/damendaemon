@@ -872,3 +872,18 @@ warm rounds, sequential engines:
 This is a narrow throughput/latency tradeoff, not general parity. GPU prefill is
 still per-prompt; GPT-NeoX chunked prefill/prefix reuse are not yet enabled.
 Evidence is stored under `evidence/architectures/pythia160m*`.
+
+Q4 optimization replaces repeated per-element scale loads with block loads and
+paired low/high-nibble Tensor Core products for FP16 decode/short prefill. The
+profiled original 14336-wide down-projection GEMV used 255 registers and spilled
+352 values; its kernel took about 4.0 ms. The paired product takes about 0.43 ms
+with no reported spills on the same matrix. An intermediate blockwise GEMV and
+split-reduction tile sweep are retained as evidence; split GEMV was not selected.
+
+All 26 CUDA matrix gates pass and all 97 Mistral model checks still pass
+(worst RMS 0.002870). The same serving workload improves to 20.06/37.70/70.39
+output tokens/s at concurrency 1/2/4, with TTFT 81.90/190.06/325.04 ms. This is
+4.80x/2.51x/2.37x faster than the original Q4 path, while still behind the matched
+llama.cpp result, especially for one request. The full 119-test suite passes.
+Further native decode work is in progress; this remains an explicit measured
+gap rather than a claim of general four-bit performance parity.
