@@ -1,0 +1,91 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "models": {
+    "oss": "models/gpt-oss-20b",
+    "swap": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775"
+  },
+  "context": 4096,
+  "batch_size": 2,
+  "prefill_mode": "default",
+  "reference": {
+    "id": "cmpl-a583faf74e2d497eb1dea89a15db4ec3",
+    "object": "text_completion",
+    "created": 1791148313,
+    "model": "oss",
+    "choices": [
+      {
+        "index": 0,
+        "text": "\n\nThe ocean plays a crucial role in shaping coastal weather patterns. Its vast surface",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 4000,
+      "completion_tokens": 16,
+      "total_tokens": 4016
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 15.313063018998946,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton-mxfp4",
+      "weight_quantization": "mxfp4",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 32.88176168598875,
+      "total_seconds": 33.87838213698706,
+      "decode_tokens_per_second": 15.050865136245813
+    }
+  },
+  "warm": {
+    "id": "cmpl-0b660a1730a746199f0dc4493a5b3fc7",
+    "object": "text_completion",
+    "created": 1791148347,
+    "model": "oss",
+    "choices": [
+      {
+        "index": 0,
+        "text": "\n\nThe ocean plays a crucial role in shaping coastal weather patterns. Its vast surface",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 4000,
+      "completion_tokens": 16,
+      "total_tokens": 4016
+    },
+    "dllm_timing": {
+      "source_tier": "gpu",
+      "activation_seconds": 1.1647993233054876e-05,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton-mxfp4",
+      "weight_quantization": "mxfp4",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 16.5858204850083,
+      "total_seconds": 17.582283947005635,
+      "decode_tokens_per_second": 15.053236342387928
+    }
+  },
+  "cold_http_seconds": 33.89655221099383,
+  "warm_http_seconds": 17.599257376001333,
+  "host_restore_http_seconds": 22.6096361400123,
+  "stream_equivalence": true,
+  "disconnect_recovery": true,
+  "concurrent_equivalence": true,
+  "unsupported_forced_harmony_tools_rejected": true,
+  "graph_executor_reclaimed_on_swap": true,
+  "peak_allocated_bytes": 15191919616,
+  "host_swap_restore_equivalence": true,
+  "explicit_unload_restore": true,
+  "native_format_reported": true
+}

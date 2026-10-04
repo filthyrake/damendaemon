@@ -19,7 +19,9 @@ def main():
         raise RuntimeError('restricted to the authorized A2')
     torch.set_num_threads(4);torch.set_grad_enabled(False)
     reference=torch.load(args.reference,map_location='cpu',weights_only=False)
-    model=ModelWeights(args.model,256);executor=GptOssExecutor(model,use_graph=not args.no_graph,max_batch=2)
+    maximum=max(len(case['ids']) for case in reference['cases'])
+    context=1<<(maximum-1).bit_length()
+    model=ModelWeights(args.model,context);executor=GptOssExecutor(model,use_graph=not args.no_graph,max_batch=2)
     checks=[];timings=[]
     def compare(actual,expected,kind,**metadata):
         actual=actual.detach().cpu();expected=expected.float()
@@ -44,8 +46,11 @@ def main():
             compare(logits[0],case['logits'][-1],'full_prefill',case=index)
             timings.append({'case':index,'kind':'all_layers_with_checks','seconds':time.perf_counter()-start})
             print(json.dumps({'phase':'layers_checked','case':index,'seconds':timings[-1]['seconds']}),flush=True)
+            del x,positions,slots
             other=1-slot;executor.prefill(ids[:3],other)
-            untouched=[cache[:,other].clone() for cache in executor.kv]
+            # Keep diagnostic snapshots on the host so checking an untouched
+            # slot does not consume another long-context GPU KV allocation.
+            untouched=[cache[:,other].cpu() for cache in executor.kv]
             start=time.perf_counter();logits=executor.prefill(ids[:split],slot);torch.cuda.synchronize()
             timings.append({'case':index,'kind':'prefill','tokens':split,'seconds':time.perf_counter()-start})
             compare(logits[0],case['logits'][0],'prefix',case=index)
@@ -53,7 +58,7 @@ def main():
                 start=time.perf_counter();logits,_=executor.decode(token) if args.scalar else executor.decode_batch([token],[slot]);torch.cuda.synchronize()
                 timings.append({'case':index,'kind':'decode','step':step,'seconds':time.perf_counter()-start})
                 compare(logits[0],case['logits'][step+1],'decode',case=index,step=step)
-            isolated=all(torch.equal(cache[:,other],saved) for cache,saved in zip(executor.kv,untouched))
+            isolated=all(torch.equal(cache[:,other].cpu(),saved) for cache,saved in zip(executor.kv,untouched))
             checks.append({'kind':'other_slot_unchanged','case':index,'passed':isolated})
             del untouched
         # Both slots have prior content. Reusing either for a short prompt must
@@ -67,7 +72,8 @@ def main():
         'reference':reference['reference'],'reference_transformers':reference['transformers'],
         'reference_torch':reference['torch'],'reference_dtype':reference['dtype'],'torch':str(torch.__version__),
         'graph':not args.no_graph,'scalar':args.scalar,'prefill_mode':executor.grouped_prefill,'chunked_experts':executor.chunked_experts,'normal_experts':executor.normal_experts,
-        'normal_scale_projections':sum(executor.expert_normal.values()),'compute_dtype':str(executor.compute_dtype),'kernel_backend':executor.kernel_backend,
+        'normal_scale_projections':sum(executor.expert_normal.values()),
+        'prefill_attention_scratch_bytes':executor.prefill_attention_bytes,'compute_dtype':str(executor.compute_dtype),'kernel_backend':executor.kernel_backend,
         'context':executor.context,'max_batch':executor.max_batch,'host_weight_bytes':model.bytes,
         'allocated_bytes':torch.cuda.memory_allocated(),'peak_allocated_bytes':torch.cuda.max_memory_allocated(),
         'checks':checks,'timings':timings}

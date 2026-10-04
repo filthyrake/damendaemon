@@ -16,12 +16,13 @@ from dllm.server import BoundedHTTPServer,handler_for
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('model');parser.add_argument('swap_model');parser.add_argument('--prompt-tokens',type=int,default=0);args=parser.parse_args()
-    if not 0<=args.prompt_tokens<=240:parser.error('prompt must fit the configured context')
+    parser=argparse.ArgumentParser();parser.add_argument('model');parser.add_argument('swap_model');parser.add_argument('--prompt-tokens',type=int,default=0)
+    parser.add_argument('--context',type=int,default=256);args=parser.parse_args()
+    if args.context<32 or not 0<=args.prompt_tokens<=args.context-16:parser.error('prompt must fit the configured context')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
     os.environ['DLLM_DEVICE']='cuda';torch.set_num_threads(4)
-    runtime=BatchedRuntime({'oss':args.model,'swap':args.swap_model},context=256,batch_size=2,
+    runtime=BatchedRuntime({'oss':args.model,'swap':args.swap_model},context=args.context,batch_size=2,
         host_gib=18,gpu_models=1,host_models=2)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
     thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
@@ -79,10 +80,11 @@ def main():
         runtime.manage('unload',model='oss',release_host=False)
         again,_=post(data);equal(again,reference);assert again['dllm_timing']['source_tier']=='host'
         print(json.dumps({'passed':True,'gpu':torch.cuda.get_device_name(),'models':{'oss':args.model,'swap':args.swap_model},
-            'context':256,'batch_size':2,'prefill_mode':os.environ.get('DLLM_GPT_OSS_PREFILL','default'),'reference':reference,'warm':warm,'cold_http_seconds':cold,
+            'context':args.context,'batch_size':2,'prefill_mode':os.environ.get('DLLM_GPT_OSS_PREFILL','default'),'reference':reference,'warm':warm,'cold_http_seconds':cold,
             'warm_http_seconds':warm_seconds,'host_restore_http_seconds':restore_seconds,
             'stream_equivalence':True,'disconnect_recovery':True,'concurrent_equivalence':True,
             'unsupported_forced_harmony_tools_rejected':True,'graph_executor_reclaimed_on_swap':True,
+            'peak_allocated_bytes':torch.cuda.max_memory_allocated(),
             'host_swap_restore_equivalence':True,'explicit_unload_restore':True,'native_format_reported':True},indent=2))
     finally:
         server.shutdown();server.server_close();thread.join();runtime.close()

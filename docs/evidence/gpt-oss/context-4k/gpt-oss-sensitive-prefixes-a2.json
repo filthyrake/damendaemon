@@ -1,0 +1,59 @@
+{
+  "passed": false,
+  "gpu": "NVIDIA A2",
+  "context": 2048,
+  "rows": [
+    {
+      "prefix_tokens": 788,
+      "relative_rms": 1.106384047488973e-06,
+      "max_absolute_error": 1.71661376953125e-05,
+      "greedy_match": true,
+      "bounded_unbounded_exact": true,
+      "native_token": 69024,
+      "reference_token": 69024,
+      "passed": true
+    },
+    {
+      "prefix_tokens": 789,
+      "relative_rms": 0.14650732278823853,
+      "max_absolute_error": 2.87699031829834,
+      "greedy_match": false,
+      "bounded_unbounded_exact": true,
+      "native_token": 1008,
+      "reference_token": 279,
+      "passed": false
+    },
+    {
+      "prefix_tokens": 790,
+      "relative_rms": 0.015351897105574608,
+      "max_absolute_error": 0.29514551162719727,
+      "greedy_match": true,
+      "bounded_unbounded_exact": true,
+      "native_token": 30547,
+      "reference_token": 30547,
+      "passed": false
+    },
+    {
+      "prefix_tokens": 791,
+      "relative_rms": 0.0070444620214402676,
+      "max_absolute_error": 0.13470125198364258,
+      "greedy_match": true,
+      "bounded_unbounded_exact": true,
+      "native_token": 328,
+      "reference_token": 328,
+      "passed": true
+    },
+    {
+      "prefix_tokens": 1025,
+      "relative_rms": 0.001219391473568976,
+      "max_absolute_error": 0.024409174919128418,
+      "greedy_match": true,
+      "bounded_unbounded_exact": true,
+      "native_token": 1131,
+      "reference_token": 1131,
+      "passed": true
+    }
+  ],
+  "reference": "Unmodified Transformers RMS norm and CPU FP32 output head over independent saved final-layer states",
+  "source_device": "cpu"
+}

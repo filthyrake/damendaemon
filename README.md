@@ -729,7 +729,9 @@ truncated by the token limit is not published. Forced/named/strict calls, multip
 calls in one historical assistant message, and tool history containing both
 commentary content and reasoning are not yet supported. Structured chat output,
 chat logprobs, 120B and longer contexts remain unqualified; unsupported combinations fail
-explicitly. See [architecture evidence](docs/architecture-parity.md#gpt-oss-20b-packed-raw-execution).
+explicitly. Bounded attention now permits a 4K memory replay on A2, but a routing-sensitive
+longer-prefix numerical failure remains open in [issue #41](https://github.com/filthyrake/dllm/issues/41);
+this does not expand numerical qualification. See [architecture evidence](docs/architecture-parity.md#gpt-oss-20b-packed-raw-execution).
 
 
 Direct CUDA generation (`dllm run` and `Runtime.generate`) reuses the native

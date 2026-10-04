@@ -182,7 +182,7 @@ def _merge(PART, LSE, OUT, SINKS, HAS_SINKS: tl.constexpr, H: tl.constexpr,
 
 
 def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=None, alibi=None, page_table=None,
-              relative_bias=None,relative_max_distance=128,sinks=None):
+              relative_bias=None,relative_max_distance=128,sinks=None,scratch_bytes=None):
     batch, heads, _, dim = query.shape
     if alibi is not None and (alibi.shape != (heads,) or alibi.dtype != torch.float32
                               or alibi.device != query.device or not alibi.is_contiguous()):
@@ -205,6 +205,22 @@ def attention(query, cache_k, cache_v, positions, slots=None, window=0, scale=No
         context = max_pages * page_size
     block = min(256, tr.next_power_of_2(context))
     splits = tr.cdiv(context, block)
+    if scratch_bytes is not None:
+        from .attention_budget import query_rows
+        rows=query_rows(heads,dim,splits,scratch_bytes,query.element_size())
+        if batch>rows:
+            # Keep global positions and slot IDs. Only partition independent
+            # query rows; each row still attends its full causal/windowed cache.
+            out=torch.empty_like(query)
+            for start in range(0,batch,rows):
+                end=min(start+rows,batch)
+                value=attention(query[start:end],cache_k,cache_v,positions[start:end],
+                    None if slots is None else slots[start:end],window=window,scale=scale,
+                    alibi=alibi,page_table=page_table,relative_bias=relative_bias,
+                    relative_max_distance=relative_max_distance,sinks=sinks)
+                out[start:end].copy_(value)
+                del value
+            return out
     out = torch.empty_like(query)
     partial = torch.empty((batch * heads, splits, dim), device=query.device, dtype=torch.float32)
     lse = torch.empty((batch * heads, splits), device=query.device, dtype=torch.float32)

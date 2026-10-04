@@ -113,6 +113,7 @@ class GptOssExecutor(BatchExecutor):
                 self.expert_half[i,projection],self.expert_normal[i,projection]=scale_capabilities(scales)
         self.chunked_experts=True
         self.normal_experts=True
+        self.prefill_attention_bytes=32*1024**2
         self.expert_linear=routed_linear
         self.expert_activation=mxfp4_kernels.swiglu
         self.combine=moe_kernels.combine
@@ -150,14 +151,18 @@ class GptOssExecutor(BatchExecutor):
             if bucket!=count:hidden=F.pad(hidden,(0,0,0,bucket-count))
             weight=unpack(w[f'{i}.up.blocks'][expert],w[f'{i}.up.scales'][expert],
                 torch.float16 if self.expert_half[i,'up'] else torch.float32)
-            up=self.dense_linear(hidden,weight,w[f'{i}.up.bias'][expert])
-            del weight
+            up=self.dense_linear(hidden,weight)
+            up.add_(w[f'{i}.up.bias'][expert])
+            del weight,hidden
             activation=self.expert_activation(up,self.c['swiglu_limit'])
+            del up
             weight=unpack(w[f'{i}.down.blocks'][expert],w[f'{i}.down.scales'][expert],
                 torch.float16 if self.expert_half[i,'down'] else torch.float32)
-            output=self.dense_linear(activation,weight,w[f'{i}.down.bias'][expert])
+            output=self.dense_linear(activation,weight)
+            output.add_(w[f'{i}.down.bias'][expert])
+            del weight,activation
             projected.index_copy_(0,tokens*top+routes,output[:count])
-            del weight
+            del output
         return self.combine(projected,probabilities)
 
     @torch.inference_mode()
@@ -174,8 +179,11 @@ class GptOssExecutor(BatchExecutor):
         ck,cv=self.kv[i].unbind(0)
         query=self.kernels.rope_batch(qkv,self.cos,self.sin,positions,slots,ck,cv,self.heads,precise=True)
         window=self.c['sliding_window'] if self.c['layer_types'][i]=='sliding_attention' else 0
-        attended=self.kernels.attention(query,ck,cv,positions,slots,window=window,sinks=w[f'{i}.sinks'])
+        attended=self.kernels.attention(query,ck,cv,positions,slots,window=window,sinks=w[f'{i}.sinks'],
+            scratch_bytes=self.prefill_attention_bytes if prefill else None)
         x=x+self.dense_linear(attended.reshape(x.shape[0],-1),w[f'{i}.out'],w[f'{i}.out.bias'])
+        # Expert expansion must not overlap dead long-prompt attention tensors.
+        del qkv,query,attended
         return x+self.experts(self.norm(x,w[f'{i}.norm2']),i,prefill)
 
     def _forward(self,ids,positions,slots,prefill):

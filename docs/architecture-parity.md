@@ -1301,3 +1301,14 @@ wall time in the recorded run. This is a small optimization, not a new precision
 policy. 238 CPU/HTTP tests pass. An alternative compensated Tensor Core route
 layout was measured and rejected as slower; it is excluded from runtime selection.
 See [full proof, limits and rejected experiment](evidence/gpt-oss/normal-scales/README.md).
+
+### GPT-OSS longer-context memory and open numerical gate
+
+A 32 MiB prefill attention workspace bound and shorter expert-intermediate
+lifetimes allow a two-slot, 4096-context replay on A2. Attention partitioning is
+bit-identical; the measured attention allocation peak drops from 1.08 GiB to
+95.8 MiB, including the full output. Longer-context numerical parity remains
+unqualified: a nearly tied expert choice produces a greedy mismatch at a
+789-token prefix with both bounded and unbounded attention.
+See [all measurements, failed checks and reproduction](evidence/gpt-oss/context-4k/README.md)
+and [issue #41](https://github.com/filthyrake/dllm/issues/41).
