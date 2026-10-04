@@ -14,7 +14,9 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('model')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     p.add_argument('--quantization',choices=('none','q8_0'),default='none')
+    p.add_argument('--chunk-size',type=int,default=127)
     args=p.parse_args();os.environ['DLLM_DEVICE']=args.device
+    if not 1<=args.chunk_size<=2048:p.error('chunk size must be 1..2048')
     require_gpu();torch.set_num_threads(4)
     model=load(args.model,2048,quantization=args.quantization)
     executor=make_executor(model,max_batch=4)
@@ -70,8 +72,8 @@ def main():
         else:raise AssertionError('invalid continuation accepted')
     assert before==executor.lengths
     long=corpus[:2048]
-    for start in range(0,len(long),127):
-        logits=executor.prefill_chunk(long[start:start+127],0,start,final=start+127>=len(long))
+    for start in range(0,len(long),args.chunk_size):
+        logits=executor.prefill_chunk(long[start:start+args.chunk_size],0,start,final=start+args.chunk_size>=len(long))
     check(long,0,logits,'full-context-chunked')
     cache.remember(long,0,logits)
     assert cache.tokens==len(prompt),'oversized recurrent snapshot was truncated'
@@ -84,6 +86,8 @@ def main():
         'prefix_no_rewind':True,'independent_snapshot':True,'invalid_state_rejected':True,
         'snapshot_bytes':executor.prefix_state_bytes(len(prompt)),
         'architecture':model.config['model_type'],
+        'full_context_chunk_size':args.chunk_size,
+        'prefill_ssd':getattr(executor,'prefill_ssd',False),
         'reference_chunk_size':16 if model.config['model_type']=='mamba2' else None,
         'reference':'CPU full prompt recomputation; independently quantized matrices when selected'},indent=2))
 

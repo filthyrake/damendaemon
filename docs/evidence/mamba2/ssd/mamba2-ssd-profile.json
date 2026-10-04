@@ -1,0 +1,128 @@
+{
+  "layout": "fixed",
+  "reports": {
+    "prefill": {
+      "steps": 4,
+      "gpu_us_per_step": 239320.46274999992,
+      "kernels": [
+        {
+          "name": "_ssd",
+          "calls": 96,
+          "total_us": 470519.81300000014
+        },
+        {
+          "name": "ampere_sgemm_128x64_tn",
+          "calls": 96,
+          "total_us": 282289.7440000003
+        },
+        {
+          "name": "ampere_sgemm_64x64_tn",
+          "calls": 96,
+          "total_us": 131942.15499999988
+        },
+        {
+          "name": "void at::native::elementwise_kernel<128, 2, at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#7}::operator()() const::{lambda(float)#1}>(at::TensorIteratorBase&, at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#7}::operator()() const::{lambda(float)#1} const&)::{lambda(int)#1}>(int, at::native::gpu_kernel_impl_nocast<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#7}::operator()() const::{lambda(float)#1}>(at::TensorIteratorBase&, at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#7}::operator()() const::{lambda(float)#1} const&)::{lambda(int)#1})",
+          "calls": 288,
+          "total_us": 26312.49700000035
+        },
+        {
+          "name": "_conv",
+          "calls": 96,
+          "total_us": 17776.381999999972
+        },
+        {
+          "name": "_rms",
+          "calls": 196,
+          "total_us": 16387.844999999666
+        },
+        {
+          "name": "void at::native::vectorized_elementwise_kernel<4, at::native::CUDAFunctor_add<float>, std::array<char*, 3ul> >(int, at::native::CUDAFunctor_add<float>, std::array<char*, 3ul>)",
+          "calls": 96,
+          "total_us": 7964.88700000009
+        },
+        {
+          "name": "_linear_fp32",
+          "calls": 4,
+          "total_us": 3493.54999999993
+        },
+        {
+          "name": "void at::native::(anonymous namespace)::indexSelectLargeIndex<float, long, unsigned int, 2, 2, -2, true>(at::cuda::detail::TensorInfo<float, unsigned int>, at::cuda::detail::TensorInfo<float const, unsigned int>, at::cuda::detail::TensorInfo<long const, unsigned int>, int, int, unsigned int, unsigned int, long)",
+          "calls": 4,
+          "total_us": 364.1899999999732
+        },
+        {
+          "name": "Memset (Device)",
+          "calls": 192,
+          "total_us": 208.2939999995251
+        },
+        {
+          "name": "Memcpy DtoD (Device -> Device)",
+          "calls": 4,
+          "total_us": 15.3279999998922
+        },
+        {
+          "name": "Memcpy HtoD (Pageable -> Device)",
+          "calls": 8,
+          "total_us": 7.165999999975611
+        }
+      ]
+    },
+    "decode": {
+      "steps": 4,
+      "gpu_us_per_step": 3533.040750000001,
+      "kernels": [
+        {
+          "name": "_linear_fp32",
+          "calls": 196,
+          "total_us": 12513.503
+        },
+        {
+          "name": "_scan",
+          "calls": 96,
+          "total_us": 881.8319999999926
+        },
+        {
+          "name": "_rms",
+          "calls": 196,
+          "total_us": 303.0850000000082
+        },
+        {
+          "name": "_conv",
+          "calls": 96,
+          "total_us": 215.5119999999947
+        },
+        {
+          "name": "void at::native::vectorized_elementwise_kernel<4, at::native::CUDAFunctor_add<float>, std::array<char*, 3ul> >(int, at::native::CUDAFunctor_add<float>, std::array<char*, 3ul>)",
+          "calls": 96,
+          "total_us": 129.0640000000135
+        },
+        {
+          "name": "void at::native::reduce_kernel<512, 1, at::native::ReduceOp<float, at::native::ArgMaxOps<float>, unsigned int, long, 4> >(at::native::ReduceOp<float, at::native::ArgMaxOps<float>, unsigned int, long, 4>)",
+          "calls": 4,
+          "total_us": 66.06799999999748
+        },
+        {
+          "name": "void at::native::(anonymous namespace)::indexSelectSmallIndex<float, long, unsigned int, 2, 2, -2>(at::cuda::detail::TensorInfo<float, unsigned int>, at::cuda::detail::TensorInfo<float const, unsigned int>, at::cuda::detail::TensorInfo<long const, unsigned int>, int, int, unsigned int, long)",
+          "calls": 4,
+          "total_us": 10.942000000000007
+        },
+        {
+          "name": "void at::native::vectorized_elementwise_kernel<4, at::native::FillFunctor<long>, std::array<char*, 1ul> >(int, at::native::FillFunctor<long>, std::array<char*, 1ul>)",
+          "calls": 8,
+          "total_us": 9.565999999997075
+        },
+        {
+          "name": "Memcpy HtoD (Pinned -> Device)",
+          "calls": 4,
+          "total_us": 2.5909999999994398
+        }
+      ]
+    }
+  },
+  "model": "models/mamba2-130m",
+  "prompt_length": 1536,
+  "batch": 1,
+  "runtime_environment": {
+    "DLLM_MAMBA2_SSD": "1"
+  }
+}

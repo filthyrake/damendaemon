@@ -102,6 +102,16 @@ class Mamba2Weights(MambaWeights):
 
 class Mamba2Executor(MambaExecutor):
     def __init__(self,*args,**kwargs):
+        import os
+        policy=os.environ.get('DLLM_MAMBA2_SSD','0')
+        if policy not in ('0','1'):raise ValueError('Mamba-2 SSD policy must be 0 or 1')
+        self.prefill_ssd=policy=='1'
+        if self.prefill_ssd and selected_device()!='cuda':raise ValueError('Mamba-2 SSD experiment requires CUDA')
+        if self.prefill_ssd:
+            from triton.runtime import driver
+            properties=driver.active.utils.get_device_properties(torch.cuda.current_device())
+            if torch.cuda.get_device_capability()[0]<8 or properties['max_shared_mem']<101376:
+                raise ValueError('Mamba-2 SSD requires Ampere or newer and at least 99 KiB shared memory')
         if selected_device()=='cuda':from . import mamba2_kernels as native
         else:from . import mamba2_metal as native
         self.ssd=native
@@ -116,7 +126,10 @@ class Mamba2Executor(MambaExecutor):
             gate,signal,dt=[v.reshape(batch,length,-1).contiguous() for v in packed.split((i,cd,n),-1)]
             if self.recurrent:
                 signal=self.recurrent.conv(signal,self.w[p+'conv'],self.w[p+'conv_bias'],self.conv[layer],slots,reset)
-                output=self.ssd.scan(signal,gate,dt,self.w[p+'dt_bias'],self.w[p+'A'],self.w[p+'D'],
+                scan=self.ssd.scan
+                if self.prefill_ssd and length>=128 and i==1536 and self.c['head_dim']==64 and self.c['state_size']==128:
+                    from .mamba2_ssd import scan
+                output=scan(signal,gate,dt,self.w[p+'dt_bias'],self.w[p+'A'],self.w[p+'D'],
                     self.state[layer],slots,self.c['head_dim'],reset)
             else:
                 history=torch.zeros_like(self.conv[layer].index_select(0,slots)) if reset else self.conv[layer].index_select(0,slots)

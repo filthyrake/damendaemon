@@ -112,7 +112,8 @@ Apple Silicon (`--host-gib 16`), and with optional CUDA Q8 weight storage.
 Mistral 7B Instruct v0.1 is qualified on A2 with Q8 storage through its 4096-token
 window boundary. See the architecture evidence for exact revisions and limits.
 Enable experimental Q8 on-load conversion with `DLLM_QUANTIZATION=q8_0`; it
-currently requires CUDA and does not import GGUF/AWQ/GPTQ files.
+requires CUDA for attention decoders; Mamba-1/2 also have native Metal Q8.
+It does not import GGUF/AWQ/GPTQ files.
 
 ```sh
 curl http://127.0.0.1:8088/v1/completions \
@@ -367,7 +368,8 @@ dllm add encoder /path/to/minilm/snapshot --quantization none
 `q8_0`, or `q4_0`), and `/v1/models/status` reports each alias's policy. Omission uses the
 server's `DLLM_QUANTIZATION` default captured at startup. Policies are part of
 alias identity and remain stable across eviction/reload; register another alias
-for a different precision. Q8 still requires CUDA. A Q8 decoder and an
+for a different precision. Attention-decoder Q8 requires CUDA; Mamba-1/2 Q8
+also runs on Metal. A Q8 decoder and an
 unquantized encoder can share one server and its GPU/host residency budgets.
 
 

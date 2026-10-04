@@ -78,6 +78,7 @@ def main():
         'slot_reuse':True,'generated_ids':generated,'generated_text':model.tokenizer.decode(generated),
         'reference_quantization':args.reference_quantization,
         'architecture':model.config['model_type'],
+        'prefill_ssd':getattr(executor,'prefill_ssd',False),
         'reference_chunk_size':16 if model.config['model_type']=='mamba2' else None,
         'reference':'CPU FP32 Transformers; independent GGUF quantization when selected'},indent=2))
     if not passed:raise SystemExit(1)

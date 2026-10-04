@@ -1,0 +1,36 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/baselines/vllm-venv/bin/vllm",
+    "serve",
+    "/home/damen/dllm-dev/models/mamba2-130m",
+    "--served-model-name",
+    "a",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "49529",
+    "--dtype",
+    "float",
+    "--max-model-len",
+    "2048",
+    "--max-num-seqs",
+    "4",
+    "--gpu-memory-utilization",
+    "0.5",
+    "--no-enable-prefix-caching",
+    "--generation-config",
+    "vllm"
+  ],
+  "model": {
+    "repo": "state-spaces/mamba2-130m",
+    "revision": "3a5aea0c25d0fb43cc360e2c2aac82c26e3eed49",
+    "path": "/home/damen/dllm-dev/models/mamba2-130m",
+    "original_path": "/Users/damenknight/dllm/results/models/mamba2-130m-original",
+    "prepared_format": "FP32 safetensors; strict original state dictionary load"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_MAMBA2_SSD": "1",
+    "DLLM_DEVICE": "cuda"
+  }
+}

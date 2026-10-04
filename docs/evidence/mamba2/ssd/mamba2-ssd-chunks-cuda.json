@@ -1,0 +1,90 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "model": "models/mamba2-130m",
+  "quantization": "none",
+  "checks": [
+    {
+      "label": "interleaved-chunk",
+      "length": 1,
+      "relative_rms": 4.562535025343095e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "interleaved-chunk",
+      "length": 3,
+      "relative_rms": 1.3028333967213257e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "interleaved-chunk",
+      "length": 3,
+      "relative_rms": 1.560629385721768e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "interleaved-chunk",
+      "length": 81,
+      "relative_rms": 3.9027619891385257e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "interleaved-chunk",
+      "length": 257,
+      "relative_rms": 4.707129903636087e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "exact-prefix",
+      "length": 257,
+      "relative_rms": 4.707129903636087e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "decode-after-prefix",
+      "length": 258,
+      "relative_rms": 9.82160941020993e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "snapshot-survives-other-slot-decode",
+      "length": 257,
+      "relative_rms": 4.707129903636087e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "extend-prefix",
+      "length": 274,
+      "relative_rms": 3.678062228118506e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "full-context-chunked",
+      "length": 2048,
+      "relative_rms": 6.443664801736304e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "reset-after-reuse",
+      "length": 3,
+      "relative_rms": 6.680988917651121e-07,
+      "greedy_match": true
+    },
+    {
+      "label": "reset-after-reuse",
+      "length": 3,
+      "relative_rms": 1.346135576341112e-07,
+      "greedy_match": true
+    }
+  ],
+  "state_checks": true,
+  "prefix_no_rewind": true,
+  "independent_snapshot": true,
+  "invalid_state_rejected": true,
+  "snapshot_bytes": 19562496,
+  "architecture": "mamba2",
+  "full_context_chunk_size": 256,
+  "prefill_ssd": true,
+  "reference_chunk_size": 16,
+  "reference": "CPU full prompt recomputation; independently quantized matrices when selected"
+}
