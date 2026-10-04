@@ -280,6 +280,11 @@ def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     if model.config.get('task') == 'embedding':
         from .encoder import EncoderExecutor
         return EncoderExecutor(model,use_graph=use_graph)
+    if model.config['model_type'] == 'gpt2':
+        from .gpt2 import Gpt2Executor
+        if kwargs.pop('fuse_projections',True) is False:
+            raise ValueError('GPT-2 requires packed checkpoint projections')
+        return Gpt2Executor(model,use_graph,max_batch or 1,**kwargs)
     if model.config['model_type'] == 'olmoe':
         from .moe import OlmoeExecutor
         if kwargs.pop('fuse_projections', True) is False:

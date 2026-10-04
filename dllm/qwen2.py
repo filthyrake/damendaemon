@@ -41,11 +41,15 @@ def weight_bytes(path,quantization=None):
     from .quantization import mode
     quantized = mode(quantization) == 'q8_0'
     config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
-    element_bytes = 4 if config['model_type'] == 'starcoder2' else 2
+    if config['model_type'] == 'gpt2' and quantized:
+        raise ValueError('GPT-2 quantization is not implemented')
+    element_bytes = 4 if config['model_type'] in ('starcoder2','gpt2') else 2
     total, embedding, has_head = 0, None, False
     for file in weight_files(path):
         with safe_open(str(file), framework="pt", device="cpu") as reader:
             for key in reader.keys():
+                if config['model_type']=='gpt2' and key.endswith(('attn.bias','attn.masked_bias')):
+                    continue
                 shape = reader.get_slice(key).get_shape()
                 is_embedding = key.endswith('embed_tokens.weight')
                 if is_embedding:
@@ -71,6 +75,8 @@ class ModelWeights:
         self.path = Path(path).resolve()
         self.config = decoder_config(json.loads((self.path / "config.json").read_text()))
         c = self.config
+        if c['model_type']=='gpt2' and self.quantization!='none':
+            raise ValueError('GPT-2 quantization is not implemented')
         if not 1 <= max_context <= c["max_position_embeddings"]:
             raise ValueError("context exceeds model position limit")
         self.max_context = max_context
@@ -103,8 +109,10 @@ class ModelWeights:
                 for key in reader.keys():
                     if not key.startswith(('model.visual.', 'mtp.')):
                         state[key] = reader.get_tensor(key)
-        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2", "olmoe"):
-            if c['model_type'] == 'olmoe':
+        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2", "olmoe", "gpt2"):
+            if c['model_type'] == 'gpt2':
+                from .gpt2 import load_weights
+            elif c['model_type'] == 'olmoe':
                 from .moe import load_weights
             elif c['model_type'] == 'starcoder2':
                 from .starcoder import load_weights
@@ -199,10 +207,10 @@ class Executor:
         self.dim = c["head_dim"]
         self.eps = c["rms_norm_eps"]
         self.window = c.get("sliding_window") if c["model_type"] in ("phi3", "mistral", "starcoder2") else None
-        self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3", "starcoder2", "olmoe")
+        self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3", "starcoder2", "olmoe", "gpt2")
         self.rotary_precise = c["model_type"] in ("qwen3", "starcoder2", "olmoe")
         self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
-        if c["model_type"] in ("gemma3_text", "starcoder2", "olmoe"):
+        if c["model_type"] in ("gemma3_text", "starcoder2", "olmoe", "gpt2"):
             self.compute_dtype = torch.float32
         self.qwen3_precision = 'standard'
         if self.device == 'cuda' and c['model_type'] == 'qwen3':

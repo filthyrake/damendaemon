@@ -40,6 +40,8 @@ def eos_ids(value):
     return set(values)
 
 def decoder_config(config):
+    if config.get('model_type') == 'gpt2':
+        return gpt2_config(config)
     if config.get('model_type') == 'olmoe':
         return olmoe_config(config)
     if config.get('model_type') == 'starcoder2':
@@ -173,3 +175,28 @@ def gemma_config(config):
                              'layer_types': ['full_attention'] * len(layers)})
     return {**common, **c, 'head_dim': common['head_dim'],
             'tie_word_embeddings': c.get('tie_word_embeddings', True)}
+
+
+def gpt2_config(config):
+    c=dict(config)
+    if (c.get('architectures') != ['GPT2LMHeadModel'] or c.get('activation_function') != 'gelu_new'
+            or c.get('add_cross_attention',False) or c.get('scale_attn_weights',True) is not True
+            or c.get('scale_attn_by_inverse_layer_idx',False) or c.get('reorder_and_upcast_attn',False)
+            or c.get('tie_word_embeddings',True) is not True or c.get('quantization_config')):
+        raise ValueError('unsupported GPT-2 activation, attention or checkpoint format')
+    for name in ('n_embd','n_head','n_layer','n_positions','vocab_size'):
+        if type(c.get(name)) is not int or c[name]<=0:
+            raise ValueError('invalid GPT-2 dimensions')
+    if c['n_embd'] % c['n_head'] or (c['n_embd']//c['n_head']) % 2:
+        raise ValueError('unsupported GPT-2 head geometry')
+    inter=c.get('n_inner')
+    inter=4*c['n_embd'] if inter is None else inter
+    epsilon=c.get('layer_norm_epsilon',1e-5)
+    if (type(inter) is not int or inter<=0 or type(epsilon) not in (int,float)
+            or not math.isfinite(epsilon) or epsilon<=0):
+        raise ValueError('invalid GPT-2 MLP or normalization')
+    return {**c,'hidden_size':c['n_embd'],'intermediate_size':inter,
+            'num_attention_heads':c['n_head'],'num_key_value_heads':c['n_head'],
+            'num_hidden_layers':c['n_layer'],'head_dim':c['n_embd']//c['n_head'],
+            'max_position_embeddings':c['n_positions'],'rms_norm_eps':epsilon,
+            'tie_word_embeddings':True,'rope_theta':10000.0}

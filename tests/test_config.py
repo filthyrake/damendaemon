@@ -145,3 +145,25 @@ class Phi3ConfigTests(unittest.TestCase):
         for window in (False, -1, 0, 3.5):
             with self.subTest(window=window), self.assertRaises(ValueError):
                 decoder_config({**c, 'sliding_window':window})
+
+
+class Gpt2ConfigTests(unittest.TestCase):
+    def config(self,**changes):
+        return {'model_type':'gpt2','architectures':['GPT2LMHeadModel'],
+                'activation_function':'gelu_new','n_embd':768,'n_head':12,
+                'n_layer':12,'n_positions':1024,'vocab_size':50257,**changes}
+
+    def test_learned_position_dimensions(self):
+        c=decoder_config(self.config())
+        self.assertEqual((c['head_dim'],c['intermediate_size'],c['max_position_embeddings']),(64,3072,1024))
+        self.assertTrue(c['tie_word_embeddings'])
+        self.assertEqual(decoder_config(self.config(n_inner=1024))['intermediate_size'],1024)
+
+    def test_unsupported_modes_rejected(self):
+        for change in ({'add_cross_attention':True},{'scale_attn_weights':False},
+                       {'scale_attn_by_inverse_layer_idx':True},{'reorder_and_upcast_attn':True},
+                       {'tie_word_embeddings':False},{'activation_function':'relu'},
+                       {'n_inner':True},{'n_head':13},{'n_positions':0},
+                       {'layer_norm_epsilon':float('nan')},{'architectures':['GPT2Model']}):
+            with self.subTest(change=change),self.assertRaises(ValueError):
+                decoder_config(self.config(**change))

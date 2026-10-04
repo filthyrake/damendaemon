@@ -30,8 +30,8 @@ def main():
     args = parser.parse_args()
     torch.set_num_threads(4)
     reference_device = args.reference_device or selected_device()
-    if args.context < 1040:
-        parser.error("context must be at least 1040 for split-boundary tests")
+    if args.context < 512:
+        parser.error("context must be at least 512 for boundary tests")
     require_gpu()
     if args.reference_only and not args.golden_output:
         parser.error("--reference-only requires --golden-output")
@@ -47,6 +47,7 @@ def main():
         model = ModelWeights(args.path, args.context)
     reference = load_reference(args.path, reference_quantization=args.reference_quantization, local_files_only=True,
         trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype), attn_implementation=args.reference_attention).to(reference_device).eval()
+    logit_options = {} if model.config['model_type']=='gpt2' else {'logits_to_keep':1}
     executor = None if args.reference_only else make_executor(model, max_batch=4)
     cache_lengths = executor.lengths if executor else [0]*4
     checks, template_checks, states, timings = [], [], {}, []
@@ -89,7 +90,7 @@ def main():
         event = {'kind': 'prefill', 'prompts': prompts, 'slots': slots, 'targets': []}
         trace.append(event)
         for row, (slot, ids) in enumerate(zip(slots, prompts)):
-            ref = reference(torch.tensor([ids], device=reference_device), use_cache=True, logits_to_keep=1)
+            ref = reference(torch.tensor([ids], device=reference_device), use_cache=True, **logit_options)
             target = ref.logits[:, -1]
             event['targets'].append(target.detach().float().cpu())
             compare(actual[row] if actual is not None else None, target, 'prefill:'+str(len(ids)), slot)
@@ -109,7 +110,7 @@ def main():
             trace.append(event)
             for row, (slot, token) in enumerate(zip(slots, tokens)):
                 ref = reference(torch.tensor([[token]], device=reference_device),
-                    past_key_values=states[slot][0], use_cache=True, logits_to_keep=1)
+                    past_key_values=states[slot][0], use_cache=True, **logit_options)
                 target = ref.logits[:, -1]
                 event['targets'].append(target.detach().float().cpu())
                 compare(actual[row] if actual is not None else None, target, f'decode:{cache_lengths[slot]}', slot)
@@ -132,14 +133,14 @@ def main():
             assert ids == tokenizer.apply_chat_template(messages, return_dict=False, add_generation_prompt=True, **options)
         with torch.inference_mode():
             actual = executor.prefill(ids, 0) if executor else None
-            ref = reference(torch.tensor([ids], device=reference_device), use_cache=True, logits_to_keep=1)
+            ref = reference(torch.tensor([ids], device=reference_device), use_cache=True, **logit_options)
             compare(actual, ref.logits[:, -1], f'template:{mode}', 0)
             trace.append({'kind': 'prefill', 'prompts': [ids], 'slots': [0],
                           'targets': [ref.logits[:, -1].detach().float().cpu()]})
         template_checks.append({'input_kind': 'raw' if tokenizer.chat_template is None else 'chat',
                                 'enable_thinking': mode, 'tokens': len(ids), 'runtime_compared': executor is not None})
     del ref
-    prefill([31, 255, 257, 1023], [3, 0, 2, 1])
+    prefill([31, 255, 257, min(1023,args.context-16)], [3, 0, 2, 1])
     decode([3, 0, 2, 1], 8)
     # Release/reuse two slots at new lengths while retaining the other caches.
     del states[0], states[1]
@@ -161,6 +162,16 @@ def main():
         except ValueError:
             assert executor.lengths == before
     decode([next(iter(states))], 1)
+    if model.config['model_type']=='gpt2':
+        prefill([args.context-1],[1])
+        decode([1],1)
+        if executor is not None:
+            before=list(executor.lengths)
+            try:
+                executor.decode_batch([states[1][1]],[1])
+                raise AssertionError('position past learned table accepted')
+            except ValueError:
+                assert executor.lengths==before
     if args.golden_output:
         torch.save({'path': args.path, 'context': args.context, 'reference_dtype': args.reference_dtype,
                     'reference_torch': str(torch.__version__), 'reference_quantization': args.reference_quantization, 'reference_attention': args.reference_attention, 'trace': trace}, args.golden_output)

@@ -617,3 +617,32 @@ encoder text/token/base64, concurrent requests, alias-conflict rejection, and
 invalid-task recovery pass. The 101-test unit suite covers independent alias
 policies and policy retention through full unload/reload. See
 `evidence/embeddings/minilm-a2-q8-mixed-service.json`.
+
+## GPT-2 learned positions
+
+Issue #20. `openai-community/gpt2` at immutable revision
+`607a30d783dfa663caf39e06633721c8d4cfcd7e` passes **84/84** independent-reference
+checks on both A2 and Apple M4. This adds learned absolute position embeddings,
+transposed Conv1D checkpoint projections, LayerNorm, tanh GELU and tied output
+weights to the independent runtime. FP32 weights, arithmetic and KV are used.
+The existing CUDA/Metal small-batch matrix and attention kernels and residency
+scheduler are shared; model execution is not delegated to Transformers.
+
+The tests cover heterogeneous prompt lengths, reordered/shrinking decode
+batches, reused cache slots, raw Unicode tokenizer equivalence, and the final
+learned position at context1024. Attempts to decode beyond the position table
+are rejected without changing cache lengths. Maximum relative RMS logit error
+is 0.00034994 on A2 and 0.00010385 on M4; all greedy tokens agree. Gates remain
+relative RMS below 0.01 and maximum absolute error below 0.5. The reference is
+FP32 eager Transformers (CUDA for the A2 test; CPU for the M4 test).
+
+The first CUDA batched test exposed noncontiguous query rows from packed QKV
+slices; making those rows contiguous fixed the native attention input contract.
+This is covered by the heterogeneous/reordered batch checks. Live raw API
+text/token equivalence, streaming, four concurrent requests, seeded sampling,
+stops, and error recovery pass on both devices. The unit suite has 103 tests.
+
+This qualifies the pinned 124M base checkpoint and its 1024-position limit.
+It has no chat template. Cross-attention, alternate attention scaling/upcast
+modes, untied output heads, GPT-2 quantization, and other GPT architectures are
+rejected or unqualified. Evidence is in `evidence/architectures/gpt2-*.json`.

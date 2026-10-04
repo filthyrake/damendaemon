@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "model_path": "/home/damen/.cache/huggingface/hub/models--openai-community--gpt2/snapshots/607a30d783dfa663caf39e06633721c8d4cfcd7e",
+  "device": "cuda",
+  "raw_text_equals_token_ids": true,
+  "stream_matches_nonstream": true,
+  "concurrent_batch": 4,
+  "seed_and_stop_passed": true,
+  "base_checkpoint_without_template": true,
+  "rejection_recovery": true,
+  "sample": {
+    "id": "cmpl-243c1c7021d040dfa80c6a2a8ec91a8e",
+    "object": "text_completion",
+    "created": 1791094444,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": "                        ",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 14,
+      "completion_tokens": 24,
+      "total_tokens": 38
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 4.477924380997138,
+      "kernel_backend": "triton",
+      "weight_quantization": "none",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 4.600029950001044,
+      "total_seconds": 4.6809853939994355,
+      "decode_tokens_per_second": 284.1068971279689
+    }
+  }
+}

@@ -11,7 +11,7 @@ GPU execution; dllm does not depend on vLLM, llama.cpp, Ollama,
 or Transformers generation. Transformers is used for validation and optional structured-output tokenizer adaptation; model execution remains independent.
 
 Additional qualified checkpoints include Llama 3.2, Gemma 3 text, Phi-3
-mini, Mistral 7B, StarCoder2 3B, and CUDA OLMoE. Exact revisions, numerical gates, and remaining limits are recorded in
+mini, Mistral 7B, StarCoder2 3B, GPT-2, MiniLM sentence embeddings, and CUDA OLMoE. Exact revisions, numerical gates, and remaining limits are recorded in
 [architecture evidence](docs/architecture-parity.md).
 
 The server selects models from each request without restarting. GPU-resident
@@ -369,3 +369,11 @@ server's `DLLM_QUANTIZATION` default captured at startup. Policies are part of
 alias identity and remain stable across eviction/reload; register another alias
 for a different precision. Q8 still requires CUDA. A Q8 decoder and an
 unquantized encoder can share one server and its GPU/host residency budgets.
+
+
+GPT-2 learned-position decoding is qualified on A2 and Apple M4 with FP32
+weights/arithmetic/KV through its complete 1024-token position table. Use the
+pinned `openai-community/gpt2` revision
+`607a30d783dfa663caf39e06633721c8d4cfcd7e` with `--raw` or `/v1/completions`.
+This base model has no chat template. GPT-2 quantization is not yet supported;
+register it with `--quantization none` when the server default is Q8.
