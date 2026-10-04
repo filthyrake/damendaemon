@@ -18,6 +18,7 @@ def main():
     parser.add_argument("--engine", choices=["dllm", "llama.cpp", "vllm"], required=True)
     parser.add_argument("--concurrency", type=int, default=1)
     parser.add_argument("--thinking", choices=("auto", "on", "off"), default="auto")
+    parser.add_argument('--raw', action='store_true', help='benchmark a raw code-completion prompt')
     args = parser.parse_args()
     if not 1 <= args.concurrency <= 8:
         parser.error("concurrency must be 1..8")
@@ -26,6 +27,9 @@ def main():
                 "Explain how matrix multiplication works in detail, with a worked example."}],
                 "temperature": 0, "max_tokens": 64, "stream": True,
                 "stream_options": {"include_usage": True}}
+        if args.raw:
+            del body['messages']
+            body['prompt'] = 'def binary_search(values, target):\n    '
         if args.thinking != "auto":
             body["chat_template_kwargs"] = {"enable_thinking": args.thinking == "on"}
         if args.engine == "llama.cpp":
@@ -35,7 +39,7 @@ def main():
         usage = None
         text = ""
         done = False
-        with urlopen(Request(args.base_url + "/chat/completions", data=json.dumps(body).encode(),
+        with urlopen(Request(args.base_url + ("/completions" if args.raw else "/chat/completions"), data=json.dumps(body).encode(),
                              headers={"Content-Type": "application/json"}), timeout=120) as response:
             for data in events(response):
                 if data == "[DONE]":
@@ -45,7 +49,7 @@ def main():
                 if chunk.get("error"):
                     raise RuntimeError(chunk["error"])
                 for choice in chunk.get("choices", []):
-                    content = choice.get("delta", {}).get("content", "")
+                    content = choice.get('text', '') if args.raw else choice.get("delta", {}).get("content", "")
                     if content:
                         if first is None:
                             first = time.perf_counter()
@@ -67,7 +71,7 @@ def main():
             trials.extend(results)
             rounds.append({"warmup": trial == 0, "seconds": elapsed,
                            "aggregate_output_tokens_per_second": 64 * args.concurrency / elapsed})
-    print(json.dumps({"engine": args.engine, "concurrency": args.concurrency, "thinking": args.thinking,
+    print(json.dumps({"engine": args.engine, "concurrency": args.concurrency, "thinking": args.thinking, 'raw': args.raw,
                       "trials": trials, "rounds": rounds}, indent=2))
 
 

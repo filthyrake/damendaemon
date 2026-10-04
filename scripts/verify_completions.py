@@ -18,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('path', type=Path)
     parser.add_argument('--device', choices=('cuda','mps'), default='cuda')
+    parser.add_argument('--host-gib', type=float, default=8)
     args = parser.parse_args()
     source = args.path.resolve()
     text = 'def binary_search(values, target):\n    '
@@ -35,7 +36,7 @@ def main():
         logpath = root/'server.log'
         with logpath.open('w') as log:
             process = subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0',
-                '--context','512','--device',args.device,'--model','a='+str(model)],stdout=log,stderr=log)
+                '--context','512','--device',args.device,'--host-gib',str(args.host_gib),'--model','a='+str(model)],stdout=log,stderr=log)
             try:
                 deadline = time.monotonic()+180
                 while time.monotonic()<deadline and process.poll() is None:

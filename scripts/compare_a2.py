@@ -25,6 +25,9 @@ def main():
     parser.add_argument('--engines', nargs='+', choices=('dllm', 'vllm', 'llama.cpp'), default=['dllm', 'vllm'])
     parser.add_argument('--gguf', help='matching checkpoint and precision for llama.cpp')
     parser.add_argument('--thinking', choices=('auto', 'on', 'off'), default='auto')
+    parser.add_argument('--raw', action='store_true')
+    parser.add_argument('--host-gib', type=float, default=8)
+    parser.add_argument('--dtype', choices=('half','float'), default='half', help='vLLM model arithmetic/storage precision')
     args = parser.parse_args()
     if not args.label.replace('-', '').replace('_', '').isalnum():
         parser.error('label must contain only letters, digits, hyphens or underscores')
@@ -44,7 +47,7 @@ def main():
         env = dict(os.environ)
         if engine == 'dllm':
             command = [sys.executable, '-m', 'dllm', 'serve', '--port', str(port), '--context', str(args.context),
-                       '--batch-size', '4', '--model', 'a=' + model['path']]
+                       '--batch-size', '4', '--host-gib', str(args.host_gib), '--model', 'a=' + model['path']]
         elif engine == 'llama.cpp':
             command = [str(root / 'baselines/llama-cuda-build/bin/llama-server'),
                        '-m', args.gguf, '--alias', 'a', '--host', '127.0.0.1', '--port', str(port),
@@ -55,7 +58,7 @@ def main():
         else:
             venv = root / 'baselines/vllm-venv/bin'
             command = [str(venv / 'vllm'), 'serve', model['path'], '--served-model-name', 'a',
-                       '--host', '127.0.0.1', '--port', str(port), '--dtype', 'half',
+                       '--host', '127.0.0.1', '--port', str(port), '--dtype', args.dtype,
                        '--max-model-len', str(args.context), '--max-num-seqs', '4', '--gpu-memory-utilization', str(args.gpu_memory_utilization),
                        '--no-enable-prefix-caching', '--generation-config', 'vllm']
             config = json.loads((Path(model['path']) / 'config.json').read_text())
@@ -89,7 +92,8 @@ def main():
                     name = f'compare-{engine}-{args.label}-c{concurrency}.json'
                     with (root / name).open('w') as out:
                         subprocess.run([sys.executable, 'scripts/compare_llama.py', base + '/v1',
-                                        '--engine', engine, '--concurrency', str(concurrency), '--thinking', args.thinking],
+                                        '--engine', engine, '--concurrency', str(concurrency), '--thinking', args.thinking,
+                                        *(['--raw'] if args.raw else [])],
                                        stdout=out, check=True, timeout=180)
                     print(name, 'complete', flush=True)
             finally:

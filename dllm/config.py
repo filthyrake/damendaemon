@@ -40,6 +40,8 @@ def eos_ids(value):
     return set(values)
 
 def decoder_config(config):
+    if config.get('model_type') == 'starcoder2':
+        return starcoder_config(config)
     if config.get('model_type') == 'gemma3_text':
         return gemma_config(config)
     if config.get('model_type') in ('qwen3_5', 'qwen3_5_text'):
@@ -75,6 +77,19 @@ def decoder_config(config):
     if c['rope_theta'] <= 0 or c.get('rms_norm_eps', 0) <= 0:
         raise ValueError('RoPE base and normalization epsilon must be positive')
     return c
+
+
+def starcoder_config(config):
+    c = dict(config)
+    if (c.get('hidden_act') != 'gelu_pytorch_tanh' or type(c.get('use_bias', True)) is not bool
+            or c.get('norm_type', 'layer_norm') != 'layer_norm' or c.get('mlp_type', 'default') != 'default'):
+        raise ValueError('unsupported StarCoder2 activation or bias configuration')
+    epsilon = c.get('norm_epsilon', 1e-5)
+    if type(epsilon) not in (int, float) or not math.isfinite(epsilon) or epsilon <= 0:
+        raise ValueError('LayerNorm epsilon must be finite and positive')
+    common = decoder_config({**c, 'model_type': 'mistral', 'hidden_act': 'silu', 'rms_norm_eps': epsilon})
+    return {**common, **c, 'head_dim': common['head_dim'], 'rms_norm_eps': epsilon,
+            'use_bias': c.get('use_bias', True), 'tie_word_embeddings': c.get('tie_word_embeddings', True)}
 
 
 def hybrid_config(config):

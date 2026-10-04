@@ -37,6 +37,7 @@ def main():
     run.add_argument("path", help="local model directory or Hugging Face owner/repository")
     run.add_argument("--revision", default="main")
     run.add_argument("--prompt", required=True)
+    run.add_argument('--raw', action='store_true', help='use the prompt directly without a chat template')
     run.add_argument("--max-tokens", type=int, default=128)
     run.add_argument("--thinking", choices=("auto", "on", "off"), default="auto",
                      help="Qwen3 thinking mode; auto uses the model template default")
@@ -52,6 +53,8 @@ def main():
         command.add_argument("--host-gib", type=float, default=8)
         command.add_argument("--no-graph", action="store_true")
     args = parser.parse_args()
+    if args.command == 'run' and args.raw and args.thinking != 'auto':
+        parser.error('--raw cannot use chat thinking controls')
     if args.command == "pull":
         # Resolve the revision before downloading; report its immutable identity.
         print(json.dumps(download(args.repository, args.revision)))
@@ -81,8 +84,9 @@ def main():
         from .server import serve
         serve(runtime, args.port)
     else:
-        for event in runtime.generate("model", [{"role": "user", "content": args.prompt}], args.max_tokens,
-                                      enable_thinking=None if args.thinking == "auto" else args.thinking == "on"):
+        for event in runtime.generate("model", None if args.raw else [{"role": "user", "content": args.prompt}], args.max_tokens,
+                                      enable_thinking=None if args.thinking == "auto" else args.thinking == "on",
+                                      raw_prompt=args.prompt if args.raw else None):
             if "text" in event:
                 print(event["text"], end="", flush=True)
             else:

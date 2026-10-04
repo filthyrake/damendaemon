@@ -173,6 +173,11 @@ class Runtime:
 
 def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     """Choose an execution path from the validated architecture, not the model name."""
+    if model.config['model_type'] == 'starcoder2':
+        from .starcoder import StarcoderExecutor
+        if kwargs.pop('fuse_projections', True) is False:
+            raise ValueError('StarCoder2 requires fused projections')
+        return StarcoderExecutor(model, use_graph, max_batch or 1, **kwargs)
     if model.config['model_type'] == 'gemma3_text':
         from .gemma import GemmaExecutor
         if kwargs.pop('fuse_projections', True) is False:

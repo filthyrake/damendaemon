@@ -105,6 +105,14 @@ without a chat template; chat requests to those models are rejected. Text prompt
 use the tokenizer's normal special-token processing; token-ID prompts are used
 exactly as supplied. One prompt/completion per request is supported; prompt
 batches, echo, and logprobs are not yet implemented.
+The CLI equivalent is `dllm run MODEL --raw --prompt 'text to continue'`.
+
+StarCoder2 3B is qualified at 2048 context with original FP32 weights on A2 and
+Apple Silicon (`--host-gib 16`), and with optional CUDA Q8 weight storage.
+Mistral 7B Instruct v0.1 is qualified on A2 with Q8 storage through its 4096-token
+window boundary. See the architecture evidence for exact revisions and limits.
+Enable experimental Q8 on-load conversion with `DLLM_QUANTIZATION=q8_0`; it
+currently requires CUDA and does not import GGUF/AWQ/GPTQ files.
 
 ```sh
 curl http://127.0.0.1:8088/v1/completions \

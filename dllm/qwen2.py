@@ -40,6 +40,8 @@ def weight_bytes(path):
     """Estimate host weight storage from headers before loading tensors."""
     from .quantization import mode
     quantized = mode() == 'q8_0'
+    config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
+    element_bytes = 4 if config['model_type'] == 'starcoder2' else 2
     total, embedding, has_head = 0, None, False
     for file in weight_files(path):
         with safe_open(str(file), framework="pt", device="cpu") as reader:
@@ -52,9 +54,8 @@ def weight_bytes(path):
                 if quantized and len(shape) == 2 and not is_embedding and shape[1] % 32 == 0:
                     total += math.prod(shape) + 2 * shape[0] * (shape[1] // 32)
                 else:
-                    total += 2 * math.prod(shape)
+                    total += element_bytes * math.prod(shape)
     if quantized and embedding is not None and not has_head:
-        config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
         if config.get('tie_word_embeddings'):
             total += math.prod(embedding) + 2 * embedding[0] * (embedding[1] // 32)
     return total
@@ -102,8 +103,10 @@ class ModelWeights:
                 for key in reader.keys():
                     if not key.startswith(('model.visual.', 'mtp.')):
                         state[key] = reader.get_tensor(key)
-        if c["model_type"] in ("qwen3_5_text", "gemma3_text"):
-            if c["model_type"] == "gemma3_text":
+        if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2"):
+            if c['model_type'] == 'starcoder2':
+                from .starcoder import load_weights
+            elif c["model_type"] == "gemma3_text":
                 from .gemma import load_weights
             else:
                 from .hybrid import load_weights
@@ -193,11 +196,11 @@ class Executor:
         self.kv_heads = c["num_key_value_heads"]
         self.dim = c["head_dim"]
         self.eps = c["rms_norm_eps"]
-        self.window = c.get("sliding_window") if c["model_type"] in ("phi3", "mistral") else None
-        self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3")
-        self.rotary_precise = c["model_type"] == "qwen3"
+        self.window = c.get("sliding_window") if c["model_type"] in ("phi3", "mistral", "starcoder2") else None
+        self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3", "starcoder2")
+        self.rotary_precise = c["model_type"] in ("qwen3", "starcoder2")
         self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
-        if c["model_type"] == "gemma3_text":
+        if c["model_type"] in ("gemma3_text", "starcoder2"):
             self.compute_dtype = torch.float32
         self.residual_dtype = torch.float32 if self.precise else self.compute_dtype
         selected = kernels or os.environ.get("DLLM_KERNELS", "auto")
@@ -249,6 +252,8 @@ class Executor:
         def device_dtype(name, tensor):
             if tensor.dtype == torch.int8:
                 return torch.int8
+            if c['model_type'] == 'starcoder2' and 'norm' in name:
+                return torch.float32
             if c['model_type'] == 'phi3' and name == 'norm':
                 return torch.float32
             if c['model_type'] == 'gemma3_text' and (tensor.ndim == 1 or (self.device == 'mps' and name.endswith('.down'))):
@@ -356,6 +361,19 @@ class Executor:
     def prefill_attention(self, query, key, value):
         if not self.window:
             return scaled_attention(query, key, value, is_causal=True, enable_gqa=True)
+        if query.shape[-2] > 2048:
+            # Masked GQA can select the quadratic-memory SDPA math backend.
+            # Bound its query dimension while retaining the exact global window.
+            outputs = []
+            for start in range(0, query.shape[-2], 256):
+                end = min(start+256, query.shape[-2])
+                first_key = max(0, start-self.window+1)
+                qpos = self.arange[start:end, None]
+                kpos = self.arange[None, first_key:end]
+                mask = (kpos <= qpos) & (kpos > qpos-self.window)
+                outputs.append(scaled_attention(query[:,:,start:end], key[:,:,first_key:end],
+                    value[:,:,first_key:end], attn_mask=mask, enable_gqa=True))
+            return torch.cat(outputs, dim=-2)
         positions = self.arange[:query.shape[-2]]
         mask = (positions[None, :] <= positions[:, None]) & (positions[None, :] > positions[:, None] - self.window)
         return scaled_attention(query, key, value, attn_mask=mask, enable_gqa=True)

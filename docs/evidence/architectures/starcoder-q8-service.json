@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "model_path": "/home/damen/.cache/huggingface/hub/models--bigcode--starcoder2-3b/snapshots/733247c55e3f73af49ce8e9c7949bf14af205928",
+  "device": "cuda",
+  "raw_text_equals_token_ids": true,
+  "stream_matches_nonstream": true,
+  "concurrent_batch": 4,
+  "seed_and_stop_passed": true,
+  "base_checkpoint_without_template": true,
+  "rejection_recovery": true,
+  "sample": {
+    "id": "cmpl-cc56316e4803477aafc33b4a5cf0d436",
+    "object": "text_completion",
+    "created": 1791086380,
+    "model": "a",
+    "choices": [
+      {
+        "index": 0,
+        "text": " low = 0\n     high = len(values) - 1\n     while low <= high:\n         mid = (",
+        "logprobs": null,
+        "finish_reason": "length"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 24,
+      "total_tokens": 34
+    },
+    "dllm_timing": {
+      "source_tier": "disk",
+      "activation_seconds": 25.192877293000493,
+      "kernel_backend": "triton+q8_0",
+      "weight_quantization": "q8_0",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 25.61732820799807,
+      "total_seconds": 26.42557807099729,
+      "decode_tokens_per_second": 28.45654673500666
+    }
+  }
+}

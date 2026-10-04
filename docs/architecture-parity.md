@@ -274,11 +274,48 @@ agreement, exact usage, batch four, seeded sampling, stop sequences, and recover
 after invalid token IDs, oversized input and missing-template chat requests.
 The CPU/API suite passes 73 tests.
 
-## Mistral qualification in progress
+## Mistral 7B sliding-window qualification
 
 Issue #11. The shared dense executor now recognizes Mistral and applies its
 configured sliding window. Official Mistral-7B-Instruct-v0.1 revision
 `ec5deb64f2c6e6fa90c1abf74a91d5c93a9669ca` passes Q8 A2 mixed-model service at
 residency capacities one and three alongside Qwen2 and Qwen3.5. The independent
-4352-context reference, including the 4096-token window boundary, is still
-running; numerical qualification is not yet claimed.
+FP32 eager quantized reference at context 4352 passes 97/97 A2 checks, including
+4095/4096/4097 window boundaries, slot reuse and batch reorder/shrink. Worst
+relative RMS is 0.24477%, maximum absolute error 0.03812, with exact greedy
+agreement. Host weights occupy 7,817,469,952 bytes. This establishes correctness
+against Q8 weights, not original-checkpoint task-quality parity.
+
+The initial full-window SDPA allocation exceeded A2 memory. Long masked prefill
+now processes query blocks of at most 256 tokens, retaining the exact global
+causal/window coordinates while bounding temporary attention scores. CPU checks
+compare this with the full mask; Phi-3 retains all 97 passing checks, including
+its previous worst relative error. This is bounded attention workspace, not
+scheduler-level chunked prefill or a paged KV cache.
+
+## StarCoder2 code models
+
+Issue #13. Official `bigcode/starcoder2-3b` revision
+`733247c55e3f73af49ce8e9c7949bf14af205928` uses LayerNorm with bias, biased
+projections, GELU MLP, GQA and rotary/window attention. It defaults to tied
+embeddings even when that field is omitted. The independent executor shares
+native rotary/attention kernels, graph replay and batch slot management; it
+does not invoke Transformers during generation. Prefills currently run one
+sequence at a time; decode batches normally.
+
+The published weights are FP32. Initial FP16 storage/arithmetic variants failed
+strict logit checks despite agreeing on sampled greedy tokens. Unquantized
+execution therefore preserves the original FP32 weights, normalization, matrix
+arithmetic and KV. Use `--host-gib 16` for this 3B checkpoint. At context 2048,
+all 82 checks pass against FP32 eager reference: A2 worst relative RMS 0.02999%,
+Apple M4 0.00677%. Synthetic bias/no-bias and tied/untied-head variants also
+exercise window boundaries and reordered batches. Real checkpoint qualification
+beyond 2048 tokens remains open.
+
+The CUDA Q8 path passes all 82 independently quantized-reference checks at
+2048, worst relative RMS 0.07770%, with 3,826,790,400 host weight bytes. This
+retains FP32 embeddings, biases, normalization, activations and KV; matrix
+weights use Q8 blocks. Actual raw code-completion service checks pass, including
+text/token-ID equivalence, streaming, batch four, seeded sampling, stopping and
+recovery. Q8-vs-original task quality and performance remain separate open
+measurements. Original FP32 and Q8 references are both retained as evidence.

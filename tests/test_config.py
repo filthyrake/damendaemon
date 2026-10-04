@@ -26,6 +26,16 @@ class ConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 decoder_config(self.config(model_type='mistral', sliding_window=window))
 
+    def test_starcoder_layernorm_and_gelu_configuration(self):
+        config = self.config(model_type='starcoder2', hidden_act='gelu_pytorch_tanh',
+                             norm_epsilon=1e-5, sliding_window=4096, use_bias=True)
+        parsed = decoder_config(config)
+        self.assertEqual(parsed['rms_norm_eps'], 1e-5)
+        self.assertEqual(parsed['hidden_act'], 'gelu_pytorch_tanh')
+        for change in ({'norm_epsilon':0}, {'use_bias':1}, {'hidden_act':'silu'}):
+            with self.assertRaises(ValueError):
+                decoder_config({**config, **change})
+
     def test_unsupported_variants_fail_before_weight_loading(self):
         for changes in ({'model_type': 'qwen3_5'}, {'model_type': 'qwen3_moe'},
                         {'rope_scaling': {'type': 'yarn', 'factor': 2}},

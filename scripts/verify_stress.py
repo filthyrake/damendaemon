@@ -1,6 +1,7 @@
 """Long-prefix, split-boundary and rolling-slot checks against an independent decoder."""
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -39,7 +40,8 @@ def main():
         config = decoder_config(json.loads((Path(args.path) / 'config.json').read_text()))
         if args.context > config['max_position_embeddings']:
             parser.error('context exceeds model limit')
-        model = SimpleNamespace(config=config, chat_tokens=lambda messages, **options:
+        model = SimpleNamespace(config=config, raw_tokens=lambda text: tokenizer.encode(text, add_special_tokens=True),
+            chat_tokens=lambda messages, **options:
             tokenizer.apply_chat_template(messages, return_dict=False, add_generation_prompt=True, **options))
     else:
         model = ModelWeights(args.path, args.context)
@@ -75,6 +77,7 @@ def main():
 
     @torch.inference_mode()
     def prefill(lengths, slots):
+        print(f'prefill lengths={lengths} slots={slots}', file=sys.stderr, flush=True)
         prompts = [corpus[slot*13:slot*13+length] for slot, length in zip(slots, lengths)]
         assert all(len(ids) == length for ids, length in zip(prompts, lengths))
         synchronize()
@@ -120,15 +123,21 @@ def main():
                 {'role': 'user', 'content': 'Return it as JSON.'}]
     for mode in modes:
         options = {} if mode is None else {'enable_thinking': mode}
-        ids = model.chat_tokens(messages, **options)
-        assert ids == tokenizer.apply_chat_template(messages, return_dict=False, add_generation_prompt=True, **options)
+        if tokenizer.chat_template is None:
+            text = 'def binary_search(values, target):\n    # café: sorted input\n    '
+            ids = model.raw_tokens(text)
+            assert ids == tokenizer.encode(text, add_special_tokens=True)
+        else:
+            ids = model.chat_tokens(messages, **options)
+            assert ids == tokenizer.apply_chat_template(messages, return_dict=False, add_generation_prompt=True, **options)
         with torch.inference_mode():
             actual = executor.prefill(ids, 0) if executor else None
             ref = reference(torch.tensor([ids], device=reference_device), use_cache=True, logits_to_keep=1)
             compare(actual, ref.logits[:, -1], f'template:{mode}', 0)
             trace.append({'kind': 'prefill', 'prompts': [ids], 'slots': [0],
                           'targets': [ref.logits[:, -1].detach().float().cpu()]})
-        template_checks.append({'enable_thinking': mode, 'tokens': len(ids), 'runtime_compared': executor is not None})
+        template_checks.append({'input_kind': 'raw' if tokenizer.chat_template is None else 'chat',
+                                'enable_thinking': mode, 'tokens': len(ids), 'runtime_compared': executor is not None})
     del ref
     prefill([31, 255, 257, 1023], [3, 0, 2, 1])
     decode([3, 0, 2, 1], 8)
@@ -138,7 +147,7 @@ def main():
     decode([2, 0, 1, 3], 8)
     decode([0], 4)
     decode([3, 1], 3)
-    window = model.config.get('sliding_window') if model.config['model_type'] in ('gemma3_text', 'phi3', 'mistral') else None
+    window = model.config.get('sliding_window') if model.config['model_type'] in ('gemma3_text', 'phi3', 'mistral', 'starcoder2') else None
     if window and window + 8 < args.context:
         states.clear()
         prefill([window-1, window, window+1], [2, 0, 3])
