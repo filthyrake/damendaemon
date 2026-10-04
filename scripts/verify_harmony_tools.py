@@ -17,13 +17,22 @@ MESSAGES=[{'role':'user','content':'Use the weather tool to get the current weat
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--output',required=True);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--output',required=True)
+    p.add_argument('--context',type=int,default=1024);p.add_argument('--prefix-tokens',type=int,default=0);args=p.parse_args()
+    if args.prefix_tokens<0:raise ValueError('prefix length must be nonnegative')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':raise RuntimeError('restricted to A2')
     os.environ['DLLM_DEVICE']='cuda';torch.set_num_threads(4)
-    runtime=BatchedRuntime({'oss':args.model},context=1024,batch_size=2,host_gib=18)
+    messages=MESSAGES
+    if args.prefix_tokens:
+        from tokenizers import Tokenizer
+        tokenizer=Tokenizer.from_file(str(Path(args.model)/'tokenizer.json'))
+        corpus=tokenizer.encode('Background: the ocean affects coastal weather through temperature and wind. ',add_special_tokens=False).ids
+        ids=(corpus*((args.prefix_tokens+len(corpus)-1)//len(corpus)))[:args.prefix_tokens]
+        messages=[{'role':'user','content':tokenizer.decode(ids)+'\n\n'+MESSAGES[0]['content']}]
+    runtime=BatchedRuntime({'oss':args.model},context=args.context,batch_size=2,host_gib=18)
     server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime));thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     url=f'http://127.0.0.1:{server.server_port}/v1/chat/completions'
-    base={'model':'oss','messages':MESSAGES,'max_tokens':128,'temperature':0,'reasoning_effort':'low','tools':TOOLS}
+    base={'model':'oss','messages':messages,'max_tokens':128,'temperature':0,'reasoning_effort':'low','tools':TOOLS}
     rows=[]
     def request(body):return urlopen(Request(url,data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=240)
     def post(body):
@@ -58,7 +67,7 @@ def main():
         actual,calls,finish,usage=stream(base)
         assert (actual['content'],actual['reasoning_content'],[c['function'] for c in calls],finish,usage)==canonical(first)
         rows.append({'case':'auto_stream_equivalence','response':first})
-        history=MESSAGES+[message,{'role':'tool','tool_call_id':call['id'],'content':'Paris: 19 degrees Celsius, sunny.'}]
+        history=messages+[message,{'role':'tool','tool_call_id':call['id'],'content':'Paris: 19 degrees Celsius, sunny.'}]
         reply=post({**base,'messages':history});print(json.dumps(reply),flush=True)
         assert reply['choices'][0]['finish_reason']=='stop' and '19' in reply['choices'][0]['message']['content']
         rows.append({'case':'tool_result_history','response':reply})
@@ -81,11 +90,11 @@ def main():
             try:post(invalid)
             except HTTPError as error:assert error.code==400;error.close()
             else:raise AssertionError('unsupported choice accepted')
-        captured=list(runtime.generate('oss',MESSAGES,128,tools=TOOLS,reasoning_effort='low'))
+        captured=list(runtime.generate('oss',messages,128,tools=TOOLS,reasoning_effort='low'))
         rows.append({'case':'captured_tokens','tokens':[e['token'] for e in captured if 'token' in e],
             'content':''.join(e.get('text','') for e in captured),'reasoning_content':''.join(e.get('reasoning_content','') for e in captured),
             'calls':[c for e in captured for c in e.get('tool_calls',[])],'final':captured[-1]})
-        result={'passed':True,'gpu':torch.cuda.get_device_name(),'context':1024,'batch_size':2,'rows':rows,
+        result={'passed':True,'gpu':torch.cuda.get_device_name(),'context':args.context,'prefix_tokens':args.prefix_tokens,'prompt_messages':messages,'batch_size':2,'rows':rows,
             'disconnect_recovery':True,'concurrent_calls_isolated':True,'unsupported_choices_rejected':True}
         Path(args.output).write_text(json.dumps(result,indent=2)+'\n');print(json.dumps({'passed':True,'checks':len(rows)}))
     finally:server.shutdown();server.server_close();runtime.close()

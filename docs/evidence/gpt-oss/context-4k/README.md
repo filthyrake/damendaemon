@@ -29,6 +29,13 @@ allocation is 15,191,919,616 bytes. The single measured warm request took 17.60 
 for 4000 input / 16 output tokens; this is not a comparative performance claim.
 The existing 72 short reference checks and all 241 CPU tests pass.
 
+Long-prompt Harmony function lifecycle checks also pass at context 4096: the
+first request uses 3363 actual prompt tokens and the tool-result turn uses 3414.
+The test covers complete JSON handoff, tool-result history, SSE equivalence,
+incomplete-call suppression, disconnect recovery, unique concurrent call IDs and
+rejection of unsupported forced/strict tool choices. This is protocol/lifecycle
+evidence; it does not override the independent numerical failures below.
+
 ## Numerical failure retained
 
 The 72-check long replay has 14 failed layer checks (layers 17–23 in each
@@ -73,3 +80,27 @@ architecture evidence. Native scripts use the dllm CUDA environment.
 Both failing replay commands deliberately return a nonzero status while saving
 the complete report. Large reference tensors are local test artifacts; the
 committed JSON reports retain all check outcomes, including failures.
+
+## Further controls (experimental, not serving policy)
+
+Attention-only IEEE FP32 projections recover all five targeted output prefixes;
+expert-only IEEE FP32 does not. The attention-only full long replay still fails
+five internal absolute-error checks, with maximum error 1.256 and relative RMS
+around 1e-5. All other original gates are retained in its report.
+
+The independent CPU and CUDA reference traces themselves differ by up to 1.790
+in late hidden states, exceeding the same 0.5 absolute threshold; their saved
+endpoint logits differ by at most 7.11e-5 and their greedy tokens agree. This
+reference variability is separate from the original native greedy mismatch.
+Thresholds remain unchanged while the discrepancy is investigated.
+
+A fused-attention experiment uses ordinary fused attention's log-sum-exp to
+recover sink normalization: multiply its output by `sigmoid(logsumexp - sink)`.
+Head partitioning bounds full-attention GQA expansion, while query partitioning
+trims each sliding-window tile's keys. At 4096 queries, six alternating warm
+measurements yield median full-attention 772.17 -> 86.63 ms and window-128
+131.30 -> 17.82 ms. Selected independent FP64 rows agree within 8.35e-7 across
+all tested sizes. Measured incremental peaks are 92.7 MB full and 77.8 MB
+windowed, versus 101.2 MB baseline. The first unbounded windowed layout was
+slower and used more memory; its report is also retained. These are component
+measurements, not end-to-end performance or numerical qualification.

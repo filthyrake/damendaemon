@@ -21,3 +21,41 @@ Reproduce from the repository root with `PYTHONPATH=.` and the A2 UUID in
 issue #39. The probe tests layers 0/23, one/three input tokens, top-4 routing and
 both expert projections, including the input-split launch in graph timing.
 Evidence: `docs/evidence/gpt-oss/normal-scales/mxfp4-tensorcore-experiment-a2.json`.
+
+## GPT-OSS projection accuracy controls
+
+`probe_gpt_oss_projection.py MODEL BOUNDARIES.pt --output REPORT.json` compares
+native compensated projection, IEEE FP32, separate high/low accumulation,
+FP64 tile summation and TF32x3 against independent saved output states. Optional
+`--modes expert_ieee attention_ieee --positions 787 788 789 790 1024` separates
+expert from attention projection effects. Positions are zero-based. Each case
+warms once before its measured run; these are exploratory single measurements,
+not a production benchmark or a general numerical qualification.
+
+On the A2 sensitive 789-token prefix, only IEEE FP32 and TF32x3 among the first
+five policies recover the independent greedy token; their measured prefill time
+is 4.80 and 11.46 seconds versus 2.53 native. Neither is enabled in production.
+Attention-only IEEE FP32 recovers all five boundary outputs at much lower cost
+(2.75 seconds at the sensitive prefix), while expert-only IEEE does not fix it.
+`replay_attention_projection.py` runs the existing full-layer, teacher-forced
+and slot-isolation gates with this attention-only substitution. It does not
+change the gate thresholds or runtime policy.
+
+Boundary references are generated with `reference_gpt_oss_boundaries.py` from
+independent layer traces. See issue #41 and the complete retained results under
+`docs/evidence/gpt-oss/context-4k/`.
+
+## Fused FP32 sink attention
+
+`probe_sink_attention.py --bounded --output REPORT.json` compares full and
+window-128 attention at 129/513/4096 tokens, including independent selected-row
+FP64 checks, alternating warm timings and incremental memory peaks. Omitting
+`--bounded` selects the initial layout retained for comparison, which is slower
+for the 4K windowed case. `sink_attention.py` explains the sink normalization.
+
+This uses PyTorch's version-specific efficient-attention operator to obtain
+log-sum-exp, so it is intentionally isolated from serving until model-level and
+lifecycle verification. `replay_fused_attention.py` runs the existing numerical
+gates using `gpt_oss_fused_attention.py`; optional `--ieee-attention` also applies
+the independent attention-projection control. `probe_gpt_oss_projection.py
+--fused` checks sensitive output prefixes with the experimental attention path.

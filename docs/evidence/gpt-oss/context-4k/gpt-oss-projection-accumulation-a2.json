@@ -1,0 +1,47 @@
+{
+  "gpu": "NVIDIA A2",
+  "context": 1024,
+  "reference": "gpt-oss-cpu-boundary-reference.pt",
+  "rows": [
+    {
+      "mode": "original",
+      "prefix_tokens": 789,
+      "warm_prefill_seconds": 2.5328767119935947,
+      "relative_rms": 0.14650769531726837,
+      "max_abs": 2.8769969940185547,
+      "greedy_match": false
+    },
+    {
+      "mode": "ieee",
+      "prefix_tokens": 789,
+      "warm_prefill_seconds": 4.802253960006055,
+      "relative_rms": 1.425618029315956e-05,
+      "max_abs": 0.0003154277801513672,
+      "greedy_match": true
+    },
+    {
+      "mode": "separate",
+      "prefix_tokens": 789,
+      "warm_prefill_seconds": 2.6101461130019743,
+      "relative_rms": 0.1241406500339508,
+      "max_abs": 2.3064188957214355,
+      "greedy_match": false
+    },
+    {
+      "mode": "fp64_tiles",
+      "prefix_tokens": 789,
+      "warm_prefill_seconds": 9.051603332001832,
+      "relative_rms": 0.14650724828243256,
+      "max_abs": 2.8769850730895996,
+      "greedy_match": false
+    },
+    {
+      "mode": "tf32x3",
+      "prefix_tokens": 789,
+      "warm_prefill_seconds": 11.458342254001764,
+      "relative_rms": 4.875881586485775e-06,
+      "max_abs": 0.00010728836059570312,
+      "greedy_match": true
+    }
+  ]
+}
