@@ -244,7 +244,7 @@ class Executor:
         self.dense_precision = self.qwen3_precision
         self.llama_precision = 'standard'
         if self.device == 'cuda' and c['model_type'] == 'llama':
-            self.llama_precision = os.environ.get('DLLM_LLAMA_PRECISION','standard')
+            self.llama_precision = os.environ.get('DLLM_LLAMA_PRECISION','mixed')
             if self.llama_precision not in ('standard','mixed'):
                 raise ValueError('DLLM_LLAMA_PRECISION must be standard or mixed')
             if self.llama_precision == 'mixed':

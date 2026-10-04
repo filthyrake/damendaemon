@@ -503,11 +503,13 @@ read the live page table without rebuilding graphs at page boundaries.
 
 Add `--prefill-chunk-size 128` to interleave bounded prompt chunks with active
 decodes while keeping each request's page reservation. Qwen2, accurate Qwen3
-and Mistral Q4 pass chunked reference checks. For Llama Q4 chunking, set
+and Mistral Q4 pass chunked reference checks. CUDA Llama defaults to
 `DLLM_LLAMA_PRECISION=mixed`: FP32 residual accumulation and precise elementwise
 arithmetic resolve the standard FP16 path's numerical gate failure while
 retaining FP16 weights, Tensor Core projections and FP16 KV. The mixed policy
-passes full/chunked fixed and paged reference replay at context 2048.
+passes Q4 full/chunked fixed and paged replay at context 2048, FP16 full/chunked
+replay at context 8192, and Q4 prefix reuse. `DLLM_LLAMA_PRECISION=standard`
+restores the legacy arithmetic, including its known chunked numerical failure.
 Add `--prefix-cache-tokens 4096` for bounded copied prefix snapshots alongside
 the page pool. Snapshot storage has its own budget and consumes additional GPU
 memory; requests still reserve their full prompt/output capacity before reuse.

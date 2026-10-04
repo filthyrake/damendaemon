@@ -169,3 +169,11 @@ physical pool, 64 requested outputs and five warm rounds:
 The roughly 1% throughput differences at concurrency 1/4 and improvement at 2
 do not establish a speedup. The change addresses numerical accuracy with a
 small measured cost; broader 8K/prefix qualification continues.
+
+The broader gates also pass: 82 FP16-weight checks against CPU FP32 at 8192
+context, 82 replay checks with 256-token chunks at the same context, and 48 Q4
+prefix reuse checks. Maximum relative RMS is 0.003136 / 0.003017 / 0.007133.
+The 8K runs use a 16384-token physical pool; prefix proof uses 2048 tokens.
+With these gates complete, mixed precision is now the CUDA Llama default.
+`DLLM_LLAMA_PRECISION=standard` retains the old policy for explicit comparisons.
+Apple precision is unchanged.
