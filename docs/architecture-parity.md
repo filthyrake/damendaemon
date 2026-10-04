@@ -334,9 +334,20 @@ reference checks. Representative four-row large matrices improve by roughly
 The first Mistral cross-engine chat benchmark was rejected as a matched
 comparison because templates produced 23 vs 26 input tokens. The benchmark
 client can now accept a frozen token-ID array and use raw completions across
-engines. A corrected end-to-end comparison is pending.
+engines. The corrected Q8 comparison uses the same 23 input token IDs, 64
+output tokens, 2048 context per request, FP16 KV and matching Q8 matrix/FP16
+embedding storage on the A2. Five warm rounds give these medians:
 
-## MoE execution in progress
+| Concurrency | dllm tokens/s | llama.cpp tokens/s | dllm TTFT ms | llama.cpp TTFT ms |
+|---|---:|---:|---:|---:|
+| 1 | 19.63 | 20.74 | 232.8 | 89.5 |
+| 2 | 29.45 | 39.81 | 373.4 | 98.5 |
+| 4 | 56.53 | 62.03 | 549.2 | 251.1 |
+
+Prompt latency remains a clear gap. Reports are the
+`compare-*-mistral-q8-tensorcore-*` files under `evidence/quantization`.
+
+## OLMoE checkpoint qualification
 
 Issue #14. OLMoE has an independent CUDA implementation with whole-projection
 Q/K normalization, optional QKV clipping, expert routing, gated expert MLPs and
@@ -350,5 +361,13 @@ Eight routed projection/aggregation cases and sixteen complete synthetic model
 checks pass, including repeated and mixed experts, quantized/unquantized weights,
 normalized/unnormalized routing, clipping and reordered batches. The official
 OLMoE-1B-7B-0924-Instruct revision `7f1c97f440f06ce36705e4f2b843edb5925f4498`
-is downloaded; independent real-model reference generation is underway.
-Synthetic success is not a real-checkpoint qualification.
+passes all 82 independent Q8-reference checks at context 2048 on A2, including
+batch changes and slot reuse. Worst relative RMS is 0.0003882%, with exact
+sampled greedy agreement. Host weight storage is 7,448,584,192 bytes. Real mixed
+dense/hybrid/MoE service checks pass at batch capacities one and three, including
+model switching and concurrency. Reports are `olmoe-q8-replay.json` and
+`olmoe-q8-service.json` under `evidence/architectures`.
+
+This qualifies execution against independently quantized weights; original
+checkpoint task quality, longer contexts and comparative MoE performance remain
+open measurements.
