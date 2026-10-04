@@ -15,7 +15,7 @@ if HAS_GGUF:
     from dllm.gguf_model import GgufWeights, plan, tensor_groups, weight_bytes
 
 
-def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False):
+def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True):
     from tokenizers.pre_tokenizers import ByteLevel
     tokens = sorted(ByteLevel.alphabet()) + ['<|endoftext|>', '<|im_start|>', '<|im_end|>']
     c = dict(model_type=arch, hidden_size=32, num_attention_heads=4, head_dim=8,
@@ -25,6 +25,7 @@ def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixe
                        ('block_count', 1), ('attention.head_count', 4), ('attention.head_count_kv', 2)]:
         writer.add_uint32(f'{arch}.{key}', value)
     writer.add_float32(f'{arch}.attention.layer_norm_rms_epsilon', 1e-6)
+    writer.add_bool(f'{arch}.attention.causal', causal)
     writer.add_tokenizer_model('gpt2'); writer.add_tokenizer_pre('qwen2')
     # Use one merge; empty metadata arrays have no subtype in upstream ReaderField.
     tokens.append('ab')
@@ -34,10 +35,12 @@ def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixe
     writer.add_chat_template("{% for m in messages %}{{ m['content'] }}{% endfor %}")
     rng = np.random.default_rng(7)
     names = {} if tied else {'output.weight': True}
+    if rope_factors is not None:names['rope_freqs.weight'] = True
     arrays = {}
     for _, group in tensor_groups(c, names):
         for name, shape in group:
-            value = rng.normal(0, .1, shape).astype(np.float32)
+            value = (np.asarray(rope_factors, dtype=np.float32) if name == 'rope_freqs.weight'
+                     else rng.normal(0, .1, shape).astype(np.float32))
             dtype = kind if len(shape) == 2 and (name != 'token_embd.weight' or packed_embedding) else 0
             if mixed and name.endswith('attn_k.weight'):
                 dtype = 2 if kind == 8 else 8
@@ -194,6 +197,45 @@ class GgufTests(unittest.TestCase):
             with patch('dllm.gguf_model.read_tensor', side_effect=lambda f,i:altered(f,i,True)):
                 with self.assertRaisesRegex(ValueError, 'finite FP16'):
                     GgufWeights(path, 64, 'none')
+
+
+    def test_llama_restores_packed_qk_rows_and_preserves_rotary_factors(self):
+        from dllm.quantization import dequantize as q8, dequantize_q4 as q4
+        factors = [1.0, 1.000123, 2.7182818, 32.0]
+        for kind in (0, 2, 8):
+            with tempfile.TemporaryDirectory() as folder:
+                path = Path(folder)/'model.gguf'
+                fixture(path, kind, arch='llama', rope_factors=factors)
+                model = GgufWeights(path, 64, 'none')
+                self.assertEqual(model.bytes, weight_bytes(path, 'none'))
+                self.assertEqual(model.weights['rope_factors'].dtype, torch.float32)
+                np.testing.assert_array_equal(model.weights['rope_factors'].numpy(), np.array(factors,dtype=np.float32))
+                reader = GGUFReader(path)
+                original = {t.name:dequantize(t.data,t.tensor_type) for t in reader.tensors}
+                values = model.weights['0.qkv.weight']
+                if kind in (2,8):values = (q4 if kind==2 else q8)(values,model.scales['0.qkv.weight'])
+                else:values=values.float()
+                for first,rows,heads,name in ((0,32,4,'q'),(32,16,2,'k')):
+                    restored = values[first:first+rows]
+                    # Apply the reference's forward permutation; it must recover
+                    # the original independent GGUF dequantized row sequence.
+                    encoded = restored.reshape(heads,2,rows//heads//2,32).transpose(1,2).reshape(rows,32)
+                    expected = original[f'blk.0.attn_{name}.weight']
+                    if kind==0:expected=expected.astype(np.float16).astype(np.float32)
+                    np.testing.assert_array_equal(encoded.numpy(),expected)
+                self.assertNotIn('0.q_norm',model.weights)
+
+    def test_llama_invalid_rotary_factors_are_rejected(self):
+        for factors in ([1,2,0,4],[1,2,-1,4],[1,2,float('nan'),4]):
+            with tempfile.TemporaryDirectory() as folder:
+                path=Path(folder)/'model.gguf'
+                fixture(path,arch='llama',rope_factors=factors)
+                with self.assertRaises(ValueError):GgufWeights(path,64,'none')
+
+    def test_noncausal_decoder_is_rejected_during_preflight(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'model.gguf'; fixture(path,arch='llama',causal=False)
+            with self.assertRaisesRegex(ValueError,'causal attention'):plan(path)
 
 
 if __name__ == '__main__': unittest.main()

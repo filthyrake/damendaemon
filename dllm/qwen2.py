@@ -346,6 +346,8 @@ class Executor:
         empty_cache()
         free = available_memory()
         def device_dtype(name, tensor):
+            if name == 'rope_factors':
+                return torch.float32
             if c['model_type']=='gpt_oss':
                 return tensor.dtype
             if tensor.dtype in (torch.int8,torch.uint8):
@@ -386,6 +388,8 @@ class Executor:
         self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
         inv = inverse_frequencies(rotary_config, self.device)
+        if 'rope_factors' in self.w:
+            inv = inv / self.w['rope_factors']
         angles = torch.outer(torch.arange(self.context, device=self.device, dtype=torch.float32), inv)
         angles = torch.cat((angles, angles), dim=-1)
         scale = attention_factor(c)

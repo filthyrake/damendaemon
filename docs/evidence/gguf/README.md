@@ -43,15 +43,16 @@ between unrelated quantizations.
 
 ## Boundaries
 
-The initial importer accepts dense Qwen2/Qwen3 and little-endian GGUF v2/v3 with
-F16/F32 or Q4_0/Q8_0 tensors. Acceptance is broader than this first A2 checkpoint
-qualification. K-quants, IQ formats, split checkpoints, other architectures,
-scaled RoPE, vision/audio adapters and arbitrary GGUF tokenizer families are
+The importer accepts dense Qwen2/Qwen3 and Llama 3 BPE checkpoints in
+little-endian GGUF v2/v3 with F16/F32 or Q4_0/Q8_0 tensors. The Llama extension
+below includes explicit FP32 rotary-factor vectors. K-quants, IQ formats, split
+checkpoints, other architectures, other scaled-RoPE metadata, SentencePiece
+tokenizers, vision/audio adapters and arbitrary GGUF tokenizer families are
 not implemented. Q/K/V and gate/up fused components must each use compatible
 formats; distinct projections may use different supported formats.
 
-Floating weights follow the existing FP16 decoder-weight policy, including
-F32 vectors. GGUF import is not an all-FP32 execution mode. CUDA packed embeddings now retain their original storage and dequantize only
+Floating decoder weights follow the existing FP16 weight policy, including
+normalization vectors; explicit rotary factors retain FP32. GGUF import is not an all-FP32 execution mode. CUDA packed embeddings now retain their original storage and dequantize only
 selected token rows, rounding products to FP16 before any residual widening.
 The Metal fallback expands Q8 embeddings to FP16 in bounded row chunks. Tied
 packed heads share both values and scales with their CUDA embeddings. The metadata cache holds at most two
@@ -275,3 +276,46 @@ host restoration and disk reload for both packed Qwen3 Q8 and official Qwen2.5
 Q8. Malformed and conflicting template registrations return HTTP 400 without
 changing registry/residency state. This also completes the added negative HTTP
 checks described in the template section above.
+
+## Llama 3 standalone import
+
+The loader now accepts Llama 3 BPE tokenization (`llama-bpe`, `llama3`,
+`llama-v3`) and dense `llama` tensors. It restores the Q/K row ordering for both
+floating and packed weights/scales, applies the embedded automatic BOS policy,
+and preserves explicit `rope_freqs.weight` divisors in FP32. Unknown tensors,
+noncausal attention, invalid rotary divisors and unsupported metadata still fail
+explicitly. This does not add SentencePiece or Llama tool-call protocols.
+
+Source: `unsloth/Llama-3.2-1B-Instruct` revision
+`5a8abab4a5d6f164389b1079fb721cfab8d7126c`, converted by the unchanged reference
+converter at llama.cpp `836d57176dc699a726c55418e4f96b8ca628e1bf`.
+Fixture hashes are in `llama32-gguf-sha256.txt`. The implementation follows the
+format documented in that MIT-licensed project's
+[Q/K permutation and rotary-factor export](https://github.com/ggml-org/llama.cpp/blob/836d57176dc699a726c55418e4f96b8ca628e1bf/conversion/llama.py)
+and [BPE tokenization](https://github.com/ggml-org/llama.cpp/blob/836d57176dc699a726c55418e4f96b8ca628e1bf/src/llama-vocab.cpp).
+No reference inference runtime is imported.
+
+`llama32-gguf-tokenizer.json` matches both llama.cpp and the pinned HF tokenizer
+on all 38 checks, including multilingual/Unicode text, digits, whitespace,
+controls, code, special tokens, and automatic-special-token on/off.
+
+A2 runtime qualification uses 512 context and four prompt lengths
+(1/17/129/505), eight full-logit comparisons each, graphs on/off. The GGUF file's
+explicit FP32 rotary divisors are a rounded representation of the HF Llama3
+schedule, so not all logits are bitwise equal. The existing absolute <0.5 and
+relative-RMS <1% gates plus exact greedy decisions apply to that explicit-factor
+case; Qwen's bitwise import gate is unchanged.
+
+| Format | Exact weights/scales | Bitwise logit steps / 64 | Max absolute | Max relative RMS |
+|---|---:|---:|---:|---:|
+| F16 | 99 / 0 | 20 | 0.01953 | 0.401% |
+| Q8_0 | 99 / 65 | 30 | 0.01758 | 0.160% |
+| Q4_0 | 99 / 65 | 32 | 0.01953 | 0.260% |
+
+`llama32-gguf-f16-a2.json`, `llama32-gguf-q8-a2.json` and
+`llama32-gguf-q4-a2.json` also pass actual HTTP
+registration, matching HF/GGUF chat, SSE, concurrency, cancellation recovery,
+host restoration and unload. These are import regressions on the same checkpoint
+and precision, not throughput comparisons with another engine. GPU qualification
+here stops at 512 tokens; the checkpoint's full advertised context is not proven
+by this import test. The local CPU/HTTP suite passes 273 tests.

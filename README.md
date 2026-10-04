@@ -776,15 +776,18 @@ dllm run /models/qwen.gguf --context 512 --prompt 'Explain binary search.'
 dllm add qwen /models/qwen.gguf --quantization none
 ```
 
-Initial import scope is dense Qwen2/Qwen3, little-endian GGUF v2/v3, F16/F32 and
+Import supports dense Qwen2/Qwen3 and Llama 3 BPE checkpoints, little-endian
+GGUF v2/v3, F16/F32 and
 Q4_0/Q8_0. Floating tensors follow the existing decoder's FP16 weight policy;
 this does not provide FP32-weight inference. On CUDA, quantized embeddings stay
 packed in host/GPU memory and only selected token rows are dequantized, preserving
 the previous FP16 lookup values. The Metal fallback still expands Q8 embeddings
 to FP16. Packed output heads stay packed. Mixed matrix formats are allowed
 between projections, but Q/K/V and gate/up components must each have compatible
-formats. Unsupported architectures, split files, scaled RoPE, packed formats,
-or malformed tensors fail explicitly. Q4 requires CUDA.
+formats. Llama Q/K rotary rows are restored to the decoder layout, including
+packed scales, and explicit GGUF rotary-factor vectors remain FP32. Unsupported
+architectures, SentencePiece tokenizers, split files, other scaled-RoPE metadata,
+other quantized formats, or malformed tensors fail explicitly. Q4 requires CUDA.
 
 For a Hugging Face GGUF repository, `pull`, `run`, and `add` accept
 `--filename EXACT_FILE.gguf` and optional `--revision`. Only that file is fetched

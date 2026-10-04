@@ -14,6 +14,8 @@ from dllm.gguf_model import plan
 
 
 CASES = [
+    '<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\nHello<|eot_id|>',
+    '<|eom_id|><|end_of_text|>', '12345678901234567890 000 1234', 'İ K ſ IS isn’t',
     '', 'Hello, world!', "We're here; I'M READY. isn't it?", '1234567890 1.25 -500',
     'a  b\t\n\r\n  c   ', 'café e\u0301 é Å A\u030a', '你好，世界！こんにちは 한국어',
     '🦊 👨\u200d👩\u200d👧\u200d👦 👍🏽', 'عَرَبِيّ हिन्दी',
@@ -48,16 +50,17 @@ def main():
                 else: raise RuntimeError(path.read_text()[-5000:])
                 cases = []
                 for text in CASES:
-                    body = {'content':text, 'add_special':False, 'parse_special':True}
-                    with urlopen(Request(base+'/tokenize', data=json.dumps(body).encode(),
-                        headers={'Content-Type':'application/json'}), timeout=30) as response:
-                        expected = json.load(response)['tokens']
-                    actual = tokenizer.encode(text, add_special_tokens=False).ids
-                    comparison = dict(text=text, expected=expected, actual=actual, equal=actual == expected)
-                    if hf:
-                        comparison['hf_tokens'] = hf.encode(text, add_special_tokens=False).ids
-                        comparison['hf_equal'] = comparison['hf_tokens'] == actual
-                    cases.append(comparison)
+                    for add_special in (False, True):
+                        body = {'content':text, 'add_special':add_special, 'parse_special':True}
+                        with urlopen(Request(base+'/tokenize', data=json.dumps(body).encode(),
+                            headers={'Content-Type':'application/json'}), timeout=30) as response:
+                            expected = json.load(response)['tokens']
+                        actual = tokenizer.encode(text, add_special_tokens=add_special).ids
+                        comparison = dict(text=text, add_special=add_special, expected=expected, actual=actual, equal=actual == expected)
+                        if hf:
+                            comparison['hf_tokens'] = hf.encode(text, add_special_tokens=add_special).ids
+                            comparison['hf_equal'] = comparison['hf_tokens'] == actual
+                        cases.append(comparison)
                 report = dict(passed=all(c['equal'] for c in cases), gguf=str(Path(args.gguf).resolve()), cases=cases)
                 print(json.dumps(report, ensure_ascii=False, indent=2))
                 assert report['passed'], 'standalone tokenizer differs from llama.cpp'

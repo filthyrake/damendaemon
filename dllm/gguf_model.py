@@ -1,4 +1,4 @@
-"""Standalone Qwen2/Qwen3 GGUF import into dllm's own decoder and kernels."""
+"""Standalone Qwen2/Qwen3/Llama GGUF import into dllm's own decoder and kernels."""
 from dataclasses import dataclass
 from functools import lru_cache
 import math
@@ -35,7 +35,7 @@ class TensorInfo:
 
     @property
     def host_bytes(self):
-        return self.length if self.kind in (2, 8) else math.prod(self.shape) * 2
+        return self.length if self.kind in (2, 8) else math.prod(self.shape) * (4 if self.name == 'rope_freqs.weight' else 2)
 
 
 @dataclass(frozen=True)
@@ -53,8 +53,10 @@ class Plan:
 
 
 def tokenizer(metadata):
-    if metadata.get('tokenizer.ggml.model') != 'gpt2' or metadata.get('tokenizer.ggml.pre') != 'qwen2':
-        raise ValueError('GGUF requires the qwen2 GPT-2 BPE tokenizer')
+    pre = metadata.get('tokenizer.ggml.pre')
+    llama = pre in ('llama-bpe', 'llama3', 'llama-v3')
+    if metadata.get('tokenizer.ggml.model') != 'gpt2' or not (pre == 'qwen2' or llama):
+        raise ValueError('GGUF requires a supported Qwen2 or Llama3 GPT-2 BPE tokenizer')
     tokens = metadata.get('tokenizer.ggml.tokens')
     types = metadata.get('tokenizer.ggml.token_type')
     merges = metadata.get('tokenizer.ggml.merges')
@@ -69,15 +71,16 @@ def tokenizer(metadata):
     if not set(pre_tokenizers.ByteLevel.alphabet()).issubset(vocab):
         raise ValueError('GGUF byte-level tokenizer is missing byte tokens')
     if metadata.get('tokenizer.ggml.add_space_prefix', False):
-        raise ValueError('GGUF qwen2 tokenizer cannot add a space prefix')
+        raise ValueError('GGUF tokenizer cannot add a space prefix')
     pairs = [m.split(' ') for m in merges if isinstance(m, str)]
     if len(pairs) != len(merges) or any(len(pair) != 2 for pair in pairs):
         raise ValueError('invalid GGUF BPE merge pair')
     if any(pair[0] not in vocab or pair[1] not in vocab or ''.join(pair) not in vocab for pair in pairs):
         raise ValueError('GGUF BPE merge references an unknown token')
-    result = Tokenizer(models.BPE(vocab=vocab, merges=[tuple(p) for p in pairs]))
+    result = Tokenizer(models.BPE(vocab=vocab, merges=[tuple(p) for p in pairs], ignore_merges=llama))
+    pattern = QWEN_PATTERN.replace(r'|\p{N}|', r'|\p{N}{1,3}|') if llama else QWEN_PATTERN
     result.pre_tokenizer = pre_tokenizers.Sequence([
-        pre_tokenizers.Split(Regex(QWEN_PATTERN), behavior='isolated'),
+        pre_tokenizers.Split(Regex(pattern), behavior='isolated'),
         pre_tokenizers.ByteLevel(add_prefix_space=False, use_regex=False)])
     result.decoder = decoders.ByteLevel()
     for i, (text, kind) in enumerate(zip(tokens, types)):
@@ -96,15 +99,15 @@ def tokenizer(metadata):
                 special[f'{name}_token'] = tokens[index]
             if name != 'bos':
                 eos.add(index)
-    # Qwen marks both end-of-text and end-of-turn as generation stops.
-    for text in ('<|im_end|>', '<|endoftext|>'):
+    # Generation stops include end-of-text, end-of-turn and end-of-message.
+    for text in ('<|im_end|>', '<|endoftext|>', '<|end_of_text|>', '<|eot_id|>', '<|eom_id|>'):
         if text in vocab:
             eos.add(vocab[text])
     if not eos:
         raise ValueError('GGUF model needs an EOS token')
     prefix, suffix, added = [], [], []
     for name, target in (('bos', prefix), ('eos', suffix)):
-        enabled = metadata.get(f'tokenizer.ggml.add_{name}_token', False)
+        enabled = metadata.get(f'tokenizer.ggml.add_{name}_token', llama and name == 'bos')
         if type(enabled) is not bool:
             raise ValueError('GGUF automatic special-token flags must be boolean')
         if enabled:
@@ -120,12 +123,14 @@ def tokenizer(metadata):
 
 def model_config(metadata, tensors, vocab_size, eos):
     arch = metadata.get('general.architecture')
-    if arch not in ('qwen2', 'qwen3'):
-        raise ValueError('GGUF currently supports dense qwen2 and qwen3 only')
+    if arch not in ('qwen2', 'qwen3', 'llama'):
+        raise ValueError('GGUF currently supports dense qwen2, qwen3 and llama only')
     if any(name.startswith('split.') for name in metadata):
         raise ValueError('split GGUF files are not supported')
     def get(name, default=None):
         return metadata.get(f'{arch}.{name}', default)
+    if get('attention.causal', True) is not True:
+        raise ValueError('GGUF decoder requires causal attention')
     if (get('rope.scaling.type', 'none') != 'none'
             or any(name.startswith(f'{arch}.rope.scaling.') and name != f'{arch}.rope.scaling.type' for name in metadata)
             or get('attention.sliding_window', 0) != 0
@@ -150,6 +155,8 @@ def tensor_groups(c, tensors):
     h, n, d, kv, f = (c[k] for k in ('hidden_size', 'num_attention_heads', 'head_dim', 'num_key_value_heads', 'intermediate_size'))
     yield 'embed', [('token_embd.weight', (c['vocab_size'], h))]
     yield 'norm', [('output_norm.weight', (h,))]
+    if c['model_type'] == 'llama' and 'rope_freqs.weight' in tensors:
+        yield 'rope_factors', [('rope_freqs.weight', (d // 2,))]
     if 'output.weight' in tensors:
         yield 'head', [('output.weight', (c['vocab_size'], h))]
     for i in range(c['num_hidden_layers']):
@@ -157,7 +164,7 @@ def tensor_groups(c, tensors):
         yield f'{i}.qkv.weight', [(p + f'attn_{a}.weight', (rows * d, h)) for a, rows in (('q', n), ('k', kv), ('v', kv))]
         if c['model_type'] == 'qwen2':
             yield f'{i}.qkv.bias', [(p + f'attn_{a}.bias', (rows * d,)) for a, rows in (('q', n), ('k', kv), ('v', kv))]
-        else:
+        elif c['model_type'] == 'qwen3':
             yield f'{i}.q_norm', [(p + 'attn_q_norm.weight', (d,))]
             yield f'{i}.k_norm', [(p + 'attn_k_norm.weight', (d,))]
         yield f'{i}.out', [(p + 'attn_output.weight', (h, n * d))]
@@ -188,6 +195,8 @@ def _plan(path, version):
             tensor = tensors.get(name)
             if tensor is None or tensor.shape != shape:
                 raise ValueError(f'GGUF tensor {name} is missing or has the wrong shape')
+            if name == 'rope_freqs.weight' and tensor.kind != 0:
+                raise ValueError('GGUF rotary factors require an F32 vector')
             expected.add(name)
             kinds.add(tensor.kind if tensor.kind in (2, 8) else 0)
         if len(kinds) > 1:
@@ -227,9 +236,12 @@ def read_tensor(file, tensor):
         raise ValueError(f'truncated GGUF tensor: {tensor.name}')
     if tensor.kind in (0, 1):
         dtype = '<f4' if tensor.kind == 0 else '<f2'
-        value = torch.from_numpy(raw.view(dtype).reshape(tensor.shape)).to(torch.float16)
+        target = torch.float32 if tensor.name == 'rope_freqs.weight' else torch.float16
+        value = torch.from_numpy(raw.view(dtype).reshape(tensor.shape)).to(target)
         if not torch.isfinite(value).all():
-            raise ValueError(f'GGUF tensor exceeds finite FP16 range: {tensor.name}')
+            raise ValueError(f'GGUF tensor exceeds finite {target} range: {tensor.name}')
+        if tensor.name == 'rope_freqs.weight' and not (value > 0).all():
+            raise ValueError('GGUF rotary factors must be positive')
         return value, None
     block_bytes = 18 if tensor.kind == 2 else 34
     blocks = raw.reshape(-1, block_bytes)
@@ -239,6 +251,22 @@ def read_tensor(file, tensor):
     packed = blocks[:, 2:].copy()
     packed = packed if tensor.kind == 2 else packed.view(np.int8)
     return torch.from_numpy(packed.reshape(tensor.shape[0], -1)), scales
+
+
+def restore_llama_rows(name, part, config):
+    """Invert GGUF's interleaved Q/K rotary rows, including packed block scales.
+
+    The format mapping is documented by llama.cpp conversion/llama.py::permute.
+    Qwen GGUF already uses the half-split row order consumed by our decoder.
+    """
+    if not name.endswith(('attn_q.weight', 'attn_k.weight')):
+        return part
+    heads = config['num_attention_heads' if name.endswith('attn_q.weight') else 'num_key_value_heads']
+    def restore(value):
+        if value is None:
+            return None
+        return value.reshape(heads, value.shape[0] // heads // 2, 2, *value.shape[1:]).transpose(1, 2).reshape(value.shape).contiguous()
+    return tuple(restore(value) for value in part)
 
 
 class GgufWeights(ModelWeights):
@@ -260,6 +288,8 @@ class GgufWeights(ModelWeights):
         with self.path.open('rb') as file:
             for destination, group in tensor_groups(self.config, source.tensors):
                 parts = [read_tensor(file, source.tensors[name]) for name, _ in group]
+                if self.config['model_type'] == 'llama':
+                    parts = [restore_llama_rows(name, part, self.config) for (name, _), part in zip(group, parts)]
                 values = [p[0] for p in parts]
                 weights[destination] = values[0] if len(values) == 1 else torch.cat(values)
                 if parts[0][1] is not None:
