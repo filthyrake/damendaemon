@@ -453,3 +453,20 @@ Triton path. CUDA graph capture uses the caller's current stream. The measured
 Mistral Q4 result is 22.53 tokens/s versus 20.06 with the paired Tensor Core
 path alone, still below the matched llama.cpp result of 34.20. There is no
 runtime compilation requirement when this option is unset.
+
+### Prepared weight cache
+
+Set `DLLM_WEIGHT_CACHE=/path/to/trusted/cache` before starting dllm to reuse
+prepared Q4/Q8 weights across processes and cold model activations. This is
+currently available for dense Qwen2, Qwen3, Llama, Phi-3 and Mistral. The first
+load converts weights and writes a safetensors file; subsequent loads reuse it.
+GPU-resident and host-resident switching continue to use their existing paths.
+
+Cache keys include the preparation version, validated configuration, precision,
+and source shard paths and file metadata. This is local file identity, **not a
+cryptographic checkpoint digest**. Use trusted checkpoint and cache directories.
+Missing, truncated or incompatible entries are rebuilt; publication is atomic.
+Cache write failures warn and leave inference available. Changing a source during
+loading is an error. There is no automatic disk eviction: budget roughly one
+extra prepared-weight copy per checkpoint and precision, and remove obsolete
+cache files when desired. No files are created unless this option is set.

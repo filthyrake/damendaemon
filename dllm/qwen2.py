@@ -110,6 +110,15 @@ class ModelWeights:
             self.eos.update(eos_ids(json.loads(generation.read_text()).get('eos_token_id')))
         if not self.eos:
             raise ValueError('model needs at least one EOS token ID')
+        from .weight_cache import configured_cache
+        cache = configured_cache(self.path, c, self.quantization, weight_files(self.path))
+        self.weight_cache_status = 'disabled' if cache is None else 'miss'
+        if cache is not None:
+            prepared = cache.load()
+            if prepared is not None:
+                self.finalize_weights(prepared[0], prepared[1])
+                self.weight_cache_status = 'hit'
+                return
         state = {}
         for candidate in weight_files(self.path):
             with safe_open(str(candidate), framework="pt", device="cpu") as reader:
@@ -162,10 +171,12 @@ class ModelWeights:
         # Keep host backing pageable: pinning whole multi-GB models can harm the
         # machine. Transfers are synchronous in this first executor.
         self.finalize_weights(weights)
+        if cache is not None:
+            self.weight_cache_status = 'stored' if cache.save(self.weights, self.scales) else 'write-failed'
 
-    def finalize_weights(self, weights):
+    def finalize_weights(self, weights, prepared_scales=None):
         from .quantization import prepare
-        self.scales = prepare(weights, self.quantization)
+        self.scales = prepare(weights, self.quantization) if prepared_scales is None else prepared_scales
         self.weights = weights
         self.bytes = sum(t.numel() * t.element_size() for t in
                          {id(t):t for t in (*weights.values(), *self.scales.values())}.values())
