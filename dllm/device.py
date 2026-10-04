@@ -27,10 +27,20 @@ def available_memory():
 
 
 def attention(q, k, v, **kwargs):
+    import torch
     from torch.nn import functional as F
-    if q.device.type == 'mps' and kwargs.pop('enable_gqa', False):
-        repeats = q.shape[-3] // k.shape[-3]
-        k, v = k.repeat_interleave(repeats, dim=-3), v.repeat_interleave(repeats, dim=-3)
+    expand_gqa = q.device.type == 'mps' or (q.device.type == 'cuda'
+        and q.dtype == torch.float32 and q.ndim == 4 and q.shape[-2] >= 256)
+    if expand_gqa and kwargs.get('enable_gqa', False):
+        # Native GQA selects the quadratic-memory math backend for CUDA FP32.
+        # Expanding only K/V lets SDPA select its fused efficient kernel; short
+        # requests retain their existing path and avoid this materialization.
+        # Preserve SDPA's validation for malformed head counts.
+        if k.shape[-3] == v.shape[-3] and q.shape[-3] % k.shape[-3] == 0:
+            kwargs.pop('enable_gqa')
+            repeats = q.shape[-3] // k.shape[-3]
+            if repeats != 1:
+                k, v = k.repeat_interleave(repeats, dim=-3), v.repeat_interleave(repeats, dim=-3)
     return F.scaled_dot_product_attention(q, k, v, **kwargs)
 
 

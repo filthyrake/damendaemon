@@ -687,3 +687,8 @@ Measured complete HTTP gains reach roughly4.4× on the tested Qwen2 repetition
 case and1.5× on its code case; ordinary prose is approximately unchanged and
 poor proposals can regress. [Exact-output, fallback, lifecycle and performance
 evidence](docs/evidence/speculation/README.md).
+
+Long CUDA FP32 prompts use fused grouped-query attention to avoid quadratic
+temporary storage. Full 8K Llama prefill now fits the A2; at 2K, measured complete
+HTTP latency drops 23% at the same precision.
+[Reference, memory and request-level evidence](docs/evidence/fp32-attention/README.md).

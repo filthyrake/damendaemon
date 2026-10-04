@@ -1,0 +1,240 @@
+{
+  "passed": true,
+  "gpu": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "dtype": "float32",
+  "query_heads": 32,
+  "kv_heads": 8,
+  "head_dim": 64,
+  "rows": [
+    {
+      "query_tokens": 127,
+      "key_tokens": 127,
+      "query_start": 0,
+      "window": 0,
+      "max_absolute_error": 6.556510925292969e-07,
+      "rms_error": 5.4876228006150995e-08,
+      "native": {
+        "milliseconds": [
+          0.5099620029795915,
+          0.5199409933993593,
+          0.44947199057787657,
+          0.45548699563369155,
+          0.4554409970296547
+        ],
+        "median_ms": 0.45548699563369155,
+        "peak_extra_allocated_bytes": 7837184
+      },
+      "math_baseline": {
+        "milliseconds": [
+          0.4721869918284938,
+          0.48015499487519264,
+          0.4441719938768074,
+          0.43852999806404114,
+          0.4455559974303469
+        ],
+        "median_ms": 0.4455559974303469,
+        "peak_extra_allocated_bytes": 7837184
+      },
+      "operators": [
+        "aten::scaled_dot_product_attention",
+        "aten::_scaled_dot_product_attention_math"
+      ]
+    },
+    {
+      "query_tokens": 257,
+      "key_tokens": 257,
+      "query_start": 0,
+      "window": 0,
+      "max_absolute_error": 1.3113021850585938e-06,
+      "rms_error": 1.1081228024067968e-07,
+      "native": {
+        "milliseconds": [
+          0.6077949947211891,
+          0.49814498925115913,
+          0.5314800073392689,
+          0.5383300012908876,
+          0.5128719931235537
+        ],
+        "median_ms": 0.5314800073392689,
+        "peak_extra_allocated_bytes": 6316032
+      },
+      "math_baseline": {
+        "milliseconds": [
+          1.4101919950917363,
+          1.3147279969416559,
+          1.4702350017614663,
+          1.3335590047063306,
+          1.397300002281554
+        ],
+        "median_ms": 1.397300002281554,
+        "peak_extra_allocated_bytes": 25613312
+      },
+      "operators": [
+        "aten::scaled_dot_product_attention",
+        "aten::_scaled_dot_product_efficient_attention"
+      ]
+    },
+    {
+      "query_tokens": 512,
+      "key_tokens": 512,
+      "query_start": 0,
+      "window": 0,
+      "max_absolute_error": 8.940696716308594e-07,
+      "rms_error": 9.319070670699148e-08,
+      "native": {
+        "milliseconds": [
+          1.1270329996477813,
+          0.9843640000326559,
+          0.9339180105598643,
+          0.9401020070072263,
+          0.9518279985059053
+        ],
+        "median_ms": 0.9518279985059053,
+        "peak_extra_allocated_bytes": 12582912
+      },
+      "math_baseline": {
+        "milliseconds": [
+          3.484909000690095,
+          3.4730250044958666,
+          3.4366070030955598,
+          3.428386989980936,
+          3.4290390030946583
+        ],
+        "median_ms": 3.4366070030955598,
+        "peak_extra_allocated_bytes": 89145856
+      },
+      "operators": [
+        "aten::scaled_dot_product_attention",
+        "aten::_scaled_dot_product_efficient_attention"
+      ]
+    },
+    {
+      "query_tokens": 2048,
+      "key_tokens": 2048,
+      "query_start": 0,
+      "window": 0,
+      "max_absolute_error": 1.0728836059570312e-06,
+      "rms_error": 8.62439435422857e-08,
+      "native": {
+        "milliseconds": [
+          10.946637994493358,
+          10.9338970069075,
+          10.96849598980043,
+          10.975804994814098,
+          10.91117000032682
+        ],
+        "median_ms": 10.946637994493358,
+        "peak_extra_allocated_bytes": 50331648
+      },
+      "math_baseline": {
+        "milliseconds": [
+          59.16284999693744,
+          59.167480998439714,
+          59.13086299551651,
+          59.12152199016418,
+          59.13403499289416
+        ],
+        "median_ms": 59.13403499289416,
+        "peak_extra_allocated_bytes": 1275134464
+      },
+      "operators": [
+        "aten::scaled_dot_product_attention",
+        "aten::_scaled_dot_product_efficient_attention"
+      ]
+    },
+    {
+      "query_tokens": 8192,
+      "key_tokens": 8192,
+      "query_start": 0,
+      "window": 0,
+      "max_absolute_error": 9.5367431640625e-07,
+      "rms_error": 9.656612576236512e-08,
+      "native": {
+        "milliseconds": [
+          162.52126700419467,
+          162.50622300140094,
+          162.46799498912878,
+          162.500345002627,
+          162.41747100139037
+        ],
+        "median_ms": 162.500345002627,
+        "peak_extra_allocated_bytes": 201326592
+      },
+      "math_baseline": null,
+      "operators": [
+        "aten::scaled_dot_product_attention",
+        "aten::_scaled_dot_product_efficient_attention"
+      ]
+    },
+    {
+      "query_tokens": 257,
+      "key_tokens": 274,
+      "query_start": 17,
+      "window": 0,
+      "max_absolute_error": 1.6689300537109375e-06,
+      "rms_error": 1.188927143402907e-07,
+      "native": {
+        "milliseconds": [
+          0.7777290011290461,
+          0.7766420021653175,
+          0.7535019976785406,
+          0.7289880013559014,
+          0.7369460072368383
+        ],
+        "median_ms": 0.7535019976785406,
+        "peak_extra_allocated_bytes": 6882816
+      },
+      "math_baseline": {
+        "milliseconds": [
+          1.294998000958003,
+          1.288046987610869,
+          1.2756219948641956,
+          1.2932429963257164,
+          1.2684829998761415
+        ],
+        "median_ms": 1.288046987610869,
+        "peak_extra_allocated_bytes": 27167232
+      },
+      "operators": [
+        "aten::scaled_dot_product_attention",
+        "aten::_scaled_dot_product_efficient_attention"
+      ]
+    },
+    {
+      "query_tokens": 257,
+      "key_tokens": 274,
+      "query_start": 17,
+      "window": 127,
+      "max_absolute_error": 9.5367431640625e-07,
+      "rms_error": 1.207183828455527e-07,
+      "native": {
+        "milliseconds": [
+          0.7782800093991682,
+          0.7445089868269861,
+          0.7373230037046596,
+          0.7610470056533813,
+          0.7233520009322092
+        ],
+        "median_ms": 0.7445089868269861,
+        "peak_extra_allocated_bytes": 6882816
+      },
+      "math_baseline": {
+        "milliseconds": [
+          1.3070490094833076,
+          1.2668760027736425,
+          1.2959079904248938,
+          1.2582009949255735,
+          1.2558559974422678
+        ],
+        "median_ms": 1.2668760027736425,
+        "peak_extra_allocated_bytes": 28326912
+      },
+      "operators": [
+        "aten::scaled_dot_product_attention",
+        "aten::_scaled_dot_product_efficient_attention"
+      ]
+    }
+  ],
+  "reference": "Independent math SDPA at selected first/boundary/last query rows; no 8192 full math allocation"
+}

@@ -43,10 +43,11 @@ and host restoration pass in the same live HTTP suite.
 
 The first unchunked 8192-context reference replay runs out of A2 memory: the
 FP32 GQA math-attention backend attempts a 7.97 GiB temporary allocation. This
-failure is separate from the passing context512 serving qualification. The same independent FP32 reference trace passes all82 comparisons with
+failure is separate from the passing context512 serving qualification. This allocation failure is resolved by the separately qualified
+[fused FP32 attention path](../../fp32-attention/README.md). The same independent FP32 reference trace passes all82 comparisons with
 128-token chunked prefill, including rolling slots and decode through context8192;
 maximum absolute logit error is0.000120. Chunked scheduling continues to fall
-back to ordinary generation. The unchunked allocation is a separate follow-up.
+back to ordinary generation. The full unchunked trace also passes after that attention fix.
 The full regression suite passes216 tests.
 
 ## Actual precision-policy cost
