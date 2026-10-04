@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "device": "cuda",
+  "model": "/home/damen/dllm-dev/models/minilm-reranker",
+  "precision": "float32",
+  "baseline": "Same server, length partitioning disabled between completed requests",
+  "baseline_ms": [
+    499.81801700778306,
+    500.3904909972334,
+    503.911802006769,
+    497.9480789916124,
+    496.68736499734223,
+    495.5554670013953
+  ],
+  "optimized_ms": [
+    43.07693199370988,
+    40.63168799621053,
+    41.478299011942,
+    42.376299999887124,
+    47.54532300285064,
+    40.04048299975693
+  ],
+  "median_baseline_ms": 498.88304799969774,
+  "median_optimized_ms": 41.92729950591456,
+  "max_score_error": 1.430511474609375e-06,
+  "usage": {
+    "prompt_tokens": 2024,
+    "total_tokens": 2024
+  },
+  "concurrent_isolation": true,
+  "document_mapping": true,
+  "workload": "63 pairs of 24 tokens, one pair of 512 tokens; six alternating-order measured rounds"
+}

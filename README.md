@@ -660,3 +660,7 @@ confidence probabilities. Up to64 documents are accepted; each query/document
 pair must fit the configured context and512-token model limit. Oversized inputs
 are rejected rather than silently truncated.
 [A2/M4 reference, HTTP and performance evidence](docs/evidence/reranking/README.md).
+
+Mixed-length reranking automatically avoids excessive padding when length
+partitioning halves the work. Original document indices and usage are preserved;
+[measured A2/M4 gains and limits](docs/evidence/reranking/README.md#mixed-length-padding-reduction).

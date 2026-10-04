@@ -1,6 +1,23 @@
 """Bounded cross-encoder request validation and stable relevance ranking."""
 
 
+def length_groups(tokens):
+    """Split costly padding only when four length buckets save at least half.
+
+    Return original indices so scoring never changes document order. Small or
+    homogeneous requests retain the existing graph-friendly single batch.
+    """
+    padded=len(tokens)*max(map(len,tokens))
+    if padded<4096:return None
+    buckets={}
+    for index,row in enumerate(tokens):
+        bound=next((size for size in (64,128,256) if len(row)<=size),512)
+        buckets.setdefault(bound,[]).append(index)
+    groups=list(buckets.values())
+    work=sum(len(group)*max(len(tokens[i]) for i in group) for group in groups)
+    return groups if work*2<=padded else None
+
+
 def options(query,documents,top_n=None,return_documents=False):
     if not isinstance(query,str) or not query:raise ValueError('query must be nonempty text')
     if (not isinstance(documents,list) or not 1<=len(documents)<=64

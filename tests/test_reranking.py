@@ -3,10 +3,20 @@ from pathlib import Path
 import tempfile
 import unittest
 from dllm.encoder import config
-from dllm.reranking import options,ranked
+from dllm.reranking import options,ranked,length_groups
 
 
 class RerankingTests(unittest.TestCase):
+    def test_padding_groups_preserve_indices_and_skip_small_savings(self):
+        self.assertIsNone(length_groups([[0]*20]*64))
+        self.assertIsNone(length_groups([[0]*500]*63+[[0]*512]))
+        lengths=[512,24,128,24,256,24,64,24]*8
+        groups=length_groups([[0]*n for n in lengths])
+        self.assertEqual(sorted(i for group in groups for i in group),list(range(64)))
+        self.assertEqual(len(groups),4)
+        self.assertEqual(groups[0],list(range(0,64,8)))
+        self.assertLessEqual(sum(len(g)*max(lengths[i] for i in g) for g in groups)*2,64*512)
+
     def test_options_and_stable_rank(self):
         docs=['first','second','third']
         q,copy,n,include=options('query',docs,2,True);docs[0]='changed'

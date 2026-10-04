@@ -175,9 +175,19 @@ class EncoderExecutor:
     @torch.inference_mode()
     def rerank(self,tokens,token_types):
         if self.model.task!='rerank':raise ValueError('model does not support reranking')
-        return self._run(tokens,token_types).reshape(-1)
+        from .reranking import length_groups
+        groups=length_groups(tokens)
+        if groups is None:return self._run(tokens,token_types).reshape(-1)
+        # Length buckets reduce padded attention and projections. Variable
+        # bucket shapes bypass graph capture to avoid cold-capture churn.
+        scores=[self._run([tokens[i] for i in group],[token_types[i] for i in group],
+            allow_graph=False).reshape(-1) for group in groups]
+        order=[i for group in groups for i in group]
+        inverse=[0]*len(order)
+        for offset,index in enumerate(order):inverse[index]=offset
+        return torch.cat(scores).index_select(0,torch.tensor(inverse,device=self.device))
 
-    def _run(self,tokens,token_types=None):
+    def _run(self,tokens,token_types=None,allow_graph=True):
         w,c = self.w,self.model.config
         batch,length = len(tokens),max(map(len,tokens))
         # Upload the complete padded batch once instead of synchronizing once per row.
@@ -188,7 +198,7 @@ class EncoderExecutor:
         lengths = torch.tensor([len(values) for values in tokens],device=self.device)
         mask = torch.arange(length,device=self.device)[None,:] < lengths[:,None]
         # Bound retained graph allocations and avoid capturing large padded batches.
-        if self.use_graph and batch <= 8:
+        if allow_graph and self.use_graph and batch <= 8:
             key = (batch,length)
             if key not in self.graphs:
                 if len(self.graphs) >= 4:

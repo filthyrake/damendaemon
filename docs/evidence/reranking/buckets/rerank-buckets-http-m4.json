@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "device": "mps",
+  "model": "results/models/minilm-reranker",
+  "precision": "float32",
+  "baseline": "Same server, length partitioning disabled between completed requests",
+  "baseline_ms": [
+    451.3135420274921,
+    431.2346249935217,
+    438.46358300652355,
+    429.41799998516217,
+    434.04091597767547,
+    434.77824999717996
+  ],
+  "optimized_ms": [
+    44.36470801010728,
+    45.76545802410692,
+    35.15745798358694,
+    35.271541972178966,
+    45.06958299316466,
+    42.94687503715977
+  ],
+  "median_baseline_ms": 434.4095829874277,
+  "median_optimized_ms": 43.655791523633525,
+  "max_score_error": 0,
+  "usage": {
+    "prompt_tokens": 2024,
+    "total_tokens": 2024
+  },
+  "concurrent_isolation": true,
+  "document_mapping": true,
+  "workload": "63 pairs of 24 tokens, one pair of 512 tokens; six alternating-order measured rounds"
+}

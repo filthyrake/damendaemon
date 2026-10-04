@@ -126,3 +126,35 @@ GPU-only eager/replay medians were5.204/5.087ms at16 pairs and18.449/18.579ms
 at64 pairs, with129/183ms cold capture cost. HTTP medians moved11.995→10.212ms
 and28.980→28.370ms, but unchanged one-pair control also moved5.813→5.004ms.
 The experiment does not establish a substantial repeatable larger-batch gain.
+
+## Mixed-length padding reduction
+
+Native reranking now partitions a request into length buckets only when its
+original padded size is at least4096 tokens and partitioning saves at least half
+of the padded token work. Boundaries are64/128/256/512 tokens. Each partition
+still uses full bidirectional attention within each pair; no pair sees another
+pair's tokens. Scores are restored to original document indices before ranking.
+Small and homogeneous requests retain the previous path. Partitioned requests
+bypass CUDA graph capture to avoid variable-shape capture churn.
+
+`buckets/` contains CPU-reference, original-padded-path and full HTTP proofs on
+A2 and M4, including mixed/reversed document order, returned-buffer independence,
+concurrent isolation and unchanged usage. Maximum CPU reference errors across
+these cases are2.87e-6 A2 and4.30e-6 M4. Tests alternate baseline/optimized order
+across six measured rounds. GPU timings include input upload and score execution;
+HTTP timings include tokenization, scheduling, serialization and transfer.
+
+| Workload | A2 GPU before/after ms | M4 GPU before/after ms |
+|---|---:|---:|
+| 64 short pairs | 18.182 / 18.249 | 18.990 / 18.742 |
+| 63 short + one512-token pair | 483.400 / 26.998 | 418.143 / 27.696 |
+| 63 short + one224-token pair | 178.496 / 22.660 | 166.078 / 23.957 |
+| Four mixed lengths,64 pairs | 482.085 / 105.687 | 418.147 / 102.170 |
+| 16 pairs of512 tokens | 119.374 / 119.276 | 106.145 / 107.166 |
+
+The one-long-pair workload reduces padded tokens from32,768 to2,024. Complete
+HTTP medians improve498.883→41.927ms on A2 (11.90×) and434.410→43.656ms on M4
+(9.95×). This A/B comparison uses the same server, temporarily disabling only
+partition selection between completed requests for the baseline. It is not a
+new comparison with vLLM. Reproduce with `verify_rerank_buckets.py` and
+`verify_rerank_buckets_http.py`. Full unit/HTTP regression suite:207 tests pass.
