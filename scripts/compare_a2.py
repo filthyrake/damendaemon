@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--concurrencies',nargs='+',type=int,choices=range(1,9),default=[1,2,4])
     parser.add_argument('--host-gib', type=float, default=8)
     parser.add_argument('--dtype', choices=('half','float'), default='half', help='vLLM model arithmetic/storage precision')
+    parser.add_argument('--experimental-awq-decode', action='store_true')
     args = parser.parse_args()
     if not args.label.replace('-', '').replace('_', '').isalnum():
         parser.error('label must contain only letters, digits, hyphens or underscores')
@@ -55,7 +56,8 @@ def main():
             port = sock.getsockname()[1]
         env = dict(os.environ)
         if engine == 'dllm':
-            command = [sys.executable, '-m', 'dllm', 'serve', '--port', str(port), '--context', str(args.context),
+            module = 'scripts.experiments.serve_awq_decode' if args.experimental_awq_decode else 'dllm'
+            command = [sys.executable, '-m', module, 'serve', '--port', str(port), '--context', str(args.context),
                        '--batch-size', str(args.batch_size), '--host-gib', str(args.host_gib), '--model', 'a=' + model['path']]
         elif engine == 'llama.cpp':
             command = [str(root / 'baselines/llama-cuda-build/bin/llama-server'),

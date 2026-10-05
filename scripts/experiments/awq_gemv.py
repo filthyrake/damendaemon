@@ -40,14 +40,14 @@ def _finish(P, B, Y, M: tl.constexpr, N: tl.constexpr, GROUPS: tl.constexpr,
 
 
 def linear(x, matrix, bias=None, tile=64):
-    if tile not in (32, 64, 128) or matrix.group != 128 or not 1 <= x.shape[0] <= 4:
+    if tile not in (32, 64, 128, 256) or matrix.group != 128 or not 1 <= x.shape[0] <= 4:
         raise ValueError('GEMV experiment requires group-128 AWQ and one to four rows')
     x = x.contiguous()
     rows, outputs, groups = x.shape[0], matrix.outputs, matrix.inputs//128
     partial = torch.empty((groups, rows, outputs), device=x.device, dtype=torch.float32)
     result = torch.empty((rows, outputs), device=x.device, dtype=torch.float16)
     _partial[(tr.cdiv(outputs, tile), groups)](x, matrix.weight, matrix.zeros, matrix.scales,
-        partial, rows, matrix.inputs, outputs, tile, num_warps=4)
+        partial, rows, matrix.inputs, outputs, tile, num_warps=8 if tile == 256 else 4)
     _finish[(tr.cdiv(rows*outputs, 128),)](partial, partial if bias is None else bias,
         result, rows, outputs, groups, tr.next_power_of_2(groups), bias is not None, 128)
     return result

@@ -30,7 +30,7 @@ def main():
     choices = (2, 4, 8, 16)
     if args.gemv:
         from experiments import awq_gemv
-        candidate, choices = awq_gemv, (32, 64, 128)
+        candidate, choices = awq_gemv, (128, 256)
     if args.gemm_tiles:
         from experiments import awq_tiles
         candidate, choices = awq_tiles, (64, 128, 256)

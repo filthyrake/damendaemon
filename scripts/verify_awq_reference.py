@@ -52,6 +52,7 @@ def main():
     parser.add_argument('--output', required=True)
     parser.add_argument('--reference-attention', choices=('eager', 'sdpa'), default='eager',
                         help='independent HF attention implementation; recorded as qualification scope')
+    parser.add_argument('--experimental-awq-decode', action='store_true')
     parser.add_argument('--diagnostic-expanded-products', action='store_true',
                         help='isolate packed GEMM errors using temporary expanded FP16 products')
     parser.add_argument('--diagnostic-separate-products', action='store_true',
@@ -64,6 +65,10 @@ def main():
     if args.context < 512:
         parser.error('context must be at least 512')
     require_gpu()
+    experiment = None
+    if args.experimental_awq_decode:
+        from experiments.awq_decode import install_validation_dispatch
+        experiment = install_validation_dispatch()
     if args.diagnostic_rounded_attention:
         install_rounded_attention_diagnostic()
     if args.diagnostic_expanded_products:
@@ -90,6 +95,7 @@ def main():
                               for w, b in zip(weight.split(sizes), biases)], -1)
         awq_kernels.linear = separate_products
     report = dict(passed=False, diagnostic_expanded_products=args.diagnostic_expanded_products,
+                  experiment=experiment,
                   diagnostic_rounded_attention=args.diagnostic_rounded_attention,
                   diagnostic_separate_products=args.diagnostic_separate_products,
                   context=args.context, cases=[], model=str(path.resolve()),

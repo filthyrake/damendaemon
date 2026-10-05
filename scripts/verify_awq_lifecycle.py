@@ -25,8 +25,13 @@ def main():
     parser.add_argument('model')
     parser.add_argument('--context', type=int, default=2048)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--experimental-awq-decode', action='store_true')
     args = parser.parse_args()
     require_gpu()
+    experiment = None
+    if args.experimental_awq_decode:
+        from experiments.awq_decode import install_validation_dispatch
+        experiment = install_validation_dispatch()
     torch.set_num_threads(4)
     path = Path(args.model).resolve()
     source = load(path, args.context, 'none')
@@ -34,7 +39,7 @@ def main():
         raise ValueError('this gate requires native AWQ')
     messages = [dict(role='user', content='Explain binary search with a short worked example.')]
     prompt = source.chat_tokens(messages)
-    report = dict(passed=False, model=str(path), device=torch.cuda.get_device_name(),
+    report = dict(passed=False, experiment=experiment, model=str(path), device=torch.cuda.get_device_name(),
                   context=args.context, host_bytes=source.bytes, cycles=[],
                   alias_scope='two aliases of the same pinned AWQ checkpoint',
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
@@ -90,7 +95,8 @@ def main():
         with tempfile.TemporaryDirectory(prefix='dllm-awq-http-') as folder:
             log_path = Path(folder)/'server.log'
             with log_path.open('w') as log:
-                process = subprocess.Popen([sys.executable, '-m', 'dllm', 'serve', '--port', '0',
+                module = 'scripts.experiments.serve_awq_decode' if args.experimental_awq_decode else 'dllm'
+                process = subprocess.Popen([sys.executable, '-m', module, 'serve', '--port', '0',
                     '--context', str(args.context), '--gpu-models', '1', '--host-models', '2',
                     '--batch-size', '2'], stdout=log, stderr=log)
                 try:

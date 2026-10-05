@@ -169,3 +169,13 @@ gains are much smaller and QKV regresses. Both reports are retained under
 The first wider-MMA-tile trial requested 106496 bytes of shared memory, above
 A2's 101376-byte limit. Its failure is retained; reduced pipeline stages are
 being measured separately.
+
+The resource-bounded wider-MMA run passes 384 checks, but larger tiles generally
+regress; its strongest gate/up gain is only about 2.5%. The final direct-reduction
+sweep passes 288 checks including three-row batches. The 256-output direct tile
+also regresses. The isolated candidate therefore retains the 128-output direct
+tile for QKV rows 1–2, output rows 1–4, gate/up rows 1–3 and down rows 1–4,
+only for the measured four projection shapes on A2. Other shapes/rows retain
+normal dispatch. `qwen25-small-candidate-reference-a2.json` passes all 128
+independent HF SDPA checks at 2048, worst relative RMS 0.8120%, with exact
+greedy choices. Runtime layout and serving gates remain separate.
