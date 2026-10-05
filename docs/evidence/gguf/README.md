@@ -319,3 +319,21 @@ host restoration and unload. These are import regressions on the same checkpoint
 and precision, not throughput comparisons with another engine. GPU qualification
 here stops at 512 tokens; the checkpoint's full advertised context is not proven
 by this import test. The local CPU/HTTP suite passes 273 tests.
+
+## Native K-quant kernel qualification
+
+`kquant-kernels-a2.json` records 24 format/layout cases and 192 matrix
+comparisons on A2, torch 2.6.0+cu124 / Triton 3.2.0 / gguf 0.19.0. Q4_K, Q5_K,
+Q6_K, legacy Q4_0/Q8_0 and floating segments are decoded from compact byte rows.
+Mixed segments cross output-tile boundaries. Exact FP16/FP32 expansion and
+FP16-rounded embedding lookup match independent `gguf.quants` decoding. Matrix
+products at 1/4/17/129 rows, including bias/no-bias, stay below 0.046% relative
+RMS versus independently expanded PyTorch products (gate <0.1%, TF32 disabled).
+Changed-ID embedding graphs and changed-input matrix graphs also pass.
+
+This is a kernel proof, not yet whole-model K-quant qualification or a speed
+claim. `scripts/verify_kquant_kernels.py` reproduces it. The initial dynamically
+branched segment implementation triggered a Triton 3.2 compiler failure;
+static segments with masked native loads passed. No whole-model expansion or
+requantization is needed by the kernels. FP32 multi-row matrix fallback expands
+one projection temporarily; FP16 products use native packed Tensor Core kernels.
