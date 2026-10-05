@@ -2,7 +2,52 @@
 // activation quantizer; source quantized bytes and scales remain unchanged.
 // Unlike native/q4_gemv.cu, multiplication applies the FP16 scale in FP32
 // without rounding each coefficient to FP16. This arithmetic is experimental.
+#ifdef DLLM_Q4_SINGLE_TERM
+#define dllm_residual_quantize dllm_residual_quantize_two_term_unused
+#endif
 #include "../../native/kquant_residual.cu"
+#ifdef DLLM_Q4_SINGLE_TERM
+#undef dllm_residual_quantize
+
+// Diagnostic only: measure the accuracy/cost of one absmax-scaled int8 term.
+// The normal Q4 library continues to use the qualified two-term quantizer.
+__global__ void quantize_single(const half* x, int8_t* q1, int8_t* q2,
+                                float4* scales, int groups) {
+    const int lane=threadIdx.x&31;
+    const int group=blockIdx.x*4+threadIdx.x/32;
+    if (group>=groups) return;
+    const int index=group*32+lane;
+    const float value=__half2float(x[index]);
+    float maximum=fabsf(value), sum=value;
+    for (int offset=16;offset;offset>>=1)
+        maximum=fmaxf(maximum,__shfl_xor_sync(0xffffffff,maximum,offset));
+    const float scale=maximum/127.f;
+    q1[index]=static_cast<int8_t>(scale==0.f?0:max(-127,min(127,__float2int_rn(value/scale))));
+    q2[index]=0;
+    for (int offset=16;offset;offset>>=1)
+        sum+=__shfl_down_sync(0xffffffff,sum,offset);
+    if (lane==0) scales[group]=make_float4(scale,0.f,sum,0.f);
+}
+
+extern "C" int dllm_residual_quantize(const void* x,void* q1,void* q2,void* scales,
+                                      int rows,int k,void* stream) {
+    if (!x || !q1 || !q2 || !scales || rows<1 || rows>4 || k<=0 || k%256)
+        return cudaErrorInvalidValue;
+    const int groups=rows*(k/32);
+    quantize_single<<<(groups+3)/4,128,0,reinterpret_cast<cudaStream_t>(stream)>>>(
+        static_cast<const half*>(x),static_cast<int8_t*>(q1),static_cast<int8_t*>(q2),
+        static_cast<float4*>(scales),groups);
+    return cudaGetLastError();
+}
+#endif
+
+extern "C" int dllm_q4_activation_terms() {
+#ifdef DLLM_Q4_SINGLE_TERM
+    return 1;
+#else
+    return 2;
+#endif
+}
 
 template<int Rows>
 __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs,
@@ -37,10 +82,14 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
             const int index=r*k+column;
             const int a=__dp4a(static_cast<int>(lo),*reinterpret_cast<const int*>(q1+index),
                         __dp4a(static_cast<int>(hi),*reinterpret_cast<const int*>(q1+index+16),0));
+            const float4 d=xs[index/32];
+#ifdef DLLM_Q4_SINGLE_TERM
+            accum[r]+=scale*static_cast<float>(a)*d.x;
+#else
             const int b=__dp4a(static_cast<int>(lo),*reinterpret_cast<const int*>(q2+index),
                         __dp4a(static_cast<int>(hi),*reinterpret_cast<const int*>(q2+index+16),0));
-            const float4 d=xs[index/32];
             accum[r]+=scale*(static_cast<float>(a)*d.x+static_cast<float>(b)*d.y);
+#endif
         }
     }
     #pragma unroll

@@ -1374,3 +1374,48 @@ The option remains disabled by default. Context, kernels, precision and weights
 are identical within each comparison; this is not a new cross-engine parity
 claim. The implementation and validation complete the bounded opt-in scope of
 issue #47; wider scheduling/performance work remains open.
+
+
+### TinyLlama full context and activation-precision diagnostic
+
+The ordinary native K-quant path passes all 64 independent HF checks at context
+2048 in `tinyllama-q4-k-m-reference-2048-a2.json`, including a 2041-token prompt
+and eight output positions. Worst RMS is 0.32765%, maximum absolute error
+0.04296875, and every greedy token agrees. All 128 layout checks also pass in
+`tinyllama-q4-k-m-layout-2048-a2.json` (worst RMS 0.09839%), using prompt lengths
+4/128/1024/1920, batches 1/2/4, eager/graphs, fixed/paged KV and 128-token chunks.
+The layout verifier now accepts `--context`; its 512 default retains the original
+workloads. These checks qualify the checkpoint's full declared context for
+those execution layouts; existing HTTP performance/lifecycle measurements
+remain at 512.
+
+The pinned llama.cpp CUDA source converts inputs to Q8_1 in its
+[`mmvq` path](https://github.com/ggml-org/llama.cpp/blob/836d57176dc699a726c55418e4f96b8ca628e1bf/ggml/src/ggml-cuda/mmvq.cu),
+while dllm's qualified Q4 residual path uses two int8 terms. Same weight bytes
+and FP16 KV do not imply identical internal activation arithmetic. An independent
+single-term absmax/127 diagnostic is enabled only when building
+`scripts/experiments/q4_residual.cu` with `-DDLLM_Q4_SINGLE_TERM=1`. It uses FP32
+activation scaling and is not a bitwise reimplementation of Q8_1.
+
+`q4-single-term-matrices-a2.json` retains the failed numerical gate: 18 of 108
+matrix/range checks pass, 90 fail the unchanged 0.1% RMS limit; worst relative
+RMS is 0.56752%. All timings are diagnostic, not accepted model-performance
+claims. In the same run, large single-row cases are 13–15% faster than the
+qualified two-term production kernel, whose hash is also recorded:
+
+| Outputs / width | Original native ms | Qualified two-term ms | Diagnostic one-term ms |
+|---|---:|---:|---:|
+| 6144 / 4096 | 0.1500 | 0.1189 | 0.1034 |
+| 4096 / 4096 | 0.1015 | 0.0817 | 0.0708 |
+| 28672 / 4096 | 0.6966 | 0.5329 | 0.4542 |
+| 4096 / 14336 | 0.3426 | 0.2823 | 0.2397 |
+| 32000 / 4096 | 0.7801 | 0.5959 | 0.5071 |
+
+This identifies a measurable accuracy/cost tradeoff; it does not attribute the
+entire cross-engine gap to that difference. The diagnostic is not selected by
+normal runtime dispatch and does not replace the qualified two-term kernel.
+Build with `nvcc -O3 -std=c++17 -arch=sm_86 -DDLLM_Q4_SINGLE_TERM=1 -shared
+-Xcompiler -fPIC scripts/experiments/q4_residual.cu -o PATH.so`, then use
+`profile_q4_residual.py --two-term-library PATH_TO_PRODUCTION_LIBRARY` with the
+existing experimental/native library environment variables. Its nonzero exit
+status is the preserved accuracy failure, not a successful qualification.

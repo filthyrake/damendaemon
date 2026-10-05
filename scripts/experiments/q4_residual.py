@@ -18,6 +18,16 @@ def library(path):
     return handle,quantize,multiply
 
 
+def activation_terms(path):
+    handle,_,_=library(path)
+    function=getattr(handle,'dllm_q4_activation_terms',None)
+    if function is None:return 2  # Earlier two-term experimental builds.
+    function.argtypes=[];function.restype=ctypes.c_int
+    terms=function()
+    if terms not in (1,2):raise RuntimeError('unsupported experimental activation quantizer')
+    return terms
+
+
 def linear(x,weights,scales,bias=None):
     rows,width=x.shape;outputs=weights.shape[0]
     if (not x.is_cuda or x.dtype!=torch.float16 or not x.is_contiguous() or not 1<=rows<=4 or width%256
@@ -50,6 +60,9 @@ def install_validation_dispatch():
             return linear(x,weights,scales,bias)
         return original(x,weights,scales,bias)
     native_q4.linear_if_enabled=candidate
-    return dict(name='experimental Q4 two-term int8',library=str(path),sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+    terms=activation_terms(str(path))
+    return dict(name=f'experimental Q4 {terms}-term int8',activation_terms=terms,
+                activation_scaling='absmax/127' if terms==1 else 'two dyadic residual terms',
+                library=str(path),sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                 arithmetic='FP32 coefficient scaling; not rounded FP16 coefficients',
                 scope='single row, width >=4096 divisible by 256, outputs >=1024',production_dispatch=False)

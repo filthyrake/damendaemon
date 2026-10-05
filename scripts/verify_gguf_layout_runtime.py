@@ -19,8 +19,10 @@ from dllm.runtime import make_executor, require_gpu
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model'); parser.add_argument('--output', required=True)
+    parser.add_argument('--context',type=int,default=512,help='context capacity, at least 512')
     parser.add_argument('--experimental-q4-residual', action='store_true')
     args = parser.parse_args()
+    if args.context<512:parser.error('--context must be at least 512')
     experiment = None
     if args.experimental_q4_residual:
         from experiments.q4_residual import install_validation_dispatch
@@ -28,16 +30,22 @@ def main():
     if os.environ.get('DLLM_KV_CACHE_TOKENS'):
         raise ValueError('run with no inherited KV pool override')
     require_gpu(); torch.set_num_threads(4); torch.backends.cuda.matmul.allow_tf32 = False
-    source = GgufWeights(args.model, 512, 'none')
+    source = GgufWeights(args.model, args.context, 'none')
     corpus = source.raw_tokens('The library contains books about oceans and mountains. ')
-    prompts = [(corpus * ((n+len(corpus)-1)//len(corpus)))[:n] for n in (4, 128, 256, 384)]
+    prompts = [(corpus * ((n+len(corpus)-1)//len(corpus)))[:n]
+               for n in (4,128,args.context//2,args.context-128)]
     traces = []; checks = []
-    report = dict(experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=512,
+    report = dict(experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=args.context,
+                  prompt_lengths=[len(ids) for ids in prompts], chunk_size=128,
                   model=str(Path(args.model).resolve()), host_bytes=source.bytes, comparisons=checks,
                   scope='layout equivalence to single-request fixed eager; independent model accuracy is separate')
     kquant_path = os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
     if kquant_path:
         report['native_kquant_library'] = dict(path=kquant_path,sha256=hashlib.sha256(Path(kquant_path).read_bytes()).hexdigest())
+    kquant_residual_path = os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
+    if kquant_residual_path:
+        report['native_kquant_residual_library'] = dict(path=kquant_residual_path,
+            sha256=hashlib.sha256(Path(kquant_residual_path).read_bytes()).hexdigest())
     library = os.environ.get('DLLM_Q4_CUDA_LIBRARY')
     if library:
         report['native_q4_library'] = dict(path=library, sha256=hashlib.sha256(Path(library).read_bytes()).hexdigest())
@@ -65,7 +73,7 @@ def main():
             del actual, executor
             gc.collect(); empty_cache()
             for paged in (False, True):
-                if paged:os.environ['DLLM_KV_CACHE_TOKENS'] = '1024'
+                if paged:os.environ['DLLM_KV_CACHE_TOKENS'] = str(((2*args.context+15)//16)*16)
                 else:os.environ.pop('DLLM_KV_CACHE_TOKENS', None)
                 for graph in (False, True):
                     print(f'Checking paged={paged}, graph={graph}', flush=True)
@@ -79,8 +87,9 @@ def main():
                             if step < 7:actual, _ = executor.decode_batch(expected.argmax(-1).tolist(), slots)
                         if paged:
                             for slot in slots:executor.release_request(slot)
-                    for start in range(0, 384, 128):
-                        actual = executor.prefill_chunk(prompts[3][start:start+128],0,start,final=start==256)
+                    for start in range(0,len(prompts[3]),128):
+                        actual = executor.prefill_chunk(prompts[3][start:start+128],0,start,
+                                                       final=start+128>=len(prompts[3]))
                     for step in range(8):
                         compare(actual, traces[3][step], paged=paged, graph=graph, kind='chunked', step=step)
                         if step < 7:actual, _ = executor.decode_batch(traces[3][step].argmax(-1).tolist(), [0])

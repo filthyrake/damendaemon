@@ -10,11 +10,12 @@ import triton.testing
 from dllm.runtime import require_gpu
 from dllm.quantization import quantize_q4, dequantize_q4
 from dllm.quantized_kernels_q4 import linear as production
-from experiments.q4_residual import linear as candidate
+from experiments.q4_residual import linear as candidate, activation_terms
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output',required=True)
+    p.add_argument('--two-term-library',help='also time the qualified single-row production residual library')
     p.add_argument('--production',action='store_true');args=p.parse_args()
     require_gpu();torch.set_num_threads(4);torch.manual_seed(713)
     torch.backends.cuda.matmul.allow_tf32=False
@@ -23,7 +24,13 @@ def main():
     if args.production:
         from dllm.native_q4_residual import linear
         evaluate=lambda x,w,s,b:linear(x,w,s,b,library_path=str(path))
+    control=None
+    if args.two_term_library:
+        from dllm.native_q4_residual import linear as two_term
+        control=lambda x,w,s,b:two_term(x,w,s,b,library_path=args.two_term_library)
     report=dict(production=args.production, device=torch.cuda.get_device_name(),torch=torch.__version__,passed=False,
+                activation_terms=2 if args.production else activation_terms(str(path)),
+                two_term_library_sha256=hashlib.sha256(Path(args.two_term_library).read_bytes()).hexdigest() if control else None,
                 candidate_library_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                 production_library_sha256=hashlib.sha256(Path(os.environ['DLLM_Q4_CUDA_LIBRARY']).read_bytes()).hexdigest(),
                 scope='synthetic matrices; FP16-rounded coefficient oracle; not model or serving qualification',checks=[])
@@ -49,6 +56,8 @@ def main():
                 timing=dict(outputs=n,width=k,rows=rows,
                     production_ms=triton.testing.do_bench_cudagraph(lambda:production(x,weights,scales,bias),rep=100),
                     candidate_ms=triton.testing.do_bench_cudagraph(lambda:evaluate(x,weights,scales,bias),rep=100))
+                if control and rows==1:
+                    timing['two_term_ms']=triton.testing.do_bench_cudagraph(lambda:control(x,weights,scales,bias),rep=100)
                 report.setdefault('timings',[]).append(timing);print(json.dumps(timing),flush=True)
             del weights,scales,decoded
         report['passed']=all(c['passed'] for c in report['checks'])
