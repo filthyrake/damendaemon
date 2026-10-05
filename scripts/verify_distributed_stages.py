@@ -21,7 +21,10 @@ def main():
     parser.add_argument('trace')
     parser.add_argument('--output',required=True)
     parser.add_argument('--model-path')
+    parser.add_argument('--fail-rank',type=int,choices=(0,1),help='inject an isolated worker failure for lifecycle validation')
+    parser.add_argument('--fail-after',type=int,default=3,help='completed activation transfers before failure injection')
     args=parser.parse_args()
+    if args.fail_after<1:parser.error('fail-after must be positive')
     rank=int(os.environ['RANK']); local_rank=int(os.environ['LOCAL_RANK'])
     if int(os.environ['WORLD_SIZE'])!=2:parser.error('exactly two workers required')
     torch.cuda.set_device(local_rank)
@@ -36,6 +39,9 @@ def main():
         reference_torch=trace['reference_torch'],reference_dtype=trace['reference_dtype'],quantization=model.quantization,
         checks=[],scope='fixed-trace distributed layer experiment; not a serving protocol')
     output=Path(args.output.format(rank=rank))
+    report['final_report']=False
+    report['failure_injection_rank']=args.fail_rank
+    output.write_text(json.dumps(report,indent=2)+'\n')
     try:
         dist.init_process_group('nccl',timeout=timedelta(seconds=30),device_id=torch.device('cuda',local_rank))
         # Compare exact trusted trace and configuration before any activation sizes
@@ -46,6 +52,7 @@ def main():
         dist.all_gather(peers,local)
         if not torch.equal(peers[0],peers[1]):raise ValueError('worker trace/configuration mismatch')
         lengths=[0]*4
+        transfers=0
         for event in trace['trace']:
             if event['kind']=='prefill':
                 batches=[(prompt,[slot],[0],target) for prompt,slot,target in zip(
@@ -72,6 +79,9 @@ def main():
                         dtype=stage.residual_dtype,device='cuda')
                     operation=dist.P2POp(dist.irecv,hidden,0)
                 for work in dist.batch_isend_irecv([operation]):work.wait()
+                transfers+=1
+                if rank==args.fail_rank and transfers==args.fail_after:
+                    raise RuntimeError('injected stage worker failure')
                 if rank==1:
                     actual=(stage.run_prefill(hidden,pos,slots[0]) if prefill
                             else stage.run_decode(hidden,pos,slot_tensor)).float().cpu()
@@ -96,6 +106,7 @@ def main():
         report['error']=repr(error)
         raise
     finally:
+        report['final_report']=True
         output.write_text(json.dumps(report,indent=2)+'\n')
         if dist.is_initialized():dist.destroy_process_group()
 

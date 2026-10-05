@@ -106,3 +106,15 @@ output-stage checks pass, worst relative RMS 0.005336, maximum absolute error
 0.052735, every greedy token exact. Checkpoint, context, and slots match the
 FP16 experiment, but precision differs; these are correctness results, not a
 matched-precision speed comparison. Cross-host Q8 has not been qualified.
+
+## Worker failure and fresh restart
+
+A deliberate exception on rank one after its third completed activation transfer
+causes the two-worker job to exit unsuccessfully; the launcher terminates its
+peer. The initial probe revealed that a terminated peer could leave no report.
+The harness now writes an initial `passed: false, final_report: false` record,
+and only marks the report final when its own completion/error handler runs.
+The repeated failure probe retains both the incomplete peer record and the
+injected worker's explicit error. A fresh pair then passes all 82 FP16 reference
+checks (`qwen2-worker-restart-rank*.json`). This demonstrates failed-job reporting
+and a clean new job; it is not transparent worker recovery or resumable requests.
