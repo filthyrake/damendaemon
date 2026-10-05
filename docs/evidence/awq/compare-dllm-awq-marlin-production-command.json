@@ -1,0 +1,28 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/venv/bin/python",
+    "-m",
+    "dllm",
+    "serve",
+    "--port",
+    "35555",
+    "--context",
+    "2048",
+    "--batch-size",
+    "4",
+    "--host-gib",
+    "8",
+    "--model",
+    "a=/home/damen/dllm-dev/baselines/awq/snapshots/db09cd27ead7fee40cdee309693cf83601b9c899"
+  ],
+  "model": {
+    "path": "/home/damen/dllm-dev/baselines/awq/snapshots/db09cd27ead7fee40cdee309693cf83601b9c899",
+    "repo": "Qwen/Qwen2.5-0.5B-Instruct-AWQ",
+    "revision": "db09cd27ead7fee40cdee309693cf83601b9c899"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_DEVICE": "cuda",
+    "DLLM_AWQ_MARLIN_LIBRARY": "/home/damen/dllm-dev/build-awq-qualified/libdllm-awq-marlin.so"
+  }
+}

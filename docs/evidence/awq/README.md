@@ -294,3 +294,12 @@ All 343 local regression tests pass; scope tests cover unsupported geometry,
 context, precision, hardware, absent opt-in and explicit incompatible-library
 failure. Batch-capacity exclusion was also checked after limiting selection to
 four. A final serving confirmation uses the CMake-built library.
+
+Final ordinary serving with the CMake-built library measures 237.0/413.7/693.5
+aggregate tokens/s and 0.2695/0.3082/0.3657-second total latency at concurrency
+1/2/4. Keep this confirmation separate from the interleaved experiment figures.
+The ordinary decode profile measures 3.615 ms of CUDA kernel time per step:
+1.626 ms in the dense vocabulary head, 1.598 ms in Marlin, and the remainder
+in attention/norm/rotary/elementwise work. Profiling uses a different prompt
+and profiler instrumentation; it explains costs rather than replacing HTTP
+timing. The earlier original AWQ profile spent about 5.037 ms in packed GEMMs.
