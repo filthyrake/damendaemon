@@ -458,6 +458,13 @@ control medians vary between phases (0.719 vs 0.540 seconds), so its aggregate
 service results, not decode-only throughput or a cross-runtime comparison.
 See [HTTP measurements and phase medians](evidence/architectures/olmoe-device-grouped-http-summary-a2.json).
 
+A further 32-row/128-column projection tile passes all 32 standalone and 82
+independent full-model checks, but does not improve on the narrower experimental
+tile. Prefill medians are 0.245/0.340/0.505/0.884/1.657 seconds at
+32/128/256/512/1024 input tokens, versus paired stable controls of
+0.342/0.456/0.536/0.803/1.343 seconds. It stays disabled; see
+[wider-tile timings](evidence/architectures/olmoe-device-grouped32x128-prefill-a2.json).
+
 
 ## Q8 short-prefill latency
 

@@ -13,8 +13,9 @@ def main():
     parser.add_argument('script')
     parser.add_argument('arguments', nargs=argparse.REMAINDER)
     parser.add_argument('--block-rows', type=int, choices=(16, 32), default=16)
+    parser.add_argument('--block-columns', type=int, choices=(64, 128), default=64)
     args = parser.parse_args()
-    report = install_validation_dispatch(args.block_rows)
+    report = install_validation_dispatch(args.block_rows, args.block_columns)
     report.update(script=args.script, arguments=args.arguments, completed=False)
     try:
         sys.argv = [args.script, *args.arguments]

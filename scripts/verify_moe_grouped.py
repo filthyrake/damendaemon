@@ -15,12 +15,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', required=True)
     parser.add_argument('--block-rows', type=int, choices=(16, 32), default=16)
+    parser.add_argument('--block-columns', type=int, choices=(64, 128), default=64)
     args = parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
     torch.manual_seed(342)
     torch.backends.cuda.matmul.allow_tf32 = False
-    report = dict(passed=False, block_rows=args.block_rows, cases=[], device=torch.cuda.get_device_name(),
+    report = dict(passed=False, block_rows=args.block_rows, block_columns=args.block_columns, cases=[], device=torch.cuda.get_device_name(),
         source_sha256=hashlib.sha256(Path('scripts/experiments/moe_grouped.py').read_bytes()).hexdigest(),
         scope='synthetic grouped projections; independent FP32 dense reference; not runtime registration')
     try:
@@ -47,7 +48,7 @@ def main():
                         x=torch.randn(rows if shared else rows*top,width,device='cuda')
                         expected=torch.stack([torch.nn.functional.linear(x[i//top if shared else i],reference[e])
                                               for i,e in enumerate(expert_ids)])
-                        actual=linear(x,weights,scales,routes,outputs,shared)
+                        actual=linear(x,weights,scales,routes,outputs,shared,args.block_columns)
                         error=actual-expected
                         rms=(error.square().mean()/expected.square().mean().clamp_min(1e-12)).sqrt().item()
                         torch.testing.assert_close(actual,expected,rtol=1e-4,atol=.002)
@@ -58,7 +59,7 @@ def main():
                                   relative_rms=rms,max_absolute=error.abs().max().item())
                         report['cases'].append(case)
                         case['graph_ms']=triton.testing.do_bench_cudagraph(
-                            lambda:linear(x,weights,scales,routes,outputs,shared),rep=50)
+                            lambda:linear(x,weights,scales,routes,outputs,shared,args.block_columns),rep=50)
                         print(json.dumps(case),flush=True)
         report['passed']=True
     except Exception as error:

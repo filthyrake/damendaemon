@@ -1,0 +1,854 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+  "device": "NVIDIA A2",
+  "backend": "triton+q8_0-olmoe",
+  "quantization": "q8_0",
+  "scope": "same resident weights and prompts; control/candidate/candidate/control; prefill only",
+  "comparison": "numerical",
+  "baseline_sha256": "27736a2b91aae81f1b18043dca921354a5ea8f3cd35b01f37822b68cbc3d0094",
+  "candidate_source": "/home/damen/dllm-dev/scripts/experiments/moe_grouped.py",
+  "candidate_sha256": "3ad644ea34af17d2b934f471f4d6bdbef0e3ebd1a14f6312357c8c8e37012e59",
+  "cases": [
+    {
+      "prompt_tokens": 32,
+      "rounds": [
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.3360260939807631,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.3411245280003641,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.3276043639925774,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.2446907699923031,
+          "bitwise_equal": false,
+          "relative_rms": 4.038529937133717e-07,
+          "max_absolute": 8.821487426757812e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.2451700859819539,
+          "bitwise_equal": false,
+          "relative_rms": 4.038529937133717e-07,
+          "max_absolute": 8.821487426757812e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.24537061201408505,
+          "bitwise_equal": false,
+          "relative_rms": 4.038529937133717e-07,
+          "max_absolute": 8.821487426757812e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.24514933000318706,
+          "bitwise_equal": false,
+          "relative_rms": 4.038529937133717e-07,
+          "max_absolute": 8.821487426757812e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.24526380602037534,
+          "bitwise_equal": false,
+          "relative_rms": 4.038529937133717e-07,
+          "max_absolute": 8.821487426757812e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.24525308201555163,
+          "bitwise_equal": false,
+          "relative_rms": 4.038529937133717e-07,
+          "max_absolute": 8.821487426757812e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.3424474830098916,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.34308212401811033,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.36340299699804746,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        }
+      ],
+      "profiles": {
+        "control": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 49,
+            "self_cpu_us": 258.77199999992445
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 98.36700000004203
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 544.0720000001638
+          },
+          {
+            "name": "aten::bincount",
+            "calls": 16,
+            "self_cpu_us": 576.0379999999604
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 512.7820000000065
+          }
+        ],
+        "candidate": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 1,
+            "self_cpu_us": 30.898999999999887
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 56.32899999999427
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 411.1779999999826
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 204522.057
+          }
+        ]
+      },
+      "peak_extra_allocated_bytes": {
+        "control": 54265344,
+        "candidate": 54265344
+      }
+    },
+    {
+      "prompt_tokens": 128,
+      "rounds": [
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.46375679000630043,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.46417596301762387,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.4589966860075947,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.3398132320144214,
+          "bitwise_equal": false,
+          "relative_rms": 4.580245729357557e-07,
+          "max_absolute": 8.58306884765625e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.34008440098841675,
+          "bitwise_equal": false,
+          "relative_rms": 4.580245729357557e-07,
+          "max_absolute": 8.58306884765625e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.3401190559961833,
+          "bitwise_equal": false,
+          "relative_rms": 4.580245729357557e-07,
+          "max_absolute": 8.58306884765625e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.3401466670038644,
+          "bitwise_equal": false,
+          "relative_rms": 4.580245729357557e-07,
+          "max_absolute": 8.58306884765625e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.33986435999395326,
+          "bitwise_equal": false,
+          "relative_rms": 4.580245729357557e-07,
+          "max_absolute": 8.58306884765625e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.34028680899064057,
+          "bitwise_equal": false,
+          "relative_rms": 4.580245729357557e-07,
+          "max_absolute": 8.58306884765625e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.4480418000021018,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.4522475090052467,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.4531947630166542,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        }
+      ],
+      "profiles": {
+        "control": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 49,
+            "self_cpu_us": 242.73800000005338
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 72.55100000001403
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 514.4069999999942
+          },
+          {
+            "name": "aten::bincount",
+            "calls": 16,
+            "self_cpu_us": 555.1419999998443
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 517.9150000000373
+          }
+        ],
+        "candidate": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 1,
+            "self_cpu_us": 17.498000000000047
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 46.720999999997275
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 435.66700000002356
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 297791.902
+          }
+        ]
+      },
+      "peak_extra_allocated_bytes": {
+        "control": 69078016,
+        "candidate": 69078016
+      }
+    },
+    {
+      "prompt_tokens": 256,
+      "rounds": [
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.5349158409808297,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.5372123559936881,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.5395937249995768,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.5032822510111146,
+          "bitwise_equal": false,
+          "relative_rms": 4.0884421537157323e-07,
+          "max_absolute": 7.62939453125e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.5042512180225458,
+          "bitwise_equal": false,
+          "relative_rms": 4.0884421537157323e-07,
+          "max_absolute": 7.62939453125e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.5048508910113014,
+          "bitwise_equal": false,
+          "relative_rms": 4.0884421537157323e-07,
+          "max_absolute": 7.62939453125e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.5041536119824741,
+          "bitwise_equal": false,
+          "relative_rms": 4.0884421537157323e-07,
+          "max_absolute": 7.62939453125e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.505324236000888,
+          "bitwise_equal": false,
+          "relative_rms": 4.0884421537157323e-07,
+          "max_absolute": 7.62939453125e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.5054512659844477,
+          "bitwise_equal": false,
+          "relative_rms": 4.0884421537157323e-07,
+          "max_absolute": 7.62939453125e-06,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.5322125759848859,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.5371252140030265,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.5318110740045086,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        }
+      ],
+      "profiles": {
+        "control": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 49,
+            "self_cpu_us": 262.5079999998402
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 78.91200000010349
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 541.8690000001752
+          },
+          {
+            "name": "aten::bincount",
+            "calls": 16,
+            "self_cpu_us": 661.8580000003099
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 530.140000000014
+          }
+        ],
+        "candidate": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 1,
+            "self_cpu_us": 17.67599999999993
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 46.41099999999369
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 414.04500000002326
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 463663.24199999997
+          }
+        ]
+      },
+      "peak_extra_allocated_bytes": {
+        "control": 81795072,
+        "candidate": 81795072
+      }
+    },
+    {
+      "prompt_tokens": 512,
+      "rounds": [
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.7993601530033629,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.7997655489889439,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.8039835350064095,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.8822209610079881,
+          "bitwise_equal": false,
+          "relative_rms": 5.768960704699566e-07,
+          "max_absolute": 1.33514404296875e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.8828975429933053,
+          "bitwise_equal": false,
+          "relative_rms": 5.768960704699566e-07,
+          "max_absolute": 1.33514404296875e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.8835558709979523,
+          "bitwise_equal": false,
+          "relative_rms": 5.768960704699566e-07,
+          "max_absolute": 1.33514404296875e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.8852860750048421,
+          "bitwise_equal": false,
+          "relative_rms": 5.768960704699566e-07,
+          "max_absolute": 1.33514404296875e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.8845184480014723,
+          "bitwise_equal": false,
+          "relative_rms": 5.768960704699566e-07,
+          "max_absolute": 1.33514404296875e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.884391150000738,
+          "bitwise_equal": false,
+          "relative_rms": 5.768960704699566e-07,
+          "max_absolute": 1.33514404296875e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.8022224449960049,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.8033390110067558,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.8035106220049784,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        }
+      ],
+      "profiles": {
+        "control": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 49,
+            "self_cpu_us": 323.36399999971763
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 76.84400000006781
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 565.3349999998713
+          },
+          {
+            "name": "aten::bincount",
+            "calls": 16,
+            "self_cpu_us": 823.4949999999526
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 1892.326000000001
+          }
+        ],
+        "candidate": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 1,
+            "self_cpu_us": 16.19900000000007
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 50.837999999996555
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 450.1890000000012
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 835253.695
+          }
+        ]
+      },
+      "peak_extra_allocated_bytes": {
+        "control": 113258496,
+        "candidate": 113258496
+      }
+    },
+    {
+      "prompt_tokens": 1024,
+      "rounds": [
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 1.3378129689954221,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 1.3437018890108448,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 1.339919446996646,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 1.6565428909962066,
+          "bitwise_equal": false,
+          "relative_rms": 5.785615257991594e-07,
+          "max_absolute": 1.3589859008789062e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 1.6562235850142315,
+          "bitwise_equal": false,
+          "relative_rms": 5.785615257991594e-07,
+          "max_absolute": 1.3589859008789062e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 1.6553646109823603,
+          "bitwise_equal": false,
+          "relative_rms": 5.785615257991594e-07,
+          "max_absolute": 1.3589859008789062e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 1.6577918860130012,
+          "bitwise_equal": false,
+          "relative_rms": 5.785615257991594e-07,
+          "max_absolute": 1.3589859008789062e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 1.6584516310249455,
+          "bitwise_equal": false,
+          "relative_rms": 5.785615257991594e-07,
+          "max_absolute": 1.3589859008789062e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 1.6585899589990731,
+          "bitwise_equal": false,
+          "relative_rms": 5.785615257991594e-07,
+          "max_absolute": 1.3589859008789062e-05,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 1.3437922970042564,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 1.3430098700046074,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 1.345050520991208,
+          "bitwise_equal": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "greedy_equal": true
+        }
+      ],
+      "profiles": {
+        "control": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 49,
+            "self_cpu_us": 313.91500000064684
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 97.38299999982428
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 977.7080000002697
+          },
+          {
+            "name": "aten::bincount",
+            "calls": 16,
+            "self_cpu_us": 797.5510000004979
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 30207.27099999995
+          }
+        ],
+        "candidate": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 1,
+            "self_cpu_us": 11.521999999999935
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 53.07299999999623
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 892.4229999999548
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 1605235.136
+          }
+        ]
+      },
+      "peak_extra_allocated_bytes": {
+        "control": 176185344,
+        "candidate": 201516544
+      }
+    }
+  ]
+}
