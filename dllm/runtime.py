@@ -8,6 +8,7 @@ import threading
 import time
 
 from .device import selected_device, synchronize, empty_cache
+from .prompts import decode_output
 
 
 def require_gpu():
@@ -345,7 +346,7 @@ class Runtime:
                     if output_decoder is not None:
                         delta,reasoning,text_stop=output_decoder.feed(token,final=stop or index==max_tokens-1)
                     else:
-                        decoded = model.tokenizer.decode(output, skip_special_tokens=True)
+                        decoded = decode_output(model, output)
                         delta, emitted, text_stop = text_delta(decoded, emitted, stops, stop or index == max_tokens-1)
                     stop = stop or text_stop
                     event={"token": token, "text": delta}

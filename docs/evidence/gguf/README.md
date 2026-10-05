@@ -1071,3 +1071,38 @@ maximum absolute error 0.089844 and RMS 0.4425%, with exact greedy agreement
 hashes the selected native library. The merge reconstruction attribution and
 Apache-2.0 text are retained in `dllm/gguf_sentencepiece.py` and
 `docs/licenses/transformers-Apache-2.0.txt`.
+
+The first same-file normal-server A/B/B/A comparison is preserved in
+`mistral-spm-q4-http-a2.json`. Both dllm phases pass cross-checkpoint
+Mistral→Qwen3→Mistral switching, host restore, full disk reload, cancellation
+recovery, streaming and concurrent chat. The whole comparison remains
+`passed: false`: the 16-token prompt generates different words across engines;
+the 400-token prompt differs by an initial space. Medians for 16 output tokens:
+
+| Input / concurrency | dllm native Q4 | llama.cpp | Text equal |
+| --- | ---: | ---: | --- |
+| 16 / 1 | 0.720051 s | 0.494891 s | No |
+| 129 / 1 | 1.029845 s | 0.648294 s | Yes |
+| 400 / 1 | 1.245919 s | 0.958910 s | No, leading space |
+| 129 / 2 | 1.524126 s | 0.803146 s | Yes |
+
+Both engines use the same file, explicit token IDs, 512 tokens per slot, four
+slots and FP16 KV. dllm uses its qualified mixed policy; this does not imply
+identical internal arithmetic. The matching 129-token cases show dllm 59%/90%
+slower at concurrency 1/2. No performance-parity claim is made.
+
+The independent HF replay of those exact benchmark IDs passes all 96 checks,
+with exact greedy agreement, maximum absolute error 0.023438 and RMS 0.0812%
+(`mistral-spm-q4-engine-prompts-reference-a2.json`). The differing short-prompt
+words therefore do not reproduce against the independent reference.
+
+The leading-space case exposed a serving boundary error. Full-text native
+`llama_detokenize` removes an artificial initial space; generated continuations
+use `llama_token_to_piece` with no such removal. `decode_output` now selects a
+continuation decoder for GGUF SentencePiece in both serialized and batched
+runtime paths, leaving ordinary full-text decode intact. The updated native
+adapter verifies 512 continuation outputs, 512 encodings and 1,024 full-text
+decodings (`mistral-spm-generated-tokenizer-reference.json`, accompanying oracle,
+and the earlier expanded request corpus). Scheduler streaming and fallback
+regressions pass; the complete local suite has 298 tests. The earlier failed
+HTTP report is intentionally retained; post-fix server comparison is separate.

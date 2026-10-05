@@ -36,3 +36,10 @@ def encode(model, messages, raw_prompt=None, enable_thinking=None, tools=None, t
     if tools is not None:options['tools']=tools
     if tool_json:options['tool_json']=True
     return model.chat_tokens(messages,**options)
+
+
+def decode_output(model, tokens):
+    """Generated continuations may preserve space that full-text decoding strips."""
+    tokenizer = model.tokenizer
+    decode = getattr(tokenizer, 'decode_generated', tokenizer.decode)
+    return decode(tokens, skip_special_tokens=True)

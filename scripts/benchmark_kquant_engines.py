@@ -33,9 +33,12 @@ def main():
     parser.add_argument('--prefill-f32',action='store_true',help='compare production FP32 residual decode with experimental compensated prefill')
     parser.add_argument('--production-residual-f32',action='store_true',help='exercise normal CLI per-executor FP32 selection')
     parser.add_argument('--lifecycle',action='store_true',help='also check dllm cancellation, swapping and reloads after timing')
+    parser.add_argument('--swap-model', help='optional different GGUF checkpoint for lifecycle swapping')
+    parser.add_argument('--native-format', choices=('kquant','q4'), default='kquant', help='native decode library format')
     parser.add_argument('--native-library',required=True);parser.add_argument('--output',required=True)
     args=parser.parse_args()
-    if args.lifecycle and args.llama_server:parser.error('--lifecycle requires a dllm candidate comparison')
+    if args.swap_model and not args.lifecycle:parser.error('--swap-model requires --lifecycle')
+    if args.native_format=='q4' and not args.llama_server:parser.error('--native-format q4 requires --llama-server')
     if args.production_prefill_f32:args.prefill_f32=True
     if args.prefill_f32:args.production_residual_f32=True
     if args.production_residual_f32 and not args.residual_f32_library:
@@ -47,12 +50,13 @@ def main():
     llama=Path(args.llama_server).resolve() if args.llama_server else None
     residual_argument=args.residual_library or args.residual_f32_library
     residual=Path(residual_argument).resolve() if residual_argument else None
+    swap_model=Path(args.swap_model).resolve() if args.swap_model else model
     output=Path(args.output)
     tokenizer=Tokenizer.from_str(plan(model).tokenizer_json)
     base_tokens=tokenizer.encode('Binary search repeatedly halves a sorted range. A detailed explanation follows: ',
                                 add_special_tokens=True).ids
     prompts={length:(base_tokens*((length+len(base_tokens)-1)//len(base_tokens)))[:length] for length in (16,129,400)}
-    report=dict(model=str(model),model_sha256=digest(model),native_library=str(library),
+    report=dict(native_format=args.native_format, model=str(model),model_sha256=digest(model),native_library=str(library),
         native_library_sha256=digest(library),llama_server=str(llama) if llama else None,llama_server_sha256=digest(llama) if llama else None,
         residual_library=str(residual) if residual else None,
         residual_library_sha256=digest(residual) if residual else None,
@@ -61,6 +65,7 @@ def main():
         gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=512,slots=4,kv_dtype='float32' if precision=='float32' else 'float16',
         dllm_precision='FP32 matrices, residual/nonlinear and KV' if precision=='float32' else 'mixed: FP16 matrices, FP32 residual/nonlinear',output_tokens=16,
         prompts=prompts,warmup_rounds=3,measured_rounds=6,runs=[])
+    report['swap_model']=dict(path=str(swap_model),sha256=digest(swap_model)) if args.swap_model else None
     report['production_residual_f32']=args.production_residual_f32
     report['experimental_prefill_f32']=args.prefill_f32 and not args.production_prefill_f32
     report['production_prefill_f32']=args.production_prefill_f32
@@ -71,7 +76,10 @@ def main():
     environment=os.environ.copy()
     environment.pop('DLLM_KQUANT_RESIDUAL_F32_LIBRARY',None)
     environment.pop('DLLM_KQUANT_PREFILL_F32',None)
-    environment.update(DLLM_DEVICE='cuda',DLLM_KQUANT_CUDA_LIBRARY=str(library),DLLM_LLAMA_PRECISION=precision,
+    environment.pop('DLLM_Q4_CUDA_LIBRARY',None)
+    environment.pop('DLLM_KQUANT_CUDA_LIBRARY',None)
+    environment['DLLM_Q4_CUDA_LIBRARY' if args.native_format=='q4' else 'DLLM_KQUANT_CUDA_LIBRARY']=str(library)
+    environment.update(DLLM_DEVICE='cuda',DLLM_LLAMA_PRECISION=precision,
         DLLM_QWEN3_PRECISION='float32' if precision=='float32' else 'standard',
         DLLM_SPECULATIVE_TOKENS='0',DLLM_QUANTIZATION='none',OMP_NUM_THREADS='4')
     production_residual=os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
@@ -168,7 +176,7 @@ def main():
                         case['median_seconds']=statistics.median(r['seconds'] for r in measured)
                         case['median_aggregate_output_tokens_per_second']=statistics.median(
                             r['aggregate_output_tokens_per_second'] for r in measured)
-                    if args.lifecycle:
+                    if args.lifecycle and engine!='llama.cpp':
                         def post(route,body):
                             return urlopen(Request(base+route,data=json.dumps(body).encode(),
                                 headers={'Content-Type':'application/json'}),timeout=300)
@@ -184,12 +192,16 @@ def main():
                         if args.production_prefill_f32:
                             assert ('compensated-kquant-prefill-f32' in run['kernel_backend']) == (engine==counterpart)
                         checks['host_restore']=True
-                        json_post('/v1/models/register',dict(model='b',path=str(model),quantization='none'))
-                        other=json_post('/v1/completions',{**body,'model':'b'})
+                        json_post('/v1/models/register',dict(model='b',path=str(swap_model),quantization='none'))
+                        swap_body={**body,'model':'b'}
+                        if args.swap_model:swap_body['prompt']='Explain binary search in one sentence.'
+                        other=json_post('/v1/completions',swap_body)
                         restored=json_post('/v1/completions',body)
-                        assert other['choices'][0]['text']==expected and restored['choices'][0]['text']==expected
+                        if not args.swap_model:assert other['choices'][0]['text']==expected
+                        assert other['usage']['completion_tokens']>0 and restored['choices'][0]['text']==expected
                         assert restored['dllm_timing']['source_tier']=='host'
-                        checks['alias_swap']=True
+                        checks['model_swap' if args.swap_model else 'alias_swap']=True
+                        if args.swap_model:checks['swap_sample']=other['choices'][0]['text']
                         json_post('/v1/models/unload',dict(model='a',release_host=True))
                         restored=json_post('/v1/completions',body)
                         assert restored['dllm_timing']['source_tier']=='disk' and restored['choices'][0]['text']==expected
@@ -199,6 +211,21 @@ def main():
                         recovered=json_post('/v1/completions',body)
                         assert recovered['choices'][0]['text']==expected
                         checks['cancellation_recovery']=True
+                        chat_body=dict(model='a',messages=[dict(role='user',content='Explain binary search in one short sentence.')],
+                                       temperature=0,max_tokens=32)
+                        chat=json_post('/v1/chat/completions',chat_body)
+                        chat_text=chat['choices'][0]['message']['content']
+                        with post('/v1/chat/completions',{**chat_body,'stream':True}) as response:
+                            chunks=list(events(response))
+                        assert chunks[-1]=='[DONE]'
+                        streamed=''.join(c.get('delta',{}).get('content','') for item in chunks[:-1]
+                                         for c in json.loads(item)['choices'])
+                        assert streamed==chat_text
+                        with ThreadPoolExecutor(2) as pool:
+                            concurrent=list(pool.map(lambda _:json_post('/v1/chat/completions',chat_body),range(2)))
+                        assert all(r['choices'][0]['message']['content']==chat_text for r in concurrent)
+                        checks['chat_stream_and_concurrency']=True
+                        checks['chat_sample']=chat_text
                 finally:
                     process.terminate()
                     try:process.wait(timeout=20)

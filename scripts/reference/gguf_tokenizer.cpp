@@ -38,6 +38,18 @@ int main(int argc, char ** argv) {
             if (bytes < 0) return 5;
             response[skip ? "decoded_skip_special" : "decoded"] = std::string(output.data(), bytes);
         }
+        std::string generated;
+        for (auto id : ids) {
+            std::vector<char> piece(128);
+            int bytes = llama_token_to_piece(vocab, id, piece.data(), piece.size(), 0, false);
+            if (bytes < 0) {
+                piece.resize(-bytes);
+                bytes = llama_token_to_piece(vocab, id, piece.data(), piece.size(), 0, false);
+            }
+            if (bytes < 0) return 6;
+            generated.append(piece.data(), bytes);
+        }
+        response["generated"] = generated;
         std::cout << response.dump() << '\n';
     }
     llama_model_free(model);

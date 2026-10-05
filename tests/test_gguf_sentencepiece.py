@@ -2,6 +2,7 @@ import importlib.util
 import math
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 import unittest
 
 from tokenizers import Tokenizer
@@ -50,6 +51,15 @@ class SentencePieceGgufTests(unittest.TestCase):
         self.assertEqual(result.decode([1, 264]), ' ab')
         self.assertEqual(result.decode_batch([[264], [1, 264], [0, 264]]), ['ab', ' ab', ' ab'])
         self.assertIsInstance(result.backend_tokenizer, Tokenizer)
+
+    def test_generation_preserves_leading_space_without_changing_text_decode(self):
+        from dllm.prompts import decode_output
+        result, _, _ = tokenizer(metadata())
+        self.assertEqual(result.decode([264]), 'ab')
+        self.assertEqual(decode_output(SimpleNamespace(tokenizer=result), [264]), ' ab')
+        self.assertEqual(decode_output(SimpleNamespace(tokenizer=result), [1, 264]), ' ab')
+        plain = Tokenizer.from_str(result.to_str())
+        self.assertEqual(decode_output(SimpleNamespace(tokenizer=plain), [264]), 'ab')
 
     def test_declared_unknown_can_be_a_control_token(self):
         source = metadata()

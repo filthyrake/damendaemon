@@ -101,5 +101,10 @@ class SentencePieceTokenizer:
                    else self.backend_tokenizer)
         return decoder.decode(ids, skip_special_tokens=skip_special_tokens)
 
+    def decode_generated(self, ids, skip_special_tokens=True):
+        # A continuation has no artificial beginning-of-text prefix to remove.
+        # Match llama.cpp server token-to-piece output, not full detokenization.
+        return self._unstripped.decode(ids, skip_special_tokens=skip_special_tokens)
+
     def decode_batch(self, sequences, skip_special_tokens=True):
         return [self.decode(ids, skip_special_tokens=skip_special_tokens) for ids in sequences]

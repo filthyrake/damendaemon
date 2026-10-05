@@ -15,6 +15,7 @@ import time
 from .runtime import Runtime, BusyError
 from .sampling import Sampling, Sampler, sample_rows
 from .stopping import stop_sequences, text_delta
+from .prompts import decode_output
 
 
 @dataclass(eq=False)
@@ -246,7 +247,7 @@ class BatchedRuntime:
         if request.output_decoder is not None:
             delta,reasoning,text_stop=request.output_decoder.feed(token,final=finished)
         else:
-            decoded = executor.model.tokenizer.decode(request.output, skip_special_tokens=True)
+            decoded = decode_output(executor.model, request.output)
             delta, request.emitted, text_stop = text_delta(decoded, request.emitted, request.stops, finished)
         stop = stop or text_stop
         finished = finished or text_stop

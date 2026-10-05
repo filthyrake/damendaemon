@@ -50,11 +50,17 @@ def main():
             case['decode'].append(dict(skip_special_tokens=skip, expected=expected, actual=actual,
                 equal=expected == actual == restored.decode(ids, skip_special_tokens=skip),
                 unwrapped_equal=expected == serialized.decode(ids, skip_special_tokens=skip)))
+        if 'generated' in reference:
+            actual = runtime.decode_generated(ids) if hasattr(runtime,'decode_generated') else runtime.decode(ids)
+            repeated = restored.decode_generated(ids) if hasattr(restored,'decode_generated') else restored.decode(ids)
+            case['generated'] = dict(expected=reference['generated'], actual=actual,
+                                     equal=reference['generated']==actual==repeated)
         report['cases'].append(case)
-    report['passed'] = all(case['encode_equal'] and all(d['equal'] for d in case['decode']) for case in report['cases'])
+    report['passed'] = all(case['encode_equal'] and case.get('generated',{}).get('equal',True) and all(d['equal'] for d in case['decode']) for case in report['cases'])
     Path(args.output).write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps(dict(passed=report['passed'], encode_checks=len(report['cases']),
         decode_checks=sum(len(c['decode']) for c in report['cases']),
+        generated_checks=sum('generated' in c for c in report['cases']),
         hf_mismatches=sum(not c.get('hf_equal', True) for c in report['cases']),
         unwrapped_decode_mismatches=sum(not d['unwrapped_equal'] for c in report['cases'] for d in c['decode']))))
     if not report['passed']:raise AssertionError('GGUF tokenizer reference mismatch')

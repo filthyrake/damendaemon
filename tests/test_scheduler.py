@@ -74,6 +74,12 @@ class SchedulerTests(unittest.TestCase):
     def generate(self, alias='a', prompt='ok', count=5):
         return self.runtime.generate(alias, [{'content': prompt}], count)
 
+    def test_generated_decoder_preserves_continuation_space_in_stream(self):
+        self.executor.model.tokenizer.decode_generated = lambda tokens, **_: ' '+''.join(map(str,tokens))
+        self.executor.release.set()
+        events = list(self.generate(count=3))
+        self.assertEqual(''.join(event.get('text','') for event in events), ' 123')
+
     def wait_pending(self, count):
         deadline = time.monotonic() + 3
         while time.monotonic() < deadline:
