@@ -1,0 +1,118 @@
+{
+  "scope": "A2 pinned Qwen3-4B AWQ; 129 explicit input tokens, 64 outputs, context 2048; native/control/control/native; warmups excluded; FP16 matrices/KV and FP32 residuals in both dllm paths",
+  "passed": true,
+  "cases": [
+    {
+      "concurrency": 1,
+      "native": {
+        "rounds": 10,
+        "total_seconds": 1.2664681285095867,
+        "first_output_seconds": 0.10310460900655016,
+        "aggregate_tokens_per_second": 50.51949201289092,
+        "phases": [
+          {
+            "phase": "native-a1",
+            "aggregate_tokens_per_second": 50.80592873272815
+          },
+          {
+            "phase": "native-a2",
+            "aggregate_tokens_per_second": 49.95207130028318
+          }
+        ]
+      },
+      "control": {
+        "rounds": 10,
+        "total_seconds": 3.286032575997524,
+        "first_output_seconds": 0.22541582449048292,
+        "aggregate_tokens_per_second": 19.474252260527628,
+        "phases": [
+          {
+            "phase": "control-b1",
+            "aggregate_tokens_per_second": 19.492421617201263
+          },
+          {
+            "phase": "control-b2",
+            "aggregate_tokens_per_second": 19.43162980162397
+          }
+        ]
+      },
+      "latency_reduction_percent": 61.459051326503314,
+      "throughput_gain_percent": 159.4168512199511
+    },
+    {
+      "concurrency": 2,
+      "native": {
+        "rounds": 10,
+        "total_seconds": 1.4370084260008298,
+        "first_output_seconds": 0.1854214805207448,
+        "aggregate_tokens_per_second": 88.59391124752844,
+        "phases": [
+          {
+            "phase": "native-a1",
+            "aggregate_tokens_per_second": 88.70461226439657
+          },
+          {
+            "phase": "native-a2",
+            "aggregate_tokens_per_second": 88.23152280840428
+          }
+        ]
+      },
+      "control": {
+        "rounds": 10,
+        "total_seconds": 3.583274068980245,
+        "first_output_seconds": 0.30843808349163737,
+        "aggregate_tokens_per_second": 35.32801024490092,
+        "phases": [
+          {
+            "phase": "control-b1",
+            "aggregate_tokens_per_second": 35.331899976455716
+          },
+          {
+            "phase": "control-b2",
+            "aggregate_tokens_per_second": 35.32412051334614
+          }
+        ]
+      },
+      "latency_reduction_percent": 59.896776011615984,
+      "throughput_gain_percent": 150.77526482068336
+    },
+    {
+      "concurrency": 4,
+      "native": {
+        "rounds": 10,
+        "total_seconds": 1.7230570904939668,
+        "first_output_seconds": 0.3839745595032582,
+        "aggregate_tokens_per_second": 147.77761211496386,
+        "phases": [
+          {
+            "phase": "native-a1",
+            "aggregate_tokens_per_second": 148.85003273175911
+          },
+          {
+            "phase": "native-a2",
+            "aggregate_tokens_per_second": 146.6725232558368
+          }
+        ]
+      },
+      "control": {
+        "rounds": 10,
+        "total_seconds": 3.878521891005221,
+        "first_output_seconds": 0.6468721374985762,
+        "aggregate_tokens_per_second": 65.87158209147907,
+        "phases": [
+          {
+            "phase": "control-b1",
+            "aggregate_tokens_per_second": 65.98654030243601
+          },
+          {
+            "phase": "control-b2",
+            "aggregate_tokens_per_second": 65.77940763587671
+          }
+        ]
+      },
+      "latency_reduction_percent": 55.574387900453715,
+      "throughput_gain_percent": 124.34198090116904
+    }
+  ],
+  "identical_output_text": true
+}

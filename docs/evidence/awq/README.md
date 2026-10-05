@@ -416,3 +416,26 @@ at 1.8317 seconds, retained as a lifecycle observation rather than a swap-speed
 benchmark. The normal model-factory, independent-reference, layout and server
 proofs now all cover the native Qwen3 backend. Matched throughput measurements
 are the next gate and are not inferred from these correctness results.
+
+## Qwen3-4B AWQ repeated native HTTP comparison
+
+The native/control/control/native sequence uses the same pinned checkpoint,
+129 explicit input tokens, 64 generated tokens, context 2048 and batch capacity
+four on A2. Each phase has one excluded warmup and five measured rounds per
+concurrency. Both dllm paths use FP16 matrices/KV and FP32 residuals. All measured
+responses have identical text and token counts. Raw trials and launch commands
+are retained alongside `qwen3-4b-awq-marlin-http-summary-a2.json`.
+
+| Concurrency | Native tokens/s | Triton tokens/s | Native response seconds | Triton response seconds |
+|---|---:|---:|---:|---:|
+| 1 | 50.52 | 19.47 | 1.2665 | 3.2860 |
+| 2 | 88.59 | 35.33 | 1.4370 | 3.5833 |
+| 4 | 147.78 | 65.87 | 1.7231 | 3.8785 |
+
+These are medians across ten measured rounds per path; response latency uses
+individual requests and throughput uses complete concurrent rounds. Native
+first-output medians are 0.1031/0.1854/0.3840 seconds versus
+0.2254/0.3084/0.6469 seconds. Phase throughput medians remain in the summary:
+for example native concurrency-four varies from 148.85 to 146.67 tokens/s.
+This establishes improvement over dllm's Triton path on this workload; a
+separate matching vLLM measurement is still required for that comparison.

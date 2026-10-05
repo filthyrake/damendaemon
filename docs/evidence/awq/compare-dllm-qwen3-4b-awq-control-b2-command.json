@@ -1,0 +1,27 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/venv/bin/python",
+    "-m",
+    "dllm",
+    "serve",
+    "--port",
+    "41945",
+    "--context",
+    "2048",
+    "--batch-size",
+    "4",
+    "--host-gib",
+    "8",
+    "--model",
+    "a=/home/damen/dllm-dev/baselines/awq-qwen3/models--Qwen--Qwen3-4B-AWQ/snapshots/74d4bd2bd4bff9cafc9345221320bffb08b406a3"
+  ],
+  "model": {
+    "repository": "Qwen/Qwen3-4B-AWQ",
+    "revision": "74d4bd2bd4bff9cafc9345221320bffb08b406a3",
+    "path": "/home/damen/dllm-dev/baselines/awq-qwen3/models--Qwen--Qwen3-4B-AWQ/snapshots/74d4bd2bd4bff9cafc9345221320bffb08b406a3"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_DEVICE": "cuda"
+  }
+}
