@@ -1419,3 +1419,25 @@ Build with `nvcc -O3 -std=c++17 -arch=sm_86 -DDLLM_Q4_SINGLE_TERM=1 -shared
 `profile_q4_residual.py --two-term-library PATH_TO_PRODUCTION_LIBRARY` with the
 existing experimental/native library environment variables. Its nonzero exit
 status is the preserved accuracy failure, not a successful qualification.
+
+
+### TinyLlama native residual decode at 512 context
+
+The existing opt-in `DLLM_KQUANT_RESIDUAL_LIBRARY` passes 64 initial and 96
+extended independent HF checks on this published checkpoint, with exact greedy
+agreement. Reports `tinyllama-q4-k-m-residual-reference-a2.json` and
+`tinyllama-q4-k-m-residual-reference-extended-a2.json` record the selected normal
+backend and library hash. Worst RMS is 0.44765% initially and 0.46080% in the
+extended suite. All 128 layout checks pass in
+`tinyllama-q4-k-m-residual-layout-a2.json` (worst RMS 0.10958%).
+
+Normal-CLI A/B/B/A serving also passes every output/lifecycle gate in
+`tinyllama-q4-k-m-residual-production-http-a2.json`, including actual cross-model
+swaps. Combined baseline/residual median seconds are 0.2084/0.1906 (16/1),
+0.2342/0.2161 (129/1), 0.2741/0.2584 (400/1), 0.3431/0.3397 (129/2), and
+0.4937/0.4893 (129/4). Single-request latency improves 5.7–8.5%; the unchanged
+multi-row decode path is approximately tied. This run keeps idle admission at
+its default zero in both engines and does not claim combined-policy results.
+
+The currently qualified residual selection remains bounded to context 512.
+Longer-context activation is tested separately before changing that selection.
