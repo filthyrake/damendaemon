@@ -17,21 +17,60 @@ from dllm.awq_model import AwqWeights
 from dllm.runtime import make_executor, require_gpu
 
 
+def install_rounded_attention_diagnostic():
+    """Isolate eager FP16 attention rounding; never installed by the runtime."""
+    from dllm.qwen2 import Executor
+
+    def attention(self, query, key, value, positions):
+        repeats = query.shape[1] // key.shape[1]
+        key = key.repeat_interleave(repeats, dim=1)
+        value = value.repeat_interleave(repeats, dim=1)
+        scores = (query @ key.transpose(-1, -2)) * (self.dim ** -.5)
+        allowed = torch.arange(key.shape[-2], device=query.device) <= positions[..., None]
+        scores = scores.masked_fill(~allowed, torch.finfo(scores.dtype).min)
+        probabilities = scores.softmax(-1, dtype=torch.float32).to(query.dtype)
+        return probabilities @ value
+
+    def prefill(self, query, key, value, query_start=0):
+        positions = torch.arange(query_start, query_start+query.shape[-2], device=query.device)
+        return attention(self, query, key, value, positions)
+
+    def decode(self, query, key, value, positions, slots=None):
+        if slots is not None:
+            key, value = key.index_select(0, slots), value.index_select(0, slots)
+        return attention(self, query, key, value, positions[:, None, None])
+
+    Executor.prefill_attention = prefill
+    Executor.decode_attention = decode
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model')
     parser.add_argument('--upstream-source', required=True)
     parser.add_argument('--context', type=int, default=2048)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--diagnostic-expanded-products', action='store_true',
+                        help='isolate packed GEMM errors using temporary expanded FP16 products')
+    parser.add_argument('--diagnostic-rounded-attention', action='store_true',
+                        help='isolate eager FP16 attention rounding from fused attention')
     args = parser.parse_args()
     if args.context < 512:
         parser.error('context must be at least 512')
     require_gpu()
+    if args.diagnostic_rounded_attention:
+        install_rounded_attention_diagnostic()
+    if args.diagnostic_expanded_products:
+        from dllm import awq_kernels
+        awq_kernels.linear = lambda x, matrix, bias=None: torch.nn.functional.linear(
+            x, awq_kernels.expand(matrix), bias)
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32 = False
     path = Path(args.model)
     source = AwqWeights(path, args.context, 'none')
-    report = dict(passed=False, context=args.context, cases=[], model=str(path.resolve()),
+    report = dict(passed=False, diagnostic_expanded_products=args.diagnostic_expanded_products,
+                  diagnostic_rounded_attention=args.diagnostic_rounded_attention,
+                  context=args.context, cases=[], model=str(path.resolve()),
                   host_bytes=source.bytes, torch=torch.__version__, device=torch.cuda.get_device_name(),
                   reference='pinned upstream AWQ coefficient decoder; independent HF eager FP16 model execution',
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),

@@ -72,3 +72,16 @@ Both harness failures are retained in the `reference-assembly-failure` and
 `reference-interface-failure` reports. Repairs use ordinary no-grad reference
 weights with gradients disabled and unpack the existing decode interface;
 they do not change model arithmetic or accuracy thresholds.
+
+`qwen25-small-reference-numerical-failure-a2.json` completes all 128 model
+checks through context 2048 but passes only 120. Worst relative RMS is 2.704%
+and maximum absolute logit error is 0.65235. A separate greedy mismatch occurs
+where the independent reference's top two logits tie. Both eager and graph
+execution reproduce the failures. Registration remains disabled.
+
+`qwen25-small-reference-expanded-diagnostic-a2.json` replaces packed products
+only with temporary expanded FP16 products. It also passes only 120/128,
+with 2.683% worst relative RMS and 0.66114 maximum absolute error. This isolates
+the failure beyond the packed product alone; it is not a runtime fallback or
+a performance result. The verifier exposes explicitly named diagnostic flags
+and records them in each report.
