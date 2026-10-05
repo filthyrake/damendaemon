@@ -69,3 +69,25 @@ and rotary cosine/sine values exactly for seven layouts against Transformers
 5.18.0, including text-only and two-image prompts plus eight subsequent decode
 positions. Physical cache offsets remain distinct from rotary offsets. These
 helpers are not yet wired into the hybrid executor.
+
+## Experimental image/text computation
+
+`scripts/experiments/vision_qwen35.py` combines native preprocessing and image
+features with the hybrid text executor in a standalone validation path. It is
+not registered for serving; graph capture is disabled. Image-specific rotary
+offsets are stored per slot while KV addressing uses physical token positions.
+
+An independent Transformers full-model run provides three image-conditioned
+prompts (square, resized, and two images), each followed by eight teacher-forced
+decode steps. Reference text weights/arithmetic use FP16; the reference vision
+module is promoted from that loaded FP16 checkpoint to FP32 arithmetic. This is
+distinct from the earlier source-BF16-to-FP32 encoder oracle. Native vision uses
+FP16 projection storage and compensated FP32 arithmetic, with image features
+cast to the text embedding precision during fusion.
+
+All 27 full-model comparisons pass the existing logit gates (greedy agreement,
+relative RMS below 0.01, maximum absolute below 0.5). Worst RMS is 0.00367180 and
+maximum absolute error 0.0560737. Decode slots are reordered and batched. This
+does not clear the separate intermediate encoder failures, prove semantic image
+quality generally, or establish serving/performance support. Same-text/different-
+image and slot-reuse controls remain next.
