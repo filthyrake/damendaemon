@@ -496,10 +496,20 @@ It shares the existing forward implementation, keeps attention/cache segments
 separate and retains the sequential path outside that bound. Both independent
 suites pass on the integrated code: 234 regrouped checks and the original 82
 mixed-length checks. All 350 local tests pass, including selection boundaries.
-The repeated default-scheduler HTTP comparison and refreshed lifecycle proof are
-pending. See [normal batch gate](evidence/architectures/olmoe-packed-normal-batch-reference-a2.json),
+Refreshed mixed-model lifecycle proof is pending. See [normal batch gate](evidence/architectures/olmoe-packed-normal-batch-reference-a2.json),
 [original model gate](evidence/architectures/olmoe-packed-normal-full-reference-a2.json)
 and [source fingerprints](evidence/architectures/olmoe-packed-normal-source.json).
+
+Repeated default-scheduler HTTP measurements (32 input IDs, 32 outputs,
+control/candidate/candidate/control) preserve every response and token count.
+C4 median total latency improves from 1.667 to 1.384 seconds (17.0%), first
+output from 0.750 to 0.468 seconds (37.6%) and aggregate output throughput
+including prefill from 76.60 to 92.21 tokens/s. C1 and C2 total latency remain
+effectively unchanged (0.463 vs 0.461 and 0.861 vs 0.860 seconds). C2 candidate
+first-output phase medians vary (0.285 vs 0.221 seconds), reflecting request
+admission; do not interpret its combined first-output statistic as a uniform
+kernel gain. No scheduler coalescing setting was changed. See
+[HTTP measurements](evidence/architectures/olmoe-packed-http-summary-a2.json).
 
 
 ## Q8 short-prefill latency

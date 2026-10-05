@@ -1,0 +1,130 @@
+{
+  "scope": "A2 pinned OLMoE Q8, 32 identical input IDs, 32 outputs, context 2048, batch capacity 4; control/candidate/candidate/control; warmups excluded",
+  "cases": [
+    {
+      "concurrency": 1,
+      "control": {
+        "rounds": 10,
+        "total_seconds": 0.4629857755062403,
+        "first_output_seconds": 0.18825367050885689,
+        "aggregate_tokens_per_second": 69.04833606400774,
+        "phases": [
+          {
+            "phase": "control-b1",
+            "total_seconds": 0.4599962049978785,
+            "first_output_seconds": 0.188495073991362
+          },
+          {
+            "phase": "control-b2",
+            "total_seconds": 0.4633060690248385,
+            "first_output_seconds": 0.1882524250249844
+          }
+        ]
+      },
+      "candidate": {
+        "rounds": 10,
+        "total_seconds": 0.46098519999941345,
+        "first_output_seconds": 0.18787117648753338,
+        "aggregate_tokens_per_second": 69.34107069276556,
+        "phases": [
+          {
+            "phase": "candidate-a1",
+            "total_seconds": 0.4614555320004001,
+            "first_output_seconds": 0.18855342900496908
+          },
+          {
+            "phase": "candidate-a2",
+            "total_seconds": 0.459192668000469,
+            "first_output_seconds": 0.18764608399942517
+          }
+        ]
+      },
+      "total_seconds_reduction_percent": 0.4321030175580165,
+      "first_output_seconds_reduction_percent": 0.2031801134552147
+    },
+    {
+      "concurrency": 2,
+      "control": {
+        "rounds": 10,
+        "total_seconds": 0.8605440209939843,
+        "first_output_seconds": 0.3715734534926014,
+        "aggregate_tokens_per_second": 74.10951934218784,
+        "phases": [
+          {
+            "phase": "control-b1",
+            "total_seconds": 0.8598621999844909,
+            "first_output_seconds": 0.37171186148771085
+          },
+          {
+            "phase": "control-b2",
+            "total_seconds": 0.8624121554894373,
+            "first_output_seconds": 0.37154466098581906
+          }
+        ]
+      },
+      "candidate": {
+        "rounds": 10,
+        "total_seconds": 0.860388443514239,
+        "first_output_seconds": 0.22127108050335664,
+        "aggregate_tokens_per_second": 73.98248147239127,
+        "phases": [
+          {
+            "phase": "candidate-a1",
+            "total_seconds": 0.8622981925145723,
+            "first_output_seconds": 0.28477841899439227
+          },
+          {
+            "phase": "candidate-a2",
+            "total_seconds": 0.8548590920108836,
+            "first_output_seconds": 0.22127108050335664
+          }
+        ]
+      },
+      "total_seconds_reduction_percent": 0.018078968181722832,
+      "first_output_seconds_reduction_percent": 40.45024518745323
+    },
+    {
+      "concurrency": 4,
+      "control": {
+        "rounds": 10,
+        "total_seconds": 1.666906779501005,
+        "first_output_seconds": 0.7497593574953498,
+        "aggregate_tokens_per_second": 76.59563422145357,
+        "phases": [
+          {
+            "phase": "control-b1",
+            "total_seconds": 1.6656331935082562,
+            "first_output_seconds": 0.7495808320090873
+          },
+          {
+            "phase": "control-b2",
+            "total_seconds": 1.6672581029852154,
+            "first_output_seconds": 0.7498509904980892
+          }
+        ]
+      },
+      "candidate": {
+        "rounds": 10,
+        "total_seconds": 1.3837527965079062,
+        "first_output_seconds": 0.4675165079970611,
+        "aggregate_tokens_per_second": 92.20596688353685,
+        "phases": [
+          {
+            "phase": "candidate-a1",
+            "total_seconds": 1.390325052998378,
+            "first_output_seconds": 0.46797583799343556
+          },
+          {
+            "phase": "candidate-a2",
+            "total_seconds": 1.3807044534914894,
+            "first_output_seconds": 0.4669517389993416
+          }
+        ]
+      },
+      "total_seconds_reduction_percent": 16.986791731560547,
+      "first_output_seconds_reduction_percent": 37.64445840878208
+    }
+  ],
+  "identical_outputs": true,
+  "identical_prompts": true
+}
