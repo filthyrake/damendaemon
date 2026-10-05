@@ -29,6 +29,7 @@ def main():
     parser.add_argument('model'); parser.add_argument('--output', required=True)
     parser.add_argument('--context',type=int,default=512,help='context capacity, at least 512')
     parser.add_argument('--prompt-lengths', type=int, nargs=4, help='four explicit lengths, each leaving seven decode positions')
+    parser.add_argument('--chunk-size', type=int, default=128, help='positive chunk length for the final prompt')
     parser.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     parser.add_argument('--require-q4-small-tiles', action='store_true', help='require the normal A2 Q4 prompt policy')
     experiments=parser.add_mutually_exclusive_group()
@@ -40,6 +41,8 @@ def main():
     args = parser.parse_args()
     if args.context<512:parser.error('--context must be at least 512')
     lengths = args.prompt_lengths or (4, 128, args.context//2, args.context-128)
+    if args.chunk_size < 1:
+        parser.error('chunk size must be positive')
     if any(length <= 0 or length + 7 > args.context for length in lengths):
         parser.error('prompt lengths must be positive and leave seven decode positions')
     pool_tokens = paged_capacity(args.context, lengths)
@@ -71,7 +74,7 @@ def main():
     if hasattr(source.tokenizer,'native_model'):
         tokenizer_runtime.update(sentencepiece=version('sentencepiece'),protobuf=version('protobuf'))
     report = dict(tokenizer_runtime=tokenizer_runtime, experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=args.context,
-                  prompt_lengths=[len(ids) for ids in prompts], chunk_size=128,
+                  prompt_lengths=[len(ids) for ids in prompts], chunk_size=args.chunk_size,
                   paged_pool_tokens=pool_tokens,
                   model=str(Path(args.model).resolve()), host_bytes=source.bytes, comparisons=checks,
                   scope='layout equivalence to single-request fixed eager; independent model accuracy is separate')
@@ -138,9 +141,9 @@ def main():
                             if step < 7:actual, _ = executor.decode_batch(expected.argmax(-1).tolist(), slots)
                         if paged:
                             for slot in slots:executor.release_request(slot)
-                    for start in range(0,len(prompts[3]),128):
-                        actual = executor.prefill_chunk(prompts[3][start:start+128],0,start,
-                                                       final=start+128>=len(prompts[3]))
+                    for start in range(0,len(prompts[3]),args.chunk_size):
+                        actual = executor.prefill_chunk(prompts[3][start:start+args.chunk_size],0,start,
+                                                       final=start+args.chunk_size>=len(prompts[3]))
                     for step in range(8):
                         compare(actual, traces[3][step], paged=paged, graph=graph, kind='chunked', step=step)
                         if step < 7:actual, _ = executor.decode_batch(traces[3][step].argmax(-1).tolist(), [0])
