@@ -871,8 +871,9 @@ Resolved HF cache symlinks work even when their backing blob has no extension.
 Llama-style identity-normalized SentencePiece BPE is also accepted for the
 `llama` GGUF architecture. Its embedded vocabulary, scores, byte fallback and
 chat template need no HF sidecar files. Mistral's pinned original tokenizer
-passes native llama.cpp encoding/decoding checks; full-model qualification is
-tracked separately in issue #46. Placeholder/tied non-whitespace merge scores,
+passes native llama.cpp encoding/decoding checks. A vocabulary-corrected Mistral
+7B Q4 comparator passes independent full-logit and runtime-layout checks on A2
+at 512 context; broader qualification remains in issue #46. Placeholder/tied non-whitespace merge scores,
 Unigram and custom normalization are rejected explicitly.
 
 The embedded Qwen2 BPE tokenizer and chat template need no HF sidecar files.

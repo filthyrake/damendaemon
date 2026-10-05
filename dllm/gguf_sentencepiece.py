@@ -1,3 +1,8 @@
+# Score-ordered merge reconstruction adapted from Transformers 4.51.3.
+# Copyright 2018 The HuggingFace Inc. team.
+# Licensed under the Apache License, Version 2.0; see
+# docs/licenses/transformers-Apache-2.0.txt. Modifications: read GGUF metadata,
+# validate the supported vocabulary subset, preserve GGUF decoding semantics.
 """Reconstruct Llama-style SentencePiece BPE from standalone GGUF metadata.
 
 Score-ordered merge reconstruction follows the approach in Apache-2.0

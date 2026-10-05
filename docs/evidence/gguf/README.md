@@ -1063,3 +1063,11 @@ comparisons, with exact greedy agreement and maximum RMS 0.2654%:
 These are layout checks, not a substitute for the independent HF model oracle.
 Native library SHA-256:
 `29dffba1428aab9846a5b71464855a4d48e6fbd6b9ec8a89a47f64b1ef0dd063`.
+
+
+The native Q4 path additionally passes all 96 extended independent HF checks,
+maximum absolute error 0.089844 and RMS 0.4425%, with exact greedy agreement
+(`mistral-spm-q4-native-reference-extended-a2.json`). The report identifies and
+hashes the selected native library. The merge reconstruction attribution and
+Apache-2.0 text are retained in `dllm/gguf_sentencepiece.py` and
+`docs/licenses/transformers-Apache-2.0.txt`.

@@ -1348,3 +1348,15 @@ on A2, including actual HTTP model swapping and the embedded tokenizer/chat
 path. Quantized matrices retain their supplied values and scales. This is
 format coverage; it does not remove existing architecture/precision limits or
 qualify all GGUF formats. See [scope, exact fixtures and measurements](evidence/gguf/README.md).
+
+
+Llama 3 BPE and Llama-style SentencePiece BPE now also load through the standalone
+GGUF path. Mistral-7B-Instruct-v0.1's pinned original SentencePiece vocabulary
+passes 512 native encoding and 1,024 decoding checks. A separate Q4_0 comparator
+with those vocabulary scores preserves all 291 original packed weight tensors.
+At 512 context, 160 independent HF complete-logit checks and 128 runtime-layout
+checks pass. The optional CUDA C++ decode path passes another 128 layout checks
+and 96 extended HF checks, worst RMS 0.4425%, with greedy agreement throughout.
+The older placeholder-score vocabulary is explicitly rejected; its failed
+control is retained. This does not establish general SentencePiece, arbitrary
+equal-score BPE, longer-window semantics or serving/performance parity.
