@@ -82,6 +82,7 @@ def main():
     p = argparse.ArgumentParser(); p.add_argument('gguf'); p.add_argument('hf_config'); p.add_argument('--output', required=True)
     p.add_argument('--benchmark-report',help='validate the exact prompt IDs and output length from an engine comparison')
     p.add_argument('--context',type=int,default=512,help='context capacity; must be at least 512')
+    p.add_argument('--extra-prompt-tokens',type=int,nargs='*',default=[],help='additional raw prompt lengths, leaving eight decode positions')
     p.add_argument('--weight-rounding',choices=('float16','kquant-float32'),default='float16',
                    help='explicit coefficient policy; FP32 K projections retain FP16 embedding/vector values')
     p.add_argument('--serial-reference',action='store_true',help='cache independent HF logits, release HF GPU weights, then run dllm')
@@ -94,6 +95,7 @@ def main():
     p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
     p.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     experiments=p.add_mutually_exclusive_group()
+    experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
     experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
     experiments.add_argument('--experimental-residual-f32', action='store_true')
@@ -106,6 +108,9 @@ def main():
     if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
         p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
+    if args.experimental_q4_small_tiles:
+        from experiments.q4_small_tiles import install_validation_dispatch
+        experiment = install_validation_dispatch()
     if args.experimental_dense_cache:
         from experiments.kquant_dense_cache import install_validation_dispatch
         experiment = install_validation_dispatch()
@@ -162,6 +167,13 @@ def main():
         for length in (window - 1, window, window + 1):
             if length > 0 and length not in [len(ids) for ids in prompts]:
                 prompts.append((base * ((length+len(base)-1)//len(base)))[:length])
+    if args.extra_prompt_tokens and args.benchmark_report:
+        p.error('--extra-prompt-tokens cannot be combined with --benchmark-report')
+    if any(length < 1 or length + 7 > args.context for length in args.extra_prompt_tokens):
+        p.error('extra prompt lengths must be positive and leave eight decode positions')
+    for length in dict.fromkeys(args.extra_prompt_tokens):
+        if length not in [len(ids) for ids in prompts]:
+            prompts.append((base * ((length+len(base)-1)//len(base)))[:length])
     benchmark=json.loads(Path(args.benchmark_report).read_text()) if args.benchmark_report else None
     steps=8
     if benchmark:

@@ -96,3 +96,12 @@ policy and alternates control/candidate/candidate/control timings at 16, 32,
 64, 128, 129 and 256 rows. The 129/256-row cases already use the expanded path
 in production and provide a timing control. Matrix results do not qualify a
 model, a production dispatch change, or a server-level speedup.
+
+The `--tiles` mode instead compares 16/32-row fused tiles against production,
+with the same independent arithmetic gate. Real Mistral matrices favor 32-row
+tiles at 64 and 129 input rows; other tested sizes do not justify a change.
+`q4_small_tiles.py` isolates precisely those cases and projection shapes for
+model, layout and HTTP validation. Use `--experimental-q4-small-tiles` in the
+reference/layout verifiers or `--q4-small-tiles --native-format q4` in the engine
+benchmark. Include `--extra-prompt-tokens 64` in reference and HTTP workloads;
+the existing control lengths remain. Normal serving does not import this code.

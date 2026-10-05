@@ -30,6 +30,7 @@ def main():
     parser.add_argument('model')
     comparison=parser.add_mutually_exclusive_group(required=True)
     comparison.add_argument('--llama-server')
+    comparison.add_argument('--q4-small-tiles',action='store_true',help='compare isolated Q4 prompt tiles at 64/129 rows')
     comparison.add_argument('--expand-tiles',action='store_true',help='compare isolated exact-coefficient expansion tiles')
     comparison.add_argument('--dense-cache',action='store_true',help='compare isolated resident FP16 projection caching')
     comparison.add_argument('--batch-wait-ms',type=float,help='compare normal admission with an isolated idle-group coalescing delay')
@@ -46,6 +47,7 @@ def main():
     parser.add_argument('--production-residual-f32',action='store_true',help='exercise normal CLI per-executor FP32 selection')
     parser.add_argument('--include-concurrency-four',action='store_true',help='also measure four simultaneous 129-token prompts')
     parser.add_argument('--context',type=int,default=512,help='context capacity per slot, at least 512')
+    parser.add_argument('--extra-prompt-tokens',type=int,nargs='*',default=[],help='additional single-request prompt lengths; existing controls remain')
     parser.add_argument('--long-prompt-tokens',type=int,default=400,help='length of the long single-request workload')
     parser.add_argument('--prompt-text',default='Binary search repeatedly halves a sorted range. A detailed explanation follows: ',
                         help='text repeated to construct identical explicit prompt IDs for both engines')
@@ -55,15 +57,18 @@ def main():
     parser.add_argument('--native-library',required=True);parser.add_argument('--output',required=True)
     args=parser.parse_args()
     if args.context<512:parser.error('--context must be at least 512')
+    if any(n < 1 or n + 16 > args.context for n in args.extra_prompt_tokens):
+        parser.error('extra prompt lengths must be positive and leave 16 output tokens')
     if not args.prompt_text:parser.error('--prompt-text must be nonempty')
     if not 129<args.long_prompt_tokens<=args.context-16:
         parser.error('--long-prompt-tokens must exceed 129 and leave room for 16 output tokens')
     if args.swap_model and not args.lifecycle:parser.error('--swap-model requires --lifecycle')
     if args.batch_wait_ms is not None and (not math.isfinite(args.batch_wait_ms) or not 0<args.batch_wait_ms<=10):
         parser.error('--batch-wait-ms must be >0 and <=10')
-    if args.native_format=='q4' and not (args.llama_server or args.q4_residual_library or args.batch_wait_ms):
+    if args.native_format=='q4' and not (args.llama_server or args.q4_residual_library or args.batch_wait_ms or args.q4_small_tiles):
         parser.error('--native-format q4 requires a Q4 engine, kernel or admission comparison')
     if args.q4_residual_library and args.native_format!='q4':parser.error('Q4 candidate requires --native-format q4')
+    if args.q4_small_tiles and args.native_format!='q4':parser.error('Q4 tiles require --native-format q4')
     if args.production_q4_residual and not args.q4_residual_library:parser.error('--production-q4-residual requires --q4-residual-library')
     if args.production_batch_wait and not args.batch_wait_ms:parser.error('--production-batch-wait requires --batch-wait-ms')
     if args.production_residual and not args.residual_library:parser.error('--production-residual requires --residual-library')
@@ -85,7 +90,7 @@ def main():
     source=plan(model);tokenizer=restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
     base_tokens=tokenizer.encode(args.prompt_text,add_special_tokens=True).ids
     prompts={length:(base_tokens*((length+len(base_tokens)-1)//len(base_tokens)))[:length]
-             for length in (16,129,args.long_prompt_tokens)}
+             for length in (16,129,args.long_prompt_tokens,*args.extra_prompt_tokens)}
     tokenizer_runtime=dict(kind=type(tokenizer).__name__)
     if hasattr(tokenizer,'native_model'):
         tokenizer_runtime.update(sentencepiece=version('sentencepiece'),protobuf=version('protobuf'))
@@ -105,6 +110,7 @@ def main():
     report['production_batch_wait_ms']=args.batch_wait_ms if args.production_batch_wait else None
     workloads=[(16,1),(129,1),(args.long_prompt_tokens,1),(129,2)]
     if args.include_concurrency_four:workloads.append((129,4))
+    workloads.extend((n,1) for n in dict.fromkeys(args.extra_prompt_tokens) if (n,1) not in workloads)
     report['workloads']=workloads
     report['production_q4_residual']=args.production_q4_residual
     report['production_residual_f32']=args.production_residual_f32
@@ -138,6 +144,10 @@ def main():
         report['experimental_arithmetic']+='; batch-two pure Q6 at (width, outputs)=(8192,2048) or (2048,128256)'
     counterpart='residual-int8-fp32' if precision=='float32' else 'residual-int8-v2' if residual else 'llama.cpp'
     if args.q4_residual_library:counterpart='q4-residual-int8'
+    if args.q4_small_tiles:
+        counterpart='q4-small-tiles'
+        report['experimental_arithmetic']='unchanged FP16 coefficients; paired-dot 32-row tiles at 64/129 rows'
+        report['tile_source_sha256']=digest(Path(__file__).parent/'experiments/q4_small_tiles.py')
     if args.batch_wait_ms:counterpart='coalesced-prefill'
     if args.expand_tiles:
         counterpart='expand-tiles'
@@ -181,6 +191,7 @@ def main():
                 phase_environment['DLLM_KQUANT_PREFILL_F32']='1'
             if engine!='llama.cpp':
                 module={'coalesced-prefill':'scripts.experiments.serve_batch_wait',
+                        'q4-small-tiles':'scripts.experiments.serve_q4_small_tiles',
                         'expand-tiles':'scripts.experiments.serve_expand_tiles',
                         'dense-cache':'scripts.experiments.serve_dense_cache',
                         'q4-residual-int8':'scripts.experiments.serve_q4_residual',

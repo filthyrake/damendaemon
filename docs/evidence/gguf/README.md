@@ -1969,3 +1969,10 @@ matrix multiplication takes 1.21–4.17 times the production fused-kernel time,
 including expansion on every call. At 129/256 rows both paths already use the
 same expansion policy and their timings agree within 0.1%. No dispatch change
 is justified, and no full-model speedup is claimed.
+
+The follow-up `mistral-q4-small-tiles-a2.json` checks smaller fused tiles instead.
+All 90 independent matrix checks pass. Across five real projection shapes,
+32-row tiles reduce kernel time by 20.9–25.9% at 64 input rows and 7.4–17.4%
+at 129 rows. Other measured sizes retain the production choice. The isolated
+candidate still needs full-model and real serving qualification; this report
+alone does not justify a normal runtime change.

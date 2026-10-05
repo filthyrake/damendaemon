@@ -31,6 +31,7 @@ def main():
     parser.add_argument('--prompt-lengths', type=int, nargs=4, help='four explicit lengths, each leaving seven decode positions')
     parser.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     experiments=parser.add_mutually_exclusive_group()
+    experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
     experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
     experiments.add_argument('--experimental-expand-tiles', action='store_true')
@@ -42,6 +43,9 @@ def main():
         parser.error('prompt lengths must be positive and leave seven decode positions')
     pool_tokens = paged_capacity(args.context, lengths)
     experiment = None
+    if args.experimental_q4_small_tiles:
+        from experiments.q4_small_tiles import install_validation_dispatch
+        experiment = install_validation_dispatch()
     if args.experimental_dense_cache:
         from experiments.kquant_dense_cache import install_validation_dispatch
         experiment = install_validation_dispatch()
