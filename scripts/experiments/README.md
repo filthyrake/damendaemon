@@ -85,3 +85,14 @@ admission-accounted and does not change normal runtime qualification.
 and checks independently expanded HF logits. Layout and HTTP comparisons have
 separate gates. Normal `DLLM_KQUANT_DENSE_CACHE_MIB` remains restricted to its
 qualified model scopes in `dllm/kquant_cache.py`.
+
+## Q4 prompt dispatch without resident copies
+
+`../profile_q4_dispatch.py MODEL --output REPORT.json` compares the current
+production prompt path with temporary expansion plus dense GEMM on actual model
+projections. Expansion is included in every candidate invocation; no dense
+weight cache survives the operation. It checks the existing FP16 coefficient
+policy and alternates control/candidate/candidate/control timings at 16, 32,
+64, 128, 129 and 256 rows. The 129/256-row cases already use the expanded path
+in production and provide a timing control. Matrix results do not qualify a
+model, a production dispatch change, or a server-level speedup.
