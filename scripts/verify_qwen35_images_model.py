@@ -41,20 +41,36 @@ def main():
         report['checks'].append(record)
         print(json.dumps(record),flush=True)
     try:
-        for slot,case in enumerate(reference['cases']):
-            pixels,grids=prepare_images(case['images'])
-            features=vision.encode(pixels,grids)
-            actual=executor.prefill_images(case['tokens'],features,grids,slot)
-            check(actual,case['targets'][0],case['name']+':prefill')
-        # Reordered slots exercise independent image offsets during batched decode.
-        slots=list(reversed(range(len(reference['cases']))))
-        for step in range(reference['steps']):
-            tokens=[reference['cases'][slot]['decode_tokens'][step] for slot in slots]
-            actual,_=executor.decode_batch(tokens,slots)
-            for row,slot in enumerate(slots):
-                case=reference['cases'][slot]
-                check(actual[row],case['targets'][step+1],case['name']+f':decode:{step}')
+        prefills={}
+        for start in range(0,len(reference['cases']),3):
+            cases=reference['cases'][start:start+3]
+            for slot,case in enumerate(cases):
+                if case['grids']:
+                    pixels,grids=prepare_images(case['images'])
+                    features=vision.encode(pixels,grids)
+                    actual=executor.prefill_images(case['tokens'],features,grids,slot)
+                else:
+                    actual=executor.prefill(case['tokens'],slot)
+                check(actual,case['targets'][0],case['name']+':prefill')
+                prefills[case['name']]=actual.float().cpu().clone()
+            # Reordered slots exercise independent image offsets during batched decode.
+            slots=list(reversed(range(len(cases))))
+            for step in range(reference['steps']):
+                tokens=[cases[slot]['decode_tokens'][step] for slot in slots]
+                actual,_=executor.decode_batch(tokens,slots)
+                for row,slot in enumerate(slots):
+                    case=cases[slot]
+                    check(actual[row],case['targets'][step+1],case['name']+f':decode:{step}')
         report['passed']=all(check['passed'] for check in report['checks'])
+        if 'square-inverted' in prefills:
+            cases={case['name']:case for case in reference['cases']}
+            original,changed=cases['square'],cases['square-inverted']
+            report['changed_image_control']=dict(same_tokens=original['tokens']==changed['tokens'],
+                native_logit_difference=(prefills['square']-prefills['square-inverted']).abs().max().item(),
+                reference_logit_difference=(original['targets'][0]-changed['targets'][0]).abs().max().item())
+            control=report['changed_image_control']
+            report['passed'] &= (control['same_tokens'] and control['native_logit_difference']>0
+                                 and control['reference_logit_difference']>0)
         if not report['passed']:raise AssertionError('independent image/text model gate failed')
     except BaseException as error:
         report['error']=repr(error)

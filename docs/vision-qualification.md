@@ -91,3 +91,11 @@ maximum absolute error 0.0560737. Decode slots are reordered and batched. This
 does not clear the separate intermediate encoder failures, prove semantic image
 quality generally, or establish serving/performance support. Same-text/different-
 image and slot-reuse controls remain next.
+
+The expanded six-prompt run adds identical text with inverted image pixels,
+reversed image order, and replacement of an image-bearing slot by a text-only
+request. All 54 independent comparisons pass, including reordered batched
+decode: worst relative RMS 0.00635574, maximum absolute 0.0787911, and every
+greedy choice agrees. With identical tokens, changed pixels produce a maximum
+logit difference of 0.845695 natively versus 0.838867 independently. This tests
+executor state reuse, not a serving prefix cache (none is enabled here).
