@@ -514,6 +514,13 @@ admission; do not interpret its combined first-output statistic as a uniform
 kernel gain. No scheduler coalescing setting was changed. See
 [HTTP measurements](evidence/architectures/olmoe-packed-http-summary-a2.json).
 
+An isolated offset-prefill experiment passes the original 82 independent model
+checks with 128-token chunks, including the 2032-token prompt and subsequent
+slot reuse/decode. Worst relative RMS is 0.000198%. It is not yet registered in
+the normal runtime; prefix-cache and service behavior require separate proof.
+See [chunked oracle](evidence/architectures/olmoe-chunk128-reference-a2.json)
+and [dispatch provenance](evidence/architectures/olmoe-chunk128-reference-dispatch.json).
+
 
 ## Q8 short-prefill latency
 
