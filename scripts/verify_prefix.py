@@ -3,6 +3,7 @@ import argparse
 import gc
 import json
 import os
+import sys
 import torch
 from transformers import AutoTokenizer
 from reference_model import load_reference
@@ -33,6 +34,7 @@ def main():
     checks=[]
     def check(prompt,slot):
         reused,logits=cache.restore(prompt,slot)
+        print(f'prefix check tokens={len(prompt)} slot={slot} reused={reused}',file=sys.stderr,flush=True)
         if logits is None:
             for start in range(reused,len(prompt),127):
                 logits=executor.prefill_chunk(prompt[start:start+127],slot,start,final=start+127>=len(prompt))

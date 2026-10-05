@@ -18,6 +18,7 @@ def main():
     p.add_argument('model')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     p.add_argument('--chunk-size',type=int,default=0)
+    p.add_argument('--host-gib',type=float,default=8)
     args=p.parse_args()
     tokenizer=Tokenizer.from_file(str(Path(args.model)/'tokenizer.json'))
     tokenizer.no_padding();tokenizer.no_truncation()
@@ -30,6 +31,7 @@ def main():
             with logpath.open('w') as log:
                 process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--device',args.device,
                     '--context','2048','--batch-size','4','--gpu-models','1','--host-models','2',
+                    '--host-gib',str(args.host_gib),
                     '--prefix-cache-tokens',str(budget),'--prefill-chunk-size',str(args.chunk_size),'--model','a='+args.model,'--model','b='+args.model],stdout=log,stderr=log)
                 try:
                     deadline=time.monotonic()+120
@@ -85,7 +87,7 @@ def main():
     assert [r['choices'] for r in rows[0]['partial_trials']]==[r['choices'] for r in rows[1]['partial_trials']]
     print(json.dumps({'passed':True,'model':args.model,'device':args.device,
         'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')},
-        'prefill_chunk_size':args.chunk_size,'prompt_tokens':len(prompt),'max_output_tokens':8,'results':rows},indent=2))
+        'prefill_chunk_size':args.chunk_size,'host_gib':args.host_gib,'prompt_tokens':len(prompt),'max_output_tokens':8,'results':rows},indent=2))
 
 
 if __name__=='__main__':main()

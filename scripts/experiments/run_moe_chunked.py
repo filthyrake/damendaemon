@@ -17,6 +17,7 @@ def main():
     report.update(script=args.script, arguments=args.arguments, completed=False)
     try:
         sys.argv = [args.script, *args.arguments]
+        sys.path.insert(0, str(Path(args.script).resolve().parent))
         runpy.run_path(args.script, run_name='__main__')
         if not report['selected_calls']:
             raise AssertionError('chunked MoE prefill was not exercised')
