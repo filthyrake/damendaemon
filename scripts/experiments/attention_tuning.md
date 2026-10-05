@@ -43,3 +43,11 @@ repeated in eager/graph modes. All greedy tokens match. The 1% RMS gate stays
 unchanged and this candidate is not promoted. Its reports retain the original
 source hash. A two-piece FP16 representation of FP32 probabilities is the next
 precision experiment; its extra tensor-core product must also be timed.
+
+The two-piece probability candidate also fails four of 128 layout comparisons:
+fixed batch-four step two reaches 1.3660% RMS; ordinary paged execution versus
+the candidate single-sequence baseline reaches 1.1820%. Greedy tokens still
+match. More precise probability products did not solve the full-model layout
+sensitivity. Neither grouped candidate is promoted, and no HTTP throughput
+claim is made for either. The existing split attention algorithm at block 128
+is being checked separately against the same unchanged gate.

@@ -31,10 +31,13 @@ def _grouped(Q, K, V, POS, SLOTS, OUT, H: tl.constexpr, KH: tl.constexpr,
         weights = tl.exp(scores-next_max[:, None])
         denominator = denominator*correction + tl.sum(weights, 1)
         v = tl.load(V + offsets, valid[:, None], other=0)
-        # Tensor-core probability products use FP16; oracle gates must validate
-        # the resulting rounding independently before any runtime registration.
+        # Preserve the FP32 probabilities as two FP16 pieces. A single rounded
+        # product failed the unchanged whole-model batch-layout RMS gate.
+        high = weights.to(v.dtype)
+        low = (weights-high.to(tl.float32)).to(v.dtype)
         accumulator = accumulator*correction[:, None]
-        accumulator = tl.dot(weights.to(v.dtype), v, accumulator)
+        accumulator = tl.dot(low, v, accumulator)
+        accumulator = tl.dot(high, v, accumulator)
         maximum = next_max
     result = accumulator/denominator[:, None]
     tl.store(OUT + (batch*H + heads[:, None])*D + cols[None, :], result, rows[:, None] < group)
