@@ -573,6 +573,25 @@ this workload. Full prefill remains the default; chunking is an explicit latency
 tradeoff, not a general throughput improvement. See
 [stream arrivals and measurements](evidence/architectures/olmoe-chunk-interleaving-a2.json).
 
+### OLMoE four-bit experiment (not registered)
+
+Routed Q4_0 expert kernels pass 24 checks against upstream GGUF-produced bytes
+and independently dequantized FP32 values. The initial whole-model experiment
+keeps tiny router matrices and embeddings in FP16, other projections in Q4_0,
+and arithmetic/norms in FP32. Stored host weights occupy 4,043,595,776 bytes,
+compared with 7,448,584,192 bytes for the qualified Q8 configuration; this is
+storage accounting, not a peak-memory or quality claim.
+
+The first independent 512-context whole-model gate fails one of 82 checks.
+At decode position 498 in slot 1, relative RMS is 4.232% and maximum absolute
+logit error 0.912, despite greedy agreement. The preceding 496-token prefill
+already differs by 0.187% RMS. Q4 OLMoE remains disabled in normal registration;
+the existing error thresholds are unchanged. Graph dependence, expert routing,
+and weight equivalence require diagnosis before performance claims or promotion.
+See [kernel proof](evidence/architectures/moe-q4-routed-kernels-a2.json),
+[failed full-model gate](evidence/architectures/olmoe-q4-model512-a2.json)
+and [explicit storage policy/dispatch](evidence/architectures/olmoe-q4-model512-dispatch.json).
+
 
 ## Q8 short-prefill latency
 

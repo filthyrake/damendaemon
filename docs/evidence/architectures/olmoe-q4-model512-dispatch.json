@@ -1,0 +1,29 @@
+{
+  "kind": "experimental Q4 OLMoE; FP16 routers and embeddings; FP32 arithmetic",
+  "model_loads": 1,
+  "reference_loads": 1,
+  "routed_calls": 608,
+  "host_weight_bytes": [
+    4043595776
+  ],
+  "source_sha256": "ed20dfc74471d72852e084300d952553b3f3056da768e3e4935efa2c8ddfb349",
+  "kernel_sha256": "62bde22a7409349b7640fb745eae131450e3b2f677b2282f8292e687b31abd5b",
+  "script": "scripts/verify_stress.py",
+  "arguments": [
+    "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+    "--context",
+    "512",
+    "--reference-dtype",
+    "float32",
+    "--reference-quantization",
+    "q4_0",
+    "--reference-attention",
+    "eager",
+    "--reference-device",
+    "cpu",
+    "--golden-output",
+    "results/olmoe-q4-router-f16-golden512.pt"
+  ],
+  "completed": false,
+  "error": "AssertionError('long-context correctness gate failed; see JSON checks')"
+}
