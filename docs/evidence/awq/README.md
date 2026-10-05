@@ -32,3 +32,12 @@ and matched HTTP performance gates remain required before runtime support.
 
 Reproduce with `PYTHONPATH=. python scripts/verify_awq_format.py SNAPSHOT
 --output REPORT.json` using the pinned snapshot.
+
+`verify_awq_kernels.py` is the next isolated gate. It loads a pinned upstream
+`awq_triton.py` solely as a validation oracle, replacing only its Triton import
+in a temporary copy and preserving its copyright header. It records original
+and adapted source hashes. dllm's independently implemented packed GPU
+products are checked against FP32 accumulation over FP16 coefficients, with
+bias/no-bias and three activation magnitudes; coefficient bit patterns must
+also match both the host codec and the upstream decoder. Any timings compare
+standalone projection paths, not vLLM's production engine or Marlin backend.
