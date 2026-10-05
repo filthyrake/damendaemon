@@ -1,0 +1,1193 @@
+{
+  "tokenizer_runtime": {
+    "kind": "PositionalSentencePieceTokenizer",
+    "sentencepiece": "0.2.2",
+    "protobuf": "4.25.8"
+  },
+  "experiment": {
+    "kind": "experimental K-quant expansion tiles",
+    "br": 8,
+    "bc": 512,
+    "warps": 4,
+    "coefficient_policy": "unchanged FP16; CUDA Q4_K/Q6_K widths 2048/5632",
+    "source_sha256": "7b65b62b847a003f7b71bfe8ea578593572ceeacc3e21d335f3137c34ea407b0"
+  },
+  "passed": true,
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "context": 2048,
+  "prompt_lengths": [
+    4,
+    128,
+    1024,
+    1920
+  ],
+  "chunk_size": 128,
+  "model": "/home/damen/.cache/huggingface/hub/models--TheBloke--TinyLlama-1.1B-Chat-v1.0-GGUF/blobs/9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "host_bytes": 666894336,
+  "comparisons": [
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 0,
+      "max_absolute": 0.0205078125,
+      "relative_rms": 0.0008150219218805432,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0008294063154608011,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 2,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006119299796409905,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 3,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0005557588301599026,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 4,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006523801130242646,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 5,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006648889393545687,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 6,
+      "max_absolute": 0.017578125,
+      "relative_rms": 0.0007667563622817397,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 7,
+      "max_absolute": 0.02001953125,
+      "relative_rms": 0.0009838985279202461,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 0,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0003951632243115455,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00041836861055344343,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 2,
+      "max_absolute": 0.009765625,
+      "relative_rms": 0.00027148122899234295,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 3,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00022777574486099184,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00029914412880316377,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 5,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.0003141523338854313,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 6,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.00029797825845889747,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 7,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.00035299608134664595,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 0,
+      "max_absolute": 0.0205078125,
+      "relative_rms": 0.0008150219218805432,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0008294063154608011,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 2,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006119299796409905,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 3,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0005557588301599026,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 4,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006523801130242646,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 5,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006648889393545687,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 6,
+      "max_absolute": 0.017578125,
+      "relative_rms": 0.0007667563622817397,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 7,
+      "max_absolute": 0.02001953125,
+      "relative_rms": 0.0009838985279202461,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 0,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0003951632243115455,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00041836861055344343,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 2,
+      "max_absolute": 0.009765625,
+      "relative_rms": 0.00027148122899234295,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 3,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00022777574486099184,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00029914412880316377,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 5,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.0003141523338854313,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 6,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.00029797825845889747,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 7,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.00035299608134664595,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 0,
+      "max_absolute": 0.0205078125,
+      "relative_rms": 0.0008150219218805432,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0008294063154608011,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 2,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006119299796409905,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 3,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0005557588301599026,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 4,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006523801130242646,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 5,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006648889393545687,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 6,
+      "max_absolute": 0.017578125,
+      "relative_rms": 0.0007667563622817397,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 7,
+      "max_absolute": 0.02001953125,
+      "relative_rms": 0.0009838985279202461,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 0,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0003951632243115455,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00041836861055344343,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 2,
+      "max_absolute": 0.009765625,
+      "relative_rms": 0.00027148122899234295,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 3,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00022777574486099184,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00029914412880316377,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 5,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.0003141523338854313,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 6,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.00029797825845889747,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 7,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.00035299608134664595,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 0,
+      "max_absolute": 0.0205078125,
+      "relative_rms": 0.0008150219218805432,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0008294063154608011,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 2,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006119299796409905,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 3,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0005557588301599026,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 4,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006523801130242646,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 5,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0006648889393545687,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 6,
+      "max_absolute": 0.017578125,
+      "relative_rms": 0.0007667563622817397,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 7,
+      "max_absolute": 0.02001953125,
+      "relative_rms": 0.0009838985279202461,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 0,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0003951632243115455,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00041836861055344343,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 2,
+      "max_absolute": 0.009765625,
+      "relative_rms": 0.00027148122899234295,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 3,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00022777574486099184,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00029914412880316377,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 5,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.0003141523338854313,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 6,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.00029797825845889747,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 7,
+      "max_absolute": 0.01171875,
+      "relative_rms": 0.00035299608134664595,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    }
+  ],
+  "scope": "layout equivalence to single-request fixed eager; independent model accuracy is separate",
+  "native_kquant_library": {
+    "path": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+    "sha256": "2896d777ef22e1658e1f3f2cae1b67126bf886f071a624f241f1ee816638a61c"
+  },
+  "backend": "triton+mixed+cuda-kquant-gemv",
+  "precision": {
+    "matrix": "torch.float16",
+    "residual": "torch.float32"
+  },
+  "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0"
+}

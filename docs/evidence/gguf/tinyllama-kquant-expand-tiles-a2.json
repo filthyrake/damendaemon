@@ -1,0 +1,638 @@
+{
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "device": "NVIDIA A2",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "kernel_sha256": "cb1690d7284e6e1c9bad97dffcfbb4e067cf87d3be47a247c769c9e30ff5afcc",
+  "torch": "2.6.0+cu124",
+  "triton": "3.2.0",
+  "cases": [
+    {
+      "name": "0.qkv.weight",
+      "width": 2048,
+      "outputs": 2560,
+      "formats": [
+        [
+          0,
+          2304,
+          12,
+          0
+        ],
+        [
+          2304,
+          2560,
+          14,
+          2654208
+        ]
+      ],
+      "candidates": [
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 38,
+          "spills": 0,
+          "ms": 0.17991259694099426
+        },
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 32,
+          "spills": 0,
+          "ms": 0.2490675449371338
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.1607072651386261
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.1996084749698639
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.1543428599834442
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 38,
+          "spills": 0,
+          "ms": 0.1868896186351776
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 72,
+          "spills": 0,
+          "ms": 0.14337614178657532
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.16798987984657288
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 71,
+          "spills": 0,
+          "ms": 0.14157824218273163
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.15734043717384338
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 168,
+          "spills": 0,
+          "ms": 0.1565038114786148
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 80,
+          "spills": 0,
+          "ms": 0.17329806089401245
+        }
+      ],
+      "baseline_ms": 0.17991062998771667
+    },
+    {
+      "name": "0.out",
+      "width": 2048,
+      "outputs": 2048,
+      "formats": [
+        [
+          0,
+          2048,
+          12,
+          0
+        ]
+      ],
+      "candidates": [
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 23,
+          "spills": 0,
+          "ms": 0.08149474859237671
+        },
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 23,
+          "spills": 0,
+          "ms": 0.12452507019042969
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 37,
+          "spills": 0,
+          "ms": 0.07264105975627899
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 25,
+          "spills": 0,
+          "ms": 0.08739051222801208
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 38,
+          "spills": 0,
+          "ms": 0.07496383041143417
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 25,
+          "spills": 0,
+          "ms": 0.08438684791326523
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.06842739880084991
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 37,
+          "spills": 0,
+          "ms": 0.07681068032979965
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.07155636698007584
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 38,
+          "spills": 0,
+          "ms": 0.07912950217723846
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 56,
+          "spills": 0,
+          "ms": 0.06972955167293549
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.06868896633386612
+        }
+      ],
+      "baseline_ms": 0.08144581317901611
+    },
+    {
+      "name": "0.gate_up",
+      "width": 2048,
+      "outputs": 11264,
+      "formats": [
+        [
+          0,
+          11264,
+          12,
+          0
+        ]
+      ],
+      "candidates": [
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 23,
+          "spills": 0,
+          "ms": 0.447726309299469
+        },
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 23,
+          "spills": 0,
+          "ms": 0.6807249784469604
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 37,
+          "spills": 0,
+          "ms": 0.396717369556427
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 25,
+          "spills": 0,
+          "ms": 0.4778004586696625
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 38,
+          "spills": 0,
+          "ms": 0.4145600199699402
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 25,
+          "spills": 0,
+          "ms": 0.4650728106498718
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.3710463047027588
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 37,
+          "spills": 0,
+          "ms": 0.41671618819236755
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.3954029977321625
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 38,
+          "spills": 0,
+          "ms": 0.43519943952560425
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 56,
+          "spills": 0,
+          "ms": 0.3761150538921356
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.37058210372924805
+        }
+      ],
+      "baseline_ms": 0.4478294849395752
+    },
+    {
+      "name": "0.down",
+      "width": 5632,
+      "outputs": 2048,
+      "formats": [
+        [
+          0,
+          2048,
+          14,
+          0
+        ]
+      ],
+      "candidates": [
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 34,
+          "spills": 0,
+          "ms": 0.28525510430336
+        },
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 25,
+          "spills": 0,
+          "ms": 0.3682840168476105
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.24715085327625275
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 35,
+          "spills": 0,
+          "ms": 0.30673694610595703
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 39,
+          "spills": 0,
+          "ms": 0.2573562264442444
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 34,
+          "spills": 0,
+          "ms": 0.2950311601161957
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 48,
+          "spills": 0,
+          "ms": 0.2409042865037918
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.2725640833377838
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 48,
+          "spills": 0,
+          "ms": 0.24609926342964172
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 0.2744747996330261
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 96,
+          "spills": 0,
+          "ms": 0.30150550603866577
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 48,
+          "spills": 0,
+          "ms": 0.320115864276886
+        }
+      ],
+      "baseline_ms": 0.2855204641819
+    },
+    {
+      "name": "head",
+      "width": 2048,
+      "outputs": 32000,
+      "formats": [
+        [
+          0,
+          32000,
+          14,
+          0
+        ]
+      ],
+      "candidates": [
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 34,
+          "spills": 0,
+          "ms": 1.6120998859405518
+        },
+        {
+          "br": 4,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 26,
+          "spills": 0,
+          "ms": 2.120323896408081
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 1.3749035596847534
+        },
+        {
+          "br": 4,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 35,
+          "spills": 0,
+          "ms": 1.730385422706604
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 39,
+          "spills": 0,
+          "ms": 1.439371943473816
+        },
+        {
+          "br": 8,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 34,
+          "spills": 0,
+          "ms": 1.6732937097549438
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 56,
+          "spills": 0,
+          "ms": 1.2861076593399048
+        },
+        {
+          "br": 8,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 1.5165088176727295
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 4,
+          "passed": true,
+          "registers": 56,
+          "spills": 0,
+          "ms": 1.3304516077041626
+        },
+        {
+          "br": 16,
+          "bc": 256,
+          "warps": 8,
+          "passed": true,
+          "registers": 40,
+          "spills": 0,
+          "ms": 1.513766884803772
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 4,
+          "passed": true,
+          "registers": 93,
+          "spills": 0,
+          "ms": 1.5429222583770752
+        },
+        {
+          "br": 16,
+          "bc": 512,
+          "warps": 8,
+          "passed": true,
+          "registers": 48,
+          "spills": 0,
+          "ms": 1.6468627452850342
+        }
+      ],
+      "baseline_ms": 1.6136844158172607
+    }
+  ],
+  "scope": "FP16 expansion only; exact current-coefficient equality; no dispatch change",
+  "passed": true
+}

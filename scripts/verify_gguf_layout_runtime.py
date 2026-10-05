@@ -24,9 +24,13 @@ def main():
     experiments=parser.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
+    experiments.add_argument('--experimental-expand-tiles', action='store_true')
     args = parser.parse_args()
     if args.context<512:parser.error('--context must be at least 512')
     experiment = None
+    if args.experimental_expand_tiles:
+        from experiments.kquant_expand import install_validation_dispatch
+        experiment = install_validation_dispatch()
     if args.experimental_q4_residual:
         from experiments.q4_residual import install_validation_dispatch
         experiment = install_validation_dispatch()

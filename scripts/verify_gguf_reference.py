@@ -83,11 +83,15 @@ def main():
     experiments.add_argument('--experimental-residual', action='store_true')
     experiments.add_argument('--experimental-residual-f32', action='store_true')
     experiments.add_argument('--experimental-prefill-f32', action='store_true')
+    experiments.add_argument('--experimental-expand-tiles', action='store_true')
     args = p.parse_args(); torch.set_num_threads(4)
     if args.context < 512:p.error('--context must be at least 512')
     if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
         p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
+    if args.experimental_expand_tiles:
+        from experiments.kquant_expand import install_validation_dispatch
+        experiment = install_validation_dispatch()
     if args.experimental_q4_residual:
         from experiments.q4_residual import install_validation_dispatch
         experiment = install_validation_dispatch()

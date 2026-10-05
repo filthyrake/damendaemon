@@ -1550,3 +1550,26 @@ multi-row probes are synthetic matrix cases: normal prefill projects only the
 last hidden row, so those head timings must not be added to model latency.
 These findings do not change production dispatch. Expansion tile efficiency is
 being measured separately before choosing a candidate for model qualification.
+
+
+`tinyllama-kquant-expand-tiles-a2.json` isolates the expansion kernel on those
+same five packed projections. All 60 tile variants produce exactly equal FP16
+coefficient tensors. A common 8-row / 512-column tile with four warps reduces
+expansion-only GPU time by roughly 15–20% versus the current 4x256 tile (the
+QKV-specific fastest tile is 16x256, but 8x512 is close). This avoids separate
+per-projection tuning and changes neither arithmetic nor persistent storage.
+The experiment records checkpoint/kernel hashes and Torch/Triton/GPU identity.
+`profile_kquant_expand.py` reproduces it; full-model/server qualification is
+separate. No production dispatch change follows from these matrix timings alone.
+
+
+The explicit validation-only override in `scripts/experiments/kquant_expand.py`
+then passes 96 independent model checks on the exact ocean benchmark prompts at
+2048 context, with exact greedy agreement and the same 0.73287% maximum RMS as
+the original expansion. It also passes all 128 fixed/paged, eager/graph,
+batched/chunked layout comparisons. Reports are
+`tinyllama-expand-tiles-reference-a2.json` and
+`tinyllama-expand-tiles-layout-a2.json`; both record the override and its source
+hash. The hook preserves fallback for other widths, formats and precisions.
+The benchmark's `--expand-tiles` option selects an explicit experimental server
+module only in candidate phases; normal CLI dispatch remains unchanged.

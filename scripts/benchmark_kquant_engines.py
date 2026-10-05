@@ -30,6 +30,7 @@ def main():
     parser.add_argument('model')
     comparison=parser.add_mutually_exclusive_group(required=True)
     comparison.add_argument('--llama-server')
+    comparison.add_argument('--expand-tiles',action='store_true',help='compare isolated exact-coefficient expansion tiles')
     comparison.add_argument('--batch-wait-ms',type=float,help='compare normal admission with an isolated idle-group coalescing delay')
     comparison.add_argument('--q4-residual-library',help='compare native Q4 decode with the isolated integer-dot candidate')
     comparison.add_argument('--residual-library',help='compare production with the isolated residual-int8 candidate')
@@ -132,6 +133,11 @@ def main():
     counterpart='residual-int8-fp32' if precision=='float32' else 'residual-int8-v2' if residual else 'llama.cpp'
     if args.q4_residual_library:counterpart='q4-residual-int8'
     if args.batch_wait_ms:counterpart='coalesced-prefill'
+    if args.expand_tiles:
+        counterpart='expand-tiles'
+        report['experimental_arithmetic']='unchanged FP16 coefficients; 8x512 expansion tiles, four warps'
+        report['expansion_source_sha256']=digest(Path(__file__).parent/'experiments/kquant_expand.py')
+        report['expansion_kernel_sha256']=digest(Path(__file__).resolve().parents[1]/'dllm/kquant_kernels.py')
     if residual:
         variable='DLLM_EXPERIMENTAL_RESIDUAL_F32_LIBRARY' if precision=='float32' else 'DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY'
         environment[variable]=str(residual)
@@ -158,6 +164,7 @@ def main():
                 phase_environment['DLLM_KQUANT_PREFILL_F32']='1'
             if engine!='llama.cpp':
                 module={'coalesced-prefill':'scripts.experiments.serve_batch_wait',
+                        'expand-tiles':'scripts.experiments.serve_expand_tiles',
                         'q4-residual-int8':'scripts.experiments.serve_q4_residual',
                         'compensated-prefill-fp32':'scripts.experiments.serve_prefill_f32',
                         'residual-int8-v2':'scripts.experiments.serve_residual',
