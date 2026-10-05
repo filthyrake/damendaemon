@@ -1,5 +1,6 @@
 """Independent OLMoE execution with GPU-resident decode routing."""
 import os
+from itertools import accumulate
 import torch
 from torch.nn import functional as F
 from .batch import BatchExecutor
@@ -107,7 +108,7 @@ class OlmoeExecutor(BatchExecutor):
     def forward_batch(self, ids, positions, slots):
         return self._forward(ids,positions,slots,False)
 
-    def _forward(self, ids, positions, slots, prefill):
+    def _forward(self, ids, positions, slots, prefill, segments=None):
         count,w = ids.numel(),self.w
         x = F.embedding(ids,w['embed']).float()
         for i in range(self.c['num_hidden_layers']):
@@ -121,16 +122,31 @@ class OlmoeExecutor(BatchExecutor):
             ck,cv = self.kv[i].unbind(0)
             query = self.kernels.rope_batch(packed,self.cos,self.sin,positions,slots,ck,cv,self.heads,precise=True)
             if prefill:
-                slot = slots[:1]
-                attended = self.prefill_attention(query[:,:,0,:].transpose(0,1).unsqueeze(0),
-                    ck.index_select(0,slot)[:,:,:count],cv.index_select(0,slot)[:,:,:count])
-                attended = attended.transpose(1,2).reshape(count,-1)
+                if segments is None:
+                    slot = slots[:1]
+                    attended = self.prefill_attention(query[:,:,0,:].transpose(0,1).unsqueeze(0),
+                        ck.index_select(0,slot)[:,:,:count],cv.index_select(0,slot)[:,:,:count])
+                    attended = attended.transpose(1,2).reshape(count,-1)
+                else:
+                    parts, offset = [], 0
+                    for slot, length in segments:
+                        q = query[offset:offset+length,:,0,:].transpose(0,1).unsqueeze(0)
+                        value = self.prefill_attention(q, ck[slot:slot+1,:,:length],
+                                                       cv[slot:slot+1,:,:length])
+                        parts.append(value.transpose(1,2).reshape(length,-1))
+                        offset += length
+                    attended = torch.cat(parts)
             else:
                 attended = self.decode_attention(query,ck,cv,positions,slots).reshape(count,-1)
             x = x+self._linear(attended,w[f'{i}.out'])
             x = x+self.experts(self.norm(x,w[f'{i}.norm2']),i,prefill)
         if prefill:
-            x=x[-1:]
+            if segments is None:
+                x = x[-1:]
+            else:
+                ends = torch.tensor([end-1 for end in accumulate(length for _,length in segments)],
+                                    device=self.device)
+                x = x.index_select(0,ends)
         return self._linear(self.norm(x,w['norm']),w['head'])
 
     @torch.inference_mode()
@@ -139,4 +155,19 @@ class OlmoeExecutor(BatchExecutor):
                 or any(slot<0 or slot>=self.max_batch for slot in slots)
                 or any(not ids or len(ids)>self.context for ids in prompts)):
             raise ValueError('invalid prefill batch')
-        return torch.cat([self.prefill(ids,slot) for ids,slot in zip(prompts,slots)])
+        from .moe_prefill import use_packed_prefill
+        lengths = list(map(len,prompts))
+        if not use_packed_prefill(self.grouped_prefill,lengths):
+            return torch.cat([self.prefill(ids,slot) for ids,slot in zip(prompts,slots)])
+        # Share projection/expert work, while keeping attention and KV slots isolated.
+        ids = torch.tensor([token for prompt in prompts for token in prompt],device=self.device)
+        positions = torch.tensor([position for length in lengths for position in range(length)],
+                                 device=self.device)
+        slot_ids = torch.tensor([slot for slot,length in zip(slots,lengths) for _ in range(length)],
+                                device=self.device)
+        logits = self._forward(ids,positions,slot_ids,True,list(zip(slots,lengths)))
+        for slot,length in zip(slots,lengths):
+            self.lengths[slot] = length
+        # Preserve the scalar length side effect of the previous sequential path.
+        self.length = lengths[-1]
+        return logits

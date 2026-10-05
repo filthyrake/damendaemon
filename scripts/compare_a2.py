@@ -41,6 +41,7 @@ def main():
     experiments.add_argument('--experimental-awq-decode', action='store_true')
     experiments.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     experiments.add_argument('--experimental-olmoe-baseline', metavar='SOURCE')
+    experiments.add_argument('--experimental-olmoe-prefill-baseline', metavar='SOURCE')
     args = parser.parse_args()
     if not args.label.replace('-', '').replace('_', '').isalnum():
         parser.error('label must contain only letters, digits, hyphens or underscores')
@@ -63,9 +64,11 @@ def main():
             if args.experimental_awq_marlin:
                 module = 'scripts.experiments.serve_awq_marlin'
                 env['DLLM_EXPERIMENT_MARLIN_LIBRARY'] = str(Path(args.experimental_awq_marlin).resolve())
-            if args.experimental_olmoe_baseline:
+            moe_baseline = args.experimental_olmoe_baseline or args.experimental_olmoe_prefill_baseline
+            if moe_baseline:
                 module = 'scripts.experiments.serve_moe_baseline'
-                env['DLLM_EXPERIMENT_MOE_BASELINE'] = str(Path(args.experimental_olmoe_baseline).resolve())
+                env['DLLM_EXPERIMENT_MOE_BASELINE'] = str(Path(moe_baseline).resolve())
+                env['DLLM_EXPERIMENT_MOE_METHOD'] = ('prefill_batch' if args.experimental_olmoe_prefill_baseline else 'experts')
                 env['DLLM_EXPERIMENT_MOE_REPORT'] = str(root / f'compare-{engine}-{args.label}-source.json')
             command = [sys.executable, '-m', module, 'serve', '--port', str(port), '--context', str(args.context),
                        '--batch-size', str(args.batch_size), '--host-gib', str(args.host_gib), '--model', 'a=' + model['path']]

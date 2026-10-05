@@ -1,0 +1,15 @@
+{
+  "scope": "qualified A2 Q8 OLMoE, 2-4 requests, sum of prompt lengths <=128; other cases sequential",
+  "sources": {
+    "dllm/moe.py": "48815429c4c885381a3880c53a6d88dd9e10493a46158bc800689e58df1b6340",
+    "dllm/moe_prefill.py": "9e4118f80f6eaab5d4a07f7e998e9d0e3b1da24fd872a4aef1154f1e8a65c4a0",
+    "dllm/grouped_moe.py": "d29e8724e1fe9dd34f36a44ea66f09f31abb8addb4fbb2d4aa67af957cc04dc6"
+  },
+  "independent_checks": {
+    "regrouped_batch": 234,
+    "original_full_model": 82
+  },
+  "local_tests": 350,
+  "http_performance": "pending",
+  "mixed_model_service": "pending"
+}

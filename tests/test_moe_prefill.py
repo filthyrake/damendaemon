@@ -1,5 +1,5 @@
 import unittest
-from dllm.moe_prefill import qualified_scope, use_grouped_prefill
+from dllm.moe_prefill import qualified_scope, use_grouped_prefill, use_packed_prefill
 
 
 class MoEPrefillScopeTests(unittest.TestCase):
@@ -26,3 +26,10 @@ class MoEPrefillScopeTests(unittest.TestCase):
             self.assertFalse(use_grouped_prefill(False, tokens))
         for tokens in (0, 129, 256, 512, 1024, 2048):
             self.assertFalse(use_grouped_prefill(True, tokens))
+
+    def test_packed_batches_remain_within_measured_token_budget(self):
+        for lengths in ([1,1], [1]*4, [31,65], [32]*4, [64,64], [31,31,65], [1,127]):
+            self.assertTrue(use_packed_prefill(True,lengths))
+            self.assertFalse(use_packed_prefill(False,lengths))
+        for lengths in ([], [32], [1]*5, [65,65], [64,65], [0,32], [-1,32]):
+            self.assertFalse(use_packed_prefill(True,lengths))

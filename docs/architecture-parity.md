@@ -472,7 +472,7 @@ decode continuations: six cases cover mixed lengths, repeated prompts, two to
 four requests, reordered slots and a 130-total-token fallback. The sequential
 control and experimental implementation both pass all 234 checks (experimental
 worst relative RMS 0.000098%). This is independent target reuse, not a new
-reference computed by dllm. Normal-runtime integration is under qualification.
+reference computed by dllm. Normal-runtime qualification is described below.
 See [oracle provenance](evidence/architectures/olmoe-short-batch-reference-provenance.json),
 [control](evidence/architectures/olmoe-short-batch-control-reference-a2.json),
 [candidate](evidence/architectures/olmoe-packed-prefill-reference-a2.json)
@@ -489,6 +489,17 @@ All measured greedy outputs agree and complete logits remain inside the
 existing numerical gates. These are direct prefill timings, not HTTP claims.
 See [batch measurements](evidence/architectures/olmoe-packed-prefill-timing-a2.json)
 and [boundary measurements](evidence/architectures/olmoe-packed-prefill-boundary-a2.json).
+
+The normal OLMoE runtime now packs two to four requests when the combined
+prompt length is at most 128 tokens within the already-qualified A2 Q8 scope.
+It shares the existing forward implementation, keeps attention/cache segments
+separate and retains the sequential path outside that bound. Both independent
+suites pass on the integrated code: 234 regrouped checks and the original 82
+mixed-length checks. All 350 local tests pass, including selection boundaries.
+The repeated default-scheduler HTTP comparison and refreshed lifecycle proof are
+pending. See [normal batch gate](evidence/architectures/olmoe-packed-normal-batch-reference-a2.json),
+[original model gate](evidence/architectures/olmoe-packed-normal-full-reference-a2.json)
+and [source fingerprints](evidence/architectures/olmoe-packed-normal-source.json).
 
 
 ## Q8 short-prefill latency

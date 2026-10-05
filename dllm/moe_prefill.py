@@ -16,3 +16,8 @@ def use_grouped_prefill(qualified, tokens):
     # Longer prompts retain stable host grouping: the device path regressed
     # at 256/512/1024 tokens on the qualification GPU.
     return qualified and 1 <= tokens <= 128
+
+
+def use_packed_prefill(qualified, lengths):
+    return (qualified and 2 <= len(lengths) <= 4
+            and all(length > 0 for length in lengths) and sum(lengths) <= 128)
