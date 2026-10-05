@@ -1,0 +1,31 @@
+{
+  "experiment": {
+    "kind": "experimental resident FP16 projection cache",
+    "byte_cap": 3221225472,
+    "scope": "CUDA Q4_K/Q6_K widths 2048/5632; rows greater than one",
+    "production_admission_accounts_for_cache": false,
+    "source_sha256": "721b9f6778dfce954e8060790638c58c0681139b63fea799d3e063f1e194dd39"
+  },
+  "passed": false,
+  "cycles": [
+    {
+      "cap": 3221225472,
+      "cached_bytes": 2068840448,
+      "before": 0,
+      "resident": 2953563136,
+      "after_release": 25559040,
+      "references_released": true
+    },
+    {
+      "cap": 3221225472,
+      "cached_bytes": 2068840448,
+      "before": 25559040,
+      "resident": 2964499456,
+      "after_release": 34078720,
+      "references_released": true
+    }
+  ],
+  "device": "NVIDIA A2",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "error": "AssertionError('residency grows after repeated unload')"
+}

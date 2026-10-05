@@ -25,9 +25,13 @@ def main():
     experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
     experiments.add_argument('--experimental-expand-tiles', action='store_true')
+    experiments.add_argument('--experimental-dense-cache', action='store_true')
     args = parser.parse_args()
     if args.context<512:parser.error('--context must be at least 512')
     experiment = None
+    if args.experimental_dense_cache:
+        from experiments.kquant_dense_cache import install_validation_dispatch
+        experiment = install_validation_dispatch()
     if args.experimental_expand_tiles:
         from experiments.kquant_expand import install_validation_dispatch
         experiment = install_validation_dispatch()
@@ -75,6 +79,10 @@ def main():
     try:
         with torch.inference_mode():
             executor = make_executor(source, use_graph=False, max_batch=1)
+            if args.experimental_dense_cache:
+                experiment['resident_cache_bytes'] = executor.quant_linear.experimental_dense_cache_bytes
+                if not experiment['resident_cache_bytes']:
+                    raise ValueError('dense-cache experiment selected no projections')
             report['backend'] = executor.kernel_backend
             report['precision'] = dict(matrix=str(executor.compute_dtype), residual=str(executor.residual_dtype))
             for ids in prompts:

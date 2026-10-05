@@ -84,11 +84,15 @@ def main():
     experiments.add_argument('--experimental-residual-f32', action='store_true')
     experiments.add_argument('--experimental-prefill-f32', action='store_true')
     experiments.add_argument('--experimental-expand-tiles', action='store_true')
+    experiments.add_argument('--experimental-dense-cache', action='store_true')
     args = p.parse_args(); torch.set_num_threads(4)
     if args.context < 512:p.error('--context must be at least 512')
     if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
         p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
+    if args.experimental_dense_cache:
+        from experiments.kquant_dense_cache import install_validation_dispatch
+        experiment = install_validation_dispatch()
     if args.experimental_expand_tiles:
         from experiments.kquant_expand import install_validation_dispatch
         experiment = install_validation_dispatch()
@@ -170,6 +174,10 @@ def main():
     with torch.inference_mode():
         for graph in (False, True):
             executor = make_executor(source, use_graph=graph)
+            if args.experimental_dense_cache:
+                experiment['resident_cache_bytes'] = executor.quant_linear.experimental_dense_cache_bytes
+                if not experiment['resident_cache_bytes']:
+                    raise ValueError('dense-cache experiment selected no projections')
             if (args.experimental_residual_f32 or args.experimental_prefill_f32) and executor.compute_dtype!=torch.float32:
                 raise ValueError('FP32 experiment requires an FP32 executor policy')
             precision = dict(matrix_dtype=str(executor.compute_dtype), residual_dtype=str(executor.residual_dtype),

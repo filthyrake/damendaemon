@@ -1618,3 +1618,48 @@ unflagged library against GGUF dequantization, including mixed segment alignment
 and tail rows, with all coefficient checks passing. The installed library is
 unchanged. No runtime setting or performance improvement is claimed from either
 launch-geometry or cache-policy sweep.
+
+
+### Resident projection-cache prototype and reload workspace fix
+
+`scripts/experiments/kquant_dense_cache.py` explores a separate memory/speed
+tradeoff: retain FP16-expanded projection copies for multi-row calls while
+keeping authoritative packed weights and single-row packed decode. The cache
+belongs to each executor's Linear object, is capped at 3 GiB, and falls back
+when the requested cache exceeds the cap. It is validation-only: production
+model admission does not yet account for this additional residency. It has no
+normal CLI option and is not a new default.
+
+TinyLlama caches 2,068,840,448 additional bytes (about 1.927 GiB). Initial
+`tinyllama-dense-cache-reference-a2.json` and
+`tinyllama-dense-cache-layout-a2.json` pass 96 independent exact-prompt checks
+and 128 layout comparisons at 2048 context. Maximum RMS is 0.73287% against HF
+and 0.10232% across layouts, with greedy agreement.
+
+The first unload proof fails despite all cache tensor references being released:
+`tinyllama-dense-cache-release-initial-failure-a2.json`. A separate ordinary
+dense control (independent CPU coefficient expansion, no cache override) also
+retains extra allocated memory after successive executor unloads: 34,078,720
+then 51,118,080 bytes. Diagnostic-only cuBLAS workspace clearing releases all
+of those bytes; the failed controls and `*.workspace.json` reports remain
+preserved. This establishes stream-associated workspace retention, not an
+unbounded model-tensor leak. The private diagnostic operation is never used by
+the runtime.
+
+Dense and batched dense warmups now share one serialized CUDA stream per device.
+Caller-stream dependencies are maintained on normal and exceptional exits.
+`tinyllama-dense-control-release-fixed-a2.json` passes three ordinary dense
+activation/unload cycles, each returning to 25,559,040 bytes (24.375 MiB) of
+reusable workspace. `tinyllama-dense-cache-release-fixed-a2.json` passes two
+cached cycles plus a one-byte-budget fallback with the same stable allocation;
+all executor, weight and cache references are released. The full local suite
+passes 317 tests, including stream reuse, device isolation, exception handling
+and overlapping warmup serialization. See GitHub issue #48. Other independently
+implemented architecture warmup paths are outside this fix's scope.
+
+
+Post-fix `tinyllama-dense-cache-warmup-reference-a2.json` and
+`tinyllama-dense-cache-warmup-layout-a2.json` repeat all 96 independent model and
+128 layout checks successfully, with unchanged maximum errors. These checks use
+stream reuse without clearing cuBLAS workspaces. HTTP timing and hot-swap proof
+for the prototype are evaluated separately before any production cache decision.

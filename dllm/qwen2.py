@@ -420,9 +420,8 @@ class Executor:
         self.position = torch.zeros(1, dtype=torch.long, device=self.device)
         self.graph = None
         if self.device == "cuda" and (use_graph or self.kernels):
-            stream = torch.cuda.Stream()
-            stream.wait_stream(torch.cuda.current_stream())
-            with torch.cuda.stream(stream), torch.inference_mode():
+            from .cuda_warmup import warmup_stream
+            with warmup_stream(), torch.inference_mode():
                 try:
                     for _ in range(3):
                         self.forward(self.token, self.position, prefill=False)
@@ -433,7 +432,6 @@ class Executor:
                     print(f"dllm: fused kernel toolchain unavailable ({type(error).__name__}); using torch kernels", file=sys.stderr)
                     for _ in range(3):
                         self.forward(self.token, self.position, prefill=False)
-            torch.cuda.current_stream().wait_stream(stream)
             torch.cuda.synchronize()
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if model.scales or packed_formats:

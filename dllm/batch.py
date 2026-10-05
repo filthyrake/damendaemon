@@ -25,8 +25,7 @@ class BatchExecutor(Executor):
     def capture_graphs(self):
         """Capture decode against executor-owned stable metadata and cache buffers."""
         if self.device == 'cuda':
-            stream = torch.cuda.Stream()
-            stream.wait_stream(torch.cuda.current_stream())
+            from .cuda_warmup import warmup_stream
             for size in range(1, self.max_batch + 1):
                 metadata = torch.zeros((3, size), dtype=torch.long, device=self.device)
                 ids, positions, slots = metadata.unbind(0)
@@ -34,11 +33,9 @@ class BatchExecutor(Executor):
                 staging = torch.empty((3, size), dtype=torch.long, pin_memory=True)
                 staging_values = (ctypes.c_int64 * (3 * size)).from_address(staging.data_ptr())
                 copied = torch.cuda.Event()
-                stream.wait_stream(torch.cuda.current_stream())
-                with torch.cuda.stream(stream), torch.inference_mode():
+                with warmup_stream(), torch.inference_mode():
                     for _ in range(3):
                         self.forward_batch(ids, positions, slots)
-                torch.cuda.current_stream().wait_stream(stream)
                 torch.cuda.synchronize()
                 graph = torch.cuda.CUDAGraph()
                 # A previous encoder graph can leave RNG bookkeeping as inference
