@@ -10,19 +10,23 @@ from dllm.batch import BatchExecutor
 
 def shard_model(model,start,end):
     c=model.config
-    if (c['model_type']!='qwen2' or model.scales or getattr(model,'packed_formats',{})
+    if (c['model_type']!='qwen2' or model.quantization not in ('none','q8_0')
+            or getattr(model,'packed_formats',{}) or getattr(model,'awq_matrices',{})
             or c.get('rope_scaling') or not 0<=start<end<=c['num_hidden_layers']):
-        raise ValueError('stage prototype requires unquantized Qwen2 with standard RoPE')
+        raise ValueError('stage prototype requires FP16 or Q8 Qwen2 with standard RoPE')
     shard=copy.copy(model)
     shard.config={**c,'num_hidden_layers':end-start}
-    shard.weights={}
-    for name,value in model.weights.items():
+    names={}
+    for name in model.weights:
         prefix,_,tail=name.partition('.')
         if prefix.isdigit() and start<=int(prefix)<end:
-            shard.weights[f'{int(prefix)-start}.{tail}']=value
+            names[name]=f'{int(prefix)-start}.{tail}'
         elif (name=='embed' and start==0) or (name in ('norm','head') and end==c['num_hidden_layers']):
-            shard.weights[name]=value
-    shard.bytes=sum(t.numel()*t.element_size() for t in {id(t):t for t in shard.weights.values()}.values())
+            names[name]=name
+    shard.weights={renamed:model.weights[name] for name,renamed in names.items()}
+    shard.scales={renamed:model.scales[name] for name,renamed in names.items() if name in model.scales}
+    shard.bytes=sum(t.numel()*t.element_size() for t in
+        {id(t):t for t in (*shard.weights.values(),*shard.scales.values())}.values())
     return shard
 
 

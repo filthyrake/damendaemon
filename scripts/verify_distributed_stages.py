@@ -27,13 +27,13 @@ def main():
     torch.cuda.set_device(local_rank)
     trace_path=Path(args.trace.format(rank=rank))
     trace=torch.load(trace_path,map_location='cpu',weights_only=True)
-    model=ModelWeights(args.model_path or trace['path'],trace['context'])
+    model=ModelWeights(args.model_path or trace['path'],trace['context'],quantization=trace.get('reference_quantization','none'))
     total=model.config['num_hidden_layers']; split=total//2
     start,end=(0,split) if rank==0 else (split,total)
     stage=LayerStage(model,start,end,max_batch=4)
     report=dict(passed=False,rank=rank,device=torch.cuda.get_device_name(),layers=[start,end],
         model=trace['path'],context=trace['context'],torch=str(torch.__version__),
-        reference_torch=trace['reference_torch'],reference_dtype=trace['reference_dtype'],
+        reference_torch=trace['reference_torch'],reference_dtype=trace['reference_dtype'],quantization=model.quantization,
         checks=[],scope='fixed-trace distributed layer experiment; not a serving protocol')
     output=Path(args.output.format(rank=rank))
     try:

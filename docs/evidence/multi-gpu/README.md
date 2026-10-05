@@ -35,8 +35,9 @@ all three were explicitly removed after the probe. The lab's rich-rule list
 was empty afterward and the desktop's pre-existing 10.42.0.0/16 rule remained.
 No persistent firewall or router configuration changed.
 
-Model partitioning, failure recovery, serving integration, RDMA, and GPUDirect
-RDMA remain unqualified. A successful NCCL Socket test establishes none of these.
+Failure recovery, serving integration, RDMA, and GPUDirect RDMA remain
+unqualified. The model partition experiments below are separate evidence;
+a successful communication-only Socket test establishes none of these.
 
 ## Same-host model partition proof
 
@@ -90,3 +91,18 @@ The three approved peer-only temporary rules were reused within the original
 one-hour authorization window, with expiry shortened to stay inside that window.
 All were removed again immediately after the model proof; both rich-rule lists
 were checked afterward. No permanent firewall/router changes were made.
+
+## Q8 stage ownership
+
+The experimental stage filter also retains and renames only the Q8 scales
+belonging to its selected layer weights or final head. It leaves the source
+model unchanged and rejects unsupported quantization/packed formats. Two host
+ownership tests cover remapping, byte accounting, source preservation, and
+invalid bounds; they make no GPU performance claims.
+
+`qwen2-distributed-q8-rank*.json` qualifies the same A2/A30 two-process layer
+split against independently generated Q8-dequantized reference logits: all 82
+output-stage checks pass, worst relative RMS 0.005336, maximum absolute error
+0.052735, every greedy token exact. Checkpoint, context, and slots match the
+FP16 experiment, but precision differs; these are correctness results, not a
+matched-precision speed comparison. Cross-host Q8 has not been qualified.
