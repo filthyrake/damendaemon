@@ -516,8 +516,8 @@ kernel gain. No scheduler coalescing setting was changed. See
 
 An isolated offset-prefill experiment passes the original 82 independent model
 checks with 128-token chunks, including the 2032-token prompt and subsequent
-slot reuse/decode. Worst relative RMS is 0.000198%. It is not yet registered in
-the normal runtime; prefix-cache and service behavior require separate proof.
+slot reuse/decode. Worst relative RMS is 0.000198%. This initial isolated gate
+precedes the normal-runtime and prefix/service qualification below.
 See [chunked oracle](evidence/architectures/olmoe-chunk128-reference-a2.json)
 and [dispatch provenance](evidence/architectures/olmoe-chunk128-reference-dispatch.json).
 
@@ -535,7 +535,11 @@ only within the existing A2 Q8 geometry/context/batch scope. The integrated
 127-token chunk path passes all 82 independent model checks, and the packed
 prompt regression passes all 234 checks. All 351 local tests pass, including
 invalid continuation offsets and unchanged cache lengths on rejection. The normal
-prefix reference and actual HTTP prefix/interleaving measurements remain pending.
+prefix reference passes all 48 CPU FP32 eager-reference checks (worst relative
+RMS 0.003459%), and 256-token chunks pass all 82 original model checks (worst
+relative RMS 0.000582%). Actual HTTP prefix/interleaving measurements are pending.
+See [normal prefix proof](evidence/architectures/olmoe-prefix-normal-a2.json) and
+[256-token chunk proof](evidence/architectures/olmoe-chunk256-normal-reference-a2.json).
 See [normal chunk gate](evidence/architectures/olmoe-chunk127-normal-reference-a2.json),
 [packed regression](evidence/architectures/olmoe-chunk-normal-batch-regression-a2.json)
 and [source fingerprints](evidence/architectures/olmoe-chunk-normal-source.json).
