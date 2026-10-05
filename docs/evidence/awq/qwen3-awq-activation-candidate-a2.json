@@ -1,0 +1,72 @@
+{
+  "scope": "warm-host executor activation; no disk load or HTTP queue timing",
+  "model": "/home/damen/dllm-dev/baselines/awq-qwen3/models--Qwen--Qwen3-4B-AWQ/snapshots/74d4bd2bd4bff9cafc9345221320bffb08b406a3",
+  "context": 2048,
+  "batch_size": 4,
+  "profiled": false,
+  "native_awq_baseline": null,
+  "native_awq_source_sha256": "f05b8283fb92f31175a93260082936e007cbcb183bba2ac47d93579e240dcdc7",
+  "host_preparation_seconds": 1.9847239360096864,
+  "cycles": [
+    {
+      "cycle": 0,
+      "warmup": true,
+      "seconds": 3.838310608000029,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931622912,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 1,
+      "warmup": false,
+      "seconds": 1.8692630899895448,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 2,
+      "warmup": false,
+      "seconds": 1.8899418549844995,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 3,
+      "warmup": false,
+      "seconds": 1.8735640250088181,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 4,
+      "warmup": false,
+      "seconds": 1.8918567100190558,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 5,
+      "warmup": false,
+      "seconds": 1.876896817004308,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    }
+  ]
+}

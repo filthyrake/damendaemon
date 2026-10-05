@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 import os
 import torch
-from .awq import unpack_channels
 
 
 @dataclass
@@ -43,7 +42,18 @@ class Library:
         if status:
             raise RuntimeError(f'native AWQ CUDA error {status}')
 
-    def prepare(self, matrix, bias=None, workspace=None):
+    @staticmethod
+    def packing_indices(device):
+        # These exact index/shift arrays are shared only during one activation.
+        # Keeping them out of the resident library avoids extra lifetime state.
+        return dict(
+            channels=torch.tensor([i+8*j for i in range(8) for j in range(8)], device=device),
+            interleave=torch.tensor([0, 2, 4, 6, 1, 3, 5, 7], device=device),
+            bias=torch.tensor([2*i+j for i in range(4) for j in (0, 1, 8, 9, 16, 17, 24, 25)], device=device),
+            unpack=torch.tensor([0, 16, 4, 20, 8, 24, 12, 28], device=device),
+            pack=torch.arange(8, device=device, dtype=torch.int32)*4)
+
+    def prepare(self, matrix, bias=None, workspace=None, indices=None):
         if (not matrix.weight.is_cuda or matrix.group != 128 or matrix.inputs % 128
                 or matrix.outputs % 128 or matrix.inputs <= 128):
             raise ValueError('native AWQ requires CUDA AWQ group 128 with aligned dimensions')
@@ -55,15 +65,13 @@ class Library:
             k, n, self.sms, self.shared, torch.cuda.current_stream(device).cuda_stream))
         # Layout permutations follow the pinned upstream Marlin format. Keep
         # the canonical AWQ zero-point decoder independent of the repacker.
-        permutation = [i+8*j for i in range(8) for j in range(8)]
-        scales = matrix.scales.reshape(-1, 64)[:, permutation].reshape(-1, n).contiguous()
-        zeros = unpack_channels(matrix.zeros).reshape(-1, 64)[:, permutation]
-        zeros = zeros.reshape(-1, 8)[:, [0, 2, 4, 6, 1, 3, 5, 7]]
-        shifts = torch.arange(8, device=device, dtype=torch.int32)*4
-        zeros = (zeros << shifts).sum(-1, dtype=torch.int32).reshape(k//128, n//8).contiguous()
+        indices = self.packing_indices(device) if indices is None else indices
+        scales = matrix.scales.reshape(-1, 64)[:, indices['channels']].reshape(-1, n).contiguous()
+        zeros = ((matrix.zeros[..., None] >> indices['unpack']) & 15).reshape(-1, 64)[:, indices['channels']]
+        zeros = zeros.reshape(-1, 8)[:, indices['interleave']]
+        zeros = (zeros << indices['pack']).sum(-1, dtype=torch.int32).reshape(k//128, n//8).contiguous()
         if bias is not None:
-            permutation = [2*i+j for i in range(4) for j in (0, 1, 8, 9, 16, 17, 24, 25)]
-            bias = bias.reshape(-1, 32)[:, permutation].reshape(n).contiguous()
+            bias = bias.reshape(-1, 32)[:, indices['bias']].reshape(n).contiguous()
         # A runtime executor supplies one shared, admitted workspace.
         if workspace is None:
             scratch = torch.empty(4*self.sms*64*256, dtype=torch.float32, device=device)
@@ -119,13 +127,14 @@ def replace_packing(linear, weights, library):
         torch.empty(4*library.sms*64*256, dtype=torch.float32, device=device),
         torch.zeros(4*library.sms, dtype=torch.int32, device=device))
     prepared = {}
+    indices = library.packing_indices(device)
     for name in list(weights):
         key = id(weights[name])
         if key not in linear.awq:
             continue
         matrix = linear.awq.pop(key)
         bias_name = name.removesuffix('.weight') + '.bias'
-        value = library.prepare(matrix, weights.get(bias_name), linear.native_workspace)
+        value = library.prepare(matrix, weights.get(bias_name), linear.native_workspace, indices)
         weights[name] = value.weight
         linear.scales.pop(key)
         linear.scales[id(value.weight)] = value.scales

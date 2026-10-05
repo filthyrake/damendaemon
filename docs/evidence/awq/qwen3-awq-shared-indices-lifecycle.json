@@ -1,0 +1,163 @@
+{
+  "passed": true,
+  "experiment": null,
+  "model": "/home/damen/dllm-dev/baselines/awq-qwen3/models--Qwen--Qwen3-4B-AWQ/snapshots/74d4bd2bd4bff9cafc9345221320bffb08b406a3",
+  "device": "NVIDIA A2",
+  "context": 2048,
+  "host_bytes": 2665925632,
+  "cycles": [
+    {
+      "resident": 3931622912,
+      "after_release": 25559040,
+      "references_released": true
+    },
+    {
+      "resident": 3931328000,
+      "after_release": 25559040,
+      "references_released": true
+    },
+    {
+      "resident": 3931328000,
+      "after_release": 25559040,
+      "references_released": true
+    }
+  ],
+  "alias_scope": "two distinct checkpoints; single restore observations, not a swap benchmark",
+  "source_sha256": "287be51a22173d1d1a836ea65cd233e8bf18e36debbc1e75a6782792d8479148",
+  "expected": {
+    "text": "<think>\nOkay, the user wants me to explain binary search with a short worked example. Let me start by recalling what binary search is. It's an efficient",
+    "tokens": [
+      151667,
+      198,
+      32313,
+      11,
+      279,
+      1196,
+      6801,
+      752,
+      311,
+      10339,
+      7868,
+      2711,
+      448,
+      264,
+      2805,
+      6439,
+      3110,
+      13,
+      6771,
+      752,
+      1191,
+      553,
+      88646,
+      1128,
+      7868,
+      2711,
+      374,
+      13,
+      1084,
+      594,
+      458,
+      11050
+    ]
+  },
+  "alternate_model": "/home/damen/dllm-dev/baselines/awq/snapshots/db09cd27ead7fee40cdee309693cf83601b9c899",
+  "alternate_expected": {
+    "text": "Certainly! Binary search is a search algorithm that works by dividing the search space into halves and narrowing down the search range until the target is found, or the search",
+    "tokens": [
+      95456,
+      0,
+      17718,
+      2711,
+      374,
+      264,
+      2711,
+      12111,
+      429,
+      4278,
+      553,
+      49702,
+      279,
+      2711,
+      3550,
+      1119,
+      74112,
+      323,
+      97767,
+      1495,
+      279,
+      2711,
+      2088,
+      3080,
+      279,
+      2169,
+      374,
+      1730,
+      11,
+      476,
+      279,
+      2711
+    ]
+  },
+  "switch_observations": {
+    "initial": {
+      "source_tier": "disk",
+      "activation_seconds": 5.58239933301229,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton+awq-marlin",
+      "weight_quantization": "awq_gemm",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 5.627630536997458,
+      "total_seconds": 6.180889610986924,
+      "decode_tokens_per_second": 56.03161603200429
+    },
+    "alternate": {
+      "source_tier": "disk",
+      "activation_seconds": 1.9796172170026693,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton+awq-marlin",
+      "weight_quantization": "awq_gemm",
+      "max_batch_size": 1,
+      "residual_dtype": "float16",
+      "first_token_seconds": 2.0079626129881945,
+      "total_seconds": 2.1265756039938424,
+      "decode_tokens_per_second": 261.35417155549084
+    },
+    "restored": {
+      "source_tier": "host",
+      "activation_seconds": 1.5953089570102748,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton+awq-marlin",
+      "weight_quantization": "awq_gemm",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 1.6291781270119827,
+      "total_seconds": 2.1831894670031033,
+      "decode_tokens_per_second": 55.95553332987164
+    }
+  },
+  "http": {
+    "registration": true,
+    "exact_direct_trace": true,
+    "stream": true,
+    "concurrency": true,
+    "cancellation_recovery": true,
+    "host_restore": true,
+    "unload": true,
+    "disk_reload": true
+  },
+  "checkpoint_sha256": "a7043493ebd993f5fea18794ad7b5b3e064a52023f392a7fcce7ce0984c341f0",
+  "alternate_checkpoint_sha256": {
+    "model.safetensors": "c50d807b7bed7ff314308972e0f4bcf4e5a70bc60ad88fc7df53940831ed0c1b"
+  }
+}

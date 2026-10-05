@@ -1,0 +1,72 @@
+{
+  "scope": "warm-host executor activation; no disk load or HTTP queue timing",
+  "model": "/home/damen/dllm-dev/baselines/awq-qwen3/models--Qwen--Qwen3-4B-AWQ/snapshots/74d4bd2bd4bff9cafc9345221320bffb08b406a3",
+  "context": 2048,
+  "batch_size": 4,
+  "profiled": false,
+  "native_awq_baseline": "results/native_awq-before-indices.py",
+  "native_awq_source_sha256": "9499f473b97d33f244fbd242ac96099e2c0d706e37bbc2403dd3b1a9211157c2",
+  "host_preparation_seconds": 2.5034015069832094,
+  "cycles": [
+    {
+      "cycle": 0,
+      "warmup": true,
+      "seconds": 4.14423427201109,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931622912,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 1,
+      "warmup": false,
+      "seconds": 2.035981441993499,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 2,
+      "warmup": false,
+      "seconds": 2.0739014990103897,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 3,
+      "warmup": false,
+      "seconds": 2.131508542021038,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 4,
+      "warmup": false,
+      "seconds": 2.1366688939742744,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    },
+    {
+      "cycle": 5,
+      "warmup": false,
+      "seconds": 2.090744929999346,
+      "backend": "triton+awq-marlin",
+      "resident_bytes": 3931360768,
+      "released_bytes": 25559040,
+      "greedy_token": 481,
+      "cpu_events": []
+    }
+  ]
+}

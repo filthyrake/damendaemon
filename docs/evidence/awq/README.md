@@ -457,3 +457,24 @@ Marlin 11.773 ms, vocabulary projection 4.704 ms, attention 2.418 ms. Profiles
 are diagnostic instrumented runs, separate from HTTP timing. Both retain the
 129 benchmark IDs in their reports. A wider small-row Marlin configuration is
 being tested separately; it is not enabled in the qualified library.
+
+## Activation-local AWQ packing indices
+
+Warm-host activation profiling finds repeated construction/transfer of the
+same channel, zero-point and bias permutations. Reusing these arrays for one
+activation reduces copy calls from 1446 to 874. The arrays are released after
+packing; they are not retained by the resident library. Packed weights, scales,
+zero points and biases retain exactly the existing transforms.
+
+The unprofiled control/candidate/candidate/control sequence has five measured
+cycles per phase, excluding warmups. Phase medians are 2.0907/1.8981/1.8769/1.8877
+seconds. Although combined medians are 2.0076 versus 1.8864 seconds, the final
+control matches the candidate. Phase drift prevents a reliable activation
+speedup claim. Instrumented activation durations are diagnostic only.
+
+Both Qwen2 and Qwen3 pass all 128 independent reference checks after the change;
+Qwen3's numerical check records exactly match the prior qualified implementation.
+The real Qwen3-to-Qwen2 HTTP switching, streaming, cancellation, release and
+reload gate passes. All measured activation releases return to 25559040 bytes.
+All 347 local regressions pass. Raw profile, unprofiled phase, reference and
+lifecycle reports are retained with the `activation` and `shared-indices` names.
