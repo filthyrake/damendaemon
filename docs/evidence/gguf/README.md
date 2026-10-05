@@ -1961,3 +1961,11 @@ HF-loaded path, both within dllm, using identical prompt IDs and the same packed
 values. No extra logprobs are requested in this final run. These near-equal
 measurements are functional-path evidence, not an optimization or cross-engine
 performance win.
+
+`mistral-q4-prefill-dispatch-a2.json` rejects expanding legacy Q4 projections
+earlier in prompt processing. All 60 arithmetic checks pass on five real Mistral
+projections at 16/32/64/128/129/256 rows. For 16–128 rows, expansion plus dense
+matrix multiplication takes 1.21–4.17 times the production fused-kernel time,
+including expansion on every call. At 129/256 rows both paths already use the
+same expansion policy and their timings agree within 0.1%. No dispatch change
+is justified, and no full-model speedup is claimed.

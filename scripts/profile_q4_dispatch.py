@@ -14,7 +14,7 @@ import triton.testing
 
 from dllm.gguf_model import GgufWeights
 from dllm.quantization import dequantize_q4
-from dllm.quantized_kernels_q4 import expand, linear
+from dllm.quantized_kernels_q4 import expand, linear, _gemm
 from dllm.runtime import require_gpu
 
 
@@ -22,6 +22,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model')
     parser.add_argument('--output', required=True)
+    parser.add_argument('--tiles', action='store_true',
+                        help='Compare smaller fused tiles instead of dense expansion')
     args = parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
@@ -35,7 +37,8 @@ def main():
                   triton=triton.__version__,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/quantized_kernels_q4.py').read_bytes()).hexdigest(),
-                  scope='real Q4 projections; expansion included; no persistent dense cache',
+                  scope=('real Q4 projections; smaller fused tiles' if args.tiles else
+                         'real Q4 projections; expansion included; no persistent dense cache'),
                   cases=[], passed=False)
     try:
         with torch.inference_mode():
@@ -54,6 +57,16 @@ def main():
                                          x, expand(weight, scales, x.dtype), bias))
                     case = dict(name=name, width=width, outputs=outputs, rows=rows,
                                 expanded_bytes=oracle.numel()*oracle.element_size(), checks={}, rounds=[])
+                    if args.tiles:
+                        functions = dict(production=functions['production'])
+                        for bm in (16, 32):
+                            def tiled(bm=bm):
+                                result = torch.empty_like(expected)
+                                _gemm[(triton.cdiv(rows, bm), triton.cdiv(outputs, 64))](
+                                    x, weight, scales, bias, result, rows, outputs, width,
+                                    bm, 64, 128, True, num_warps=4, num_stages=3)
+                                return result
+                            functions[f'tile_{bm}'] = tiled
                     report['cases'].append(case)
                     for label, function in functions.items():
                         actual = function()
@@ -63,7 +76,8 @@ def main():
                                                      passed=bool(torch.isfinite(actual).all()) and rms < .001)
                     if not all(c['passed'] for c in case['checks'].values()):
                         raise AssertionError('projection accuracy gate failed')
-                    for label in ('production', 'expanded', 'expanded', 'production'):
+                    order = list(functions)
+                    for label in order + order[::-1]:
                         case['rounds'].append(dict(kind=label, ms=triton.testing.do_bench_cudagraph(
                             functions[label], rep=100)))
                     print(json.dumps(case), flush=True)
