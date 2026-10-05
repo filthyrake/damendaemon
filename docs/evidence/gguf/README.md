@@ -1815,3 +1815,13 @@ includes prefill. Four-request latency falls 21.6%, single-request latency
 cross-engine comparison. Cached host-restore requests took 1.535/1.712 seconds,
 switches back 1.800/1.973 seconds and disk-reload requests 3.770/5.009 seconds.
 Only two observations per action are available; no hot-swap speedup is claimed.
+
+The ordinary and experimental cache paths also pass their separate 64-check
+independent model suites at 2048 context:
+`qwen3-medium-{kquant,cache}-reference-2048-a2.json`. Worst relative RMS remains
+0.6857%, maximum absolute error 0.1328125 and all greedy decisions agree.
+`qwen3-medium-cache-release-a2.json` passes two 4 GiB-budget cached activations
+and a positive-but-insufficient 1 MiB fallback. All executor/weight/cache weak
+references expire after each unload; allocated GPU memory returns to exactly
+25,559,040 bytes each time. This retained workspace is stable across all three
+cycles and the cached model tensors are released.
