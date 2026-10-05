@@ -439,7 +439,10 @@ of 1–128 tokens. Longer prompts and other configurations retain the previous
 path. The integrated runtime passes all 82 independent checks including mixed
 short/long prompts and reused decode slots (worst relative RMS 0.000389%);
 349 local tests pass, including selection boundaries. Mixed-model lifecycle
-qualification is in progress. See
+qualification also passes with Qwen2.5, Qwen3.5 hybrid and OLMoE at GPU model
+capacities one and three: repeated responses, host restoration, mixed-model
+concurrency, thinking controls and disconnect/rejection recovery. See
+[service proof](evidence/architectures/olmoe-device-grouped-service-a2.json),
 [normal-runtime oracle](evidence/architectures/olmoe-device-grouped-normal-reference-a2.json)
 and [source fingerprints](evidence/architectures/olmoe-device-grouped-normal-source.json).
 
