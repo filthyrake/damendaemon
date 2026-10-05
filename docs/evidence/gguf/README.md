@@ -783,3 +783,37 @@ The flag requires an FP32 HF reference and rejects uncovered legacy Q4_0/Q8_0
 combinations. The prior `float16` reference policy remains the default; no
 historical failed result or threshold is changed. Unit tests cover tied storage,
 independent coefficients, vectors and rejected format combinations.
+
+## FP32 K-quant numerical path
+
+`llama32-q4-k-m-float32-reference-2048-a2.json` passes the same 2048-context
+teacher trace under the existing `DLLM_LLAMA_PRECISION=float32` policy, using
+explicit `--reference-dtype float32 --weight-rounding kquant-float32` independent
+HF execution. All 64 greedy decisions agree; maximum absolute error is
+0.00012112 and RMS 0.00160%. The old mixed/standard failures remain unchanged.
+This establishes an accurate model-execution mode for this trace, not an HTTP
+performance or full long-context lifecycle claim.
+
+A separate validation-only FP32 residual-int8 library now preserves FP32 inputs
+and outputs instead of rounding activations/results to FP16. ABI 101 deliberately
+prevents accidental selection through the production FP16 ABI. Its independent
+80-case matrix/changed-input/zero-graph proof passes at maximum RMS 0.00688%,
+against the unchanged 0.1% matrix gate, in
+`kquant-residual-f32-matrices-a2.jsonl`. This experiment is not a production option
+and does not yet establish whole-model accuracy or speed.
+
+The FP32 candidate subsequently passes the independent 2048-context teacher
+trace in `llama32-q4-k-m-residual-f32-reference-2048-a2.json`: maximum RMS 0.281%,
+absolute 0.03632, all 64 greedy decisions equal. The unchanged production FP32
+path remains more accurate on this trace; the candidate remains below the
+original 1% / 0.5 gates. `kquant-residual-f32-matrices-range-a2.jsonl` additionally
+checks activation reconstruction from subnormal magnitudes through 2^100;
+errors stay within 0.01% of each group's maximum plus one minimum subnormal.
+
+`kquant-residual-f32-profile-a2.jsonl` compares real projections in layers 0 and 2
+and the output head, batches 1/2/4, using identical unrounded FP32 coefficients.
+The candidate is 1.5–3.9x faster than ordinary packed FP32 projection dispatch
+across these cases. Single-row head time falls from 5.283 to 1.831 ms, and
+four-row head time from 8.249 to 4.423 ms. These are matrix timings, not a
+whole-model speed claim; full batching/lifecycle and HTTP comparisons remain
+necessary before production integration.

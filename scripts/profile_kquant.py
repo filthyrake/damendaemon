@@ -24,9 +24,12 @@ def main():
     p.add_argument('--native-only',action='store_true')
     p.add_argument('--layers',type=int,nargs='+',default=[0],help='decoder layers to profile')
     p.add_argument('--rows',type=int,nargs='+',choices=(1,2,3,4),help='explicit decode batch sizes')
+    p.add_argument('--float32-experimental',action='store_true',help='compare isolated FP32 candidate against ordinary packed FP32')
     p.add_argument('--residual',action='store_true',help='include isolated residual-int8 candidate')
     args=p.parse_args()
-    if args.residual:args.native_only=True
+    if args.float32_experimental and args.residual:p.error('select only one residual arithmetic experiment')
+    if args.residual or args.float32_experimental:args.native_only=True
+    dtype=torch.float32 if args.float32_experimental else torch.float16
     torch.set_num_threads(4);torch.manual_seed(613)
     torch.backends.cuda.matmul.allow_tf32=False
     model=GgufWeights(args.model,512,'none')
@@ -35,14 +38,19 @@ def main():
         for name in names:
             weight=model.weights[name].cuda();layout=model.packed_formats[name]
             width,spec=layout;outputs=spec[-1][1]
-            dense=expand(weight,layout,torch.float16)
+            dense=expand(weight,layout,dtype)
             for rows in (args.rows or ((1,4) if args.decode_tuning or args.native_only else (1,4,129))):
-                x=torch.randn(rows,width,device='cuda',dtype=torch.float16)
+                x=torch.randn(rows,width,device='cuda',dtype=dtype)
                 expected=torch.nn.functional.linear(x,dense)
                 variants={'current':lambda:linear(x,weight,layout),
                           'expanded_resident':lambda:torch.nn.functional.linear(x,dense),
                           'expand_each_call':lambda:torch.nn.functional.linear(x,expand(weight,layout,x.dtype))}
-                if args.native_only:
+                if args.float32_experimental:
+                    from experiments.kquant_residual_f32 import linear as residual_linear
+                    variants={'packed_float32':variants['current'],
+                              'expanded_resident':variants['expanded_resident'],
+                              'residual_float32':lambda:residual_linear(x,weight,layout)}
+                elif args.native_only:
                     from dllm.native_kquant import linear_if_enabled
                     assert os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
                     variants={'expanded_resident':variants['expanded_resident'],
@@ -76,7 +84,7 @@ def main():
                     relative=((actual.float()-expected.float()).square().mean()/expected.float().square().mean()).sqrt().item()
                     assert torch.isfinite(actual).all() and relative<.001,(name,rows,variant,relative)
                     print(json.dumps(dict(name=name,rows=rows,width=width,outputs=outputs,
-                        variant=variant,ms=ms,formats=[segment[2] for segment in spec],relative_rms=relative)),flush=True)
+                        variant=variant,ms=ms,dtype=str(dtype),formats=[segment[2] for segment in spec],relative_rms=relative)),flush=True)
             del weight,dense
 
 
