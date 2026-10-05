@@ -1,0 +1,32 @@
+{
+  "passed": false,
+  "cases": [
+    {
+      "name": "q_proj",
+      "inputs": 896,
+      "outputs": 896,
+      "rows": 1,
+      "checks": [],
+      "rounds": []
+    }
+  ],
+  "coefficient_checks": [
+    {
+      "name": "q_proj",
+      "dllm_exact": true,
+      "upstream_exact": true
+    }
+  ],
+  "device": "NVIDIA A2",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "torch": "2.6.0+cu124",
+  "triton": "3.2.0",
+  "source_sha256": "1abaeab67f0d1260f42028f1a7e4b5e31c6f3a145df845e83db7e779856a5cd7",
+  "kernel_sha256": "37971076b498f18d5cc67f6e7cb5805e790776fa5abcad039681e630b8601324",
+  "upstream_source_sha256": "7d11fdad7e630d2a90b5d99cad7c31b4fb501222b14d474f900266b6f5bfce78",
+  "adapted_source_sha256": "6d2fb2294da5723c5f67e482d93a298927f2d7637cd7b4a3b1104a15272938a9",
+  "upstream_adaptation": "replace only the Triton import; preserve the implementation and copyright header",
+  "scope": "first-layer real/fused projections; FP16 coefficients, FP32 accumulation; no model or serving qualification",
+  "model_sha256": "c50d807b7bed7ff314308972e0f4bcf4e5a70bc60ad88fc7df53940831ed0c1b",
+  "error": "OutOfResources(208896, 101376, 'shared memory')"
+}

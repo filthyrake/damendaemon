@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/home/damen/dllm-dev/scripts/verify_awq_kernels.py", line 112, in <module>
+    main()
+  File "/home/damen/dllm-dev/scripts/verify_awq_kernels.py", line 86, in main
+    actual = linear(x, matrix, bias)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/damen/dllm-dev/dllm/awq_kernels.py", line 70, in linear
+    _gemm[(tr.cdiv(rows, bm), tr.cdiv(matrix.outputs, 64))](
+  File "/home/damen/dllm-dev/venv/lib64/python3.11/site-packages/triton/runtime/jit.py", line 330, in <lambda>
+    return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/damen/dllm-dev/venv/lib64/python3.11/site-packages/triton/runtime/jit.py", line 653, in run
+    kernel.run(grid_0, grid_1, grid_2, stream, kernel.function, kernel.packed_metadata, launch_metadata,
+    ^^^^^^^^^^
+  File "/home/damen/dllm-dev/venv/lib64/python3.11/site-packages/triton/compiler/compiler.py", line 395, in __getattribute__
+    self._init_handles()
+  File "/home/damen/dllm-dev/venv/lib64/python3.11/site-packages/triton/compiler/compiler.py", line 388, in _init_handles
+    raise OutOfResources(self.metadata.shared, max_shared, "shared memory")
+triton.runtime.errors.OutOfResources: out of resource: shared memory, Required: 208896, Hardware limit: 101376. Reducing block sizes or `num_stages` may help.

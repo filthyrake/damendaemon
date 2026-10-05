@@ -40,13 +40,23 @@ def _gemm(X, W, Z, S, B, Y, M: tl.constexpr, K: tl.constexpr, N: tl.constexpr,
           GROUP: tl.constexpr, BM: tl.constexpr, BN: tl.constexpr, BK: tl.constexpr, BIASED: tl.constexpr):
     rows = tl.program_id(0)*BM + tl.arange(0, BM)
     outputs = tl.program_id(1)*BN + tl.arange(0, BN)
+    packed_outputs = tl.program_id(1)*(BN//8) + tl.arange(0, BN//8)
+    lanes = tl.arange(0, 8)
+    shifts = (lanes//2 + (lanes%2)*4)*4
     offsets = tl.arange(0, BK)
     accumulator = tl.full((BM, BN), 0, tl.float32)
+    tl.static_assert(BK == GROUP)
     for block in range(tr.cdiv(K, BK)):
         columns = block*BK + offsets
         x = tl.load(X + rows[:, None]*K + columns[None, :],
                     (rows[:, None] < M) & (columns[None, :] < K), other=0)
-        w = _values(W, Z, S, columns[:, None], outputs[None, :], K, N, GROUP)
+        packed = tl.load(W + columns[:, None]*(N//8) + packed_outputs[None, :],
+                         (columns[:, None] < K) & (packed_outputs[None, :] < N//8), other=0)
+        zeros = tl.load(Z + block*(N//8) + packed_outputs, packed_outputs < N//8, other=0)
+        scales = tl.load(S + block*N + outputs, outputs < N, other=0).to(tl.float32)
+        values = ((packed[:, :, None] >> shifts[None, None, :]) & 15).reshape(BK, BN)
+        zero_values = ((zeros[:, None] >> shifts[None, :]) & 15).reshape(BN)
+        w = ((values - zero_values[None, :]).to(tl.float32)*scales[None, :]).to(tl.float16)
         accumulator += tl.dot(x, w)
     if BIASED:
         accumulator += tl.load(B + outputs, outputs < N, other=0).to(tl.float32)[None, :]

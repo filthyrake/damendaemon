@@ -41,3 +41,26 @@ products are checked against FP32 accumulation over FP16 coefficients, with
 bias/no-bias and three activation magnitudes; coefficient bit patterns must
 also match both the host codec and the upstream decoder. Any timings compare
 standalone projection paths, not vLLM's production engine or Marlin backend.
+
+The first matrix kernel exceeded A2 per-block shared memory: 208896 bytes
+requested versus 101376 available. Its coefficient decoders had already
+matched both references. The failure report/log are retained as
+`qwen25-small-kernels-shared-memory-failure-a2.*`. The repaired kernel loads
+compact packed tiles, then loads group scales and zero points once per tile
+instead of replicating those loads across input rows.
+
+`qwen25-small-kernels-compact-a2.json` passes all 378 matrix checks over nine
+real/fused projection shapes, rows 1/2/4/33/64/129/256, bias on/off and activation
+exponents -10/0/8. All nine decoded projections are bit-exact against both host
+and upstream GPU references; worst matrix relative RMS is 0.0414%. Timings are
+matrix-only comparisons with expansion plus dense multiplication; rows above
+128 already use that path and act as controls.
+
+`qwen25-small-host-import.json` checks the separate strict host loader: 96 fused
+packed projections, a shared tied output head, valid chat tokenization and an
+exact 458314496-byte storage/admission match. Header preflight rejects missing
+or unexpected tensors, wrong dtypes/shapes, mismatched/escaping shard indexes,
+unsupported formats and changed sources. Five additional loader tests cover
+these failures, tied-head disagreement, nonfinite scales and unsupported
+devices/conversions. Runtime registration and full-model GPU validation remain
+separate gates.
