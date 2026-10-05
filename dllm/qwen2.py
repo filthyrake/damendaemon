@@ -388,6 +388,7 @@ class Executor:
         self.quant_linear = None
         self.packed_decode = None
         self.packed_prefill = None
+        self.q4_decode = None
         if model.scales or packed_formats:
             from .quantization import Linear
             from .native_kquant_residual import select
@@ -399,8 +400,11 @@ class Executor:
             from .kquant_prefill import select as select_prefill
             self.packed_prefill = select_prefill(c, packed_formats, self.device, self.compute_dtype,
                                                 self.llama_precision, self.context)
+            from .native_q4_residual import select as select_q4
+            self.q4_decode = select_q4(c, model.quantization, self.device, self.compute_dtype,
+                                      self.llama_precision, self.context)
             self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats,
-                                       self.packed_decode, self.packed_prefill)
+                                       self.packed_decode, self.packed_prefill, self.q4_decode)
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
@@ -434,6 +438,8 @@ class Executor:
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if model.scales or packed_formats:
             self.kernel_backend += '+'+model.quantization
+            if self.q4_decode is not None:
+                self.kernel_backend += '+cuda-q4-residual'
             if self.packed_decode is not None:
                 self.kernel_backend += ('+cuda-kquant-residual-f32' if self.compute_dtype == torch.float32
                                         else '+cuda-kquant-residual')

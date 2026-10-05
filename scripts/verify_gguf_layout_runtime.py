@@ -38,6 +38,9 @@ def main():
     library = os.environ.get('DLLM_Q4_CUDA_LIBRARY')
     if library:
         report['native_q4_library'] = dict(path=library, sha256=hashlib.sha256(Path(library).read_bytes()).hexdigest())
+    residual_library = os.environ.get('DLLM_Q4_RESIDUAL_LIBRARY')
+    if residual_library:
+        report['native_q4_residual_library'] = dict(path=residual_library,sha256=hashlib.sha256(Path(residual_library).read_bytes()).hexdigest())
     def compare(actual, expected, **case):
         expected = expected.to(actual.device)
         error = actual.float()-expected.float()

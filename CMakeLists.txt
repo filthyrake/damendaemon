@@ -25,3 +25,8 @@ add_library(dllm-kquant-residual-f32 SHARED native/kquant_residual_f32.cu)
 target_compile_features(dllm-kquant-residual-f32 PRIVATE cuda_std_17)
 target_link_libraries(dllm-kquant-residual-f32 PRIVATE CUDA::cudart)
 target_compile_options(dllm-kquant-residual-f32 PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3> $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
+
+add_library(dllm-q4-residual SHARED native/q4_residual.cu)
+target_compile_features(dllm-q4-residual PRIVATE cuda_std_17)
+target_link_libraries(dllm-q4-residual PRIVATE CUDA::cudart)
+target_compile_options(dllm-q4-residual PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3>)

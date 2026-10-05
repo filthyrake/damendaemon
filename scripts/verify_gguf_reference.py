@@ -216,7 +216,10 @@ def main():
     q4_path=os.environ.get('DLLM_Q4_CUDA_LIBRARY')
     q4_library=dict(path=q4_path, selected='+cuda-gemv' in precision['backend'],
                     sha256=hashlib.sha256(Path(q4_path).read_bytes()).hexdigest()) if q4_path else None
-    report = dict(native_q4_library=q4_library, serial_reference=args.serial_reference, reference_cache_bytes=sum(t.numel()*t.element_size() for trace in reference_cache.values() for t in trace), production_prefill_kernel_sha256=prefill_kernel, passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
+    q4_residual_path=os.environ.get('DLLM_Q4_RESIDUAL_LIBRARY')
+    q4_residual_library=dict(path=q4_residual_path,selected='+cuda-q4-residual' in precision['backend'],
+        sha256=hashlib.sha256(Path(q4_residual_path).read_bytes()).hexdigest()) if q4_residual_path else None
+    report = dict(native_q4_residual_library=q4_residual_library, native_q4_library=q4_library, serial_reference=args.serial_reference, reference_cache_bytes=sum(t.numel()*t.element_size() for trace in reference_cache.values() for t in trace), production_prefill_kernel_sha256=prefill_kernel, passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
                   precision=precision, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
                   benchmark_report=args.benchmark_report, steps=steps,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,

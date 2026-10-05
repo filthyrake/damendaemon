@@ -14,11 +14,16 @@ from experiments.q4_residual import linear as candidate
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--output',required=True);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--output',required=True)
+    p.add_argument('--production',action='store_true');args=p.parse_args()
     require_gpu();torch.set_num_threads(4);torch.manual_seed(713)
     torch.backends.cuda.matmul.allow_tf32=False
-    path=Path(os.environ['DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY'])
-    report=dict(device=torch.cuda.get_device_name(),torch=torch.__version__,passed=False,
+    path=Path(os.environ['DLLM_Q4_RESIDUAL_LIBRARY' if args.production else 'DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY'])
+    evaluate=candidate
+    if args.production:
+        from dllm.native_q4_residual import linear
+        evaluate=lambda x,w,s,b:linear(x,w,s,b,library_path=str(path))
+    report=dict(production=args.production, device=torch.cuda.get_device_name(),torch=torch.__version__,passed=False,
                 candidate_library_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                 production_library_sha256=hashlib.sha256(Path(os.environ['DLLM_Q4_CUDA_LIBRARY']).read_bytes()).hexdigest(),
                 scope='synthetic matrices; FP16-rounded coefficient oracle; not model or serving qualification',checks=[])
@@ -26,7 +31,7 @@ def main():
         for n,k in ((113,4096),(6144,4096),(4096,4096),(28672,4096),(4096,14336),(32000,4096)):
             weights,scales=quantize_q4(torch.randn(n,k,device='cuda',dtype=torch.float16)*.02)
             decoded=dequantize_q4(weights,scales,torch.float16)
-            for rows in (1,2,4):
+            for rows in ((1,) if args.production else (1,2,4)):
                 x=torch.randn(rows,k,device='cuda',dtype=torch.float16)
                 bias=torch.randn(n,device='cuda',dtype=torch.float16)
                 for exponent in (-14,0,10):
@@ -34,7 +39,7 @@ def main():
                     for with_bias in (False,True):
                         b=bias if with_bias else None
                         expected=torch.nn.functional.linear(value,decoded,b)
-                        actual=candidate(value,weights,scales,b)
+                        actual=evaluate(value,weights,scales,b)
                         error=actual.float()-expected.float()
                         rms=(error.square().mean()/expected.float().square().mean().clamp_min(1e-12)).sqrt().item()
                         item=dict(outputs=n,width=k,rows=rows,activation_exponent=exponent,bias=with_bias,
@@ -43,7 +48,7 @@ def main():
                         report['checks'].append(item)
                 timing=dict(outputs=n,width=k,rows=rows,
                     production_ms=triton.testing.do_bench_cudagraph(lambda:production(x,weights,scales,bias),rep=100),
-                    candidate_ms=triton.testing.do_bench_cudagraph(lambda:candidate(x,weights,scales,bias),rep=100))
+                    candidate_ms=triton.testing.do_bench_cudagraph(lambda:evaluate(x,weights,scales,bias),rep=100))
                 report.setdefault('timings',[]).append(timing);print(json.dumps(timing),flush=True)
             del weights,scales,decoded
         report['passed']=all(c['passed'] for c in report['checks'])

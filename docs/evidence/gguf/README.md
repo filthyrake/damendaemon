@@ -1181,3 +1181,34 @@ Single-request latency improves 11–18%; the unchanged batch-two path is
 approximately tied. These are dllm-versus-dllm results, not new llama.cpp parity
 claims. Normal per-model dispatch requires separate confirmation from this
 validation-only server entry point.
+
+The normal opt-in implementation lives in `native/q4_residual.cu` and
+`dllm/native_q4_residual.py`, CMake target `dllm-q4-residual`, ABI 201. Set
+`DLLM_Q4_RESIDUAL_LIBRARY` before creating the executor. Selection is per model,
+not a global monkey patch, and bound to its library path for graph lifetime.
+It requires CUDA, Q4_0, mixed precision, context <=512, Llama metadata with
+32 layers, hidden 4096, intermediate 14336, 32 query/8 KV heads, head dimension
+128 and vocabulary 32000. Only one-row projections with width >=4096 divisible
+by 256 and outputs >=1024 use it; all other cases retain existing dispatch.
+The native API itself rejects multiple rows.
+
+The final library's 36 matrix checks pass
+(`q4-residual-production-matrices-a2.json`), along with 64 initial independent
+HF logit comparisons (worst RMS 0.2233%, exact greedy agreement) and all 128
+runtime-layout comparisons. Reports carry the final library hash and selected
+`+cuda-q4-residual` backend. All 96 extended independent checks also pass
+(worst RMS 0.4182%, exact greedy agreement), matching the isolated candidate.
+Normal-server confirmation is recorded separately when complete. The four new CPU regression tests cover
+ABI rejection, CPU-buffer rejection, opt-in/topology/precision/context gates,
+per-executor path binding and unchanged dense/batch fallback. The complete
+local suite passed 302 tests before the separate admission-experiment tests.
+
+Prompt-processing profiling also retains a rejected broad expansion of the
+existing paired-dot Q4 kernel in `q4-prefill-tiles-a2.json`: 48 tile/matrix
+checks pass; 12 BK256 variants exceed the A2 shared-memory limit and are
+retained as failures. Modest 129-row wins become regressions at 258/400 rows. No
+prefill dispatch is changed from those results. A distinct single-dot layout
+is prepared for separate measurement; bounded idle-group admission is tracked in #47.
+
+The complete local suite passes 306 tests, including four deterministic FIFO,
+cancellation, deadline and wakeup checks for the isolated #47 admission wrapper.

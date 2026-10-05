@@ -478,6 +478,18 @@ Mistral Q4 result is 22.53 tokens/s versus 20.06 with the paired Tensor Core
 path alone, still below the matched llama.cpp result of 34.20. There is no
 runtime compilation requirement when this option is unset.
 
+An additional experimental integer-dot path is available for the qualified
+Mistral-style GGUF topology (Llama metadata, 32 layers, width 4096, intermediate
+14336, 32 attention/8 KV heads, vocabulary 32000), Q4_0, mixed precision and
+context at most 512. Build `dllm-q4-residual` and set
+`DLLM_Q4_RESIDUAL_LIBRARY` to that library before starting dllm. Its per-model
+selector only changes one-row decode; other shapes and models fall back.
+It preserves packed weights but applies scaling in FP32 instead of rounding
+each coefficient to FP16. The isolated candidate reduced single-request HTTP
+latency 11–18%; final normal-path serving confirmation is tracked in
+[the GGUF evidence](docs/evidence/gguf/README.md). This is an explicit opt-in,
+not a new default or a broader precision-parity claim.
+
 GGUF Q4_K/Q5_K/Q6_K have a separate CUDA C++ decode library. It reads the
 original packed bytes, including mixed-format fused projections, and preserves
 FP16 coefficient rounding before FP32 accumulation:
