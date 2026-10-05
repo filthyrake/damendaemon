@@ -33,3 +33,21 @@ class MoEPrefillScopeTests(unittest.TestCase):
             self.assertFalse(use_packed_prefill(False,lengths))
         for lengths in ([], [32], [1]*5, [65,65], [64,65], [0,32], [-1,32]):
             self.assertFalse(use_packed_prefill(True,lengths))
+
+    def test_invalid_chunk_state_fails_before_touching_device_or_lengths(self):
+        from dllm.moe import OlmoeExecutor
+        executor = object.__new__(OlmoeExecutor)
+        executor.grouped_prefill = True
+        executor.max_batch = 4
+        executor.context = 128
+        executor.lengths = [7, 0, 12, 0]
+        before = executor.lengths.copy()
+        for tokens,slot,start in [([1],0,-1), ([1],0,1.0), ([1],4,0),
+                                  ([1],0,6), ([],0,0), ([1]*129,0,0), ([1]*122,0,7)]:
+            with self.assertRaises(ValueError):
+                executor.prefill_chunk(tokens,slot,start)
+            self.assertEqual(executor.lengths,before)
+        executor.grouped_prefill = False
+        with self.assertRaisesRegex(ValueError,'not supported'):
+            executor.prefill_chunk([1],0,0)
+        self.assertEqual(executor.lengths,before)

@@ -108,7 +108,7 @@ class OlmoeExecutor(BatchExecutor):
     def forward_batch(self, ids, positions, slots):
         return self._forward(ids,positions,slots,False)
 
-    def _forward(self, ids, positions, slots, prefill, segments=None):
+    def _forward(self, ids, positions, slots, prefill, segments=None, return_logits=True):
         count,w = ids.numel(),self.w
         x = F.embedding(ids,w['embed']).float()
         for i in range(self.c['num_hidden_layers']):
@@ -129,10 +129,10 @@ class OlmoeExecutor(BatchExecutor):
                     attended = attended.transpose(1,2).reshape(count,-1)
                 else:
                     parts, offset = [], 0
-                    for slot, length in segments:
+                    for slot, length, start in segments:
                         q = query[offset:offset+length,:,0,:].transpose(0,1).unsqueeze(0)
-                        value = self.prefill_attention(q, ck[slot:slot+1,:,:length],
-                                                       cv[slot:slot+1,:,:length])
+                        value = self.prefill_attention(q, ck[slot:slot+1,:,:start+length],
+                                                       cv[slot:slot+1,:,:start+length],query_start=start)
                         parts.append(value.transpose(1,2).reshape(length,-1))
                         offset += length
                     attended = torch.cat(parts)
@@ -140,11 +140,13 @@ class OlmoeExecutor(BatchExecutor):
                 attended = self.decode_attention(query,ck,cv,positions,slots).reshape(count,-1)
             x = x+self._linear(attended,w[f'{i}.out'])
             x = x+self.experts(self.norm(x,w[f'{i}.norm2']),i,prefill)
+        if not return_logits:
+            return None
         if prefill:
             if segments is None:
                 x = x[-1:]
             else:
-                ends = torch.tensor([end-1 for end in accumulate(length for _,length in segments)],
+                ends = torch.tensor([end-1 for end in accumulate(length for _,length,_ in segments)],
                                     device=self.device)
                 x = x.index_select(0,ends)
         return self._linear(self.norm(x,w['norm']),w['head'])
@@ -165,9 +167,31 @@ class OlmoeExecutor(BatchExecutor):
                                  device=self.device)
         slot_ids = torch.tensor([slot for slot,length in zip(slots,lengths) for _ in range(length)],
                                 device=self.device)
-        logits = self._forward(ids,positions,slot_ids,True,list(zip(slots,lengths)))
+        logits = self._forward(ids,positions,slot_ids,True,[(slot,length,0) for slot,length in zip(slots,lengths)])
         for slot,length in zip(slots,lengths):
             self.lengths[slot] = length
         # Preserve the scalar length side effect of the previous sequential path.
         self.length = lengths[-1]
+        return logits
+
+    @property
+    def supports_chunked_prefill(self):
+        return self.grouped_prefill
+
+    @torch.inference_mode()
+    def prefill_chunk(self,tokens,slot,start,final=True):
+        if not self.supports_chunked_prefill:
+            raise ValueError('chunked prefill is not supported for this OLMoE configuration')
+        if (type(start) is not int or start<0 or not 0<=slot<self.max_batch
+                or (start and self.lengths[slot]!=start)):
+            raise ValueError('invalid partial prompt cache state')
+        if not tokens or start+len(tokens)>self.context:
+            raise ValueError('prompt is empty or exceeds context')
+        end = start+len(tokens)
+        ids = torch.tensor(tokens,device=self.device,dtype=torch.long)
+        positions = torch.arange(start,end,device=self.device)
+        slots = torch.full_like(positions,slot)
+        logits = self._forward(ids,positions,slots,True,[(slot,len(tokens),start)],return_logits=final)
+        self.lengths[slot] = end
+        self.length = end
         return logits

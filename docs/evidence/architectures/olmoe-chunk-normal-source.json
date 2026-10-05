@@ -1,0 +1,15 @@
+{
+  "scope": "qualified A2 Q8 OLMoE, context <=2048 and batch capacity <=4; chunking/prefix cache remain opt-in",
+  "sources": {
+    "dllm/moe.py": "0efa4431ee6af1fd7d5196add94a7eae87290c0b3947c117609eae5728eff645",
+    "dllm/moe_prefill.py": "9e4118f80f6eaab5d4a07f7e998e9d0e3b1da24fd872a4aef1154f1e8a65c4a0",
+    "dllm/grouped_moe.py": "d29e8724e1fe9dd34f36a44ea66f09f31abb8addb4fbb2d4aa67af957cc04dc6"
+  },
+  "local_tests": 351,
+  "independent_checks": {
+    "chunk127": 82,
+    "packed_batch_regression": 234
+  },
+  "normal_prefix_reference": "pending",
+  "http_prefix_and_interleaving": "pending"
+}

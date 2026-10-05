@@ -529,6 +529,17 @@ The snapshots remain copied per-executor KV state, not shared pages. See
 [prefix numerical proof](evidence/architectures/olmoe-prefix-experiment-a2.json)
 and [experimental dispatch](evidence/architectures/olmoe-prefix-experiment-dispatch.json).
 
+The shared normal OLMoE forward pass now accepts offset attention segments and
+can skip final logits on nonfinal chunks. Opt-in chunking/prefix reuse is exposed
+only within the existing A2 Q8 geometry/context/batch scope. The integrated
+127-token chunk path passes all 82 independent model checks, and the packed
+prompt regression passes all 234 checks. All 351 local tests pass, including
+invalid continuation offsets and unchanged cache lengths on rejection. The normal
+prefix reference and actual HTTP prefix/interleaving measurements remain pending.
+See [normal chunk gate](evidence/architectures/olmoe-chunk127-normal-reference-a2.json),
+[packed regression](evidence/architectures/olmoe-chunk-normal-batch-regression-a2.json)
+and [source fingerprints](evidence/architectures/olmoe-chunk-normal-source.json).
+
 
 ## Q8 short-prefill latency
 
