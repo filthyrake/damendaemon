@@ -1330,3 +1330,22 @@ The full local suite passes 309 tests, including the positional tokenizer's
 longest-special-first overlap regression. Both TinyLlama native oracle corpora
 pass again after that refinement; reports now include the native tokenizer
 version, reconstructed model hash and adapter hash.
+
+
+The smaller published TinyLlama checkpoint also passes the isolated admission
+comparison in `tinyllama-q4-k-m-admission-1ms-a2.json`, including every lifecycle
+check and identical outputs. Ordinary / candidate median seconds are
+0.2051/0.2073 (16/1), 0.2345/0.2341 (129/1), 0.2739/0.2753 (400/1),
+0.3433/0.2965 (129/2), and 0.4910/0.4931 (129/4). Two-request latency improves
+13.6%; single-request first nonempty output medians increase by 1.1–1.3 ms.
+Four-request total latency remains tied. Both models therefore support an
+explicit latency/throughput option, not a changed default.
+
+Normal CLI plumbing now exposes `dllm serve --batch-wait-ms 1`, bounded to
+finite values from 0 through 10, with default 0. The shared helper runs once
+before an idle model group begins; it is never inserted into active decode
+iterations. Existing queue order, management/model barriers, cancellation and
+shutdown notifications remain authoritative. CPU integration verifies option
+bounds and one call per group across multiple decode steps. The full local
+suite passes 313 tests. Normal-command A/B/B/A confirmation on both checkpoints
+is recorded separately when complete.

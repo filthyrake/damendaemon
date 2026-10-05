@@ -898,3 +898,17 @@ GGUF tokenization follows llama.cpp's Qwen2 behavior, including preserving
 combining marks; some HF tokenizers normalize those inputs to NFC and produce
 different token IDs. Import acceptance is not broad model qualification. See
 [GGUF validation and limitations](docs/evidence/gguf/README.md).
+
+
+### Optional prompt coalescing
+
+`dllm serve --batch-wait-ms 1` waits up to 1 ms before an idle model group starts,
+allowing closely arriving requests to share prompt processing. The default is
+0 (disabled), and the supported range is 0–10 ms. It does not wait between active
+decode steps or cross queued model/management barriers.
+
+Isolated A2 comparisons reduce two-request latency by 13.6% for TinyLlama and
+17.5% for Mistral, with four-request total latency roughly tied. Single-request
+first output costs about 1–4 ms; coalescing can also delay the earliest request's
+first output while bringing later requests forward. Normal CLI confirmation
+is in progress; see [the measured tradeoffs](docs/evidence/gguf/README.md).

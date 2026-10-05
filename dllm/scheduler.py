@@ -6,6 +6,7 @@ admission to the current group, avoiding starvation and active-model eviction.
 """
 from collections import deque
 import copy
+import math
 import traceback
 from dataclasses import dataclass, field
 import queue
@@ -16,6 +17,7 @@ from .runtime import Runtime, BusyError
 from .sampling import Sampling, Sampler, sample_rows
 from .stopping import stop_sequences, text_delta
 from .prompts import decode_output
+from .admission import wait_for_batch
 
 
 @dataclass(eq=False)
@@ -58,13 +60,16 @@ class Pending:
 
 
 class BatchedRuntime:
-    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, prefix_cache_tokens=0, **kwargs):
+    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, prefix_cache_tokens=0, batch_wait_ms=0, **kwargs):
         if not 1 <= batch_size <= 16 or queue_size < batch_size or queue_timeout <= 0:
             raise ValueError("batch size must be 1..16 and fit inside the request queue")
         if type(prefill_chunk_size) is not int or prefill_chunk_size<0:
             raise ValueError('prefill chunk size must be a nonnegative integer')
         if type(prefix_cache_tokens) is not int or prefix_cache_tokens<0:
             raise ValueError('prefix cache tokens must be a nonnegative integer')
+        if type(batch_wait_ms) not in (int,float) or not math.isfinite(batch_wait_ms) or not 0<=batch_wait_ms<=10:
+            raise ValueError("batch wait must be a finite number between 0 and 10 milliseconds")
+        self.batch_wait_seconds=batch_wait_ms/1000
         self.prefix_cache_tokens=prefix_cache_tokens
         self.prefill_chunk_size=prefill_chunk_size
         self.runtime = Runtime(models, batch_size=batch_size, **kwargs)
@@ -694,6 +699,7 @@ class BatchedRuntime:
                 continue
             try:
                 with self.runtime.session(first.alias) as (executor, tier, activation):
+                    wait_for_batch(self,first,self.batch_wait_seconds)
                     self._group(first, executor, tier, activation)
             except Exception as error:
                 if not first.done.is_set():

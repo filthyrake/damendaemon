@@ -74,6 +74,26 @@ class SchedulerTests(unittest.TestCase):
     def generate(self, alias='a', prompt='ok', count=5):
         return self.runtime.generate(alias, [{'content': prompt}], count)
 
+    def test_batch_wait_configuration_is_bounded_before_loading_models(self):
+        for value in (-1,11,float('nan'),float('inf'),None,True,'1'):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError,'batch wait'):
+                BatchedRuntime({},batch_wait_ms=value)
+        for value in (0,.5,10):
+            runtime=BatchedRuntime({'a':'a'},batch_wait_ms=value)
+            try:self.assertEqual(runtime.batch_wait_seconds,value/1000)
+            finally:runtime.close()
+
+    def test_admission_wait_runs_once_per_idle_group_not_per_decode(self):
+        self.executor.release.set()
+        self.runtime.batch_wait_seconds=.001
+        with patch('dllm.scheduler.wait_for_batch') as wait:
+            list(self.generate(count=5))
+            self.assertEqual(wait.call_count,1)
+            self.assertEqual(wait.call_args.args[2],.001)
+            self.assertGreater(len(self.executor.batches),1)
+            list(self.generate(alias='b',count=3))
+            self.assertEqual(wait.call_count,2)
+
     def test_generated_decoder_preserves_continuation_space_in_stream(self):
         self.executor.model.tokenizer.decode_generated = lambda tokens, **_: ' '+''.join(map(str,tokens))
         self.executor.release.set()

@@ -34,6 +34,7 @@ def main():
     comparison.add_argument('--residual-library',help='compare production with the isolated residual-int8 candidate')
     comparison.add_argument('--residual-f32-library',help='compare ordinary packed FP32 with the isolated FP32 candidate')
     parser.add_argument('--production-q4-residual',action='store_true',help='exercise normal per-model Q4 integer-dot selection')
+    parser.add_argument('--production-batch-wait',action='store_true',help='exercise normal CLI idle admission configuration')
     parser.add_argument('--production-residual',action='store_true',help='exercise normal per-model FP16 K-quant residual selection')
     parser.add_argument('--production-prefill-f32',action='store_true',help='exercise normal per-executor compensated prefill selection')
     parser.add_argument('--prefill-f32',action='store_true',help='compare production FP32 residual decode with experimental compensated prefill')
@@ -51,6 +52,7 @@ def main():
         parser.error('--native-format q4 requires a Q4 engine, kernel or admission comparison')
     if args.q4_residual_library and args.native_format!='q4':parser.error('Q4 candidate requires --native-format q4')
     if args.production_q4_residual and not args.q4_residual_library:parser.error('--production-q4-residual requires --q4-residual-library')
+    if args.production_batch_wait and not args.batch_wait_ms:parser.error('--production-batch-wait requires --batch-wait-ms')
     if args.production_residual and not args.residual_library:parser.error('--production-residual requires --residual-library')
     if args.production_prefill_f32:args.prefill_f32=True
     if args.prefill_f32:args.production_residual_f32=True
@@ -81,7 +83,8 @@ def main():
     if args.q4_residual_library:
         report['experimental_arithmetic']='Q4 single-row integer dot; two dyadic int8 activation terms; FP32 coefficient scaling rather than rounded FP16 coefficients'
     report['swap_model']=dict(path=str(swap_model),sha256=digest(swap_model)) if args.swap_model else None
-    report['experimental_batch_wait_ms']=args.batch_wait_ms
+    report['experimental_batch_wait_ms']=args.batch_wait_ms if not args.production_batch_wait else None
+    report['production_batch_wait_ms']=args.batch_wait_ms if args.production_batch_wait else None
     workloads=[(16,1),(129,1),(400,1),(129,2)]
     if args.include_concurrency_four:workloads.append((129,4))
     report['workloads']=workloads
@@ -131,7 +134,7 @@ def main():
             base=f'http://127.0.0.1:{port}'
             log_path=output.with_name(output.stem+f'-{phase}-{engine}.log')
             phase_environment=environment.copy()
-            if args.batch_wait_ms and engine==counterpart:
+            if args.batch_wait_ms and engine==counterpart and not args.production_batch_wait:
                 phase_environment['DLLM_EXPERIMENTAL_BATCH_WAIT_MS']=str(args.batch_wait_ms)
             if args.production_residual and engine==counterpart:
                 phase_environment['DLLM_KQUANT_RESIDUAL_LIBRARY']=str(residual)
@@ -148,11 +151,13 @@ def main():
                         'residual-int8-v2':'scripts.experiments.serve_residual',
                         'residual-int8-fp32':'scripts.experiments.serve_residual_f32'}.get(engine,
                         'scripts.experiments.serve_float32' if precision=='float32' else 'dllm')
-                if args.production_q4_residual or args.production_residual:module='dllm'
+                if args.production_q4_residual or args.production_residual or args.production_batch_wait:module='dllm'
                 if args.production_residual_f32 and (args.production_prefill_f32 or not (args.prefill_f32 and engine==counterpart)):module='dllm'
                 command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
                     '--context','512','--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
                     '--prefill-chunk-size','0','--prefix-cache-tokens','0']
+                if args.production_batch_wait:
+                    command+=['--batch-wait-ms',str(args.batch_wait_ms if engine==counterpart else 0)]
             else:
                 command=[str(llama),'--model',str(model),'--alias','a','--host','127.0.0.1','--port',str(port),
                     '--ctx-size','2048','--parallel','4','--kv-unified-per-slot','512','--gpu-layers','99',
