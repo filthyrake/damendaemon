@@ -2055,3 +2055,9 @@ worst relative RMS is 0.0737%. Because 128-token chunks largely bypass the new
 33–64-row launch choice, an additional 58-token chunk run targets the policy
 throughout long-prompt processing, including the final 37-token chunk crossing
 the 4096-token attention window.
+
+That targeted run, `mistral-q4-production-tiles-chunk58-a2.json`, passes all
+128 comparisons with exact greedy choices and worst relative RMS 0.0903%.
+The normal short-tile policy remains active throughout the 58-token chunks
+and the final 37-token window-crossing chunk. The final ordinary-entrypoint
+HTTP comparison includes 33/48/64-token workloads plus all previous controls.
