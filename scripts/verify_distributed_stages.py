@@ -20,6 +20,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('trace')
     parser.add_argument('--output',required=True)
+    parser.add_argument('--stage-graphs',action='store_true')
     parser.add_argument('--model-path')
     parser.add_argument('--fail-rank',type=int,choices=(0,1),help='inject an isolated worker failure for lifecycle validation')
     parser.add_argument('--fail-after',type=int,default=3,help='completed activation transfers before failure injection')
@@ -33,10 +34,10 @@ def main():
     model=ModelWeights(args.model_path or trace['path'],trace['context'],quantization=trace.get('reference_quantization','none'))
     total=model.config['num_hidden_layers']; split=total//2
     start,end=(0,split) if rank==0 else (split,total)
-    stage=LayerStage(model,start,end,max_batch=4)
+    stage=LayerStage(model,start,end,max_batch=4,stage_graphs=args.stage_graphs)
     report=dict(passed=False,rank=rank,device=torch.cuda.get_device_name(),layers=[start,end],
         model=trace['path'],context=trace['context'],torch=str(torch.__version__),
-        reference_torch=trace['reference_torch'],reference_dtype=trace['reference_dtype'],quantization=model.quantization,
+        reference_torch=trace['reference_torch'],reference_dtype=trace['reference_dtype'],quantization=model.quantization,stage_graphs=args.stage_graphs,
         checks=[],scope='fixed-trace distributed layer experiment; not a serving protocol')
     output=Path(args.output.format(rank=rank))
     report['final_report']=False

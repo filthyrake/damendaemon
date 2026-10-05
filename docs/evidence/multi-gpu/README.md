@@ -118,3 +118,30 @@ The repeated failure probe retains both the incomplete peer record and the
 injected worker's explicit error. A fresh pair then passes all 82 FP16 reference
 checks (`qwen2-worker-restart-rank*.json`). This demonstrates failed-job reporting
 and a clean new job; it is not transparent worker recovery or resumable requests.
+
+## Per-stage decode graphs and matched performance
+
+Opt-in `--stage-graphs` captures decode for each supported batch size while
+keeping activation transfers outside the graph. Both FP16 and Q8 two-process
+runs pass all 82 reference checks. The first single-process benchmark exposed
+an implicit Torch capture stream attached to the wrong GPU. Capture now uses
+an explicit stream from the stage device's serialized warmup-stream cache;
+this also avoids creating extra cuBLAS workspace streams per stage instance.
+The final one-process, two-GPU FP16 and Q8 reference runs each pass all 82 checks.
+
+`qwen2-stage-graph-q8-abba.json` measures graph off/on/on/off, six measured
+requests per group after two warmups, identical checkpoint, Q8 policy, context
+512, prompt 255 tokens, output 32 tokens, single request, and the same A2/A30
+12/12 placement. Every generated token matches between modes. Pooled medians:
+
+| Metric | Graph off | Graph on |
+| --- | ---: | ---: |
+| First token | 31.16 ms | 31.42 ms |
+| Full 32-token generation | 768.76 ms | 134.06 ms |
+| Decode rate (31 subsequent tokens) | 42.31 tokens/s | 301.15 tokens/s |
+
+This is 7.12x decode rate and 82.56% lower full-generation latency for this
+prototype workload. It is not an upstream-runtime comparison, concurrent
+serving throughput, or a cross-network benchmark. Timings include host token
+selection and stage activation copies; model load/graph capture are excluded.
+Prefill is unchanged and does not materially improve in this comparison.

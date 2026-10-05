@@ -31,11 +31,34 @@ def shard_model(model,start,end):
 
 
 class LayerStage(BatchExecutor):
-    def __init__(self,model,start,end,max_batch=4):
+    def __init__(self,model,start,end,max_batch=4,stage_graphs=False):
         self.first=start==0
         self.last=end==model.config['num_hidden_layers']
         self.layer_range=(start,end)
         super().__init__(shard_model(model,start,end),use_graph=False,max_batch=max_batch)
+        self.stage_graphs={}
+        if stage_graphs:
+            self.capture_stage_graphs()
+
+    def capture_stage_graphs(self):
+        if self.device!='cuda':raise ValueError('stage graphs require CUDA')
+        from dllm.cuda_warmup import warmup_stream
+        for size in range(1,self.max_batch+1):
+            shape=(size,) if self.first else (size,self.c['hidden_size'])
+            inputs=torch.zeros(shape,device=self.device,
+                dtype=torch.long if self.first else self.residual_dtype)
+            positions=torch.zeros(size,device=self.device,dtype=torch.long)
+            slots=torch.arange(size,device=self.device)
+            with warmup_stream(),torch.inference_mode():
+                for _ in range(3):self._decode(inputs,positions,slots)
+                torch.cuda.synchronize()
+                graph=torch.cuda.CUDAGraph()
+                # Torch's implicit capture stream can belong to another GPU
+                # when a process owns multiple stages. Reuse this device's
+                # serialized warmup stream, including its cuBLAS workspace.
+                with torch.cuda.graph(graph,stream=torch.cuda.current_stream()):
+                    output=self._decode(inputs,positions,slots)
+            self.stage_graphs[size]=(inputs,positions,slots,graph,output)
 
     def forward(self,ids,positions,prefill,slot=0):
         # Constructor warmup runs only this shard; no dummy global weight tensors.
@@ -54,5 +77,13 @@ class LayerStage(BatchExecutor):
 
     @torch.inference_mode()
     def run_decode(self,inputs,positions,slots):
+        if self.stage_graphs:
+            cached_inputs,cached_positions,cached_slots,graph,output=self.stage_graphs[inputs.shape[0]]
+            cached_inputs.copy_(inputs);cached_positions.copy_(positions);cached_slots.copy_(slots)
+            graph.replay()
+            return output
+        return self._decode(inputs,positions,slots)
+
+    def _decode(self,inputs,positions,slots):
         hidden=self.forward_batch_hidden(self.embedding(inputs) if self.first else inputs,positions,slots)
         return self.output_logits(hidden) if self.last else hidden

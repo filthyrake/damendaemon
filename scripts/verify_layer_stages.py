@@ -12,6 +12,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('trace')
     parser.add_argument('--output',required=True)
+    parser.add_argument('--stage-graphs',action='store_true')
     args=parser.parse_args()
     if torch.cuda.device_count()!=2:parser.error('select exactly two CUDA GPUs')
     trace=torch.load(args.trace,map_location='cpu',weights_only=True)
@@ -20,7 +21,7 @@ def main():
     stages=[]; residency=[]
     for device,(start,end) in enumerate(((0,split),(split,total))):
         with torch.cuda.device(device):
-            stage=LayerStage(model,start,end,max_batch=4)
+            stage=LayerStage(model,start,end,max_batch=4,stage_graphs=args.stage_graphs)
             stages.append(stage)
             assert len(stage.kv)==end-start
             assert ('embed' in stage.w)==(device==0)
@@ -64,7 +65,7 @@ def main():
                 max_absolute=absolute,greedy_match=match,passed=relative<.01 and absolute<.5 and match))
     report=dict(passed=bool(checks) and all(c['passed'] for c in checks),model=trace['path'],
         context=trace['context'],torch=str(torch.__version__),reference_torch=trace['reference_torch'],
-        reference_dtype=trace['reference_dtype'],quantization=model.quantization,residency=residency,checks=checks,timings=timings,
+        reference_dtype=trace['reference_dtype'],quantization=model.quantization,stage_graphs=args.stage_graphs,residency=residency,checks=checks,timings=timings,
         scope='experimental sequential layer partition; no serving, capacity, or speedup claim')
     from pathlib import Path
     Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
