@@ -341,3 +341,27 @@ prefill (1.5321% RMS, 0.671875 maximum absolute error). Native Qwen3 remains
 unqualified. The next diagnostic traces that prompt with original-shaped dense
 products and explicit FP16 rounding; the checker records selected case IDs so
 a focused diagnostic cannot be mistaken for the complete suite.
+
+The focused FP16/original-shaped-product trace also fails the 504-token
+prefill. First-layer query/key/value and attention differences are small
+(roughly 0.000104 attention relative RMS); last-token residual differences grow
+across later layers. The final diagnostic prefill has 1.9300% logit RMS error,
+while subsequent teacher-forced decode checks pass. This motivates a separate
+higher-precision oracle comparison, not a conclusion that the failure is safe
+to ignore. The focused report explicitly selects only case 7.
+
+The focused FP32 oracle comparison passes all 16 checks for case 7 using dllm's
+existing Qwen3 mixed precision policy (not the FP16 rounding candidate). Worst
+RMS is 0.7305%, maximum absolute error 0.306705. An additional paired HF-FP16
+control on exactly the same FP32 target has 1.1169% RMS and 0.553015 absolute
+error at that prefill, failing the same limits; all greedy choices still match.
+This independently reproduces the reference sensitivity already documented in
+`docs/model-matrix.md`, where Qwen3 qualification explicitly uses FP32. It does
+not convert the earlier FP16 failures to passes, nor establish the untested
+full prompt/context/native-backend scope. Both focused reports are retained.
+
+The independent reference script can offload one HF layer at a time, keeping
+its computation intact while bounding GPU weight residency. Parameters are
+promoted to FP32 after exact FP16 AWQ coefficient decoding; TF32 is disabled and
+rotary buffers retain FP32. This permits the FP32 4B reference on A2 without
+using a different validation GPU or introducing an inference-runtime dependency.

@@ -1,5 +1,6 @@
 """Independent AWQ checkpoint logits: upstream coefficient decoder plus HF math."""
 import argparse
+import copy
 import gc
 import hashlib
 import importlib.util
@@ -52,6 +53,9 @@ def main():
     parser.add_argument('--context', type=int, default=2048)
     parser.add_argument('--case-indices', type=int, nargs='+', choices=range(8), default=list(range(8)))
     parser.add_argument('--output', required=True)
+    parser.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
+    parser.add_argument('--diagnostic-hf-fp16-control', action='store_true')
+    parser.add_argument('--reference-offload', action='store_true', help='move reference layers individually for bounded GPU residency')
     parser.add_argument('--reference-attention', choices=('eager', 'sdpa'), default='eager',
                         help='independent HF attention implementation; recorded as qualification scope')
     parser.add_argument('--experimental-awq-decode', action='store_true')
@@ -71,6 +75,8 @@ def main():
     args = parser.parse_args()
     if args.context < 512:
         parser.error('context must be at least 512')
+    if args.diagnostic_hf_fp16_control and (args.reference_dtype != 'float32' or not args.reference_offload):
+        parser.error('HF FP16 control requires the FP32 offloaded reference')
     require_gpu()
     experiment = None
     if args.experimental_awq_marlin:
@@ -123,8 +129,9 @@ def main():
                   diagnostic_separate_products=args.diagnostic_separate_products,
                   context=args.context, selected_cases=args.case_indices, cases=[], model=str(path.resolve()),
                   host_bytes=source.bytes, torch=torch.__version__, device=torch.cuda.get_device_name(),
-                  reference='pinned upstream AWQ coefficient decoder; independent HF FP16 model execution',
-                  reference_attention=args.reference_attention,
+                  reference='pinned upstream AWQ coefficient decoder; independent HF model execution',
+                  reference_attention=args.reference_attention, reference_dtype=args.reference_dtype,
+                  reference_offload=args.reference_offload, diagnostic_hf_fp16_control=args.diagnostic_hf_fp16_control,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   loader_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_model.py').read_bytes()).hexdigest(),
                   kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_kernels.py').read_bytes()).hexdigest())
@@ -183,7 +190,25 @@ def main():
         del state
         # Parameters are already FP16. Casting the whole module also truncates
         # HF's intentionally FP32 rotary frequencies, corrupting the oracle.
-        reference.eval().to('cuda')
+        control = copy.deepcopy(reference) if args.diagnostic_hf_fp16_control else None
+        if args.reference_dtype == 'float32':
+            reference = reference.float()
+        if args.reference_offload:
+            # HF execution remains intact; only parameter residency changes.
+            def load_layer(module, inputs):
+                module.to('cuda')
+            def release_layer(module, inputs, output):
+                module.to('cpu')
+            for candidate in [reference] + ([control] if control is not None else []):
+                for module in (candidate.model.embed_tokens, candidate.model.norm,
+                               candidate.model.rotary_emb, candidate.lm_head):
+                    module.to('cuda')
+                for layer in candidate.model.layers:
+                    layer.register_forward_pre_hook(load_layer)
+                    layer.register_forward_hook(release_layer)
+                candidate.eval()
+        else:
+            reference.eval().to('cuda')
         if reference.model.rotary_emb.inv_freq.dtype != torch.float32:
             raise AssertionError('reference rotary frequencies must retain FP32')
         report['reference_rotary_dtype'] = str(reference.model.rotary_emb.inv_freq.dtype)
@@ -235,6 +260,7 @@ def main():
                                 reference_parts[name] = output.detach().cpu().squeeze(0)
                             handles.append(module.register_forward_hook(record_part))
                     expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
+                    control_expected = control(torch.tensor([ids], device='cuda'), use_cache=True) if control is not None else None
                     for handle in handles:
                         handle.remove()
                     original_norm = executor.norm
@@ -305,6 +331,8 @@ def main():
                                 relative_rms=(delta.square().mean()/target.float().square().mean().clamp_min(1e-12)).sqrt().item(),
                                 max_absolute=delta.abs().max().item()))
                     case = dict(graph=graph, case=index, prompt_tokens=len(ids), checks=[])
+                    if control is not None:
+                        case['hf_fp16_control_checks'] = []
                     report['cases'].append(case)
                     for step in range(8):
                         target = expected.logits[:, -1, :]
@@ -317,7 +345,19 @@ def main():
                         case['checks'].append(dict(step=step, relative_rms=rms, max_absolute=maximum,
                                                    reference_token=token, actual_token=observed,
                                                    reference_top_two_margin=(best[0, 0]-best[0, 1]).item(), passed=passed))
+                        if control_expected is not None:
+                            observed_control = control_expected.logits[:, -1, :].float()
+                            control_error = observed_control-target.float()
+                            control_rms = (control_error.square().mean()/target.float().square().mean().clamp_min(1e-12)).sqrt().item()
+                            control_max = control_error.abs().max().item()
+                            control_token = observed_control.argmax(-1).item()
+                            case['hf_fp16_control_checks'].append(dict(step=step, relative_rms=control_rms,
+                                max_absolute=control_max, reference_token=token, actual_token=control_token,
+                                passed=control_rms < .01 and control_max < .5 and control_token == token))
                         if step < 7:
+                            if control is not None:
+                                control_expected = control(torch.tensor([[token]], device='cuda'),
+                                    past_key_values=control_expected.past_key_values, use_cache=True)
                             expected = reference(torch.tensor([[token]], device='cuda'),
                                                  past_key_values=expected.past_key_values, use_cache=True)
                             actual, _ = executor.decode(token)
