@@ -21,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model'); parser.add_argument('--output', required=True)
     parser.add_argument('--context',type=int,default=512,help='context capacity, at least 512')
+    parser.add_argument('--prompt-lengths', type=int, nargs=4, help='four explicit lengths, each leaving seven decode positions')
     parser.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     experiments=parser.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-residual', action='store_true')
@@ -29,6 +30,10 @@ def main():
     experiments.add_argument('--experimental-dense-cache', action='store_true')
     args = parser.parse_args()
     if args.context<512:parser.error('--context must be at least 512')
+    lengths = args.prompt_lengths or (4, 128, args.context//2, args.context-128)
+    if any(length <= 0 or length + 7 > args.context for length in lengths):
+        parser.error('prompt lengths must be positive and leave seven decode positions')
+    pool_tokens = ((max(2*args.context, sum(lengths)+32)+15)//16)*16
     experiment = None
     if args.experimental_dense_cache:
         from experiments.kquant_dense_cache import install_validation_dispatch
@@ -48,13 +53,14 @@ def main():
     source = GgufWeights(args.model, args.context, 'none')
     corpus = source.raw_tokens('The library contains books about oceans and mountains. ')
     prompts = [(corpus * ((n+len(corpus)-1)//len(corpus)))[:n]
-               for n in (4,128,args.context//2,args.context-128)]
+               for n in lengths]
     traces = []; checks = []
     tokenizer_runtime=dict(kind=type(source.tokenizer).__name__)
     if hasattr(source.tokenizer,'native_model'):
         tokenizer_runtime.update(sentencepiece=version('sentencepiece'),protobuf=version('protobuf'))
     report = dict(tokenizer_runtime=tokenizer_runtime, experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=args.context,
                   prompt_lengths=[len(ids) for ids in prompts], chunk_size=128,
+                  paged_pool_tokens=pool_tokens,
                   model=str(Path(args.model).resolve()), host_bytes=source.bytes, comparisons=checks,
                   scope='layout equivalence to single-request fixed eager; independent model accuracy is separate')
     kquant_path = os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
@@ -98,7 +104,7 @@ def main():
             del actual, executor
             gc.collect(); empty_cache()
             for paged in (False, True):
-                if paged:os.environ['DLLM_KV_CACHE_TOKENS'] = str(((2*args.context+15)//16)*16)
+                if paged:os.environ['DLLM_KV_CACHE_TOKENS'] = str(pool_tokens)
                 else:os.environ.pop('DLLM_KV_CACHE_TOKENS', None)
                 for graph in (False, True):
                     print(f'Checking paged={paged}, graph={graph}', flush=True)

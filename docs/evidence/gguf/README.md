@@ -1863,3 +1863,29 @@ These pooled warm-trial medians include prefill. Four-request latency falls
 is zero on both sides. The 2048-context test is separate from the earlier
 512-context prototype run; timings across those runs are not a matched
 comparison. This is not a llama.cpp/vLLM performance parity claim.
+
+### Explicit uniform-window Mistral fixture
+
+`prepare_gguf_window_comparator.py` creates a separate validation file using
+Mistral-7B-Instruct-v0.1's pinned HF configuration. The earlier reference export
+omitted its window; the new file adds only `llama.attention.sliding_window=4096`.
+This changes declared attention semantics and is not a claim that the original
+export encoded sliding-window attention.
+
+`mistral-window-fixture-a2.json` proves all 291 tensor representations and all
+other metadata values are unchanged. Original GGUF SHA256:
+`cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66`;
+new windowed fixture SHA256:
+`c320624e1b0b443e7b9c0e7449bff3780a3bc8e91e070d4c884679b85f1867bb`.
+HF configuration SHA256:
+`cf25cdf4719f181d1d1d371973285d9afe9afde0d0c6a6fd48de857555ce1e0d`,
+from immutable revision `ec5deb64f2c6e6fa90c1abf74a91d5c93a9669ca`.
+
+Independent validation now has an explicit `--reference-prefill-chunk-size`
+option to bound HF eager-attention temporaries for a large reference model.
+It preserves HF's own execution and KV state; no dllm kernels enter the oracle.
+A small independent HF Mistral test compares whole/chunked prompt outputs and
+continuations at lengths 15/16/17/63 around a 16-token window. The model gate
+can include declared window boundaries explicitly, and layout validation can
+select four prompt lengths with a paged pool sized for all admitted tokens.
+Fixture preparation and test-harness checks alone do not qualify runtime support.

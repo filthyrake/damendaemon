@@ -24,6 +24,17 @@ from dllm.runtime import make_executor
 from dllm.device import empty_cache, device_name
 
 
+def reference_prefill(reference, tokens, chunk_size=0):
+    """Keep HF attention temporaries bounded without substituting its math."""
+    if not chunk_size:
+        return reference(tokens, use_cache=True)
+    past = None
+    for start in range(0, tokens.shape[1], chunk_size):
+        output = reference(tokens[:, start:start + chunk_size], past_key_values=past, use_cache=True)
+        past = output.past_key_values
+    return output
+
+
 def reference_weights(path, rounding='float16'):
     if rounding not in ('float16','kquant-float32'):
         raise ValueError('unsupported reference weight rounding')
@@ -74,9 +85,12 @@ def main():
     p.add_argument('--weight-rounding',choices=('float16','kquant-float32'),default='float16',
                    help='explicit coefficient policy; FP32 K projections retain FP16 embedding/vector values')
     p.add_argument('--serial-reference',action='store_true',help='cache independent HF logits, release HF GPU weights, then run dllm')
+    p.add_argument('--reference-prefill-chunk-size', type=int, default=0,
+                   help='bound independent HF prefill attention memory; zero uses whole prompts')
     p.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
+    p.add_argument('--window-boundaries', action='store_true', help='include prompts before, at and after the declared sliding window')
     p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
     p.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     experiments=p.add_mutually_exclusive_group()
@@ -88,6 +102,7 @@ def main():
     experiments.add_argument('--experimental-dense-cache', action='store_true')
     args = p.parse_args(); torch.set_num_threads(4)
     if args.context < 512:p.error('--context must be at least 512')
+    if args.reference_prefill_chunk_size < 0:p.error('--reference-prefill-chunk-size must be nonnegative')
     if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
         p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
@@ -140,6 +155,13 @@ def main():
             [{'role':'user','content':'Write a Python function that returns the largest number in a list.'}])]
         corpus = source.raw_tokens('Library record 73 is in cabinet 7. Record 85 is in cabinet 8. Locate the requested record. ')
         for length in (257, args.context-127): prompts.append((corpus * ((length+len(corpus)-1)//len(corpus)))[:length])
+    if args.window_boundaries:
+        window = source.config.get('sliding_window')
+        if not window or args.context < window + 8 or args.benchmark_report:
+            p.error('--window-boundaries requires a declared window, context >= window+8, and no benchmark report')
+        for length in (window - 1, window, window + 1):
+            if length > 0 and length not in [len(ids) for ids in prompts]:
+                prompts.append((base * ((length+len(base)-1)//len(base)))[:length])
     benchmark=json.loads(Path(args.benchmark_report).read_text()) if args.benchmark_report else None
     steps=8
     if benchmark:
@@ -160,7 +182,7 @@ def main():
                     previous = next(c for c in teacher["cases"] if c["graph"] == graph and c["case"] == index) if teacher else None
                     if previous and previous['prompt_tokens'] != len(ids):
                         raise ValueError('teacher trace uses a different prompt/context length')
-                    expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
+                    expected = reference_prefill(reference, torch.tensor([ids], device='cuda'), args.reference_prefill_chunk_size)
                     trace = []
                     for step in range(steps):
                         target = expected.logits[:, -1, :].cpu()
@@ -187,7 +209,7 @@ def main():
                              resident_projection_cache_bytes=getattr(executor, 'packed_cache_bytes', 0),
                              nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise, backend=executor.kernel_backend)
             for index, ids in enumerate(prompts):
-                expected = None if args.serial_reference else reference(torch.tensor([ids], device='cuda'), use_cache=True)
+                expected = None if args.serial_reference else reference_prefill(reference, torch.tensor([ids], device='cuda'), args.reference_prefill_chunk_size)
                 actual = executor.prefill(ids)
                 errors = []; output = []; actual_tokens = []; margins = []; mismatches = []; forced = []; eos_step = None
                 previous = next(c for c in teacher["cases"] if c["graph"] == graph and c["case"] == index) if teacher else None
@@ -245,6 +267,8 @@ def main():
                   precision=precision, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
                   benchmark_report=args.benchmark_report, steps=steps,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
+                  reference_prefill_chunk_size=args.reference_prefill_chunk_size,
+                  window_boundary_validation=args.window_boundaries, sliding_window=source.config.get('sliding_window'),
                   weight_rounding=args.weight_rounding, tf32=False, formats=formats, embedding_type=embedding_type,
                   teacher_trace=args.teacher_trace,expanded_control=args.expanded_control,
                   host_bytes=source.bytes, experiment=experiment, production_residual_library=residual_library, cases=cases)
