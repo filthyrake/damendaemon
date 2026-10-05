@@ -79,6 +79,7 @@ def main():
     experiments=p.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-residual', action='store_true')
     experiments.add_argument('--experimental-residual-f32', action='store_true')
+    experiments.add_argument('--experimental-prefill-f32', action='store_true')
     args = p.parse_args(); torch.set_num_threads(4)
     if args.context < 512:p.error('--context must be at least 512')
     if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
@@ -91,6 +92,11 @@ def main():
         if args.weight_rounding!='kquant-float32':
             p.error('FP32 experiment requires --weight-rounding kquant-float32')
         from experiments.kquant_residual_f32 import install_validation_dispatch
+        experiment=install_validation_dispatch()
+    if args.experimental_prefill_f32:
+        if args.weight_rounding!='kquant-float32':
+            p.error('FP32 prefill experiment requires --weight-rounding kquant-float32')
+        from experiments.kquant_prefill_f32 import install_validation_dispatch
         experiment=install_validation_dispatch()
     torch.backends.cuda.matmul.allow_tf32 = False
     teacher = json.loads(Path(args.teacher_trace).read_text()) if args.teacher_trace else None
@@ -132,7 +138,7 @@ def main():
     with torch.inference_mode():
         for graph in (False, True):
             executor = make_executor(source, use_graph=graph)
-            if args.experimental_residual_f32 and executor.compute_dtype!=torch.float32:
+            if (args.experimental_residual_f32 or args.experimental_prefill_f32) and executor.compute_dtype!=torch.float32:
                 raise ValueError('FP32 experiment requires an FP32 executor policy')
             precision = dict(matrix_dtype=str(executor.compute_dtype), residual_dtype=str(executor.residual_dtype),
                              nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise, backend=executor.kernel_backend)

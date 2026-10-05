@@ -894,3 +894,38 @@ medians are 0.483638/0.248301 s (16/1), 0.598773/0.365971 s (129/1),
 29–49% lower latency without the experimental wrapper. Both production replay
 reports identify the FP32 residual backend; the server reports retain the exact
 CMake-built library hash and the normal CLI command for each phase.
+
+## FP32 prefill experiments
+
+`scripts/experiments/kquant_prefill_f32.py` keeps three alternatives separate
+from production. Every comparison retains unrounded FP32 projection coefficients
+and FP32 results; it does not substitute the FP16 reference policy.
+
+* `kquant-prefill-f32-profile-a2.jsonl`: 105 matrix cases compare IEEE FP32
+  against three-term TF32 products, with transient expansion or repeated packed
+  tile decode. All pass (max RMS 0.0000874%). Expanded TF32 improves 16-token
+  cases but regresses at 400 tokens; direct packed tile decode is much slower.
+  Neither is selected.
+* `kquant-prefill-fp16x3-profile-a2.jsonl`: split both operands into scaled
+  high/low FP16 terms and sum high*high, high*low and low*high products in FP32.
+  The omitted low*low term makes this an approximation, not bitwise FP32.
+  Longer cases improve, but preparing expanded weights hurts short prompts.
+* `kquant-prefill-fp16x3-fused-profile-a2.jsonl`: decode packed weights directly
+  into the high/low buffers, eliminating the temporary FP32 matrix. With a
+  fixed 32-row tile below 256 tokens and 64-row tile above, the five tested
+  real projections improve 23–39% at 129/400 input rows. The 16-row cases are
+  mixed, so validation dispatch retains ordinary prefill below 128 rows.
+
+The fused candidate with production FP32 residual decode passes all 64 checks
+on the previously qualified 2048-context teacher trace, maximum RMS 0.1192%,
+absolute 0.01518, exact greedy agreement. The independent HF report is
+`llama32-q4-k-m-prefill-f32-reference-2048-a2.json`. These profile/reference
+results alone do not establish server speed or paging/lifecycle qualification;
+those checks are separate. Production prompt processing is unchanged.
+
+The first extended runtime-baseline attempt retained completed batch requests
+before its independent 384-token chunked request and correctly hit the 1024-token
+page-pool limit. `llama32-q4-k-m-fp32-long-baseline-capacity-control-a2.json`
+preserves that harness failure. The extended recipe now releases completed
+requests before the chunk case; this does not increase the pool or weaken
+admission. The original 512-context replay recipe remains unchanged.
