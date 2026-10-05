@@ -48,7 +48,8 @@ def expanded(model):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model')
-    p.add_argument('--experimental-residual',action='store_true');args=p.parse_args()
+    p.add_argument('--experimental-residual',action='store_true')
+    p.add_argument('--executor-only',action='store_true',help='skip HTTP checks and timings');args=p.parse_args()
     experiment=None
     if args.experimental_residual:
         from experiments.kquant_residual import install_validation_dispatch
@@ -76,12 +77,15 @@ def main():
                 report['packed_backend']=b.kernel_backend
                 report['packed_workspace_reserve_bytes']=b.packed_workspace_bytes
                 prompts=[[9707,11,1879,0]*size for size in (1,4,8,16)]
-                expected=a.prefill_batch(prompts,[0,1,2,3]);actual=b.prefill_batch(prompts,[0,1,2,3])
-                for step in range(8):
-                    compare(expected,actual,paged=paged,graph=graph,kind='batch4',step=step)
-                    if step<7:
-                        tokens=expected.argmax(-1).tolist()
-                        expected,_=a.decode_batch(tokens,[0,1,2,3]);actual,_=b.decode_batch(tokens,[0,1,2,3])
+                for count in (1,4):
+                    slots=list(range(count))
+                    expected=a.prefill_batch(prompts[:count],slots)
+                    actual=b.prefill_batch(prompts[:count],slots)
+                    for step in range(8):
+                        compare(expected,actual,paged=paged,graph=graph,kind=f'batch{count}',step=step)
+                        if step<7:
+                            tokens=expected.argmax(-1).tolist()
+                            expected,_=a.decode_batch(tokens,slots);actual,_=b.decode_batch(tokens,slots)
                 for start in range(0,128,32):
                     expected=a.prefill_chunk([9707,11,1879,0]*8,0,start,final=start==96)
                     actual=b.prefill_chunk([9707,11,1879,0]*8,0,start,final=start==96)
@@ -89,6 +93,10 @@ def main():
                 del a,b,expected,actual
                 gc.collect();empty_cache()
     os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
+    if args.executor_only:
+        report.update(passed=True,scope='executor only; no HTTP checks')
+        print(json.dumps(report,indent=2))
+        return
     baseline_tokens=model.raw_tokens('Binary search repeatedly halves a sorted range. A detailed explanation follows: ')
     del model
     gc.collect();empty_cache()

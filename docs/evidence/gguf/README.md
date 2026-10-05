@@ -607,3 +607,18 @@ single-row arithmetic differs. All generated text matches across every phase.
 Medians pool twelve measured rounds per implementation/case. The concurrency-two
 result is effectively a tie; batched decoding retains production dispatch. These
 results do not establish another-GPU, another-model or llama.cpp parity claim.
+
+`llama32-q4-k-m-residual-v2-executor-a2.json` adds explicit single-request
+fixed/paged decoding with and without CUDA graphs, then reuses the slots for
+batch-four and chunked prefill. All 68 comparisons pass: maximum single-row RMS
+0.173%, batch-four RMS 0.107%, chunked RMS 0.0315% against the identical expanded
+coefficients. This closes the candidate's single-request paged-decode coverage
+missing from the original runtime harness; the production fallback remains
+exercised by batch four.
+
+The Q5 residual-v2 initial HF check is retained in
+`llama32-q5-k-m-residual-v2-reference-a2.json` and still **fails**: maximum RMS
+1.0288%, absolute 0.1015625, all 64 greedy decisions equal. It fails the same
+forced post-EOS arithmetic trace at step six with graphs both off and on.
+The candidate does not resolve the Q5 qualification gap. Its Q4 speed result
+must not be presented as complete K-quant numerical qualification.
