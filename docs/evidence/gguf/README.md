@@ -1440,8 +1440,8 @@ swaps. Combined baseline/residual median seconds are 0.2084/0.1906 (16/1),
 multi-row decode path is approximately tied. This run keeps idle admission at
 its default zero in both engines and does not claim combined-policy results.
 
-The currently qualified residual selection remains bounded to context 512.
-Longer-context activation is tested separately before changing that selection.
+This initial qualification bounded residual selection to context 512.
+The subsequent TinyLlama-specific extension is documented below.
 
 
 ### Normal TinyLlama residual selection through 2048
@@ -1476,4 +1476,30 @@ expected oracle outputs changed during the upgrade.
 The engine harness now accepts `--context` and `--long-prompt-tokens`, preserving
 its original 512/400 defaults. A normal-command server comparison uses context
 2048 and a 2032-token prompt, leaving exactly 16 output tokens of capacity.
-Those serving results are recorded separately when complete.
+The completed normal-CLI report is
+`tinyllama-q4-k-m-residual-production-http-2048-ocean-a2.json`. All four
+A/B/B/A phases pass exact generated-text equality and host restore, disk reload,
+cancellation recovery, concurrent/streaming chat and cross-model swapping.
+Both paths use FP16 KV and the unchanged packed checkpoint; admission stays zero.
+
+| Input tokens / concurrency | Original median seconds | Residual median seconds |
+| --- | ---: | ---: |
+| 16 / 1 | 0.207586 | 0.190698 |
+| 129 / 1 | 0.233350 | 0.218965 |
+| 2032 / 1 | 0.543438 | 0.528967 |
+| 129 / 2 | 0.341526 | 0.340122 |
+| 129 / 4 | 0.492558 | 0.494805 |
+
+These medians pool six measured rounds from each of two phases after three
+warmups per case. Single-request latency falls 2.7–8.1%; concurrent paths are
+approximately tied. This compares dllm implementations, not llama.cpp.
+
+The original binary-search corpus naturally stopped after five output tokens
+at the near-limit prompt. Its failed fixed-16-token eligibility report is
+preserved as `tinyllama-q4-k-m-residual-http-2048-short-output-control-a2.json`.
+The harness now accepts and records `--prompt-text`, retaining its old default.
+An ocean/weather corpus was the first alternative preflighted to produce all
+16 tokens at every tested input length, before candidate timing. EOS handling
+and equality/length gates were not changed. These synthetic repeated-token
+prompts measure runtime behavior, not answer quality; no latency comparison
+across different prompt corpora is claimed.

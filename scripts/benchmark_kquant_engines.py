@@ -43,12 +43,15 @@ def main():
     parser.add_argument('--include-concurrency-four',action='store_true',help='also measure four simultaneous 129-token prompts')
     parser.add_argument('--context',type=int,default=512,help='context capacity per slot, at least 512')
     parser.add_argument('--long-prompt-tokens',type=int,default=400,help='length of the long single-request workload')
+    parser.add_argument('--prompt-text',default='Binary search repeatedly halves a sorted range. A detailed explanation follows: ',
+                        help='text repeated to construct identical explicit prompt IDs for both engines')
     parser.add_argument('--lifecycle',action='store_true',help='also check dllm cancellation, swapping and reloads after timing')
     parser.add_argument('--swap-model', help='optional different GGUF checkpoint for lifecycle swapping')
     parser.add_argument('--native-format', choices=('kquant','q4'), default='kquant', help='native decode library format')
     parser.add_argument('--native-library',required=True);parser.add_argument('--output',required=True)
     args=parser.parse_args()
     if args.context<512:parser.error('--context must be at least 512')
+    if not args.prompt_text:parser.error('--prompt-text must be nonempty')
     if not 129<args.long_prompt_tokens<=args.context-16:
         parser.error('--long-prompt-tokens must exceed 129 and leave room for 16 output tokens')
     if args.swap_model and not args.lifecycle:parser.error('--swap-model requires --lifecycle')
@@ -74,8 +77,7 @@ def main():
     swap_model=Path(args.swap_model).resolve() if args.swap_model else model
     output=Path(args.output)
     source=plan(model);tokenizer=restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
-    base_tokens=tokenizer.encode('Binary search repeatedly halves a sorted range. A detailed explanation follows: ',
-                                add_special_tokens=True).ids
+    base_tokens=tokenizer.encode(args.prompt_text,add_special_tokens=True).ids
     prompts={length:(base_tokens*((length+len(base_tokens)-1)//len(base_tokens)))[:length]
              for length in (16,129,args.long_prompt_tokens)}
     tokenizer_runtime=dict(kind=type(tokenizer).__name__)
@@ -89,7 +91,7 @@ def main():
                                 else 'two dyadic int8 activation terms; FP16 single-row width-2048 K-quants') if residual else None,
         gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=args.context,slots=4,kv_dtype='float32' if precision=='float32' else 'float16',
         dllm_precision='FP32 matrices, residual/nonlinear and KV' if precision=='float32' else 'mixed: FP16 matrices, FP32 residual/nonlinear',output_tokens=16,
-        prompts=prompts,warmup_rounds=3,measured_rounds=6,runs=[])
+        prompts=prompts,prompt_text=args.prompt_text,warmup_rounds=3,measured_rounds=6,runs=[])
     if args.q4_residual_library:
         report['experimental_arithmetic']='Q4 single-row integer dot; two dyadic int8 activation terms; FP32 coefficient scaling rather than rounded FP16 coefficients'
     report['swap_model']=dict(path=str(swap_model),sha256=digest(swap_model)) if args.swap_model else None

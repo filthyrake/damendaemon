@@ -11,7 +11,7 @@ Configuration acceptance alone is not checkpoint qualification.
 | Qwen2 / Llama-style dense | Qwen2.5, SmolLM2 | NVIDIA A2, Apple M4 | Exact tested sizes/revisions in the evidence |
 | Qwen3 dense | 0.6B, 1.7B | NVIDIA A2, Apple M4 | CUDA accurate FP32 arithmetic policy is required for the stricter long-context proof |
 | Qwen3.5 hybrid | 0.8B, 2B text backbone | NVIDIA A2; Apple path qualified separately | Dense text only; no vision or hybrid MoE |
-| Llama / SentencePiece GGUF | Published TinyLlama 1.1B Chat Q4_K_M | NVIDIA A2 | Model/layout proof through 2048 context; serving and matched output at 512 |
+| Llama / SentencePiece GGUF | Published TinyLlama 1.1B Chat Q4_K_M | NVIDIA A2 | Model/layout/serving and model swapping through 2048 context |
 | Llama 3.2 | 1B Instruct mirror | NVIDIA A2, Apple M4 | Scaled RoPE; tested contexts differ by device |
 | Gemma 3 text | 270M IT mirror | NVIDIA A2, Apple M4 | Text architecture only; separate precision policy |
 | Phi-3 | Mini 4K | NVIDIA A2; limited Apple slot proof | No LongRoPE or interleaved prefill |
@@ -71,7 +71,7 @@ multi-tenant service.
 K-quant qualification covers Llama 3.2 1B and Qwen3-0.6B Q4_K_M at 512
 context, with Qwen3 independent model checks also passing at 2048. Published
 TinyLlama Q4_K_M passes independent model and fixed/paged/batched/chunked layout
-checks through 2048, with normal HTTP and model swapping qualified at 512. The optional
+checks through 2048, with normal HTTP and model swapping also qualified at 2048. The optional
 FP16 residual-int8 backend permits Q4/Q6 single-request decode through context
 2048 for the qualified TinyLlama topology, while other models retain the 512
 limit. Q5_K_M and longer Llama 3.2 contexts retain documented mixed/FP16 numerical gaps.
