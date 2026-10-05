@@ -908,7 +908,14 @@ Llama-style identity-normalized SentencePiece BPE is also accepted for the
 chat template need no HF sidecar files. Mistral's pinned original tokenizer
 passes native llama.cpp encoding/decoding checks. A vocabulary-corrected Mistral
 7B Q4 comparator passes independent full-logit and runtime-layout checks on A2
-at 512 context. Tied merge scores use native C++ SentencePiece, reconstructed
+at 512 context. Explicit uniform `llama.attention.sliding_window` metadata now
+selects the Mistral windowed decoder. A separate fixture with the pinned
+4096-token window passes independent and fixed/paged/graph/chunked checks
+through context 4104, including prompts immediately around the window boundary.
+Mixed local/global window patterns remain unsupported; KV storage still reserves
+context capacity. GGUF and HF fast tokenizers can differ around literal special
+tokens, so cross-source comparisons require identical token inputs.
+Tied merge scores use native C++ SentencePiece, reconstructed
 from the embedded vocabulary without an HF sidecar. The published TinyLlama
 1.1B Chat Q4_K_M passes independent tokenizer and model/layout checks through
 2048 context, including server lifecycle checks and cross-model swapping. It

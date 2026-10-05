@@ -1926,9 +1926,17 @@ dllm's complete GGUF token sequence exactly (native binary SHA256 recorded).
 The tokenizer was not changed to force HF chat equivalence.
 
 The HTTP verifier retains strict source-text comparison by default. Its explicit
-`--allow-tokenizer-differences` mode records both chat inputs and checks selected
-output token pieces/bytes and usage on identical raw token IDs, while keeping
-exact GGUF streaming, concurrency, restore and reload output gates. It reports
-source chat equivalence separately instead of claiming unlike inputs should
-produce identical text. Raw timing in this mode includes requested logprobs
-and must not be compared with older unscored-request timings.
+`--allow-tokenizer-differences` mode records both chat inputs and checks each
+source's exact decoded generation trace and usage on identical raw token IDs,
+while keeping exact GGUF streaming, concurrency, restore and reload output
+gates. Direct execution must still match complete logits between both loaders;
+independent HF mathematical correctness is established by the separate reference
+report. Source chat equivalence is reported separately instead of claiming
+unlike inputs should produce identical text.
+
+An intermediate harness attempt requested raw-completion logprobs, which the
+current API intentionally rejects; its failure is retained as
+`mistral-window-runtime-raw-score-rejection-a2.log`. The final trace-based check
+does not request those unsupported fields or change the runtime API. Boundary
+requests reserve the API's full output budget; the 4097-token request therefore
+uses seven output tokens at context 4104, while the preceding two use eight.

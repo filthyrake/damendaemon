@@ -15,7 +15,7 @@ if HAS_GGUF:
     from dllm.gguf_model import GgufWeights, plan, tensor_groups, weight_bytes
 
 
-def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32):
+def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32, window=None):
     from tokenizers.pre_tokenizers import ByteLevel
     tokens = sorted(ByteLevel.alphabet()) + ['<|endoftext|>', '<|im_start|>', '<|im_end|>']
     c = dict(model_type=arch, hidden_size=hidden, num_attention_heads=4, head_dim=hidden//4,
@@ -26,6 +26,8 @@ def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixe
         writer.add_uint32(f'{arch}.{key}', value)
     writer.add_float32(f'{arch}.attention.layer_norm_rms_epsilon', 1e-6)
     writer.add_bool(f'{arch}.attention.causal', causal)
+    if window is not None:
+        writer.add_uint32(f'{arch}.attention.sliding_window', window)
     writer.add_tokenizer_model('gpt2'); writer.add_tokenizer_pre('qwen2')
     # Use one merge; empty metadata arrays have no subtype in upstream ReaderField.
     tokens.append('ab')
@@ -257,6 +259,35 @@ class GgufTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'model.gguf'; fixture(path,arch='llama',causal=False)
             with self.assertRaisesRegex(ValueError,'causal attention'):plan(path)
+
+    def test_uniform_window_maps_to_mistral_and_preserves_packed_rotary_rows(self):
+        for kind in (0, 2, 8, 12):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as folder:
+                paths = [Path(folder)/f'{label}.gguf' for label in ('full', 'window')]
+                for path, window in zip(paths, (0, 64)):
+                    fixture(path, kind, arch='llama', hidden=256, window=window, mixed=kind==12)
+                full, windowed = [GgufWeights(path, 128, 'none') for path in paths]
+                self.assertEqual(full.config['model_type'], 'llama')
+                self.assertEqual(windowed.config['model_type'], 'mistral')
+                self.assertEqual(windowed.config['sliding_window'], 64)
+                self.assertEqual(full.packed_formats, windowed.packed_formats)
+                for name in full.weights:
+                    self.assertTrue(torch.equal(full.weights[name], windowed.weights[name]), name)
+                for name in full.scales:
+                    self.assertTrue(torch.equal(full.scales[name], windowed.scales[name]), name)
+
+    def test_invalid_or_nonuniform_window_metadata_fails_preflight(self):
+        from dllm.gguf_model import model_config
+        for arch, value, pattern in (('llama', -1, None), ('llama', True, None),
+                                     ('llama', 64.0, None), ('qwen2', 64, None),
+                                     ('qwen3', 64, None), ('llama', 64, 4),
+                                     ('llama', 0, [True, False])):
+            with self.subTest(arch=arch, value=value, pattern=pattern):
+                metadata = {'general.architecture': arch, f'{arch}.attention.sliding_window': value}
+                if pattern is not None:
+                    metadata[f'{arch}.attention.sliding_window_pattern'] = pattern
+                with self.assertRaisesRegex(ValueError, 'window'):
+                    model_config(metadata, {}, 32000, {2})
 
     def test_kquant_import_matches_independent_blocks_and_storage(self):
         from gguf import GGML_QUANT_SIZES

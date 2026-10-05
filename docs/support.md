@@ -93,6 +93,13 @@ wins; a passing numerical gate is not a claim of throughput parity. In particula
 Mistral Q4 single-request decoding still trails llama.cpp, and several concurrent
 workloads still trail vLLM. See the raw trials accompanying each comparison.
 
+Uniform window metadata in Llama-layout GGUF files maps to the Mistral decoder.
+The pinned Mistral 7B Q4 fixture passes independent and layout checks at context
+4104 across its 4096-token window. Mixed local/global patterns are rejected.
+This implements attention semantics with full-context KV storage, not a rolling
+window allocation. Its GGUF chat tokenizer matches the native format reference
+and can differ from the HF fast tokenizer even for the same rendered template.
+
 Recent evidence: [GGUF import and templates](evidence/gguf/), [T5](evidence/t5/), [Mamba](evidence/mamba/),
 [Mamba-2](evidence/mamba2/), [function tools](evidence/tools/),
 [direct token choices](evidence/scoring/), [trained reranking](evidence/reranking/),

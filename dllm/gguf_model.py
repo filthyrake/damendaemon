@@ -153,17 +153,25 @@ def model_config(metadata, tensors, vocab_size, eos):
         return metadata.get(f'{arch}.{name}', default)
     if get('attention.causal', True) is not True:
         raise ValueError('GGUF decoder requires causal attention')
+    window = get('attention.sliding_window', 0)
+    if type(window) is not int or window < 0:
+        raise ValueError('GGUF sliding window must be a nonnegative integer')
+    if (window and arch != 'llama') or get('attention.sliding_window_pattern') is not None:
+        raise ValueError('GGUF only supports uniform Llama/Mistral sliding-window attention')
     if (get('rope.scaling.type', 'none') != 'none'
             or any(name.startswith(f'{arch}.rope.scaling.') and name != f'{arch}.rope.scaling.type' for name in metadata)
-            or get('attention.sliding_window', 0) != 0
             or get('expert_count', 0) != 0):
-        raise ValueError('GGUF scaled RoPE, windowed attention and experts are unsupported')
-    c = dict(model_type=arch, hidden_act='silu', attention_bias=arch == 'qwen2',
+        raise ValueError('GGUF scaled RoPE and experts are unsupported')
+    # Uniform windows use the existing Mistral execution policy. The GGUF
+    # tensor layout still uses Llama's interleaved rotary rows on disk.
+    c = dict(model_type='mistral' if window else arch, hidden_act='silu', attention_bias=arch == 'qwen2',
              hidden_size=get('embedding_length'), intermediate_size=get('feed_forward_length'),
              num_hidden_layers=get('block_count'), max_position_embeddings=get('context_length'),
              num_attention_heads=get('attention.head_count'), num_key_value_heads=get('attention.head_count_kv'),
              rope_theta=get('rope.freq_base', 10000.0), rms_norm_eps=get('attention.layer_norm_rms_epsilon'),
              vocab_size=vocab_size, eos_token_id=sorted(eos), tie_word_embeddings='output.weight' not in tensors)
+    if window:
+        c['sliding_window'] = window
     if get('attention.key_length') is not None:
         c['head_dim'] = get('attention.key_length')
     c = decoder_config(c)
@@ -326,14 +334,14 @@ class GgufWeights(ModelWeights):
                             value, _ = read_tensor(file, info)
                             value = value.view(torch.uint8)
                             kind = 1  # Floating decoder weights preserve the FP16 policy.
-                        if self.config['model_type'] == 'llama':
+                        if self.config['model_type'] in ('llama', 'mistral'):
                             value, _ = restore_llama_rows(name, (value, None), self.config)
                         native.append((value, kind))
                     self.packed_formats[destination] = packed_layout(group[0][1][1], native)
                     weights[destination] = torch.cat([value.reshape(-1) for value, _ in native])
                     continue
                 parts = [read_tensor(file, source.tensors[name]) for name, _ in group]
-                if self.config['model_type'] == 'llama':
+                if self.config['model_type'] in ('llama', 'mistral'):
                     parts = [restore_llama_rows(name, part, self.config) for (name, _), part in zip(group, parts)]
                 values = [p[0] for p in parts]
                 weights[destination] = values[0] if len(values) == 1 else torch.cat(values)
