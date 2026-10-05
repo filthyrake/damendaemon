@@ -1976,3 +1976,12 @@ All 90 independent matrix checks pass. Across five real projection shapes,
 at 129 rows. Other measured sizes retain the production choice. The isolated
 candidate still needs full-model and real serving qualification; this report
 alone does not justify a normal runtime change.
+
+`mistral-q4-small-tiles-reference-a2.json` then passes independent HF execution
+at context 512, including 64/129-row prompts and eager/graph continuation.
+All greedy tokens agree; worst relative logit RMS is 0.161% and maximum absolute
+error is 0.0390625. The experimental override changes only the measured shapes;
+layout and HTTP qualification remain separate. This windowed Mistral fixture
+uses FP16 matrix and residual arithmetic, as recorded by the executor. The
+HTTP benchmark now derives its precision label from the imported architecture
+instead of assuming every GGUF uses Llama's mixed policy.

@@ -88,6 +88,11 @@ def main():
     swap_model=Path(args.swap_model).resolve() if args.swap_model else model
     output=Path(args.output)
     source=plan(model);tokenizer=restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
+    if precision == 'float32' and source.config['model_type'] not in ('llama', 'qwen3'):
+        parser.error('this benchmark can select FP32 only for Llama and Qwen3')
+    precision_description = ('FP32 matrices, residual/nonlinear and KV' if precision == 'float32' else
+                             'mixed: FP16 matrices, FP32 residual/nonlinear' if source.config['model_type'] in ('llama', 'qwen3') else
+                             'standard: FP16 matrices, residual and KV')
     base_tokens=tokenizer.encode(args.prompt_text,add_special_tokens=True).ids
     prompts={length:(base_tokens*((length+len(base_tokens)-1)//len(base_tokens)))[:length]
              for length in (16,129,args.long_prompt_tokens,*args.extra_prompt_tokens)}
@@ -101,7 +106,7 @@ def main():
         experimental_arithmetic=('two dyadic int8 activation terms; FP32 rows 1-4, widths 2048/8192' if precision=='float32'
                                 else 'two dyadic int8 activation terms; FP16 single-row width-2048 K-quants') if residual else None,
         gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=args.context,slots=4,kv_dtype='float32' if precision=='float32' else 'float16',
-        dllm_precision='FP32 matrices, residual/nonlinear and KV' if precision=='float32' else 'mixed: FP16 matrices, FP32 residual/nonlinear',output_tokens=16,
+        dllm_precision=precision_description,model_type=source.config['model_type'],output_tokens=16,
         prompts=prompts,prompt_text=args.prompt_text,warmup_rounds=3,measured_rounds=6,runs=[])
     if args.q4_residual_library:
         report['experimental_arithmetic']='Q4 single-row integer dot; two dyadic int8 activation terms; FP32 coefficient scaling rather than rounded FP16 coefficients'
