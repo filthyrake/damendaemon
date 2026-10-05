@@ -17,7 +17,10 @@ def main():
     parser.add_argument('model')
     parser.add_argument('--library', required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--rows', type=int, nargs='+', default=[1, 2, 3, 4, 8, 16])
     args = parser.parse_args()
+    if any(rows < 1 for rows in args.rows):
+        parser.error('rows must be positive')
     require_gpu()
     torch.set_num_threads(4)
     torch.manual_seed(946)
@@ -37,7 +40,7 @@ def main():
                 for biased in (False, True):
                     bias = torch.randn(matrix.outputs, device='cuda', dtype=torch.float16) if biased else None
                     prepared = library.prepare(matrix, bias)
-                    for rows in (1, 2, 3, 4, 8, 16):
+                    for rows in args.rows:
                         case = dict(name=name, rows=rows, biased=biased, checks=[], rounds=[])
                         report['cases'].append(case)
                         for exponent in (-10, 0, 8):

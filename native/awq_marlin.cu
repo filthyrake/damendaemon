@@ -9,13 +9,13 @@
 #include "awq_repack.cuh"
 
 namespace {
-template<bool Small>
+template<int Blocks, bool Small = false>
 constexpr auto kernel = dllm_marlin::Marlin<
     vllm::kFloat16.id(), vllm::kU4.id(), vllm::kFloat16.id(), vllm::kFloat16.id(),
-    128, 1, 8, 4, Small, 4, 8, false>;
+    128, Blocks, 8, 4, Small, 4, 8, false>;
 }
 
-extern "C" int dllm_awq_marlin_abi() { return 1; }
+extern "C" int dllm_awq_marlin_abi() { return 2; }
 
 extern "C" int dllm_awq_marlin_init(int* sms, int* shared) {
     if (!sms || !shared) return cudaErrorInvalidValue;
@@ -30,9 +30,13 @@ extern "C" int dllm_awq_marlin_init(int* sms, int* shared) {
     status = cudaDeviceGetAttribute(shared, cudaDevAttrMaxSharedMemoryPerBlockOptin, device);
     if (status != cudaSuccess) return status;
     int budget = *shared/2-1024;
-    status = cudaFuncSetAttribute(kernel<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, budget);
+    status = cudaFuncSetAttribute(kernel<1, true>, cudaFuncAttributeMaxDynamicSharedMemorySize, budget);
     if (status != cudaSuccess) return status;
-    status = cudaFuncSetAttribute(kernel<false>, cudaFuncAttributeMaxDynamicSharedMemorySize, budget);
+    status = cudaFuncSetAttribute(kernel<1>, cudaFuncAttributeMaxDynamicSharedMemorySize, budget);
+    if (status != cudaSuccess) return status;
+    status = cudaFuncSetAttribute(kernel<2>, cudaFuncAttributeMaxDynamicSharedMemorySize, budget);
+    if (status != cudaSuccess) return status;
+    status = cudaFuncSetAttribute(kernel<4>, cudaFuncAttributeMaxDynamicSharedMemorySize, *shared);
     if (status != cudaSuccess) return status;
     return cudaFuncSetAttribute(dllm_marlin::awq_marlin_repack_kernel<256, 4, false>,
                                cudaFuncAttributeMaxDynamicSharedMemorySize, *shared);
@@ -52,14 +56,29 @@ extern "C" int dllm_awq_marlin_gemm(const void* input, const void* weights,
                                     void* output, void* scratch, void* locks,
                                     int m, int n, int k, int sms, int shared, void* stream) {
     if (!input || !weights || !scales || !zeros || !output || !scratch || !locks
-            || m < 1 || m > 16 || k <= 0 || n <= 0 || k%128 || n%128 || sms <= 0 || shared <= 0)
+            || m < 1 || k <= 0 || n <= 0 || k%128 || n%128 || sms <= 0 || shared <= 0)
         return cudaErrorInvalidValue;
-    auto function = m <= 8 ? kernel<true> : kernel<false>;
-    const int budget = shared/2-1024;
-    function<<<sms*2, 128, budget, static_cast<cudaStream_t>(stream)>>>(
-        static_cast<const int4*>(input), static_cast<const int4*>(weights),
-        static_cast<int4*>(output), static_cast<int4*>(scratch), static_cast<const int4*>(bias),
-        nullptr, static_cast<const int4*>(scales), nullptr, static_cast<const int4*>(zeros),
-        m, n, k, k, static_cast<int*>(locks), bias != nullptr, false, true, budget);
-    return cudaGetLastError();
+    // The device kernel handles parallel full M tiles. Keep a partial tail in
+    // its own launch so floor division cannot discard rows beyond a full tile.
+    const half* a = static_cast<const half*>(input);
+    half* c = static_cast<half*>(output);
+    while (m > 0) {
+        const int rows = m > 64 ? std::min((m/64)*64, 1024) : m;
+        const int blocks_m = rows > 32 ? 4 : rows > 16 ? 2 : 1;
+        auto function = rows <= 8 ? kernel<1, true> :
+                        blocks_m == 1 ? kernel<1> : blocks_m == 2 ? kernel<2> : kernel<4>;
+        const int budget = blocks_m == 4 ? shared : shared/2-1024;
+        const int blocks = blocks_m == 4 ? sms : sms*2;
+        function<<<blocks, 128, budget, static_cast<cudaStream_t>(stream)>>>(
+            reinterpret_cast<const int4*>(a), static_cast<const int4*>(weights),
+            reinterpret_cast<int4*>(c), static_cast<int4*>(scratch), static_cast<const int4*>(bias),
+            nullptr, static_cast<const int4*>(scales), nullptr, static_cast<const int4*>(zeros),
+            rows, n, k, k, static_cast<int*>(locks), bias != nullptr, false, true, budget);
+        cudaError_t status = cudaGetLastError();
+        if (status != cudaSuccess) return status;
+        a += static_cast<size_t>(rows)*k;
+        c += static_cast<size_t>(rows)*n;
+        m -= rows;
+    }
+    return cudaSuccess;
 }

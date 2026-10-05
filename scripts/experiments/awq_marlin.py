@@ -25,7 +25,7 @@ class Library:
         ptr, integer = ctypes.c_void_p, ctypes.c_int
         self.lib.dllm_awq_marlin_abi.argtypes = []
         self.lib.dllm_awq_marlin_abi.restype = integer
-        if self.lib.dllm_awq_marlin_abi() != 1:
+        if self.lib.dllm_awq_marlin_abi() != 2:
             raise ValueError('unsupported Marlin experiment ABI')
         self.lib.dllm_awq_marlin_init.argtypes = [ctypes.POINTER(integer)]*2
         self.lib.dllm_awq_marlin_init.restype = integer
@@ -64,15 +64,15 @@ class Library:
             permutation = [2*i+j for i in range(4) for j in (0, 1, 8, 9, 16, 17, 24, 25)]
             bias = bias.reshape(-1, 32)[:, permutation].reshape(n).contiguous()
         # Conservative experiment workspace; runtime admission is a later gate.
-        scratch = torch.empty(4*self.sms*16*256, dtype=torch.float32, device=device)
+        scratch = torch.empty(4*self.sms*64*256, dtype=torch.float32, device=device)
         locks = torch.zeros(4*self.sms, dtype=torch.int32, device=device)
         return Prepared(packed, scales, zeros, bias, scratch, locks, k, n)
 
     def linear(self, x, matrix):
         if (x.ndim != 2 or not x.is_cuda or x.dtype != torch.float16
                 or x.device != matrix.weight.device or x.shape[1] != matrix.inputs
-                or not 1 <= x.shape[0] <= 16):
-            raise ValueError('Marlin experiment requires one to sixteen contiguous FP16 rows')
+                or x.shape[0] < 1):
+            raise ValueError('Marlin experiment requires nonempty contiguous FP16 rows')
         x = x.contiguous()
         result = torch.empty((x.shape[0], matrix.outputs), device=x.device, dtype=x.dtype)
         self.check(self.lib.dllm_awq_marlin_gemm(x.data_ptr(), matrix.weight.data_ptr(),

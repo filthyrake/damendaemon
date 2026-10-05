@@ -233,3 +233,9 @@ down from 55.2 to 16.5 microseconds compared with the newly promoted dllm path.
 These are standalone projection results, excluding format preparation; they
 do not yet establish full-model accuracy, memory admission, hot-swap behavior
 or serving throughput. See `qwen25-small-marlin-matrices-a2.json`.
+
+ABI 2 extends the isolated kernel to prompt-sized inputs. The second matrix
+gate passes 240 checks at rows 1, 16, 17, 32, 33, 64, 65, 129, 256 and 1025,
+covering partial tiles and the split after the 1024-row launch limit. The raw
+report is `qwen25-small-marlin-prefill-a2.json`. Full-model integration remains
+experimental and is not established by these matrix checks.
