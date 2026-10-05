@@ -575,3 +575,35 @@ cases regress. Validation-only `--experimental-residual` therefore selects
 single-row FP16 2048-wide K-quant projections and falls back elsewhere. Reports
 record the experimental library hash and warn that ordinary backend labels do
 not include this override. No production runtime selects the experiment.
+
+Full-model residual-v2 reports are retained as
+`llama32-q4-k-m-residual-v2-reference{,-extended}-a2.json`: all 160 greedy
+comparisons agree with independent HF execution, maximum absolute error 0.140625
+and RMS 0.894%, below the unchanged 0.5/1% gates. The runtime report
+`llama32-q4-k-m-residual-v2-runtime-a2.json` passes batching, chunking, fixed/paged
+caches, graphs, HTTP streaming/concurrency/cancellation and host/disk restoration.
+Its batch-four decoding deliberately uses the production fallback; single-row
+candidate decoding is covered by the HF suites. HTTP medians against identical
+expanded coefficients are 0.211/0.236/0.275 s versus 0.259/0.284/0.321 s at
+16/129/400 prompt tokens, and 0.366 versus 0.365 s for 129 tokens/concurrency two.
+These are candidate-versus-expanded results, not a direct production-kernel
+comparison. The candidate remains isolated in validation tooling.
+
+The direct comparison is now retained in
+`llama32-q4-k-m-residual-v2-http-abba-a2.json`. Production/candidate/candidate/
+production server phases use identical GGUF bytes, prompt IDs, FP16 KV, context
+512, four slots, 16 output tokens and disabled prefix/speculative paths. Each
+phase has three warmups and six measured rounds per case. Both implementations
+use the original packed weights; only the candidate's explicitly recorded
+single-row arithmetic differs. All generated text matches across every phase.
+
+| Input / concurrency | Production CUDA | Residual-v2 candidate | Median latency reduction |
+|---|---:|---:|---:|
+| 16 / 1 | 0.237830 s | 0.212148 s | 10.8% |
+| 129 / 1 | 0.260549 s | 0.236988 s | 9.0% |
+| 400 / 1 | 0.298261 s | 0.276075 s | 7.4% |
+| 129 / 2 | 0.373792 s | 0.370382 s | 0.9% |
+
+Medians pool twelve measured rounds per implementation/case. The concurrency-two
+result is effectively a tie; batched decoding retains production dispatch. These
+results do not establish another-GPU, another-model or llama.cpp parity claim.

@@ -24,33 +24,44 @@ def digest(path):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('model');parser.add_argument('--llama-server',required=True)
+    parser.add_argument('model')
+    comparison=parser.add_mutually_exclusive_group(required=True)
+    comparison.add_argument('--llama-server')
+    comparison.add_argument('--residual-library',help='compare production with the isolated residual-int8 candidate')
     parser.add_argument('--native-library',required=True);parser.add_argument('--output',required=True)
     args=parser.parse_args()
     if not os.environ.get('CUDA_VISIBLE_DEVICES','').startswith('GPU-') or ',' in os.environ['CUDA_VISIBLE_DEVICES']:
         raise RuntimeError('select exactly one GPU UUID before benchmarking')
     model=Path(args.model).resolve();library=Path(args.native_library).resolve()
-    llama=Path(args.llama_server).resolve();output=Path(args.output)
+    llama=Path(args.llama_server).resolve() if args.llama_server else None
+    residual=Path(args.residual_library).resolve() if args.residual_library else None
+    output=Path(args.output)
     tokenizer=Tokenizer.from_str(plan(model).tokenizer_json)
     base_tokens=tokenizer.encode('Binary search repeatedly halves a sorted range. A detailed explanation follows: ',
                                 add_special_tokens=True).ids
     prompts={length:(base_tokens*((length+len(base_tokens)-1)//len(base_tokens)))[:length] for length in (16,129,400)}
     report=dict(model=str(model),model_sha256=digest(model),native_library=str(library),
-        native_library_sha256=digest(library),llama_server=str(llama),llama_server_sha256=digest(llama),
+        native_library_sha256=digest(library),llama_server=str(llama) if llama else None,llama_server_sha256=digest(llama) if llama else None,
+        residual_library=str(residual) if residual else None,
+        residual_library_sha256=digest(residual) if residual else None,
+        experimental_arithmetic='two dyadic int8 activation terms; FP16 single-row width-2048 K-quants' if residual else None,
         gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=512,slots=4,kv_dtype='float16',
         dllm_precision='mixed: FP16 matrices, FP32 residual/nonlinear',output_tokens=16,
         prompts=prompts,warmup_rounds=3,measured_rounds=6,runs=[])
     environment=os.environ.copy()
     environment.update(DLLM_DEVICE='cuda',DLLM_KQUANT_CUDA_LIBRARY=str(library),DLLM_LLAMA_PRECISION='mixed',
         DLLM_SPECULATIVE_TOKENS='0',DLLM_QUANTIZATION='none',OMP_NUM_THREADS='4')
+    counterpart='residual-int8-v2' if residual else 'llama.cpp'
+    if residual:environment['DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY']=str(residual)
     try:
-        for phase,engine in enumerate(('dllm','llama.cpp','llama.cpp','dllm')):
+        for phase,engine in enumerate(('dllm',counterpart,counterpart,'dllm')):
             with socket.socket() as reservation:
                 reservation.bind(('127.0.0.1',0));port=reservation.getsockname()[1]
             base=f'http://127.0.0.1:{port}'
             log_path=output.with_name(output.stem+f'-{phase}-{engine}.log')
-            if engine=='dllm':
-                command=[sys.executable,'-m','dllm','serve','--model',f'a={model}','--port',str(port),
+            if engine!='llama.cpp':
+                module='scripts.experiments.serve_residual' if engine=='residual-int8-v2' else 'dllm'
+                command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
                     '--context','512','--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
                     '--prefill-chunk-size','0','--prefix-cache-tokens','0']
             else:
@@ -118,6 +129,15 @@ def main():
                     try:process.wait(timeout=20)
                     except subprocess.TimeoutExpired:process.kill();process.wait(timeout=20)
             output.write_text(json.dumps(report,indent=2)+'\n')
+        texts={}
+        for run in report['runs']:
+            for case in run['cases']:
+                key=(case['prompt_tokens'],case['concurrency'])
+                for trial in case['rounds']:
+                    for request in trial['requests']:
+                        texts.setdefault(key,set()).add(request['text'])
+        report['all_generated_texts_equal']=all(len(values)==1 for values in texts.values())
+        assert report['all_generated_texts_equal'], 'generated text differs between runs'
         report['passed']=True
     except Exception as error:
         report['passed']=False;report['error']=repr(error)

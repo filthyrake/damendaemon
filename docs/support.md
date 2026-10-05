@@ -54,18 +54,23 @@ Model licenses remain those of their respective publishers.
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
 | Reranking | Bounded query/document lists, raw relevance scores, stable top_n ranking and optional returned text; no silent truncation |
 | Embeddings | Text/token-ID inputs, float/base64 output for the qualified BERT sentence encoder |
-| Weight formats | Hugging Face safetensors; standalone Qwen2/Qwen3/Llama 3 BPE GGUF F16/F32/Q4_0/Q8_0; own on-load Q8_0/Q4_0 conversion where supported; checkpoint-native GPT-OSS MXFP4 |
+| Weight formats | Hugging Face safetensors; standalone Qwen2/Qwen3/Llama 3 BPE GGUF F16/F32/Q4_0/Q8_0; experimental CUDA Q4_K/Q5_K/Q6_K with mixed fused projections; own on-load Q8_0/Q4_0 conversion where supported; checkpoint-native GPT-OSS MXFP4 |
 | Chat templates | Checkpoint defaults or explicit per-model sandboxed UTF-8 overrides; stable through eviction/reload |
 | Position schemes | Standard/linear/Llama3 RoPE, fixture-qualified static YaRN; learned positions; partial rotary; ALiBi |
 
 The runtime does **not** currently provide general vLLM/llama.cpp parity.
 Missing major capabilities include paged KV for other architectures/devices, shared prefix pages, KV quantization,
-multi-GPU tensor/pipeline parallelism, adapters, broader GGUF architectures and K/IQ quantization, AWQ/GPTQ checkpoint import,
+multi-GPU tensor/pipeline parallelism, adapters, broader GGUF architectures and remaining K/IQ formats, AWQ/GPTQ checkpoint import,
 multimodal inference, additional tool-call formats, prompt/raw-completion token log-probabilities,
 trained decision-head checkpoints, and a CPU inference backend. Model registration is
 process-local. The HTTP API is a supported subset, not full OpenAI or Ollama API
 compatibility. The development server is loopback-only and is not an authenticated
 multi-tenant service.
+
+K-quant qualification currently covers Llama 3.2 1B Q4_K_M at 512 context.
+Q5_K_M passes runtime/lifecycle tests but retains a forced post-EOS FP16-reference
+numerical failure; neither these results nor block-format decoding establishes
+qualification for every model using these formats.
 
 Performance is workload-specific. Comparable results include losses as well as
 wins; a passing numerical gate is not a claim of throughput parity. In particular,
