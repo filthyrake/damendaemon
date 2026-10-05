@@ -1,0 +1,5266 @@
+{
+  "gguf_sha256": "c6088399c4f304ab5165639719837aa25e276e506371cc853b30db40012abc60",
+  "requests_sha256": "d542b9b439d94207918e09531741c9b4e2aed2fb1192bd558ef362b94e3410e4",
+  "reference_sha256": "9b253c4aea5d1b8316e0d277c6a3b3b0ee5ee433024eee70856d7295c69651e6",
+  "reference_revision": "836d57176dc699a726c55418e4f96b8ca628e1bf",
+  "reference_adapter_sha256": "fa461a55a64acdc78158a1f0d845df5a91c31e7723dd6437b23ca949d330d588",
+  "hf_tokenizer_sha256": "11c08db21487c885d8c792180f0be237f6a261b89a46f128a6a80a3aa4bd1720",
+  "cases": [
+    {
+      "text": "",
+      "add_special_tokens": false,
+      "expected_ids": [],
+      "actual_ids": [],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [],
+      "hf_equal": true
+    },
+    {
+      "text": "a",
+      "add_special_tokens": false,
+      "expected_ids": [
+        264
+      ],
+      "actual_ids": [
+        264
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "a",
+          "actual": "a",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "a",
+          "actual": "a",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        264
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": " Hello",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        22557
+      ],
+      "actual_ids": [
+        28705,
+        22557
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " Hello",
+          "actual": " Hello",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " Hello",
+          "actual": " Hello",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        22557
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "  hello  world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        6312,
+        28709,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        259,
+        6312,
+        28709,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "  hello  world",
+          "actual": "  hello  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  hello  world",
+          "actual": "  hello  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        6312,
+        28709,
+        28705,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello\n\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        13,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        13,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello\n\nworld",
+          "actual": "hello\n\nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello\n\nworld",
+          "actual": "hello\n\nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        13,
+        13,
+        9471
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "\t hello\tworld ",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        12,
+        6312,
+        28709,
+        12,
+        9471,
+        28705
+      ],
+      "actual_ids": [
+        28705,
+        12,
+        6312,
+        28709,
+        12,
+        9471,
+        28705
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\t hello\tworld ",
+          "actual": "\t hello\tworld ",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\t hello\tworld ",
+          "actual": "\t hello\tworld ",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        12,
+        6312,
+        28709,
+        12,
+        9471,
+        28705
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "こんにちは世界",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        29543,
+        29585,
+        29174,
+        30173,
+        29277,
+        30050,
+        29822
+      ],
+      "actual_ids": [
+        28705,
+        29543,
+        29585,
+        29174,
+        30173,
+        29277,
+        30050,
+        29822
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "こんにちは世界",
+          "actual": "こんにちは世界",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "こんにちは世界",
+          "actual": "こんにちは世界",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        29543,
+        29585,
+        29174,
+        30173,
+        29277,
+        30050,
+        29822
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "Hello 😀 🦙",
+      "add_special_tokens": false,
+      "expected_ids": [
+        22557,
+        28705,
+        30575,
+        28705,
+        243,
+        162,
+        169,
+        156
+      ],
+      "actual_ids": [
+        22557,
+        28705,
+        30575,
+        28705,
+        243,
+        162,
+        169,
+        156
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "Hello 😀 🦙",
+          "actual": "Hello 😀 🦙",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "Hello 😀 🦙",
+          "actual": "Hello 😀 🦙",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        22557,
+        28705,
+        30575,
+        28705,
+        243,
+        162,
+        169,
+        156
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "café café",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28345,
+        7913,
+        1512,
+        28949
+      ],
+      "actual_ids": [
+        28345,
+        7913,
+        1512,
+        28949
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "café café",
+          "actual": "café café",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "café café",
+          "actual": "café café",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28345,
+        7913,
+        1512,
+        28949
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "▁hello",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        6312,
+        28709
+      ],
+      "actual_ids": [
+        28705,
+        6312,
+        28709
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " hello",
+          "actual": " hello",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello",
+          "actual": " hello",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello\u0000world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        3,
+        9471
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        3,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello\u0000world",
+          "actual": "hello\u0000world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello\u0000world",
+          "actual": "hello\u0000world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        3,
+        9471
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<s>hello",
+      "add_special_tokens": false,
+      "expected_ids": [
+        1,
+        6312,
+        28709
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello",
+          "actual": "<s> hello",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello",
+          "actual": " hello",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        21558
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello</s>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello</s> world",
+          "actual": "hello</s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello world",
+          "actual": "hello world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "[INST] hello [/INST]",
+      "add_special_tokens": false,
+      "expected_ids": [
+        733,
+        16289,
+        28793,
+        6312,
+        28709,
+        733,
+        28748,
+        16289,
+        28793
+      ],
+      "actual_ids": [
+        733,
+        16289,
+        28793,
+        6312,
+        28709,
+        733,
+        28748,
+        16289,
+        28793
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "[INST] hello [/INST]",
+          "actual": "[INST] hello [/INST]",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "[INST] hello [/INST]",
+          "actual": "[INST] hello [/INST]",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        733,
+        16289,
+        28793,
+        6312,
+        28709,
+        733,
+        28748,
+        16289,
+        28793
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<unk>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        0
+      ],
+      "actual_ids": [
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<unk>",
+          "actual": "<unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        0
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "é ñ 中文 العربية",
+      "add_special_tokens": false,
+      "expected_ids": [
+        1233,
+        28705,
+        28877,
+        28705,
+        28991,
+        29019,
+        19078,
+        29040,
+        28947,
+        28983,
+        28972,
+        29141
+      ],
+      "actual_ids": [
+        1233,
+        28705,
+        28877,
+        28705,
+        28991,
+        29019,
+        19078,
+        29040,
+        28947,
+        28983,
+        28972,
+        29141
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "é ñ 中文 العربية",
+          "actual": "é ñ 中文 العربية",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "é ñ 中文 العربية",
+          "actual": "é ñ 中文 العربية",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        1233,
+        28705,
+        28877,
+        28705,
+        28991,
+        29019,
+        19078,
+        29040,
+        28947,
+        28983,
+        28972,
+        29141
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<s>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        1
+      ],
+      "actual_ids": [
+        1
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>",
+          "actual": "<s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        1
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<s>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        1,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> world",
+          "actual": "<s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " world",
+          "actual": " world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<s> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        1,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  world",
+          "actual": "<s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  world",
+          "actual": "  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<s>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \nworld",
+          "actual": "<s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \nworld",
+          "actual": " \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "</s>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        2
+      ],
+      "actual_ids": [
+        2
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "</s>",
+          "actual": "</s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        2
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "</s>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        2,
+        1526
+      ],
+      "actual_ids": [
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "</s> world",
+          "actual": "</s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " world",
+          "actual": " world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "</s> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        2,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        2,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "</s>  world",
+          "actual": "</s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  world",
+          "actual": "  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        2,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "</s>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "</s> \nworld",
+          "actual": "</s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \nworld",
+          "actual": " \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        2,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<unk>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        0
+      ],
+      "actual_ids": [
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<unk>",
+          "actual": "<unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        0
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<unk>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        0,
+        1526
+      ],
+      "actual_ids": [
+        0,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<unk> world",
+          "actual": "<unk> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " world",
+          "actual": " world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        0,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<unk> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        0,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        0,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<unk>  world",
+          "actual": "<unk>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  world",
+          "actual": "  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        0,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<unk>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<unk> \nworld",
+          "actual": "<unk> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \nworld",
+          "actual": " \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        0,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <s>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        1
+      ],
+      "actual_ids": [
+        259,
+        1
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " <s>",
+          "actual": " <s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " ",
+          "actual": " ",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        1
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <s>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        1,
+        1526
+      ],
+      "actual_ids": [
+        259,
+        1,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " <s> world",
+          "actual": " <s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  world",
+          "actual": "  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        1,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <s> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        1,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        259,
+        1,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " <s>  world",
+          "actual": " <s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   world",
+          "actual": "   world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        1,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <s>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        259,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " <s> \nworld",
+          "actual": " <s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  \nworld",
+          "actual": "  \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        1,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " </s>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        2
+      ],
+      "actual_ids": [
+        259,
+        2
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " </s>",
+          "actual": " </s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " ",
+          "actual": " ",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        2
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " </s>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        2,
+        1526
+      ],
+      "actual_ids": [
+        259,
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " </s> world",
+          "actual": " </s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  world",
+          "actual": "  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " </s> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        2,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        259,
+        2,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " </s>  world",
+          "actual": " </s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   world",
+          "actual": "   world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        2,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " </s>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        259,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " </s> \nworld",
+          "actual": " </s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  \nworld",
+          "actual": "  \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        2,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <unk>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        0
+      ],
+      "actual_ids": [
+        259,
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " <unk>",
+          "actual": " <unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " ",
+          "actual": " ",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        0
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <unk>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        0,
+        1526
+      ],
+      "actual_ids": [
+        259,
+        0,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " <unk> world",
+          "actual": " <unk> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  world",
+          "actual": "  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        0,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <unk> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        0,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        259,
+        0,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " <unk>  world",
+          "actual": " <unk>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   world",
+          "actual": "   world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        0,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <unk>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        259,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        259,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": " <unk> \nworld",
+          "actual": " <unk> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  \nworld",
+          "actual": "  \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        0,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<s>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        1
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        1
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n<s>",
+          "actual": "\n<s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n",
+          "actual": "\n",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        1
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "\n<s>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        1,
+        1526
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        1,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n<s> world",
+          "actual": "\n<s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n world",
+          "actual": "\n world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        1,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<s> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        1,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        1,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n<s>  world",
+          "actual": "\n<s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n  world",
+          "actual": "\n  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        1,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<s>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n<s> \nworld",
+          "actual": "\n<s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n \nworld",
+          "actual": "\n \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        1,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n</s>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        2
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        2
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n</s>",
+          "actual": "\n</s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n",
+          "actual": "\n",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        2
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "\n</s>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        2,
+        1526
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n</s> world",
+          "actual": "\n</s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n world",
+          "actual": "\n world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n</s> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        2,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        2,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n</s>  world",
+          "actual": "\n</s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n  world",
+          "actual": "\n  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        2,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n</s>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n</s> \nworld",
+          "actual": "\n</s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n \nworld",
+          "actual": "\n \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        2,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<unk>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        0
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n<unk>",
+          "actual": "\n<unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n",
+          "actual": "\n",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        0
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "\n<unk>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        0,
+        1526
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        0,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n<unk> world",
+          "actual": "\n<unk> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n world",
+          "actual": "\n world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        0,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<unk> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        0,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        0,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n<unk>  world",
+          "actual": "\n<unk>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n  world",
+          "actual": "\n  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        0,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<unk>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        28705,
+        13,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        28705,
+        13,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "\n<unk> \nworld",
+          "actual": "\n<unk> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "\n \nworld",
+          "actual": "\n \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        28705,
+        13,
+        0,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<s>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        1
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        1
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello<s>",
+          "actual": "hello<s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello",
+          "actual": "hello",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        1
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "hello<s>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        1,
+        1526
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        1,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello<s> world",
+          "actual": "hello<s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello world",
+          "actual": "hello world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        1,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<s> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        1,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        1,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello<s>  world",
+          "actual": "hello<s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello  world",
+          "actual": "hello  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        1,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<s>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello<s> \nworld",
+          "actual": "hello<s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello \nworld",
+          "actual": "hello \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        1,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello</s>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        2
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        2
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello</s>",
+          "actual": "hello</s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello",
+          "actual": "hello",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        2
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "hello</s>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello</s> world",
+          "actual": "hello</s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello world",
+          "actual": "hello world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello</s> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        2,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        2,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello</s>  world",
+          "actual": "hello</s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello  world",
+          "actual": "hello  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello</s>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello</s> \nworld",
+          "actual": "hello</s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello \nworld",
+          "actual": "hello \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        2,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<unk>",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        0
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello<unk>",
+          "actual": "hello<unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello",
+          "actual": "hello",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        0
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "hello<unk>world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        0,
+        1526
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        0,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello<unk> world",
+          "actual": "hello<unk> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello world",
+          "actual": "hello world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        0,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<unk> world",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        0,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        0,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello<unk>  world",
+          "actual": "hello<unk>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello  world",
+          "actual": "hello  world",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        0,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<unk>\nworld",
+      "add_special_tokens": false,
+      "expected_ids": [
+        6312,
+        28709,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        6312,
+        28709,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "hello<unk> \nworld",
+          "actual": "hello<unk> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "hello \nworld",
+          "actual": "hello \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        6312,
+        28709,
+        0,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1
+      ],
+      "actual_ids": [
+        1
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>",
+          "actual": "<s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        1
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "a",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        264
+      ],
+      "actual_ids": [
+        1,
+        264
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> a",
+          "actual": "<s> a",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " a",
+          "actual": " a",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        264
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": " Hello",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        22557
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        22557
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  Hello",
+          "actual": "<s>  Hello",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  Hello",
+          "actual": "  Hello",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        22557
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "  hello  world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        6312,
+        28709,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        259,
+        6312,
+        28709,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>   hello  world",
+          "actual": "<s>   hello  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   hello  world",
+          "actual": "   hello  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        6312,
+        28709,
+        28705,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello\n\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        13,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        13,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello\n\nworld",
+          "actual": "<s> hello\n\nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello\n\nworld",
+          "actual": " hello\n\nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        13,
+        13,
+        9471
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "\t hello\tworld ",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        12,
+        6312,
+        28709,
+        12,
+        9471,
+        28705
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        12,
+        6312,
+        28709,
+        12,
+        9471,
+        28705
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \t hello\tworld ",
+          "actual": "<s> \t hello\tworld ",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \t hello\tworld ",
+          "actual": " \t hello\tworld ",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        12,
+        6312,
+        28709,
+        12,
+        9471,
+        28705
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "こんにちは世界",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        29543,
+        29585,
+        29174,
+        30173,
+        29277,
+        30050,
+        29822
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        29543,
+        29585,
+        29174,
+        30173,
+        29277,
+        30050,
+        29822
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> こんにちは世界",
+          "actual": "<s> こんにちは世界",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " こんにちは世界",
+          "actual": " こんにちは世界",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        29543,
+        29585,
+        29174,
+        30173,
+        29277,
+        30050,
+        29822
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "Hello 😀 🦙",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        22557,
+        28705,
+        30575,
+        28705,
+        243,
+        162,
+        169,
+        156
+      ],
+      "actual_ids": [
+        1,
+        22557,
+        28705,
+        30575,
+        28705,
+        243,
+        162,
+        169,
+        156
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> Hello 😀 🦙",
+          "actual": "<s> Hello 😀 🦙",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " Hello 😀 🦙",
+          "actual": " Hello 😀 🦙",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        22557,
+        28705,
+        30575,
+        28705,
+        243,
+        162,
+        169,
+        156
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "café café",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28345,
+        7913,
+        1512,
+        28949
+      ],
+      "actual_ids": [
+        1,
+        28345,
+        7913,
+        1512,
+        28949
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> café café",
+          "actual": "<s> café café",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " café café",
+          "actual": " café café",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28345,
+        7913,
+        1512,
+        28949
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "▁hello",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        6312,
+        28709
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        6312,
+        28709
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  hello",
+          "actual": "<s>  hello",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  hello",
+          "actual": "  hello",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello\u0000world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        3,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        3,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello\u0000world",
+          "actual": "<s> hello\u0000world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello\u0000world",
+          "actual": " hello\u0000world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        3,
+        9471
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<s>hello",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        1,
+        6312,
+        28709
+      ],
+      "actual_ids": [
+        1,
+        1,
+        6312,
+        28709
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><s> hello",
+          "actual": "<s><s> hello",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello",
+          "actual": " hello",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        1,
+        21558
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello</s>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello</s> world",
+          "actual": "<s> hello</s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello world",
+          "actual": " hello world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "[INST] hello [/INST]",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        733,
+        16289,
+        28793,
+        6312,
+        28709,
+        733,
+        28748,
+        16289,
+        28793
+      ],
+      "actual_ids": [
+        1,
+        733,
+        16289,
+        28793,
+        6312,
+        28709,
+        733,
+        28748,
+        16289,
+        28793
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> [INST] hello [/INST]",
+          "actual": "<s> [INST] hello [/INST]",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " [INST] hello [/INST]",
+          "actual": " [INST] hello [/INST]",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        733,
+        16289,
+        28793,
+        6312,
+        28709,
+        733,
+        28748,
+        16289,
+        28793
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<unk>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        0
+      ],
+      "actual_ids": [
+        1,
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><unk>",
+          "actual": "<s><unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        1,
+        0
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "é ñ 中文 العربية",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        1233,
+        28705,
+        28877,
+        28705,
+        28991,
+        29019,
+        19078,
+        29040,
+        28947,
+        28983,
+        28972,
+        29141
+      ],
+      "actual_ids": [
+        1,
+        1233,
+        28705,
+        28877,
+        28705,
+        28991,
+        29019,
+        19078,
+        29040,
+        28947,
+        28983,
+        28972,
+        29141
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> é ñ 中文 العربية",
+          "actual": "<s> é ñ 中文 العربية",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " é ñ 中文 العربية",
+          "actual": " é ñ 中文 العربية",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        1233,
+        28705,
+        28877,
+        28705,
+        28991,
+        29019,
+        19078,
+        29040,
+        28947,
+        28983,
+        28972,
+        29141
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<s>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        1
+      ],
+      "actual_ids": [
+        1,
+        1
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><s>",
+          "actual": "<s><s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        1,
+        1
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<s>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        1,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        1,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><s> world",
+          "actual": "<s><s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " world",
+          "actual": " world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        1,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<s> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        1,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        1,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><s>  world",
+          "actual": "<s><s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  world",
+          "actual": "  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        1,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<s>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><s> \nworld",
+          "actual": "<s><s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \nworld",
+          "actual": " \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        1,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "</s>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        2
+      ],
+      "actual_ids": [
+        1,
+        2
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s></s>",
+          "actual": "<s></s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        1,
+        2
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "</s>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        2,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s></s> world",
+          "actual": "<s></s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " world",
+          "actual": " world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "</s> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        2,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        2,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s></s>  world",
+          "actual": "<s></s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  world",
+          "actual": "  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        2,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "</s>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s></s> \nworld",
+          "actual": "<s></s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \nworld",
+          "actual": " \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        2,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<unk>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        0
+      ],
+      "actual_ids": [
+        1,
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><unk>",
+          "actual": "<s><unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "",
+          "actual": "",
+          "equal": true,
+          "unwrapped_equal": true
+        }
+      ],
+      "hf_ids": [
+        1,
+        0
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "<unk>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        0,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        0,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><unk> world",
+          "actual": "<s><unk> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " world",
+          "actual": " world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        0,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<unk> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        0,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        0,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><unk>  world",
+          "actual": "<s><unk>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  world",
+          "actual": "  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        0,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "<unk>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s><unk> \nworld",
+          "actual": "<s><unk> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \nworld",
+          "actual": " \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        0,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <s>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        1
+      ],
+      "actual_ids": [
+        1,
+        259,
+        1
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  <s>",
+          "actual": "<s>  <s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  ",
+          "actual": "  ",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        1
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <s>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        1,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        259,
+        1,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  <s> world",
+          "actual": "<s>  <s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   world",
+          "actual": "   world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        1,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <s> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        1,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        259,
+        1,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  <s>  world",
+          "actual": "<s>  <s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "    world",
+          "actual": "    world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        1,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <s>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        259,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  <s> \nworld",
+          "actual": "<s>  <s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   \nworld",
+          "actual": "   \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        1,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " </s>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        2
+      ],
+      "actual_ids": [
+        1,
+        259,
+        2
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  </s>",
+          "actual": "<s>  </s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  ",
+          "actual": "  ",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        2
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " </s>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        2,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        259,
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  </s> world",
+          "actual": "<s>  </s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   world",
+          "actual": "   world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " </s> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        2,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        259,
+        2,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  </s>  world",
+          "actual": "<s>  </s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "    world",
+          "actual": "    world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        2,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " </s>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        259,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  </s> \nworld",
+          "actual": "<s>  </s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   \nworld",
+          "actual": "   \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        2,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <unk>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        0
+      ],
+      "actual_ids": [
+        1,
+        259,
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  <unk>",
+          "actual": "<s>  <unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "  ",
+          "actual": "  ",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        0
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <unk>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        0,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        259,
+        0,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  <unk> world",
+          "actual": "<s>  <unk> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   world",
+          "actual": "   world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        0,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <unk> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        0,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        259,
+        0,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  <unk>  world",
+          "actual": "<s>  <unk>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "    world",
+          "actual": "    world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        0,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": " <unk>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        259,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        259,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s>  <unk> \nworld",
+          "actual": "<s>  <unk> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": "   \nworld",
+          "actual": "   \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        0,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<s>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        1
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        1
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n<s>",
+          "actual": "<s> \n<s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n",
+          "actual": " \n",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        1
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "\n<s>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        1,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        1,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n<s> world",
+          "actual": "<s> \n<s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n world",
+          "actual": " \n world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        1,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<s> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        1,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        1,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n<s>  world",
+          "actual": "<s> \n<s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n  world",
+          "actual": " \n  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        1,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<s>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n<s> \nworld",
+          "actual": "<s> \n<s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n \nworld",
+          "actual": " \n \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        1,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n</s>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        2
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        2
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n</s>",
+          "actual": "<s> \n</s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n",
+          "actual": " \n",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        2
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "\n</s>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        2,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n</s> world",
+          "actual": "<s> \n</s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n world",
+          "actual": " \n world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n</s> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        2,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        2,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n</s>  world",
+          "actual": "<s> \n</s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n  world",
+          "actual": " \n  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        2,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n</s>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n</s> \nworld",
+          "actual": "<s> \n</s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n \nworld",
+          "actual": " \n \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        2,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<unk>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        0
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n<unk>",
+          "actual": "<s> \n<unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n",
+          "actual": " \n",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        0
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "\n<unk>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        0,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        0,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n<unk> world",
+          "actual": "<s> \n<unk> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n world",
+          "actual": " \n world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        0,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<unk> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        0,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        0,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n<unk>  world",
+          "actual": "<s> \n<unk>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n  world",
+          "actual": " \n  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        0,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "\n<unk>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        28705,
+        13,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        28705,
+        13,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> \n<unk> \nworld",
+          "actual": "<s> \n<unk> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " \n \nworld",
+          "actual": " \n \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        28705,
+        13,
+        0,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<s>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        1
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        1
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello<s>",
+          "actual": "<s> hello<s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello",
+          "actual": " hello",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        1
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "hello<s>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        1,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        1,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello<s> world",
+          "actual": "<s> hello<s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello world",
+          "actual": " hello world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        1,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<s> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        1,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        1,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello<s>  world",
+          "actual": "<s> hello<s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello  world",
+          "actual": " hello  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        1,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<s>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        1,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello<s> \nworld",
+          "actual": "<s> hello<s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello \nworld",
+          "actual": " hello \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        1,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello</s>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        2
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        2
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello</s>",
+          "actual": "<s> hello</s>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello",
+          "actual": " hello",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        2
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "hello</s>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello</s> world",
+          "actual": "<s> hello</s> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello world",
+          "actual": " hello world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello</s> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello</s>  world",
+          "actual": "<s> hello</s>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello  world",
+          "actual": " hello  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello</s>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello</s> \nworld",
+          "actual": "<s> hello</s> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello \nworld",
+          "actual": " hello \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        2,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<unk>",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        0
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        0
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello<unk>",
+          "actual": "<s> hello<unk>",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello",
+          "actual": " hello",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        0
+      ],
+      "hf_equal": true
+    },
+    {
+      "text": "hello<unk>world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        0,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        0,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello<unk> world",
+          "actual": "<s> hello<unk> world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello world",
+          "actual": " hello world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        0,
+        9471
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<unk> world",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        0,
+        28705,
+        1526
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        0,
+        28705,
+        1526
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello<unk>  world",
+          "actual": "<s> hello<unk>  world",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello  world",
+          "actual": " hello  world",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        0,
+        1526
+      ],
+      "hf_equal": false
+    },
+    {
+      "text": "hello<unk>\nworld",
+      "add_special_tokens": true,
+      "expected_ids": [
+        1,
+        6312,
+        28709,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "actual_ids": [
+        1,
+        6312,
+        28709,
+        0,
+        28705,
+        13,
+        9471
+      ],
+      "encode_equal": true,
+      "decode": [
+        {
+          "skip_special_tokens": false,
+          "expected": "<s> hello<unk> \nworld",
+          "actual": "<s> hello<unk> \nworld",
+          "equal": true,
+          "unwrapped_equal": true
+        },
+        {
+          "skip_special_tokens": true,
+          "expected": " hello \nworld",
+          "actual": " hello \nworld",
+          "equal": true,
+          "unwrapped_equal": false
+        }
+      ],
+      "hf_ids": [
+        1,
+        6312,
+        28709,
+        0,
+        13,
+        9471
+      ],
+      "hf_equal": false
+    }
+  ],
+  "passed": true
+}

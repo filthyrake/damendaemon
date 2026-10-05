@@ -52,9 +52,10 @@ class Plan:
     quantization: str
     host_bytes: int
     raw_groups: frozenset
+    sentencepiece_prefix: bool = False
 
 
-def tokenizer(metadata):
+def bpe_tokenizer(metadata):
     pre = metadata.get('tokenizer.ggml.pre')
     llama = pre in ('llama-bpe', 'llama3', 'llama-v3')
     if metadata.get('tokenizer.ggml.model') != 'gpt2' or not (pre == 'qwen2' or llama):
@@ -85,9 +86,21 @@ def tokenizer(metadata):
         pre_tokenizers.Split(Regex(pattern), behavior='isolated'),
         pre_tokenizers.ByteLevel(add_prefix_space=False, use_regex=False)])
     result.decoder = decoders.ByteLevel()
+    return result, tokens, types, vocab, llama
+
+
+def tokenizer(metadata):
+    sentencepiece = metadata.get('tokenizer.ggml.model') == 'llama'
+    if sentencepiece:
+        if metadata.get('general.architecture') != 'llama':
+            raise ValueError('GGUF SentencePiece currently requires the llama architecture')
+        from .gguf_sentencepiece import build
+        result, tokens, types, vocab, llama = build(metadata)
+    else:
+        result, tokens, types, vocab, llama = bpe_tokenizer(metadata)
     for i, (text, kind) in enumerate(zip(tokens, types)):
-        if kind in (3, 4):
-            result.add_tokens([AddedToken(text, normalized=False, special=kind == 3)])
+        if kind in (3, 4) or (sentencepiece and kind == 2):
+            result.add_tokens([AddedToken(text, normalized=False, special=kind != 4)])
             if result.token_to_id(text) != i:
                 raise ValueError('GGUF added token changed its declared token ID')
     special = {}
@@ -120,6 +133,9 @@ def tokenizer(metadata):
             added.append((text, vocab[text]))
     if added:
         result.post_processor = processors.TemplateProcessing(single=prefix + ['$A'] + suffix, special_tokens=added)
+    if sentencepiece and metadata.get('tokenizer.ggml.add_space_prefix', True):
+        from .gguf_sentencepiece import SentencePieceTokenizer
+        result = SentencePieceTokenizer(result)
     return result, special, frozenset(eos)
 
 
@@ -220,7 +236,8 @@ def _plan(path, version):
         raise ValueError('GGUF needs a single text chat template')
     if identity(path) != version:
         raise ValueError('GGUF file changed while reading metadata')
-    return Plan(path, version, c, tensors, tok.to_str(), template, special, eos, quantization, total, frozenset(raw_groups))
+    return Plan(path, version, c, tensors, tok.to_str(), template, special, eos, quantization, total, frozenset(raw_groups),
+                metadata.get('tokenizer.ggml.model') == 'llama' and metadata.get('tokenizer.ggml.add_space_prefix', True))
 
 
 def weight_bytes(path, quantization=None):
@@ -286,7 +303,11 @@ class GgufWeights(ModelWeights):
         if not 1 <= max_context <= self.config['max_position_embeddings']:
             raise ValueError('context exceeds model position limit')
         self.max_context = max_context
-        self.configure_tokenizer(Tokenizer.from_str(source.tokenizer_json), source.template, source.special_tokens)
+        tokenizer = Tokenizer.from_str(source.tokenizer_json)
+        if source.sentencepiece_prefix:
+            from .gguf_sentencepiece import SentencePieceTokenizer
+            tokenizer = SentencePieceTokenizer(tokenizer)
+        self.configure_tokenizer(tokenizer, source.template, source.special_tokens)
         self.eos = set(source.eos)
         weights, scales = {}, {}
         self.packed_formats = {}

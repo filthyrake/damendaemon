@@ -112,7 +112,7 @@ class Constraint:
         size = model.config['vocab_size']
         compiler = getattr(model, '_grammar_compiler', None)
         if compiler is None:
-            tokenizer = PreTrainedTokenizerFast(tokenizer_object=model.tokenizer)
+            tokenizer = PreTrainedTokenizerFast(tokenizer_object=getattr(model.tokenizer, 'backend_tokenizer', model.tokenizer))
             info = xgr.TokenizerInfo.from_huggingface(tokenizer, vocab_size=size,
                                                      stop_token_ids=list(model.eos))
             compiler = xgr.GrammarCompiler(info, max_threads=2, cache_limit_bytes=64*1024*1024)

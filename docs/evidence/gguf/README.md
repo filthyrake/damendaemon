@@ -45,10 +45,10 @@ between unrelated quantizations.
 
 The importer accepts dense Qwen2/Qwen3 and Llama 3 BPE checkpoints in
 little-endian GGUF v2/v3 with F16/F32 or Q4_0/Q8_0 tensors. The Llama extension
-below includes explicit FP32 rotary-factor vectors. K-quants, IQ formats, split
-checkpoints, other architectures, other scaled-RoPE metadata, SentencePiece
-tokenizers, vision/audio adapters and arbitrary GGUF tokenizer families are
-not implemented. Q/K/V and gate/up fused components must each use compatible
+below includes explicit FP32 rotary-factor vectors. Later sections describe
+experimental K-quants and Llama-style SentencePiece BPE. IQ formats, split
+checkpoints, other architectures, other scaled-RoPE metadata, vision/audio
+adapters and arbitrary GGUF tokenizer families are not implemented. Q/K/V and gate/up fused components must each use compatible
 formats; distinct projections may use different supported formats.
 
 Floating decoder weights follow the existing FP16 weight policy, including
@@ -991,3 +991,49 @@ The changed longer-prompt cases improve 9–16%; the unchanged 16-token path is
 approximately tied. This is an incremental FP32 gain, not a cross-engine or
 cross-precision parity claim. Independent model coverage extends to 2048;
 server, paging and lifecycle evidence remains at 512 context.
+
+
+## Llama-style SentencePiece BPE
+
+Issue #46 tracks full-model qualification. The runtime reconstructs the embedded
+BPE vocabulary using the existing Rust `tokenizers` dependency; no SentencePiece,
+protobuf, Transformers or llama.cpp runtime dependency is added. This supports
+identity normalization, score-ranked BPE, byte fallback, BOS/EOS and control-token
+boundaries. Unigram, custom normalization and tied non-whitespace merge scores
+are rejected. The source's unknown token may be typed UNKNOWN or CONTROL.
+
+The original Mistral-7B-Instruct-v0.1 `tokenizer.model` is pinned at
+`ec5deb64f2c6e6fa90c1abf74a91d5c93a9669ca`, SHA-256
+`dadfd56d766715c61d2ef780a525ab43b8e6da4de6865bda3d95fdef5e134055`.
+`scripts/prepare_sentencepiece_vocab.py` creates a vocabulary-only GGUF with no
+weights; it is not an inference model. `scripts/reference/gguf_tokenizer.cpp`
+links the unchanged llama.cpp API at revision
+`836d57176dc699a726c55418e4f96b8ca628e1bf` and captures encoding and both decoding
+modes. Reference library SHA-256:
+`892b2900e612677241b33112f583d95bc89ac3b8da7b9094b1515b9ec93ce5c7`.
+
+The initial 128 encodings and 256 decodings pass, including serialization/reload.
+The expanded report `mistral-spm-tokenizer-expanded-reference.json` passes 512
+encodings and 1,024 decodings, including whitespace runs of 1–64 spaces and
+control boundaries. Requests and native oracle JSONL are retained alongside it.
+A decoder adapter preserves the leading space when a leading control token is
+hidden; the unwrapped decoder fails 325 expanded checks. The raw pinned HF
+`tokenizer.json` control differs in 88 initial encoding cases; this is not a
+claim about a fully configured HF AutoTokenizer.
+
+The existing older Mistral Q4 comparator instead contains placeholder -1000
+scores for every token. Ranked merges disagree with native positional tie
+handling in 36/128 encodings (`mistral-spm-placeholder-score-control.json`).
+That input is now rejected explicitly; this failed control predates the guard.
+`scripts/prepare_gguf_vocab_comparator.py` creates a separate comparator with
+the original pinned vocabulary metadata, requiring identical vocabulary IDs
+and texts. `mistral-spm-q4-comparator.json` proves all 291 weight tensors retain
+identical type, shape and bytes. The original file is unchanged. This does not
+qualify arbitrary equal-score vocabularies, nor claim equivalence between the
+two tokenizers. The comparator has no sliding-window metadata, so full-model
+checks below 4096 cannot establish Mistral's longer-context window semantics.
+
+Score-based merge reconstruction follows the approach in Apache-2.0
+Transformers `convert_slow_tokenizer.generate_merges`; native behavior is checked
+against MIT-licensed llama.cpp. Both are validation references rather than
+inference engines used by dllm. The local regression suite passes 295 tests.

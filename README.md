@@ -859,7 +859,7 @@ to FP16. Packed output heads stay packed. CUDA supports mixed matrix formats
 within Q/K/V and gate/up groups without requantization.
 Llama Q/K rotary rows are restored to the decoder layout, including
 packed scales, and explicit GGUF rotary-factor vectors remain FP32. Unsupported
-architectures, SentencePiece tokenizers, split files, other scaled-RoPE metadata,
+architectures, arbitrary SentencePiece variants, split files, other scaled-RoPE metadata,
 other quantized formats, or malformed tensors fail explicitly. Q4, K-quants,
 and mixed-format fused groups require CUDA.
 
@@ -867,6 +867,13 @@ For a Hugging Face GGUF repository, `pull`, `run`, and `add` accept
 `--filename EXACT_FILE.gguf` and optional `--revision`. Only that file is fetched
 at an immutable resolved revision; other quantization variants are not downloaded.
 Resolved HF cache symlinks work even when their backing blob has no extension.
+
+Llama-style identity-normalized SentencePiece BPE is also accepted for the
+`llama` GGUF architecture. Its embedded vocabulary, scores, byte fallback and
+chat template need no HF sidecar files. Mistral's pinned original tokenizer
+passes native llama.cpp encoding/decoding checks; full-model qualification is
+tracked separately in issue #46. Placeholder/tied non-whitespace merge scores,
+Unigram and custom normalization are rejected explicitly.
 
 The embedded Qwen2 BPE tokenizer and chat template need no HF sidecar files.
 GGUF tokenization follows llama.cpp's Qwen2 behavior, including preserving
