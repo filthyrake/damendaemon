@@ -451,4 +451,27 @@ This removes most of the initial 5.5–13.0 second latency, but the default path
 still trails resident FP16 by about 62–72%. Host weights remain 799,727,744 bytes;
 the added temporary-projection reserve is 525,336,576 bytes. HTTP timings use
 fixed KV; the top-level backend label records the last direct paged-KV test.
-The optional C++ path requires its own complete request measurements.
+The optional C++ path's complete request measurements follow.
+
+`llama32-q4-k-m-runtime-cuda-a2.json` passes the same full-model/HTTP/lifecycle
+checks with the CMake-built native library selected. Maximum relative RMS against
+the expanded comparator is 0.108%, with all greedy decisions equal. Its matched
+alternating HTTP medians are:
+
+| Input tokens / concurrency | Packed CUDA C++ | Expanded FP16 |
+|---|---:|---:|
+| 16 / 1 | 0.237 s | 0.262 s |
+| 129 / 1 | 0.262 s | 0.285 s |
+| 400 / 1 | 0.300 s | 0.324 s |
+| 129 / 2 | 0.376 s | 0.366 s |
+
+Single-request latency improves about 7–10% while retaining the original
+compact weights; concurrency two is about 3% slower. This compares dllm paths,
+not other engines, and excludes activation/cold-start time.
+
+Fresh independent HF requalification for both optimized paths is recorded in
+`llama32-q4-k-m-reference-{triton,cuda}{,-extended}-a2.json`: 160 full-logit
+comparisons per path, no greedy mismatches, maximum relative RMS 0.824% and
+maximum absolute error 0.137. The unchanged gates remain <1% and <0.5.
+The initial and extended prompts, source checkpoint and 512-token scope are
+unchanged. No broader architecture/context/hardware claim is implied.

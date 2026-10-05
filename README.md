@@ -795,7 +795,8 @@ dllm add qwen /models/qwen.gguf --quantization none
 
 Import supports dense Qwen2/Qwen3 and Llama 3 BPE checkpoints, little-endian
 GGUF v2/v3, F16/F32, Q4_0/Q8_0 and experimental Q4_K/Q5_K/Q6_K.
-K-quants currently have a substantial measured performance gap; see the
+K-quants remain experimental. Optional CUDA C++ decode significantly improves
+A2 performance; the default Triton path retains a measured gap. See the
 qualification report before choosing them for serving.
 Floating tensors follow the existing decoder's FP16 weight policy;
 this does not provide FP32-weight inference. On CUDA, quantized embeddings stay
