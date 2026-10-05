@@ -573,6 +573,24 @@ this workload. Full prefill remains the default; chunking is an explicit latency
 tradeoff, not a general throughput improvement. See
 [stream arrivals and measurements](evidence/architectures/olmoe-chunk-interleaving-a2.json).
 
+### OLMoE short-prefill graph experiment (not enabled)
+
+The qualified Q8 grouped path can be captured and replayed with changed input
+IDs and exact outputs. A bounded two-entry single-prompt graph experiment passes
+changed prompts/routes, slot isolation, subsequent decode, 129-token fallback,
+eviction, graph release, and model unload checks. Packed and chunked requests
+bypass this cache; unsupported candidate scoring still rejects before mutation.
+
+Alternating complete-prefill measurements, including input staging, show only
+67.056 to 65.924 ms at 16 tokens and 248.938 to 247.826 ms at 128 tokens. A first
+cached call including warmup/capture costs about 445 ms and 1,177 ms respectively.
+These small warmed gains do not justify normal dispatch or a default change.
+The isolated prototype and its evidence remain available for future tuning;
+normal OLMoE prefill graph eligibility is unchanged. See
+[capture probe](evidence/architectures/olmoe-q8-prefill-graph-probe-a2.json),
+[lifecycle and alternating measurements](evidence/architectures/olmoe-q8-prefill-graph-lifecycle-a2.json),
+and [experimental dispatch](evidence/architectures/olmoe-q8-prefill-graph-lifecycle-dispatch.json).
+
 ### OLMoE four-bit experiment (not registered)
 
 Routed Q4_0 expert kernels pass 24 checks against upstream GGUF-produced bytes

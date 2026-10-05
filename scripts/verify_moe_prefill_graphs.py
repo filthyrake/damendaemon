@@ -1,0 +1,102 @@
+"""OLMoE short-prefill graph isolation, changed routes, lifetime and timing gate."""
+import argparse
+import gc
+import json
+import os
+import statistics
+import time
+import weakref
+import torch
+from dllm.runtime import Runtime
+
+
+def timed(fn):
+    for _ in range(3):fn()
+    torch.cuda.synchronize();times=[]
+    for _ in range(15):
+        start=time.perf_counter();fn();torch.cuda.synchronize();times.append((time.perf_counter()-start)*1000)
+    return statistics.median(times)
+
+
+@torch.inference_mode()
+def main():
+    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--output',required=True);args=p.parse_args()
+    os.environ['DLLM_PREFILL_GRAPHS']='2';os.environ['DLLM_PREFILL_GRAPH_MAX_TOKENS']='128'
+    torch.set_num_threads(4);runtime=Runtime({'a':args.model},context=2048,batch_size=4,host_gib=16)
+    checks=[]
+    try:
+        with runtime.session('a') as (executor,_,_):
+            assert executor.c['model_type']=='olmoe' and executor.model.quantization=='q8_0'
+            cache=executor.prefill_graph_cache;assert cache is not None
+            for count,slot,value in [(16,0,40),(16,0,100),(16,1,40),(32,0,100),(16,0,200),(128,2,40),(129,3,100)]:
+                prompt=[value]*count
+                executor.prefill_graph_cache=None
+                expected=executor.prefill(prompt,slot).clone()
+                next_token=expected.argmax().item()
+                expected_decode=executor.decode_batch([next_token],[slot])[0].clone()
+                executor.prefill_graph_cache=cache
+                before=cache.captures;start=time.perf_counter()
+                actual=executor.prefill(prompt,slot).clone();torch.cuda.synchronize()
+                first_ms=(time.perf_counter()-start)*1000
+                torch.testing.assert_close(actual,expected,atol=.0001,rtol=.0001)
+                actual_decode=executor.decode_batch([next_token],[slot])[0]
+                torch.testing.assert_close(actual_decode,expected_decode,atol=.0001,rtol=.0001)
+                assert len(cache.entries)<=2
+                if count>128:assert before==cache.captures
+                checks.append({'count':count,'slot':slot,'value':value,'first_call_ms':first_ms,
+                    'max_logit_error':(actual-expected).abs().max().item(),
+                    'max_decode_error':(actual_decode-expected_decode).abs().max().item()})
+            # OLMoE does not implement direct candidate-head scoring.
+            before=(cache.hits,cache.captures)
+            try:executor.score_candidates([40]*16,[0,1,100])
+            except ValueError:pass
+            else:raise AssertionError('unsupported candidate scoring was accepted')
+            assert before==(cache.hits,cache.captures)
+            # Packed/chunked paths retain their own metadata and bypass this
+            # single-prompt cache, even when token counts match cached entries.
+            before=(cache.hits,cache.captures)
+            executor.prefill_batch([[40]*16,[100]*16],[0,1])
+            executor.prefill_chunk([40]*16,slot=2,start=0,final=False)
+            executor.prefill_chunk([100]*16,slot=2,start=16,final=True)
+            assert before==(cache.hits,cache.captures)
+            rows=[]
+            for count in (16,128):
+                prompt=[40]*count
+                rounds=[]
+                for kind in ('control','candidate','candidate','control'):
+                    executor.prefill_graph_cache=None if kind=='control' else cache
+                    rounds.append(dict(kind=kind,milliseconds=timed(lambda:executor.prefill(prompt))))
+                eager=statistics.median(r['milliseconds'] for r in rounds if r['kind']=='control')
+                replay=statistics.median(r['milliseconds'] for r in rounds if r['kind']=='candidate')
+                rows.append({'tokens':count,'eager_ms':eager,'graph_ms':replay,'speedup':eager/replay,'rounds':rounds})
+            executor.prefill_graph_cache=cache
+            # Reference only weakly: graph ownership must end when the entry is evicted.
+            oldest=next(iter(cache.entries));ref=weakref.ref(cache.entries[oldest][2])
+            executor.prefill([40]*48,slot=3);gc.collect();assert ref() is None
+            assert cache.evictions>0 and cache.hits>0
+            torch.cuda.synchronize();reserved_with=torch.cuda.memory_reserved();allocated_with=torch.cuda.memory_allocated()
+            refs=[weakref.ref(entry[2]) for entry in cache.entries.values()]
+            cache.entries.clear();gc.collect();torch.cuda.empty_cache();torch.cuda.synchronize()
+            assert all(ref() is None for ref in refs)
+            memory={'allocated_with_cache':allocated_with,'allocated_after_clear':torch.cuda.memory_allocated(),
+                'reserved_with_cache':reserved_with,'reserved_after_clear':torch.cuda.memory_reserved()}
+            assert memory['allocated_after_clear']<allocated_with
+            stats={'hits':cache.hits,'captures':cache.captures,'evictions':cache.evictions}
+            # Recreate a cached entry and release all test-owned executor references.
+            executor.prefill([40]*16);executor_ref=weakref.ref(executor)
+            graph_ref=weakref.ref(next(iter(cache.entries.values()))[2])
+            del executor,cache
+        runtime.manage('unload',model='a');gc.collect()
+        assert executor_ref() is None and graph_ref() is None
+        report={'passed':True,'model':args.model,'quantization':'q8_0','gpu':torch.cuda.get_device_name(),
+            'torch':torch.__version__,'checks':checks,'timings':rows,'cache':stats,'memory':memory,
+            'eviction_frees_graph':True,'unload_frees_executor_and_graph':True,'unsupported_scoring_rejected':True,
+            'packed_and_chunked_bypass_single_prompt_cache':True,
+            'timing':'control/candidate/candidate/control; each phase median 15 synchronized complete prefills after 3 warmups; includes input staging; loading and HTTP excluded'}
+        from pathlib import Path
+        Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
+        print(json.dumps(report,indent=2))
+    finally:runtime.manage('unload',model='a',release_host=True)
+
+
+if __name__=='__main__':main()

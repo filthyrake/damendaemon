@@ -1,0 +1,49 @@
+{
+  "model": "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+  "gpu": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "compute_dtype": "torch.float32",
+  "rows": [
+    {
+      "tokens": 1,
+      "eager_ms": 35.14787901076488,
+      "graph_ms": 33.46977801993489,
+      "speedup": 1.0501377986382372,
+      "capture_ms": 165.05226501612924,
+      "retained_allocated_bytes": 201216,
+      "changed_prompt_equal": true,
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 16,
+      "eager_ms": 63.274885003920645,
+      "graph_ms": 61.589363001985475,
+      "speedup": 1.0273670958714223,
+      "capture_ms": 169.26583898020908,
+      "retained_allocated_bytes": 8720896,
+      "changed_prompt_equal": true,
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 32,
+      "eager_ms": 77.90991899673827,
+      "graph_ms": 75.89793598162942,
+      "speedup": 1.0265090610052405,
+      "capture_ms": 169.79217799962498,
+      "retained_allocated_bytes": 201216,
+      "changed_prompt_equal": true,
+      "max_logit_error": 0.0
+    },
+    {
+      "tokens": 128,
+      "eager_ms": 244.83652799972333,
+      "graph_ms": 243.44253199524246,
+      "speedup": 1.0057261810130538,
+      "capture_ms": 186.41444999957457,
+      "retained_allocated_bytes": 201216,
+      "changed_prompt_equal": true,
+      "max_logit_error": 0.0
+    }
+  ],
+  "timing": "median 25 synchronized complete forward/replay calls after 5 warmups; device IDs already resident; HTTP and input copy excluded"
+}

@@ -1,0 +1,131 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+  "quantization": "q8_0",
+  "gpu": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "checks": [
+    {
+      "count": 16,
+      "slot": 0,
+      "value": 40,
+      "first_call_ms": 445.2825920016039,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 16,
+      "slot": 0,
+      "value": 100,
+      "first_call_ms": 73.82723400951363,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 16,
+      "slot": 1,
+      "value": 40,
+      "first_call_ms": 453.74980798806064,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 32,
+      "slot": 0,
+      "value": 100,
+      "first_call_ms": 500.14539502444677,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 16,
+      "slot": 0,
+      "value": 200,
+      "first_call_ms": 443.1257839896716,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 128,
+      "slot": 2,
+      "value": 40,
+      "first_call_ms": 1177.3501569987275,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    },
+    {
+      "count": 129,
+      "slot": 3,
+      "value": 100,
+      "first_call_ms": 240.34139400464483,
+      "max_logit_error": 0.0,
+      "max_decode_error": 0.0
+    }
+  ],
+  "timings": [
+    {
+      "tokens": 16,
+      "eager_ms": 67.0560949947685,
+      "graph_ms": 65.92448499577586,
+      "speedup": 1.0171652459486813,
+      "rounds": [
+        {
+          "kind": "control",
+          "milliseconds": 67.02831099391915
+        },
+        {
+          "kind": "candidate",
+          "milliseconds": 65.94903999939561
+        },
+        {
+          "kind": "candidate",
+          "milliseconds": 65.8999299921561
+        },
+        {
+          "kind": "control",
+          "milliseconds": 67.08387899561785
+        }
+      ]
+    },
+    {
+      "tokens": 128,
+      "eager_ms": 248.93807948683389,
+      "graph_ms": 247.8259795025224,
+      "speedup": 1.0044874229350123,
+      "rounds": [
+        {
+          "kind": "control",
+          "milliseconds": 248.9383849897422
+        },
+        {
+          "kind": "candidate",
+          "milliseconds": 247.83575400942937
+        },
+        {
+          "kind": "candidate",
+          "milliseconds": 247.8162049956154
+        },
+        {
+          "kind": "control",
+          "milliseconds": 248.93777398392558
+        }
+      ]
+    }
+  ],
+  "cache": {
+    "hits": 72,
+    "captures": 7,
+    "evictions": 5
+  },
+  "memory": {
+    "allocated_with_cache": 9626767872,
+    "allocated_after_clear": 9626362368,
+    "reserved_with_cache": 9858711552,
+    "reserved_after_clear": 9703522304
+  },
+  "eviction_frees_graph": true,
+  "unload_frees_executor_and_graph": true,
+  "unsupported_scoring_rejected": true,
+  "packed_and_chunked_bypass_single_prompt_cache": true,
+  "timing": "control/candidate/candidate/control; each phase median 15 synchronized complete prefills after 3 warmups; includes input staging; loading and HTTP excluded"
+}

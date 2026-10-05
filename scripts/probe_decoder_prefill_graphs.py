@@ -16,13 +16,17 @@ def measure(fn):
     return statistics.median(times)
 
 
+@torch.inference_mode()
 def main():
-    p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('model')
+    p.add_argument('--lengths',type=int,nargs='+',default=[16,128,512])
+    args=p.parse_args()
+    if any(count<1 or count>1024 for count in args.lengths):p.error('prompt lengths must be 1..1024')
     torch.set_num_threads(4);runtime=Runtime({'probe':args.model},context=1024,use_graph=True)
     reports=[]
     try:
         with runtime.session('probe') as (executor,_,_):
-            for count in (16,128,512):
+            for count in args.lengths:
                 ids=torch.tensor(([40,298,1111,13]*((count+3)//4))[:count],device='cuda')
                 positions=torch.arange(count,device='cuda')
                 def forward():return executor.forward(ids,positions,prefill=True)
