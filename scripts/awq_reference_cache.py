@@ -1,0 +1,18 @@
+"""Content identities for reusable independent AWQ oracle logits."""
+import hashlib
+from pathlib import Path
+from dllm.awq_model import plan
+
+
+def fingerprint(path):
+    path = Path(path).resolve()
+    prepared = plan(path, allow_qwen3=True)
+    hashes = {}
+    for file in prepared.identities:
+        if file.exists():
+            with file.open('rb') as stream:
+                hashes[str(file.relative_to(path))] = hashlib.file_digest(stream, 'sha256').hexdigest()
+        else:
+            hashes[str(file.relative_to(path))] = None
+    prepared.check_source()
+    return hashes

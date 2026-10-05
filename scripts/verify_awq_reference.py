@@ -54,6 +54,8 @@ def main():
     parser.add_argument('--case-indices', type=int, nargs='+', choices=range(8), default=list(range(8)))
     parser.add_argument('--output', required=True)
     parser.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
+    parser.add_argument('--reference-cache-out', help='save complete independent oracle logits with checkpoint identities')
+    parser.add_argument('--reuse-reference-for-graph', action='store_true', help='reuse exact CPU copies of eager-mode oracle logits for graph checks')
     parser.add_argument('--diagnostic-hf-fp16-control', action='store_true')
     parser.add_argument('--reference-offload', action='store_true', help='move reference layers individually for bounded GPU residency')
     parser.add_argument('--reference-attention', choices=('eager', 'sdpa'), default='eager',
@@ -77,6 +79,10 @@ def main():
         parser.error('context must be at least 512')
     if args.diagnostic_hf_fp16_control and (args.reference_dtype != 'float32' or not args.reference_offload):
         parser.error('HF FP16 control requires the FP32 offloaded reference')
+    if args.reuse_reference_for_graph and args.diagnostic_hf_fp16_control:
+        parser.error('reference reuse cannot be combined with the paired HF control')
+    if args.reference_cache_out and not args.reuse_reference_for_graph:
+        parser.error('reference cache output requires reference reuse for graph checks')
     require_gpu()
     experiment = None
     if args.experimental_awq_marlin:
@@ -131,6 +137,7 @@ def main():
                   host_bytes=source.bytes, torch=torch.__version__, device=torch.cuda.get_device_name(),
                   reference='pinned upstream AWQ coefficient decoder; independent HF model execution',
                   reference_attention=args.reference_attention, reference_dtype=args.reference_dtype,
+                  reference_reused_for_graph=args.reuse_reference_for_graph,
                   reference_offload=args.reference_offload, diagnostic_hf_fp16_control=args.diagnostic_hf_fp16_control,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   loader_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_model.py').read_bytes()).hexdigest(),
@@ -142,6 +149,7 @@ def main():
             report['checkpoint_sha256'][shard.name] = hashlib.file_digest(stream, 'sha256').hexdigest()
     if len(shards) == 1:
         report['model_sha256'] = report['checkpoint_sha256'][shards[0].name]
+    reference_cache = {}
     try:
         upstream = Path(args.upstream_source).read_text()
         dependency = 'from vllm.triton_utils import tl, triton'
@@ -223,6 +231,7 @@ def main():
         for length in (16, 64, 129, args.context-8):
             prompts.append((corpus*((length+len(corpus)-1)//len(corpus)))[:length])
         report['prompts'] = prompts
+        reference_cache = {}
         with torch.inference_mode():
             for graph in (False, True):
                 executor = make_executor(source, use_graph=graph)
@@ -259,7 +268,12 @@ def main():
                             def record_part(module, inputs, output, name=name):
                                 reference_parts[name] = output.detach().cpu().squeeze(0)
                             handles.append(module.register_forward_hook(record_part))
-                    expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
+                    replay_reference = graph and args.reuse_reference_for_graph
+                    if replay_reference:
+                        expected = None
+                    else:
+                        expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
+                        reference_cache[index] = []
                     control_expected = control(torch.tensor([ids], device='cuda'), use_cache=True) if control is not None else None
                     for handle in handles:
                         handle.remove()
@@ -335,7 +349,10 @@ def main():
                         case['hf_fp16_control_checks'] = []
                     report['cases'].append(case)
                     for step in range(8):
-                        target = expected.logits[:, -1, :]
+                        target = (reference_cache[index][step].to('cuda') if replay_reference
+                                  else expected.logits[:, -1, :])
+                        if args.reuse_reference_for_graph and not replay_reference:
+                            reference_cache[index].append(target.detach().cpu().contiguous())
                         error = actual.float()-target.float()
                         rms = (error.square().mean()/target.float().square().mean().clamp_min(1e-12)).sqrt().item()
                         maximum = error.abs().max().item()
@@ -358,8 +375,9 @@ def main():
                             if control is not None:
                                 control_expected = control(torch.tensor([[token]], device='cuda'),
                                     past_key_values=control_expected.past_key_values, use_cache=True)
-                            expected = reference(torch.tensor([[token]], device='cuda'),
-                                                 past_key_values=expected.past_key_values, use_cache=True)
+                            if not replay_reference:
+                                expected = reference(torch.tensor([[token]], device='cuda'),
+                                                     past_key_values=expected.past_key_values, use_cache=True)
                             actual, _ = executor.decode(token)
                     print(json.dumps(dict(graph=graph, case=index, prompt_tokens=len(ids),
                                           passed=all(c['passed'] for c in case['checks']))), flush=True)
@@ -373,6 +391,27 @@ def main():
         report['error'] = repr(error)
         raise
     finally:
+        if (args.reference_cache_out and set(reference_cache) == set(args.case_indices)
+                and all(len(values) == 8 for values in reference_cache.values())):
+            from safetensors.torch import save_file
+            from awq_reference_cache import fingerprint
+            metadata = dict(version=1, checkpoint=fingerprint(path), context=args.context,
+                prompts=report['prompts'], cases=args.case_indices, steps=8,
+                reference_dtype=args.reference_dtype, reference_attention=args.reference_attention,
+                reference_offload=args.reference_offload, torch=torch.__version__,
+                transformers=sys.modules['transformers'].__version__,
+                reference_source_sha256=report['source_sha256'],
+                upstream_source_sha256=report['upstream_source_sha256'],
+                teacher_forcing='independent reference greedy tokens')
+            cache_path = Path(args.reference_cache_out)
+            temporary = cache_path.with_suffix(cache_path.suffix+'.tmp')
+            save_file({f'case_{index}_step_{step}': value for index, values in reference_cache.items()
+                       for step, value in enumerate(values)}, str(temporary),
+                      metadata={'qualification': json.dumps(metadata)})
+            temporary.replace(cache_path)
+            with cache_path.open('rb') as stream:
+                cache_hash = hashlib.file_digest(stream, 'sha256').hexdigest()
+            report['reference_cache'] = dict(path=str(cache_path), sha256=cache_hash, complete=True)
         Path(args.output).write_text(json.dumps(report, indent=2) + '\n')
 
 
