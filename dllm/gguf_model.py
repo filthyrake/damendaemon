@@ -11,6 +11,7 @@ from tokenizers import AddedToken, Regex, Tokenizer, decoders, models, pre_token
 from .config import decoder_config
 from .device import selected_device
 from .gguf_reader import BoundedReader
+from .gguf_packed import FORMATS, KQUANTS, NAMES, read_raw, layout as packed_layout
 from .qwen2 import ModelWeights
 from .quantization import dequantize, dequantize_q4, mode
 
@@ -35,7 +36,7 @@ class TensorInfo:
 
     @property
     def host_bytes(self):
-        return self.length if self.kind in (2, 8) else math.prod(self.shape) * (4 if self.name == 'rope_freqs.weight' else 2)
+        return self.length if self.kind in FORMATS else math.prod(self.shape) * (4 if self.name == 'rope_freqs.weight' else 2)
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,7 @@ class Plan:
     eos: frozenset
     quantization: str
     host_bytes: int
+    raw_groups: frozenset
 
 
 def tokenizer(metadata):
@@ -188,7 +190,7 @@ def _plan(path, version):
     del reader
     tok, special, eos = tokenizer(metadata)
     c = model_config(metadata, tensors, len(metadata['tokenizer.ggml.tokens']), eos)
-    expected = set()
+    expected = set(); raw_groups = set()
     for destination, group in tensor_groups(c, tensors):
         kinds = set()
         for name, shape in group:
@@ -198,18 +200,18 @@ def _plan(path, version):
             if name == 'rope_freqs.weight' and tensor.kind != 0:
                 raise ValueError('GGUF rotary factors require an F32 vector')
             expected.add(name)
-            kinds.add(tensor.kind if tensor.kind in (2, 8) else 0)
-        if len(kinds) > 1:
-            raise ValueError(f'GGUF fused projection {destination} has incompatible weight formats')
+            kinds.add(tensor.kind if tensor.kind in FORMATS else 0)
+        if len(kinds) > 1 or kinds & KQUANTS:
+            raw_groups.add(destination)
     if set(tensors) != expected:
         raise ValueError(f'unrecognized GGUF tensors: {sorted(set(tensors) - expected)[:4]}')
-    kinds = {t.kind for t in tensors.values()} & {2, 8}
-    quantization = 'mixed' if len(kinds) > 1 else 'q4_0' if 2 in kinds else 'q8_0' if 8 in kinds else 'none'
+    kinds = {t.kind for t in tensors.values()} & FORMATS.keys()
+    quantization = 'mixed' if len(kinds) > 1 else NAMES[next(iter(kinds))] if kinds else 'none'
     total = sum(t.host_bytes for t in tensors.values())
     embedding = tensors['token_embd.weight']
     if embedding.kind in (2, 8):
-        # Lookup requires dense FP16 embeddings; an absent head shares the
-        # original packed matrix, not the expanded embedding.
+        # The Metal fallback expands legacy embeddings. CUDA uses the sum
+        # of original tensor storage instead of this expanded estimate.
         total += math.prod(embedding.shape) * 2
         if not c['tie_word_embeddings']:
             total -= embedding.host_bytes
@@ -218,13 +220,15 @@ def _plan(path, version):
         raise ValueError('GGUF needs a single text chat template')
     if identity(path) != version:
         raise ValueError('GGUF file changed while reading metadata')
-    return Plan(path, version, c, tensors, tok.to_str(), template, special, eos, quantization, total)
+    return Plan(path, version, c, tensors, tok.to_str(), template, special, eos, quantization, total, frozenset(raw_groups))
 
 
 def weight_bytes(path, quantization=None):
     if mode(quantization) != 'none':
         raise ValueError('GGUF preserves checkpoint quantization; requested conversion is unsupported')
     source = plan(path)
+    if source.raw_groups and selected_device() != 'cuda':
+        raise ValueError('GGUF K-quants and mixed-format fused projections require CUDA')
     return (sum(t.host_bytes for t in source.tensors.values())
             if selected_device() == 'cuda' else source.host_bytes)
 
@@ -285,8 +289,26 @@ class GgufWeights(ModelWeights):
         self.configure_tokenizer(Tokenizer.from_str(source.tokenizer_json), source.template, source.special_tokens)
         self.eos = set(source.eos)
         weights, scales = {}, {}
+        self.packed_formats = {}
         with self.path.open('rb') as file:
             for destination, group in tensor_groups(self.config, source.tensors):
+                if destination in source.raw_groups:
+                    native = []
+                    for name, shape in group:
+                        info = source.tensors[name]
+                        if info.kind in FORMATS:
+                            value = read_raw(file, info, embedding=destination == 'embed')
+                            kind = info.kind
+                        else:
+                            value, _ = read_tensor(file, info)
+                            value = value.view(torch.uint8)
+                            kind = 1  # Floating decoder weights preserve the FP16 policy.
+                        if self.config['model_type'] == 'llama':
+                            value, _ = restore_llama_rows(name, (value, None), self.config)
+                        native.append((value, kind))
+                    self.packed_formats[destination] = packed_layout(group[0][1][1], native)
+                    weights[destination] = torch.cat([value.reshape(-1) for value, _ in native])
+                    continue
                 parts = [read_tensor(file, source.tensors[name]) for name, _ in group]
                 if self.config['model_type'] == 'llama':
                     parts = [restore_llama_rows(name, part, self.config) for (name, _), part in zip(group, parts)]
@@ -299,6 +321,8 @@ class GgufWeights(ModelWeights):
             weights['head'] = weights['embed']
             if 'embed' in scales:
                 scales['head'] = scales['embed']
+            if 'embed' in self.packed_formats:
+                self.packed_formats['head'] = self.packed_formats['embed']
         if 'embed' in scales:
             unpack = dequantize_q4 if weights['embed'].dtype == torch.uint8 else dequantize
             packed, step = weights['embed'], scales['embed']

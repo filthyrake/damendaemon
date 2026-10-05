@@ -17,7 +17,8 @@ except ImportError as error:
 
 MAX_HEADER = 256 * 1024 * 1024
 MAX_ITEMS = 1_000_000
-FORMATS = {0: (1, 4), 1: (1, 2), 2: (32, 18), 8: (32, 34)}
+from .gguf_packed import FORMATS as PACKED_FORMATS
+FORMATS = {0: (1, 4), 1: (1, 2), **PACKED_FORMATS}
 
 
 class BoundedReader(GGUFReader):
@@ -76,7 +77,7 @@ class BoundedReader(GGUFReader):
                 raise ValueError(f'unsupported GGUF weight type: {GGMLQuantizationType(kind).name}')
             block, size = FORMATS[kind]
             if shape[0] % block or (block > 1 and len(shape) != 2):
-                raise ValueError('GGUF packed matrices require rows divisible by 32')
+                raise ValueError(f'GGUF packed matrices require rows divisible by {block}')
             length = math.prod(shape) // block * size
             first = int(start_offs) + int(offset[0])
             last = first + length

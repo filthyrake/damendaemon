@@ -762,7 +762,7 @@ decode and about 2% faster GPT-OSS decode versus the previous scalar dispatch;
 HTTP batching already used these graphs. [Scope and evidence](docs/evidence/scalar-decode/README.md).
 
 
-### Standalone Qwen GGUF files
+### Standalone GGUF files
 
 Install `dllm[gguf]` alongside the runtime extra. Local `.gguf` files work with
 `run`, `serve --model NAME=PATH`, and `add`, including normal host/GPU residency
@@ -777,17 +777,20 @@ dllm add qwen /models/qwen.gguf --quantization none
 ```
 
 Import supports dense Qwen2/Qwen3 and Llama 3 BPE checkpoints, little-endian
-GGUF v2/v3, F16/F32 and
-Q4_0/Q8_0. Floating tensors follow the existing decoder's FP16 weight policy;
+GGUF v2/v3, F16/F32, Q4_0/Q8_0 and experimental Q4_K/Q5_K/Q6_K.
+K-quants currently have a substantial measured performance gap; see the
+qualification report before choosing them for serving.
+Floating tensors follow the existing decoder's FP16 weight policy;
 this does not provide FP32-weight inference. On CUDA, quantized embeddings stay
 packed in host/GPU memory and only selected token rows are dequantized, preserving
 the previous FP16 lookup values. The Metal fallback still expands Q8 embeddings
-to FP16. Packed output heads stay packed. Mixed matrix formats are allowed
-between projections, but Q/K/V and gate/up components must each have compatible
-formats. Llama Q/K rotary rows are restored to the decoder layout, including
+to FP16. Packed output heads stay packed. CUDA supports mixed matrix formats
+within Q/K/V and gate/up groups without requantization.
+Llama Q/K rotary rows are restored to the decoder layout, including
 packed scales, and explicit GGUF rotary-factor vectors remain FP32. Unsupported
 architectures, SentencePiece tokenizers, split files, other scaled-RoPE metadata,
-other quantized formats, or malformed tensors fail explicitly. Q4 requires CUDA.
+other quantized formats, or malformed tensors fail explicitly. Q4, K-quants,
+and mixed-format fused groups require CUDA.
 
 For a Hugging Face GGUF repository, `pull`, `run`, and `add` accept
 `--filename EXACT_FILE.gguf` and optional `--revision`. Only that file is fetched

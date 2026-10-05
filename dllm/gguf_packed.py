@@ -42,10 +42,17 @@ def layout(width, parts):
     for tensor,kind in parts:
         if tensor.dtype!=torch.uint8 or tensor.ndim!=2 or not tensor.is_contiguous() or not len(tensor):
             raise ValueError('packed matrix segments must be contiguous byte rows')
+        if type(kind) is not int or kind not in (1,*FORMATS):
+            raise ValueError('unsupported packed matrix segment format')
         block,size=(1,2) if kind==1 else FORMATS[kind]
         if width%block or tensor.shape[1]!=width//block*size:
             raise ValueError('packed matrix segment shape disagrees with its format')
         rows=len(tensor)
-        spec.append((first,first+rows,kind,offset));first+=rows;offset+=tensor.numel()
+        if spec and spec[-1][2]==kind:
+            previous=spec[-1]
+            spec[-1]=(previous[0],first+rows,kind,previous[3])
+        else:
+            spec.append((first,first+rows,kind,offset))
+        first+=rows;offset+=tensor.numel()
     if not spec:raise ValueError('packed matrix needs at least one segment')
     return width,tuple(spec)

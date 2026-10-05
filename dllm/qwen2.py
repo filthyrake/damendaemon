@@ -323,7 +323,10 @@ class Executor:
                 except ImportError:
                     if selected == "triton":
                         raise
-        if model.scales and self.kernels is None:
+        packed_formats = getattr(model, 'packed_formats', {})
+        if packed_formats and (self.device != 'cuda' or not self.fuse_projections):
+            raise ValueError('native packed layouts require fused CUDA execution')
+        if (model.scales or packed_formats) and self.kernels is None:
             raise ValueError('quantized weights require native CUDA kernels')
         self.linear = self.kernels.linear if self.device == 'mps' and self.kernels else F.linear
         half_metal_weights = False
@@ -381,9 +384,9 @@ class Executor:
         if self.dense_precision != 'standard':
             self.linear = self.dense_linear
         self.quant_linear = None
-        if model.scales:
+        if model.scales or packed_formats:
             from .quantization import Linear
-            self.quant_linear = Linear(self.w, model.scales, self.device, self.linear)
+            self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats)
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
@@ -415,11 +418,11 @@ class Executor:
             torch.cuda.current_stream().wait_stream(stream)
             torch.cuda.synchronize()
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
-        if model.scales:
+        if model.scales or packed_formats:
             self.kernel_backend += '+'+model.quantization
             if (model.quantization=='q4_0' and self.compute_dtype==torch.float16
                     and os.environ.get('DLLM_Q4_CUDA_LIBRARY')
-                    and any(w.dtype==torch.uint8 and w.shape[0]>=1024 and w.shape[1]>=2048 for w in self.w.values())):
+                    and any(w.ndim==2 and w.dtype==torch.uint8 and w.shape[0]>=1024 and w.shape[1]>=2048 for w in self.w.values())):
                 self.kernel_backend += '+cuda-gemv'
         if use_graph:
             self.graph = torch.cuda.CUDAGraph()
@@ -433,7 +436,7 @@ class Executor:
         from .prefill_graphs import configuration,PrefillGraphs
         count,tokens=configuration()
         eligible=(use_graph and self.device=='cuda' and self.c['model_type'] in ('qwen2','qwen3')
-            and not self.model.scales and not hasattr(self,'pool'))
+            and not self.model.scales and not getattr(self.model,'packed_formats',{}) and not hasattr(self,'pool'))
         self.prefill_graph_cache=PrefillGraphs(count,tokens) if eligible and count else None
 
     def allocate_kv(self):
@@ -444,8 +447,7 @@ class Executor:
     def embedding(self, ids):
         weight = self.w['embed']
         if weight.dtype in (torch.int8, torch.uint8):
-            from .quantized_embedding import embedding
-            return embedding(ids, weight, self.quant_linear.scales[id(weight)], self.residual_dtype)
+            return self.quant_linear.embedding(ids, weight, self.residual_dtype)
         return F.embedding(ids, weight).to(self.residual_dtype)
 
     def dense_linear(self, x, weight, bias=None):

@@ -84,12 +84,16 @@ def prepare(weights, quantization=None):
 
 
 class Linear:
-    def __init__(self, weights, host_scales, device, fallback):
+    def __init__(self, weights, host_scales, device, fallback, packed_formats=None):
         copies = {key: value.to(device) for key, value in {id(t):t for t in host_scales.values()}.items()}
         self.scales = {id(weights[name]): copies[id(value)] for name, value in host_scales.items()}
+        self.formats = {id(weights[name]): layout for name, layout in (packed_formats or {}).items()}
         self.fallback = fallback
 
     def __call__(self, x, weight, bias=None):
+        if id(weight) in self.formats:
+            from .kquant_kernels import linear
+            return linear(x, weight, self.formats[id(weight)], bias)
         if weight.dtype == torch.uint8:
             from .quantized_kernels_q4 import linear
             return linear(x,weight,self.scales[id(weight)],bias)
@@ -100,3 +104,10 @@ class Linear:
             return linear(x,weight,self.scales[id(weight)],bias)
         from .quantized_kernels import linear
         return linear(x, weight, self.scales[id(weight)], bias)
+
+    def embedding(self, ids, weight, dtype):
+        if id(weight) in self.formats:
+            from .kquant_kernels import embedding
+            return embedding(ids, weight, self.formats[id(weight)], dtype)
+        from .quantized_embedding import embedding
+        return embedding(ids, weight, self.scales[id(weight)], dtype)

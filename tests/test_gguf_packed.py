@@ -30,6 +30,8 @@ class PackedLayoutTests(unittest.TestCase):
         self.assertEqual(width,256)
         self.assertEqual([(s[0],s[1]) for s in spec],[(i*2,i*2+2) for i in range(5)])
         self.assertEqual([s[3] for s in spec],list(np.cumsum([0]+[t.numel() for t,_ in parts[:-1]])))
+        value,kind=parts[0]
+        self.assertEqual(layout(256,[(value,kind),(value,kind)])[1],((0,4,kind,0),))
         with self.assertRaises(ValueError):layout(255,parts)
         with self.assertRaises(ValueError):layout(256,[])
         with self.assertRaises(ValueError):layout(256,[(torch.zeros(2,256),1)])

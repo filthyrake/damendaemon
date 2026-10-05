@@ -1,7 +1,8 @@
 """Validate a published GGUF against independent dequantization and HF execution.
 
 Transformers and gguf.quants are validation-only here; the production importer
-uses neither Transformers execution nor the upstream dequantizer.
+uses neither Transformers execution nor the upstream dequantizer for GPU math.
+The host importer may use codec decoding for rare embedding-finiteness checks.
 """
 import argparse
 import gc
@@ -24,6 +25,7 @@ from dllm.device import empty_cache, device_name
 def reference_weights(path):
     reader = GGUFReader(path)
     state = {}
+    architecture = reader.fields['general.architecture'].contents()
     root = {'token_embd.weight':'model.embed_tokens.weight', 'output_norm.weight':'model.norm.weight', 'output.weight':'lm_head.weight'}
     layer = {'attn_norm.weight':'input_layernorm.weight', 'ffn_norm.weight':'post_attention_layernorm.weight',
              'attn_output.weight':'self_attn.o_proj.weight', 'ffn_gate.weight':'mlp.gate_proj.weight',
@@ -33,12 +35,19 @@ def reference_weights(path):
         for kind in ('weight', 'bias'): layer[f'attn_{axis}.{kind}'] = f'self_attn.{axis}_proj.{kind}'
     types = {}
     for tensor in reader.tensors:
+        if tensor.name == 'rope_freqs.weight':
+            continue  # HF independently constructs the Llama3 rotary schedule.
         target = root.get(tensor.name)
         if target is None:
             match = re.fullmatch(r'blk\.(\d+)\.(.+)', tensor.name)
             if not match or match[2] not in layer: raise ValueError(tensor.name)
             target = f'model.layers.{match[1]}.' + layer[match[2]]
         value = dequantize(tensor.data, tensor.tensor_type)
+        if architecture == 'llama' and tensor.name.endswith(('attn_q.weight','attn_k.weight')):
+            key = 'llama.attention.head_count' if tensor.name.endswith('attn_q.weight') else 'llama.attention.head_count_kv'
+            heads = reader.fields[key].contents()
+            shape = value.shape
+            value = value.reshape(heads,shape[0]//heads//2,2,*shape[1:]).swapaxes(1,2).reshape(shape)
         state[target] = torch.from_numpy(value.copy()).to(torch.float16)
         types[tensor.tensor_type.name] = types.get(tensor.tensor_type.name, 0) + 1
     if 'lm_head.weight' not in state: state['lm_head.weight'] = state['model.embed_tokens.weight']
@@ -109,7 +118,7 @@ def main():
     passed = all(not c['greedy_mismatches'] and all(e['max_absolute'] < .5 and e['relative_rms'] < .01 for e in c['errors']) for c in cases)
     report = dict(passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
                   precision=precision, suite="extended" if args.extended else "initial",
-                  reference='independent gguf.quants dequantization into HF eager Qwen execution', reference_dtype=args.reference_dtype,
+                  reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
                   weight_rounding='float16', tf32=False, formats=formats, embedding_type=embedding_type,
                   teacher_trace=args.teacher_trace,
                   host_bytes=source.bytes, cases=cases)

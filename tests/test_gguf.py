@@ -15,13 +15,13 @@ if HAS_GGUF:
     from dllm.gguf_model import GgufWeights, plan, tensor_groups, weight_bytes
 
 
-def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True):
+def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32):
     from tokenizers.pre_tokenizers import ByteLevel
     tokens = sorted(ByteLevel.alphabet()) + ['<|endoftext|>', '<|im_start|>', '<|im_end|>']
-    c = dict(model_type=arch, hidden_size=32, num_attention_heads=4, head_dim=8,
-             num_key_value_heads=2, intermediate_size=64, num_hidden_layers=1, vocab_size=len(tokens))
+    c = dict(model_type=arch, hidden_size=hidden, num_attention_heads=4, head_dim=hidden//4,
+             num_key_value_heads=2, intermediate_size=hidden*2, num_hidden_layers=1, vocab_size=len(tokens))
     writer = GGUFWriter(str(path), arch)
-    for key, value in [('context_length', 128), ('embedding_length', 32), ('feed_forward_length', 64),
+    for key, value in [('context_length', 128), ('embedding_length', hidden), ('feed_forward_length', hidden*2),
                        ('block_count', 1), ('attention.head_count', 4), ('attention.head_count_kv', 2)]:
         writer.add_uint32(f'{arch}.{key}', value)
     writer.add_float32(f'{arch}.attention.layer_norm_rms_epsilon', 1e-6)
@@ -43,8 +43,16 @@ def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixe
                      else rng.normal(0, .1, shape).astype(np.float32))
             dtype = kind if len(shape) == 2 and (name != 'token_embd.weight' or packed_embedding) else 0
             if mixed and name.endswith('attn_k.weight'):
-                dtype = 2 if kind == 8 else 8
-            array = quantize(value, GGMLQuantizationType(dtype))
+                dtype = 14 if kind == 12 else 2 if kind == 8 else 8
+            if dtype in (12,13,14):
+                from gguf import GGML_QUANT_SIZES
+                block,size=GGML_QUANT_SIZES[GGMLQuantizationType(dtype)]
+                array=rng.integers(0,256,(value.size//block,size),dtype=np.uint8)
+                offset=208 if dtype==14 else 0; count=1 if dtype==14 else 2
+                array[:,offset:offset+count*2]=np.full((len(array),count),.001,dtype=np.float16).view(np.uint8)
+                array=array.reshape(shape[0],-1)
+            else:
+                array = quantize(value, GGMLQuantizationType(dtype))
             writer.add_tensor(name, array, raw_dtype=GGMLQuantizationType(dtype))
             arrays[name] = (value, dtype)
     writer.write_header_to_file(); writer.write_kv_data_to_file(); writer.write_tensors_to_file(); writer.close()
@@ -100,11 +108,24 @@ class GgufTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'conversion'):
                 weight_bytes(path, 'q8_0')
 
-    def test_incompatible_fused_formats_rejected_before_weight_loading(self):
+    def test_mixed_fused_formats_preserve_raw_segments(self):
+        from unittest.mock import patch
+        from gguf import GGML_QUANT_SIZES
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'model.gguf'; fixture(path, mixed=True)
-            with self.assertRaisesRegex(ValueError, 'incompatible'):
-                plan(path)
+            model=GgufWeights(path,64,'none')
+            width,spec=model.packed_formats['0.qkv.weight']
+            self.assertEqual([s[2] for s in spec],[8,2,8])
+            expected={t.name:dequantize(t.data,t.tensor_type) for t in GGUFReader(path).tensors}
+            actual=[];raw=model.weights['0.qkv.weight'].numpy()
+            for first,last,kind,offset in spec:
+                block,size=GGML_QUANT_SIZES[GGMLQuantizationType(kind)]
+                count=(last-first)*width//block*size
+                actual.append(dequantize(raw[offset:offset+count].reshape(-1,size),GGMLQuantizationType(kind)).reshape(last-first,width))
+            np.testing.assert_array_equal(np.concatenate(actual),np.concatenate([expected[f'blk.0.attn_{a}.weight'] for a in ('q','k','v')]))
+            self.assertEqual(model.bytes,weight_bytes(path,'none'))
+            with patch('dllm.gguf_model.selected_device',return_value='mps'):
+                with self.assertRaisesRegex(ValueError,'require CUDA'):weight_bytes(path,'none')
 
     def test_cache_blob_symlinks_remain_gguf_after_resolution(self):
         from dllm.cli import resolve_model
@@ -236,6 +257,30 @@ class GgufTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'model.gguf'; fixture(path,arch='llama',causal=False)
             with self.assertRaisesRegex(ValueError,'causal attention'):plan(path)
+
+    def test_kquant_import_matches_independent_blocks_and_storage(self):
+        from gguf import GGML_QUANT_SIZES
+        for kind in (12,13,14):
+            with tempfile.TemporaryDirectory() as folder:
+                path=Path(folder)/'model.gguf'
+                fixture(path,kind=kind,hidden=256,packed_embedding=True,tied=True,mixed=kind==12)
+                model=GgufWeights(path,64,'none')
+                expected={t.name:dequantize(t.data,t.tensor_type) for t in GGUFReader(path).tensors}
+                for target,group in tensor_groups(model.config,expected):
+                    target_values=np.concatenate([expected[name] for name,_ in group])
+                    if target not in model.packed_formats:
+                        np.testing.assert_array_equal(model.weights[target].numpy(),target_values.astype(np.float16))
+                        continue
+                    width,spec=model.packed_formats[target];raw=model.weights[target].numpy();actual=[]
+                    for first,last,fmt,offset in spec:
+                        block,size=GGML_QUANT_SIZES[GGMLQuantizationType(fmt)]
+                        count=(last-first)*width//block*size
+                        actual.append(dequantize(raw[offset:offset+count].reshape(-1,size),GGMLQuantizationType(fmt)).reshape(last-first,width))
+                    np.testing.assert_array_equal(np.concatenate(actual),target_values)
+                self.assertEqual(model.bytes,weight_bytes(path,'none'))
+                self.assertIs(model.weights['head'],model.weights['embed'])
+                self.assertEqual(model.packed_formats['head'],model.packed_formats['embed'])
+                self.assertEqual(model.scales,{})
 
 
 if __name__ == '__main__': unittest.main()

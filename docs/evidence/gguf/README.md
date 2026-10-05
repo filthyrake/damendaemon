@@ -331,9 +331,51 @@ products at 1/4/17/129 rows, including bias/no-bias, stay below 0.046% relative
 RMS versus independently expanded PyTorch products (gate <0.1%, TF32 disabled).
 Changed-ID embedding graphs and changed-input matrix graphs also pass.
 
-This is a kernel proof, not yet whole-model K-quant qualification or a speed
-claim. `scripts/verify_kquant_kernels.py` reproduces it. The initial dynamically
+This initial kernel report is not a speed claim.
+`scripts/verify_kquant_kernels.py` reproduces it. The initial dynamically
 branched segment implementation triggered a Triton 3.2 compiler failure;
 static segments with masked native loads passed. No whole-model expansion or
 requantization is needed by the kernels. FP32 multi-row matrix fallback expands
 one projection temporarily; FP16 products use native packed Tensor Core kernels.
+
+## Llama Q4_K_M integration: correctness and initial performance gap
+
+The same pinned Llama 3.2 1B F16 fixture was quantized using the unchanged
+llama.cpp reference `llama-quantize` with `Q4_K_M`. SHA256:
+`0f94fa98d163d9e70e97026f256da3876a9049e0d88eb6b8e880d754a01d7377`.
+Its 96 Q4_K and 17 Q6_K tensors include mixed Q/K/V projections and a tied
+Q6_K embedding/output head. Original coefficient bytes remain packed; there
+is no requantization or inference-engine dependency.
+
+`llama32-q4-k-m-reference-a2.json` and the extended report independently decode
+those bytes through `gguf.quants` into a Hugging Face eager FP16 reference.
+Across 160 full-logit comparisons with graphs on/off, raw prompts through 505
+tokens, multilingual chat, arithmetic, code and conversation history, all greedy
+decisions agree. Maximum absolute error is 0.1504 and relative RMS is 0.797%
+(existing gates: <0.5 and <1%). This qualifies the Llama mixed-precision path at
+512 context, not arbitrary models, Q5_K_M checkpoints or the advertised 131K context.
+
+`llama32-q4-k-m-runtime-initial-a2.json` adds 36 comparisons against the same
+coefficients expanded to FP16, covering four-way unequal-length batching,
+fixed/paged KV, graphs on/off and chunked prefill. All greedy decisions agree;
+maximum relative RMS is 0.222%. Real HTTP registration, chat, SSE, concurrency,
+cancellation recovery, GPU unload/host restore and full disk reload pass.
+The CPU/HTTP suite passes 277 tests.
+
+The initial implementation is **not performance-ready**. Controlled alternating
+HTTP measurements use the same coefficient values, A2, 512 context, two resident
+models, three warmups and six measured pairs per case, with exactly 16 output
+tokens and matching text/usage. These compare dllm's two execution paths, not
+llama.cpp or vLLM:
+
+| Input tokens / concurrency | Packed median | Expanded FP16 median |
+|---|---:|---:|
+| 16 / 1 | 5.498 s | 0.261 s |
+| 129 / 1 | 7.992 s | 0.284 s |
+| 400 / 1 | 12.983 s | 0.321 s |
+| 129 / 2 | 11.177 s | 0.363 s |
+
+Packed host weights use 799,727,744 bytes versus 2,471,628,928 bytes expanded.
+The report's `passed` field denotes numerical/functional checks, **not a
+performance gate**. Issue #45 remains open for kernel optimization and further
+qualification. Preserve this initial report when adding subsequent measurements.
