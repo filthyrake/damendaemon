@@ -324,6 +324,10 @@ class Executor:
                     if selected == "triton":
                         raise
         packed_formats = getattr(model, 'packed_formats', {})
+        awq_matrices = getattr(model, 'awq_matrices', {})
+        if awq_matrices and (self.device != 'cuda' or self.compute_dtype != torch.float16
+                             or not self.fuse_projections or self.kernels is None):
+            raise ValueError('AWQ requires fused native CUDA execution with FP16 matrices')
         if packed_formats and (self.device != 'cuda' or not self.fuse_projections):
             raise ValueError('native packed layouts require fused CUDA execution')
         if (model.scales or packed_formats) and self.kernels is None:
@@ -349,6 +353,8 @@ class Executor:
         empty_cache()
         free = available_memory()
         def device_dtype(name, tensor):
+            if name in awq_matrices:
+                return torch.int32
             if name == 'rope_factors':
                 return torch.float32
             if c['model_type']=='gpt_oss':
@@ -372,8 +378,12 @@ class Executor:
         device_weight_bytes = sum(t.numel() * torch.empty((), dtype=dtype).element_size()
                                   for t, dtype in storage.values())
         device_weight_bytes += sum(t.numel() * t.element_size() for t in {id(t):t for t in model.scales.values()}.values())
+        device_weight_bytes += sum(t.numel() * t.element_size() for t in
+                                   {id(m.zeros): m.zeros for m in awq_matrices.values()}.values())
         self.packed_workspace_bytes = max((width*spec[-1][1]*(4 if self.compute_dtype==torch.float32 else 2)
             for name,(width,spec) in packed_formats.items() if name!='embed'),default=0)
+        self.packed_workspace_bytes = max(self.packed_workspace_bytes,
+                                         max((m.inputs*m.outputs*2 for m in awq_matrices.values()), default=0))
         if device_weight_bytes + kv_bytes + self.packed_workspace_bytes + 512 * 1024**2 > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         from .kquant_cache import plan as plan_cache, build as build_cache
@@ -410,7 +420,7 @@ class Executor:
                                       self.llama_precision, self.context)
             self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats,
                                        self.packed_decode, self.packed_prefill, self.q4_decode,
-                                       packed_cache=build_cache(cache_plan, self.w, packed_formats))
+                                       packed_cache=build_cache(cache_plan, self.w, packed_formats), awq_matrices=awq_matrices)
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
@@ -441,7 +451,7 @@ class Executor:
             torch.cuda.synchronize()
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if model.scales or packed_formats:
-            self.kernel_backend += '+'+model.quantization
+            self.kernel_backend += '+'+('awq-gemm' if awq_matrices else model.quantization)
             if self.packed_cache_bytes:
                 self.kernel_backend += '+resident-kquant-cache'
             if self.q4_decode is not None:

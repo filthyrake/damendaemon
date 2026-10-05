@@ -84,9 +84,15 @@ def prepare(weights, quantization=None):
 
 
 class Linear:
-    def __init__(self, weights, host_scales, device, fallback, packed_formats=None, packed_decode=None, packed_prefill=None, q4_decode=None, packed_cache=None):
+    def __init__(self, weights, host_scales, device, fallback, packed_formats=None, packed_decode=None, packed_prefill=None, q4_decode=None, packed_cache=None, awq_matrices=None):
         copies = {key: value.to(device) for key, value in {id(t):t for t in host_scales.values()}.items()}
         self.scales = {id(weights[name]): copies[id(value)] for name, value in host_scales.items()}
+        self.awq = {}
+        if awq_matrices:
+            from .awq import Matrix
+            self.awq = {id(weights[name]): Matrix(weights[name], matrix.zeros.to(device),
+                                                 self.scales[id(weights[name])], matrix.inputs, matrix.outputs, matrix.group)
+                        for name, matrix in awq_matrices.items()}
         self.formats = {id(weights[name]): layout for name, layout in (packed_formats or {}).items()}
         self.fallback = fallback
         self.packed_decode = packed_decode
@@ -95,6 +101,9 @@ class Linear:
         self.packed_cache = packed_cache or {}
 
     def __call__(self, x, weight, bias=None):
+        if self.awq and id(weight) in self.awq:
+            from .awq_kernels import linear
+            return linear(x, self.awq[id(weight)], bias)
         if id(weight) in self.formats:
             cached = self.packed_cache.get(id(weight))
             if cached is not None and x.dtype == torch.float16 and x.numel() // x.shape[-1] > 1:
