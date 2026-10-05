@@ -67,7 +67,9 @@ process-local. The HTTP API is a supported subset, not full OpenAI or Ollama API
 compatibility. The development server is loopback-only and is not an authenticated
 multi-tenant service.
 
-K-quant qualification currently covers Llama 3.2 1B Q4_K_M at 512 context.
+K-quant qualification currently covers Llama 3.2 1B and Qwen3-0.6B Q4_K_M at
+512 context. An optional residual-int8 CUDA backend accelerates the qualified
+Llama single-request scope; Qwen3 retains ordinary K-quant CUDA dispatch.
 Q5_K_M passes runtime/lifecycle tests but retains a forced post-EOS FP16-reference
 numerical failure; neither these results nor block-format decoding establishes
 qualification for every model using these formats.

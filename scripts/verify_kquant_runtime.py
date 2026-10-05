@@ -3,6 +3,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import copy
 import gc
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -59,6 +60,10 @@ def main():
     report={'model':str(Path(args.model).resolve()),'device':device_name(),'torch':torch.__version__,
             'packed_host_bytes':model.bytes,'expanded_host_bytes':reference.bytes,'comparisons':[],
             'experiment':experiment,'native_library':os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')}
+    residual_path=os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
+    if residual_path:
+        report['production_residual_library']=dict(path=residual_path,
+            sha256=hashlib.sha256(Path(residual_path).read_bytes()).hexdigest())
     def compare(expected,actual,**case):
         error=actual.float()-expected.float()
         absolute=error.abs().max().item()

@@ -386,9 +386,12 @@ class Executor:
         if self.dense_precision != 'standard':
             self.linear = self.dense_linear
         self.quant_linear = None
+        self.packed_decode = None
         if model.scales or packed_formats:
             from .quantization import Linear
-            self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats)
+            from .native_kquant_residual import select
+            self.packed_decode = select(c, packed_formats, self.device, self.compute_dtype, self.llama_precision)
+            self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats, self.packed_decode)
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
@@ -422,6 +425,8 @@ class Executor:
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if model.scales or packed_formats:
             self.kernel_backend += '+'+model.quantization
+            if self.packed_decode is not None:
+                self.kernel_backend += '+cuda-kquant-residual'
             if (self.compute_dtype==torch.float16 and os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
                     and any(name!='embed' and all(kind in (12,13,14) for _,_,kind,_ in layout[1])
                             for name,layout in packed_formats.items())):

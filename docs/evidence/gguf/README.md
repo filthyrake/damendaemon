@@ -545,7 +545,8 @@ not resolve the original forced post-EOS FP16-reference failure.
 `scripts/experiments/kquant_residual.cu` and its validation-only wrapper test
 two dyadic int8 activation terms with integer dot products over original K-quant
 bytes. This changes arithmetic: it is not the production FP16 coefficient path.
-No production module imports or selects this experiment.
+At this stage production did not select the candidate; the later qualified
+opt-in is described below.
 
 `kquant-residual-matrices-a2.jsonl` passes 80 independent matrix checks,
 including changed-input graphs and wide-range inputs, at maximum RMS 0.0534%
@@ -556,7 +557,7 @@ latency is approximately 7–45% worse, and four-row latency approximately 89–
 worse. It is rejected for production selection. No full-model speed or quality
 claim follows from these isolated kernel results.
 
-The initial experiment was built with:
+The initial experiment (source at commit `ebcfe2e`) was built with:
 
 ```sh
 nvcc -O3 -std=c++17 -arch=sm_86 --fmad=false -Xcompiler=-fPIC -shared \
@@ -565,6 +566,7 @@ nvcc -O3 -std=c++17 -arch=sm_86 --fmad=false -Xcompiler=-fPIC -shared \
 
 The validation scripts select it only through
 `DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY`; ordinary dllm execution ignores that variable.
+The later production option uses a separate variable and a narrower model scope.
 
 The residual experiment's second revision removes repeated subgroup reductions
 from the dot-product inner loop. `kquant-residual-v2-matrices-a2.jsonl` retains
@@ -574,7 +576,7 @@ production CUDA, but the 8192-wide down projection is 14% slower and all four-ro
 cases regress. Validation-only `--experimental-residual` therefore selects
 single-row FP16 2048-wide K-quant projections and falls back elsewhere. Reports
 record the experimental library hash and warn that ordinary backend labels do
-not include this override. No production runtime selects the experiment.
+not include this override. These early results precede the qualified opt-in described below.
 
 Full-model residual-v2 reports are retained as
 `llama32-q4-k-m-residual-v2-reference{,-extended}-a2.json`: all 160 greedy
@@ -587,7 +589,7 @@ candidate decoding is covered by the HF suites. HTTP medians against identical
 expanded coefficients are 0.211/0.236/0.275 s versus 0.259/0.284/0.321 s at
 16/129/400 prompt tokens, and 0.366 versus 0.365 s for 129 tokens/concurrency two.
 These are candidate-versus-expanded results, not a direct production-kernel
-comparison. The candidate remains isolated in validation tooling.
+comparison. This report was obtained through the isolated validation dispatch.
 
 The direct comparison is now retained in
 `llama32-q4-k-m-residual-v2-http-abba-a2.json`. Production/candidate/candidate/
@@ -622,3 +624,61 @@ The Q5 residual-v2 initial HF check is retained in
 forced post-EOS arithmetic trace at step six with graphs both off and on.
 The candidate does not resolve the Q5 qualification gap. Its Q4 speed result
 must not be presented as complete K-quant numerical qualification.
+
+## Qualified optional residual backend
+
+The shared CUDA implementation is now built as `dllm-kquant-residual`; explicit
+`DLLM_KQUANT_RESIDUAL_LIBRARY` enables per-executor selection. Selection requires
+CUDA, Llama `mixed` precision, hidden width 2048, and packed formats exactly
+Q4_K/Q6_K. Any Q5-containing model is excluded. Only single-row 2048-wide
+projections use it; all other projections retain ordinary dispatch. Ordinary
+K-quant CUDA remains separately configurable for those fallbacks. Selection is
+not a process-wide monkeypatch and does not affect expanded or other-family
+models sharing the service. The validation entry points still permit broader
+experimental arithmetic for diagnostics.
+
+`llama32-q4-k-m-residual-production-runtime-a2.json` confirms the normal server
+path selects `cuda-kquant-residual` and passes all 68 executor comparisons plus
+HTTP/lifecycle checks. Single-request packed/expanded medians are approximately
+0.211/0.261, 0.237/0.283 and 0.275/0.321 s at 16/129/400 input tokens;
+concurrency two is 0.364/0.361 s. The separately recorded direct A/B/B/A comparison
+above establishes the gain over ordinary packed CUDA. These are A2/512-context
+Llama 3.2 1B results, not a universal backend performance claim.
+
+The CMake-built library passes the same 80 independent matrix/changed-input graph
+checks (`kquant-residual-production-matrices-a2.jsonl`). The normal production
+selection passes the 96-case extended independent HF suite again, with the same
+0.894% maximum RMS and exact greedy decisions
+(`llama32-q4-k-m-residual-production-reference-extended-a2.json`). Reports record
+the selected backend and rebuilt library hash. Local selection/isolation tests
+exclude Q5, other families, FP32/standard precision and unsupported shapes;
+the full CPU/HTTP regression suite has 281 passing tests.
+
+## Qwen3-0.6B Q4_K_M
+
+The existing pinned Qwen3-0.6B F16 conversion was quantized by the unchanged
+reference CPU quantizer to `qwen3-small-import-q4_k_m.gguf`, SHA256
+`9467d0bfdf4673a4182a6a02e8a66a89f1e2b5e214fcb120f1dc5068b83468df`.
+It contains 169 Q4_K, 29 Q6_K and 113 F32 tensors. The source HF revision is
+`c1899de289a04d12100db370d81485cdf75e47ca`.
+
+`qwen3-q4-k-m-reference-cuda-{initial,extended}-a2.json` passes all 160 independent
+FP16 HF comparisons: maximum RMS 0.841%, absolute 0.126953125, no greedy
+mismatches. dllm uses its standard Qwen3 policy (FP16 matrices, FP32 residuals
+and nonlinear operations). `qwen3-q4-k-m-runtime-cuda-a2.json` passes all 68
+single/batched fixed/paged/graph/chunked comparisons and the full HTTP/lifecycle
+suite, maximum RMS 0.203% against the identical expanded coefficients.
+Packed host storage is 478,137,344 bytes. The residual library was configured
+in this test but correctly remains unselected for Qwen3.
+
+| Input / concurrency | Native packed CUDA | Same coefficients expanded to FP16 |
+|---|---:|---:|
+| 16 / 1 | 0.144926 s | 0.158667 s |
+| 129 / 1 | 0.145993 s | 0.160588 s |
+| 400 / 1 | 0.170793 s | 0.185060 s |
+| 129 / 2 | 0.216639 s | 0.222944 s |
+
+These are HTTP medians after warmup, 16 output tokens and 512 context, alternating
+six measured rounds per implementation. Packed execution is about 8–9% faster
+for single requests and 3% at concurrency two. This is a within-dllm comparison;
+it does not establish parity with another engine or qualify long Qwen3 contexts.

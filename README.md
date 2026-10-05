@@ -493,6 +493,24 @@ of one through four when every segment uses a K-quant format. Other cases retain
 the Triton fallback. Prompt processing expands one projection temporarily for
 the matrix library; persistent weights remain packed. Admission reserves space
 for that largest temporary projection in addition to the usual workspace.
+An additional opt-in uses two int8 activation terms for faster single-request
+Llama Q4/Q6 decoding:
+
+```sh
+cmake --build build --target dllm-kquant-residual -j2
+export DLLM_KQUANT_RESIDUAL_LIBRARY="$PWD/build/libdllm-kquant-residual.so"
+```
+
+Keep the ordinary K-quant library configured for fallback. The residual option
+requires CUDA, the default Llama `mixed` precision, hidden width 2048, and only Q4_K/Q6_K packed
+formats. It selects single-row 2048-wide projections; other shapes use the
+ordinary path. Q5-containing models are excluded because their independent
+numerical gate remains open. The option changes arithmetic without changing
+stored weights. A2 Llama 3.2 1B Q4_K_M tests measured 7–11% lower single-request
+HTTP latency than ordinary CUDA, with concurrency two roughly tied. Other
+hardware, model sizes and long contexts are not qualified by those results.
+Backend status includes `cuda-kquant-residual` when selected.
+
 See the [K-quant qualification and performance evidence](docs/evidence/gguf/README.md).
 
 ### Prepared weight cache

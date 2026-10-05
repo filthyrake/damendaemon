@@ -8,6 +8,7 @@ import argparse
 import gc
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 
@@ -98,7 +99,7 @@ def main():
         for graph in (False, True):
             executor = make_executor(source, use_graph=graph)
             precision = dict(matrix_dtype=str(executor.compute_dtype), residual_dtype=str(executor.residual_dtype),
-                             nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise)
+                             nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise, backend=executor.kernel_backend)
             for index, ids in enumerate(prompts):
                 expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
                 actual = executor.prefill(ids)
@@ -125,12 +126,18 @@ def main():
             gc.collect(); empty_cache()
     with Path(args.gguf).open('rb') as file: sha = hashlib.file_digest(file, 'sha256').hexdigest()
     passed = all(not c['greedy_mismatches'] and all(e['max_absolute'] < .5 and e['relative_rms'] < .01 for e in c['errors']) for c in cases)
+    residual_path=os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
+    residual_selected='cuda-kquant-residual' in precision['backend']
+    residual_library=None
+    if residual_path:
+        residual_library=dict(path=residual_path,selected=residual_selected,
+            sha256=hashlib.sha256(Path(residual_path).read_bytes()).hexdigest() if residual_selected else None)
     report = dict(passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
                   precision=precision, suite="extended" if args.extended else "initial",
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
                   weight_rounding='float16', tf32=False, formats=formats, embedding_type=embedding_type,
                   teacher_trace=args.teacher_trace,expanded_control=args.expanded_control,
-                  host_bytes=source.bytes, experiment=experiment, cases=cases)
+                  host_bytes=source.bytes, experiment=experiment, production_residual_library=residual_library, cases=cases)
     Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(dict(passed=passed, sha256=sha, formats=formats,
         max_absolute=max(e['max_absolute'] for c in cases for e in c['errors']),

@@ -84,14 +84,19 @@ def prepare(weights, quantization=None):
 
 
 class Linear:
-    def __init__(self, weights, host_scales, device, fallback, packed_formats=None):
+    def __init__(self, weights, host_scales, device, fallback, packed_formats=None, packed_decode=None):
         copies = {key: value.to(device) for key, value in {id(t):t for t in host_scales.values()}.items()}
         self.scales = {id(weights[name]): copies[id(value)] for name, value in host_scales.items()}
         self.formats = {id(weights[name]): layout for name, layout in (packed_formats or {}).items()}
         self.fallback = fallback
+        self.packed_decode = packed_decode
 
     def __call__(self, x, weight, bias=None):
         if id(weight) in self.formats:
+            if self.packed_decode is not None:
+                output = self.packed_decode(x, weight, self.formats[id(weight)], bias)
+                if output is not None:
+                    return output
             from .kquant_kernels import linear
             return linear(x, weight, self.formats[id(weight)], bias)
         if weight.dtype == torch.uint8:

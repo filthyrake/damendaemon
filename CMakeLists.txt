@@ -15,3 +15,8 @@ add_library(dllm-kquant SHARED native/kquant_gemv.cu)
 target_compile_features(dllm-kquant PRIVATE cuda_std_17)
 target_link_libraries(dllm-kquant PRIVATE CUDA::cudart)
 target_compile_options(dllm-kquant PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3> $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
+
+add_library(dllm-kquant-residual SHARED native/kquant_residual.cu)
+target_compile_features(dllm-kquant-residual PRIVATE cuda_std_17)
+target_link_libraries(dllm-kquant-residual PRIVATE CUDA::cudart)
+target_compile_options(dllm-kquant-residual PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3> $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
