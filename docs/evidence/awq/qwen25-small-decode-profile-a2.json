@@ -1,0 +1,83 @@
+{
+  "batch_size": 1,
+  "backend": "triton+awq-gemm",
+  "host_preparation_seconds": 1.2204403420037124,
+  "executor_activation_seconds": 2.272698068001773,
+  "context": 2048,
+  "steps": 32,
+  "graph": true,
+  "kernel_calls_per_decode_step": 297.0,
+  "kernel_time_us_per_decode_step": 7064.800531249972,
+  "kernels": [
+    {
+      "name": "_gemm",
+      "calls": 3072,
+      "total_us": 161197.34499999913
+    },
+    {
+      "name": "void gemv2T_kernel_val<int, int, __half, __half, __half, float, 128, 16, 4, 4, false, false, cublasGemvParamsEx<int, cublasGemvTensorStridedBatched<__half const>, cublasGemvTensorStridedBatched<__half const>, cublasGemvTensorStridedBatched<__half>, float> >(cublasGemvParamsEx<int, cublasGemvTensorStridedBatched<__half const>, cublasGemvTensorStridedBatched<__half const>, cublasGemvTensorStridedBatched<__half>, float>, float, float)",
+      "calls": 32,
+      "total_us": 52043.05499999987
+    },
+    {
+      "name": "_attention",
+      "calls": 768,
+      "total_us": 4744.4520000000775
+    },
+    {
+      "name": "_rms",
+      "calls": 1568,
+      "total_us": 2302.557999999921
+    },
+    {
+      "name": "void at::native::vectorized_elementwise_kernel<4, at::native::CUDAFunctor_add<c10::Half>, std::array<char*, 3ul> >(int, at::native::CUDAFunctor_add<c10::Half>, std::array<char*, 3ul>)",
+      "calls": 1536,
+      "total_us": 1772.469999999852
+    },
+    {
+      "name": "_merge",
+      "calls": 768,
+      "total_us": 1205.1060000000798
+    },
+    {
+      "name": "_rope_batch",
+      "calls": 768,
+      "total_us": 1130.7550000000047
+    },
+    {
+      "name": "_swiglu",
+      "calls": 768,
+      "total_us": 1109.5220000002737
+    },
+    {
+      "name": "void at::native::reduce_kernel<512, 1, at::native::ReduceOp<c10::Half, at::native::ArgMaxOps<float>, unsigned int, long, 4> >(at::native::ReduceOp<c10::Half, at::native::ArgMaxOps<float>, unsigned int, long, 4>)",
+      "calls": 32,
+      "total_us": 341.4700000000921
+    },
+    {
+      "name": "void at::native::(anonymous namespace)::indexSelectSmallIndex<c10::Half, long, unsigned int, 2, 2, -2>(at::cuda::detail::TensorInfo<c10::Half, unsigned int>, at::cuda::detail::TensorInfo<c10::Half const, unsigned int>, at::cuda::detail::TensorInfo<long const, unsigned int>, int, int, unsigned int, long)",
+      "calls": 32,
+      "total_us": 88.73699999994642
+    },
+    {
+      "name": "void at::native::vectorized_elementwise_kernel<4, at::native::FillFunctor<long>, std::array<char*, 1ul> >(int, at::native::FillFunctor<long>, std::array<char*, 1ul>)",
+      "calls": 64,
+      "total_us": 80.93099999991318
+    },
+    {
+      "name": "Memcpy DtoH (Device -> Pinned)",
+      "calls": 32,
+      "total_us": 34.75399999994261
+    },
+    {
+      "name": "Memset (Unknown)",
+      "calls": 32,
+      "total_us": 12.70100000002276
+    },
+    {
+      "name": "Memcpy HtoD (Pinned -> Device)",
+      "calls": 32,
+      "total_us": 9.7609999999695
+    }
+  ]
+}

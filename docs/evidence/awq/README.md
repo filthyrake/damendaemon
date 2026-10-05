@@ -137,3 +137,25 @@ HTTP registration, exact direct-executor text/token accounting, streaming,
 two concurrent requests, cancellation recovery, host restoration, host/GPU
 unload and disk reload all pass. Switching uses two aliases of this same
 checkpoint; it is not a different-model hot-swap speed measurement.
+
+## Initial matched engine measurement
+
+`compare-*-awq-qwen25-small-first-*` retains the first sequential dllm/vLLM
+run: identical pinned AWQ weights, 129 explicit input tokens, 64 output tokens,
+context 2048, FP16 execution/KV, concurrency 1/2/4, one warmup and five measured
+rounds. Both engines return identical text and token counts across these runs.
+vLLM 0.30.0 selects Marlin AWQ and FlashAttention 2. Prefix caching is disabled.
+These are initial one-order measurements, not repeated interleaved trials.
+
+| Concurrency | dllm total median (s) | vLLM total median (s) | dllm first output (s) | vLLM first output (s) | dllm aggregate tokens/s | vLLM aggregate tokens/s |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 | 0.4992 | 0.2777 | 0.0353 | 0.0352 | 128.1 | 230.2 |
+| 2 | 0.5484 | 0.3022 | 0.0437 | 0.0566 | 231.7 | 422.5 |
+| 4 | 0.6102 | 0.3130 | 0.0938 | 0.0614 | 416.6 | 812.4 |
+
+The standalone decode profile (`qwen25-small-decode-profile-a2.json`) measures
+7.065 ms of GPU kernel time per step: packed AWQ GEMM consumes 5.037 ms and
+the dense output head 1.626 ms. Profiling overhead and its shorter prompt make
+these diagnostic timings distinct from HTTP measurements. Split-K candidates
+are isolated under `scripts/experiments/awq_splitk.py`; normal dispatch is
+unchanged until separate matrix, model, layout and serving gates pass.
