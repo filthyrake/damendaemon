@@ -115,7 +115,8 @@ Mistral 7B Instruct v0.1 is qualified on A2 with Q8 storage through its 4096-tok
 window boundary. See the architecture evidence for exact revisions and limits.
 Enable experimental Q8 on-load conversion with `DLLM_QUANTIZATION=q8_0`; it
 supports native Metal for Qwen2, Qwen3, Llama and Mamba-1/2; other families require CUDA.
-Standalone Qwen GGUF import is described below; AWQ/GPTQ import remains unsupported.
+Standalone Qwen GGUF import is described below. Initial CUDA Qwen2 AWQ GEMM
+import is also available; see the AWQ scope below. GPTQ remains unsupported.
 
 ```sh
 curl http://127.0.0.1:8088/v1/completions \
@@ -438,7 +439,21 @@ checkpoint qualification. Four-bit quantization is lossy: on our small authored
 171-token Qwen2 corpus, next-token agreement with the original weights was
 74.3% for Q4 versus 95.3% for Q8. This is not a broad quality evaluation.
 Q4 remains opt-in and CUDA-only. This is on-load conversion from safetensors;
-Standalone Qwen GGUF import is available below. AWQ and GPTQ import remain unsupported.
+Standalone Qwen GGUF import is available below. GPTQ import remains unsupported.
+
+### Native AWQ checkpoints
+
+CUDA can load Qwen2 checkpoints using AWQ GEMM four-bit packing, group size 128,
+and asymmetric zero points. Use `--quantization none` when registering to preserve
+the checkpoint format; on-load Q4/Q8 conversion is rejected. GEMV packing,
+module exclusions, other group sizes and other architectures are not qualified.
+
+The pinned Qwen2.5-0.5B-Instruct-AWQ checkpoint passes independent HF SDPA
+logit checks and fixed/paged, eager/graph, batched/chunked execution through
+2048 context on A2. Normal HTTP streaming, cancellation recovery and model
+release/reload also pass. Eager FP16 attention has documented numerical
+differences, and this is not a general AWQ quality or performance-parity claim.
+See [the exact evidence and limitations](docs/evidence/awq/README.md).
 
 ### Static YaRN configurations
 

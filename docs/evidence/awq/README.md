@@ -127,3 +127,13 @@ an explicit `--awq-qualification` mode for this isolated source format.
 Shared model-factory tests cover dispatch, packed storage/admission and rejection
 of conversion, GEMV, non-four-bit and GPTQ declarations. All 339 regression
 tests pass after integration.
+
+`qwen25-small-lifecycle-final-a2.json` exercises the normal model factory and
+HTTP server. Three graph/batch/generation/unload cycles release every tracked
+GPU weight, scale and zero-point tensor. Allocation falls from 588541952 bytes
+to a stable 25559040-byte process workspace. The earlier lifecycle report kept
+one 512-byte token allocation in the verifier; the final script releases it.
+HTTP registration, exact direct-executor text/token accounting, streaming,
+two concurrent requests, cancellation recovery, host restoration, host/GPU
+unload and disk reload all pass. Switching uses two aliases of this same
+checkpoint; it is not a different-model hot-swap speed measurement.
