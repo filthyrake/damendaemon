@@ -1,0 +1,524 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+  "device": "NVIDIA A2",
+  "backend": "triton+q8_0-olmoe",
+  "quantization": "q8_0",
+  "scope": "same resident weights and prompts; control/candidate/candidate/control; prefill only",
+  "baseline_sha256": "b75cc4f3f589011e2c8d5fe8d937195f89ffa21b373c5f7be950ab7da8102bac",
+  "candidate_sha256": "27736a2b91aae81f1b18043dca921354a5ea8f3cd35b01f37822b68cbc3d0094",
+  "cases": [
+    {
+      "prompt_tokens": 32,
+      "rounds": [
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.48863998797605745,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.5119989560043905,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.4801644030085299,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.36860777300898917,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.3586424929962959,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.3825024690013379,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.3284531499957666,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.33931717500672676,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.35291036998387426,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.46967257899814285,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.4710931979934685,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.4797333779861219,
+          "bitwise_equal": true
+        }
+      ],
+      "profiles": {
+        "control": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 1025,
+            "self_cpu_us": 6707.156000000297
+          },
+          {
+            "name": "aten::nonzero_numpy",
+            "calls": 1024,
+            "self_cpu_us": 2987.587000000505
+          },
+          {
+            "name": "aten::nonzero",
+            "calls": 1024,
+            "self_cpu_us": 38786.996999999064
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 522.5699999999488
+          }
+        ],
+        "candidate": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 49,
+            "self_cpu_us": 247.80600000005893
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 90.64499999982672
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 493.66499999997086
+          },
+          {
+            "name": "aten::bincount",
+            "calls": 16,
+            "self_cpu_us": 562.2480000001797
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 478.01900000002934
+          }
+        ]
+      }
+    },
+    {
+      "prompt_tokens": 128,
+      "rounds": [
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.6089891460142098,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.6127798429806717,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.6166655819979496,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.4390687459963374,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.44404034499893896,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.4414694030128885,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.44387844801531173,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.44147506199078634,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.43503184901783243,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.6158322959963698,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.6032861010171473,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.6249904969881754,
+          "bitwise_equal": true
+        }
+      ],
+      "profiles": {
+        "control": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 1025,
+            "self_cpu_us": 40412.66400000072
+          },
+          {
+            "name": "aten::nonzero_numpy",
+            "calls": 1024,
+            "self_cpu_us": 3237.385999999526
+          },
+          {
+            "name": "aten::nonzero",
+            "calls": 1024,
+            "self_cpu_us": 43817.575000000215
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 530.6689999999944
+          }
+        ],
+        "candidate": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 49,
+            "self_cpu_us": 260.2719999998708
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 94.79000000011365
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 540.7469999999239
+          },
+          {
+            "name": "aten::bincount",
+            "calls": 16,
+            "self_cpu_us": 583.7489999998224
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 499.52700000000186
+          }
+        ]
+      }
+    },
+    {
+      "prompt_tokens": 512,
+      "rounds": [
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.9683463279798161,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.959364859998459,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.9718502259929664,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.7929621119983494,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.79360954000731,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.7979720130097121,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 0.7964165069861338,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 0.7964465519762598,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 0.7965014280052856,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 0.9743101880012546,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 0.9732121249835473,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 0.9546231069834903,
+          "bitwise_equal": true
+        }
+      ],
+      "profiles": {
+        "control": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 1025,
+            "self_cpu_us": 345114.2950000002
+          },
+          {
+            "name": "aten::nonzero_numpy",
+            "calls": 1024,
+            "self_cpu_us": 2958.8000000006123
+          },
+          {
+            "name": "aten::nonzero",
+            "calls": 1024,
+            "self_cpu_us": 38425.9150000035
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 526.6230000000214
+          }
+        ],
+        "candidate": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 49,
+            "self_cpu_us": 286.8300000000488
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 79.08699999982855
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 514.8750000001019
+          },
+          {
+            "name": "aten::bincount",
+            "calls": 16,
+            "self_cpu_us": 662.4629999999688
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 6194.806999999913
+          }
+        ]
+      }
+    },
+    {
+      "prompt_tokens": 1024,
+      "rounds": [
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 1.480992069002241,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 1.4825560429890174,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 1.4816660879878327,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 1.3336280429793987,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 1.3345344440022018,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 1.3333233529992867,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 0,
+          "seconds": 1.3355459249869455,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 1,
+          "seconds": 1.336884866002947,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "candidate",
+          "trial": 2,
+          "seconds": 1.3369116320100147,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 0,
+          "seconds": 1.487285808980232,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 1,
+          "seconds": 1.4848873959854245,
+          "bitwise_equal": true
+        },
+        {
+          "kind": "control",
+          "trial": 2,
+          "seconds": 1.4940005219832528,
+          "bitwise_equal": true
+        }
+      ],
+      "profiles": {
+        "control": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 1025,
+            "self_cpu_us": 824605.6040000016
+          },
+          {
+            "name": "aten::nonzero_numpy",
+            "calls": 1024,
+            "self_cpu_us": 3185.4649999960493
+          },
+          {
+            "name": "aten::nonzero",
+            "calls": 1024,
+            "self_cpu_us": 47185.74299999359
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 527.8610000000335
+          }
+        ],
+        "candidate": [
+          {
+            "name": "cudaStreamSynchronize",
+            "calls": 49,
+            "self_cpu_us": 362.03399999954127
+          },
+          {
+            "name": "aten::argsort",
+            "calls": 16,
+            "self_cpu_us": 99.1219999996988
+          },
+          {
+            "name": "aten::sort",
+            "calls": 16,
+            "self_cpu_us": 975.0179999988145
+          },
+          {
+            "name": "aten::bincount",
+            "calls": 16,
+            "self_cpu_us": 1039.6780000003382
+          },
+          {
+            "name": "cudaDeviceSynchronize",
+            "calls": 1,
+            "self_cpu_us": 29585.106000000145
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -67,17 +67,16 @@ class OlmoeExecutor(BatchExecutor):
             probabilities = probabilities/probabilities.sum(-1,keepdim=True)
         up,down = self.w[f'{layer}.experts_up'],self.w[f'{layer}.experts_down']
         if prefill:
-            # Dynamic grouping is confined to prefill. Decode uses only device
-            # routing below, including during CUDA graph capture/replay.
+            from .expert_routes import grouped_routes
+            # Stable groups retain token/route and expert accumulation order,
+            # while replacing per-expert nonzero reads with one count vector.
             result = torch.zeros_like(hidden)
-            for expert in range(self.c['num_experts']):
-                tokens,routes = torch.where(selected==expert)
-                if tokens.numel()==0:
-                    continue
+            route_probabilities = probabilities.reshape(-1)
+            for expert,tokens,route_indices in grouped_routes(selected,self.c['num_experts']):
                 packed = self._expert_linear(hidden.index_select(0,tokens),up,expert,2*width)
                 activated = self.kernels.swiglu(packed,True)
                 projected = self._expert_linear(activated,down,expert,self.c['hidden_size'])
-                result.index_add_(0,tokens,projected*probabilities[tokens,routes,None])
+                result.index_add_(0,tokens,projected*route_probabilities[route_indices,None])
             return result
         packed = self.expert_kernels.routed_linear(hidden,up,self._expert_scales(up),selected,2*width,True)
         activated = self.kernels.swiglu(packed,True)
