@@ -17,6 +17,13 @@ from dllm.gguf_model import GgufWeights
 from dllm.runtime import make_executor, require_gpu
 
 
+def paged_capacity(context, lengths):
+    # Each slot owns whole pages; rounding only the combined token count can
+    # under-reserve when several requests cross a page boundary together.
+    required = sum(((length + 7 + 15)//16)*16 for length in lengths)
+    return ((max(2*context, required)+15)//16)*16
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model'); parser.add_argument('--output', required=True)
@@ -33,7 +40,7 @@ def main():
     lengths = args.prompt_lengths or (4, 128, args.context//2, args.context-128)
     if any(length <= 0 or length + 7 > args.context for length in lengths):
         parser.error('prompt lengths must be positive and leave seven decode positions')
-    pool_tokens = ((max(2*args.context, sum(lengths)+32)+15)//16)*16
+    pool_tokens = paged_capacity(args.context, lengths)
     experiment = None
     if args.experimental_dense_cache:
         from experiments.kquant_dense_cache import install_validation_dispatch

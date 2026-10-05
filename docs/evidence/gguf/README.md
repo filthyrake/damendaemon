@@ -1898,3 +1898,13 @@ uses 128-token prefill chunks and releases reference GPU weights before dllm
 runs. dllm uses the existing FP16 Mistral arithmetic policy and native Q4 CUDA
 GEMV; the separate Llama residual optimization remains unselected. Layout and
 normal-service qualification are recorded separately when complete.
+
+The initial long-window layout run is retained as
+`mistral-window-layout-underbudget-a2.json`. Its new test-pool calculation
+rounded the combined token count, under-reserving one page for simultaneously
+advancing requests. The runtime correctly raised `PageCapacityError`. The
+harness now sums each slot's rounded reservation, including all seven decode
+positions: 12352 tokens rather than 12336 for this workload. A regression test
+runs those reservations through the actual `PagePool`, including all slots
+crossing page boundaries and release. This is a harness-budget correction;
+no runtime capacity check or numerical threshold was weakened.
