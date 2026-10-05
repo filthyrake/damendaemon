@@ -54,6 +54,8 @@ def main():
                         help='isolate packed GEMM errors using temporary expanded FP16 products')
     parser.add_argument('--diagnostic-rounded-attention', action='store_true',
                         help='isolate eager FP16 attention rounding from fused attention')
+    parser.add_argument('--diagnostic-layer-trace', action='store_true',
+                        help='record first-prompt residual error at each decoder layer')
     args = parser.parse_args()
     if args.context < 512:
         parser.error('context must be at least 512')
@@ -139,8 +141,61 @@ def main():
                 report['workspace_reserve_bytes'] = executor.packed_workspace_bytes
                 report['precision'] = dict(matrix=str(executor.compute_dtype), residual=str(executor.residual_dtype))
                 for index, ids in enumerate(prompts):
+                    handles, reference_layers, actual_layers = [], [], []
+                    reference_parts, actual_parts = {}, {}
+                    if args.diagnostic_layer_trace and not graph and index == 0:
+                        def record_reference(module, inputs):
+                            reference_layers.append(inputs[0].detach().cpu())
+                        for layer in [*reference.model.layers, reference.model.norm]:
+                            handles.append(layer.register_forward_pre_hook(record_reference))
+                        first = reference.model.layers[0]
+                        for name, module in [('norm1', first.input_layernorm), ('norm2', first.post_attention_layernorm),
+                                             ('q', first.self_attn.q_proj), ('k', first.self_attn.k_proj),
+                                             ('v', first.self_attn.v_proj), ('out', first.self_attn.o_proj),
+                                             ('gate', first.mlp.gate_proj), ('up', first.mlp.up_proj), ('down', first.mlp.down_proj)]:
+                            def record_part(module, inputs, output, name=name):
+                                reference_parts[name] = output.detach().cpu().squeeze(0)
+                            handles.append(module.register_forward_hook(record_part))
                     expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
+                    for handle in handles:
+                        handle.remove()
+                    original_norm = executor.norm
+                    original_linear = executor.linear
+                    if handles:
+                        def record_norm(x, weight):
+                            actual_layers.append(x.detach().cpu())
+                            result = original_norm(x, weight)
+                            if len(actual_layers) <= 2:
+                                actual_parts['norm'+str(len(actual_layers))] = result.detach().cpu()
+                            return result
+                        def record_linear(x, weight, bias=None):
+                            result = original_linear(x, weight, bias)
+                            for name in ('qkv.weight', 'out', 'gate_up', 'down'):
+                                if weight is executor.w['0.'+name]:
+                                    actual_parts[name] = result.detach().cpu()
+                            return result
+                        executor.norm = record_norm
+                        executor.linear = record_linear
                     actual = executor.prefill(ids)
+                    executor.norm = original_norm
+                    executor.linear = original_linear
+                    if handles:
+                        report['layer_trace'] = []
+                        # Two norms per layer; the final norm sees only the last token.
+                        for layer, (observed, target) in enumerate(zip(actual_layers[::2], reference_layers)):
+                            delta = observed[-1].float()-target[0, -1].float()
+                            report['layer_trace'].append(dict(layer=layer,
+                                last_token_relative_rms=(delta.square().mean()/target[0, -1].float().square().mean().clamp_min(1e-12)).sqrt().item(),
+                                last_token_max_absolute=delta.abs().max().item()))
+                        reference_parts['qkv.weight'] = torch.cat([reference_parts[k] for k in ('q', 'k', 'v')], -1)
+                        reference_parts['gate_up'] = torch.cat([reference_parts[k] for k in ('gate', 'up')], -1)
+                        report['first_layer_parts'] = []
+                        for name, observed in actual_parts.items():
+                            target = reference_parts[name]
+                            delta = observed.float()-target.float()
+                            report['first_layer_parts'].append(dict(name=name,
+                                relative_rms=(delta.square().mean()/target.float().square().mean().clamp_min(1e-12)).sqrt().item(),
+                                max_absolute=delta.abs().max().item()))
                     case = dict(graph=graph, case=index, prompt_tokens=len(ids), checks=[])
                     report['cases'].append(case)
                     for step in range(8):

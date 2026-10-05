@@ -85,3 +85,11 @@ with 2.683% worst relative RMS and 0.66114 maximum absolute error. This isolates
 the failure beyond the packed product alone; it is not a runtime fallback or
 a performance result. The verifier exposes explicitly named diagnostic flags
 and records them in each report.
+
+The rounded-attention diagnostic also fails (118/128 pass), so it is not a
+candidate production fix. Layer tracing shows identical input embeddings and
+first-layer normalization. The first-layer QKV product differs by 0.0050%
+relative RMS, while the attention output projection differs by 0.7651%.
+`qwen25-small-reference-layer-trace-a2.json` and
+`qwen25-small-reference-parts-a2.json` retain the intermediate measurements.
+These are localization results, not evidence that a single cause is resolved.
