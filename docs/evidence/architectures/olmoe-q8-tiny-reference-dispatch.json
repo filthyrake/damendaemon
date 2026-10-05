@@ -1,0 +1,25 @@
+{
+  "kind": "experimental routed Q8 expert projections for tiny prefills",
+  "max_tokens": 4,
+  "selected_calls": 112,
+  "fallback_calls": 480,
+  "source_sha256": "69a492c40b242201b820b019dd0b127ab460008b17b447cc9cfbcd2a66cd6a54",
+  "script": "scripts/verify_stress.py",
+  "arguments": [
+    "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+    "--context",
+    "2048",
+    "--tiny-prefixes",
+    "--reference-dtype",
+    "float32",
+    "--reference-quantization",
+    "q8_0",
+    "--reference-attention",
+    "eager",
+    "--reference-device",
+    "cpu",
+    "--golden-output",
+    "results/olmoe-q8-tiny-golden2048.pt"
+  ],
+  "completed": true
+}

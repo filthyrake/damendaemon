@@ -65,6 +65,11 @@ class OlmoeExecutor(BatchExecutor):
         return self._linear(x,matrix)
 
     def experts(self, hidden, layer, prefill):
+        # Tiny prompts waste most grouped matrix rows. Reuse the routed
+        # projections for at most four total tokens, including packed prompts;
+        # concentrated-routing measurements regress beyond this boundary.
+        if prefill and self.grouped_prefill and 1 <= hidden.shape[0] <= 4:
+            prefill = False
         width = self.c['intermediate_size']
         probabilities,selected = self._linear(hidden,self.w[f'{layer}.router']).softmax(-1).topk(self.c['num_experts_per_tok'],dim=-1)
         if self.c['norm_topk_prob']:

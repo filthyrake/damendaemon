@@ -429,7 +429,9 @@ latency measurements are in the architecture evidence.
 OLMoE-1B-7B-0924-Instruct Q8 on A2 now supports these opt-in chunking and prefix
 features at context up to 2048 and batch capacity up to four. Short expert
 prefill and packed concurrent prompts are selected automatically within their
-measured 128-token bounds. Repeated default-scheduler HTTP tests show a further
+measured 128-token bounds. Prompts or uncached suffixes of at most four total
+tokens reuse routed projections, avoiding sparsely populated grouped tiles.
+Repeated default-scheduler HTTP tests show a further
 17% C4 total-latency improvement from packing; single-request latency is
 unchanged by packing. A separate warm prefix-hit test reduces server first-token
 time for a repeated 1536-token prompt from 1792 to 6 ms. These are different

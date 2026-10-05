@@ -352,10 +352,11 @@ Prompt latency remains a clear gap. Reports are the
 Issue #14. OLMoE has an independent CUDA implementation with whole-projection
 Q/K normalization, optional QKV clipping, expert routing, gated expert MLPs and
 weighted aggregation. Decode selects expert weight addresses on GPU, including
-inside captured graphs. Prefill uses stable device-side route sorting and one
-host count vector per layer, retaining a Python expert loop. This removes
-per-expert nonzero discovery while preserving expert accumulation order;
-fully device-driven grouped prefill remains a performance task.
+inside captured graphs. Within the qualified Q8/A2 scope, prefills of one to
+four total tokens reuse routed projections; five to 128 use device-counted
+grouped projections. Longer prompts retain stable device-side route sorting,
+one host count vector per layer, and a Python expert loop. Improving that
+long-prompt path remains a performance task.
 Projection/cache/activation arithmetic is FP32, with FP16 or Q8 matrix storage.
 Apple MoE is not yet supported.
 
@@ -573,7 +574,7 @@ this workload. Full prefill remains the default; chunking is an explicit latency
 tradeoff, not a general throughput improvement. See
 [stream arrivals and measurements](evidence/architectures/olmoe-chunk-interleaving-a2.json).
 
-### OLMoE tiny-prefill routed projection experiment
+### OLMoE tiny-prefill routed projections
 
 Reusing the existing routed decode projections during prefill avoids mostly
 empty grouped matrix tiles for tiny prompts. Same-resident alternating trials
@@ -593,12 +594,25 @@ concentrated repeated-token workload regresses after four tokens:
 | 15 | not measured | 66.865 / 114.006 |
 | 16 | 173.033 / 119.066 | 66.806 / 119.115 |
 
-The conservative candidate cutoff is four total tokens, including packed
-prompts. Independent tiny-prefix and subsequent-decode qualification is still
-required before promotion. [Varied prompts](evidence/architectures/olmoe-q8-routed-prefill-a2.json)
+The normal runtime uses a conservative cutoff of four total tokens, including
+packed prompts, within the existing qualified Q8/A2 scope. Both the isolated
+candidate and actual normal runtime pass 182 independent FP32 HF/GGUF checks
+through context 2048, including scalar 1/2/4/8/16-token prompts, packed totals on
+both sides of the boundary, reordered slots, and subsequent decoding. Worst
+relative RMS is 3.883e-6 and every greedy token agrees. The local regression
+suite passes 351 tests. [Independent reference](evidence/architectures/olmoe-q8-tiny-reference-a2.json),
+[normal replay](evidence/architectures/olmoe-q8-tiny-normal-reference-a2.json),
+and [source fingerprints](evidence/architectures/olmoe-q8-tiny-normal-source.json)
+record qualification. [Varied prompts](evidence/architectures/olmoe-q8-routed-prefill-a2.json)
 and [concentrated prompts](evidence/architectures/olmoe-q8-routed-prefill-concentrated-a2.json)
 retain the gains and regressions; these are prefill-only comparisons, not HTTP
 throughput measurements.
+
+The normal service also passes exact/divergent prefix reuse, three-token suffix
+execution, concurrent response equality, disconnect recovery, and model alias
+switching with host restoration. The live test compares cached and uncached
+execution; it is not a matched before/after latency benchmark for this change.
+See [live prefix and residency proof](evidence/architectures/olmoe-q8-tiny-prefix-service-a2.json).
 
 ### OLMoE short-prefill graph experiment (not enabled)
 
