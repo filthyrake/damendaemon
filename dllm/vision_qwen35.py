@@ -17,7 +17,10 @@ from .qwen2 import weight_files
 
 
 class VisionWeights:
-    def __init__(self, path):
+    def __init__(self, path, *, projection_dtype=torch.float16):
+        if projection_dtype not in (torch.float16,torch.float32):
+            raise ValueError('unsupported vision projection storage')
+        self.projection_dtype=projection_dtype
         self.path = Path(path)
         config = json.loads((self.path/'config.json').read_text())
         self.config = c = config.get('vision_config',{})
@@ -56,7 +59,7 @@ class VisionWeights:
                         raise ValueError(f'unsupported vision tensor: {name}')
                     if name in self.weights:raise ValueError(f'duplicate vision tensor: {name}')
                     projection=name.endswith('.weight') and name!='pos_embed.weight' and '.norm' not in name
-                    value=reader.get_tensor(key).to(torch.float16 if projection else torch.float32)
+                    value=reader.get_tensor(key).to(projection_dtype if projection else torch.float32)
                     if name=='patch_embed.proj.weight':value=value.flatten(1)
                     self.weights[name]=value.contiguous()
         if self.weights.keys()!=schema.keys():raise ValueError('incomplete vision checkpoint')
@@ -75,7 +78,7 @@ class VisionEncoder:
         self.attention=attention
         self.w={key:value.to(self.device) for key,value in model.weights.items()}
         self.product=None
-        if self.device.type=='cuda' and kernels=='auto':
+        if self.device.type=='cuda' and kernels=='auto' and model.projection_dtype==torch.float16:
             from .precise_matmul import linear
             self.product=linear
         self.backend='compensated-cuda-vision' if self.product else 'torch-fp32-vision'

@@ -31,7 +31,7 @@ Source hashes identify the exact encoder revision used for each run. Diagnostic
 attention/backend switches were added afterward; the default arithmetic is
 unchanged. Existing runtime suite: 351 tests pass.
 
-Remaining work includes numerical diagnosis, independent preprocessing,
+Remaining work includes numerical diagnosis,
 image/text fusion and multimodal rotary positions, decode state, image-aware
 prefix identity, serving input/lifecycle handling, and end-to-end performance.
 Encoder timing alone will not establish multimodal request performance.
@@ -46,3 +46,26 @@ necessary for exact agreement; resizing in floating point and rounding only at
 the end produces different pixels. The helper validates the combined patch
 budget before resizing and leaves source tensors untouched. Three input/budget/
 isolation tests pass. Encoded-image decoding and serving remain unimplemented.
+
+## Expanded checks
+
+All five native encoder cases pass the original final-feature limits: maximum
+relative RMS 0.0000153751 and maximum absolute error 0.000217557. All stages
+except block 11 pass both limits. Block 11 fails the absolute limit for every
+case (0.0546–0.1057); its relative RMS still passes. No limits were changed and
+no failed case was benchmarked.
+
+An independent Transformers CPU-versus-CUDA control, with both matrix and
+cuDNN TF32 disabled, also fails the same block-11 absolute limit for all five
+cases (0.0371–0.0857). Its largest reference activations are about 2,400.
+This establishes a limitation of the absolute intermediate check across
+arithmetic implementations; it does not constitute end-to-end qualification.
+The source-weight FP32 diagnostic also remains a failed check. Regenerate the
+control with `reference_qwen35_vision.py --device cuda`, then compare artifacts
+using `compare_vision_references.py`.
+
+`vision_positions.py` independently matches prompt positions, decode offsets,
+and rotary cosine/sine values exactly for seven layouts against Transformers
+5.18.0, including text-only and two-image prompts plus eight subsequent decode
+positions. Physical cache offsets remain distinct from rotary offsets. These
+helpers are not yet wired into the hybrid executor.

@@ -1,0 +1,135 @@
+{
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "torch": "2.13.0+cu130",
+  "transformers": "5.18.0",
+  "reference_device": "cuda",
+  "reference_dtype": "float32",
+  "reference_attention": "eager",
+  "reference_source_sha256": "d0c8561d91e31e50d9a57b74196c5a7ad023e42ebe9f84004d0a535310879939",
+  "config": {
+    "deepstack_visual_indexes": [],
+    "depth": 12,
+    "hidden_act": "gelu_pytorch_tanh",
+    "hidden_size": 768,
+    "in_channels": 3,
+    "initializer_range": 0.02,
+    "intermediate_size": 3072,
+    "model_type": "qwen3_5_vision",
+    "num_heads": 12,
+    "num_position_embeddings": 2304,
+    "out_hidden_size": 1024,
+    "patch_size": 16,
+    "rope_parameters": {
+      "rope_theta": 10000.0,
+      "rope_type": "axial"
+    },
+    "spatial_merge_size": 2,
+    "temporal_patch_size": 2,
+    "transformers_version": "5.18.0"
+  },
+  "processor": {
+    "do_convert_rgb": true,
+    "do_normalize": true,
+    "do_rescale": true,
+    "do_resize": true,
+    "image_mean": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "image_processor_type": "Qwen2VLImageProcessor",
+    "image_std": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "merge_size": 2,
+    "patch_size": 16,
+    "resample": 3,
+    "rescale_factor": 0.00392156862745098,
+    "size": {
+      "longest_edge": 16777216,
+      "shortest_edge": 65536
+    },
+    "temporal_patch_size": 2
+  },
+  "completed": true,
+  "cases": [
+    {
+      "name": "square",
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ]
+      ],
+      "output_shape": [
+        64,
+        1024
+      ]
+    },
+    {
+      "name": "landscape",
+      "grids": [
+        [
+          1,
+          16,
+          24
+        ]
+      ],
+      "output_shape": [
+        96,
+        1024
+      ]
+    },
+    {
+      "name": "resized",
+      "grids": [
+        [
+          1,
+          14,
+          22
+        ]
+      ],
+      "output_shape": [
+        77,
+        1024
+      ]
+    },
+    {
+      "name": "larger",
+      "grids": [
+        [
+          1,
+          32,
+          32
+        ]
+      ],
+      "output_shape": [
+        256,
+        1024
+      ]
+    },
+    {
+      "name": "two-images",
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ],
+        [
+          1,
+          16,
+          24
+        ]
+      ],
+      "output_shape": [
+        160,
+        1024
+      ]
+    }
+  ],
+  "artifact_sha256": "f0b84dad2a619679528f726bba9bbb3be7e8490902d1544a066eed9d57135ce1"
+}
