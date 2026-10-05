@@ -34,7 +34,7 @@ def create(executor,use_graph):
     supported=family in ('qwen2','qwen3') or (family=='llama'
         and getattr(executor,'llama_precision',None)=='float32')
     if (not width or not use_graph or executor.device!='cuda' or executor.kernels is None
-            or not supported or executor.model.scales
+            or not supported or executor.model.scales or getattr(executor.model,'packed_formats',{})
             or hasattr(executor,'pool') or executor.context<width):
         return None
     return Verifier(executor,width)

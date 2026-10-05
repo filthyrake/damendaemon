@@ -35,6 +35,11 @@ class SpeculativeTests(unittest.TestCase):
             del executor.pool
             executor.model.scales={'weight':1}
             self.assertIsNone(create(executor,True))
+            executor.model.scales={}
+            executor.model.packed_formats={'head':(256,((0,32,12,0),))}
+            for family in ('llama','qwen2','qwen3'):
+                executor.c['model_type']=family
+                self.assertIsNone(create(executor,True))
             verifier.assert_not_called()
 
     def test_sampling_constraints_and_tools_are_ineligible(self):
