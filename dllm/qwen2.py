@@ -644,9 +644,13 @@ class Executor:
 
     @torch.inference_mode()
     def forward(self, ids, positions, prefill, slot=0):
+        hidden=self.forward_hidden(self.embedding(ids),positions,prefill,slot)
+        return self.output_logits(hidden[-1:])
+
+    @torch.inference_mode()
+    def forward_hidden(self, x, positions, prefill, slot=0):
         w = self.w
-        x = self.embedding(ids)
-        count = ids.shape[0]
+        count = x.shape[0]
         if not self.kernels or not self.fuse_projections:
             cos = self.cos[positions].view(1, 1, count, self.dim)
             sin = self.sin[positions].view(1, 1, count, self.dim)
@@ -690,7 +694,7 @@ class Executor:
                 gate, up = [self.linear(hidden, weight) for weight in w[f"{i}.gate_up"].chunk(2)]
             activated = self.kernels.swiglu(gate_up, self.precise) if self.kernels and self.fuse_projections else self.activate(gate, up)
             x = x + self.linear(activated, w[f"{i}.down"])
-        return self.output_logits(x[-1:])
+        return x
 
     @torch.inference_mode()
     def prefill(self, tokens, slot=0):

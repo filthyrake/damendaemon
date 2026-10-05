@@ -37,3 +37,28 @@ No persistent firewall or router configuration changed.
 
 Model partitioning, failure recovery, serving integration, RDMA, and GPUDirect
 RDMA remain unqualified. A successful NCCL Socket test establishes none of these.
+
+## Same-host model partition proof
+
+`qwen2-layer-stages.json` runs Qwen2.5-0.5B-Instruct revision
+`7ae557604adf67be50417f59c2c2f167def9a775`, FP16, context 512, four slots.
+The independent Transformers trace includes mixed prompt lengths, reordered
+slots, replacement prompts, batched decode, and a near-context boundary.
+All 82 logits checks passed the existing 0.01 relative RMS / 0.5 maximum
+absolute / exact greedy-token gates. Worst relative RMS was 0.005811 and maximum
+absolute error 0.085938. The A2 owns layers 0–11 plus embeddings; the A30 owns
+layers 12–23 plus final normalization and output head. Each stage has only its
+12 KV layers (12,582,912 bytes). GPU weight residency is 630,166,528 bytes and
+630,168,320 bytes respectively. The host loader still loads the full checkpoint.
+
+`qwen2-stage-single-gpu-regression.json` replays the same trace through the
+ordinary A2 graph-enabled executor: all 82 checks pass, worst relative RMS
+0.005656 and maximum absolute error 0.070313. The local regression suite passes
+367 tests. The shared runtime change extracts hidden-state layer execution from
+embedding/head execution; ordinary entry points retain their behavior.
+
+The stage implementation lives under `scripts/experiments` and is not registered
+for serving. It executes stages sequentially and copies their activations. It
+does not yet have a network control protocol, worker recovery, pipeline
+scheduling, or a capacity/speedup qualification. The small checkpoint fits on a
+single GPU; this proof must not be represented as a larger-model capacity win.

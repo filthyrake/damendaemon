@@ -47,9 +47,13 @@ class BatchExecutor(Executor):
 
     @torch.inference_mode()
     def forward_batch(self, ids, positions, slots):
-        batch = ids.shape[0]
+        hidden=self.forward_batch_hidden(self.embedding(ids),positions,slots)
+        return self.output_logits(hidden)
+
+    @torch.inference_mode()
+    def forward_batch_hidden(self, x, positions, slots):
+        batch = x.shape[0]
         w = self.w
-        x = self.embedding(ids)
         if not self.kernels:
             cos = self.cos[positions].view(batch, 1, 1, self.dim)
             sin = self.sin[positions].view(batch, 1, 1, self.dim)
@@ -78,7 +82,7 @@ class BatchExecutor(Executor):
                 gate, up = gate_up.chunk(2, -1)
                 activated = self.activate(gate, up)
             x = x + self.linear(activated, w[f"{i}.down"])
-        return self.output_logits(x)
+        return x
 
     def prefill(self, tokens, slot=0):
         result = super().prefill(tokens, slot)
