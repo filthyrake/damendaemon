@@ -85,18 +85,16 @@ __global__ void multiply(const int8_t* q1, const int8_t* q2, const float4* scale
                 const int index = r*k + block*256 + column;
                 int a = __dp4a(static_cast<int>(values), *reinterpret_cast<const int*>(q1 + index), 0);
                 int b = __dp4a(static_cast<int>(values), *reinterpret_cast<const int*>(q2 + index), 0);
-                #pragma unroll
-                for (int offset = subgroup / 2; offset; offset >>= 1) {
-                    a += __shfl_down_sync(0xffffffff, a, offset, subgroup);
-                    b += __shfl_down_sync(0xffffffff, b, offset, subgroup);
-                }
-                if (lane % subgroup == 0) {
-                    const float4 activation = scales[index / 32];
-                    const float dot = __fadd_rn(__fmul_rn(static_cast<float>(a), activation.x),
-                                               __fmul_rn(static_cast<float>(b), activation.y));
-                    const float value = __fsub_rn(__fmul_rn(scale, dot), __fmul_rn(minimum, activation.z));
-                    accum[r] += value;
-                }
+                const float4 activation = scales[index / 32];
+                const float dot = __fadd_rn(__fmul_rn(static_cast<float>(a), activation.x),
+                                           __fmul_rn(static_cast<float>(b), activation.y));
+                float value = __fmul_rn(scale, dot);
+                // Scale each lane's four-term partial directly. Only the
+                // affine minimum needs one contribution per 32-value group.
+                // Avoid repeated subgroup shuffles inside the reduction loop.
+                if constexpr (Kind != 14)
+                    if (lane % subgroup == 0) value = __fsub_rn(value, __fmul_rn(minimum, activation.z));
+                accum[r] += value;
             }
         }
     }

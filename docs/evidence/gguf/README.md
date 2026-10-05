@@ -529,6 +529,17 @@ result does not replace or erase the original failing gate.
 `llama32-q5-k-m-reference-cuda-extended-a2.json` additionally passes all 96
 extended FP16-reference comparisons, maximum RMS 0.700%, zero greedy mismatches.
 
+The extended Q5 FP32-reference suite also passes all 96 comparisons (maximum
+RMS 0.516%, no greedy mismatches), retained in
+`llama32-q5-k-m-reference-float32-extended-a2.json`. The full executor/HTTP proof
+in `llama32-q5-k-m-runtime-cuda-a2.json` passes fixed/paged caches, changed-input
+graphs, batching, chunking, cancellation and model restore/reload. Its maximum
+RMS against the same expanded coefficients is 0.125%. Packed host storage is
+903,536,768 bytes. At 16/129/400 input tokens and one request, packed HTTP
+latencies are 0.275/0.303/0.337 s versus expanded 0.263/0.288/0.324 s; at 129
+tokens with two requests, 0.423 s versus 0.368 s. These additional passes do
+not resolve the original forced post-EOS FP16-reference failure.
+
 ## Isolated residual-int8 experiment
 
 `scripts/experiments/kquant_residual.cu` and its validation-only wrapper test
@@ -554,3 +565,13 @@ nvcc -O3 -std=c++17 -arch=sm_86 --fmad=false -Xcompiler=-fPIC -shared \
 
 The validation scripts select it only through
 `DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY`; ordinary dllm execution ignores that variable.
+
+The residual experiment's second revision removes repeated subgroup reductions
+from the dot-product inner loop. `kquant-residual-v2-matrices-a2.jsonl` retains
+the same independent matrix/graph gates. `kquant-profile-residual-v2-a2.jsonl`
+shows single-row QKV/output/gate-up/head gains of approximately 3/8/14/25% over
+production CUDA, but the 8192-wide down projection is 14% slower and all four-row
+cases regress. Validation-only `--experimental-residual` therefore selects
+single-row FP16 2048-wide K-quant projections and falls back elsewhere. Reports
+record the experimental library hash and warn that ordinary backend labels do
+not include this override. No production runtime selects the experiment.

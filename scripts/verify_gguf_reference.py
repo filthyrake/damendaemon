@@ -61,7 +61,12 @@ def main():
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
     p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
+    p.add_argument('--experimental-residual', action='store_true')
     args = p.parse_args(); torch.set_num_threads(4)
+    experiment = None
+    if args.experimental_residual:
+        from experiments.kquant_residual import install_validation_dispatch
+        experiment = install_validation_dispatch()
     torch.backends.cuda.matmul.allow_tf32 = False
     teacher = json.loads(Path(args.teacher_trace).read_text()) if args.teacher_trace else None
     source = GgufWeights(args.gguf, 512, 'none')
@@ -125,7 +130,7 @@ def main():
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
                   weight_rounding='float16', tf32=False, formats=formats, embedding_type=embedding_type,
                   teacher_trace=args.teacher_trace,expanded_control=args.expanded_control,
-                  host_bytes=source.bytes, cases=cases)
+                  host_bytes=source.bytes, experiment=experiment, cases=cases)
     Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(dict(passed=passed, sha256=sha, formats=formats,
         max_absolute=max(e['max_absolute'] for c in cases for e in c['errors']),

@@ -47,12 +47,17 @@ def expanded(model):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('model');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('model')
+    p.add_argument('--experimental-residual',action='store_true');args=p.parse_args()
+    experiment=None
+    if args.experimental_residual:
+        from experiments.kquant_residual import install_validation_dispatch
+        experiment=install_validation_dispatch()
     require_gpu();torch.set_num_threads(4);torch.backends.cuda.matmul.allow_tf32=False
     model=GgufWeights(args.model,512,'none');reference=expanded(model)
     report={'model':str(Path(args.model).resolve()),'device':device_name(),'torch':torch.__version__,
             'packed_host_bytes':model.bytes,'expanded_host_bytes':reference.bytes,'comparisons':[],
-            'native_library':os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')}
+            'experiment':experiment,'native_library':os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')}
     def compare(expected,actual,**case):
         error=actual.float()-expected.float()
         absolute=error.abs().max().item()
