@@ -37,7 +37,9 @@ def main():
     parser.add_argument('--concurrencies',nargs='+',type=int,choices=range(1,9),default=[1,2,4])
     parser.add_argument('--host-gib', type=float, default=8)
     parser.add_argument('--dtype', choices=('half','float'), default='half', help='vLLM model arithmetic/storage precision')
-    parser.add_argument('--experimental-awq-decode', action='store_true')
+    experiments = parser.add_mutually_exclusive_group()
+    experiments.add_argument('--experimental-awq-decode', action='store_true')
+    experiments.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     args = parser.parse_args()
     if not args.label.replace('-', '').replace('_', '').isalnum():
         parser.error('label must contain only letters, digits, hyphens or underscores')
@@ -57,6 +59,9 @@ def main():
         env = dict(os.environ)
         if engine == 'dllm':
             module = 'scripts.experiments.serve_awq_decode' if args.experimental_awq_decode else 'dllm'
+            if args.experimental_awq_marlin:
+                module = 'scripts.experiments.serve_awq_marlin'
+                env['DLLM_EXPERIMENT_MARLIN_LIBRARY'] = str(Path(args.experimental_awq_marlin).resolve())
             command = [sys.executable, '-m', module, 'serve', '--port', str(port), '--context', str(args.context),
                        '--batch-size', str(args.batch_size), '--host-gib', str(args.host_gib), '--model', 'a=' + model['path']]
         elif engine == 'llama.cpp':

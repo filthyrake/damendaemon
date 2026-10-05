@@ -239,3 +239,16 @@ gate passes 240 checks at rows 1, 16, 17, 32, 33, 64, 65, 129, 256 and 1025,
 covering partial tiles and the split after the 1024-row launch limit. The raw
 report is `qwen25-small-marlin-prefill-a2.json`. Full-model integration remains
 experimental and is not established by these matrix checks.
+
+The explicit whole-model Marlin experiment now passes 128 independent HF SDPA
+checks (worst relative RMS 0.6710%, exact greedy tokens) and 128 fixed/paged,
+eager/graph, chunked/batched checks (worst relative RMS 0.2834%). Both reports
+are retained here. GPU weight storage remains 458314496 bytes: native packing
+replaces the original device weights, scales, zero points and bias. Shared
+scratch/locks consume 2621600 bytes within the existing 17432576-byte packed
+workspace reserve. Construction explicitly checks free memory for the temporary
+old/new packing overlap, conversion workspace and shared scratch. CPU checkpoint
+packing is preserved for reload. These are opt-in scripts only; the ordinary
+runtime still uses the previously qualified Triton dispatch. Lifecycle and
+HTTP performance are separate gates. The experiment metadata identifies the
+native C ABI even though the inherited executor backend label remains unchanged.

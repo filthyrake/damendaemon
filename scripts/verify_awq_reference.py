@@ -53,6 +53,7 @@ def main():
     parser.add_argument('--reference-attention', choices=('eager', 'sdpa'), default='eager',
                         help='independent HF attention implementation; recorded as qualification scope')
     parser.add_argument('--experimental-awq-decode', action='store_true')
+    parser.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     parser.add_argument('--require-awq-decode', action='store_true', help='assert ordinary A2 decode selection')
     parser.add_argument('--diagnostic-expanded-products', action='store_true',
                         help='isolate packed GEMM errors using temporary expanded FP16 products')
@@ -67,6 +68,11 @@ def main():
         parser.error('context must be at least 512')
     require_gpu()
     experiment = None
+    if args.experimental_awq_marlin:
+        if args.experimental_awq_decode or args.diagnostic_expanded_products:
+            parser.error('Marlin cannot be combined with other product dispatch overrides')
+        from experiments.awq_marlin_dispatch import install_validation_dispatch
+        experiment = install_validation_dispatch(args.experimental_awq_marlin)
     if args.experimental_awq_decode:
         from experiments.awq_decode import install_validation_dispatch
         experiment = install_validation_dispatch()

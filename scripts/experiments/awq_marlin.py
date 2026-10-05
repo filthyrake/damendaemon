@@ -42,7 +42,7 @@ class Library:
         if status:
             raise RuntimeError(f'Marlin experiment CUDA error {status}')
 
-    def prepare(self, matrix, bias=None):
+    def prepare(self, matrix, bias=None, workspace=None):
         if (not matrix.weight.is_cuda or matrix.group != 128 or matrix.inputs % 128
                 or matrix.outputs % 128 or matrix.inputs <= 128):
             raise ValueError('Marlin experiment requires CUDA AWQ group 128 with aligned dimensions')
@@ -64,8 +64,11 @@ class Library:
             permutation = [2*i+j for i in range(4) for j in (0, 1, 8, 9, 16, 17, 24, 25)]
             bias = bias.reshape(-1, 32)[:, permutation].reshape(n).contiguous()
         # Conservative experiment workspace; runtime admission is a later gate.
-        scratch = torch.empty(4*self.sms*64*256, dtype=torch.float32, device=device)
-        locks = torch.zeros(4*self.sms, dtype=torch.int32, device=device)
+        if workspace is None:
+            scratch = torch.empty(4*self.sms*64*256, dtype=torch.float32, device=device)
+            locks = torch.zeros(4*self.sms, dtype=torch.int32, device=device)
+        else:
+            scratch, locks = workspace
         return Prepared(packed, scales, zeros, bias, scratch, locks, k, n)
 
     def linear(self, x, matrix):

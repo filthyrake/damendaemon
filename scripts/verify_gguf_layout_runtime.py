@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--require-q4-small-tiles', action='store_true', help='require the normal A2 Q4 prompt policy')
     experiments=parser.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-awq-decode', action='store_true')
+    experiments.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
     experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
@@ -50,6 +51,11 @@ def main():
         parser.error('prompt lengths must be positive and leave seven decode positions')
     pool_tokens = paged_capacity(args.context, lengths)
     experiment = None
+    if args.experimental_awq_marlin:
+        if not args.awq_qualification:
+            parser.error('Marlin experiment requires --awq-qualification')
+        from experiments.awq_marlin_dispatch import install_validation_dispatch
+        experiment = install_validation_dispatch(args.experimental_awq_marlin)
     if args.experimental_awq_decode:
         if not args.awq_qualification:
             parser.error('AWQ decode experiment requires --awq-qualification')

@@ -1,4 +1,5 @@
 """Actual AWQ factory, allocation release and HTTP lifecycle qualification."""
+import os
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import gc
@@ -25,10 +26,15 @@ def main():
     parser.add_argument('model')
     parser.add_argument('--context', type=int, default=2048)
     parser.add_argument('--output', required=True)
-    parser.add_argument('--experimental-awq-decode', action='store_true')
+    experiments = parser.add_mutually_exclusive_group()
+    experiments.add_argument('--experimental-awq-decode', action='store_true')
+    experiments.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     args = parser.parse_args()
     require_gpu()
     experiment = None
+    if args.experimental_awq_marlin:
+        from experiments.awq_marlin_dispatch import install_validation_dispatch
+        experiment = install_validation_dispatch(args.experimental_awq_marlin)
     if args.experimental_awq_decode:
         from experiments.awq_decode import install_validation_dispatch
         experiment = install_validation_dispatch()
@@ -51,6 +57,7 @@ def main():
                 refs = [weakref.ref(executor)]
                 tensors = [*executor.w.values(), *executor.quant_linear.scales.values(),
                            *(m.zeros for m in executor.quant_linear.awq.values())]
+                tensors.extend(getattr(executor.quant_linear, 'native_workspace', ()))
                 refs += [weakref.ref(t) for t in tensors]
                 del tensors
                 logits = executor.prefill_batch([prompt]*4, list(range(4)))
@@ -96,6 +103,9 @@ def main():
             log_path = Path(folder)/'server.log'
             with log_path.open('w') as log:
                 module = 'scripts.experiments.serve_awq_decode' if args.experimental_awq_decode else 'dllm'
+                if args.experimental_awq_marlin:
+                    module = 'scripts.experiments.serve_awq_marlin'
+                    os.environ['DLLM_EXPERIMENT_MARLIN_LIBRARY'] = str(Path(args.experimental_awq_marlin).resolve())
                 process = subprocess.Popen([sys.executable, '-m', module, 'serve', '--port', '0',
                     '--context', str(args.context), '--gpu-models', '1', '--host-models', '2',
                     '--batch-size', '2'], stdout=log, stderr=log)
