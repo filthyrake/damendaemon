@@ -43,7 +43,8 @@ def main():
                 case = dict(name=name, shape=list(expected.shape), checks={}, rounds=[])
                 report['cases'].append(case)
                 for label, function in functions.items():
-                    case['checks'][label] = bool(torch.equal(function(), expected))
+                    case['checks'][label] = bool(torch.equal(
+                        function().view(torch.int16), expected.view(torch.int16)))
                 if not all(case['checks'].values()):
                     raise AssertionError('expanded coefficients are not bit-exact')
                 order = list(functions)
