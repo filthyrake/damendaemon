@@ -1985,3 +1985,10 @@ layout and HTTP qualification remain separate. This windowed Mistral fixture
 uses FP16 matrix and residual arithmetic, as recorded by the executor. The
 HTTP benchmark now derives its precision label from the imported architecture
 instead of assuming every GGUF uses Llama's mixed policy.
+
+The candidate also passes all 128 fixed/paged, eager/graph, batch and chunk
+comparisons in `mistral-q4-small-tiles-layout-a2.json`, at context 512 with
+prompt lengths 64/129/256/384. Greedy choices agree and the worst relative RMS
+is 0.456%. The independent reference report contains 80 full-logit comparisons.
+Real HTTP timing and lifecycle checks are the next gate; no production kernel
+selection changes are included in these results.
