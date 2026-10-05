@@ -2024,3 +2024,11 @@ projection shapes at 33 rows (10.7–16.0%), 48 rows (17.3–21.3%) and 130 rows
 The measured evidence supports investigating a 33–64-row range, but does not
 support extending the 129/130 result through 160 rows or changing all larger
 prompts. Production dispatch is still unchanged.
+
+`mistral-q4-paired-expansion-a2.json` rejects a separate expansion rewrite.
+Loading each packed byte once for both nibbles preserves every FP16 coefficient
+bit pattern, including signed zero, on all five real projections. The best
+512-byte tile reduces expansion time only 0.4–1.0%; 256-byte tiles regress
+about 5–6%, and 1024-byte tiles are effectively tied. This small isolated gain
+does not justify changing the production expansion path or another serving
+speedup claim.

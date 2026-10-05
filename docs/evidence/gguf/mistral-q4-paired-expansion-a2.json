@@ -1,0 +1,248 @@
+{
+  "model_sha256": "c320624e1b0b443e7b9c0e7449bff3780a3bc8e91e070d4c884679b85f1867bb",
+  "device": "NVIDIA A2",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "torch": "2.6.0+cu124",
+  "triton": "3.2.0",
+  "passed": true,
+  "cases": [
+    {
+      "name": "0.qkv.weight",
+      "shape": [
+        6144,
+        4096
+      ],
+      "checks": {
+        "production": true,
+        "pairs_256": true,
+        "pairs_512": true,
+        "pairs_1024": true
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.3930070102214813
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 0.4159160554409027
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 0.39140552282333374
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 0.3945077061653137
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 0.3944684565067291
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 0.39145180583000183
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 0.4158952236175537
+        },
+        {
+          "kind": "production",
+          "ms": 0.39319485425949097
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "shape": [
+        4096,
+        4096
+      ],
+      "checks": {
+        "production": true,
+        "pairs_256": true,
+        "pairs_512": true,
+        "pairs_1024": true
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.2633300721645355
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 0.2777482569217682
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 0.26087480783462524
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 0.26288050413131714
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 0.26285630464553833
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 0.26087263226509094
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 0.27780336141586304
+        },
+        {
+          "kind": "production",
+          "ms": 0.2635628283023834
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "shape": [
+        28672,
+        4096
+      ],
+      "checks": {
+        "production": true,
+        "pairs_256": true,
+        "pairs_512": true,
+        "pairs_1024": true
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.8456453084945679
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 1.9374473094940186
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 1.8265641927719116
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 1.8422905206680298
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 1.84218430519104
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 1.8265787363052368
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 1.9385188817977905
+        },
+        {
+          "kind": "production",
+          "ms": 1.8414785861968994
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "shape": [
+        4096,
+        14336
+      ],
+      "checks": {
+        "production": true,
+        "pairs_256": true,
+        "pairs_512": true,
+        "pairs_1024": true
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.9188480377197266
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 0.9689512252807617
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 0.9128918647766113
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 0.9206581115722656
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 0.9205428957939148
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 0.9131287336349487
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 0.9693500399589539
+        },
+        {
+          "kind": "production",
+          "ms": 0.9190362095832825
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "shape": [
+        32000,
+        4096
+      ],
+      "checks": {
+        "production": true,
+        "pairs_256": true,
+        "pairs_512": true,
+        "pairs_1024": true
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.0653746128082275
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 2.1642534732818604
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 2.039189338684082
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 2.0574965476989746
+        },
+        {
+          "kind": "pairs_1024",
+          "ms": 2.0571608543395996
+        },
+        {
+          "kind": "pairs_512",
+          "ms": 2.0415704250335693
+        },
+        {
+          "kind": "pairs_256",
+          "ms": 2.1648426055908203
+        },
+        {
+          "kind": "production",
+          "ms": 2.0580625534057617
+        }
+      ]
+    }
+  ],
+  "source_sha256": "6336b395cbf64d752d2178c7a3b6bc0e497842e5d069df7651717d46f84a5572",
+  "candidate_sha256": "1d5ac7fa7323bab1a3699781e6aae5f47f2de136560564cfe78405598835fe01",
+  "scope": "expansion only; no dense cache; no serving performance claim"
+}
