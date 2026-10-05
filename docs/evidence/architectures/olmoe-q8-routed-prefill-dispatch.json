@@ -1,0 +1,25 @@
+{
+  "kind": "experimental routed Q8 expert projections for tiny prefills",
+  "max_tokens": 16,
+  "selected_calls": 640,
+  "fallback_calls": 432,
+  "source_sha256": "69a492c40b242201b820b019dd0b127ab460008b17b447cc9cfbcd2a66cd6a54",
+  "script": "scripts/profile_moe_prefill.py",
+  "arguments": [
+    "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+    "--baseline-source",
+    "results/moe-before-routed-prefill.py",
+    "--comparison",
+    "numerical",
+    "--lengths",
+    "1",
+    "2",
+    "4",
+    "8",
+    "16",
+    "32",
+    "--output",
+    "results/olmoe-q8-routed-prefill-a2.json"
+  ],
+  "completed": true
+}

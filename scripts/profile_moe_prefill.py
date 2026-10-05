@@ -24,6 +24,8 @@ def main():
     parser.add_argument('--comparison', choices=('bitwise', 'numerical'), default='bitwise')
     parser.add_argument('--quantization', choices=('q8_0', 'q4_0'), default='q8_0',
                         help='Q4 OLMoE requires the explicit experimental runner')
+    parser.add_argument('--repeated-token',type=int,
+                        help='use a concentrated repeated-token prompt instead of the varied corpus')
     args = parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
@@ -43,7 +45,14 @@ def main():
                   candidate_source=inspect.getsourcefile(methods['candidate']),
                   candidate_sha256=hashlib.sha256(Path(inspect.getsourcefile(methods['candidate'])).read_bytes()).hexdigest(),
                   cases=[])
-    corpus = source.raw_tokens('The library contains books about oceans and mountains. ')
+    if args.repeated_token is not None:
+        if not 0 <= args.repeated_token < source.config['vocab_size']:
+            raise ValueError('repeated token is outside the vocabulary')
+        corpus = [args.repeated_token]
+    else:
+        corpus = source.raw_tokens('The library contains books about oceans and mountains. ')
+    report['prompt_kind'] = 'varied corpus' if args.repeated_token is None else 'repeated token'
+    report['corpus_token_ids'] = corpus
     def check(actual, target):
         value = actual.cpu()
         error = value.float()-target.float()

@@ -24,6 +24,8 @@ def main():
     parser.add_argument("--reference-dtype", choices=("float16", "bfloat16", "float32"), default="float16")
     parser.add_argument('--reference-quantization', choices=('none', 'q8_0','q4_0'), default='none')
     parser.add_argument('--prefill-chunk-size',type=int,default=0)
+    parser.add_argument('--tiny-prefixes',action='store_true',
+                        help='also qualify single and packed 1..16-token prompts with subsequent decode')
     parser.add_argument('--reference-only', action='store_true', help='generate a reference trace without a dllm GPU executor')
     parser.add_argument('--golden-output', help='save teacher-forced inputs and FP32 reference logits for cross-environment replay')
     parser.add_argument('--reference-attention', choices=('sdpa', 'eager'), default='sdpa')
@@ -184,6 +186,14 @@ def main():
                 raise AssertionError('position past learned table accepted')
             except ValueError:
                 assert executor.lengths==before
+    if args.tiny_prefixes:
+        # Exercise scalar lengths and packed totals on both sides of tiny
+        # projection dispatch boundaries, with fresh and reused cache slots.
+        for index,lengths in enumerate(([1],[2],[4],[8],[16],[1,1],[1,2],
+                                         [1,1,1,1],[1,4],[2,2],[1,2,4])):
+            slots=[(3-index+offset)%4 for offset in range(len(lengths))]
+            prefill(lengths,slots)
+            decode(list(reversed(slots)),4)
     if args.golden_output:
         torch.save({'path': args.path, 'context': args.context, 'reference_dtype': args.reference_dtype,
                     'reference_torch': str(torch.__version__), 'reference_quantization': args.reference_quantization, 'reference_attention': args.reference_attention, 'trace': trace}, args.golden_output)
@@ -192,7 +202,8 @@ def main():
         'weight_dtype': str(executor.w['head'].dtype) if executor else None,
         'reference_only': args.reference_only, 'reference_quantization': args.reference_quantization,
         'weight_quantization': model.quantization if executor else None,
-        'prefill_chunk_size':args.prefill_chunk_size, 'context': args.context, 'backend': executor.kernel_backend if executor else None, 'checks': checks,
+        'prefill_chunk_size':args.prefill_chunk_size, 'tiny_prefixes':args.tiny_prefixes,
+        'context': args.context, 'backend': executor.kernel_backend if executor else None, 'checks': checks,
         'template_checks': template_checks, 'timings': timings,
         'passed': all(row['passed'] for row in checks) if executor else None}, indent=2))
     assert all(row['passed'] for row in checks), 'long-context correctness gate failed; see JSON checks'

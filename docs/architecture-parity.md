@@ -573,6 +573,33 @@ this workload. Full prefill remains the default; chunking is an explicit latency
 tradeoff, not a general throughput improvement. See
 [stream arrivals and measurements](evidence/architectures/olmoe-chunk-interleaving-a2.json).
 
+### OLMoE tiny-prefill routed projection experiment
+
+Reusing the existing routed decode projections during prefill avoids mostly
+empty grouped matrix tiles for tiny prompts. Same-resident alternating trials
+compare that strategy with grouped Q8 prefill, with unchanged attention and KV
+handling. All measured outputs agree greedily and remain within the existing
+numerical limits. Varied corpus prompts improve through 16 tokens, but a
+concentrated repeated-token workload regresses after four tokens:
+
+| Tokens | Varied grouped / routed ms | Repeated-token grouped / routed ms |
+|---|---:|---:|
+| 1 | 39.122 / 20.436 | 39.136 / 21.253 |
+| 2 | 61.552 / 24.061 | 40.053 / 24.136 |
+| 3 | not measured | 41.030 / 28.828 |
+| 4 | 92.610 / 34.774 | 41.936 / 34.752 |
+| 7 | not measured | 57.631 / 65.127 |
+| 8 | 139.319 / 70.250 | 57.695 / 70.172 |
+| 15 | not measured | 66.865 / 114.006 |
+| 16 | 173.033 / 119.066 | 66.806 / 119.115 |
+
+The conservative candidate cutoff is four total tokens, including packed
+prompts. Independent tiny-prefix and subsequent-decode qualification is still
+required before promotion. [Varied prompts](evidence/architectures/olmoe-q8-routed-prefill-a2.json)
+and [concentrated prompts](evidence/architectures/olmoe-q8-routed-prefill-concentrated-a2.json)
+retain the gains and regressions; these are prefill-only comparisons, not HTTP
+throughput measurements.
+
 ### OLMoE short-prefill graph experiment (not enabled)
 
 The qualified Q8 grouped path can be captured and replayed with changed input
