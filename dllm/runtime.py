@@ -82,7 +82,8 @@ class Runtime:
         with self.registry_lock:
             models = [{'id': alias, 'quantization':self.quantizations[alias], 'residency': 'gpu' if alias in self.gpu else 'host' if alias in self.host else 'disk',
                        'chat_template': override_metadata(self.chat_templates[alias]),
-                       'host_weight_bytes': self.host[alias].bytes if alias in self.host else None}
+                       'host_weight_bytes': self.host[alias].bytes if alias in self.host else None,
+                       'gpu_projection_cache_bytes': getattr(self.gpu.get(alias), 'packed_cache_bytes', 0)}
                       for alias in self.models]
         return {'models': models, 'device': selected_device(), 'context': self.context,
                 'host_cached_bytes': sum(model.bytes for model in self.host.values()),

@@ -39,6 +39,8 @@ def main():
     parser.add_argument('--production-q4-residual',action='store_true',help='exercise normal per-model Q4 integer-dot selection')
     parser.add_argument('--production-batch-wait',action='store_true',help='exercise normal CLI idle admission configuration')
     parser.add_argument('--production-residual',action='store_true',help='exercise normal per-model FP16 K-quant residual selection')
+    parser.add_argument('--production-dense-cache',action='store_true',help='exercise normal admission-accounted resident cache')
+    parser.add_argument('--dense-cache-mib',type=int,default=2048,help='normal resident cache budget per executor')
     parser.add_argument('--production-prefill-f32',action='store_true',help='exercise normal per-executor compensated prefill selection')
     parser.add_argument('--prefill-f32',action='store_true',help='compare production FP32 residual decode with experimental compensated prefill')
     parser.add_argument('--production-residual-f32',action='store_true',help='exercise normal CLI per-executor FP32 selection')
@@ -65,6 +67,8 @@ def main():
     if args.production_q4_residual and not args.q4_residual_library:parser.error('--production-q4-residual requires --q4-residual-library')
     if args.production_batch_wait and not args.batch_wait_ms:parser.error('--production-batch-wait requires --batch-wait-ms')
     if args.production_residual and not args.residual_library:parser.error('--production-residual requires --residual-library')
+    if args.production_dense_cache and (not args.dense_cache or args.dense_cache_mib <= 0):
+        parser.error('--production-dense-cache requires --dense-cache and a positive budget')
     if args.production_prefill_f32:args.prefill_f32=True
     if args.prefill_f32:args.production_residual_f32=True
     if args.production_residual_f32 and not args.residual_f32_library:
@@ -111,6 +115,7 @@ def main():
         report['prefill_source_sha256']=digest(Path(__file__).parent/'experiments/kquant_prefill_f32.py')
         report['prefill_kernel_sha256']=digest(Path(__file__).resolve().parents[1]/'dllm/kquant_prefill_kernels.py')
     environment=os.environ.copy()
+    environment.pop('DLLM_KQUANT_DENSE_CACHE_MIB',None)
     environment.pop('DLLM_KQUANT_RESIDUAL_F32_LIBRARY',None)
     environment.pop('DLLM_KQUANT_PREFILL_F32',None)
     environment.pop('DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY',None)
@@ -143,6 +148,11 @@ def main():
         counterpart='dense-cache'
         report['experimental_arithmetic']='same FP16 coefficients; resident expanded projections for rows >1; extra VRAM, experimental accounting only'
         report['dense_cache_source_sha256']=digest(Path(__file__).parent/'experiments/kquant_dense_cache.py')
+        report['production_dense_cache']=args.production_dense_cache
+        if args.production_dense_cache:
+            report['experimental_arithmetic']='same FP16 coefficients; normal admission-accounted resident projection cache'
+            report['dense_cache_source_sha256']=digest(Path(__file__).resolve().parents[1]/'dllm/kquant_cache.py')
+            report['dense_cache_budget_mib']=args.dense_cache_mib
     if residual:
         variable='DLLM_EXPERIMENTAL_RESIDUAL_F32_LIBRARY' if precision=='float32' else 'DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY'
         environment[variable]=str(residual)
@@ -157,6 +167,8 @@ def main():
             base=f'http://127.0.0.1:{port}'
             log_path=output.with_name(output.stem+f'-{phase}-{engine}.log')
             phase_environment=environment.copy()
+            if args.production_dense_cache and engine==counterpart:
+                phase_environment['DLLM_KQUANT_DENSE_CACHE_MIB']=str(args.dense_cache_mib)
             if args.batch_wait_ms and engine==counterpart and not args.production_batch_wait:
                 phase_environment['DLLM_EXPERIMENTAL_BATCH_WAIT_MS']=str(args.batch_wait_ms)
             if args.production_residual and engine==counterpart:
@@ -177,6 +189,7 @@ def main():
                         'residual-int8-fp32':'scripts.experiments.serve_residual_f32'}.get(engine,
                         'scripts.experiments.serve_float32' if precision=='float32' else 'dllm')
                 if args.production_q4_residual or args.production_residual or args.production_batch_wait:module='dllm'
+                if args.production_dense_cache:module='dllm'
                 if args.production_residual_f32 and (args.production_prefill_f32 or not (args.prefill_f32 and engine==counterpart)):module='dllm'
                 command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
                     '--context',str(args.context),'--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
@@ -247,15 +260,27 @@ def main():
                         def post(route,body):
                             return urlopen(Request(base+route,data=json.dumps(body).encode(),
                                 headers={'Content-Type':'application/json'}),timeout=300)
-                        def json_post(route,body):
-                            with post(route,body) as response:return json.load(response)
+                        def json_post(route,body,timing=None):
+                            started=time.perf_counter()
+                            with post(route,body) as response:value=json.load(response)
+                            if timing:
+                                run.setdefault('lifecycle_timings',{})[timing]=dict(
+                                    seconds=time.perf_counter()-started,dllm_timing=value.get('dllm_timing'))
+                            return value
                         body=dict(model='a',prompt=prompts[129],temperature=0,max_tokens=16)
                         expected=next(c for c in run['cases'] if c['prompt_tokens']==129 and c['concurrency']==1)['rounds'][3]['requests'][0]['text']
                         checks={};run['lifecycle']=checks
                         json_post('/v1/models/unload',dict(model='a'))
-                        restored=json_post('/v1/completions',body)
+                        restored=json_post('/v1/completions',body,timing='host_restore_request')
                         assert restored['dllm_timing']['source_tier']=='host' and restored['choices'][0]['text']==expected
                         run['kernel_backend']=restored['dllm_timing']['kernel_backend']
+                        if args.production_dense_cache:
+                            assert ('+resident-kquant-cache' in run['kernel_backend']) == (engine==counterpart)
+                            with urlopen(base+'/v1/models/status',timeout=30) as response:
+                                status=json.load(response)
+                            cache_bytes=next(m['gpu_projection_cache_bytes'] for m in status['models'] if m['id']=='a')
+                            assert (0 < cache_bytes <= args.dense_cache_mib*1024**2) if engine==counterpart else cache_bytes==0
+                            run['resident_projection_cache_bytes']=cache_bytes
                         if args.production_q4_residual:
                             assert ('+cuda-q4-residual' in run['kernel_backend']) == (engine==counterpart)
                         if args.production_residual:
@@ -266,15 +291,15 @@ def main():
                         json_post('/v1/models/register',dict(model='b',path=str(swap_model),quantization='none'))
                         swap_body={**body,'model':'b'}
                         if args.swap_model:swap_body['prompt']='Explain binary search in one sentence.'
-                        other=json_post('/v1/completions',swap_body)
-                        restored=json_post('/v1/completions',body)
+                        other=json_post('/v1/completions',swap_body,timing='switch_to_other_request')
+                        restored=json_post('/v1/completions',body,timing='switch_back_request')
                         if not args.swap_model:assert other['choices'][0]['text']==expected
                         assert other['usage']['completion_tokens']>0 and restored['choices'][0]['text']==expected
                         assert restored['dllm_timing']['source_tier']=='host'
                         checks['model_swap' if args.swap_model else 'alias_swap']=True
                         if args.swap_model:checks['swap_sample']=other['choices'][0]['text']
                         json_post('/v1/models/unload',dict(model='a',release_host=True))
-                        restored=json_post('/v1/completions',body)
+                        restored=json_post('/v1/completions',body,timing='disk_reload_request')
                         assert restored['dllm_timing']['source_tier']=='disk' and restored['choices'][0]['text']==expected
                         checks['disk_reload']=True
                         with post('/v1/completions',{**body,'stream':True,'max_tokens':256}) as response:

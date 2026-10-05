@@ -41,6 +41,7 @@ Model licenses remain those of their respective publishers.
 |---|---|
 | GPU execution | Independent forward passes; CUDA/Triton/native optional CUDA C++; Apple MPS/Metal |
 | Model lifecycle | Download pinned snapshots or exact GGUF files; register/load/unload aliases; GPU and host residency; request-selected switching |
+| Resident projection cache | Opt-in, admission-accounted FP16 copies for qualified TinyLlama K-quants; 1973 MiB extra VRAM, ordinary packed fallback when budget/free memory is insufficient |
 | Persistent prepared weights | Opt-in safetensors cache for dense Q4/Q8; source identity and layout checks; no automatic disk eviction |
 | HTTP generation | Text chat and raw text/token-ID completions; streaming SSE; usage and timing; bounded admission and cancellation |
 | Sampling | Greedy or request-seeded temperature/top-p/top-k; repetition, frequency and presence penalties; token bias; text stops |

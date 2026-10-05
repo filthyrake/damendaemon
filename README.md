@@ -528,6 +528,16 @@ Published TinyLlama Q4_K_M passes model/layout and normal serving proof through
 Other Llama models retain the 512-context residual-selection limit.
 Backend status includes `cuda-kquant-residual` when selected.
 
+For the qualified TinyLlama Q4_K_M checkpoint on CUDA, optionally set
+`DLLM_KQUANT_DENSE_CACHE_MIB=2048` to retain 1973 MiB of FP16-expanded projection
+copies for multi-row execution. Default is zero. Core weights, KV and workspace
+reserves take priority; an insufficient cache budget or free VRAM leaves packed
+execution in place. `/v1/models/status` reports `gpu_projection_cache_bytes`.
+Normal A2 server checks show about 20% lower four-request latency (131 to 164
+aggregate output tokens/s) and 4–9% lower single-request latency, with matching
+outputs and tested model swaps/reloads. Packed weights remain authoritative;
+this is an explicit memory-for-speed tradeoff, qualified through context 2048.
+
 For Llama 3.2 1B Q4_K_M/Q5_K_M, an independent FP32 mode addresses the observed
 long-context FP16 numerical gap. An optional FP32 residual library accelerates
 its decode without rounding inputs or output to FP16:

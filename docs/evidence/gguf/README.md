@@ -1676,3 +1676,54 @@ latency falls 3.9–8.6%. These are within-dllm gains for an additional 1.927 Gi
 of residency, not cross-engine wins or a free memory optimization. The
 prototype's performance proof is separate from normal-path admission and
 status qualification, which must pass before the cache is supported.
+
+
+### Normal admission-accounted TinyLlama resident cache
+
+The normal executor now supports `DLLM_KQUANT_DENSE_CACHE_MIB`, default zero.
+Selection is bounded to the qualified TinyLlama metadata, mixed precision,
+CUDA Q4_K/Q6_K and context up to 2048. Core weights, KV and existing workspace
+reserves are accounted first. A complete set of eligible projections is cached
+only when both the requested per-executor budget and remaining free VRAM cover
+it; otherwise ordinary packed execution remains available. The authoritative
+packed weights remain resident. Aliased storage is counted once, embedding
+storage is excluded, and single-row decode keeps its existing path.
+
+A 2048 MiB budget admits the tested 1973 MiB cache. Backend status includes
+`resident-kquant-cache`; `/v1/models/status` reports
+`gpu_projection_cache_bytes` per loaded model. The setting does not change
+other architectures or promote the experimental cache globally.
+
+`tinyllama-dense-cache-production-reference-a2.json` and
+`tinyllama-dense-cache-production-layout-a2.json` pass 96 independent and 128
+layout checks with assertions that normal cache selection is active, reporting
+2,068,840,448 bytes. `tinyllama-dense-cache-production-release-a2.json` passes
+two normal cached unloads plus a disabled-cache control, with all tensor
+references released and 25,559,040 bytes of stable cuBLAS workspace. The full
+local suite passes 320 tests, including exact budget boundaries, insufficient
+free memory, unique-storage accounting, scope exclusions and preservation of
+single-row decode. `tinyllama-dense-cache-production-budget-fallback-a2.json` additionally checks
+a positive but insufficient 1 MiB cache budget: zero projections are retained,
+ordinary execution succeeds and all memory-release gates pass.
+
+The normal-CLI A/B/B/A confirmation in
+`tinyllama-dense-cache-production-http-a2.json` passes every output and lifecycle
+gate, verifies the normal backend tag, and checks reported cache residency:
+zero in control phases and exactly 2,068,840,448 bytes in candidate phases.
+
+| Input / concurrency | Original seconds | Cached seconds | Original output tokens/s | Cached output tokens/s |
+| --- | ---: | ---: | ---: | ---: |
+| 16 / 1 | 0.208638 | 0.191722 | 76.69 | 83.45 |
+| 129 / 1 | 0.233278 | 0.212179 | 68.59 | 75.41 |
+| 2032 / 1 | 0.542663 | 0.521587 | 29.48 | 30.68 |
+| 129 / 2 | 0.341168 | 0.329117 | 93.80 | 97.23 |
+| 129 / 4 | 0.488414 | 0.390238 | 131.04 | 164.00 |
+
+Latencies and aggregate output throughput pool the measured rounds from both
+phases of each engine, excluding warmups. Throughput includes request prefill;
+it is not decode-only token speed. Four-request latency falls 20.1% and aggregate
+output throughput rises 25.2%. Single-request latency falls 3.9–9.0%. Both sides
+use ordinary native decode and zero idle coalescing. Combined-option results
+are qualified separately; these are within-dllm gains, not llama.cpp parity.
+The additional GPU-resident copies cost 1973 MiB in total across all cached
+projections; the cache does not reduce the authoritative packed checkpoint.

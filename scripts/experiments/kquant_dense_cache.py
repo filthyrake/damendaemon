@@ -20,9 +20,9 @@ def install_validation_dispatch():
     original_call = Linear.__call__
 
     def initialize(self, weights, host_scales, device, fallback, packed_formats=None,
-                   packed_decode=None, packed_prefill=None, q4_decode=None):
+                   packed_decode=None, packed_prefill=None, q4_decode=None, packed_cache=None):
         original_init(self, weights, host_scales, device, fallback, packed_formats,
-                      packed_decode, packed_prefill, q4_decode)
+                      packed_decode, packed_prefill, q4_decode, packed_cache)
         self.experimental_dense_cache = {}
         self.experimental_dense_cache_bytes = 0
         if device != 'cuda':

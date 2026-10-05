@@ -376,6 +376,11 @@ class Executor:
             for name,(width,spec) in packed_formats.items() if name!='embed'),default=0)
         if device_weight_bytes + kv_bytes + self.packed_workspace_bytes + 512 * 1024**2 > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
+        from .kquant_cache import plan as plan_cache, build as build_cache
+        cache_plan = plan_cache(c, model.weights, packed_formats, self.device, self.compute_dtype,
+                               self.llama_precision, self.context,
+                               free - device_weight_bytes - kv_bytes - self.packed_workspace_bytes - 512 * 1024**2)
+        self.packed_cache_bytes = cache_plan.bytes
         self.w = {}
         copies = {}
         for name, tensor in model.weights.items():
@@ -404,7 +409,8 @@ class Executor:
             self.q4_decode = select_q4(c, model.quantization, self.device, self.compute_dtype,
                                       self.llama_precision, self.context)
             self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats,
-                                       self.packed_decode, self.packed_prefill, self.q4_decode)
+                                       self.packed_decode, self.packed_prefill, self.q4_decode,
+                                       packed_cache=build_cache(cache_plan, self.w, packed_formats))
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
@@ -436,6 +442,8 @@ class Executor:
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if model.scales or packed_formats:
             self.kernel_backend += '+'+model.quantization
+            if self.packed_cache_bytes:
+                self.kernel_backend += '+resident-kquant-cache'
             if self.q4_decode is not None:
                 self.kernel_backend += '+cuda-q4-residual'
             if self.packed_decode is not None:

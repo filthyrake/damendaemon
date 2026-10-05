@@ -21,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model'); parser.add_argument('--output', required=True)
     parser.add_argument('--context',type=int,default=512,help='context capacity, at least 512')
+    parser.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     experiments=parser.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
@@ -79,11 +80,14 @@ def main():
     try:
         with torch.inference_mode():
             executor = make_executor(source, use_graph=False, max_batch=1)
+            if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
+                raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:
                 experiment['resident_cache_bytes'] = executor.quant_linear.experimental_dense_cache_bytes
                 if not experiment['resident_cache_bytes']:
                     raise ValueError('dense-cache experiment selected no projections')
             report['backend'] = executor.kernel_backend
+            report['resident_projection_cache_bytes'] = getattr(executor, 'packed_cache_bytes', 0)
             report['precision'] = dict(matrix=str(executor.compute_dtype), residual=str(executor.residual_dtype))
             for ids in prompts:
                 actual = executor.prefill(ids); trace = []

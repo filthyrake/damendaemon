@@ -78,6 +78,7 @@ def main():
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
     p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
+    p.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     experiments=p.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
@@ -174,6 +175,8 @@ def main():
     with torch.inference_mode():
         for graph in (False, True):
             executor = make_executor(source, use_graph=graph)
+            if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
+                raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:
                 experiment['resident_cache_bytes'] = executor.quant_linear.experimental_dense_cache_bytes
                 if not experiment['resident_cache_bytes']:
@@ -181,6 +184,7 @@ def main():
             if (args.experimental_residual_f32 or args.experimental_prefill_f32) and executor.compute_dtype!=torch.float32:
                 raise ValueError('FP32 experiment requires an FP32 executor policy')
             precision = dict(matrix_dtype=str(executor.compute_dtype), residual_dtype=str(executor.residual_dtype),
+                             resident_projection_cache_bytes=getattr(executor, 'packed_cache_bytes', 0),
                              nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise, backend=executor.kernel_backend)
             for index, ids in enumerate(prompts):
                 expected = None if args.serial_reference else reference(torch.tensor([ids], device='cuda'), use_cache=True)

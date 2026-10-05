@@ -3,6 +3,7 @@ import argparse
 import gc
 import hashlib
 import json
+import os
 from pathlib import Path
 import weakref
 
@@ -19,11 +20,16 @@ def main():
     parser.add_argument('--output', required=True)
     parser.add_argument('--expanded-control', action='store_true',
                         help='exercise normal dense execution with independently expanded weights, no cache hook')
+    parser.add_argument('--production-cache', action='store_true', help='verify normal cache selection and budget fallback')
     args = parser.parse_args()
+    if args.expanded_control and args.production_cache:
+        parser.error('choose either expanded control or production cache')
+    os.environ.pop('DLLM_KQUANT_DENSE_CACHE_MIB', None)
     require_gpu()
     torch.set_num_threads(4)
-    report = dict(experiment=None if args.expanded_control else kquant_dense_cache.install_validation_dispatch(),
+    report = dict(experiment=None if args.expanded_control or args.production_cache else kquant_dense_cache.install_validation_dispatch(),
                   expanded_control=args.expanded_control,
+                  production_cache=args.production_cache,
                   passed=False, cycles=[], device=torch.cuda.get_device_name())
     with open(args.model, 'rb') as handle:
         report['model_sha256'] = hashlib.file_digest(handle, 'sha256').hexdigest()
@@ -33,19 +39,26 @@ def main():
         source = expanded(source)
     prompt = source.raw_tokens('Explain how the ocean influences coastal weather.')
     previous_released = None
+    caps = ((1, 1, 1) if args.expanded_control else
+            (2048 * 1024**2, 2048 * 1024**2, 1024**2) if args.production_cache else
+            (3 * 1024**3, 3 * 1024**3, 1))
     try:
         with torch.inference_mode():
-            for cap in ((1, 1, 1) if args.expanded_control else (3 * 1024**3, 3 * 1024**3, 1)):
+            for cycle, cap in enumerate(caps):
                 kquant_dense_cache.CACHE_LIMIT = cap
+                if args.production_cache:
+                    os.environ['DLLM_KQUANT_DENSE_CACHE_MIB'] = str(cap // 1024**2)
                 gc.collect()
                 torch.cuda.empty_cache()
                 before = torch.cuda.memory_allocated()
                 executor = make_executor(source, use_graph=True, max_batch=4)
-                cached = getattr(executor.quant_linear, 'experimental_dense_cache_bytes', 0)
+                cached = (executor.packed_cache_bytes if args.production_cache else
+                          getattr(executor.quant_linear, 'experimental_dense_cache_bytes', 0))
                 refs = [weakref.ref(executor)] + [weakref.ref(value) for value in executor.w.values()]
                 refs += [weakref.ref(value) for value in getattr(
                     executor.quant_linear, 'experimental_dense_cache', {}).values()]
-                assert (cached > 0) if cap > 1 else (cached == 0)
+                refs += [weakref.ref(value) for value in getattr(executor.quant_linear, 'packed_cache', {}).values()]
+                assert (cached > 0) if not args.expanded_control and cycle < 2 else (cached == 0)
                 logits = executor.prefill_batch([prompt] * 4, list(range(4)))
                 logits, tokens = executor.decode_batch(logits.argmax(-1).tolist(), list(range(4)))
                 assert torch.isfinite(logits).all()
