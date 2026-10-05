@@ -1037,3 +1037,14 @@ Score-based merge reconstruction follows the approach in Apache-2.0
 Transformers `convert_slow_tokenizer.generate_merges`; native behavior is checked
 against MIT-licensed llama.cpp. Both are validation references rather than
 inference engines used by dllm. The local regression suite passes 295 tests.
+
+The initial full-model A2 report `mistral-spm-q4-reference-a2.json` passes all
+64 complete-logit comparisons (four prompts, eight steps, eager and graph),
+with exact greedy-token agreement, maximum absolute error 0.08594 and maximum
+relative RMS 0.2114%. The independent reference dequantizes the same Q4_0 bytes
+with `gguf.quants` and executes HF Mistral eager attention in FP16. dllm uses
+its default Llama mixed-precision policy. Context is 512. The new
+`--serial-reference` verifier mode saves CPU logits and releases the expanded
+HF GPU weights before loading dllm, allowing this check on the A2 without
+altering either runtime's arithmetic. This is numerical proof, not a timing
+comparison or longer-window qualification.

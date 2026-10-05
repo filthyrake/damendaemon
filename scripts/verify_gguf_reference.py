@@ -72,6 +72,7 @@ def main():
     p.add_argument('--context',type=int,default=512,help='context capacity; must be at least 512')
     p.add_argument('--weight-rounding',choices=('float16','kquant-float32'),default='float16',
                    help='explicit coefficient policy; FP32 K projections retain FP16 embedding/vector values')
+    p.add_argument('--serial-reference',action='store_true',help='cache independent HF logits, release HF GPU weights, then run dllm')
     p.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
@@ -135,6 +136,28 @@ def main():
             raise ValueError('invalid benchmark output length')
         if any(not ids or len(ids)+steps-1>args.context or any(type(t) is not int or not 0<=t<source.config['vocab_size'] for t in ids) for ids in prompts):
             raise ValueError('invalid benchmark prompt tokens or context budget')
+    reference_cache = {}
+    if args.serial_reference:
+        # Large checkpoints need not hold HF's expanded weights and dllm's
+        # packed weights on the GPU together. The oracle still executes independently.
+        with torch.inference_mode():
+            for graph in (False, True):
+                for index, ids in enumerate(prompts):
+                    previous = next(c for c in teacher["cases"] if c["graph"] == graph and c["case"] == index) if teacher else None
+                    if previous and previous['prompt_tokens'] != len(ids):
+                        raise ValueError('teacher trace uses a different prompt/context length')
+                    expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
+                    trace = []
+                    for step in range(steps):
+                        target = expected.logits[:, -1, :].cpu()
+                        trace.append(target)
+                        token = previous["reference_tokens"][step] if previous else target.argmax(-1).item()
+                        if step < steps-1:
+                            expected = reference(torch.tensor([[token]], device='cuda'), past_key_values=expected.past_key_values, use_cache=True)
+                    reference_cache[graph, index] = trace
+                    del expected
+        del reference
+        gc.collect(); empty_cache()
     with torch.inference_mode():
         for graph in (False, True):
             executor = make_executor(source, use_graph=graph)
@@ -143,14 +166,14 @@ def main():
             precision = dict(matrix_dtype=str(executor.compute_dtype), residual_dtype=str(executor.residual_dtype),
                              nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise, backend=executor.kernel_backend)
             for index, ids in enumerate(prompts):
-                expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
+                expected = None if args.serial_reference else reference(torch.tensor([ids], device='cuda'), use_cache=True)
                 actual = executor.prefill(ids)
                 errors = []; output = []; actual_tokens = []; margins = []; mismatches = []; forced = []; eos_step = None
                 previous = next(c for c in teacher["cases"] if c["graph"] == graph and c["case"] == index) if teacher else None
                 if previous and previous['prompt_tokens'] != len(ids):
                     raise ValueError('teacher trace uses a different prompt/context length')
                 for step in range(steps):
-                    target = expected.logits[:, -1, :]
+                    target = reference_cache[graph, index][step].to('cuda') if args.serial_reference else expected.logits[:, -1, :]
                     error = actual.float()-target.float()
                     absolute = error.abs().max().item()
                     relative = (error.square().mean()/target.float().square().mean().clamp_min(1e-12)).sqrt().item()
@@ -164,7 +187,8 @@ def main():
                     forced.append(next_input)
                     if token != actual.argmax(-1).item(): mismatches.append(step)
                     if step < steps-1:
-                        expected = reference(torch.tensor([[next_input]], device='cuda'), past_key_values=expected.past_key_values, use_cache=True)
+                        if not args.serial_reference:
+                            expected = reference(torch.tensor([[next_input]], device='cuda'), past_key_values=expected.past_key_values, use_cache=True)
                         actual, _ = executor.decode(next_input)
                 cases.append(dict(graph=graph, case=index, prompt_tokens=len(ids), errors=errors,
                                   greedy_mismatches=mismatches, reference_tokens=output, actual_tokens=actual_tokens, reference_top_two_margins=margins, teacher_tokens=forced, eos_step=eos_step))
@@ -185,7 +209,7 @@ def main():
     if 'compensated-kquant-prefill-f32' in precision['backend']:
         from dllm import kquant_prefill_kernels
         prefill_kernel=hashlib.sha256(Path(kquant_prefill_kernels.__file__).read_bytes()).hexdigest()
-    report = dict(production_prefill_kernel_sha256=prefill_kernel, passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
+    report = dict(serial_reference=args.serial_reference, reference_cache_bytes=sum(t.numel()*t.element_size() for trace in reference_cache.values() for t in trace), production_prefill_kernel_sha256=prefill_kernel, passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
                   precision=precision, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
                   benchmark_report=args.benchmark_report, steps=steps,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
