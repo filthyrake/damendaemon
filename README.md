@@ -456,7 +456,9 @@ differences, and this is not a general AWQ quality or performance-parity claim.
 See [the exact evidence and limitations](docs/evidence/awq/README.md).
 
 Qwen3-4B-AWQ passes 128 independent FP32-reference checks through 2048 context
-with both Triton and native Marlin. It preserves the existing Qwen3 mixed
+with both Triton and native Marlin. Both pass fixed/paged, eager/graph, batched
+and chunked layout checks; native server lifecycle and switching to the smaller
+Qwen2 AWQ checkpoint also pass. It preserves the existing Qwen3 mixed
 precision policy: FP16 matrix/KV storage with FP32 residuals and elementwise
 intermediates. Its BF16 dense checkpoint tensors are converted to FP16 for GPU
 execution; scales remain FP16. Earlier FP16-reference differences are retained

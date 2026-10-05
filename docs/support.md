@@ -118,8 +118,8 @@ SDPA, fixed/paged/graph/batched/chunked and server lifecycle checks pass. Eager
 FP16 reference differences remain documented; no general AWQ architecture or
 engine performance parity is claimed. Qwen3-4B-AWQ now passes the full 128-check
 FP32-reference gate through context 2048 with Triton and native Marlin; Qwen3
-retains its existing mixed precision policy. Separate layout and lifecycle
-qualification is recorded in the evidence as it completes. The optional native
+retains its existing mixed precision policy. Both backends pass layout checks;
+native HTTP lifecycle and switching to the smaller Qwen2 AWQ checkpoint pass. The optional native
 Marlin backend is limited to the qualified small Qwen2 and Qwen3-4B geometries
 on NVIDIA A2 through context 2048 and batch capacity four; its packed storage replaces the
 original GPU format and native scratch is included in admission.

@@ -304,14 +304,14 @@ in attention/norm/rotary/elementwise work. Profiling uses a different prompt
 and profiler instrumentation; it explains costs rather than replacing HTTP
 timing. The earlier original AWQ profile spent about 5.037 ms in packed GEMMs.
 
-## Qwen3 AWQ qualification in progress
+## Qwen3 AWQ qualification history
 
 Pinned official `Qwen/Qwen3-4B-AWQ` revision
 `74d4bd2bd4bff9cafc9345221320bffb08b406a3` adds bias-free projections, Q/K
 normalization, separate query/head dimensions, and BF16 dense tensors alongside
 FP16 scales. The isolated loader flag handles these schemas and rejects BF16
-dense values outside the declared FP16 execution range. Default registration
-still rejects Qwen3 AWQ while qualification is incomplete.
+dense values outside the declared FP16 execution range. During these initial runs, default registration
+rejected Qwen3 AWQ while the FP32 qualification described below was incomplete.
 
 The first 512-context independent HF SDPA comparison passes 122/128 numerical
 checks and matches all 128 greedy tokens. Six checks exceed the unchanged
@@ -406,3 +406,13 @@ Qwen3 architecture/checkpoint scope; layout and HTTP lifecycle proof follow.
 Ordinary Qwen3 AWQ Triton execution also passes all 128 fixed/paged,
 eager/graph, batch-1/2/4 and chunked-layout comparisons through context 2048;
 worst relative RMS is 0.8259%, with exact greedy agreement.
+
+Normal native Qwen3 execution passes all 128 layout comparisons through 2048
+context (worst RMS 0.9817%, exact greedy choices). Its full HTTP lifecycle also
+passes, including switching to the distinct small Qwen2 AWQ checkpoint and back.
+All three release cycles return to 25559040 bytes with tracked references
+released; resident allocations are about 3.931 GB. One host restore is observed
+at 1.8317 seconds, retained as a lifecycle observation rather than a swap-speed
+benchmark. The normal model-factory, independent-reference, layout and server
+proofs now all cover the native Qwen3 backend. Matched throughput measurements
+are the next gate and are not inferred from these correctness results.
