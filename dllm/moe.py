@@ -36,6 +36,9 @@ class OlmoeExecutor(BatchExecutor):
     def __init__(self, model, use_graph=True, max_batch=4, kernels=None):
         if selected_device() != 'cuda' or (kernels or os.environ.get('DLLM_KERNELS','auto')) == 'torch':
             raise ValueError('OLMoE currently requires native CUDA kernels')
+        from .moe_prefill import qualified_scope
+        self.grouped_prefill = qualified_scope(model.config, torch.cuda.get_device_name(),
+                                               model.quantization, model.max_context, max_batch)
         from . import moe_kernels
         self.expert_kernels = moe_kernels
         super().__init__(model,use_graph,max_batch,kernels)
@@ -67,6 +70,19 @@ class OlmoeExecutor(BatchExecutor):
             probabilities = probabilities/probabilities.sum(-1,keepdim=True)
         up,down = self.w[f'{layer}.experts_up'],self.w[f'{layer}.experts_down']
         if prefill:
+            from .moe_prefill import use_grouped_prefill
+            if (use_grouped_prefill(self.grouped_prefill, hidden.shape[0])
+                    and hidden.dtype == torch.float32
+                    and up.dtype == torch.int8 and down.dtype == torch.int8):
+                from .grouped_moe import prepare_routes, linear
+                routes = prepare_routes(selected, self.c['num_experts'])
+                packed = linear(hidden, up, self._expert_scales(up), routes, 2*width, True)
+                activated = self.kernels.swiglu(packed, True)
+                del packed
+                projected = linear(activated, down, self._expert_scales(down),
+                                   routes, self.c['hidden_size'], False)
+                del activated
+                return self.expert_kernels.combine(projected, probabilities)
             from .expert_routes import grouped_routes
             # Stable groups retain token/route and expert accumulation order,
             # while replacing per-expert nonzero reads with one count vector.

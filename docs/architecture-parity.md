@@ -407,14 +407,14 @@ An isolated A2 experiment keeps route counts, expert tile assignment and Q8
 expert projections on the GPU, using TF32x3 matrix products with FP32 outputs.
 It passes all 82 independent whole-model oracle checks (worst relative RMS
 0.000242%), but changes reduction order and is not bitwise equivalent. The
-normal runtime still uses the qualified stable grouping above.
+initial measurements below compare against the qualified stable grouping above.
 
 Against that improved runtime, alternating same-resident-weight measurements
 show prefill medians of 0.175 vs 0.327 seconds at 32 input tokens and 0.325 vs
 0.440 seconds at 128. At 512 and 1024 tokens the experiment is slower: 1.018 vs
 0.799 and 1.950 vs 1.338 seconds. Boundary checks also win at 1/4/16/64/129
 but regress at 256 tokens (0.557 vs 0.533 seconds). These are direct prefill
-measurements, not HTTP throughput. No default selection is enabled yet.
+measurements, not HTTP throughput.
 
 Evidence: [independent oracle](evidence/architectures/olmoe-device-grouped-reference-a2.json),
 [dispatch source fingerprint](evidence/architectures/olmoe-device-grouped-reference-dispatch.json),
@@ -432,6 +432,16 @@ It improves the 256-token point but still regresses at longer prompts and
 loses to the 16-row experiment for short prompts. It remains experimental.
 See [larger-tile measurements](evidence/architectures/olmoe-device-grouped32-prefill-a2.json)
 and [independent model gate](evidence/architectures/olmoe-device-grouped32-reference-a2.json).
+
+The normal runtime now selects the 16-row tile only for the tested A2 Q8
+OLMoE geometry, context at most 2048, batch capacity at most four and prompts
+of 1–128 tokens. Longer prompts and other configurations retain the previous
+path. The integrated runtime passes all 82 independent checks including mixed
+short/long prompts and reused decode slots (worst relative RMS 0.000389%);
+349 local tests pass, including selection boundaries. Streaming HTTP performance
+and mixed-model lifecycle qualification are in progress. See
+[normal-runtime oracle](evidence/architectures/olmoe-device-grouped-normal-reference-a2.json)
+and [source fingerprints](evidence/architectures/olmoe-device-grouped-normal-source.json).
 
 
 ## Q8 short-prefill latency

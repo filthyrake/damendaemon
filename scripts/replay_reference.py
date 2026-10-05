@@ -85,6 +85,7 @@ def main():
         'weight_cache_status':model.weight_cache_status, 'weight_quantization': model.quantization, 'host_weight_bytes': model.bytes, 'reference_attention': trace.get('reference_attention', 'sdpa'), 'graph_requested': not args.no_graph,
         'kernel_backend': executor.kernel_backend, 'compute_dtype': str(executor.compute_dtype),
         'qwen3_precision': getattr(executor, 'qwen3_precision', None),
+        'olmoe_grouped_prefill': getattr(executor, 'grouped_prefill', None),
         'llama_precision': getattr(executor, 'llama_precision', None),
         'residual_dtype': str(executor.residual_dtype),
         'dense_precision': getattr(executor, 'dense_precision', None), 'checks': checks, 'timings': timings}, indent=2))
