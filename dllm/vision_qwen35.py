@@ -1,4 +1,4 @@
-"""Independent Qwen3.5 still-image encoder; not yet wired into serving.
+"""Independent Qwen3.5 still-image encoder for experimental serving.
 
 FP16 projection storage, FP32 normalization/residuals/attention and outputs.
 CUDA projections reuse dllm's compensated Tensor Core products. The published
@@ -107,7 +107,9 @@ class VisionEncoder:
         side=isqrt(self.c['num_position_embeddings'])
         learned=[]
         for coords,(_,height,width) in zip(coordinates,grids):
-            point=coords.float()*(side-1)/torch.tensor([height-1,width-1],device=self.device)
+            # Scalar divisors avoid a synchronous host tensor upload during capture.
+            scaled=coords.float()*(side-1)
+            point=torch.stack((scaled[:,0]/(height-1),scaled[:,1]/(width-1)),dim=-1)
             lower=point.floor().long();upper=(lower+1).clamp_max(side-1)
             fraction=point-lower
             rows=torch.stack((lower[:,0],upper[:,0]),dim=-1)

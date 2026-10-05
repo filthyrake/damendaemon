@@ -26,8 +26,12 @@ def main():
     parser.add_argument('reference')
     parser.add_argument('--output',required=True)
     parser.add_argument('--allocation-diagnostics',action='store_true')
+    parser.add_argument('--warm-requests',type=int,default=3)
+    parser.add_argument('--stage-profile',help='diagnostic stage JSONL path; adds GPU synchronization')
     parser.add_argument('--allocation-reference',help='trusted allocator trace identifying persistent cuBLAS workspace')
     args=parser.parse_args()
+    if args.warm_requests<1 or (args.stage_profile and args.allocation_diagnostics):
+        parser.error("positive warm request count and at most one diagnostic mode required")
     reference=torch.load(args.reference,weights_only=True)
     tokenizer=Tokenizer.from_file(str(Path(reference['model'])/'tokenizer.json'))
     tokenizer.no_padding();tokenizer.no_truncation()
@@ -42,10 +46,10 @@ def main():
         payloads.append(dict(model='a',messages=[dict(role='user',content=content)],
             max_tokens=8,temperature=0,chat_template_kwargs=dict(enable_thinking=False)))
     report=dict(passed=False,reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
-                quantization=reference.get('text_quantization','none'),checks=[],trials=[],statuses={},
+                stage_profile=bool(args.stage_profile),quantization=reference.get('text_quantization','none'),checks=[],trials=[],statuses={},
                 torch=str(torch.__version__),device_uuid=os.environ.get('CUDA_VISIBLE_DEVICES'),
                 source_sha256={str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in
-                    [Path('dllm')/name for name in ('models.py','qwen2.py','runtime.py','scheduler.py','server.py',
+                    [Path('dllm')/name for name in ('hybrid.py','cuda_warmup.py','models.py','qwen2.py','runtime.py','scheduler.py','server.py',
                     'vision_policy.py','vision_model.py','vision_hybrid.py','vision_qwen35.py','vision_messages.py')]})
     from dllm.models import weight_bytes
     with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'1'}):
@@ -64,8 +68,10 @@ def main():
         logpath=Path(directory)/'server.log'
         env={**os.environ,'DLLM_EXPERIMENTAL_VISION':'1',
              'DLLM_QUANTIZATION':reference.get('text_quantization','none')}
+        if args.stage_profile:env['DLLM_VISION_STAGE_PROFILE']=args.stage_profile
         with logpath.open('w') as log:
             command=([sys.executable,'scripts/diagnose_vision_server.py'] if args.allocation_diagnostics
+                     else [sys.executable,'scripts/profile_vision_server.py'] if args.stage_profile
                      else [sys.executable,'-m','dllm'])
             process=subprocess.Popen([*command,'serve','--port','0',
                 '--context','1024','--batch-size','4','--gpu-models','1','--host-models','2',
@@ -105,7 +111,7 @@ def main():
                 loaded=status('loaded')
                 assert loaded['models'][0]['vision_gpu_weight_bytes']==204977152
                 assert loaded['models'][0]['host_weight_bytes']==report['estimated_host_weight_bytes']
-                for _ in range(3):
+                for _ in range(args.warm_requests):
                     result=request(payloads[0]);check(result,0,'warm')
                     report['trials'].append(dict(name='warm-square',http_seconds=result['measured_http_seconds'],
                         timing=result['dllm_timing'],usage=result['usage']))

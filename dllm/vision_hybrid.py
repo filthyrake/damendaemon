@@ -1,4 +1,4 @@
-"""Image/text hybrid backend; explicit construction only, not serving dispatch.
+"""Experimental image/text hybrid backend with opt-in serving dispatch.
 
 Shares the text backbone with HybridExecutor and keeps image rotary offsets
 separate from physical KV indices. Validation scope is documented separately.

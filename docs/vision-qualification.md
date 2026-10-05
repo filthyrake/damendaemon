@@ -216,3 +216,34 @@ For the square image with eight output tokens, three warm Q8 HTTP requests took
 is retained and requires investigation. These short service checks include HTTP
 and image decoding and are not a controlled cross-runtime performance comparison.
 They must not be combined with the earlier 32-token core-only measurements.
+
+### Warm-request follow-up and stage profile
+
+The 342 ms Q8 warm outlier did not reproduce in either 30-request follow-up.
+An ordinary-server run passed all 47 checks with warm HTTP min/median/p95/max
+105.3/108.3/112.1/119.9 ms (nearest-rank p95). The synchronized diagnostic run
+also passed all 47 checks, but adds stage instrumentation and is not a production
+benchmark. Its median encoder time was 16.9 ms and image/text prefill 42.4 ms;
+chat token preparation was 4.4 ms, including 1.8 ms image decoding and 1.5 ms
+pixel preparation. No slow measured prefill overlapped a substantial Python GC
+pause. The initial outlier remains unexplained rather than attributed to GC or
+hidden by changing runtime behavior. Reports and raw stage events are retained.
+
+### Encoder graph candidate: keep experimental
+
+`scripts/bench_vision_graph.py` compares ordinary encoder execution with a
+single-shape graph cache in `scripts/experiments/vision_encoder_graph.py`.
+It retains only one graph, reuses its input buffer, and explicitly checks changed
+pixels with the same shape. All five image fixtures and their inverted-pixel
+probes match eager features exactly. ABBA runs use two warmups and ten timed
+iterations per phase, including packed-pixel host-to-device copying.
+
+The median encoder savings are only 1.5–2.5 ms: square 16.34→14.06 ms, resized
+19.24→17.74 ms, paired images 43.32→41.51 ms. Creating/replacing a graph costs
+169–286 ms in this experiment. This does not justify adding capture latency to
+ordinary image requests; graph encoding remains an isolated experiment and is
+not enabled by the serving opt-in. The initial capture failure is retained:
+constructing a constant divisor tensor uploaded host data during capture. Scalar
+division now produces the same position construction without that upload.
+Full FP16 and Q8 image/text replays each still pass all 54 independent
+logit/token checks; all 366 local regression tests pass.
