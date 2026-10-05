@@ -1,0 +1,30 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/venv/bin/python",
+    "-m",
+    "scripts.experiments.serve_moe_baseline",
+    "serve",
+    "--port",
+    "54333",
+    "--context",
+    "2048",
+    "--batch-size",
+    "4",
+    "--host-gib",
+    "12.0",
+    "--model",
+    "a=/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498"
+  ],
+  "model": {
+    "repository": "allenai/OLMoE-1B-7B-0924-Instruct",
+    "revision": "7f1c97f440f06ce36705e4f2b843edb5925f4498",
+    "path": "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_QUANTIZATION": "q8_0",
+    "DLLM_DEVICE": "cuda",
+    "DLLM_EXPERIMENT_MOE_BASELINE": "/home/damen/dllm-dev/results/moe-before-grouped-prefill.py",
+    "DLLM_EXPERIMENT_MOE_REPORT": "/home/damen/dllm-dev/compare-dllm-olmoe-grouped-control-b2-source.json"
+  }
+}

@@ -384,6 +384,17 @@ from 0.4799/0.6143/0.9701/1.4837 seconds to
 HTTP timing is a separate gate. Reports use the `olmoe-grouped-` prefix under
 `evidence/architectures`.
 
+The repeated real HTTP comparison uses the same 512 input IDs, 32 outputs,
+Q8 checkpoint, context 2048 and capacity four. Control/candidate/candidate/control
+phases each contain five measured rounds after warmup. At concurrency 1/2/4,
+median response latency decreases from 1.3077/2.5598/5.0717 seconds to
+1.1535/2.2547/4.4885 seconds (11.8/11.9/11.5%). All output text and token counts
+match. First-output medians improve by about 15% at concurrency one/four;
+concurrency-two control phases vary substantially with admission timing, so its
+combined first-output percentage is not treated as an isolated kernel gain.
+Raw trials, baseline source hashes and phase medians accompany
+`olmoe-grouped-http-summary-a2.json`.
+
 ## Q8 short-prefill latency
 
 Fused dequantization/Tensor Core multiplication now handles 2–128 FP16 rows;
