@@ -2,10 +2,12 @@
 import argparse
 from collections import defaultdict
 import json
+from pathlib import Path
+import time
 
 import torch
 
-from dllm.qwen2 import ModelWeights, Executor
+from dllm.models import load
 from dllm.runtime import require_gpu, make_executor
 
 
@@ -15,21 +17,36 @@ def main():
     parser.add_argument("--context", type=int, default=256)
     parser.add_argument("--steps", type=int, default=16)
     parser.add_argument("--eager", action="store_true")
+    parser.add_argument('--batch-size', type=int, choices=(1,2,4), default=1)
+    parser.add_argument('--quantization', default=None)
+    parser.add_argument('--output')
     args = parser.parse_args()
     require_gpu()
-    model = ModelWeights(args.path, args.context)
-    executor = make_executor(model, use_graph=not args.eager)
+    torch.set_num_threads(4)
+    started = time.perf_counter()
+    model = load(args.path, args.context, args.quantization)
+    host_seconds = time.perf_counter()-started
+    started = time.perf_counter()
+    executor = make_executor(model, use_graph=not args.eager, max_batch=args.batch_size)
+    torch.cuda.synchronize()
+    activation_seconds = time.perf_counter()-started
     prompt = model.chat_tokens([{"role": "user", "content": "Explain matrix multiplication in detail."}])
-    token = executor.prefill(prompt).argmax(-1).item()
-    for _ in range(3):
-        _, next_token = executor.decode(token)
-        token = next_token.item()
+    if len(prompt)+3+args.steps > args.context:raise ValueError('profile exceeds context')
+    slots = list(range(args.batch_size))
+    token = (executor.prefill(prompt).argmax(-1).item() if args.batch_size==1 else
+             executor.prefill_batch([prompt]*args.batch_size,slots).argmax(-1).tolist())
+    def decode(token):
+        if args.batch_size==1:
+            _, next_token = executor.decode(token)
+            return next_token.item()
+        _, next_token = executor.decode_batch(token,slots)
+        return next_token.tolist()
+    for _ in range(3):token=decode(token)
     torch.cuda.synchronize()
     with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU,
                                             torch.profiler.ProfilerActivity.CUDA]) as profile:
         for _ in range(args.steps):
-            _, next_token = executor.decode(token)
-            token = next_token.item()
+            token = decode(token)
         torch.cuda.synchronize()
     kernels = defaultdict(lambda: {"calls": 0, "total_us": 0.0})
     for event in profile.events():
@@ -38,10 +55,14 @@ def main():
             kernels[event.name]["total_us"] += event.self_device_time_total
     ordered = sorted(({"name": name, **value} for name, value in kernels.items()),
                      key=lambda value: value["total_us"], reverse=True)
-    print(json.dumps({"context": args.context, "steps": args.steps, "graph": not args.eager,
-                      "kernel_calls_per_token": sum(k["calls"] for k in ordered) / args.steps,
-                      "kernel_time_us_per_token": sum(k["total_us"] for k in ordered) / args.steps,
-                      "kernels": ordered}, indent=2))
+    report = {"batch_size":args.batch_size, "backend":executor.kernel_backend,
+                      "host_preparation_seconds":host_seconds, "executor_activation_seconds":activation_seconds,
+                      "context": args.context, "steps": args.steps, "graph": not args.eager,
+                      "kernel_calls_per_decode_step": sum(k["calls"] for k in ordered) / args.steps,
+                      "kernel_time_us_per_decode_step": sum(k["total_us"] for k in ordered) / args.steps,
+                      "kernels": ordered}
+    if args.output:Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
+    print(json.dumps(report, indent=2))
 
 
 if __name__ == "__main__":

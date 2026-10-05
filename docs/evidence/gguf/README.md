@@ -1106,3 +1106,42 @@ decodings (`mistral-spm-generated-tokenizer-reference.json`, accompanying oracle
 and the earlier expanded request corpus). Scheduler streaming and fallback
 regressions pass; the complete local suite has 298 tests. The earlier failed
 HTTP report is intentionally retained; post-fix server comparison is separate.
+
+Normal-server post-fix confirmation passes for all three benchmark prompts,
+both streamed and nonstreamed, against independently qualified HF token traces
+(`mistral-spm-q4-generated-http-a2.json`). The 129- and 400-token cases now also
+match the retained llama.cpp text exactly. The 16-token wording difference
+remains and is not hidden by this narrower passing gate. Initial activation
+in this one warm-filesystem observation took 13.589 s; it is not a cold-disk or
+multi-run loading benchmark.
+
+## Legacy Q4 decode bottleneck and isolated integer-dot candidate
+
+`mistral-spm-q4-profile-b{1,2}-a2.json` profiles normal graph execution. Native
+Q4 GEMV consumes 40.81 of 41.94 ms of measured GPU work per single-request decode
+step. At batch two, Q4 GEMM consumes 46.40 of 47.79 ms per step. These are profiler
+observations, not standalone end-to-end throughput measurements. Field labels
+were corrected from `per_token` to `per_decode_step` without changing values;
+a batch-two step emits two tokens. Both profiles use the normal loader, with
+about 9.0 s host preparation and 3.1–3.2 s executor creation observed individually.
+
+`scripts/experiments/q4_residual.cu` is an isolated integer-dot experiment using
+dllm's existing two-term dyadic int8 activation quantizer. It preserves packed
+Q4_0 bytes and scales, but applies coefficient scaling in FP32 rather than
+rounding every dequantized coefficient to FP16. This arithmetic difference is
+explicit and requires independent full-model validation before promotion.
+
+`q4-residual-matrices-a2.json` passes 108 matrix checks against FP16-rounded
+independent coefficients, covering six shapes, rows 1/2/4, bias on/off and
+activation exponents -14/0/10. Maximum RMS is 0.06186%. On the five large
+single-row projections the candidate takes 17–24% less GPU time than production.
+Batch-two/four cases do not justify selection; the batch-two down projection is
+2.10x slower. All timings and rejected shapes are retained. The experimental
+model hook therefore selects only one row, widths >=4096 divisible by 256, and
+outputs >=1024. Normal production dispatch is unchanged.
+
+Build the experiment separately with CUDA `nvcc -O3 -std=c++17 -arch=sm_86
+-shared -Xcompiler -fPIC scripts/experiments/q4_residual.cu -o PATH.so`.
+Set `DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY=PATH.so` only in an explicit validation
+process. `scripts/profile_q4_residual.py` reproduces matrix checks and timing;
+full-model verifiers use `--experimental-q4-residual`.

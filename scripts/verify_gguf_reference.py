@@ -78,6 +78,7 @@ def main():
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
     p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
     experiments=p.add_mutually_exclusive_group()
+    experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
     experiments.add_argument('--experimental-residual-f32', action='store_true')
     experiments.add_argument('--experimental-prefill-f32', action='store_true')
@@ -86,6 +87,9 @@ def main():
     if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
         p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
+    if args.experimental_q4_residual:
+        from experiments.q4_residual import install_validation_dispatch
+        experiment = install_validation_dispatch()
     if args.experimental_residual:
         from experiments.kquant_residual import install_validation_dispatch
         experiment = install_validation_dispatch()

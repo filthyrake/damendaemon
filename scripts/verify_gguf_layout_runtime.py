@@ -19,7 +19,12 @@ from dllm.runtime import make_executor, require_gpu
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model'); parser.add_argument('--output', required=True)
+    parser.add_argument('--experimental-q4-residual', action='store_true')
     args = parser.parse_args()
+    experiment = None
+    if args.experimental_q4_residual:
+        from experiments.q4_residual import install_validation_dispatch
+        experiment = install_validation_dispatch()
     if os.environ.get('DLLM_KV_CACHE_TOKENS'):
         raise ValueError('run with no inherited KV pool override')
     require_gpu(); torch.set_num_threads(4); torch.backends.cuda.matmul.allow_tf32 = False
@@ -27,7 +32,7 @@ def main():
     corpus = source.raw_tokens('The library contains books about oceans and mountains. ')
     prompts = [(corpus * ((n+len(corpus)-1)//len(corpus)))[:n] for n in (4, 128, 256, 384)]
     traces = []; checks = []
-    report = dict(passed=False, device=device_name(), torch=torch.__version__, context=512,
+    report = dict(experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=512,
                   model=str(Path(args.model).resolve()), host_bytes=source.bytes, comparisons=checks,
                   scope='layout equivalence to single-request fixed eager; independent model accuracy is separate')
     library = os.environ.get('DLLM_Q4_CUDA_LIBRARY')

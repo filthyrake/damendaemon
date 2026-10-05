@@ -1,0 +1,113 @@
+{
+  "passed": true,
+  "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
+  "cases": [
+    {
+      "prompt_tokens": 16,
+      "expected": "\n\n1. First, we need a sorted range. If the range is",
+      "timing": {
+        "source_tier": "disk",
+        "activation_seconds": 13.588894360000268,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+q4_0+cuda-gemv",
+        "weight_quantization": "gguf_q4_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 13.670918945004814,
+        "total_seconds": 14.30924581400177,
+        "decode_tokens_per_second": 23.498932488257115
+      },
+      "nonstream": {
+        "text": "\n\n1. First, we need a sorted range. If the range is",
+        "equal": true
+      },
+      "stream": {
+        "text": "\n\n1. First, we need a sorted range. If the range is",
+        "equal": true
+      },
+      "llama_reference_equal": false
+    },
+    {
+      "prompt_tokens": 129,
+      "expected": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 4.112996975891292e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+q4_0+cuda-gemv",
+        "weight_quantization": "gguf_q4_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.6265903449966572,
+        "total_seconds": 1.271452714005136,
+        "decode_tokens_per_second": 23.26077737031478
+      },
+      "nonstream": {
+        "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range",
+        "equal": true
+      },
+      "stream": {
+        "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range",
+        "equal": true
+      },
+      "llama_reference_equal": true
+    },
+    {
+      "prompt_tokens": 400,
+      "expected": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 4.0800077840685844e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+q4_0+cuda-gemv",
+        "weight_quantization": "gguf_q4_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float32",
+        "first_token_seconds": 0.5594032199878711,
+        "total_seconds": 1.2240559319907334,
+        "decode_tokens_per_second": 22.568176927765855
+      },
+      "nonstream": {
+        "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted",
+        "equal": true
+      },
+      "stream": {
+        "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted",
+        "equal": true
+      },
+      "llama_reference_equal": true
+    }
+  ],
+  "reference": "results/mistral-spm-q4-engine-prompts-reference-a2.json",
+  "benchmark": "results/mistral-spm-q4-http-a2.json",
+  "scope": "normal HTTP continuation decoding against independently qualified token traces",
+  "command": [
+    "/home/damen/dllm-dev/venv/bin/python",
+    "-m",
+    "dllm",
+    "serve",
+    "--model",
+    "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+    "--port",
+    "57685",
+    "--context",
+    "512",
+    "--batch-size",
+    "4",
+    "--kv-cache-tokens",
+    "0",
+    "--prefill-chunk-size",
+    "0",
+    "--prefix-cache-tokens",
+    "0"
+  ]
+}

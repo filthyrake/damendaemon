@@ -1,0 +1,79 @@
+{
+  "batch_size": 1,
+  "backend": "triton+q4_0+cuda-gemv",
+  "host_preparation_seconds": 9.065638012005365,
+  "executor_activation_seconds": 3.0993135610042373,
+  "context": 512,
+  "steps": 16,
+  "graph": true,
+  "kernels": [
+    {
+      "name": "void q4_gemv<1>(__half const*, unsigned char const*, __half const*, __half const*, __half*, int, int)",
+      "calls": 2064,
+      "total_us": 652957.9450000009
+    },
+    {
+      "name": "_attention",
+      "calls": 512,
+      "total_us": 8485.548999998977
+    },
+    {
+      "name": "void at::native::unrolled_elementwise_kernel<at::native::CUDAFunctor_add<float>, std::array<char*, 3ul>, 4, TrivialOffsetCalculator<2, unsigned int>, TrivialOffsetCalculator<1, unsigned int>, at::native::memory::LoadWithCast<2>, at::native::memory::StoreWithCast<1> >(int, at::native::CUDAFunctor_add<float>, std::array<char*, 3ul>, TrivialOffsetCalculator<2, unsigned int>, TrivialOffsetCalculator<1, unsigned int>, at::native::memory::LoadWithCast<2>, at::native::memory::StoreWithCast<1>)",
+      "calls": 1024,
+      "total_us": 3688.860999998753
+    },
+    {
+      "name": "_rms",
+      "calls": 1040,
+      "total_us": 2763.5680000007924
+    },
+    {
+      "name": "_swiglu",
+      "calls": 512,
+      "total_us": 978.4249999988606
+    },
+    {
+      "name": "_rope_batch",
+      "calls": 512,
+      "total_us": 967.9880000006306
+    },
+    {
+      "name": "_merge",
+      "calls": 512,
+      "total_us": 763.9230000011994
+    },
+    {
+      "name": "void at::native::reduce_kernel<512, 1, at::native::ReduceOp<c10::Half, at::native::ArgMaxOps<float>, unsigned int, long, 4> >(at::native::ReduceOp<c10::Half, at::native::ArgMaxOps<float>, unsigned int, long, 4>)",
+      "calls": 16,
+      "total_us": 209.37699999993492
+    },
+    {
+      "name": "void at::native::unrolled_elementwise_kernel<at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#7}::operator()() const::{lambda(float)#1}, std::array<char*, 2ul>, 4, TrivialOffsetCalculator<1, unsigned int>, TrivialOffsetCalculator<1, unsigned int>, at::native::memory::LoadWithCast<1>, at::native::memory::StoreWithCast<1> >(int, at::native::direct_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda()#3}::operator()() const::{lambda()#7}::operator()() const::{lambda(float)#1}, std::array<char*, 2ul>, TrivialOffsetCalculator<1, unsigned int>, TrivialOffsetCalculator<1, unsigned int>, at::native::memory::LoadWithCast<1>, at::native::memory::StoreWithCast<1>)",
+      "calls": 16,
+      "total_us": 51.74399999997331
+    },
+    {
+      "name": "void at::native::(anonymous namespace)::indexSelectSmallIndex<c10::Half, long, unsigned int, 2, 2, -2>(at::cuda::detail::TensorInfo<c10::Half, unsigned int>, at::cuda::detail::TensorInfo<c10::Half const, unsigned int>, at::cuda::detail::TensorInfo<long const, unsigned int>, int, int, unsigned int, long)",
+      "calls": 16,
+      "total_us": 50.55999999976484
+    },
+    {
+      "name": "void at::native::vectorized_elementwise_kernel<4, at::native::FillFunctor<long>, std::array<char*, 1ul> >(int, at::native::FillFunctor<long>, std::array<char*, 1ul>)",
+      "calls": 32,
+      "total_us": 42.94199999959892
+    },
+    {
+      "name": "Memcpy DtoH (Device -> Pinned)",
+      "calls": 16,
+      "total_us": 18.04499999993277
+    },
+    {
+      "name": "Memcpy HtoD (Pinned -> Device)",
+      "calls": 16,
+      "total_us": 5.40799999985029
+    }
+  ],
+  "kernel_calls_per_decode_step": 393.0,
+  "kernel_time_us_per_decode_step": 41936.52093749994,
+  "units_note": "Field labels corrected from per_token to per_decode_step; measured values unchanged. A step emits batch_size tokens."
+}
