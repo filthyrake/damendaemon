@@ -93,6 +93,12 @@ wins; a passing numerical gate is not a claim of throughput parity. In particula
 Mistral Q4 single-request decoding still trails llama.cpp, and several concurrent
 workloads still trail vLLM. See the raw trials accompanying each comparison.
 
+On the A2, legacy Q4 projections with the measured Mistral geometry use smaller
+prompt tiles at 33–64 input rows. Normal HTTP first-output latency improves
+11–21% at the tested lengths, with total request latency improving 1–4%.
+Other GPUs, shapes and prompt ranges retain their existing selection. Independent
+model and window-crossing chunk/layout checks are retained in the GGUF evidence.
+
 Uniform window metadata in Llama-layout GGUF files maps to the Mistral decoder.
 The pinned Mistral 7B Q4 fixture passes independent and layout checks at context
 4104 across its 4096-token window, plus real streaming, switching, cancellation

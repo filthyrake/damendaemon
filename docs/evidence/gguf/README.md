@@ -2061,3 +2061,27 @@ That targeted run, `mistral-q4-production-tiles-chunk58-a2.json`, passes all
 The normal short-tile policy remains active throughout the 58-token chunks
 and the final 37-token window-crossing chunk. The final ordinary-entrypoint
 HTTP comparison includes 33/48/64-token workloads plus all previous controls.
+
+`mistral-q4-production-tiles-http-a2.json` completes that normal-entrypoint
+A/B/B/A comparison. All generated text agrees; every phase passes streaming,
+concurrency, host restore, alias switching, cancellation and disk reload.
+Pooled measured medians, in seconds:
+
+| Input / concurrency | Previous request | Normal request | Previous first output | Normal first output |
+|---|---:|---:|---:|---:|
+| 16 / 1 | 0.713139 | 0.719510 | 0.059331 | 0.060384 |
+| 33 / 1 | 0.813376 | 0.804745 | 0.156251 | 0.138390 |
+| 48 / 1 | 0.832196 | 0.807020 | 0.171988 | 0.140711 |
+| 64 / 1 | 0.848975 | 0.816180 | 0.187469 | 0.148745 |
+| 129 / 1 | 1.040253 | 1.045706 | 0.377131 | 0.378427 |
+| 400 / 1 | 1.324421 | 1.330999 | 0.652783 | 0.656469 |
+| 129 / 2 | 1.553727 | 1.555254 | 0.513116 | 0.516042 |
+| 129 / 4 | 1.861432 | 1.864578 | 1.070697 | 1.072353 |
+
+At 33/48/64 input tokens, first output improves 11.4%/18.2%/20.7% and total
+latency improves 1.06%/3.03%/3.86%. Unchanged workloads vary by less than 1%
+in total latency. The control disables only the new tile selector; the
+candidate uses ordinary dllm. Unlike the earlier experimental run, 129-token
+prompts retain their old dispatch and show no material improvement. These
+results qualify the bounded A2 launch policy, not general hardware or
+cross-engine performance parity.
