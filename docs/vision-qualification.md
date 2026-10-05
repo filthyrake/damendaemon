@@ -1,7 +1,7 @@
 # Qwen3.5 still-image qualification
 
 Tracked in GitHub issue #50. Experimental still-image HTTP serving is now
-opt-in for Qwen3.5-0.8B on NVIDIA A2 (FP16/Q8 text) and Apple M4 (FP16 text). See the
+opt-in for Qwen3.5-0.8B on NVIDIA A2 (FP16/Q8 text) and Apple M4 (FP16/Q8 text). See the
 final section for current scope and lifecycle evidence. Earlier sections record
 the qualification sequence, including unresolved intermediate numerical limits.
 
@@ -264,8 +264,8 @@ After each complete unload, both host model bytes and MPS tensor allocations
 return to zero. This reports live tensor allocations, not all Metal driver memory.
 
 Use `DLLM_DEVICE=mps DLLM_EXPERIMENTAL_VISION=1`, context at most 1024 and at
-most four slots. Apple hybrid Q8 is rejected; FP16 text and the separate vision
-precision policy are used. Three warm square-image/eight-token HTTP requests
+most four slots. This first Apple checkpoint uses FP16 text and the separate
+vision precision policy; subsequent Q8 qualification is recorded below. Three warm square-image/eight-token HTTP requests
 took 1.075/1.083/1.079 seconds, with first-token latency 0.636–0.642 seconds and
 decode throughput around 16 tokens/s. This establishes functioning Apple image
 serving, not competitive Apple performance. The unfused recurrent text path is
@@ -296,3 +296,32 @@ the qualified Qwen3.5-0.8B geometry, context <=1024, and at most four slots.
 rejects unsupported geometry. Other configurations retain their existing path.
 All 367 regression tests pass. Raw ABBA, operator, long-context, full-model, and
 HTTP reports are committed under `evidence/vision/`.
+
+### Native Apple Q8 hybrid projections
+
+The Metal Q8 path now accepts FP16 activations, rounding expanded coefficients
+and output to FP16 while retaining FP32 accumulation. The existing FP32
+activation path is preserved, including its wider activation range and FP32
+vocabulary projection. Both paths pass 28 independent CPU FP64 projection
+checks across rows 1–31, uneven output widths, zero scales and optional bias.
+The FP32 tolerance is unchanged; new FP16 checks require relative RMS <0.0005.
+
+Qwen3.5-0.8B Q8 passes all 54 independent full-model checks and nine additional
+near-1024-token image checks. The final ordinary HTTP run passes all 29 checks
+(including twelve warm requests); the FP16 service regression passes all 20.
+Both precision modes repeatedly unload to zero host weights and zero live MPS
+tensor bytes. All 367 local regression tests pass.
+
+On the M4, twelve warm square-image/eight-token Q8 HTTP requests have median
+latency 0.4155 seconds, first-token latency 0.1380 seconds and decode throughput
+25.23 tokens/s. Combined text/vision host weights are 1,513,533,696 bytes, versus
+1,709,875,456 for FP16; loaded live MPS tensor allocations are 1,643,826,432
+versus 1,840,168,192 bytes. These are distinct precision policies, each validated
+against its own independent reference, not a matched-precision speed comparison.
+Vision precision remains unchanged.
+
+Use `DLLM_DEVICE=mps DLLM_EXPERIMENTAL_VISION=1 DLLM_QUANTIZATION=q8_0`.
+Hybrid Q8 remains restricted to the qualified 0.8B geometry, context <=1024 and
+at most four slots, and requires the native Metal scan. Other Apple decoder
+quantization support remains unchanged. Raw numerical, lifecycle, timing and
+reference metadata are retained in `evidence/vision/`.

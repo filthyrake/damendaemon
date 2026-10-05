@@ -1,0 +1,413 @@
+{
+  "passed": true,
+  "scope": "experimental multimodal computation; not serving qualification",
+  "graph": false,
+  "kernel_backend": "torch-hybrid+q8_0+metal-scan",
+  "batch_capacity": 4,
+  "inline_messages": true,
+  "text_quantization": "q8_0",
+  "device": "Apple MPS",
+  "model": "results/models/qwen35",
+  "reference_model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "torch": "2.13.0",
+  "checks": [
+    {
+      "label": "square:prefill",
+      "relative_rms": 0.0026500688400119543,
+      "max_absolute": 0.04434823989868164,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:prefill",
+      "relative_rms": 0.00288255512714386,
+      "max_absolute": 0.04788130521774292,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:prefill",
+      "relative_rms": 0.0037598172202706337,
+      "max_absolute": 0.04937171936035156,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:prefill",
+      "relative_rms": 0.002819634275510907,
+      "max_absolute": 0.048341989517211914,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:0",
+      "relative_rms": 0.001860742224380374,
+      "max_absolute": 0.03503918647766113,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:0",
+      "relative_rms": 0.0015076504787430167,
+      "max_absolute": 0.03236246109008789,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:0",
+      "relative_rms": 0.0019004459027200937,
+      "max_absolute": 0.03475189208984375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:0",
+      "relative_rms": 0.0022291773930191994,
+      "max_absolute": 0.04245352745056152,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:1",
+      "relative_rms": 0.0011502285487949848,
+      "max_absolute": 0.028821945190429688,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:1",
+      "relative_rms": 0.001480907783843577,
+      "max_absolute": 0.029921531677246094,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:1",
+      "relative_rms": 0.0015292703174054623,
+      "max_absolute": 0.03110027313232422,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:1",
+      "relative_rms": 0.001370550598949194,
+      "max_absolute": 0.031995296478271484,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:2",
+      "relative_rms": 0.001656760461628437,
+      "max_absolute": 0.03609466552734375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:2",
+      "relative_rms": 0.0013151556486263871,
+      "max_absolute": 0.030092477798461914,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:2",
+      "relative_rms": 0.0013499464839696884,
+      "max_absolute": 0.02318096160888672,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:2",
+      "relative_rms": 0.0013428243109956384,
+      "max_absolute": 0.026149988174438477,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:3",
+      "relative_rms": 0.0013906632084399462,
+      "max_absolute": 0.028018593788146973,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:3",
+      "relative_rms": 0.0016995975747704506,
+      "max_absolute": 0.03926515579223633,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:3",
+      "relative_rms": 0.0010682587744668126,
+      "max_absolute": 0.02008819580078125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:3",
+      "relative_rms": 0.0011900608660653234,
+      "max_absolute": 0.022642135620117188,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:4",
+      "relative_rms": 0.0011463514529168606,
+      "max_absolute": 0.023281097412109375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:4",
+      "relative_rms": 0.0018398868851363659,
+      "max_absolute": 0.03682994842529297,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:4",
+      "relative_rms": 0.0010568986181169748,
+      "max_absolute": 0.026477694511413574,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:4",
+      "relative_rms": 0.001176755060441792,
+      "max_absolute": 0.02182292938232422,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:5",
+      "relative_rms": 0.0013614840572699904,
+      "max_absolute": 0.026750564575195312,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:5",
+      "relative_rms": 0.0013687324244529009,
+      "max_absolute": 0.02556610107421875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:5",
+      "relative_rms": 0.0011449158191680908,
+      "max_absolute": 0.02078104019165039,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:5",
+      "relative_rms": 0.0012746368302032351,
+      "max_absolute": 0.024415969848632812,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:6",
+      "relative_rms": 0.0017473041079938412,
+      "max_absolute": 0.020746052265167236,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:6",
+      "relative_rms": 0.0015626957174390554,
+      "max_absolute": 0.03166556358337402,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:6",
+      "relative_rms": 0.0011013924377039075,
+      "max_absolute": 0.02461862564086914,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:6",
+      "relative_rms": 0.0017291649710386992,
+      "max_absolute": 0.021486282348632812,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square-inverted:decode:7",
+      "relative_rms": 0.0016829404048621655,
+      "max_absolute": 0.02980518341064453,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images:decode:7",
+      "relative_rms": 0.0012382034910842776,
+      "max_absolute": 0.024470806121826172,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "resized:decode:7",
+      "relative_rms": 0.0010939924977719784,
+      "max_absolute": 0.024878740310668945,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "square:decode:7",
+      "relative_rms": 0.001650316407904029,
+      "max_absolute": 0.025403738021850586,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:prefill",
+      "relative_rms": 0.004443169571459293,
+      "max_absolute": 0.06932741403579712,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:prefill",
+      "relative_rms": 0.0024099142756313086,
+      "max_absolute": 0.0301513671875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:0",
+      "relative_rms": 0.0018473153468221426,
+      "max_absolute": 0.03457069396972656,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:0",
+      "relative_rms": 0.002672384725883603,
+      "max_absolute": 0.04219555854797363,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:1",
+      "relative_rms": 0.0017322413623332977,
+      "max_absolute": 0.0477757453918457,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:1",
+      "relative_rms": 0.0015124486526474357,
+      "max_absolute": 0.03232717514038086,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:2",
+      "relative_rms": 0.0014368077972903848,
+      "max_absolute": 0.027004241943359375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:2",
+      "relative_rms": 0.0014068935997784138,
+      "max_absolute": 0.028833389282226562,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:3",
+      "relative_rms": 0.001543028512969613,
+      "max_absolute": 0.027841567993164062,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:3",
+      "relative_rms": 0.0014161088038235903,
+      "max_absolute": 0.024843454360961914,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:4",
+      "relative_rms": 0.001263872953131795,
+      "max_absolute": 0.02926015853881836,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:4",
+      "relative_rms": 0.0017164908349514008,
+      "max_absolute": 0.03252291679382324,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:5",
+      "relative_rms": 0.0017191715305671096,
+      "max_absolute": 0.029276609420776367,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:5",
+      "relative_rms": 0.0017663814360275865,
+      "max_absolute": 0.02898162603378296,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:6",
+      "relative_rms": 0.0013339779106900096,
+      "max_absolute": 0.023223400115966797,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:6",
+      "relative_rms": 0.0012033380335196853,
+      "max_absolute": 0.022587299346923828,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "text-only-reused-slot:decode:7",
+      "relative_rms": 0.0014183317543938756,
+      "max_absolute": 0.02583026885986328,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "two-images-reversed:decode:7",
+      "relative_rms": 0.0012720527593046427,
+      "max_absolute": 0.02394735813140869,
+      "greedy_match": true,
+      "passed": true
+    }
+  ],
+  "reference_sha256": "2d0bf330241b1230713ee81991a798894685a54af45aea301b7f4259098157c8",
+  "sources": {
+    "dllm/qwen2.py": "35e87d2e034f59288343a38daa81fb59fdf96d48b508a4ac430640b7a81bc331",
+    "dllm/quantization.py": "f4d4f494aa397f0a50d0e901afd36489324386093a33b8ee0441094df72caa29",
+    "dllm/vision_qwen35.py": "83d3fae859349e15ecfc95110c05757412468e4a78759ad4670fb615a6b90baa",
+    "dllm/vision_inputs.py": "d86dec98cff8f23235152d1c2495f462216105fe3175ec74ecf3eb4362b6b45b",
+    "dllm/vision_positions.py": "f5ca7930aa22b73192bcdeec55fab7f072c6143ec273d9ff3e10eaa164f5da54",
+    "dllm/hybrid.py": "69089a3ab09b49acc450ab9c6cd7318e87bc050e4f9688fbd9b0d0fac10f94d4",
+    "dllm/hybrid_metal.py": "2ed99072a61d306c8a07470a0bd6ba6f0bc00c55f34bca47520e2813e7fd5202",
+    "dllm/quantized_metal.py": "5af925df97b985c74568ac1b583e889fd31aa02b29d8a17f4de3de6663a3751a",
+    "dllm/vision_hybrid.py": "649e0128f7532ea1d069670fcaf84f4f83922e9656debaef9848fb5e44bd7093",
+    "dllm/vision_model.py": "fe81a0a8cf7aea10acfa079304bc4cd4a8a6a866fb16501e64e666464fcde647",
+    "dllm/vision_messages.py": "46129a2b90f86f7dc764afffa437a0455b5c19c1c18631f6fb61ec245853cd3d",
+    "scripts/experiments/vision_qwen35.py": "13998f556f8026e965958668f973d53dd9ad2856501674e8fbb51e4ac5de7523"
+  },
+  "changed_image_control": {
+    "same_tokens": true,
+    "native_logit_difference": 0.9110550880432129,
+    "reference_logit_difference": 0.88330078125
+  }
+}

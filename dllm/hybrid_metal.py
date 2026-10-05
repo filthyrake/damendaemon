@@ -1,4 +1,4 @@
-"""Independent Metal gated-delta scan candidate; explicit validation only."""
+"""Independent Metal gated-delta scan for the qualified Qwen3.5 hybrid path."""
 import torch
 
 _SOURCE=r'''
@@ -46,6 +46,14 @@ def library():
     global _library
     if _library is None:_library=torch.mps.compile_shader(_SOURCE)
     return _library
+
+
+def eligible(config,context,max_batch=1):
+    expected=dict(model_type='qwen3_5_text',hidden_size=1024,num_hidden_layers=24,
+                  linear_key_head_dim=128,linear_value_head_dim=128,
+                  linear_num_key_heads=16,linear_num_value_heads=16)
+    return (all(config.get(key)==value for key,value in expected.items())
+            and 1<=context<=1024 and 1<=max_batch<=4)
 
 
 def scan(q,k,v,decay,beta,state,slots,reset):

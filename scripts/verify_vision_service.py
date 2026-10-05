@@ -57,7 +57,7 @@ def main():
                 model=str(model_path),reference_model=reference['model'],
                 device_uuid=os.environ.get('CUDA_VISIBLE_DEVICES') if args.device=='cuda' else None,
                 source_sha256={str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in
-                    [Path('dllm')/name for name in ('hybrid.py','hybrid_metal.py','cuda_warmup.py','models.py','qwen2.py','runtime.py','scheduler.py','server.py',
+                    [Path('dllm')/name for name in ('hybrid.py','hybrid_metal.py','quantized_metal.py','quantization.py','cuda_warmup.py','models.py','qwen2.py','runtime.py','scheduler.py','server.py',
                     'vision_policy.py','vision_model.py','vision_hybrid.py','vision_qwen35.py','vision_messages.py')]})
     from dllm.models import weight_bytes
     with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'1'}):

@@ -82,8 +82,6 @@ class HybridExecutor:
             except ImportError:
                 if selected == 'triton':
                     raise
-        if model.scales and self.fused is None:
-            raise ValueError('Q8_0 requires native CUDA kernels')
         self.kernel_backend = 'triton-hybrid' if self.fused else 'torch-hybrid'
         if model.scales:
             self.kernel_backend += '+q8_0'
@@ -91,15 +89,18 @@ class HybridExecutor:
         metal_scan = os.environ.get('DLLM_HYBRID_METAL_SCAN','auto')
         if metal_scan not in ('auto','0','1'):
             raise ValueError('DLLM_HYBRID_METAL_SCAN must be auto, 0 or 1')
-        metal_eligible=(self.device=='mps' and c['hidden_size']==1024 and c['num_hidden_layers']==24
-                        and self.dk==self.dv==128 and self.lk==self.lv==16
-                        and self.context<=1024 and max_batch<=4)
+        metal_eligible=False
+        if self.device=='mps':
+            from .hybrid_metal import eligible
+            metal_eligible=eligible(c,self.context,max_batch)
         if metal_scan=='1' and not metal_eligible:
             raise ValueError('Metal hybrid scan requires the qualified Qwen3.5-0.8B geometry, context <=1024 and at most four slots')
         if metal_eligible and metal_scan!='0':
             from .hybrid_metal import scan
             self.metal_scan=scan
             self.kernel_backend+='+metal-scan'
+        if model.scales and self.fused is None and self.metal_scan is None:
+            raise ValueError('hybrid Q8_0 requires native CUDA or qualified Apple Metal kernels')
         self.chunk_scan = None
         prefill_backend = os.environ.get('DLLM_HYBRID_PREFILL', 'scan')
         if prefill_backend not in ('scan', 'fla'):

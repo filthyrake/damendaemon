@@ -43,8 +43,8 @@ def main():
                 model=str(model_path),reference_model=reference['model'],torch=str(torch.__version__),checks=[],
                 reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                    ('dllm/vision_qwen35.py','dllm/vision_inputs.py','dllm/vision_positions.py',
-                     'dllm/hybrid.py','dllm/hybrid_metal.py','dllm/vision_hybrid.py','dllm/vision_model.py',
+                    ('dllm/qwen2.py','dllm/quantization.py','dllm/vision_qwen35.py','dllm/vision_inputs.py','dllm/vision_positions.py',
+                     'dllm/hybrid.py','dllm/hybrid_metal.py','dllm/quantized_metal.py','dllm/vision_hybrid.py','dllm/vision_model.py',
                      'dllm/vision_messages.py','scripts/experiments/vision_qwen35.py')})
     def check(actual,target,label):
         actual=actual.float().cpu().reshape(-1)

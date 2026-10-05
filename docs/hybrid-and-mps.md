@@ -19,7 +19,9 @@ The vocabulary projection accumulates and returns FP32 logits. Each request
 slot owns its convolution, recurrent, and attention state. CUDA graphs capture
 decode batches; constructor warmup state is cleared before serving requests.
 Vision and multi-token prediction weights are excluded from text loading.
-Multimodal input, MoE, and quantized variants remain unsupported.
+This section records the initial text qualification. Later [image and Apple
+qualification](vision-qualification.md) adds bounded still-image and Q8 paths;
+hybrid MoE remains unsupported.
 
 The production environment is PyTorch 2.6.0+cu124. A separate environment with
 Transformers 5.18.0 and PyTorch 2.13.0+cu130 generates independent FP32 reference

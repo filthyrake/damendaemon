@@ -98,8 +98,10 @@ class ModelWeights:
         if c['model_type']=='gpt_oss' and self.quantization!='none':
             raise ValueError('GPT-OSS uses checkpoint-native MXFP4; conversion is unsupported')
         if self.quantization != 'none' and selected_device() != 'cuda':
-            if self.quantization!='q8_0' or c['model_type'] not in ('qwen2','qwen3','llama'):
-                raise ValueError('Metal decoder quantization supports Q8 Qwen2, Qwen3 and Llama only')
+            from .hybrid_metal import eligible as hybrid_eligible
+            supported=c['model_type'] in ('qwen2','qwen3','llama') or hybrid_eligible(c,max_context)
+            if self.quantization!='q8_0' or not supported:
+                raise ValueError('Metal decoder quantization supports Q8 dense Qwen2/Qwen3/Llama and qualified Qwen3.5-0.8B only')
         if self.quantization=='q4_0' and c['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
             raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
         if c['model_type'] in ('gpt2','gpt_neox','bloom') and self.quantization!='none':

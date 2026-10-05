@@ -18,7 +18,7 @@ def validate_execution(model,max_batch):
     import torch
     from .device import selected_device
     device=selected_device()
-    supported=(torch.backends.mps.is_available() and not model.scales if device=='mps'
+    supported=(torch.backends.mps.is_available() if device=='mps'
                else torch.cuda.is_available() and torch.cuda.get_device_name()=='NVIDIA A2')
     if not supported or not 1<=max_batch<=4 or model.max_context>1024:
-        raise ValueError('experimental vision serving requires NVIDIA A2 or FP16 Apple MPS, context <=1024, and at most four slots')
+        raise ValueError('experimental vision serving requires NVIDIA A2 or Apple MPS, context <=1024, and at most four slots')

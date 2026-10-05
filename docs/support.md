@@ -10,7 +10,7 @@ Configuration acceptance alone is not checkpoint qualification.
 |---|---|---|---|
 | Qwen2 / Llama-style dense | Qwen2.5, SmolLM2 | NVIDIA A2, Apple M4 | Exact tested sizes/revisions in the evidence |
 | Qwen3 dense | 0.6B, 1.7B | NVIDIA A2, Apple M4 | CUDA accurate FP32 arithmetic policy is required for the stricter long-context proof |
-| Qwen3.5 hybrid | 0.8B, 2B text backbone; experimental 0.8B still images | NVIDIA A2, Apple M4 | Image HTTP is opt-in, context <=1024, at most four slots; Apple images use FP16 text; no hybrid MoE |
+| Qwen3.5 hybrid | 0.8B, 2B text backbone; experimental 0.8B still images | NVIDIA A2, Apple M4 | Image HTTP is opt-in, context <=1024, at most four slots; Apple images support FP16/Q8 text; no hybrid MoE |
 | Llama / SentencePiece GGUF | Published TinyLlama 1.1B Chat Q4_K_M | NVIDIA A2 | Model/layout/serving and model swapping through 2048 context |
 | Llama 3.2 | 1B Instruct mirror | NVIDIA A2, Apple M4 | Scaled RoPE; tested contexts differ by device |
 | Gemma 3 text | 270M IT mirror | NVIDIA A2, Apple M4 | Text architecture only; separate precision policy |
