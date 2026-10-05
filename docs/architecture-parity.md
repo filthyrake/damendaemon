@@ -424,6 +424,15 @@ The first comparison's candidate fingerprint identifies the normal module;
 its accompanying dispatch report identifies the actual experimental source.
 The boundary report records the experimental source directly.
 
+A second experiment doubles the route tile to 32 rows. All 32 standalone and
+82 independent model checks pass. Its measured prefill medians are 0.233,
+0.325, 0.483, 0.842 and 1.576 seconds for 32/128/256/512/1024 input tokens;
+paired stable-grouping controls are 0.331/0.453/0.528/0.800/1.341 seconds.
+It improves the 256-token point but still regresses at longer prompts and
+loses to the 16-row experiment for short prompts. It remains experimental.
+See [larger-tile measurements](evidence/architectures/olmoe-device-grouped32-prefill-a2.json)
+and [independent model gate](evidence/architectures/olmoe-device-grouped32-reference-a2.json).
+
 
 ## Q8 short-prefill latency
 
