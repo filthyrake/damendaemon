@@ -21,11 +21,12 @@ def main():
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
     reference=torch.load(args.reference,weights_only=True)
-    model=ModelWeights(reference['model'],1024)
+    model=ModelWeights(reference['model'],1024,quantization=reference.get('text_quantization','none'))
     executor=ImageHybridExecutor(model,max_batch=3,use_graph=args.graph)
     vision=VisionEncoder(VisionWeights(reference['model']))
     report=dict(passed=False,scope='experimental multimodal computation; not serving qualification',
                 graph=args.graph,
+                text_quantization=reference.get('text_quantization','none'),
                 device=torch.cuda.get_device_name(),torch=str(torch.__version__),checks=[],
                 reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in

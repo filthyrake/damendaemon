@@ -139,3 +139,13 @@ rejected. Six tests cover order, identity, source preservation, byte/count/pixel
 limits, malformed input, unsupported roles/detail, JPEG, and text-only input.
 The helper is not connected to HTTP handling yet; no image-serving support is
 implied by installing the dependency.
+
+## Q8 text with images
+
+The experimental image path also passes all 54 independent model comparisons
+with Q8_0 text projections and CUDA graphs. The reference uses upstream GGUF
+0.19.0 quantization on text Linear weights only, retaining the established
+separate vision policy. Worst relative RMS is 0.00437896 and maximum absolute
+error 0.0643835; every greedy choice agrees. Changed-image and slot-reuse controls
+also pass. This is on-load text quantization, not a claim of quantized vision
+weights or arbitrary quantized multimodal checkpoint compatibility.

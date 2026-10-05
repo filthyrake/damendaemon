@@ -23,10 +23,13 @@ def main():
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
     reference=torch.load(args.reference,weights_only=True)
-    executor=ImageHybridExecutor(ModelWeights(reference['model'],1024),max_batch=1,use_graph=args.graph)
+    executor=ImageHybridExecutor(ModelWeights(reference['model'],1024,
+        quantization=reference.get('text_quantization','none')),max_batch=1,use_graph=args.graph)
     vision=VisionEncoder(VisionWeights(reference['model']))
     report=dict(scope='experimental warm image-to-text, no HTTP, no model load, fixed 32 tokens',
         graph=args.graph,
+        text_quantization=reference.get('text_quantization','none'),
+        text_host_weight_bytes=executor.model.bytes,vision_host_weight_bytes=vision.model.bytes,
         device=torch.cuda.get_device_name(),torch=str(torch.__version__),model=reference['model'],cases=[],
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
             ('dllm/vision_qwen35.py','dllm/vision_inputs.py','dllm/vision_positions.py',

@@ -15,6 +15,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('vision_reference')
     parser.add_argument('--output',required=True)
+    parser.add_argument('--text-quantization',choices=('none','q8_0'),default='none')
     args=parser.parse_args()
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
@@ -26,8 +27,19 @@ def main():
         attn_implementation='eager',local_files_only=True,trust_remote_code=False).eval()
     # Separate vision FP32 arithmetic from the established FP16 text policy.
     reference.model.visual.float()
+    if args.text_quantization=='q8_0':
+        from gguf.quants import quantize,dequantize
+        from gguf.constants import GGMLQuantizationType
+        # Only text projections; preserve the independent vision precision policy.
+        projections=[module for module in reference.model.language_model.modules()
+                     if isinstance(module,torch.nn.Linear)]+[reference.lm_head]
+        for module in projections:
+            values=module.weight.detach().float().numpy()
+            restored=dequantize(quantize(values,GGMLQuantizationType.Q8_0),GGMLQuantizationType.Q8_0)
+            module.weight=torch.nn.Parameter(torch.from_numpy(restored).half(),requires_grad=False)
     reference.cuda()
     artifact=dict(model=path,cases=[],vision_dtype='float32',text_dtype='float16',steps=8,
+                  text_quantization=args.text_quantization,
                   vision_weight_policy='loaded FP16 then promoted to FP32',
                   torch=str(torch.__version__),transformers=transformers.__version__,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
