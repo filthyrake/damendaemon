@@ -20,8 +20,13 @@ def main():
     parser.add_argument('--batch-size', type=int, choices=(1,2,4), default=1)
     parser.add_argument('--quantization', default=None)
     parser.add_argument('--output')
+    parser.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     args = parser.parse_args()
     require_gpu()
+    experiment = None
+    if args.experimental_awq_marlin:
+        from experiments.awq_marlin_dispatch import install_validation_dispatch
+        experiment = install_validation_dispatch(args.experimental_awq_marlin)
     torch.set_num_threads(4)
     started = time.perf_counter()
     model = load(args.path, args.context, args.quantization)
@@ -55,7 +60,7 @@ def main():
             kernels[event.name]["total_us"] += event.self_device_time_total
     ordered = sorted(({"name": name, **value} for name, value in kernels.items()),
                      key=lambda value: value["total_us"], reverse=True)
-    report = {"batch_size":args.batch_size, "backend":executor.kernel_backend,
+    report = {"experiment":experiment, "batch_size":args.batch_size, "backend":executor.kernel_backend,
                       "host_preparation_seconds":host_seconds, "executor_activation_seconds":activation_seconds,
                       "context": args.context, "steps": args.steps, "graph": not args.eager,
                       "kernel_calls_per_decode_step": sum(k["calls"] for k in ordered) / args.steps,

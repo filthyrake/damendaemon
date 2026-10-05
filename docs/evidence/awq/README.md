@@ -252,3 +252,26 @@ packing is preserved for reload. These are opt-in scripts only; the ordinary
 runtime still uses the previously qualified Triton dispatch. Lifecycle and
 HTTP performance are separate gates. The experiment metadata identifies the
 native C ABI even though the inherited executor backend label remains unchanged.
+
+The native experiment lifecycle gate passes: three graph/batch/generation
+cycles release every tested model and shared native workspace reference and
+return to the same 25559040-byte allocator baseline. Resident allocation is
+592081408 bytes. Real HTTP registration, matching direct text/token trace,
+streaming, concurrency, cancellation recovery, host restore, unload and disk
+reload pass. Alias switching still uses two aliases of one checkpoint, not
+an independently timed cross-model swap.
+
+Interleaved native/control/control/native HTTP runs (ten measured rounds per
+variant and concurrency, warmups excluded) retain identical text and 64-token
+outputs from the same 129-token input. Native median total latency is
+0.2858/0.3299/0.3899 seconds versus 0.3595/0.4608/0.5988 for the current Triton
+control at concurrency 1/2/4: reductions of 20.5/28.4/34.9%. Aggregate throughput
+is 223.7/384.4/653.4 versus 178.1/275.9/424.3 tokens/s. First-output medians
+improve from 38.6/47.1/95.3 to 26.5/36.1/71.6 ms. Raw phase differences remain
+visible; neither phase is discarded. See `qwen25-small-marlin-http-summary-a2.json`.
+
+A subsequent matched vLLM refresh measures 0.2856/0.3734/0.3681 seconds and
+223.9/341.6/692.7 aggregate tokens/s. This is one refreshed baseline, not an
+interleaved engine comparison. It differs from the earlier vLLM run, especially
+at concurrency two. The native candidate closes much of this checkpoint's gap,
+but these varying measurements do not establish general engine parity.

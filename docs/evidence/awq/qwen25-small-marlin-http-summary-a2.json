@@ -1,0 +1,58 @@
+{
+  "scope": "A2 same pinned Qwen2.5-0.5B AWQ; 129 explicit input tokens, 64 outputs, context 2048; A/B/B/A; warmups excluded",
+  "passed": true,
+  "cases": [
+    {
+      "concurrency": 1,
+      "native": {
+        "rounds": 10,
+        "total_seconds": 0.28577951798797585,
+        "first_output_seconds": 0.026533819502219558,
+        "aggregate_tokens_per_second": 223.6818440963179
+      },
+      "control": {
+        "rounds": 10,
+        "total_seconds": 0.3594688699959079,
+        "first_output_seconds": 0.03858370200032368,
+        "aggregate_tokens_per_second": 178.10819200817514
+      },
+      "latency_reduction_percent": 20.499508624702578,
+      "throughput_gain_percent": 25.5876226546901
+    },
+    {
+      "concurrency": 2,
+      "native": {
+        "rounds": 10,
+        "total_seconds": 0.32994876899465453,
+        "first_output_seconds": 0.03609210599097423,
+        "aggregate_tokens_per_second": 384.4408999186058
+      },
+      "control": {
+        "rounds": 10,
+        "total_seconds": 0.4608109744876856,
+        "first_output_seconds": 0.047090367501368746,
+        "aggregate_tokens_per_second": 275.85602950720715
+      },
+      "latency_reduction_percent": 28.398239785525803,
+      "throughput_gain_percent": 39.36287729703647
+    },
+    {
+      "concurrency": 4,
+      "native": {
+        "rounds": 10,
+        "total_seconds": 0.389899918998708,
+        "first_output_seconds": 0.07161961600650102,
+        "aggregate_tokens_per_second": 653.3985537556398
+      },
+      "control": {
+        "rounds": 10,
+        "total_seconds": 0.5987666989967693,
+        "first_output_seconds": 0.09526556549826637,
+        "aggregate_tokens_per_second": 424.25533580503554
+      },
+      "latency_reduction_percent": 34.882831718600336,
+      "throughput_gain_percent": 54.01068616280311
+    }
+  ],
+  "identical_output_text": true
+}
