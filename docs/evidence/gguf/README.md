@@ -2016,3 +2016,11 @@ parity claim follows. These are ordinary native Q4 decode kernels on both
 sides, with no resident dense cache. Intermediate row counts still need
 measurement before replacing the isolated shape-specific experiment with a
 general runtime selection rule.
+
+`mistral-q4-intermediate-tiles-a2.json` adds 33/48/65/96/130/160 rows and
+passes all 90 independent matrix checks. The 32-row tile wins across all five
+projection shapes at 33 rows (10.7–16.0%), 48 rows (17.3–21.3%) and 130 rows
+(7.3–17.4%). Results at 65/96/160 are mixed, with regressions up to 12.3%.
+The measured evidence supports investigating a 33–64-row range, but does not
+support extending the 129/130 result through 160 rows or changing all larger
+prompts. Production dispatch is still unchanged.

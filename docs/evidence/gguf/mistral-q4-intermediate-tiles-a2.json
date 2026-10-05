@@ -1,0 +1,1513 @@
+{
+  "model_sha256": "c320624e1b0b443e7b9c0e7449bff3780a3bc8e91e070d4c884679b85f1867bb",
+  "device": "NVIDIA A2",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "torch": "2.6.0+cu124",
+  "triton": "3.2.0",
+  "source_sha256": "02a7615e3462931c8386427f98d4fab467f51ffa2da720613c65531fad00679a",
+  "kernel_sha256": "8502d5adc4da4674f44d74d3f4e94d8889857d3f72ab1ea9cd77da3bc9d3d6dc",
+  "scope": "real Q4 projections; smaller fused tiles",
+  "cases": [
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 33,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 6.0398938330763485e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 6.0398938330763485e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 6.0398938330763485e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.4909264147281647
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.4454430043697357
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.4382604956626892
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.43816035985946655
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.44760656356811523
+        },
+        {
+          "kind": "production",
+          "ms": 0.4907553791999817
+        }
+      ]
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 48,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 6.38714800516027e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 6.38714800516027e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 6.38714800516027e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.5577921867370605
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.457216739654541
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.4422946572303772
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.44240570068359375
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.45786190032958984
+        },
+        {
+          "kind": "production",
+          "ms": 0.5576077103614807
+        }
+      ]
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 65,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 5.574589977186406e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 5.574589977186406e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 5.574589977186406e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.6007672548294067
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.7300623059272766
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.6468325853347778
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.6468567848205566
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.7324089407920837
+        },
+        {
+          "kind": "production",
+          "ms": 0.6007845401763916
+        }
+      ]
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 96,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 4.479258677747566e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 4.479258677747566e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 4.479258677747566e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.6594055891036987
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.8874932527542114
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.6659160852432251
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.667167067527771
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.8877310752868652
+        },
+        {
+          "kind": "production",
+          "ms": 0.6593481302261353
+        }
+      ]
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 130,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 0.00011080377589678392,
+          "max_absolute": 0.00390625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 0.00011080377589678392,
+          "max_absolute": 0.00390625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.2371606826782227
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.3029115200042725
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.0612986087799072
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.061171293258667
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.307948112487793
+        },
+        {
+          "kind": "production",
+          "ms": 1.2403695583343506
+        }
+      ]
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 160,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 4.921966592519311e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 4.921966592519311e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.0006953477859497
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.4542070627212524
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.0845659971237183
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.0873433351516724
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.4604436159133911
+        },
+        {
+          "kind": "production",
+          "ms": 1.0044268369674683
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 33,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 3.000104925376945e-06,
+          "max_absolute": 0.00048828125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 3.000104925376945e-06,
+          "max_absolute": 0.00048828125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 3.000104925376945e-06,
+          "max_absolute": 0.00048828125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.3569497764110565
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.3125733733177185
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.2998611032962799
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.3000056743621826
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.3135245442390442
+        },
+        {
+          "kind": "production",
+          "ms": 0.35702162981033325
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 48,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 3.5999480587634025e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 3.5999480587634025e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 3.5999480587634025e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.38913559913635254
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.31980642676353455
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.30629962682724
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.3064406216144562
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.32032495737075806
+        },
+        {
+          "kind": "production",
+          "ms": 0.3892142176628113
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 65,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 8.649505616631359e-05,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 8.649505616631359e-05,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 8.649505616631359e-05,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.44929972290992737
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.49990934133529663
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.44045671820640564
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.4406624734401703
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.5008150935173035
+        },
+        {
+          "kind": "production",
+          "ms": 0.4497389793395996
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 96,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 2.5392844236193923e-06,
+          "max_absolute": 0.00048828125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 2.5392844236193923e-06,
+          "max_absolute": 0.00048828125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 2.5392844236193923e-06,
+          "max_absolute": 0.00048828125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.4860000014305115
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.6081501245498657
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.4596176743507385
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.4596027731895447
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.6087023615837097
+        },
+        {
+          "kind": "production",
+          "ms": 0.48596540093421936
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 130,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 8.470669854432344e-05,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 8.470669854432344e-05,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.8646808862686157
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.8898153305053711
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.7140401601791382
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.7148987054824829
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.8916270136833191
+        },
+        {
+          "kind": "production",
+          "ms": 0.8662735819816589
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 160,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 3.4150366445828695e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 3.4150366445828695e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.7449072599411011
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.9894877672195435
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.736636757850647
+        },
+        {
+          "kind": "tile_32",
+          "ms": 0.7370240688323975
+        },
+        {
+          "kind": "tile_16",
+          "ms": 0.9912523031234741
+        },
+        {
+          "kind": "production",
+          "ms": 0.7463251948356628
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 33,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 4.449992957233917e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 4.449992957233917e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 4.449992957233917e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.2912368774414062
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.121314525604248
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.012871742248535
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.014826774597168
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.123136520385742
+        },
+        {
+          "kind": "production",
+          "ms": 2.288626194000244
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 48,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 0.00010602368274703622,
+          "max_absolute": 0.00390625,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 0.00010602368274703622,
+          "max_absolute": 0.00390625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 0.00010602368274703622,
+          "max_absolute": 0.00390625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.504845380783081
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.1682848930358887
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.0546298027038574
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.055882453918457
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.1676383018493652
+        },
+        {
+          "kind": "production",
+          "ms": 2.504850149154663
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 65,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 5.226484518061625e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 5.226484518061625e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 5.226484518061625e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.69754695892334
+        },
+        {
+          "kind": "tile_16",
+          "ms": 3.4712460041046143
+        },
+        {
+          "kind": "tile_32",
+          "ms": 3.0111758708953857
+        },
+        {
+          "kind": "tile_32",
+          "ms": 3.013676166534424
+        },
+        {
+          "kind": "tile_16",
+          "ms": 3.4753520488739014
+        },
+        {
+          "kind": "production",
+          "ms": 2.699338674545288
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 96,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 4.814825388166355e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 4.814825388166355e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 4.814825388166355e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.968139171600342
+        },
+        {
+          "kind": "tile_16",
+          "ms": 4.186307907104492
+        },
+        {
+          "kind": "tile_32",
+          "ms": 3.1229143142700195
+        },
+        {
+          "kind": "tile_32",
+          "ms": 3.1256628036499023
+        },
+        {
+          "kind": "tile_16",
+          "ms": 4.190360069274902
+        },
+        {
+          "kind": "production",
+          "ms": 2.972938060760498
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 130,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 0.0001074811298167333,
+          "max_absolute": 0.00390625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 0.0001074811298167333,
+          "max_absolute": 0.00390625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 5.78248929977417
+        },
+        {
+          "kind": "tile_16",
+          "ms": 6.163866996765137
+        },
+        {
+          "kind": "tile_32",
+          "ms": 4.97335147857666
+        },
+        {
+          "kind": "tile_32",
+          "ms": 4.9733123779296875
+        },
+        {
+          "kind": "tile_16",
+          "ms": 6.173393249511719
+        },
+        {
+          "kind": "production",
+          "ms": 5.7822113037109375
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 160,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 4.784247266798047e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 4.784247266798047e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 4.705946922302246
+        },
+        {
+          "kind": "tile_16",
+          "ms": 6.900662899017334
+        },
+        {
+          "kind": "tile_32",
+          "ms": 5.135542392730713
+        },
+        {
+          "kind": "tile_32",
+          "ms": 5.13494873046875
+        },
+        {
+          "kind": "tile_16",
+          "ms": 6.913677215576172
+        },
+        {
+          "kind": "production",
+          "ms": 4.714873313903809
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 33,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 6.515570930787362e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 6.515570930787362e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 6.515570930787362e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.229597806930542
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.1044657230377197
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.0595312118530273
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.0601123571395874
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.105217456817627
+        },
+        {
+          "kind": "production",
+          "ms": 1.229198694229126
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 48,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 7.854851901356596e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 7.854851901356596e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 7.854851901356596e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.3400979042053223
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.1357896327972412
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.0812828540802002
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.0819990634918213
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.1370437145233154
+        },
+        {
+          "kind": "production",
+          "ms": 1.3396707773208618
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 65,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 0.00020653451792895794,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 0.00020653451792895794,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 0.00020653451792895794,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.417020559310913
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.7959468364715576
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.55856192111969
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.561710000038147
+        },
+        {
+          "kind": "tile_16",
+          "ms": 1.7940261363983154
+        },
+        {
+          "kind": "production",
+          "ms": 1.4168325662612915
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 96,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 6.257586392166559e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 6.257586392166559e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 6.257586392166559e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.4715731143951416
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.2459874153137207
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.634769082069397
+        },
+        {
+          "kind": "tile_32",
+          "ms": 1.639630913734436
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.24830961227417
+        },
+        {
+          "kind": "production",
+          "ms": 1.473955512046814
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 130,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 0.0002052341151284054,
+          "max_absolute": 0.00390625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 0.0002052341151284054,
+          "max_absolute": 0.00390625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.762890338897705
+        },
+        {
+          "kind": "tile_16",
+          "ms": 3.3783695697784424
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.560180187225342
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.5631160736083984
+        },
+        {
+          "kind": "tile_16",
+          "ms": 3.3728766441345215
+        },
+        {
+          "kind": "production",
+          "ms": 2.7654547691345215
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 160,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 6.8493650360323954e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 6.8493650360323954e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.4398043155670166
+        },
+        {
+          "kind": "tile_16",
+          "ms": 3.748591661453247
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.6285531520843506
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.6369261741638184
+        },
+        {
+          "kind": "tile_16",
+          "ms": 3.763859272003174
+        },
+        {
+          "kind": "production",
+          "ms": 2.4369468688964844
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 33,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 4.995629751647357e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 4.995629751647357e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 4.995629751647357e-06,
+          "max_absolute": 0.0009765625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.548473834991455
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.3738749027252197
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.248258113861084
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.248575210571289
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.374115467071533
+        },
+        {
+          "kind": "production",
+          "ms": 2.548818349838257
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 48,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 0.00012272513413336128,
+          "max_absolute": 0.00390625,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 0.00012272513413336128,
+          "max_absolute": 0.00390625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 0.00012272513413336128,
+          "max_absolute": 0.00390625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.7762584686279297
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.4208035469055176
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.2948460578918457
+        },
+        {
+          "kind": "tile_32",
+          "ms": 2.296921730041504
+        },
+        {
+          "kind": "tile_16",
+          "ms": 2.4222514629364014
+        },
+        {
+          "kind": "production",
+          "ms": 2.778085708618164
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 65,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 5.205420620768564e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 5.205420620768564e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 5.205420620768564e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 3.0056867599487305
+        },
+        {
+          "kind": "tile_16",
+          "ms": 3.8897604942321777
+        },
+        {
+          "kind": "tile_32",
+          "ms": 3.3727593421936035
+        },
+        {
+          "kind": "tile_32",
+          "ms": 3.37628173828125
+        },
+        {
+          "kind": "tile_16",
+          "ms": 3.8929429054260254
+        },
+        {
+          "kind": "production",
+          "ms": 3.003784656524658
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 96,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 5.302770205162233e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 5.302770205162233e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 5.302770205162233e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 3.317251682281494
+        },
+        {
+          "kind": "tile_16",
+          "ms": 4.69122314453125
+        },
+        {
+          "kind": "tile_32",
+          "ms": 3.5008883476257324
+        },
+        {
+          "kind": "tile_32",
+          "ms": 3.5057742595672607
+        },
+        {
+          "kind": "tile_16",
+          "ms": 4.6992340087890625
+        },
+        {
+          "kind": "production",
+          "ms": 3.3287696838378906
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 130,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 0.000123064179206267,
+          "max_absolute": 0.00390625,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 0.000123064179206267,
+          "max_absolute": 0.00390625,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 6.454936981201172
+        },
+        {
+          "kind": "tile_16",
+          "ms": 6.913476467132568
+        },
+        {
+          "kind": "tile_32",
+          "ms": 5.5888590812683105
+        },
+        {
+          "kind": "tile_32",
+          "ms": 5.590139865875244
+        },
+        {
+          "kind": "tile_16",
+          "ms": 6.938623905181885
+        },
+        {
+          "kind": "production",
+          "ms": 6.484256744384766
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 160,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "passed": true
+        },
+        "tile_16": {
+          "relative_rms": 5.370035523810657e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        },
+        "tile_32": {
+          "relative_rms": 5.370035523810657e-06,
+          "max_absolute": 0.001953125,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 5.228423118591309
+        },
+        {
+          "kind": "tile_16",
+          "ms": 7.760420799255371
+        },
+        {
+          "kind": "tile_32",
+          "ms": 5.7720112800598145
+        },
+        {
+          "kind": "tile_32",
+          "ms": 5.770707130432129
+        },
+        {
+          "kind": "tile_16",
+          "ms": 7.764810085296631
+        },
+        {
+          "kind": "production",
+          "ms": 5.233059883117676
+        }
+      ]
+    }
+  ],
+  "passed": true
+}
