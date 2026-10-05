@@ -123,3 +123,19 @@ decode improvement over this experimental uncaptured path, not an advantage over
 another runtime. First-token medians are 58–102 ms uncaptured and 61–101 ms with
 graphs; graph replay targets decode. Raw trials and per-stage measurements are
 retained under `evidence/vision/qwen35-images-a2-warm*` and the ABBA summary.
+
+## Inline image input helper
+
+`vision_messages.decode_image_messages` accepts user content lists containing
+text and inline PNG/JPEG data URLs with automatic detail. The optional `vision`
+dependency installs the tested Pillow 12.3.0. It honors EXIF orientation, converts
+to RGB, preserves content order, and returns encoded-content SHA256 identities
+for future cache policy. It fetches no remote URLs and opens no caller paths.
+
+Defaults cap requests at four images, 8 MiB decoded encoded-file bytes, and
+16 million decoded pixels across all images. Combined pixel dimensions are
+checked before loading image pixels. Animation and MIME/format mismatches are
+rejected. Six tests cover order, identity, source preservation, byte/count/pixel
+limits, malformed input, unsupported roles/detail, JPEG, and text-only input.
+The helper is not connected to HTTP handling yet; no image-serving support is
+implied by installing the dependency.
