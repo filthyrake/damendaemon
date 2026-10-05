@@ -1889,3 +1889,12 @@ continuations at lengths 15/16/17/63 around a 16-token window. The model gate
 can include declared window boundaries explicitly, and layout validation can
 select four prompt lengths with a paged pool sized for all admitted tokens.
 Fixture preparation and test-harness checks alone do not qualify runtime support.
+
+The independent A2 gate in `mistral-window-reference-a2.json` passes 96 logit
+comparisons, including prompts of 4095/4096/4097 tokens and eight continuation
+steps with eager and graph replay. Maximum absolute error is 0.0625, relative
+RMS 0.2572%, and every greedy token agrees with HF eager attention. The oracle
+uses 128-token prefill chunks and releases reference GPU weights before dllm
+runs. dllm uses the existing FP16 Mistral arithmetic policy and native Q4 CUDA
+GEMV; the separate Llama residual optimization remains unselected. Layout and
+normal-service qualification are recorded separately when complete.
