@@ -1,0 +1,18 @@
+{
+  "kind": "experimental fixed-cache grouped tensor-core attention",
+  "block": 128,
+  "captured_or_eager_calls": 2916,
+  "fallback_calls": 1800,
+  "source_sha256": "7e8ea7dcaa0304df2fce561881a28e699ea2833c3003814199067fb89a8d4909",
+  "script": "scripts/verify_gguf_layout_runtime.py",
+  "arguments": [
+    "/home/damen/dllm-dev/baselines/awq-qwen3/models--Qwen--Qwen3-4B-AWQ/snapshots/74d4bd2bd4bff9cafc9345221320bffb08b406a3",
+    "--awq-qualification",
+    "--context",
+    "2048",
+    "--output",
+    "results/qwen3-attention-tensorcore-layout.json"
+  ],
+  "completed": false,
+  "error": "AssertionError('packed layout equivalence gate failed')"
+}

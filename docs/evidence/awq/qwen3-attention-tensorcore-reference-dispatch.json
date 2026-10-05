@@ -1,0 +1,18 @@
+{
+  "kind": "experimental fixed-cache grouped tensor-core attention",
+  "block": 128,
+  "captured_or_eager_calls": 2268,
+  "fallback_calls": 0,
+  "source_sha256": "7e8ea7dcaa0304df2fce561881a28e699ea2833c3003814199067fb89a8d4909",
+  "script": "scripts/verify_awq_cached_reference.py",
+  "arguments": [
+    "/home/damen/dllm-dev/baselines/awq-qwen3/models--Qwen--Qwen3-4B-AWQ/snapshots/74d4bd2bd4bff9cafc9345221320bffb08b406a3",
+    "--cache",
+    "results/qwen3-4b-awq-fp32-2048-oracle.safetensors",
+    "--reference-report",
+    "results/qwen3-4b-awq-reference-fp32-2048-a2.json",
+    "--output",
+    "results/qwen3-attention-tensorcore-reference.json"
+  ],
+  "completed": true
+}

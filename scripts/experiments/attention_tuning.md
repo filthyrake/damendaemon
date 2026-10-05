@@ -34,3 +34,12 @@ actual experiment coverage from fallback execution.
 
 Reports, including unsuccessful candidates, live in `docs/evidence/awq`.
 GitHub issue #49 tracks the Qwen3 performance work.
+
+The initial single-FP16 probability candidate passes 128/128 independent oracle
+checks (worst RMS 0.6255%), with 2268 recorded experiment calls and no fallback.
+However, it passes only 124/128 cross-layout comparisons: batch-four step two
+has 1.0765% RMS in fixed layout and 1.1167% against ordinary paged execution,
+repeated in eager/graph modes. All greedy tokens match. The 1% RMS gate stays
+unchanged and this candidate is not promoted. Its reports retain the original
+source hash. A two-piece FP16 representation of FP32 probabilities is the next
+precision experiment; its extra tensor-core product must also be timed.
