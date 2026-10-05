@@ -24,7 +24,11 @@ def main():
     parser.add_argument('--output', required=True)
     parser.add_argument('--tiles', action='store_true',
                         help='Compare smaller fused tiles instead of dense expansion')
+    parser.add_argument('--rows', type=int, nargs='+', default=[16, 32, 64, 128, 129, 256],
+                        help='Matrix row counts for boundary and intermediate-shape sweeps')
     args = parser.parse_args()
+    if any(rows < 1 for rows in args.rows):
+        parser.error('row counts must be positive')
     require_gpu()
     torch.set_num_threads(4)
     torch.manual_seed(617)
@@ -49,7 +53,7 @@ def main():
                 width, outputs = weight.shape[1]*2, weight.shape[0]
                 oracle = dequantize_q4(weight, scales, torch.float16)
                 bias = torch.randn(outputs, device='cuda', dtype=torch.float16)
-                for rows in (16, 32, 64, 128, 129, 256):
+                for rows in dict.fromkeys(args.rows):
                     x = torch.randn(rows, width, device='cuda', dtype=torch.float16)
                     expected = torch.nn.functional.linear(x, oracle, bias)
                     functions = dict(production=lambda: linear(x, weight, scales, bias),
