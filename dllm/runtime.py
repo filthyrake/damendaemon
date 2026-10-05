@@ -12,17 +12,21 @@ from .prompts import decode_output
 
 
 def require_gpu():
+    from .partition_policy import selected_split
+    split=selected_split()
     if selected_device() == 'mps':
         import torch
         if not torch.backends.mps.is_available():
             raise RuntimeError('Apple MPS is not available')
         return
     visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
-    if not visible.startswith("GPU-") or "," in visible:
-        raise ValueError("set CUDA_VISIBLE_DEVICES to exactly one GPU UUID")
+    count=2 if split is not None else 1
+    devices=visible.split(',')
+    if len(devices)!=count or len(set(devices))!=count or any(not value.startswith('GPU-') for value in devices):
+        raise ValueError(f"set CUDA_VISIBLE_DEVICES to exactly {count} distinct GPU UUIDs")
     import torch
-    if not torch.cuda.is_available() or torch.cuda.device_count() != 1:
-        raise RuntimeError("exactly one CUDA GPU must be visible")
+    if not torch.cuda.is_available() or torch.cuda.device_count() != count:
+        raise RuntimeError(f"exactly {count} CUDA GPUs must be visible")
     torch.cuda.set_device(0)
 
 
@@ -86,10 +90,21 @@ class Runtime:
                        'host_weight_bytes': self.host[alias].bytes if alias in self.host else None,
                        'vision_host_weight_bytes': getattr(getattr(self.host.get(alias),'vision_weights',None),'bytes',0),
                        'vision_gpu_weight_bytes': getattr(getattr(self.gpu.get(alias),'vision',None),'bytes',0),
-                       'gpu_projection_cache_bytes': getattr(self.gpu.get(alias), 'packed_cache_bytes', 0)}
+                       'gpu_projection_cache_bytes': getattr(self.gpu.get(alias), 'packed_cache_bytes', 0),
+                       'partition': getattr(self.gpu.get(alias),'residency',None),
+                       'executor_failed': getattr(self.gpu.get(alias),'failed',False)}
                       for alias in self.models]
+        from .partition_policy import selected_split
+        devices=None
+        if selected_split() is not None and torch.cuda.is_initialized():
+            visible=os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+            devices=[dict(index=i,uuid=visible[i],name=torch.cuda.get_device_name(i),
+                          allocated_bytes=torch.cuda.memory_allocated(i),reserved_bytes=torch.cuda.memory_reserved(i)) for i in range(2)]
+        allocated=torch.cuda.memory_allocated() if torch.cuda.is_initialized() else None
+        if devices is not None:allocated=sum(d['allocated_bytes'] for d in devices)
         return {'models': models, 'device': selected_device(), 'context': self.context,
-                'cuda_allocated_bytes': torch.cuda.memory_allocated() if torch.cuda.is_initialized() else None,
+                'cuda_allocated_bytes': allocated,
+                'cuda_devices':devices,
                 'mps_allocated_bytes': torch.mps.current_allocated_memory() if selected_device()=='mps' else None,
                 'host_cached_bytes': sum(model.bytes for model in self.host.values()),
                 'host_budget_bytes': self.host_bytes, 'gpu_model_limit': self.gpu_limit,
@@ -153,6 +168,7 @@ class Runtime:
     def _evict(self, alias):
         import torch
         synchronize()
+        if hasattr(self.gpu[alias],'close'):self.gpu[alias].close()
         del self.gpu[alias]
         gc.collect()
         empty_cache()
@@ -161,6 +177,8 @@ class Runtime:
         import torch
         from .models import load, weight_bytes
         start = time.perf_counter()
+        if alias in self.gpu and getattr(self.gpu[alias],'failed',False):
+            self._evict(alias)
         if alias in self.gpu:
             self.gpu.move_to_end(alias)
             self.host.move_to_end(alias)
@@ -385,6 +403,12 @@ class Runtime:
 
 def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     """Choose an execution path from the validated architecture, not the model name."""
+    from .partition_policy import selected_split
+    split=selected_split()
+    if split is not None:
+        if kwargs:raise ValueError('layer partition does not accept executor overrides')
+        from .partition import PartitionExecutor
+        return PartitionExecutor(model,split,use_graph,max_batch or 1)
     budget = os.environ.get('DLLM_KV_CACHE_TOKENS')
     if budget is not None:
         if (not budget.isascii() or not budget.isdecimal() or int(budget)<=0

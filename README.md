@@ -18,6 +18,29 @@ The server selects models from each request without restarting. GPU-resident
 models retain their execution graphs; evicted models restore from the host cache.
 This remains an early runtime with deliberately narrow model support.
 
+## Experimental two-GPU serving
+
+`--layer-split 12` runs the first 12 decoder layers on the first visible GPU
+and the remaining 12 on the second. Currently qualified for Qwen2.5-0.5B,
+FP16 or dllm Q8, context up to 512 and batch size up to four. It shares the
+normal HTTP scheduler, streaming, cancellation and model residency controls.
+Sampling stays on the output GPU; status includes both devices' allocations
+and per-stage weights, scales and KV bytes.
+
+```sh
+CUDA_VISIBLE_DEVICES=GPU-first-uuid,GPU-second-uuid DLLM_QUANTIZATION=q8_0 \
+  dllm serve --layer-split 12 --context 512 --batch-size 4 \
+  --model small=/path/to/Qwen2.5-0.5B-Instruct
+```
+
+This is a sequential layer partition for same-host serving, not tensor
+parallelism or a throughput pipeline. Paged KV, prefix caching, chunked prefill
+and speculation are explicitly excluded in this mode. A partial stage failure
+invalidates the executor; the next request rebuilds both stages from the host
+cache. Cross-host A2/3090 execution has a separate experimental correctness
+proof; it is not exposed by this serving option. RDMA remains unqualified.
+See [multi-GPU evidence and limits](docs/evidence/multi-gpu/README.md).
+
 ## Run a model
 
 Linux, Python 3.11+, NVIDIA CUDA GPU and a compatible driver. Install the CUDA

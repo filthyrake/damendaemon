@@ -52,6 +52,18 @@ class RuntimeTests(unittest.TestCase):
         with runtime.session("a") as (_, tier, _):
             self.assertEqual(tier, "gpu")
 
+    def test_failed_executor_is_closed_and_rebuilt_from_host(self):
+        from unittest.mock import Mock
+        runtime=Runtime({'a':'a'})
+        with runtime.session('a') as (first,_,__):
+            first.failed=True
+            first.close=Mock()
+        with runtime.session('a') as (replacement,tier,_):
+            self.assertIsNot(replacement,first)
+            self.assertIs(replacement.model,first.model)
+            self.assertEqual(tier,'host')
+        first.close.assert_called_once_with()
+
     def test_failed_load_does_not_publish_or_leak_admission(self):
         runtime = Runtime({"bad": "broken", "a": "a"}, queue_size=1)
         with self.assertRaises(RuntimeError):

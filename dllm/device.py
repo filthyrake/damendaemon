@@ -11,11 +11,20 @@ def selected_device():
 
 def synchronize():
     import torch
+    from .partition_policy import selected_split
+    if selected_split() is not None:
+        for device in range(2):torch.cuda.synchronize(device)
+        return
     (torch.mps if selected_device() == 'mps' else torch.cuda).synchronize()
 
 
 def empty_cache():
     import torch
+    from .partition_policy import selected_split
+    if selected_split() is not None:
+        for device in range(2):
+            with torch.cuda.device(device):torch.cuda.empty_cache()
+        return
     (torch.mps if selected_device() == 'mps' else torch.cuda).empty_cache()
 
 

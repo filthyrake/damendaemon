@@ -50,6 +50,7 @@ Model licenses remain those of their respective publishers.
 | Function tools | Qualified Qwen2/Qwen3 JSON calls and result history; auto/none and required/named single-call schemas; strict auto unsupported |
 | Direct choices | Unquantized Qwen2/Qwen3 candidate-token logits/probabilities without answer generation; explicit raw prompts, no calibrated confidence |
 | Batching | Continuous decode, up to 16 slots; CUDA graph replay; opt-in bounded CUDA dense paged KV with admission reservations |
+| Two-GPU serving | Opt-in same-host Qwen2.5-0.5B layer split 12/12, FP16/Q8, context <=512, batch <=4; independent reference and HTTP lifecycle proof; cross-host execution remains an experimental harness |
 | Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state; optional 0–10 ms idle prompt coalescing (default 0), with measured first-output tradeoffs |
 | Prompt graph reuse | Opt-in bounded Qwen2/Qwen3 CUDA single-prefill and candidate-scoring graphs; cold capture cost, exact shape/slot/choice keys |
 | Speculative decoding | Opt-in Qwen2/Qwen3 dense CUDA greedy n-gram proposals with full-target verification; one active request, ordinary-path fallbacks |
@@ -62,8 +63,8 @@ Model licenses remain those of their respective publishers.
 
 The runtime does **not** currently provide general vLLM/llama.cpp parity.
 Missing major capabilities include paged KV for other architectures/devices, shared prefix pages, KV quantization,
-multi-GPU tensor/pipeline parallelism, adapters, broader GGUF architectures and remaining K/IQ formats, broader AWQ and GPTQ checkpoint import,
-multimodal inference, additional tool-call formats, prompt/raw-completion token log-probabilities,
+general multi-GPU tensor/pipeline parallelism and cross-host serving, adapters, broader GGUF architectures and remaining K/IQ formats, broader AWQ and GPTQ checkpoint import,
+broader multimodal inference, additional tool-call formats, prompt/raw-completion token log-probabilities,
 trained decision-head checkpoints, and a CPU inference backend. Model registration is
 process-local. The HTTP API is a supported subset, not full OpenAI or Ollama API
 compatibility. The development server is loopback-only and is not an authenticated

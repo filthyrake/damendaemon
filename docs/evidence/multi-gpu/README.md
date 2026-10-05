@@ -35,8 +35,8 @@ all three were explicitly removed after the probe. The lab's rich-rule list
 was empty afterward and the desktop's pre-existing 10.42.0.0/16 rule remained.
 No persistent firewall or router configuration changed.
 
-Failure recovery, serving integration, RDMA, and GPUDirect RDMA remain
-unqualified. The model partition experiments below are separate evidence;
+General distributed recovery, cross-host serving, RDMA, and GPUDirect RDMA
+remain unqualified. The model partition experiments below are separate evidence;
 a successful communication-only Socket test establishes none of these.
 
 ## Same-host model partition proof
@@ -58,8 +58,8 @@ ordinary A2 graph-enabled executor: all 82 checks pass, worst relative RMS
 367 tests. The shared runtime change extracts hidden-state layer execution from
 embedding/head execution; ordinary entry points retain their behavior.
 
-The stage implementation lives under `scripts/experiments` and is not registered
-for serving. It executes stages sequentially and copies their activations. It
+The initial stage implementation lived under `scripts/experiments`; the narrow
+serving integration qualified below now uses `dllm/layer_stage.py`. It executes stages sequentially and copies their activations. It
 does not yet have a network control protocol, worker recovery, pipeline
 scheduling, or a capacity/speedup qualification. The small checkpoint fits on a
 single GPU; this proof must not be represented as a larger-model capacity win.
@@ -145,3 +145,40 @@ prototype workload. It is not an upstream-runtime comparison, concurrent
 serving throughput, or a cross-network benchmark. Timings include host token
 selection and stage activation copies; model load/graph capture are excluded.
 Prefill is unchanged and does not materially improve in this comparison.
+
+## Same-host HTTP serving integration
+
+Explicit `--layer-split 12` / `DLLM_EXPERIMENTAL_LAYER_SPLIT=12` admits exactly
+two visible GPU UUIDs. Serving is limited to qualified Qwen2.5-0.5B geometry,
+FP16/Q8, context <=512 and batch <=4. It rejects paged KV, speculation, chunked
+prefill, prefix snapshots and unqualified layouts. The existing request scheduler
+owns both devices, with output logits and sampling on the final GPU.
+
+The production factory passes all 82 independent Q8 logits checks. Actual CLI
+HTTP runs pass 19 Q8 checks, 20 Q8 injected-failure checks, and 20 allocation-
+diagnostic checks each in FP16 and Q8. Checks cover independent reference
+continuations, four concurrent requests with differing completion lengths, SSE
+content/usage, disconnect and slot reuse, malformed-input recovery, native
+log probabilities on the output GPU, seeded sampling with penalties, alias
+switches, host restore, full release and disk reload. The local suite passes
+373 tests.
+
+A validation-only injected exception after the first stage decodes poisons the
+whole executor. HTTP returns an error; status records `executor_failed`. The
+next request evicts it, rebuilds both stages from the host cache, and matches
+the independent continuation. Failed in-flight requests are not replayed. This
+is recovery from an ordinary stage exception, not a guarantee of recovery
+from fatal CUDA device errors or a disconnected remote worker.
+
+Status now reports weights/scales/KV per stage and allocated/reserved memory
+per GPU. Q8 loaded allocations in the ordinary run were 484,069,376 bytes on
+A2 and 359,302,144 on A30. Repeated full releases return host model bytes to
+zero and remove every stage. Allocation histories independently identify all
+remaining allocations as cuBLAS workspaces: Q8 8,519,680 bytes per device; FP16
+17,039,360 per device. Repeated release does not grow either footprint. These
+are retained library allocations, so total live CUDA allocation is not zero.
+
+The ordinary Q8 run measured 1.60 s host restore for an alias switch; graph
+construction and weight upload still occur on restoration. This is a lifecycle
+observation, not a controlled swap-performance comparison. Improving this cost
+without retaining stale weights or request state is subsequent work.

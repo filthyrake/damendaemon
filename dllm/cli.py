@@ -76,6 +76,7 @@ def main():
         command.add_argument("--host-models", type=int, default=2)
         command.add_argument("--host-gib", type=float, default=8)
         command.add_argument("--no-graph", action="store_true")
+        command.add_argument('--layer-split',type=int,help='experimental two-GPU layer split; qualified value: 12 (context <=512)')
     for name in ('models', 'add', 'load', 'unload'):
         management = commands.add_parser(name, help='manage models on a running dllm server')
         management.add_argument('--server', default='http://127.0.0.1:8088')
@@ -116,6 +117,9 @@ def main():
         print(json.dumps(download(args.repository, args.revision, args.filename)))
         return
     os.environ["DLLM_DEVICE"] = args.device
+    if args.layer_split is not None:
+        if args.layer_split<=0:parser.error('layer split must be positive')
+        os.environ['DLLM_EXPERIMENTAL_LAYER_SPLIT']=str(args.layer_split)
     if args.kv_cache_tokens is not None:
         if args.kv_cache_tokens < 0 or args.kv_cache_tokens % 16:
             parser.error('KV token budget must be a nonnegative multiple of 16')

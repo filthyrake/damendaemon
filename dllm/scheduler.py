@@ -72,6 +72,9 @@ class BatchedRuntime:
         self.batch_wait_seconds=batch_wait_ms/1000
         self.prefix_cache_tokens=prefix_cache_tokens
         self.prefill_chunk_size=prefill_chunk_size
+        from .partition_policy import selected_split
+        if selected_split() is not None and (prefill_chunk_size or prefix_cache_tokens):
+            raise ValueError('layer partition does not yet support chunked prefill or prefix snapshots')
         self.runtime = Runtime(models, batch_size=batch_size, **kwargs)
         if prefill_chunk_size or prefix_cache_tokens:
             from .device import selected_device
