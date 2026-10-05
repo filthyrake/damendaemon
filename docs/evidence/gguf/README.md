@@ -1048,3 +1048,18 @@ its default Llama mixed-precision policy. Context is 512. The new
 HF GPU weights before loading dllm, allowing this check on the A2 without
 altering either runtime's arithmetic. This is numerical proof, not a timing
 comparison or longer-window qualification.
+
+The extended independent suite also passes all 96 checks with greedy agreement,
+maximum absolute error 0.078125 and RMS 0.3928%
+(`mistral-spm-q4-reference-extended-a2.json`). Inputs include multi-turn recall,
+Unicode, code, a system message and repeated raw prefixes.
+
+`scripts/verify_gguf_layout_runtime.py` checks batching (1/2/4), fixed/paged KV,
+graph/eager execution and 128-token chunked prefill against separately captured
+single-request fixed eager traces. It keeps one executor resident at a time.
+Both the ordinary Q4 path and optional CUDA C++ Q4 decode pass all 128 layout
+comparisons, with exact greedy agreement and maximum RMS 0.2654%:
+`mistral-spm-q4-layout-a2.json` and `mistral-spm-q4-native-layout-a2.json`.
+These are layout checks, not a substitute for the independent HF model oracle.
+Native library SHA-256:
+`29dffba1428aab9846a5b71464855a4d48e6fbd6b9ec8a89a47f64b1ef0dd063`.
