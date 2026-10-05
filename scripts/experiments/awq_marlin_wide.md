@@ -25,3 +25,13 @@ then replay the pinned independent Qwen3 oracle with
 Keep model-level reference/layout gates and unprofiled serving measurements
 separate. Do not promote a candidate based on isolated matrix timing alone.
 Track conclusions in GitHub issue #49 and retain failed experiment reports.
+
+## A2 outcome
+
+All 96 real Qwen3 matrix checks pass, worst relative RMS 0.0367%. The complete
+independent model oracle passes 128/128 checks, worst RMS 0.6632%. However, the
+matching batch-four full-model profile records 12.288 ms Marlin time versus
+11.773 ms for the qualified default, and 20.302 versus 19.773 ms summed device
+time per step. This candidate is not promoted. No HTTP speedup is claimed from
+these profiles; they provide no reason to replace the existing kernel. Reports
+are retained in `docs/evidence/awq/qwen3-4b-awq-wide-*.json`.
