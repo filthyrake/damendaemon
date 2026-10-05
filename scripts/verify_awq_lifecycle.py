@@ -24,6 +24,7 @@ from dllm.runtime import make_executor, require_gpu
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model')
+    parser.add_argument('--other-model', help='second real checkpoint for cross-model host restore')
     parser.add_argument('--context', type=int, default=2048)
     parser.add_argument('--output', required=True)
     experiments = parser.add_mutually_exclusive_group()
@@ -96,6 +97,26 @@ def main():
                 if previous is not None and released > previous+1024**2:
                     raise AssertionError('repeated unload grows retained allocation')
                 previous = released
+        alternate_path = Path(args.other_model).resolve() if args.other_model else path
+        alternate_expected = report['expected']
+        if alternate_path != path:
+            alternate_source = load(alternate_path, args.context, 'none')
+            with torch.inference_mode():
+                alternate_executor = make_executor(alternate_source, use_graph=True)
+                alternate_logits = alternate_executor.prefill(alternate_source.chat_tokens(messages))
+                alternate_tokens = []
+                for _ in range(32):
+                    token = alternate_logits.argmax(-1).item()
+                    alternate_tokens.append(token)
+                    if token in alternate_source.eos:
+                        break
+                    alternate_logits, next_tokens = alternate_executor.decode(token)
+                    del next_tokens
+                alternate_expected = dict(text=decode_output(alternate_source, alternate_tokens), tokens=alternate_tokens)
+            report['alias_scope'] = 'two distinct checkpoints; single restore observations, not a swap benchmark'
+            report['alternate_model'] = str(alternate_path)
+            report['alternate_expected'] = alternate_expected
+            del alternate_executor, alternate_logits, alternate_source
         del source
         gc.collect()
         torch.cuda.empty_cache()
@@ -131,19 +152,23 @@ def main():
                     def chat(alias='awq', **options):
                         return dict(model=alias, messages=messages, temperature=0, max_tokens=32, **options)
 
-                    def check(response):
-                        if response['choices'][0]['message']['content'] != expected:
+                    def check(response, expected_trace=None):
+                        expected_trace = expected_trace or report['expected']
+                        if response['choices'][0]['message']['content'] != expected_trace['text']:
                             raise AssertionError('HTTP generation differs from direct packed executor')
-                        if response['usage']['completion_tokens'] != len(report['expected']['tokens']):
+                        if response['usage']['completion_tokens'] != len(expected_trace['tokens']):
                             raise AssertionError('HTTP token accounting differs')
 
-                    for alias in ('awq', 'alternate'):
-                        request('/v1/models/register', dict(model=alias, path=str(path), quantization='none'))
+                    for alias, checkpoint in [('awq', path), ('alternate', alternate_path)]:
+                        request('/v1/models/register', dict(model=alias, path=str(checkpoint), quantization='none'))
                     first = request('/v1/chat/completions', chat())
                     check(first)
-                    check(request('/v1/chat/completions', chat('alternate')))
+                    alternate_response = request('/v1/chat/completions', chat('alternate'))
+                    check(alternate_response, alternate_expected)
                     restored = request('/v1/chat/completions', chat())
                     check(restored)
+                    report['switch_observations'] = {name: response.get('dllm_timing') for name, response in
+                        [('initial', first), ('alternate', alternate_response), ('restored', restored)]}
                     if restored['dllm_timing']['source_tier'] != 'host':
                         raise AssertionError('alias switching did not restore host weights')
                     with post('/v1/chat/completions', chat(stream=True)) as response:
@@ -189,6 +214,13 @@ def main():
     finally:
         with (path/'model.safetensors').open('rb') as stream:
             report['checkpoint_sha256'] = hashlib.file_digest(stream, 'sha256').hexdigest()
+        if args.other_model:
+            from dllm.qwen2 import weight_files
+            report['alternate_checkpoint_sha256'] = {}
+            other_path = Path(args.other_model).resolve()
+            for shard in ([other_path] if other_path.is_file() else weight_files(other_path)):
+                with shard.open('rb') as stream:
+                    report['alternate_checkpoint_sha256'][shard.name] = hashlib.file_digest(stream, 'sha256').hexdigest()
         Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
 
 

@@ -1,0 +1,163 @@
+{
+  "passed": true,
+  "experiment": null,
+  "model": "/home/damen/dllm-dev/baselines/awq/snapshots/db09cd27ead7fee40cdee309693cf83601b9c899",
+  "device": "NVIDIA A2",
+  "context": 2048,
+  "host_bytes": 458314496,
+  "cycles": [
+    {
+      "resident": 591163904,
+      "after_release": 25559040,
+      "references_released": true
+    },
+    {
+      "resident": 592603648,
+      "after_release": 25559040,
+      "references_released": true
+    },
+    {
+      "resident": 592603648,
+      "after_release": 25559040,
+      "references_released": true
+    }
+  ],
+  "alias_scope": "two distinct checkpoints; single restore observations, not a swap benchmark",
+  "source_sha256": "287be51a22173d1d1a836ea65cd233e8bf18e36debbc1e75a6782792d8479148",
+  "expected": {
+    "text": "Certainly! Binary search is a search algorithm that works by dividing the search space into halves and narrowing down the search range until the target is found, or the search",
+    "tokens": [
+      95456,
+      0,
+      17718,
+      2711,
+      374,
+      264,
+      2711,
+      12111,
+      429,
+      4278,
+      553,
+      49702,
+      279,
+      2711,
+      3550,
+      1119,
+      74112,
+      323,
+      97767,
+      1495,
+      279,
+      2711,
+      2088,
+      3080,
+      279,
+      2169,
+      374,
+      1730,
+      11,
+      476,
+      279,
+      2711
+    ]
+  },
+  "alternate_model": "/home/damen/dllm-dev/baselines/qwen3-medium-import-q4_k_m.gguf",
+  "alternate_expected": {
+    "text": "<think>\nOkay, so I need to explain binary search with a short worked example. Let me start by recalling what binary search is. From what I remember,",
+    "tokens": [
+      151667,
+      198,
+      32313,
+      11,
+      773,
+      358,
+      1184,
+      311,
+      10339,
+      7868,
+      2711,
+      448,
+      264,
+      2805,
+      6439,
+      3110,
+      13,
+      6771,
+      752,
+      1191,
+      553,
+      88646,
+      1128,
+      7868,
+      2711,
+      374,
+      13,
+      5542,
+      1128,
+      358,
+      6099,
+      11
+    ]
+  },
+  "switch_observations": {
+    "initial": {
+      "source_tier": "disk",
+      "activation_seconds": 3.5747301600058563,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton+awq-marlin",
+      "weight_quantization": "awq_gemm",
+      "max_batch_size": 1,
+      "residual_dtype": "float16",
+      "first_token_seconds": 3.6061147679865826,
+      "total_seconds": 3.7259449809789658,
+      "decode_tokens_per_second": 258.69936492535874
+    },
+    "alternate": {
+      "source_tier": "disk",
+      "activation_seconds": 12.722344243025873,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton+mixed",
+      "weight_quantization": "gguf_mixed",
+      "max_batch_size": 1,
+      "residual_dtype": "float32",
+      "first_token_seconds": 12.814893793023657,
+      "total_seconds": 14.025794287997996,
+      "decode_tokens_per_second": 25.60078233402401
+    },
+    "restored": {
+      "source_tier": "host",
+      "activation_seconds": 0.793888763000723,
+      "cached_prompt_tokens": 0,
+      "speculative_blocks": 0,
+      "speculative_proposed_drafts": 0,
+      "speculative_matched_drafts": 0,
+      "kernel_backend": "triton+awq-marlin",
+      "weight_quantization": "awq_gemm",
+      "max_batch_size": 1,
+      "residual_dtype": "float16",
+      "first_token_seconds": 0.8155184960050974,
+      "total_seconds": 0.93544509698404,
+      "decode_tokens_per_second": 258.4914418231795
+    }
+  },
+  "http": {
+    "registration": true,
+    "exact_direct_trace": true,
+    "stream": true,
+    "concurrency": true,
+    "cancellation_recovery": true,
+    "host_restore": true,
+    "unload": true,
+    "disk_reload": true
+  },
+  "checkpoint_sha256": "c50d807b7bed7ff314308972e0f4bcf4e5a70bc60ad88fc7df53940831ed0c1b",
+  "alternate_checkpoint_sha256": {
+    "qwen3-medium-import-q4_k_m.gguf": "d8a2811d8568778c79219100c92fe540889d54e1dbb2d6e5ed9c1c44d2b3a55d"
+  }
+}

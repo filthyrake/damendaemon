@@ -365,3 +365,17 @@ its computation intact while bounding GPU weight residency. Parameters are
 promoted to FP32 after exact FP16 AWQ coefficient decoding; TF32 is disabled and
 rotary buffers retain FP32. This permits the FP32 4B reference on A2 without
 using a different validation GPU or introducing an inference-runtime dependency.
+
+The native Marlin experiment with the existing Qwen3 mixed precision policy
+also passes the focused FP32 case: 16 checks, worst RMS 0.7819%, maximum
+absolute error 0.386904. Full-context/prompt qualification remains separate.
+
+The normal native Qwen2 AWQ lifecycle gate now also passes with a distinct
+Qwen3-1.7B mixed K-quant GGUF as the alternate model. Both outputs match their
+own direct traces; switching back restores AWQ from host memory, followed by
+streaming/concurrency/cancellation/unload/disk-reload checks. The GGUF SHA is
+`d8a2811d8568778c79219100c92fe540889d54e1dbb2d6e5ed9c1c44d2b3a55d`.
+One observed AWQ host restore takes 0.7939 seconds versus its initial disk
+activation of 3.5747 seconds; these are single lifecycle observations, not a
+controlled swap-speed benchmark. Raw source tiers, backends and timings are
+retained in `awq-qwen3-gguf-cross-model-lifecycle-a2.json`.
