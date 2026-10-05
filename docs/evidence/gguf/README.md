@@ -1727,3 +1727,37 @@ use ordinary native decode and zero idle coalescing. Combined-option results
 are qualified separately; these are within-dllm gains, not llama.cpp parity.
 The additional GPU-resident copies cost 1973 MiB in total across all cached
 projections; the cache does not reduce the authoritative packed checkpoint.
+
+
+### Resident cache combined with residual decode
+
+`tinyllama-cache-residual-{reference,reference-extended,layout}-a2.json`
+qualify the normal cache together with the native residual decoder: 96 exact
+benchmark-prompt, 96 extended independent-reference and 128 layout checks pass.
+Worst relative RMS is 0.8816%, 0.4608% and 0.1017%, respectively, with exact
+greedy agreement. The same 1973 MiB additional cache budget is consumed.
+
+`tinyllama-cache-residual-production-http-a2.json` compares normal CLI phases
+in A/B/B/A order. Both sides use residual decode; only the candidate enables
+the resident cache. All generated outputs and lifecycle checks pass.
+
+| Input / concurrency | Residual only seconds | With cache seconds | Residual only output tokens/s | With cache output tokens/s |
+| --- | ---: | ---: | ---: | ---: |
+| 16 / 1 | 0.192022 | 0.176063 | 83.33 | 90.88 |
+| 129 / 1 | 0.217604 | 0.198049 | 73.53 | 80.79 |
+| 2032 / 1 | 0.528808 | 0.506584 | 30.26 | 31.58 |
+| 129 / 2 | 0.340689 | 0.325770 | 93.93 | 98.23 |
+| 129 / 4 | 0.489085 | 0.384674 | 130.86 | 166.38 |
+
+Four-request latency falls 21.3%, with 27.1% higher aggregate throughput.
+These pooled medians include prefill and exclude warmups. Idle coalescing is
+zero on both sides; this does not qualify every option together or establish
+a cross-engine win.
+
+The harness now retains end-to-end lifecycle request timing separately from
+steady-state rounds. Cached host restores took 1.135/1.244 seconds and switches
+back from Qwen3 took 1.313/1.583 seconds; disk reload requests took 2.304/2.956
+seconds. These include activation and generation, with only two observations
+per action. Filesystem caches were not flushed. They prove usable reload paths,
+not a statistically established hot-swap improvement; control disk reloads
+were faster in this small sample (2.145/2.356 seconds).
