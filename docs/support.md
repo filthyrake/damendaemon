@@ -17,7 +17,7 @@ Configuration acceptance alone is not checkpoint qualification.
 | Phi-3 | Mini 4K | NVIDIA A2; limited Apple slot proof | No LongRoPE or interleaved prefill |
 | Mistral | 7B Instruct v0.1 | NVIDIA A2 | Sliding-window boundaries; Q8 and Q4 proof |
 | StarCoder2 | 3B | NVIDIA A2, Apple M4 | FP32 path; Q8 separately qualified on CUDA |
-| OLMoE | 1B-7B 0924 Instruct | NVIDIA A2 | Q8 weights; expert prefill performance remains limited |
+| OLMoE | 1B-7B 0924 Instruct | NVIDIA A2 | Q8; bounded short expert/packed prefill, opt-in chunks and copied prefix reuse through context 2048 / capacity 4; long-prefill performance remains limited |
 | GPT-OSS | 20B, native MXFP4 | NVIDIA A2 | Text Harmony chat + raw completions; auto/none function calls and results at 1024 context/two slots; forced tools, 120B and long contexts pending |
 | GPT-2 | Original GPT-2 | NVIDIA A2, Apple M4 | Learned positions; FP32, raw completions |
 | GPT-NeoX | Pythia-160M | NVIDIA A2, Apple M4 | Partial rotary / parallel residual; FP32 |
@@ -53,7 +53,7 @@ Model licenses remain those of their respective publishers.
 | Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state; optional 0–10 ms idle prompt coalescing (default 0), with measured first-output tradeoffs |
 | Prompt graph reuse | Opt-in bounded Qwen2/Qwen3 CUDA single-prefill and candidate-scoring graphs; cold capture cost, exact shape/slot/choice keys |
 | Speculative decoding | Opt-in Qwen2/Qwen3 dense CUDA greedy n-gram proposals with full-target verification; one active request, ordinary-path fallbacks |
-| Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
+| Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense, OLMoE and recurrent configurations; model/precision isolation |
 | Reranking | Bounded query/document lists, raw relevance scores, stable top_n ranking and optional returned text; no silent truncation |
 | Embeddings | Text/token-ID inputs, float/base64 output for the qualified BERT sentence encoder |
 | Weight formats | Hugging Face safetensors; standalone Qwen2/Qwen3/Llama 3 BPE GGUF F16/F32/Q4_0/Q8_0; Llama-style SentencePiece BPE including native positional score ties (Mistral Q4 and published TinyLlama Q4_K_M model/layout/serving proof through 2048 context); experimental CUDA Q4_K/Q5_K/Q6_K with mixed fused projections; own on-load Q8_0/Q4_0 conversion where supported; checkpoint-native GPT-OSS MXFP4; CUDA Qwen2/Qwen3 AWQ GEMM 4-bit/group-128 import |

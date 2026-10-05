@@ -177,10 +177,11 @@ context blocks; larger configured contexts still add launch/merge overhead.
 
 The server continuously batches up to four requests for one model by default;
 use `--batch-size 1..8` to choose capacity. Different prompt lengths have separate
-KV slots. Dense decoders pack available prompts into shared linear layers;
-hybrid prompts currently prefill separately. Model groups drain
+KV slots. Dense decoders and qualified short OLMoE batches pack available prompts
+into shared linear layers; hybrid prompts currently prefill separately. Model groups drain
 before switching; a waiting different model prevents later requests from jumping
-ahead of it. Prefill is still unchunked, so a long prompt can delay active decode.
+ahead of it. Full prefill is the default, so a long prompt can delay active decode;
+opt-in chunking for qualified architectures is described below.
 Up to eight requests can be admitted, with a 120-second queue wait/backpressure
 limit; HTTP connections are separately capped at 16.
 Disconnects close the generation iterator once a socket write detects them.
@@ -424,6 +425,15 @@ all input tokens. The default is disabled. This uses additional GPU memory and
 copies; it is not paged KV or zero-copy sharing. Under memory pressure, caching
 is skipped while ordinary inference continues. Numerical qualification and
 latency measurements are in the architecture evidence.
+
+OLMoE-1B-7B-0924-Instruct Q8 on A2 now supports these opt-in chunking and prefix
+features at context up to 2048 and batch capacity up to four. Short expert
+prefill and packed concurrent prompts are selected automatically within their
+measured 128-token bounds. Repeated default-scheduler HTTP tests show a further
+17% C4 total-latency improvement from packing; single-request latency is
+unchanged by packing. A separate warm prefix-hit test reduces server first-token
+time for a repeated 1536-token prompt from 1792 to 6 ms. These are different
+workloads; see [OLMoE scope, measurements and independent proof](docs/architecture-parity.md#olmoe-checkpoint-qualification).
 
 ### Experimental packed four-bit weights
 

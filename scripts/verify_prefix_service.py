@@ -11,6 +11,7 @@ import tempfile
 import time
 from urllib.request import Request,urlopen
 from tokenizers import Tokenizer
+from dllm.bench import events
 
 
 def main():
@@ -57,6 +58,20 @@ def main():
                         assert result['dllm_timing']['cached_prompt_tokens']==(1536 if budget else 0)
                     with ThreadPoolExecutor(4) as pool:concurrent=list(pool.map(lambda _:request(),range(4)))
                     assert all(r['choices']==baseline for r in concurrent)
+                    # Close a real streaming client after output, then reuse its prefix.
+                    body={'model':'a','prompt':prompt,'max_tokens':64,'temperature':0,'stream':True}
+                    saw_output=False
+                    with urlopen(Request(base+'/v1/completions',data=json.dumps(body).encode(),
+                                 headers={'Content-Type':'application/json'}),timeout=180) as response:
+                        for event in events(response):
+                            if event=='[DONE]':break
+                            chunk=json.loads(event)
+                            if chunk.get('error'):raise RuntimeError(chunk['error'])
+                            if any(choice.get('text') for choice in chunk.get('choices',[])):
+                                saw_output=True
+                                break
+                    assert saw_output
+                    assert request()['choices']==baseline
                     # The second alias uses identical weights but owns independent cache state.
                     other=request('b')
                     restored=request()
@@ -76,7 +91,7 @@ def main():
                         'partial_trials':[{'timing':r['dllm_timing'],'http_ms':r['measured_http_seconds']*1000,'choices':r['choices']} for r in partial_trials],
                         'median_partial_first_token_ms':statistics.median(r['dllm_timing']['first_token_seconds'] for r in partial_trials)*1000,
                         'divergent_timing':divergent['dllm_timing'],'divergent_http_ms':divergent['measured_http_seconds']*1000,
-                        'divergent_choices':divergent['choices'],'model_switch_cache_isolation':True,'concurrent_output_equality':True})
+                        'divergent_choices':divergent['choices'],'model_switch_cache_isolation':True,'concurrent_output_equality':True,'disconnect_recovery':True})
                 except Exception:
                     print(logpath.read_text(),file=sys.stderr);raise
                 finally:

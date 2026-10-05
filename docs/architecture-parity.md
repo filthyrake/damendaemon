@@ -537,12 +537,25 @@ prompt regression passes all 234 checks. All 351 local tests pass, including
 invalid continuation offsets and unchanged cache lengths on rejection. The normal
 prefix reference passes all 48 CPU FP32 eager-reference checks (worst relative
 RMS 0.003459%), and 256-token chunks pass all 82 original model checks (worst
-relative RMS 0.000582%). Actual HTTP prefix/interleaving measurements are pending.
+relative RMS 0.000582%). Actual HTTP prefix qualification passes below;
+interleaving measurements are pending.
 See [normal prefix proof](evidence/architectures/olmoe-prefix-normal-a2.json) and
 [256-token chunk proof](evidence/architectures/olmoe-chunk256-normal-reference-a2.json).
 See [normal chunk gate](evidence/architectures/olmoe-chunk127-normal-reference-a2.json),
 [packed regression](evidence/architectures/olmoe-chunk-normal-batch-regression-a2.json)
 and [source fingerprints](evidence/architectures/olmoe-chunk-normal-source.json).
+
+The actual prefix service passes exact/partial hits, concurrent response equality,
+stream-disconnect recovery and model-alias switch isolation with a 16-GiB host
+budget. At 1536 input tokens and eight outputs, five warm trials per setting
+measure median server first-token time of 1792.2 ms without caching and 6.1 ms
+for an exact cache hit; median complete HTTP latency is 1901.0 vs 110.9 ms.
+A divergent three-token suffix measures 1822.3 vs 72.9 ms to first token.
+The cache uses a 4096-token per-executor budget and copied KV snapshots. These
+are cache-hit comparisons in two sequential phases, not uncached throughput
+or a cross-runtime comparison. Outputs, input usage and cache-hit telemetry
+match expectations, and model switches clear the old executor's cache.
+See [live prefix service proof](evidence/architectures/olmoe-prefix-service-a2.json).
 
 
 ## Q8 short-prefill latency
