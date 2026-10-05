@@ -352,8 +352,10 @@ Prompt latency remains a clear gap. Reports are the
 Issue #14. OLMoE has an independent CUDA implementation with whole-projection
 Q/K normalization, optional QKV clipping, expert routing, gated expert MLPs and
 weighted aggregation. Decode selects expert weight addresses on GPU, including
-inside captured graphs. Prefill currently groups tokens with a Python expert
-loop; eliminating those synchronization points remains a performance task.
+inside captured graphs. Prefill uses stable device-side route sorting and one
+host count vector per layer, retaining a Python expert loop. This removes
+per-expert nonzero discovery while preserving expert accumulation order;
+fully device-driven grouped prefill remains a performance task.
 Projection/cache/activation arithmetic is FP32, with FP16 or Q8 matrix storage.
 Apple MoE is not yet supported.
 
@@ -364,13 +366,23 @@ OLMoE-1B-7B-0924-Instruct revision `7f1c97f440f06ce36705e4f2b843edb5925f4498`
 passes all 82 independent Q8-reference checks at context 2048 on A2, including
 batch changes and slot reuse. Worst relative RMS is 0.0003882%, with exact
 sampled greedy agreement. Host weight storage is 7,448,584,192 bytes. Real mixed
-dense/hybrid/MoE service checks pass at batch capacities one and three, including
+dense/hybrid/MoE service checks pass at GPU model capacities one and three, including
 model switching and concurrency. Reports are `olmoe-q8-replay.json` and
 `olmoe-q8-service.json` under `evidence/architectures`.
 
 This qualifies execution against independently quantized weights; original
 checkpoint task quality, longer contexts and comparative MoE performance remain
 open measurements.
+
+Stable prefill grouping retains identical records on all 82 independent checks
+and passes all 24 routed/synthetic GPU checks. On the same resident Q8 checkpoint,
+control/candidate/candidate/control measurements produce bitwise-identical
+logits throughout. Median prefill times for 32/128/512/1024 input tokens decrease
+from 0.4799/0.6143/0.9701/1.4837 seconds to
+0.3558/0.4415/0.7964/1.3350 seconds (25.9/28.1/17.9/10.0%). CPU profiles show
+1025 versus 49 stream synchronization calls. These are direct prefill timings;
+HTTP timing is a separate gate. Reports use the `olmoe-grouped-` prefix under
+`evidence/architectures`.
 
 ## Q8 short-prefill latency
 

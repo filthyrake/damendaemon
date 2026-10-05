@@ -40,6 +40,7 @@ def main():
     experiments = parser.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-awq-decode', action='store_true')
     experiments.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
+    experiments.add_argument('--experimental-olmoe-baseline', metavar='SOURCE')
     args = parser.parse_args()
     if not args.label.replace('-', '').replace('_', '').isalnum():
         parser.error('label must contain only letters, digits, hyphens or underscores')
@@ -62,6 +63,10 @@ def main():
             if args.experimental_awq_marlin:
                 module = 'scripts.experiments.serve_awq_marlin'
                 env['DLLM_EXPERIMENT_MARLIN_LIBRARY'] = str(Path(args.experimental_awq_marlin).resolve())
+            if args.experimental_olmoe_baseline:
+                module = 'scripts.experiments.serve_moe_baseline'
+                env['DLLM_EXPERIMENT_MOE_BASELINE'] = str(Path(args.experimental_olmoe_baseline).resolve())
+                env['DLLM_EXPERIMENT_MOE_REPORT'] = str(root / f'compare-{engine}-{args.label}-source.json')
             command = [sys.executable, '-m', module, 'serve', '--port', str(port), '--context', str(args.context),
                        '--batch-size', str(args.batch_size), '--host-gib', str(args.host_gib), '--model', 'a=' + model['path']]
         elif engine == 'llama.cpp':
