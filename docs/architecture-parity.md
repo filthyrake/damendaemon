@@ -586,11 +586,43 @@ The first independent 512-context whole-model gate fails one of 82 checks.
 At decode position 498 in slot 1, relative RMS is 4.232% and maximum absolute
 logit error 0.912, despite greedy agreement. The preceding 496-token prefill
 already differs by 0.187% RMS. Q4 OLMoE remains disabled in normal registration;
-the existing error thresholds are unchanged. Graph dependence, expert routing,
-and weight equivalence require diagnosis before performance claims or promotion.
+the existing error thresholds are unchanged. A graph-disabled replay reproduces
+the same failure and magnitude, excluding graph replay as the cause of this
+observed discrepancy. Expert routing and weight equivalence still require
+diagnosis before performance claims or promotion.
 See [kernel proof](evidence/architectures/moe-q4-routed-kernels-a2.json),
 [failed full-model gate](evidence/architectures/olmoe-q4-model512-a2.json)
 and [explicit storage policy/dispatch](evidence/architectures/olmoe-q4-model512-dispatch.json).
+
+A separate grouped Q4 prefill kernel dequantizes tiles directly instead of
+expanding complete expert matrices. It passes 48 independent cases covering
+shared and route-specific inputs, concentrated and mixed routing, ragged output
+dimensions, and batches 1/4/17/65 (worst relative RMS 3.065e-7). This isolated
+kernel gate does not qualify full-model execution or establish a performance
+gain. See [grouped kernel evidence](evidence/architectures/moe-q4-grouped-kernels-a2.json)
+and [graph-disabled model failure](evidence/architectures/olmoe-q4-model512-eager-a2.json).
+
+An exact comparison of all 3,219 coefficient tensors found five differences
+between the initial reference and runtime: embeddings and four layer-zero expert
+projections. The initial reference omitted the runtime's FP16 storage rounding
+before Q4 conversion. Very small checkpoint values therefore produced different
+coefficients (maximum projection difference 1.449e-5). The independent reference
+now explicitly rounds embeddings and projection inputs to FP16, while continuing
+to use upstream GGUF quantization/dequantization. This corrects the reference's
+storage policy; it does not change runtime arithmetic or numerical thresholds.
+The original failure remains preserved. See
+[exact coefficient mismatch evidence](evidence/architectures/olmoe-q4-initial-weight-mismatch-a2.json).
+
+The corrected reference matches all 3,219 tensors exactly, but reproduces the
+4.232% decode discrepancy. Instrumentation observes the first expert-membership
+split at layer zero, prompt row 239: experts 49 and 27 exchange eighth/ninth
+place with probability gaps 1.304e-8 (native) and 9.313e-9 (reference). Router
+input RMS differs by 9.179e-7. FP64 router projections on each captured input
+retain their respective ordering, locating the initial difference before the
+router multiplication. Later expert changes amplify the discrepancy. No
+tie-handling heuristic or relaxed threshold has been introduced. See
+[aligned coefficient and route diagnosis](evidence/architectures/olmoe-q4-aligned-diagnostic-a2.json)
+and [diagnostic dispatch](evidence/architectures/olmoe-q4-aligned-diagnostic-dispatch.json).
 
 
 ## Q8 short-prefill latency

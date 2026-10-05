@@ -86,13 +86,20 @@ def install_validation_dispatch():
         from gguf.constants import GGMLQuantizationType
         model = original_reference(path,reference_quantization='none',**kwargs)
         for name,module in model.named_modules():
+            if isinstance(module,torch.nn.Embedding):
+                module.weight = torch.nn.Parameter(module.weight.detach().half().to(module.weight.dtype),
+                                                   requires_grad=False)
+                continue
             if not isinstance(module,torch.nn.Linear):
                 continue
             dtype = module.weight.dtype
             if name.endswith('.mlp.gate'):
                 restored = module.weight.detach().half().to(dtype)
             else:
-                weight = module.weight.detach().float().cpu().numpy()
+                # Native checkpoint loading stores matrices in FP16 before
+                # Q4 conversion. Preserve that policy even for subnormals;
+                # GGUF remains the independent quantizer/dequantizer.
+                weight = module.weight.detach().half().float().cpu().numpy()
                 restored = torch.from_numpy(dequantize(quantize(weight,GGMLQuantizationType.Q4_0),
                                                        GGMLQuantizationType.Q4_0)).to(dtype)
             module.weight = torch.nn.Parameter(restored,requires_grad=False)

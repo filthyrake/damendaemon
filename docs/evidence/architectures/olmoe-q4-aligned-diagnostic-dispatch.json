@@ -1,0 +1,18 @@
+{
+  "kind": "experimental Q4 OLMoE; FP16 routers and embeddings; FP32 arithmetic",
+  "model_loads": 1,
+  "reference_loads": 1,
+  "routed_calls": 192,
+  "host_weight_bytes": [
+    4043595776
+  ],
+  "source_sha256": "c61d39273366f4ac0fbb23508c644bbde754052aa00b05c0bf13e28511be83ce",
+  "kernel_sha256": "62bde22a7409349b7640fb745eae131450e3b2f677b2282f8292e687b31abd5b",
+  "script": "scripts/diagnose_moe_q4.py",
+  "arguments": [
+    "results/olmoe-q4-router-f16-golden512.pt",
+    "--output",
+    "results/olmoe-q4-aligned-diagnostic-a2.json"
+  ],
+  "completed": true
+}

@@ -1,0 +1,40 @@
+{
+  "completed": false,
+  "scope": "diagnostic only; instrumented execution is not a benchmark",
+  "model": "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+  "weight_checks": 3219,
+  "weight_failures": [
+    {
+      "native": "embed",
+      "reference": "model.embed_tokens.weight",
+      "relative_rms": 5.626546695225443e-08,
+      "max_absolute": 2.9802322387695312e-08
+    },
+    {
+      "native": "0.experts_up",
+      "reference": "model.layers.0.mlp.experts.19.gate_proj.weight",
+      "relative_rms": 1.2185046216472983e-06,
+      "max_absolute": 1.436471939086914e-05
+    },
+    {
+      "native": "0.experts_up",
+      "reference": "model.layers.0.mlp.experts.19.up_proj.weight",
+      "relative_rms": 7.94794743796956e-07,
+      "max_absolute": 1.4483928680419922e-05
+    },
+    {
+      "native": "0.experts_up",
+      "reference": "model.layers.0.mlp.experts.38.gate_proj.weight",
+      "relative_rms": 1.2193311249575345e-06,
+      "max_absolute": 1.239776611328125e-05
+    },
+    {
+      "native": "0.experts_up",
+      "reference": "model.layers.0.mlp.experts.38.up_proj.weight",
+      "relative_rms": 1.3056697980573517e-06,
+      "max_absolute": 9.238719940185547e-06
+    }
+  ],
+  "phases": [],
+  "error": "AssertionError('runtime and independent reference weights differ')"
+}
