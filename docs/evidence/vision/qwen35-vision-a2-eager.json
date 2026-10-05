@@ -1,0 +1,126 @@
+{
+  "passed": false,
+  "scope": "standalone vision encoder, not multimodal serving qualification",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "backend": "torch-fp32-vision",
+  "attention": "eager",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "host_weight_bytes": 204977152,
+  "device_weight_bytes": 204977152,
+  "reference_device": "cpu",
+  "reference_dtype": "float32",
+  "reference_transformers": "5.18.0",
+  "reference_torch": "2.13.0+cu130",
+  "reference_sha256": "29b33aeb56a90058b72b7983955f4d7575e35d9da03370fa23d6ba3d44a0c5c2",
+  "source_sha256": "e50fa1b1035b241cdc615dc5dd15f0eddad07eb2754209fd38ea6d0fd6397be6",
+  "gates": {
+    "relative_rms": 0.0001,
+    "max_absolute": 0.02
+  },
+  "cases": [
+    {
+      "name": "square",
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 3.6214530041434045e-07,
+          "max_absolute": 5.4836273193359375e-06,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 4.146114633840625e-07,
+          "max_absolute": 5.4836273193359375e-06,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 8.387817160837585e-07,
+          "max_absolute": 7.867813110351562e-06,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 1.4519914657284971e-06,
+          "max_absolute": 6.67572021484375e-06,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 1.7263059817196336e-06,
+          "max_absolute": 4.470348358154297e-06,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 1.7610833538128645e-06,
+          "max_absolute": 3.516674041748047e-06,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 2.029364395639277e-06,
+          "max_absolute": 7.569789886474609e-06,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 1.605329316589632e-06,
+          "max_absolute": 5.745887756347656e-05,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 2.0767135993082775e-06,
+          "max_absolute": 7.867813110351562e-05,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 2.4476710223098053e-06,
+          "max_absolute": 8.0108642578125e-05,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 3.0302858249342535e-06,
+          "max_absolute": 8.0108642578125e-05,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 3.5236839721619617e-06,
+          "max_absolute": 8.0108642578125e-05,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 4.616821570380125e-06,
+          "max_absolute": 8.106231689453125e-05,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 8.031643119466025e-06,
+          "max_absolute": 0.06005859375,
+          "passed": false
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 7.93076560512418e-06,
+          "max_absolute": 4.6372413635253906e-05,
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "error": "AssertionError('independent vision gate failed')"
+}

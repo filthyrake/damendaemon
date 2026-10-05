@@ -1,0 +1,125 @@
+{
+  "passed": false,
+  "scope": "standalone vision encoder, not multimodal serving qualification",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "backend": "compensated-cuda-vision",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "host_weight_bytes": 204977152,
+  "device_weight_bytes": 204977152,
+  "reference_device": "cpu",
+  "reference_dtype": "float32",
+  "reference_transformers": "5.18.0",
+  "reference_torch": "2.13.0+cu130",
+  "reference_sha256": "29b33aeb56a90058b72b7983955f4d7575e35d9da03370fa23d6ba3d44a0c5c2",
+  "source_sha256": "b3fa3cfa1729980a006bc214fd5e7f6b75e415a803e7bca65400e74615de69ef",
+  "gates": {
+    "relative_rms": 0.0001,
+    "max_absolute": 0.02
+  },
+  "cases": [
+    {
+      "name": "square",
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ]
+      ],
+      "checks": [
+        {
+          "stage": "patch",
+          "relative_rms": 4.875285526395601e-07,
+          "max_absolute": 6.67572021484375e-06,
+          "passed": true
+        },
+        {
+          "stage": "positioned",
+          "relative_rms": 5.577871888817754e-07,
+          "max_absolute": 6.67572021484375e-06,
+          "passed": true
+        },
+        {
+          "stage": "block.0",
+          "relative_rms": 2.142020548490109e-06,
+          "max_absolute": 1.239776611328125e-05,
+          "passed": true
+        },
+        {
+          "stage": "block.1",
+          "relative_rms": 3.0650501230411464e-06,
+          "max_absolute": 1.2993812561035156e-05,
+          "passed": true
+        },
+        {
+          "stage": "block.2",
+          "relative_rms": 3.2119403385877376e-06,
+          "max_absolute": 8.106231689453125e-06,
+          "passed": true
+        },
+        {
+          "stage": "block.3",
+          "relative_rms": 3.1273732474801363e-06,
+          "max_absolute": 6.67572021484375e-06,
+          "passed": true
+        },
+        {
+          "stage": "block.4",
+          "relative_rms": 3.5453012969810516e-06,
+          "max_absolute": 1.3768672943115234e-05,
+          "passed": true
+        },
+        {
+          "stage": "block.5",
+          "relative_rms": 3.1653407859266736e-06,
+          "max_absolute": 0.00013709068298339844,
+          "passed": true
+        },
+        {
+          "stage": "block.6",
+          "relative_rms": 4.124291081097908e-06,
+          "max_absolute": 0.00018548965454101562,
+          "passed": true
+        },
+        {
+          "stage": "block.7",
+          "relative_rms": 4.619618266588077e-06,
+          "max_absolute": 0.00018978118896484375,
+          "passed": true
+        },
+        {
+          "stage": "block.8",
+          "relative_rms": 5.514671556738904e-06,
+          "max_absolute": 0.00018930435180664062,
+          "passed": true
+        },
+        {
+          "stage": "block.9",
+          "relative_rms": 6.391052920662332e-06,
+          "max_absolute": 0.00018978118896484375,
+          "passed": true
+        },
+        {
+          "stage": "block.10",
+          "relative_rms": 8.235282621171791e-06,
+          "max_absolute": 0.00019073486328125,
+          "passed": true
+        },
+        {
+          "stage": "block.11",
+          "relative_rms": 1.2799388969142456e-05,
+          "max_absolute": 0.05780029296875,
+          "passed": false
+        },
+        {
+          "stage": "merged",
+          "relative_rms": 1.3758557543042116e-05,
+          "max_absolute": 0.0001405477523803711,
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "error": "AssertionError('independent vision gate failed')"
+}
