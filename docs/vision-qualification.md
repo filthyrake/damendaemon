@@ -35,3 +35,14 @@ Remaining work includes numerical diagnosis, independent preprocessing,
 image/text fusion and multimodal rotary positions, decode state, image-aware
 prefix identity, serving input/lifecycle handling, and end-to-end performance.
 Encoder timing alone will not establish multimodal request performance.
+
+## RGB preprocessing
+
+`dllm.vision_inputs.prepare_images` matches the independent reference pixel
+tensors exactly for all five fixtures on the production Torch 2.6 environment.
+This includes resizing 320x192 to 352x224 and preserving paired-image ordering.
+Byte-domain antialiased bicubic interpolation and fused normalization are
+necessary for exact agreement; resizing in floating point and rounding only at
+the end produces different pixels. The helper validates the combined patch
+budget before resizing and leaves source tensors untouched. Three input/budget/
+isolation tests pass. Encoded-image decoding and serving remain unimplemented.
