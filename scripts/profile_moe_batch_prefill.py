@@ -17,6 +17,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model')
     parser.add_argument('--output', required=True)
+    parser.add_argument('--small-prompts', action='store_true')
     args = parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
@@ -43,8 +44,11 @@ def main():
             raise AssertionError('packed prefill changes reference output beyond established gates')
         return dict(relative_rms=rms, max_absolute=absolute, greedy_equal=greedy)
     try:
-        for lengths, slots in [([31,65],[3,1]), ([32]*4,[3,1,0,2]),
-                               ([64,64],[2,0]), ([31,31,65],[2,0,3]), ([65,65],[1,0])]:
+        cases = ([([1,1],[3,1]), ([1]*4,[3,1,0,2]), ([4]*4,[3,1,0,2]),
+                  ([16]*4,[3,1,0,2]), ([1,31,65],[2,0,3]), ([1,127],[1,0])]
+                 if args.small_prompts else [([31,65],[3,1]), ([32]*4,[3,1,0,2]),
+                    ([64,64],[2,0]), ([31,31,65],[2,0,3]), ([65,65],[1,0])])
+        for lengths, slots in cases:
             prompts = [corpus[index*7:index*7+length] for index, length in enumerate(lengths)]
             case = dict(lengths=lengths, slots=slots, rounds=[])
             report['cases'].append(case)
@@ -67,7 +71,7 @@ def main():
                     elapsed = time.perf_counter()-started
                     case['rounds'].append(dict(kind=kind, trial=trial, seconds=elapsed, **check(actual,target)))
             print(json.dumps(case), flush=True)
-        if not dispatch['selected_calls'] or not dispatch['fallback_calls']:
+        if not dispatch['selected_calls'] or (not args.small_prompts and not dispatch['fallback_calls']):
             raise AssertionError('both selected and fallback paths must be measured')
         report['passed'] = True
     except BaseException as error:

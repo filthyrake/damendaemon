@@ -472,11 +472,23 @@ decode continuations: six cases cover mixed lengths, repeated prompts, two to
 four requests, reordered slots and a 130-total-token fallback. The sequential
 control and experimental implementation both pass all 234 checks (experimental
 worst relative RMS 0.000098%). This is independent target reuse, not a new
-reference computed by dllm. Timing and normal-runtime integration are pending.
+reference computed by dllm. Normal-runtime integration is under qualification.
 See [oracle provenance](evidence/architectures/olmoe-short-batch-reference-provenance.json),
 [control](evidence/architectures/olmoe-short-batch-control-reference-a2.json),
 [candidate](evidence/architectures/olmoe-packed-prefill-reference-a2.json)
 and [dispatch](evidence/architectures/olmoe-packed-prefill-reference-dispatch.json).
+
+Alternating same-resident-weight measurements against the already-improved
+sequential path reduce prefill for four 32-token prompts from 0.705 to 0.323
+seconds, a mixed 31/65 pair from 0.407 to 0.278 seconds, a 64/64 pair from
+0.439 to 0.322 seconds and a 31/31/65 triple from 0.582 to 0.324 seconds.
+The 65/65 pair falls back and measures 0.465 seconds for both variants.
+Tiny and uneven boundary cases also improve, including four single-token
+prompts (0.155 to 0.045 seconds) and a 1/127 pair (0.361 to 0.318 seconds).
+All measured greedy outputs agree and complete logits remain inside the
+existing numerical gates. These are direct prefill timings, not HTTP claims.
+See [batch measurements](evidence/architectures/olmoe-packed-prefill-timing-a2.json)
+and [boundary measurements](evidence/architectures/olmoe-packed-prefill-boundary-a2.json).
 
 
 ## Q8 short-prefill latency
