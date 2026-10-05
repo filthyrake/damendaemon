@@ -179,3 +179,11 @@ only for the measured four projection shapes on A2. Other shapes/rows retain
 normal dispatch. `qwen25-small-candidate-reference-a2.json` passes all 128
 independent HF SDPA checks at 2048, worst relative RMS 0.8120%, with exact
 greedy choices. Runtime layout and serving gates remain separate.
+
+The selected candidate additionally passes 128 layout checks (worst relative
+RMS 0.3559%) and the complete allocation/HTTP lifecycle gate. Its first HTTP
+run returns identical text and token counts to the original path, with aggregate
+throughput of 183.6/279.7/438.9 tokens/s at concurrency 1/2/4. Interleaved controls
+are still being gathered before normal dispatch changes. First-output timing
+at concurrency two is sensitive to whether arrivals are admitted together;
+individual raw timings are retained rather than claiming an early TTFT win.
