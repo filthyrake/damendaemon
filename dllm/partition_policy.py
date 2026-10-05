@@ -2,6 +2,12 @@
 import os
 
 
+def rebind_enabled():
+    value=os.environ.get('DLLM_PARTITION_REBIND','1')
+    if value not in ('0','1'):raise ValueError('DLLM_PARTITION_REBIND must be 0 or 1')
+    return value=='1'
+
+
 def selected_split():
     value=os.environ.get('DLLM_EXPERIMENTAL_LAYER_SPLIT')
     if value is None:return None
@@ -23,7 +29,9 @@ def validate(model,split,max_batch):
         raise ValueError('layer partition serving is qualified only for Qwen2.5-0.5B geometry')
     if split!=12 or not 1<=max_batch<=4 or not 1<=model.max_context<=512:
         raise ValueError('layer partition serving requires split 12, context <=512, batch <=4')
-    if (model.quantization not in ('none','q8_0') or getattr(model,'packed_formats',{})
+    if (model.quantization not in ('none','q8_0')
+            or getattr(model,'weight_format',model.quantization)!=model.quantization
+            or getattr(model,'packed_formats',{})
             or getattr(model,'awq_matrices',{}) or c.get('rope_scaling')):
         raise ValueError('layer partition requires standard RoPE and FP16 or Q8 weights')
     if (os.environ.get('DLLM_KV_CACHE_TOKENS') is not None

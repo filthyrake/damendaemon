@@ -5,8 +5,8 @@ boundary; logits and sampling stay on the final GPU. A partial execution failure
 poisons the whole executor until residency replaces it.
 """
 import torch
-from .layer_stage import LayerStage
-from .partition_policy import validate
+from .layer_stage import LayerStage,shard_model
+from .partition_policy import validate,rebind_enabled
 
 
 def tensor_bytes(tensors):
@@ -18,6 +18,7 @@ class PartitionExecutor:
 
     def __init__(self,model,split,use_graph=True,max_batch=4):
         validate(model,split,max_batch)
+        rebind_enabled()
         if torch.cuda.device_count()!=2:raise ValueError('layer partition requires exactly two CUDA devices')
         self.model=model
         self.context=model.max_context
@@ -30,12 +31,13 @@ class PartitionExecutor:
         self.kernel_backend='triton+layer-partition'+('+graphs' if use_graph else '')
         self.failed=False
         self.closed=False
+        self.rebind_count=0
         self.stages=[]
         self.residency=[]
         try:
             for device,(start,end) in enumerate(((0,split),(split,model.config['num_hidden_layers']))):
                 with torch.cuda.device(device):
-                    stage=LayerStage(model,start,end,max_batch=max_batch,stage_graphs=use_graph)
+                    stage=LayerStage(model,start,end,max_batch=max_batch,stage_graphs=use_graph,kernels='triton')
                     self.stages.append(stage)
                     scales=stage.quant_linear.scales.values() if stage.quant_linear else ()
                     self.residency.append(dict(device_index=device,layers=[start,end],
@@ -48,6 +50,56 @@ class PartitionExecutor:
         # kernels must launch on the final stage's device, without copying the
         # vocabulary logits back across PCIe every token.
         torch.cuda.set_device(self.output_device)
+
+    def can_rebind(self,model):
+        if (not rebind_enabled() or self.failed or self.closed or len(self.stages)!=2
+                or model.config!=self.model.config or model.quantization!=self.model.quantization
+                or model.max_context!=self.context):
+            return False
+        try:validate(model,self.stages[0].layer_range[1],self.max_batch)
+        except ValueError:return False
+        def aliases(values):
+            first={}
+            return {name:first.setdefault(id(value),name) for name,value in values.items()}
+        for stage in self.stages:
+            shard=shard_model(model,*stage.layer_range)
+            if stage.w.keys()!=shard.weights.keys() or stage.model.scales.keys()!=shard.scales.keys():return False
+            if aliases(stage.w)!=aliases(shard.weights):return False
+            existing_scales={name:stage.quant_linear.scales[id(stage.w[name])] for name in shard.scales}
+            if aliases(existing_scales)!=aliases(shard.scales):return False
+            for name,target in stage.w.items():
+                source=shard.weights[name]
+                if target.shape!=source.shape or target.dtype!=source.dtype:return False
+            for name,source in shard.scales.items():
+                target=stage.quant_linear.scales[id(stage.w[name])]
+                if target.shape!=source.shape or target.dtype!=source.dtype:return False
+        return True
+
+    @torch.inference_mode()
+    def rebind(self,model):
+        if not self.can_rebind(model):raise ValueError('incompatible partition weight rebind')
+        try:
+            for device in range(2):torch.cuda.synchronize(device)
+            for device,stage in enumerate(self.stages):
+                shard=shard_model(model,*stage.layer_range)
+                with torch.cuda.device(device):
+                    for name,target in stage.w.items():target.copy_(shard.weights[name])
+                    for name,source in shard.scales.items():
+                        stage.quant_linear.scales[id(stage.w[name])].copy_(source)
+                    torch.cuda.synchronize(device)
+                stage.model=shard
+                stage.c=shard.config
+                stage.lengths=[0]*self.max_batch
+            # Commit metadata only after every device has finished its copies.
+            self.model=model
+            self.lengths=[0]*self.max_batch
+            self.length=0
+            self.rebind_count+=1
+            torch.cuda.set_device(self.output_device)
+        except BaseException:
+            self.failed=True
+            self.lengths=[0]*self.max_batch
+            raise
 
     def _ready(self):
         if self.failed or self.closed:raise RuntimeError('partition executor requires reactivation')

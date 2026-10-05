@@ -92,6 +92,7 @@ class Runtime:
                        'vision_gpu_weight_bytes': getattr(getattr(self.gpu.get(alias),'vision',None),'bytes',0),
                        'gpu_projection_cache_bytes': getattr(self.gpu.get(alias), 'packed_cache_bytes', 0),
                        'partition': getattr(self.gpu.get(alias),'residency',None),
+                       'partition_rebind_count': getattr(self.gpu.get(alias),'rebind_count',None),
                        'executor_failed': getattr(self.gpu.get(alias),'failed',False)}
                       for alias in self.models]
         from .partition_policy import selected_split
@@ -208,6 +209,26 @@ class Runtime:
                 del self.host[victim]
             self.host[alias] = model
         self.host.move_to_end(alias)
+        if len(self.gpu)>=self.gpu_limit:
+            victim=next(iter(self.gpu))
+            resident=self.gpu[victim]
+            if hasattr(resident,'can_rebind') and resident.can_rebind(self.host[alias]):
+                # The lifetime lock has drained all users of the old alias.
+                # Remove it before mutating graph-owned weight storage; a
+                # partially copied model must never be published under either ID.
+                del self.gpu[victim]
+                try:
+                    resident.rebind(self.host[alias])
+                except BaseException:
+                    resident.close()
+                    gc.collect()
+                    empty_cache()
+                    raise
+                self.gpu[alias]=resident
+                return resident,tier,time.perf_counter()-start
+            # An incompatible candidate must not stay alive in this frame
+            # while the ordinary eviction path allocates its replacement.
+            resident=None
         while len(self.gpu) >= self.gpu_limit:
             self._evict(next(iter(self.gpu)))
         # Failure never publishes a partially initialized executor as ready.

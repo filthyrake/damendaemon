@@ -1,0 +1,616 @@
+{
+  "passed": true,
+  "quantization": "q8_0",
+  "models": {
+    "a": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+    "b": "results/models/qwen2-rebind-perturbed"
+  },
+  "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+  "context": 512,
+  "batch_size": 4,
+  "groups": [
+    {
+      "rebind": false,
+      "warmups": [
+        {
+          "alias": "a",
+          "activation_seconds": 7.829255888995249,
+          "http_seconds": 7.845626552996691,
+          "source_tier": "disk",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 6.605558756011305,
+          "http_seconds": 6.611754043988185,
+          "source_tier": "disk",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 1.8187725780007895,
+          "http_seconds": 1.8245090440032072,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 1.821466498018708,
+          "http_seconds": 1.8274353260057978,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "alias": "a",
+          "activation_seconds": 1.8330871509970166,
+          "http_seconds": 1.8388115760171786,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 1.823008403996937,
+          "http_seconds": 1.8283663080073893,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 1.8103560160088819,
+          "http_seconds": 1.81623869901523,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 1.6336715649813414,
+          "http_seconds": 1.6392229249759112,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 1.4455561850045342,
+          "http_seconds": 1.4510778700059745,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 1.4082753710099496,
+          "http_seconds": 1.4132564629835542,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        }
+      ]
+    },
+    {
+      "rebind": true,
+      "warmups": [
+        {
+          "alias": "a",
+          "activation_seconds": 7.684451863984577,
+          "http_seconds": 7.691702834010357,
+          "source_tier": "disk",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 3.96730090197525,
+          "http_seconds": 3.97438599599991,
+          "source_tier": "disk",
+          "rebind_count": 1,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 0.22429445799207315,
+          "http_seconds": 0.23480304100667126,
+          "source_tier": "host",
+          "rebind_count": 2,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 0.21799740099231713,
+          "http_seconds": 0.22331968799699098,
+          "source_tier": "host",
+          "rebind_count": 3,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "alias": "a",
+          "activation_seconds": 0.21964254701742902,
+          "http_seconds": 0.22477920399978757,
+          "source_tier": "host",
+          "rebind_count": 4,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 0.21890178800094873,
+          "http_seconds": 0.224719568999717,
+          "source_tier": "host",
+          "rebind_count": 5,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 0.22094301498145796,
+          "http_seconds": 0.22639578499365598,
+          "source_tier": "host",
+          "rebind_count": 6,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 0.22128643101314083,
+          "http_seconds": 0.22711109402007423,
+          "source_tier": "host",
+          "rebind_count": 7,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 0.21907864001695998,
+          "http_seconds": 0.22478885500459,
+          "source_tier": "host",
+          "rebind_count": 8,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 0.2169708349974826,
+          "http_seconds": 0.2224320399982389,
+          "source_tier": "host",
+          "rebind_count": 9,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        }
+      ]
+    },
+    {
+      "rebind": true,
+      "warmups": [
+        {
+          "alias": "a",
+          "activation_seconds": 8.011000635975506,
+          "http_seconds": 8.018453656986821,
+          "source_tier": "disk",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 4.5352118219889235,
+          "http_seconds": 4.540540143003454,
+          "source_tier": "disk",
+          "rebind_count": 1,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 0.18884105700999498,
+          "http_seconds": 0.1939265189867001,
+          "source_tier": "host",
+          "rebind_count": 2,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 0.19268847699277103,
+          "http_seconds": 0.19787946401629597,
+          "source_tier": "host",
+          "rebind_count": 3,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "alias": "a",
+          "activation_seconds": 0.19338667998090386,
+          "http_seconds": 0.19842970199533738,
+          "source_tier": "host",
+          "rebind_count": 4,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 0.19251421699300408,
+          "http_seconds": 0.1976012919913046,
+          "source_tier": "host",
+          "rebind_count": 5,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 0.19387399801053107,
+          "http_seconds": 0.19841950401314534,
+          "source_tier": "host",
+          "rebind_count": 6,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 0.19098993498482741,
+          "http_seconds": 0.19610462200944312,
+          "source_tier": "host",
+          "rebind_count": 7,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 0.1926056609954685,
+          "http_seconds": 0.19778183699236251,
+          "source_tier": "host",
+          "rebind_count": 8,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 0.19458884000778198,
+          "http_seconds": 0.2002691010129638,
+          "source_tier": "host",
+          "rebind_count": 9,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        }
+      ]
+    },
+    {
+      "rebind": false,
+      "warmups": [
+        {
+          "alias": "a",
+          "activation_seconds": 7.85003213598975,
+          "http_seconds": 7.857245056016836,
+          "source_tier": "disk",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 5.9138905520085245,
+          "http_seconds": 5.921706102002645,
+          "source_tier": "disk",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 1.4905796270177234,
+          "http_seconds": 1.4963881960138679,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 1.5196635609900113,
+          "http_seconds": 1.5254897759878077,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        }
+      ],
+      "runs": [
+        {
+          "alias": "a",
+          "activation_seconds": 1.5617934439796954,
+          "http_seconds": 1.567293552972842,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 1.5172913949936628,
+          "http_seconds": 1.5225750139798038,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 1.4962896479992196,
+          "http_seconds": 1.5020042319956701,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 1.482397290004883,
+          "http_seconds": 1.4880601089971606,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "a",
+          "activation_seconds": 1.476366210001288,
+          "http_seconds": 1.4813939529994968,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        },
+        {
+          "alias": "b",
+          "activation_seconds": 1.4734536550240591,
+          "http_seconds": 1.4789708140015136,
+          "source_tier": "host",
+          "rebind_count": 0,
+          "reference_match": true,
+          "prompt_tokens": 31,
+          "output_tokens": 8,
+          "cuda_allocated_bytes": [
+            475549696,
+            350782464
+          ]
+        }
+      ]
+    }
+  ],
+  "scope": "same-host two-GPU HTTP host-restore ABBA; distinct-weight correctness fixtures; no cold-load or cross-network claim",
+  "summaries": [
+    {
+      "rebind": false,
+      "measured_swaps": 12,
+      "median_activation_seconds": 1.5067905214964412,
+      "median_http_seconds": 1.512289622987737
+    },
+    {
+      "rebind": true,
+      "measured_swaps": 12,
+      "median_activation_seconds": 0.2057798375026323,
+      "median_http_seconds": 0.21135057050560135
+    }
+  ]
+}

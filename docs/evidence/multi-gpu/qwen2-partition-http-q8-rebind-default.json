@@ -1,0 +1,834 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "quantization": "q8_0",
+  "trace_sha256": "c3c05b9e679f12c9bfd4785832014e1c8f54dde41a549d22a71ce1313f744a4c",
+  "checks": [
+    "independent:0",
+    "independent:1",
+    "independent:2",
+    "independent:3",
+    "independent:4",
+    "independent:5",
+    "concurrent-shrinking:0",
+    "concurrent-shrinking:1",
+    "concurrent-shrinking:2",
+    "concurrent-shrinking:3",
+    "streaming-content-and-usage",
+    "cancel-and-reuse-slot",
+    "invalid-request-recovery",
+    "native-logprobs-on-output-gpu",
+    "seeded-sampling-and-penalties",
+    "second-alias",
+    "host-restore",
+    "disk-reload-after-release",
+    "repeat-release-no-per-device-allocation-growth",
+    "retained-allocations-identified-as-cublas-workspaces"
+  ],
+  "trials": [
+    {
+      "label": "independent:0",
+      "wall_seconds": 8.83530291399802,
+      "timing": {
+        "source_tier": "disk",
+        "activation_seconds": 8.697358400007943,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 8.801074763992801,
+        "total_seconds": 8.826757422997616,
+        "decode_tokens_per_second": 272.5574481477037
+      }
+    },
+    {
+      "label": "independent:1",
+      "wall_seconds": 0.4609718659776263,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 6.3470215536653996e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.42923875301494263,
+        "total_seconds": 0.45497471498674713,
+        "decode_tokens_per_second": 271.99294153717574
+      }
+    },
+    {
+      "label": "independent:2",
+      "wall_seconds": 0.09473182199872099,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 5.605979822576046e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.06387000600807369,
+        "total_seconds": 0.08919927600072697,
+        "decode_tokens_per_second": 276.36011626195074
+      }
+    },
+    {
+      "label": "independent:3",
+      "wall_seconds": 0.10304952698061243,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 5.345995305106044e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.07210997998481616,
+        "total_seconds": 0.0975620079843793,
+        "decode_tokens_per_second": 275.02720019481933
+      }
+    },
+    {
+      "label": "independent:4",
+      "wall_seconds": 0.08210602900362574,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 5.936017259955406e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.050303990981774405,
+        "total_seconds": 0.07614110599388368,
+        "decode_tokens_per_second": 270.92808143321173
+      }
+    },
+    {
+      "label": "independent:5",
+      "wall_seconds": 0.1047419759852346,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 6.045011105015874e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.0748596650082618,
+        "total_seconds": 0.099412014009431,
+        "decode_tokens_per_second": 285.10510337184655
+      }
+    },
+    {
+      "label": "concurrent-shrinking:0",
+      "wall_seconds": 0.16019075299846008,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 4,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.14566602700506337,
+        "total_seconds": 0.15206780601874925,
+        "decode_tokens_per_second": 156.20657911842554
+      }
+    },
+    {
+      "label": "concurrent-shrinking:1",
+      "wall_seconds": 0.19090886501362547,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 6.632995791733265e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 4,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.14621982898097485,
+        "total_seconds": 0.18501704599475488,
+        "decode_tokens_per_second": 180.42531240098316
+      }
+    },
+    {
+      "label": "concurrent-shrinking:2",
+      "wall_seconds": 0.16928989702137187,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 4,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.14433253699098714,
+        "total_seconds": 0.16327096198801883,
+        "decode_tokens_per_second": 158.40810418343682
+      }
+    },
+    {
+      "label": "concurrent-shrinking:3",
+      "wall_seconds": 0.17987326902220957,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 4,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.14251929699094035,
+        "total_seconds": 0.17306916799861938,
+        "decode_tokens_per_second": 163.66681216896782
+      }
+    },
+    {
+      "label": "cancel-and-reuse-slot",
+      "wall_seconds": 0.06573871901491657,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 2,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.033532263012602925,
+        "total_seconds": 0.062009966000914574,
+        "decode_tokens_per_second": 245.80634199580882
+      }
+    },
+    {
+      "label": "invalid-request-recovery",
+      "wall_seconds": 0.0758058070205152,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 8.620991138741374e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.0475797800172586,
+        "total_seconds": 0.07180160901043564,
+        "decode_tokens_per_second": 288.9955173067981
+      }
+    },
+    {
+      "label": "second-alias",
+      "wall_seconds": 4.522110568010248,
+      "timing": {
+        "source_tier": "disk",
+        "activation_seconds": 4.453183378005633,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 4.4940439549973235,
+        "total_seconds": 4.518431383999996,
+        "decode_tokens_per_second": 287.03312674874104
+      }
+    },
+    {
+      "label": "host-restore",
+      "wall_seconds": 0.26294142499682494,
+      "timing": {
+        "source_tier": "host",
+        "activation_seconds": 0.19365035300143063,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.2339994520007167,
+        "total_seconds": 0.25829590499051847,
+        "decode_tokens_per_second": 288.1078980103883
+      }
+    },
+    {
+      "label": "disk-reload-after-release",
+      "wall_seconds": 5.1842547379783355,
+      "timing": {
+        "source_tier": "disk",
+        "activation_seconds": 5.115179710992379,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 5.155187847005436,
+        "total_seconds": 5.179671304009389,
+        "decode_tokens_per_second": 285.90733730411625
+      }
+    }
+  ],
+  "statuses": {
+    "initial": {
+      "models": [
+        {
+          "id": "a",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        },
+        {
+          "id": "b",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        }
+      ],
+      "device": "cuda",
+      "context": 512,
+      "cuda_allocated_bytes": 0,
+      "cuda_devices": [
+        {
+          "index": 0,
+          "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+          "name": "NVIDIA A2",
+          "allocated_bytes": 0,
+          "reserved_bytes": 0
+        },
+        {
+          "index": 1,
+          "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+          "name": "NVIDIA A30",
+          "allocated_bytes": 0,
+          "reserved_bytes": 0
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "host_cached_bytes": 0,
+      "host_budget_bytes": 8589934592,
+      "gpu_model_limit": 1,
+      "host_model_limit": 2,
+      "diagnostic_retained_allocations": []
+    },
+    "loaded": {
+      "models": [
+        {
+          "id": "a",
+          "quantization": "q8_0",
+          "residency": "gpu",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": 797246208,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": [
+            {
+              "device_index": 0,
+              "layers": [
+                0,
+                12
+              ],
+              "weight_bytes": 451253248,
+              "scale_bytes": 11182080,
+              "kv_bytes": 12582912
+            },
+            {
+              "device_index": 1,
+              "layers": [
+                12,
+                24
+              ],
+              "weight_bytes": 315120384,
+              "scale_bytes": 19690496,
+              "kv_bytes": 12582912
+            }
+          ],
+          "partition_rebind_count": 0,
+          "executor_failed": false
+        },
+        {
+          "id": "b",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        }
+      ],
+      "device": "cuda",
+      "context": 512,
+      "cuda_allocated_bytes": 843371520,
+      "cuda_devices": [
+        {
+          "index": 0,
+          "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+          "name": "NVIDIA A2",
+          "allocated_bytes": 484069376,
+          "reserved_bytes": 608174080
+        },
+        {
+          "index": 1,
+          "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+          "name": "NVIDIA A30",
+          "allocated_bytes": 359302144,
+          "reserved_bytes": 494927872
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "host_cached_bytes": 797246208,
+      "host_budget_bytes": 8589934592,
+      "gpu_model_limit": 1,
+      "host_model_limit": 2
+    },
+    "unloaded": {
+      "models": [
+        {
+          "id": "a",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        },
+        {
+          "id": "b",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        }
+      ],
+      "device": "cuda",
+      "context": 512,
+      "cuda_allocated_bytes": 17039360,
+      "cuda_devices": [
+        {
+          "index": 0,
+          "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+          "name": "NVIDIA A2",
+          "allocated_bytes": 8519680,
+          "reserved_bytes": 20971520
+        },
+        {
+          "index": 1,
+          "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+          "name": "NVIDIA A30",
+          "allocated_bytes": 8519680,
+          "reserved_bytes": 20971520
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "host_cached_bytes": 0,
+      "host_budget_bytes": 8589934592,
+      "gpu_model_limit": 1,
+      "host_model_limit": 2,
+      "diagnostic_retained_allocations": [
+        {
+          "device": 0,
+          "bytes": 8519680,
+          "cublas_workspace": true,
+          "frame_names": [
+            "torch::unwind::unwind()",
+            "torch::CapturedTraceback::gather(bool, bool, bool)",
+            "torch::cuda::(anonymous namespace)::gather_with_cpp()",
+            "c10::cuda::CUDACachingAllocator::Native::DeviceCachingAllocator::malloc(signed char, unsigned long, CUstream_st*)",
+            "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::malloc(void**, signed char, unsigned long, CUstream_st*)",
+            "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::allocate(unsigned long)",
+            "at::cuda::getNewWorkspace()",
+            "at::cuda::getCurrentCUDABlasHandle()",
+            "void at::cuda::blas::gemm_and_bias<c10::Half>(bool, bool, long, long, long, at::OpMathType<c10::Half>::type, c10::Half const*, long, c10::Half const*, long, c10::Half const*, c10::Half*, long, at::cuda::blas::GEMMAndBiasActivationEpilogue)",
+            "at::native::(anonymous namespace)::addmm_out_cuda_impl(at::Tensor&, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&, at::native::(anonymous namespace)::Activation)::{lambda()#1}::operator()() const",
+            "at::native::(anonymous namespace)::addmm_out_cuda_impl(at::Tensor&, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&, at::native::(anonymous namespace)::Activation)",
+            "at::(anonymous namespace)::wrapper_CUDA_addmm(at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&), &at::(anonymous namespace)::wrapper_CUDA_addmm>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&> >, at::Tensor (at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "at::_ops::addmm::call(at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "at::native::linear(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&), &at::(anonymous namespace)::(anonymous namespace)::wrapper_CompositeImplicitAutograd__linear>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&> >, at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "at::_ops::linear::call(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "torch::autograd::THPVariable_linear(_object*, _object*, _object*)",
+            "PyToken_OneChar",
+            "_PyObject_MakeTpCall",
+            "linear",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "_PyObject_FastCallDictTstate",
+            "_PyObject_Call_Prepend",
+            "_PyObject_RealIsInstance",
+            "_PyObject_MakeTpCall",
+            "__call__",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "forward_hidden",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "decorate_context",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "run_prefill",
+            "_PyEval_EvalFrameDefault",
+            "PyObject_CallFinalizer",
+            "PyObject_CallFinalizerFromDealloc",
+            "decorate_context",
+            "_PyEval_EvalFrameDefault",
+            "PyObject_CallFinalizer",
+            "PyObject_CallFinalizerFromDealloc",
+            "_PyThreadState_Prealloc",
+            "PyGILState_Ensure",
+            "start_thread",
+            "__clone3",
+            "prefill_batch",
+            "decorate_context",
+            "_group",
+            "_work",
+            "run",
+            "_bootstrap_inner",
+            "_bootstrap"
+          ]
+        },
+        {
+          "device": 1,
+          "bytes": 8519680,
+          "cublas_workspace": true,
+          "frame_names": [
+            "torch::unwind::unwind()",
+            "torch::CapturedTraceback::gather(bool, bool, bool)",
+            "torch::cuda::(anonymous namespace)::gather_with_cpp()",
+            "c10::cuda::CUDACachingAllocator::Native::DeviceCachingAllocator::malloc(signed char, unsigned long, CUstream_st*)",
+            "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::malloc(void**, signed char, unsigned long, CUstream_st*)",
+            "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::allocate(unsigned long)",
+            "at::cuda::getNewWorkspace()",
+            "at::cuda::getCurrentCUDABlasHandle()",
+            "void at::cuda::blas::gemm_and_bias<c10::Half>(bool, bool, long, long, long, at::OpMathType<c10::Half>::type, c10::Half const*, long, c10::Half const*, long, c10::Half const*, c10::Half*, long, at::cuda::blas::GEMMAndBiasActivationEpilogue)",
+            "at::native::(anonymous namespace)::addmm_out_cuda_impl(at::Tensor&, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&, at::native::(anonymous namespace)::Activation)::{lambda()#1}::operator()() const",
+            "at::native::(anonymous namespace)::addmm_out_cuda_impl(at::Tensor&, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&, at::native::(anonymous namespace)::Activation)",
+            "at::(anonymous namespace)::wrapper_CUDA_addmm(at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&), &at::(anonymous namespace)::wrapper_CUDA_addmm>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&> >, at::Tensor (at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "at::_ops::addmm::call(at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "at::native::linear(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&), &at::(anonymous namespace)::(anonymous namespace)::wrapper_CompositeImplicitAutograd__linear>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&> >, at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "at::_ops::linear::call(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "torch::autograd::THPVariable_linear(_object*, _object*, _object*)",
+            "PyToken_OneChar",
+            "_PyObject_MakeTpCall",
+            "linear",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "_PyObject_FastCallDictTstate",
+            "_PyObject_Call_Prepend",
+            "_PyObject_RealIsInstance",
+            "_PyObject_MakeTpCall",
+            "__call__",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "forward_hidden",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "decorate_context",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "run_prefill",
+            "_PyEval_EvalFrameDefault",
+            "PyObject_CallFinalizer",
+            "PyObject_CallFinalizerFromDealloc",
+            "decorate_context",
+            "_PyEval_EvalFrameDefault",
+            "PyObject_CallFinalizer",
+            "PyObject_CallFinalizerFromDealloc",
+            "_PyThreadState_Prealloc",
+            "PyGILState_Ensure",
+            "start_thread",
+            "__clone3",
+            "prefill_batch",
+            "decorate_context",
+            "_group",
+            "_work",
+            "run",
+            "_bootstrap_inner",
+            "_bootstrap"
+          ]
+        }
+      ]
+    },
+    "unloaded-again": {
+      "models": [
+        {
+          "id": "a",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        },
+        {
+          "id": "b",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        }
+      ],
+      "device": "cuda",
+      "context": 512,
+      "cuda_allocated_bytes": 17039360,
+      "cuda_devices": [
+        {
+          "index": 0,
+          "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+          "name": "NVIDIA A2",
+          "allocated_bytes": 8519680,
+          "reserved_bytes": 20971520
+        },
+        {
+          "index": 1,
+          "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+          "name": "NVIDIA A30",
+          "allocated_bytes": 8519680,
+          "reserved_bytes": 20971520
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "host_cached_bytes": 0,
+      "host_budget_bytes": 8589934592,
+      "gpu_model_limit": 1,
+      "host_model_limit": 2,
+      "diagnostic_retained_allocations": [
+        {
+          "device": 0,
+          "bytes": 8519680,
+          "cublas_workspace": true,
+          "frame_names": [
+            "torch::unwind::unwind()",
+            "torch::CapturedTraceback::gather(bool, bool, bool)",
+            "torch::cuda::(anonymous namespace)::gather_with_cpp()",
+            "c10::cuda::CUDACachingAllocator::Native::DeviceCachingAllocator::malloc(signed char, unsigned long, CUstream_st*)",
+            "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::malloc(void**, signed char, unsigned long, CUstream_st*)",
+            "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::allocate(unsigned long)",
+            "at::cuda::getNewWorkspace()",
+            "at::cuda::getCurrentCUDABlasHandle()",
+            "void at::cuda::blas::gemm_and_bias<c10::Half>(bool, bool, long, long, long, at::OpMathType<c10::Half>::type, c10::Half const*, long, c10::Half const*, long, c10::Half const*, c10::Half*, long, at::cuda::blas::GEMMAndBiasActivationEpilogue)",
+            "at::native::(anonymous namespace)::addmm_out_cuda_impl(at::Tensor&, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&, at::native::(anonymous namespace)::Activation)::{lambda()#1}::operator()() const",
+            "at::native::(anonymous namespace)::addmm_out_cuda_impl(at::Tensor&, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&, at::native::(anonymous namespace)::Activation)",
+            "at::(anonymous namespace)::wrapper_CUDA_addmm(at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&), &at::(anonymous namespace)::wrapper_CUDA_addmm>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&> >, at::Tensor (at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "at::_ops::addmm::call(at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "at::native::linear(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&), &at::(anonymous namespace)::(anonymous namespace)::wrapper_CompositeImplicitAutograd__linear>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&> >, at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "at::_ops::linear::call(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "torch::autograd::THPVariable_linear(_object*, _object*, _object*)",
+            "PyToken_OneChar",
+            "_PyObject_MakeTpCall",
+            "linear",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "_PyObject_FastCallDictTstate",
+            "_PyObject_Call_Prepend",
+            "_PyObject_RealIsInstance",
+            "_PyObject_MakeTpCall",
+            "__call__",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "forward_hidden",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "decorate_context",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "run_prefill",
+            "_PyEval_EvalFrameDefault",
+            "PyObject_CallFinalizer",
+            "PyObject_CallFinalizerFromDealloc",
+            "decorate_context",
+            "_PyEval_EvalFrameDefault",
+            "PyObject_CallFinalizer",
+            "PyObject_CallFinalizerFromDealloc",
+            "_PyThreadState_Prealloc",
+            "PyGILState_Ensure",
+            "start_thread",
+            "__clone3",
+            "prefill_batch",
+            "decorate_context",
+            "_group",
+            "_work",
+            "run",
+            "_bootstrap_inner",
+            "_bootstrap"
+          ]
+        },
+        {
+          "device": 1,
+          "bytes": 8519680,
+          "cublas_workspace": true,
+          "frame_names": [
+            "torch::unwind::unwind()",
+            "torch::CapturedTraceback::gather(bool, bool, bool)",
+            "torch::cuda::(anonymous namespace)::gather_with_cpp()",
+            "c10::cuda::CUDACachingAllocator::Native::DeviceCachingAllocator::malloc(signed char, unsigned long, CUstream_st*)",
+            "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::malloc(void**, signed char, unsigned long, CUstream_st*)",
+            "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::allocate(unsigned long)",
+            "at::cuda::getNewWorkspace()",
+            "at::cuda::getCurrentCUDABlasHandle()",
+            "void at::cuda::blas::gemm_and_bias<c10::Half>(bool, bool, long, long, long, at::OpMathType<c10::Half>::type, c10::Half const*, long, c10::Half const*, long, c10::Half const*, c10::Half*, long, at::cuda::blas::GEMMAndBiasActivationEpilogue)",
+            "at::native::(anonymous namespace)::addmm_out_cuda_impl(at::Tensor&, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&, at::native::(anonymous namespace)::Activation)::{lambda()#1}::operator()() const",
+            "at::native::(anonymous namespace)::addmm_out_cuda_impl(at::Tensor&, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&, at::native::(anonymous namespace)::Activation)",
+            "at::(anonymous namespace)::wrapper_CUDA_addmm(at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&), &at::(anonymous namespace)::wrapper_CUDA_addmm>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&> >, at::Tensor (at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "at::_ops::addmm::call(at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&)",
+            "at::native::linear(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&), &at::(anonymous namespace)::(anonymous namespace)::wrapper_CompositeImplicitAutograd__linear>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&> >, at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "at::_ops::linear::call(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+            "torch::autograd::THPVariable_linear(_object*, _object*, _object*)",
+            "PyToken_OneChar",
+            "_PyObject_MakeTpCall",
+            "linear",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "_PyObject_FastCallDictTstate",
+            "_PyObject_Call_Prepend",
+            "_PyObject_RealIsInstance",
+            "_PyObject_MakeTpCall",
+            "__call__",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "forward_hidden",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "decorate_context",
+            "_PyEval_EvalFrameDefault",
+            "_PyFunction_Vectorcall",
+            "run_prefill",
+            "_PyEval_EvalFrameDefault",
+            "PyObject_CallFinalizer",
+            "PyObject_CallFinalizerFromDealloc",
+            "decorate_context",
+            "_PyEval_EvalFrameDefault",
+            "PyObject_CallFinalizer",
+            "PyObject_CallFinalizerFromDealloc",
+            "_PyThreadState_Prealloc",
+            "PyGILState_Ensure",
+            "start_thread",
+            "__clone3",
+            "prefill_batch",
+            "decorate_context",
+            "_group",
+            "_work",
+            "run",
+            "_bootstrap_inner",
+            "_bootstrap"
+          ]
+        }
+      ]
+    }
+  },
+  "injected_stage_failure": false,
+  "allocation_diagnostics": true,
+  "scope": "same-host two-GPU HTTP qualification"
+}

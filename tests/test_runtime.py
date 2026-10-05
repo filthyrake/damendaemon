@@ -64,6 +64,41 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(tier,'host')
         first.close.assert_called_once_with()
 
+    def test_rebind_moves_residency_only_after_success_and_drops_partial_failure(self):
+        from unittest.mock import Mock
+        runtime=Runtime({'a':'a','b':'b'})
+        with runtime.session('a') as (resident,_,__):pass
+        resident.can_rebind=lambda model:True
+        resident.close=Mock()
+        resident.rebind=Mock(side_effect=lambda model:setattr(resident,'model',model))
+        with runtime.session('b') as (value,tier,_):
+            self.assertIs(value,resident);self.assertEqual(tier,'disk')
+            self.assertEqual(value.model.path,'b')
+        self.assertEqual(list(runtime.gpu),['b'])
+        with runtime.session('a') as (value,tier,_):
+            self.assertIs(value,resident);self.assertEqual(tier,'host')
+            self.assertEqual(value.model.path,'a')
+        resident.rebind.side_effect=RuntimeError('partial copy failure')
+        with self.assertRaisesRegex(RuntimeError,'partial copy'):
+            with runtime.session('b'):pass
+        self.assertFalse(runtime.gpu)
+        resident.close.assert_called_once_with()
+        with runtime.session('b') as (value,tier,_):
+            self.assertIsNot(value,resident);self.assertEqual(tier,'host')
+
+    def test_non_rebindable_executor_is_released_before_replacement_allocation(self):
+        import weakref
+        references=[]
+        def create(model,*args):
+            if references:self.assertIsNone(references[-1]())
+            executor=Executor(model,False)
+            references.append(weakref.ref(executor))
+            return executor
+        runtime=Runtime({'a':'a','b':'b'},gpu_models=1)
+        with patch('dllm.runtime.make_executor',side_effect=create):
+            with runtime.session('a'):pass
+            with runtime.session('b'):pass
+
     def test_failed_load_does_not_publish_or_leak_admission(self):
         runtime = Runtime({"bad": "broken", "a": "a"}, queue_size=1)
         with self.assertRaises(RuntimeError):

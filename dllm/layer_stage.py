@@ -31,11 +31,11 @@ def shard_model(model,start,end):
 
 
 class LayerStage(BatchExecutor):
-    def __init__(self,model,start,end,max_batch=4,stage_graphs=False):
+    def __init__(self,model,start,end,max_batch=4,stage_graphs=False,kernels=None):
         self.first=start==0
         self.last=end==model.config['num_hidden_layers']
         self.layer_range=(start,end)
-        super().__init__(shard_model(model,start,end),use_graph=False,max_batch=max_batch)
+        super().__init__(shard_model(model,start,end),use_graph=False,max_batch=max_batch,kernels=kernels)
         self.stage_graphs={}
         if stage_graphs:
             self.capture_stage_graphs()

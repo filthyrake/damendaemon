@@ -178,7 +178,39 @@ remaining allocations as cuBLAS workspaces: Q8 8,519,680 bytes per device; FP16
 17,039,360 per device. Repeated release does not grow either footprint. These
 are retained library allocations, so total live CUDA allocation is not zero.
 
-The ordinary Q8 run measured 1.60 s host restore for an alias switch; graph
-construction and weight upload still occur on restoration. This is a lifecycle
-observation, not a controlled swap-performance comparison. Improving this cost
-without retaining stale weights or request state is subsequent work.
+## Compatible checkpoint hot swaps
+
+Compatible layer partitions now restore host-cached weights into the existing
+CUDA buffers and retain captured decode graphs. Configuration, precision,
+weight/scale layouts and alias relationships must match. Other swaps rebuild
+normally. `DLLM_PARTITION_REBIND=0` disables this default fast path.
+
+Publication is transactional: the old alias leaves GPU residency before the
+first upload, and the new alias appears only after both devices finish. An
+interrupted upload closes the executor; the next activation builds fresh stages.
+Request lengths reset on every successful switch.
+
+FP16 and Q8 each pass 410 independent reference-logit checks across A/B/A/B
+switches and recovery after an injected second-upload failure. The disposable B
+checkpoint changes real weights without changing geometry; its provenance is in
+[dllm-test-fixture.json](dllm-test-fixture.json). Weight, scale, KV and graph
+buffer addresses remain stable across successful swaps. Full HTTP lifecycle
+qualification passes 20 checks per precision with the fast path enabled,
+including allocation-history checks after repeated release. Retained cuBLAS
+workspace footprints remain as documented above.
+
+The matched Q8 HTTP off/on/on/off benchmark uses the same A2/A30 placement,
+checkpoint pair, context 512 and batch capacity four. Each group has four
+warmup switches and six measured switches; every switch is followed by an
+independent expected-output check outside the timed load operation.
+
+| Median host restore | Rebuild graphs | Rebind buffers |
+| --- | ---: | ---: |
+| Internal activation | 1.507 s | 0.206 s |
+| HTTP model load | 1.512 s | 0.211 s |
+
+This is about 7.2x faster HTTP host restoration across 12 measured switches per
+mode. It is not a cold disk-load, FP16 performance, arbitrary-model, or
+cross-network result. See [matched measurements](qwen2-partition-swap-q8-abba.json)
+and the `qwen2-partition-rebind-*` / `qwen2-partition-http-*-rebind-default`
+reports in this directory. The local regression suite passes 376 tests.

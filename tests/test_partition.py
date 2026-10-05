@@ -56,3 +56,32 @@ class PartitionTests(unittest.TestCase):
         self.assertFalse(executor.failed)
         executor.failed=True
         with self.assertRaisesRegex(RuntimeError,'reactivation'):executor.decode_batch([1],[0])
+
+    def test_rebind_rejects_precision_config_or_tensor_layout_changes(self):
+        import copy
+        import torch
+        from dllm.layer_stage import shard_model
+        model=self.model();model.weights={'embed':torch.zeros(2,32),'norm':torch.ones(32),'head':torch.zeros(2,32,dtype=torch.int8)}
+        model.weights.update({f'{i}.out':torch.zeros(2,32,dtype=torch.int8) for i in range(24)})
+        model.scales={name:torch.ones(2,1,dtype=torch.float16) for name in model.weights if name not in ('embed','norm')}
+        executor=self.executor();executor.model=model;executor.stages=[]
+        for start,end in ((0,12),(12,24)):
+            shard=shard_model(model,start,end)
+            executor.stages.append(SimpleNamespace(layer_range=(start,end),model=shard,w=shard.weights,
+                quant_linear=SimpleNamespace(scales={id(shard.weights[name]):value for name,value in shard.scales.items()})))
+        with patch.dict('os.environ',{'DLLM_PARTITION_REBIND':'1'}):
+            self.assertTrue(executor.can_rebind(model))
+            changed=copy.copy(model);changed.quantization='none'
+            self.assertFalse(executor.can_rebind(changed))
+            changed=copy.copy(model);changed.config={**model.config,'rms_norm_eps':.01}
+            self.assertFalse(executor.can_rebind(changed))
+            changed=copy.copy(model);changed.weights={**model.weights,'0.out':torch.zeros(3,32,dtype=torch.int8)}
+            self.assertFalse(executor.can_rebind(changed))
+            changed=copy.copy(model);changed.scales={**model.scales,'12.out':torch.ones(3,1,dtype=torch.float16)}
+            self.assertFalse(executor.can_rebind(changed))
+            changed=copy.copy(model);changed.packed_formats={'0.out':'unqualified'}
+            self.assertFalse(executor.can_rebind(changed))
+            changed=copy.copy(model);changed.weight_format='gguf_q8_0'
+            self.assertFalse(executor.can_rebind(changed))
+            executor.failed=True
+            self.assertFalse(executor.can_rebind(model))
