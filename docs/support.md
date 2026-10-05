@@ -95,7 +95,8 @@ workloads still trail vLLM. See the raw trials accompanying each comparison.
 
 Uniform window metadata in Llama-layout GGUF files maps to the Mistral decoder.
 The pinned Mistral 7B Q4 fixture passes independent and layout checks at context
-4104 across its 4096-token window. Mixed local/global patterns are rejected.
+4104 across its 4096-token window, plus real streaming, switching, cancellation
+and reload checks against exact source-decoded traces. Mixed local/global patterns are rejected.
 This implements attention semantics with full-context KV storage, not a rolling
 window allocation. Its GGUF chat tokenizer matches the native format reference
 and can differ from the HF fast tokenizer even for the same rendered template.

@@ -912,6 +912,8 @@ at 512 context. Explicit uniform `llama.attention.sliding_window` metadata now
 selects the Mistral windowed decoder. A separate fixture with the pinned
 4096-token window passes independent and fixed/paged/graph/chunked checks
 through context 4104, including prompts immediately around the window boundary.
+Normal serving also passes exact decoded-trace checks, streaming, concurrency,
+cancellation, host restore and disk reload at that context.
 Mixed local/global window patterns remain unsupported; KV storage still reserves
 context capacity. GGUF and HF fast tokenizers can differ around literal special
 tokens, so cross-source comparisons require identical token inputs.

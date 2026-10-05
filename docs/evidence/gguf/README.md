@@ -1940,3 +1940,24 @@ current API intentionally rejects; its failure is retained as
 does not request those unsupported fields or change the runtime API. Boundary
 requests reserve the API's full output budget; the 4097-token request therefore
 uses seven output tokens at context 4104, while the preceding two use eight.
+
+The final `mistral-window-runtime-traces-a2.json` passes all 270 exact full-logit
+comparisons between the GGUF-loaded and identically quantized HF-loaded weights
+executing through dllm, with eager and graph replay. These are loader/runtime
+identity checks; the separate 96-check report supplies independent HF inference
+validation. Exact prompt IDs and generated-token traces are retained, including
+both source chat inputs, the short timing prompt and the three window boundaries.
+
+Normal HTTP registration, source switching, host restore, disk reload,
+cancellation recovery, streaming and concurrency all pass. Every checked
+response matches its source-decoded trace. Boundary prompt/output counts are
+4095/8, 4096/8 and 4097/7. `exact_chat` is deliberately false: rendered chat
+inputs tokenize differently, and continuation decoding also preserves a leading
+space on the GGUF path that HF may strip. The corresponding exact decoded-trace
+and streaming gates are true; no cross-source text-parity claim is made.
+
+Warm short raw-request medians are 0.726445 seconds for GGUF and 0.725845 for the
+HF-loaded path, both within dllm, using identical prompt IDs and the same packed
+values. No extra logprobs are requested in this final run. These near-equal
+measurements are functional-path evidence, not an optimization or cross-engine
+performance win.
