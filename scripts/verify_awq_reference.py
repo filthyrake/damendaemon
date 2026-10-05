@@ -53,6 +53,7 @@ def main():
     parser.add_argument('--reference-attention', choices=('eager', 'sdpa'), default='eager',
                         help='independent HF attention implementation; recorded as qualification scope')
     parser.add_argument('--experimental-awq-decode', action='store_true')
+    parser.add_argument('--require-awq-decode', action='store_true', help='assert ordinary A2 decode selection')
     parser.add_argument('--diagnostic-expanded-products', action='store_true',
                         help='isolate packed GEMM errors using temporary expanded FP16 products')
     parser.add_argument('--diagnostic-separate-products', action='store_true',
@@ -79,6 +80,11 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     path = Path(args.model)
     source = AwqWeights(path, args.context, 'none')
+    if args.require_awq_decode:
+        from dllm.awq_decode_policy import use_small_rows
+        matrix = source.awq_matrices['0.qkv.weight']
+        if not use_small_rows(1, matrix.inputs, matrix.outputs, torch.device('cuda:0')):
+            raise AssertionError('normal AWQ decode policy was not selected')
     if args.diagnostic_separate_products:
         if not args.diagnostic_expanded_products:
             parser.error('separate products requires diagnostic expanded products')
@@ -96,6 +102,7 @@ def main():
         awq_kernels.linear = separate_products
     report = dict(passed=False, diagnostic_expanded_products=args.diagnostic_expanded_products,
                   experiment=experiment,
+                  require_awq_decode=args.require_awq_decode,
                   diagnostic_rounded_attention=args.diagnostic_rounded_attention,
                   diagnostic_separate_products=args.diagnostic_separate_products,
                   context=args.context, cases=[], model=str(path.resolve()),

@@ -1,6 +1,6 @@
 """Independent CUDA/Triton products over checkpoint-native AWQ GEMM packing.
 
-Not yet connected to model loading. Coefficients round to FP16 before products;
+Coefficients round to FP16 before products;
 projection accumulation uses FP32. No persistent expanded weight copy is kept.
 """
 import torch
@@ -73,6 +73,10 @@ def linear(x, matrix, bias=None):
         raise ValueError('invalid AWQ bias')
     x = x.contiguous()
     rows = x.shape[0]
+    from .awq_decode_policy import use_small_rows
+    if use_small_rows(rows, matrix.inputs, matrix.outputs, x.device):
+        from .awq_decode_kernels import linear as small_rows
+        return small_rows(x, matrix, bias)
     if rows > 128:
         return torch.nn.functional.linear(x, expand(matrix), bias)
     result = torch.empty((rows, matrix.outputs), device=x.device, dtype=x.dtype)

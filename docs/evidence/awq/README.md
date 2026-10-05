@@ -187,3 +187,27 @@ throughput of 183.6/279.7/438.9 tokens/s at concurrency 1/2/4. Interleaved contr
 are still being gathered before normal dispatch changes. First-output timing
 at concurrency two is sensitive to whether arrivals are admitted together;
 individual raw timings are retained rather than claiming an early TTFT win.
+
+## Normal A2 decode selection
+
+The candidate/control/control/candidate sequence completes with ten measured
+rounds per variant and concurrency. All text and token counts agree.
+`qwen25-small-candidate-http-summary-a2.json` summarizes the retained raw runs:
+
+| Concurrency | Original total (s) | Selected total (s) | Original tokens/s | Selected tokens/s | Original first output (s) | Selected first output (s) |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 | 0.5012 | 0.3488 | 127.6 | 183.4 | 0.0347 | 0.0353 |
+| 2 | 0.5491 | 0.4523 | 230.8 | 280.7 | 0.0446 | 0.0559 |
+| 4 | 0.6116 | 0.5892 | 416.9 | 430.4 | 0.0935 | 0.0930 |
+
+Total median latency falls 30.4%, 17.6% and 3.7%, respectively. Concurrency-two
+first-output median increases about 11 ms in these observations; there is no
+claim of a uniform latency improvement. vLLM's earlier matched measurement
+remains faster, especially at concurrency four.
+
+Normal dispatch now selects the measured 128-output reduction for the bounded
+A2 projection/row combinations in `awq_decode_policy.py`. Other GPUs, shapes
+and rows retain their existing kernels. The final ordinary-dispatch independent
+model gate passes all 128 checks; all 341 regression tests pass, including
+hardware-cache isolation and selection-boundary tests. Final ordinary layout
+and lifecycle checks are retained separately as they complete.

@@ -1,0 +1,65 @@
+{
+  "scope": "candidate/control/control/candidate; 129 prompt tokens, 64 output tokens, context 2048; one warmup and five measured rounds per phase",
+  "cases": [
+    {
+      "concurrency": 1,
+      "candidate": {
+        "median_total_seconds": 0.34875350099173374,
+        "median_first_output_seconds": 0.03526961550232954,
+        "median_aggregate_tokens_per_second": 183.3718868951256,
+        "trial_count": 10,
+        "round_count": 10
+      },
+      "control": {
+        "median_total_seconds": 0.5011937419913011,
+        "median_first_output_seconds": 0.03470635549456347,
+        "median_aggregate_tokens_per_second": 127.58069338960144,
+        "trial_count": 10,
+        "round_count": 10
+      },
+      "exact_text": true,
+      "latency_reduction_percent": 30.415431843563034,
+      "throughput_gain_percent": 43.730122499923226
+    },
+    {
+      "concurrency": 2,
+      "candidate": {
+        "median_total_seconds": 0.4523330260126386,
+        "median_first_output_seconds": 0.05588850600179285,
+        "median_aggregate_tokens_per_second": 280.65673674591017,
+        "trial_count": 20,
+        "round_count": 10
+      },
+      "control": {
+        "median_total_seconds": 0.5491391219984507,
+        "median_first_output_seconds": 0.04457320849178359,
+        "median_aggregate_tokens_per_second": 230.78081943229554,
+        "trial_count": 20,
+        "round_count": 10
+      },
+      "exact_text": true,
+      "latency_reduction_percent": 17.628701381447975,
+      "throughput_gain_percent": 21.61181221052333
+    },
+    {
+      "concurrency": 4,
+      "candidate": {
+        "median_total_seconds": 0.5892228190059541,
+        "median_first_output_seconds": 0.09303831349825487,
+        "median_aggregate_tokens_per_second": 430.4413440572507,
+        "trial_count": 40,
+        "round_count": 10
+      },
+      "control": {
+        "median_total_seconds": 0.6115522934996989,
+        "median_first_output_seconds": 0.09349135401134845,
+        "median_aggregate_tokens_per_second": 416.8763154176324,
+        "trial_count": 40,
+        "round_count": 10
+      },
+      "exact_text": true,
+      "latency_reduction_percent": 3.6512780233332265,
+      "throughput_gain_percent": 3.2539696159108233
+    }
+  ]
+}
