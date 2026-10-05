@@ -166,8 +166,9 @@ DLLM_EXPERIMENTAL_VISION=1 DLLM_QUANTIZATION=q8_0 dllm serve \
 Select the A2 UUID through `CUDA_VISIBLE_DEVICES` as for other CUDA runs.
 For Apple, use `DLLM_DEVICE=mps DLLM_EXPERIMENTAL_VISION=1` with FP16 text
 (omit `DLLM_QUANTIZATION`). Apple image correctness and lifecycle are validated
-on M4; hybrid Q8 is unavailable there. Its current ordinary Torch hybrid path
-is substantially slower and still needs native Metal optimization.
+on M4; hybrid Q8 is unavailable there. A native Metal recurrent scan is used
+for this qualified geometry at context <=1024 and at most four slots; set
+`DLLM_HYBRID_METAL_SCAN=0` for the ordinary Torch diagnostic path.
 `/v1/chat/completions` accepts user content lists with `text` and `image_url`
 parts; image URLs must be inline PNG/JPEG data URLs with `detail: "auto"`.
 The existing 1 MiB HTTP body limit applies. FP16 text is available by omitting

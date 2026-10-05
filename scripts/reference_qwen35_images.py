@@ -15,6 +15,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('vision_reference')
     parser.add_argument('--output',required=True)
+    parser.add_argument('--long-context',action='store_true',help='near-1024-token image prompt for recurrent-state validation')
     parser.add_argument('--text-quantization',choices=('none','q8_0'),default='none')
     args=parser.parse_args()
     torch.set_num_threads(4)
@@ -53,9 +54,12 @@ def main():
         cases.append(dict(name=name,images=images,pixel_values=prepared.pixel_values,
                           grids=prepared.image_grid_thw.tolist()))
     cases.append(dict(name='text-only-reused-slot',images=[],grids=[]))
+    if args.long_context:
+        cases=[{**square,'name':'long-square','text':'color '*900+'Describe the colors and shapes in these images.'}]
     for case in cases:
         content=''.join('<|vision_start|><|image_pad|><|vision_end|>' for _ in case['grids'])
-        content+='Describe the colors and shapes in these images.'
+        text=case.get('text','Describe the colors and shapes in these images.')
+        content+=text
         prompt=tokenizer.apply_chat_template([dict(role='user',content=content)],tokenize=True,
             add_generation_prompt=True,enable_thinking=False,return_dict=False)
         if isinstance(prompt,dict):prompt=prompt['input_ids']
@@ -73,7 +77,7 @@ def main():
         result=reference(input_ids=ids,**image_args,
             mm_token_type_ids=(ids==248056).int(),use_cache=True,logits_to_keep=1)
         target=result.logits[:,-1].float().cpu()
-        entry=dict(name=case['name'],tokens=tokens,images=case['images'],grids=case['grids'],
+        entry=dict(name=case['name'],text=text,tokens=tokens,images=case['images'],grids=case['grids'],
                    targets=[target],decode_tokens=[])
         for _ in range(8):
             token=target.argmax().item()

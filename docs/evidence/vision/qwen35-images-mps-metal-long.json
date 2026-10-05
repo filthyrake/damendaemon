@@ -1,0 +1,90 @@
+{
+  "passed": true,
+  "scope": "experimental multimodal computation; not serving qualification",
+  "graph": false,
+  "kernel_backend": "torch-hybrid+metal-scan",
+  "batch_capacity": 4,
+  "inline_messages": true,
+  "text_quantization": "none",
+  "device": "Apple MPS",
+  "model": "results/models/qwen35",
+  "reference_model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "torch": "2.13.0",
+  "checks": [
+    {
+      "label": "long-square:prefill",
+      "relative_rms": 0.003119023982435465,
+      "max_absolute": 0.04735374450683594,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "long-square:decode:0",
+      "relative_rms": 0.0015550762182101607,
+      "max_absolute": 0.02485179901123047,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "long-square:decode:1",
+      "relative_rms": 0.0011740261688828468,
+      "max_absolute": 0.023000717163085938,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "long-square:decode:2",
+      "relative_rms": 0.0012594469590112567,
+      "max_absolute": 0.023181438446044922,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "long-square:decode:3",
+      "relative_rms": 0.0013977743219584227,
+      "max_absolute": 0.024580001831054688,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "long-square:decode:4",
+      "relative_rms": 0.001489295158535242,
+      "max_absolute": 0.023496150970458984,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "long-square:decode:5",
+      "relative_rms": 0.0011185522889718413,
+      "max_absolute": 0.02286529541015625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "long-square:decode:6",
+      "relative_rms": 0.0014293532585725188,
+      "max_absolute": 0.01995253562927246,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "label": "long-square:decode:7",
+      "relative_rms": 0.0015306209679692984,
+      "max_absolute": 0.022134780883789062,
+      "greedy_match": true,
+      "passed": true
+    }
+  ],
+  "reference_sha256": "d41e75efd5733c35f3fefe62b6ad59b8d7feee0f6014578e4b1e68cdbf499878",
+  "sources": {
+    "dllm/vision_qwen35.py": "83d3fae859349e15ecfc95110c05757412468e4a78759ad4670fb615a6b90baa",
+    "dllm/vision_inputs.py": "d86dec98cff8f23235152d1c2495f462216105fe3175ec74ecf3eb4362b6b45b",
+    "dllm/vision_positions.py": "f5ca7930aa22b73192bcdeec55fab7f072c6143ec273d9ff3e10eaa164f5da54",
+    "dllm/hybrid.py": "fe3ec6855e137afda8aa33ee961a6ee35deca73f4b114a724e1d5241994a4f33",
+    "dllm/hybrid_metal.py": "26da6e75a698f8c59b874576a274440007654b1bab6c463605846aa571a6a961",
+    "dllm/vision_hybrid.py": "649e0128f7532ea1d069670fcaf84f4f83922e9656debaef9848fb5e44bd7093",
+    "dllm/vision_model.py": "fe81a0a8cf7aea10acfa079304bc4cd4a8a6a866fb16501e64e666464fcde647",
+    "dllm/vision_messages.py": "46129a2b90f86f7dc764afffa437a0455b5c19c1c18631f6fb61ec245853cd3d",
+    "scripts/experiments/vision_qwen35.py": "13998f556f8026e965958668f973d53dd9ad2856501674e8fbb51e4ac5de7523"
+  }
+}

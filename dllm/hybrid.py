@@ -87,6 +87,19 @@ class HybridExecutor:
         self.kernel_backend = 'triton-hybrid' if self.fused else 'torch-hybrid'
         if model.scales:
             self.kernel_backend += '+q8_0'
+        self.metal_scan = None
+        metal_scan = os.environ.get('DLLM_HYBRID_METAL_SCAN','auto')
+        if metal_scan not in ('auto','0','1'):
+            raise ValueError('DLLM_HYBRID_METAL_SCAN must be auto, 0 or 1')
+        metal_eligible=(self.device=='mps' and c['hidden_size']==1024 and c['num_hidden_layers']==24
+                        and self.dk==self.dv==128 and self.lk==self.lv==16
+                        and self.context<=1024 and max_batch<=4)
+        if metal_scan=='1' and not metal_eligible:
+            raise ValueError('Metal hybrid scan requires the qualified Qwen3.5-0.8B geometry, context <=1024 and at most four slots')
+        if metal_eligible and metal_scan!='0':
+            from .hybrid_metal import scan
+            self.metal_scan=scan
+            self.kernel_backend+='+metal-scan'
         self.chunk_scan = None
         prefill_backend = os.environ.get('DLLM_HYBRID_PREFILL', 'scan')
         if prefill_backend not in ('scan', 'fla'):
@@ -219,15 +232,18 @@ class HybridExecutor:
             q, k = [a.float()*torch.rsqrt(a.float().square().sum(-1, keepdim=True)+1.e-6) for a in (q, k)]
             q, k = [a.repeat_interleave(self.lv//self.lk, dim=2) for a in (q, k)]
             q = q * (self.dk**-.5)
-            state = torch.zeros_like(self.state[i].index_select(0, slots)) if prefill else self.state[i].index_select(0, slots)
-            outputs = []
-            for t in range(length):
-                state = state * decay[:, t].exp()[..., None, None]
-                delta = (v[:, t].float()-(state*k[:, t, :, :, None]).sum(-2))*beta[:, t, :, None]
-                state = state + k[:, t, :, :, None]*delta.unsqueeze(-2)
-                outputs.append((state*q[:, t, :, :, None]).sum(-2))
-            self.state[i][slots] = state
-            out = torch.stack(outputs, 1)
+            if self.metal_scan is not None:
+                out=self.metal_scan(q,k,v,decay,beta,self.state[i],slots,prefill)
+            else:
+                state = torch.zeros_like(self.state[i].index_select(0, slots)) if prefill else self.state[i].index_select(0, slots)
+                outputs = []
+                for t in range(length):
+                    state = state * decay[:, t].exp()[..., None, None]
+                    delta = (v[:, t].float()-(state*k[:, t, :, :, None]).sum(-2))*beta[:, t, :, None]
+                    state = state + k[:, t, :, :, None]*delta.unsqueeze(-2)
+                    outputs.append((state*q[:, t, :, :, None]).sum(-2))
+                self.state[i][slots] = state
+                out = torch.stack(outputs, 1)
         if self.fused:
             out = self.fused.norm(out, w[f'{i}.gated_norm'], self.eps, torch.float16, gate=z)
         else:

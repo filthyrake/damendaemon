@@ -53,10 +53,11 @@ def main():
             max_tokens=8,temperature=0,chat_template_kwargs=dict(enable_thinking=False)))
     report=dict(passed=False,reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 stage_profile=bool(args.stage_profile),quantization=reference.get('text_quantization','none'),checks=[],trials=[],statuses={},
-                torch=str(torch.__version__),device=args.device,model=str(model_path),reference_model=reference['model'],
+                torch=str(torch.__version__),device=args.device,hardware=subprocess.check_output(['sysctl','-n','machdep.cpu.brand_string'],text=True).strip() if args.device=='mps' else torch.cuda.get_device_name(),
+                model=str(model_path),reference_model=reference['model'],
                 device_uuid=os.environ.get('CUDA_VISIBLE_DEVICES') if args.device=='cuda' else None,
                 source_sha256={str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in
-                    [Path('dllm')/name for name in ('hybrid.py','cuda_warmup.py','models.py','qwen2.py','runtime.py','scheduler.py','server.py',
+                    [Path('dllm')/name for name in ('hybrid.py','hybrid_metal.py','cuda_warmup.py','models.py','qwen2.py','runtime.py','scheduler.py','server.py',
                     'vision_policy.py','vision_model.py','vision_hybrid.py','vision_qwen35.py','vision_messages.py')]})
     from dllm.models import weight_bytes
     with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'1'}):

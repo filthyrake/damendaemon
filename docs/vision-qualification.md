@@ -270,3 +270,29 @@ took 1.075/1.083/1.079 seconds, with first-token latency 0.636–0.642 seconds a
 decode throughput around 16 tokens/s. This establishes functioning Apple image
 serving, not competitive Apple performance. The unfused recurrent text path is
 the next optimization target. The local regression suite passes 367 tests.
+
+### Native Metal recurrent scan
+
+The independent SIMD-group kernel in `dllm/hybrid_metal.py` keeps FP32 recurrent
+state in registers across prompt tokens, eliminating the Python loop's per-token
+GPU dispatches. It owns only the selected state slots. Twenty CPU-oracle
+output/state checks cover reset and continuation at lengths 1, 7, 87, 185 and
+1024, reordered slots, and exact preservation of unselected slots. All pass
+relative RMS and maximum absolute error below 0.0001. The full model passes
+the existing 54 image/text checks and nine additional near-context-limit
+checks against independently generated logits, without changing their gates.
+
+Four sequential ABBA HTTP runs use the same M4, pinned model, FP16 precision,
+256x256 image, prompt, eight output tokens, and six warm requests per phase.
+Each run passes all 23 service checks. Pooled medians: ordinary Torch versus
+Metal scan HTTP 1.0871→0.5324 seconds (51.0% lower), first-token latency
+0.6449→0.1404 seconds (78.2% lower), decode throughput 15.80→17.91 tokens/s
+(13.4% higher). This compares dllm implementations, not another runtime.
+
+The final default path also passes all 20 HTTP checks with repeated complete
+release back to zero live MPS tensor bytes. Automatic selection is limited to
+the qualified Qwen3.5-0.8B geometry, context <=1024, and at most four slots.
+`DLLM_HYBRID_METAL_SCAN=0` retains the Torch diagnostic fallback; explicit `1`
+rejects unsupported geometry. Other configurations retain their existing path.
+All 367 regression tests pass. Raw ABBA, operator, long-context, full-model, and
+HTTP reports are committed under `evidence/vision/`.
