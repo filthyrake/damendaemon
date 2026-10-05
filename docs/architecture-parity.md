@@ -465,6 +465,19 @@ tile. Prefill medians are 0.245/0.340/0.505/0.884/1.657 seconds at
 0.342/0.456/0.536/0.803/1.343 seconds. It stays disabled; see
 [wider-tile timings](evidence/architectures/olmoe-device-grouped32x128-prefill-a2.json).
 
+An isolated packed-prefill experiment combines concurrent short prompts for
+matrix and expert work while retaining separate attention slices and cache slots.
+A derived oracle regroups unchanged independent prompt targets and teacher-forced
+decode continuations: six cases cover mixed lengths, repeated prompts, two to
+four requests, reordered slots and a 130-total-token fallback. The sequential
+control and experimental implementation both pass all 234 checks (experimental
+worst relative RMS 0.000098%). This is independent target reuse, not a new
+reference computed by dllm. Timing and normal-runtime integration are pending.
+See [oracle provenance](evidence/architectures/olmoe-short-batch-reference-provenance.json),
+[control](evidence/architectures/olmoe-short-batch-control-reference-a2.json),
+[candidate](evidence/architectures/olmoe-packed-prefill-reference-a2.json)
+and [dispatch](evidence/architectures/olmoe-packed-prefill-reference-dispatch.json).
+
 
 ## Q8 short-prefill latency
 
