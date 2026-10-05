@@ -149,3 +149,9 @@ separate vision policy. Worst relative RMS is 0.00437896 and maximum absolute
 error 0.0643835; every greedy choice agrees. Changed-image and slot-reuse controls
 also pass. This is on-load text quantization, not a claim of quantized vision
 weights or arbitrary quantized multimodal checkpoint compatibility.
+
+The image-aware execution class now lives in `dllm.vision_hybrid` and shares
+`HybridExecutor.forward_embeddings` with the text-only path. Normal serving
+dispatch remains unchanged. Both FP16 and Q8 variants pass all 54 independent
+checks again with four request slots and graph replay after this consolidation.
+The local suite now has 363 passing tests.

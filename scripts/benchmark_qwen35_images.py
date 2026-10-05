@@ -33,7 +33,7 @@ def main():
         device=torch.cuda.get_device_name(),torch=str(torch.__version__),model=reference['model'],cases=[],
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
             ('dllm/vision_qwen35.py','dllm/vision_inputs.py','dllm/vision_positions.py',
-             'dllm/hybrid.py','scripts/experiments/vision_qwen35.py')},
+             'dllm/hybrid.py','dllm/vision_hybrid.py','scripts/experiments/vision_qwen35.py')},
         reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest())
     for case in reference['cases'][:3]:
         trials=[]

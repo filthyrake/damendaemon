@@ -17,21 +17,23 @@ def main():
     parser.add_argument('reference')
     parser.add_argument('--output',required=True)
     parser.add_argument('--graph',action='store_true')
+    parser.add_argument('--batch-size',type=int,choices=(1,2,3,4),default=3)
     args=parser.parse_args()
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
     reference=torch.load(args.reference,weights_only=True)
     model=ModelWeights(reference['model'],1024,quantization=reference.get('text_quantization','none'))
-    executor=ImageHybridExecutor(model,max_batch=3,use_graph=args.graph)
+    executor=ImageHybridExecutor(model,max_batch=args.batch_size,use_graph=args.graph)
     vision=VisionEncoder(VisionWeights(reference['model']))
     report=dict(passed=False,scope='experimental multimodal computation; not serving qualification',
                 graph=args.graph,
+                batch_capacity=args.batch_size,
                 text_quantization=reference.get('text_quantization','none'),
                 device=torch.cuda.get_device_name(),torch=str(torch.__version__),checks=[],
                 reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                     ('dllm/vision_qwen35.py','dllm/vision_inputs.py','dllm/vision_positions.py',
-                     'dllm/hybrid.py','scripts/experiments/vision_qwen35.py')})
+                     'dllm/hybrid.py','dllm/vision_hybrid.py','scripts/experiments/vision_qwen35.py')})
     def check(actual,target,label):
         actual=actual.float().cpu().reshape(-1)
         target=target.reshape(-1)
@@ -45,8 +47,8 @@ def main():
         print(json.dumps(record),flush=True)
     try:
         prefills={}
-        for start in range(0,len(reference['cases']),3):
-            cases=reference['cases'][start:start+3]
+        for start in range(0,len(reference['cases']),args.batch_size):
+            cases=reference['cases'][start:start+args.batch_size]
             for slot,case in enumerate(cases):
                 if case['grids']:
                     pixels,grids=prepare_images(case['images'])

@@ -263,7 +263,10 @@ class HybridExecutor:
 
     @torch.inference_mode()
     def forward(self, ids, positions, slots, prefill):
-        x = F.embedding(ids, self.w['embed']).float()
+        return self.forward_embeddings(F.embedding(ids, self.w['embed']).float(),positions,slots,prefill)
+
+    def forward_embeddings(self, x, positions, slots, prefill):
+        """Shared text backbone after token or image/text embedding assembly."""
         for i, kind in enumerate(self.c['layer_types']):
             h = self.norm(x, self.w[f'{i}.norm1'])
             x = x + (self.linear_attention(h, i, slots, prefill) if kind == 'linear_attention'
