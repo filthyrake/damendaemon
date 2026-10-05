@@ -33,6 +33,23 @@ def fixture(path):
 
 
 class AwqModelTests(unittest.TestCase):
+    def test_shared_factory_preserves_packed_checkpoint_and_rejects_other_formats(self):
+        from dllm import models as factory
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            c, _ = fixture(path)
+            self.assertEqual(factory.config(path)['weight_format'], 'awq_gemm')
+            model = factory.load(path, 64, 'none')
+            self.assertIsInstance(model, AwqWeights)
+            self.assertEqual(factory.weight_bytes(path, 'none'), model.bytes)
+            with self.assertRaisesRegex(ValueError, 'checkpoint-native'):
+                factory.load(path, 64, 'q8_0')
+            for change in ({'version': 'gemv'}, {'bits': 8}, {'quant_method': 'gptq'}):
+                altered = {**c, 'quantization_config': {**c['quantization_config'], **change}}
+                (path/'config.json').write_text(json.dumps(altered))
+                with self.subTest(change=change), self.assertRaises(ValueError):
+                    factory.config(path)
+
     def test_packed_fusion_tied_head_and_admission_estimate(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)

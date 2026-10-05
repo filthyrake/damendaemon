@@ -1,4 +1,4 @@
-"""Qualify graph, paging, batching and chunking against fixed eager GGUF traces.
+"""Qualify packed graph, paging, batching and chunking against fixed eager traces.
 
 This checks execution layouts, not independent model accuracy. Run the separate
 HF logit verifier first. One executor is resident at a time so 7B Q4 fits an A2.
@@ -27,6 +27,8 @@ def paged_capacity(context, lengths):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model'); parser.add_argument('--output', required=True)
+    parser.add_argument('--awq-qualification', action='store_true',
+                        help='exercise isolated AWQ loader without enabling normal registration')
     parser.add_argument('--context',type=int,default=512,help='context capacity, at least 512')
     parser.add_argument('--prompt-lengths', type=int, nargs=4, help='four explicit lengths, each leaving seven decode positions')
     parser.add_argument('--chunk-size', type=int, default=128, help='positive chunk length for the final prompt')
@@ -65,7 +67,11 @@ def main():
     if os.environ.get('DLLM_KV_CACHE_TOKENS'):
         raise ValueError('run with no inherited KV pool override')
     require_gpu(); torch.set_num_threads(4); torch.backends.cuda.matmul.allow_tf32 = False
-    source = GgufWeights(args.model, args.context, 'none')
+    if args.awq_qualification:
+        from dllm.awq_model import AwqWeights
+        source = AwqWeights(args.model, args.context, 'none')
+    else:
+        source = GgufWeights(args.model, args.context, 'none')
     corpus = source.raw_tokens('The library contains books about oceans and mountains. ')
     prompts = [(corpus * ((n+len(corpus)-1)//len(corpus)))[:n]
                for n in lengths]
@@ -73,7 +79,8 @@ def main():
     tokenizer_runtime=dict(kind=type(source.tokenizer).__name__)
     if hasattr(source.tokenizer,'native_model'):
         tokenizer_runtime.update(sentencepiece=version('sentencepiece'),protobuf=version('protobuf'))
-    report = dict(tokenizer_runtime=tokenizer_runtime, experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=args.context,
+    report = dict(awq_qualification=args.awq_qualification,
+                  tokenizer_runtime=tokenizer_runtime, experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=args.context,
                   prompt_lengths=[len(ids) for ids in prompts], chunk_size=args.chunk_size,
                   paged_pool_tokens=pool_tokens,
                   model=str(Path(args.model).resolve()), host_bytes=source.bytes, comparisons=checks,
@@ -151,13 +158,20 @@ def main():
                     del actual, executor
                     gc.collect(); empty_cache()
         report['passed'] = all(c['max_absolute'] < .5 and c['relative_rms'] < .01 and c['greedy_equal'] for c in checks)
-        if not report['passed']:raise AssertionError('GGUF layout equivalence gate failed')
+        if not report['passed']:raise AssertionError('packed layout equivalence gate failed')
     except Exception as error:
         report['error'] = repr(error)
         raise
     finally:
         os.environ.pop('DLLM_KV_CACHE_TOKENS', None)
-        with Path(args.model).open('rb') as stream:report['sha256'] = hashlib.file_digest(stream, 'sha256').hexdigest()
+        if args.awq_qualification:
+            from dllm.qwen2 import weight_files
+            report['checkpoint_sha256'] = {}
+            for file in [Path(args.model)/'config.json', *weight_files(args.model)]:
+                with file.open('rb') as stream:
+                    report['checkpoint_sha256'][file.name] = hashlib.file_digest(stream, 'sha256').hexdigest()
+        else:
+            with Path(args.model).open('rb') as stream:report['sha256'] = hashlib.file_digest(stream, 'sha256').hexdigest()
         Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
         print(json.dumps(dict(passed=report['passed'], checks=len(checks),
             max_relative_rms=max((c['relative_rms'] for c in checks), default=None))), flush=True)

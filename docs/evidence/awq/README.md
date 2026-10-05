@@ -1,8 +1,10 @@
 # AWQ checkpoint format groundwork
 
 GitHub issue #49 tracks import and execution qualification. The format module
-is connected to an isolated packed executor but not normal model registration;
-AWQ runtime support and performance parity are not yet claimed.
+is connected to packed execution and normal model dispatch. The initial scope
+is CUDA Qwen2 AWQ GEMM with four-bit weights and group size 128. Independent
+HF SDPA and runtime layout checks pass; lifecycle and matched engine performance
+remain separate gates. Eager-FP16-reference numerical parity is not claimed.
 
 Checkpoint: `Qwen/Qwen2.5-0.5B-Instruct-AWQ`, pinned revision
 `db09cd27ead7fee40cdee309693cf83601b9c899`. Its published configuration selects
@@ -103,3 +105,25 @@ The corrected normal-runtime run, `qwen25-small-reference-rotary-fixed-a2.json`,
 still fails: 118/128 checks pass, worst relative RMS 3.3295%, maximum absolute
 error 0.85157. Fixing the oracle did not qualify the runtime. Original-shape
 and rounded-attention controls are being repeated against the corrected oracle.
+
+The corrected separate-products/rounded-attention diagnostic passes all 128
+checks (`qwen25-small-reference-separate-fixed-a2.json`). Keeping the packed
+products while rounding attention passes only 120/128. Neither diagnostic is
+installed in the runtime.
+
+`qwen25-small-reference-sdpa-a2.json` compares the unchanged packed runtime to
+independent HF SDPA execution, retaining the same upstream coefficient decoder,
+FP16 parameters, FP32 rotary buffer, prompts and numerical thresholds. All
+128 checks pass, with identical greedy tokens, worst relative RMS 0.8475% and
+maximum absolute error 0.18360. This qualifies the explicitly named fast-attention
+reference scope; it does not supersede the corrected eager-reference failures.
+HF and dllm prefill both use PyTorch SDPA, while dllm's decode attention and
+model executor remain separate implementations.
+
+`qwen25-small-layout-a2.json` passes all 128 fixed/paged, eager/graph, batch
+1/2/4 and chunked-prefill comparisons through context 2048. Worst relative RMS
+is 0.5090%, with exact greedy choices. The legacy-named GGUF layout harness has
+an explicit `--awq-qualification` mode for this isolated source format.
+Shared model-factory tests cover dispatch, packed storage/admission and rejection
+of conversion, GEMV, non-four-bit and GPTQ declarations. All 339 regression
+tests pass after integration.

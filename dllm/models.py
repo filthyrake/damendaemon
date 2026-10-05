@@ -19,6 +19,10 @@ def config(path):
         from .gguf_model import plan
         return dict(plan(path).config)
     value = json.loads((Path(path)/'config.json').read_text())
+    quantization = value.get('quantization_config')
+    if isinstance(quantization, dict) and quantization.get('quant_method') == 'awq':
+        from .awq_model import config as awq_config
+        return awq_config(path)
     if value.get('model_type')=='mamba2':
         from .mamba2 import config as mamba_config
         return mamba_config(path)
@@ -39,6 +43,9 @@ def weight_bytes(path,quantization=None):
     if is_gguf(path):
         from .gguf_model import weight_bytes as estimate
         return estimate(path, quantization)
+    if config(path).get('weight_format') == 'awq_gemm':
+        from .awq_model import weight_bytes as estimate
+        return estimate(path, quantization)
     if config(path).get('model_type')=='mamba2':
         from .mamba2 import weight_bytes as estimate
     elif config(path).get('model_type')=='mamba':
@@ -56,6 +63,9 @@ def load(path,context,quantization=None):
     if is_gguf(path):
         from .gguf_model import GgufWeights
         return GgufWeights(path, context, quantization)
+    if config(path).get('weight_format') == 'awq_gemm':
+        from .awq_model import AwqWeights
+        return AwqWeights(path, context, quantization)
     if config(path).get('model_type')=='mamba2':
         from .mamba2 import Mamba2Weights
         return Mamba2Weights(path,context,quantization=quantization)

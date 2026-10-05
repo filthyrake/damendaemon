@@ -50,6 +50,8 @@ def main():
     parser.add_argument('--upstream-source', required=True)
     parser.add_argument('--context', type=int, default=2048)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--reference-attention', choices=('eager', 'sdpa'), default='eager',
+                        help='independent HF attention implementation; recorded as qualification scope')
     parser.add_argument('--diagnostic-expanded-products', action='store_true',
                         help='isolate packed GEMM errors using temporary expanded FP16 products')
     parser.add_argument('--diagnostic-separate-products', action='store_true',
@@ -92,7 +94,8 @@ def main():
                   diagnostic_separate_products=args.diagnostic_separate_products,
                   context=args.context, cases=[], model=str(path.resolve()),
                   host_bytes=source.bytes, torch=torch.__version__, device=torch.cuda.get_device_name(),
-                  reference='pinned upstream AWQ coefficient decoder; independent HF eager FP16 model execution',
+                  reference='pinned upstream AWQ coefficient decoder; independent HF FP16 model execution',
+                  reference_attention=args.reference_attention,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   loader_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_model.py').read_bytes()).hexdigest(),
                   kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_kernels.py').read_bytes()).hexdigest())
@@ -129,7 +132,7 @@ def main():
         del config.quantization_config
         config.tie_word_embeddings = False
         with no_init_weights():
-            reference = AutoModelForCausalLM.from_config(config, torch_dtype=torch.float16, attn_implementation='eager')
+            reference = AutoModelForCausalLM.from_config(config, torch_dtype=torch.float16, attn_implementation=args.reference_attention)
         reference.requires_grad_(False)
         reference.load_state_dict(state, strict=True, assign=True)
         del state
@@ -184,6 +187,7 @@ def main():
                         handle.remove()
                     original_norm = executor.norm
                     original_linear = executor.linear
+                    original_attention = executor.prefill_attention
                     if handles:
                         def record_norm(x, weight):
                             actual_layers.append(x.detach().cpu())
@@ -199,9 +203,34 @@ def main():
                             return result
                         executor.norm = record_norm
                         executor.linear = record_linear
+                        attention_calls = 0
+                        def record_attention(query, key, value, query_start=0):
+                            nonlocal attention_calls
+                            result = original_attention(query, key, value, query_start)
+                            if attention_calls == 0:
+                                from transformers.models.qwen2.modeling_qwen2 import apply_rotary_pos_emb, repeat_kv
+                                rq, rk, rv = [reference_parts[name].cuda().view(1, len(ids), -1, executor.dim).transpose(1, 2)
+                                              for name in ('q', 'k', 'v')]
+                                positions = torch.arange(len(ids), device='cuda')[None, :]
+                                cos, sin = reference.model.rotary_emb(rq, positions)
+                                rq, rk = apply_rotary_pos_emb(rq, rk, cos, sin)
+                                scores = (rq @ repeat_kv(rk, executor.heads//executor.kv_heads).transpose(-1, -2)) * executor.dim**-.5
+                                mask = positions[:, :, None] >= positions[:, None, :]
+                                scores = scores.masked_fill(~mask[:, None], torch.finfo(scores.dtype).min)
+                                ra = scores.softmax(-1, dtype=torch.float32).half() @ repeat_kv(rv, executor.heads//executor.kv_heads)
+                                report['first_attention_parts'] = []
+                                for name, observed, target in [('query', query, rq), ('key', key, rk), ('value', value, rv), ('attention', result, ra)]:
+                                    delta = observed.float()-target.float()
+                                    report['first_attention_parts'].append(dict(name=name,
+                                        relative_rms=(delta.square().mean()/target.float().square().mean().clamp_min(1e-12)).sqrt().item(),
+                                        max_absolute=delta.abs().max().item()))
+                            attention_calls += 1
+                            return result
+                        executor.prefill_attention = record_attention
                     actual = executor.prefill(ids)
                     executor.norm = original_norm
                     executor.linear = original_linear
+                    executor.prefill_attention = original_attention
                     if handles:
                         report['layer_trace'] = []
                         # Two norms per layer; the final norm sees only the last token.
