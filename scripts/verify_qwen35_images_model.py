@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import torch
@@ -16,25 +17,30 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('reference')
     parser.add_argument('--output',required=True)
+    parser.add_argument('--model',help='local copy of the pinned reference checkpoint')
+    parser.add_argument('--device',choices=('cuda','mps'),default='cuda')
     parser.add_argument('--graph',action='store_true')
     parser.add_argument('--batch-size',type=int,choices=(1,2,3,4),default=3)
     parser.add_argument('--messages',action='store_true',help='exercise inline PNG chat messages and model-owned vision weights')
     args=parser.parse_args()
+    os.environ['DLLM_DEVICE']=args.device
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
-    reference=torch.load(args.reference,weights_only=True)
-    model=ModelWeights(reference['model'],1024,quantization=reference.get('text_quantization','none'))
+    reference=torch.load(args.reference,map_location='cpu',weights_only=True)
+    model_path=args.model or reference['model']
+    model=ModelWeights(model_path,1024,quantization=reference.get('text_quantization','none'))
     if args.messages:
         from dllm.vision_model import VisionModelWeights
-        model=VisionModelWeights(model,VisionWeights(reference['model']))
+        model=VisionModelWeights(model,VisionWeights(model_path))
     executor=ImageHybridExecutor(model,max_batch=args.batch_size,use_graph=args.graph)
-    vision=executor.vision if args.messages else VisionEncoder(VisionWeights(reference['model']))
+    vision=executor.vision if args.messages else VisionEncoder(VisionWeights(model_path),device=args.device)
     report=dict(passed=False,scope='experimental multimodal computation; not serving qualification',
                 graph=args.graph,
                 batch_capacity=args.batch_size,
                 inline_messages=args.messages,
                 text_quantization=reference.get('text_quantization','none'),
-                device=torch.cuda.get_device_name(),torch=str(torch.__version__),checks=[],
+                device='Apple MPS' if args.device=='mps' else torch.cuda.get_device_name(),
+                model=str(model_path),reference_model=reference['model'],torch=str(torch.__version__),checks=[],
                 reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                     ('dllm/vision_qwen35.py','dllm/vision_inputs.py','dllm/vision_positions.py',

@@ -155,7 +155,7 @@ Qwen3.5 has a separate hybrid executor with FP32 recurrent state, causal
 convolution, gated attention, partial RoPE, and FP32 vocabulary accumulation.
 Q8 text projections are supported on the qualified CUDA path. Hybrid MoE and
 dynamic rotary scaling remain unsupported. Still-image serving is experimental
-and opt-in for the qualified Qwen3.5-0.8B geometry on NVIDIA A2:
+and opt-in for the qualified Qwen3.5-0.8B geometry on NVIDIA A2 and Apple M4:
 
 ```sh
 python -m pip install -e '.[runtime,vision]'
@@ -164,6 +164,10 @@ DLLM_EXPERIMENTAL_VISION=1 DLLM_QUANTIZATION=q8_0 dllm serve \
 ```
 
 Select the A2 UUID through `CUDA_VISIBLE_DEVICES` as for other CUDA runs.
+For Apple, use `DLLM_DEVICE=mps DLLM_EXPERIMENTAL_VISION=1` with FP16 text
+(omit `DLLM_QUANTIZATION`). Apple image correctness and lifecycle are validated
+on M4; hybrid Q8 is unavailable there. Its current ordinary Torch hybrid path
+is substantially slower and still needs native Metal optimization.
 `/v1/chat/completions` accepts user content lists with `text` and `image_url`
 parts; image URLs must be inline PNG/JPEG data URLs with `detail: "auto"`.
 The existing 1 MiB HTTP body limit applies. FP16 text is available by omitting

@@ -1,7 +1,7 @@
 # Qwen3.5 still-image qualification
 
 Tracked in GitHub issue #50. Experimental still-image HTTP serving is now
-opt-in on NVIDIA A2 for Qwen3.5-0.8B, with FP16 or Q8 text weights. See the
+opt-in for Qwen3.5-0.8B on NVIDIA A2 (FP16/Q8 text) and Apple M4 (FP16 text). See the
 final section for current scope and lifecycle evidence. Earlier sections record
 the qualification sequence, including unresolved intermediate numerical limits.
 
@@ -247,3 +247,26 @@ constructing a constant divisor tensor uploaded host data during capture. Scalar
 division now produces the same position construction without that upload.
 Full FP16 and Q8 image/text replays each still pass all 54 independent
 logit/token checks; all 366 local regression tests pass.
+
+## Apple M4 image serving
+
+Torch 2.13.0 MPS runs the independent encoder with FP16 projection storage and
+FP32 arithmetic. All five final merged-feature gates pass; all five retain the
+known block-11 absolute-error failure (0.0639–0.1073 against the 0.02 limit).
+This is preserved in `qwen35-vision-mps-initial.json`; the encoder gate is not
+reported as passed and no tolerance changes were made.
+
+The full model passes all 54 independent logit and exact greedy-token checks
+with worst relative RMS 0.004825 and maximum absolute error 0.07085. The ordinary
+HTTP service passes all 20 checks, including concurrent image/text requests,
+streaming, changed-image cancellation recovery, swaps, and repeated release.
+After each complete unload, both host model bytes and MPS tensor allocations
+return to zero. This reports live tensor allocations, not all Metal driver memory.
+
+Use `DLLM_DEVICE=mps DLLM_EXPERIMENTAL_VISION=1`, context at most 1024 and at
+most four slots. Apple hybrid Q8 is rejected; FP16 text and the separate vision
+precision policy are used. Three warm square-image/eight-token HTTP requests
+took 1.075/1.083/1.079 seconds, with first-token latency 0.636–0.642 seconds and
+decode throughput around 16 tokens/s. This establishes functioning Apple image
+serving, not competitive Apple performance. The unfused recurrent text path is
+the next optimization target. The local regression suite passes 367 tests.

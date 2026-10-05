@@ -90,6 +90,7 @@ class Runtime:
                       for alias in self.models]
         return {'models': models, 'device': selected_device(), 'context': self.context,
                 'cuda_allocated_bytes': torch.cuda.memory_allocated() if torch.cuda.is_initialized() else None,
+                'mps_allocated_bytes': torch.mps.current_allocated_memory() if selected_device()=='mps' else None,
                 'host_cached_bytes': sum(model.bytes for model in self.host.values()),
                 'host_budget_bytes': self.host_bytes, 'gpu_model_limit': self.gpu_limit,
                 'host_model_limit': self.host_limit}
@@ -446,6 +447,8 @@ def make_executor(model, use_graph=True, max_batch=None, **kwargs):
         if kwargs.pop('fuse_projections', True) is False:
             raise ValueError('unfused projection mode is not available for hybrid execution')
         if getattr(model,'vision_weights',None) is not None:
+            from .vision_policy import validate_execution
+            validate_execution(model,max_batch or 1)
             from .vision_hybrid import VisionHybridExecutor
             return VisionHybridExecutor(model,use_graph=use_graph,max_batch=max_batch or 1,**kwargs)
         return HybridExecutor(model, use_graph, max_batch or 1, **kwargs)

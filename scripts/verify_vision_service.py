@@ -25,6 +25,8 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('reference')
     parser.add_argument('--output',required=True)
+    parser.add_argument('--device',choices=('cuda','mps'),default='cuda')
+    parser.add_argument('--model',help='local copy of the pinned reference checkpoint')
     parser.add_argument('--allocation-diagnostics',action='store_true')
     parser.add_argument('--warm-requests',type=int,default=3)
     parser.add_argument('--stage-profile',help='diagnostic stage JSONL path; adds GPU synchronization')
@@ -32,8 +34,12 @@ def main():
     args=parser.parse_args()
     if args.warm_requests<1 or (args.stage_profile and args.allocation_diagnostics):
         parser.error("positive warm request count and at most one diagnostic mode required")
-    reference=torch.load(args.reference,weights_only=True)
-    tokenizer=Tokenizer.from_file(str(Path(reference['model'])/'tokenizer.json'))
+    reference=torch.load(args.reference,map_location='cpu',weights_only=True)
+    model_path=args.model or reference['model']
+    allocation_key=args.device+'_allocated_bytes'
+    if args.device=='mps' and (args.allocation_diagnostics or args.allocation_reference or args.stage_profile):
+        parser.error('CUDA diagnostic modes do not apply to Apple MPS')
+    tokenizer=Tokenizer.from_file(str(Path(model_path)/'tokenizer.json'))
     tokenizer.no_padding();tokenizer.no_truncation()
     payloads=[]
     for case in reference['cases']:
@@ -47,13 +53,14 @@ def main():
             max_tokens=8,temperature=0,chat_template_kwargs=dict(enable_thinking=False)))
     report=dict(passed=False,reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 stage_profile=bool(args.stage_profile),quantization=reference.get('text_quantization','none'),checks=[],trials=[],statuses={},
-                torch=str(torch.__version__),device_uuid=os.environ.get('CUDA_VISIBLE_DEVICES'),
+                torch=str(torch.__version__),device=args.device,model=str(model_path),reference_model=reference['model'],
+                device_uuid=os.environ.get('CUDA_VISIBLE_DEVICES') if args.device=='cuda' else None,
                 source_sha256={str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in
                     [Path('dllm')/name for name in ('hybrid.py','cuda_warmup.py','models.py','qwen2.py','runtime.py','scheduler.py','server.py',
                     'vision_policy.py','vision_model.py','vision_hybrid.py','vision_qwen35.py','vision_messages.py')]})
     from dllm.models import weight_bytes
     with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'1'}):
-        report['estimated_host_weight_bytes']=weight_bytes(reference['model'],quantization=report['quantization'])
+        report['estimated_host_weight_bytes']=weight_bytes(model_path,quantization=report['quantization'])
     workspace=0
     if args.allocation_reference:
         data=Path(args.allocation_reference).read_bytes()
@@ -66,7 +73,7 @@ def main():
     report['identified_persistent_cublas_workspace_bytes']=workspace
     with tempfile.TemporaryDirectory(prefix='dllm-vision-http-') as directory:
         logpath=Path(directory)/'server.log'
-        env={**os.environ,'DLLM_EXPERIMENTAL_VISION':'1',
+        env={**os.environ,'DLLM_EXPERIMENTAL_VISION':'1','DLLM_DEVICE':args.device,
              'DLLM_QUANTIZATION':reference.get('text_quantization','none')}
         if args.stage_profile:env['DLLM_VISION_STAGE_PROFILE']=args.stage_profile
         with logpath.open('w') as log:
@@ -75,7 +82,7 @@ def main():
                      else [sys.executable,'-m','dllm'])
             process=subprocess.Popen([*command,'serve','--port','0',
                 '--context','1024','--batch-size','4','--gpu-models','1','--host-models','2',
-                '--host-gib','8','--model','a='+reference['model'],'--model','b='+reference['model']],
+                '--host-gib','8','--model','a='+model_path,'--model','b='+model_path],
                 env=env,stdout=log,stderr=log)
             try:
                 deadline=time.monotonic()+180
@@ -152,11 +159,11 @@ def main():
                 assert unloaded['host_cached_bytes']==0
                 assert all(model['vision_gpu_weight_bytes']==0 for model in unloaded['models'])
                 allowed=unloaded.get('diagnostic_cublas_workspace_bytes',workspace) if args.allocation_diagnostics else workspace
-                assert unloaded['cuda_allocated_bytes'] is not None and unloaded['cuda_allocated_bytes']<=allowed,unloaded
+                assert unloaded[allocation_key] is not None and unloaded[allocation_key]<=allowed,unloaded
                 check(request(payloads[0]),0,'disk-reload-after-release')
                 with open_request('/v1/models/unload',dict(model='a',release_host=True)) as response:json.load(response)
                 again=status('unloaded-again')
-                assert again['host_cached_bytes']==0 and again['cuda_allocated_bytes']==unloaded['cuda_allocated_bytes']
+                assert again['host_cached_bytes']==0 and again[allocation_key]==unloaded[allocation_key]
                 report['checks'].append('repeat-release-no-allocation-growth')
                 report['passed']=True
             except BaseException as error:
