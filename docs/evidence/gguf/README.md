@@ -629,7 +629,7 @@ must not be presented as complete K-quant numerical qualification.
 
 The shared CUDA implementation is now built as `dllm-kquant-residual`; explicit
 `DLLM_KQUANT_RESIDUAL_LIBRARY` enables per-executor selection. Selection requires
-CUDA, Llama `mixed` precision, hidden width 2048, and packed formats exactly
+CUDA, Llama `mixed` precision, hidden width 2048, context at most 512, and packed formats exactly
 Q4_K/Q6_K. Any Q5-containing model is excluded. Only single-row 2048-wide
 projections use it; all other projections retain ordinary dispatch. Ordinary
 K-quant CUDA remains separately configurable for those fallbacks. Selection is
@@ -724,3 +724,13 @@ batch sizes two and three. Batch three regresses on every measured projection.
 Batch two shows potential gains in the sampled down projection and head but
 regresses elsewhere. These microbenchmarks do not enable batched residual
 production dispatch or establish whole-model gains.
+
+The subsequent Llama residual 2048-context probe **fails** the unchanged RMS
+gate on its 2041-token prompt: maximum RMS 1.876%, absolute 0.2890625, with all
+64 greedy decisions still equal. The full failing result remains in
+`llama32-q4-k-m-residual-production-reference-2048-a2.json`. Production residual
+selection is consequently restricted to configured context capacities at most
+512; larger capacities use ordinary dispatch. A same-teacher-trace ordinary
+CUDA control is being evaluated to distinguish a residual-kernel regression
+from the existing long-context precision behavior. This result does not erase
+the passing 512-context proofs or establish a successful long-context fallback.

@@ -49,17 +49,17 @@ def linear(x,weight,layout,bias=None,*,library_path):
 
 
 
-def qualified_scope(config, layouts, device, dtype, precision):
+def qualified_scope(config, layouts, device, dtype, precision, context):
     """Q5 is explicitly excluded: its forced post-EOS numerical gate is open."""
-    return (device == 'cuda' and dtype == torch.float16 and precision == 'mixed'
+    return (device == 'cuda' and dtype == torch.float16 and precision == 'mixed' and context <= 512
             and config.get('model_type') == 'llama' and config.get('hidden_size') == 2048
             and bool(layouts)
             and {kind for _, spec in layouts.values() for _, _, kind, _ in spec} == {12, 14})
 
 
-def select(config, layouts, device, dtype, precision):
+def select(config, layouts, device, dtype, precision, context):
     path = os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
-    if not path or not qualified_scope(config, layouts, device, dtype, precision):
+    if not path or not qualified_scope(config, layouts, device, dtype, precision, context):
         return None
     library(path)
 

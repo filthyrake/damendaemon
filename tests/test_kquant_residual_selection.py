@@ -13,7 +13,7 @@ class ResidualSelectionTests(unittest.TestCase):
     layouts = {'qkv': (2048, ((0, 8, 12, 0), (8, 16, 14, 9216)))}
 
     def test_only_qualified_model_precision_and_formats(self):
-        self.assertTrue(qualified_scope(self.config, self.layouts, 'cuda', torch.float16, 'mixed'))
+        self.assertTrue(qualified_scope(self.config, self.layouts, 'cuda', torch.float16, 'mixed', 512))
         for config, layouts, device, dtype in (
             ({**self.config, 'model_type': 'qwen3'}, self.layouts, 'cuda', torch.float16),
             ({**self.config, 'hidden_size': 4096}, self.layouts, 'cuda', torch.float16),
@@ -24,18 +24,21 @@ class ResidualSelectionTests(unittest.TestCase):
             (self.config, {**self.layouts, 'float': (2048, ((0, 8, 1, 0),))}, 'cuda', torch.float16),
         ):
             with self.subTest(config=config, layouts=layouts, device=device, dtype=dtype):
-                self.assertFalse(qualified_scope(config, layouts, device, dtype, 'mixed'))
+                self.assertFalse(qualified_scope(config, layouts, device, dtype, 'mixed', 512))
 
     def test_standard_precision_is_not_qualified(self):
-        self.assertFalse(qualified_scope(self.config, self.layouts, 'cuda', torch.float16, 'standard'))
+        self.assertFalse(qualified_scope(self.config, self.layouts, 'cuda', torch.float16, 'standard', 512))
+
+    def test_long_context_is_not_qualified(self):
+        self.assertFalse(qualified_scope(self.config, self.layouts, 'cuda', torch.float16, 'mixed', 2048))
 
     def test_opt_in_captures_library_and_falls_back_for_other_shapes(self):
         with patch.dict(os.environ, {}, clear=True), patch('dllm.native_kquant_residual.library') as load:
-            self.assertIsNone(select(self.config, self.layouts, 'cuda', torch.float16, 'mixed'))
+            self.assertIsNone(select(self.config, self.layouts, 'cuda', torch.float16, 'mixed', 512))
             load.assert_not_called()
         with patch.dict(os.environ, {'DLLM_KQUANT_RESIDUAL_LIBRARY': '/first.so'}), \
                 patch('dllm.native_kquant_residual.library') as load:
-            decode = select(self.config, self.layouts, 'cuda', torch.float16, 'mixed')
+            decode = select(self.config, self.layouts, 'cuda', torch.float16, 'mixed', 512)
             load.assert_called_once_with('/first.so')
         weight = torch.zeros(1, dtype=torch.uint8)
         result = torch.ones(1, 16)

@@ -390,7 +390,7 @@ class Executor:
         if model.scales or packed_formats:
             from .quantization import Linear
             from .native_kquant_residual import select
-            self.packed_decode = select(c, packed_formats, self.device, self.compute_dtype, self.llama_precision)
+            self.packed_decode = select(c, packed_formats, self.device, self.compute_dtype, self.llama_precision, self.context)
             self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats, self.packed_decode)
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
