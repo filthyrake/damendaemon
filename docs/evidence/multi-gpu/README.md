@@ -296,3 +296,50 @@ by 4.6% in the second experiment. Control overhead remains a performance target.
 These are sequential same-host worker measurements, not HTTP throughput,
 cross-network performance, an upstream comparison, or an RDMA claim. Local
 completion-ownership and failed-fence regressions bring the suite to 384 tests.
+
+## Command-driven A2/3090 network qualification
+
+The bounded command channel now passes all 82 independent logits/token checks
+at both FP16 and Q8 across the A2 and desktop RTX 3090. Each pair completes 35
+commands; only the A2 coordinator opens the reference trace. The desktop is
+explicitly passed a nonexistent trace path. Prepared-weight identities agree
+between hosts. Stale third-command injection is rejected by both workers after
+exactly two completed commands, before the next activation transfer.
+
+The first attempt exposed an incidental NumPy dependency in the experiment's
+weight fingerprint. `stage_identity.py` now hashes explicitly bounded CPU tensor
+storage directly, without NumPy or a full byte-buffer copy. Its versioned hash
+includes configuration, context, precision/format, dtype, shape, weights and
+scales. This identity format differs from the earlier experimental fingerprint;
+hash values from those formats must not be compared directly. The local suite
+passes 387 tests, including identity changes and non-CPU pointer rejection.
+
+The network ABBA benchmark uses the same Q8 checkpoint pair, context 512,
+255-token prompt, 32 output tokens and batch one. Both modes retain bounded
+control validation and sample on the 3090, returning only token IDs. Two warmups
+and six measured requests per group give 12 measurements per mode; all warmup
+and measured outputs match exactly. Torch 2.6.0+cu124 / NCCL 2.21.5 run on both
+hosts. NCCL Socket is explicitly selected on lab `enp6s18` and desktop `enp72s0`;
+RDMA is disabled for this test. Per-worker hardware/transport metadata accompanies
+`qwen2-network-token-ack-q8-abba.json`.
+
+| Median network metric | Separate completion collective | Token reply completion |
+| --- | ---: | ---: |
+| First token | 20.88 ms | 20.76 ms |
+| Full generation | 131.35 ms | 127.73 ms |
+| Decode | 282.13 tokens/s | 290.07 tokens/s |
+
+The measured gain is modest: 2.8% higher decode rate and 2.8% lower total latency.
+This is a single sequential worker experiment with existing services preserved,
+not HTTP throughput, a single-GPU comparison, or broad distributed serving parity.
+The initial setup failure also showed that a surviving coordinator does not yet
+immediately terminate when its peer fails before NCCL initialization; the test
+owner explicitly stopped that coordinator within its external deadline. Worker
+startup/failure supervision remains required for a serving implementation.
+
+The peer-only firewall window began 2026-10-05 at 23:45:34 UTC (lab) and
+23:45:38 UTC (desktop), with automatic 30-minute expiry. All three temporary
+rules were removed early at 23:55:07/11 UTC. Lab rich rules returned to empty;
+the desktop retained its original 10.42.0.0/16 rule. GPU allocations returned
+to baseline: A2 0 MiB, A30 13,403 MiB, desktop 10,835 MiB. No permanent firewall
+changes or existing GPU-service restarts were made.

@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import statistics
+import socket
 import time
 import torch
 import torch.distributed as dist
@@ -17,7 +18,7 @@ from dllm.layer_stage import LayerStage
 from dllm.partition_policy import validate
 from dllm.stage_protocol import Command, StageState, PREFILL, DECODE
 from dllm.stage_transport import StageChannel
-from scripts.verify_stage_protocol import fingerprint
+from dllm.stage_identity import fingerprint
 
 
 def transfer(tensor, sender, rank):
@@ -31,10 +32,13 @@ def main():
     p.add_argument('model'); p.add_argument('--trace', required=True); p.add_argument('--output', required=True)
     p.add_argument('--repeats', type=int, default=6)
     p.add_argument('--compare-completion', action='store_true')
+    p.add_argument('--placement', choices=('same-host', 'cross-host'), default='same-host')
     args = p.parse_args()
     if args.repeats < 1:p.error('positive repetitions required')
     rank, local_rank = int(os.environ['RANK']), int(os.environ['LOCAL_RANK'])
     if int(os.environ['WORLD_SIZE']) != 2:p.error('two workers required')
+    if rank == 0:
+        Path(args.output).write_text(json.dumps(dict(passed=False, final_report=False))+'\n')
     torch.cuda.set_device(local_rank)
     model = ModelWeights(args.model, 512, quantization='q8_0'); validate(model, 12, 1)
     stage = LayerStage(model, 0 if rank == 0 else 12, 12 if rank == 0 else 24,
@@ -45,6 +49,11 @@ def main():
         local = torch.tensor(list(identity), dtype=torch.uint8, device='cuda')
         peers = [torch.empty_like(local) for _ in range(2)]; dist.all_gather(peers, local)
         if not torch.equal(peers[0], peers[1]):raise ValueError('model identity mismatch')
+        worker = dict(rank=rank, hostname=socket.gethostname(), device=torch.cuda.get_device_name(),
+            visible_devices=os.environ.get('CUDA_VISIBLE_DEVICES'), torch=str(torch.__version__),
+            nccl=list(torch.cuda.nccl.version()), requested_transport=os.environ.get('NCCL_NET', 'auto'),
+            network_interface=os.environ.get('NCCL_SOCKET_IFNAME'), model_sha256=identity.hex())
+        Path(args.output + f'.worker{rank}.json').write_text(json.dumps(worker, indent=2)+'\n')
         prompt = None
         if rank == 0:
             trace = torch.load(args.trace, map_location='cpu', weights_only=True)
@@ -108,11 +117,15 @@ def main():
                 runs = [row for group in groups if group['mode'] == mode for row in group['runs']]
                 summaries.append(dict(mode=mode, **{key:statistics.median(r[key] for r in runs)
                     for key in ('first_token_seconds','total_seconds','decode_tokens_per_second')}))
-            report = dict(passed=True, model=args.model, model_sha256=identity.hex(), quantization='q8_0',
+            report = dict(passed=True, final_report=True, model=args.model, model_sha256=identity.hex(), quantization='q8_0',
                 context=512, prompt_tokens=255, output_tokens=32, batch=1, torch=str(torch.__version__),
-                scope='same-host A2/A30 two-worker protocol overhead ABBA; token-only return; not HTTP or cross-network',
+                scope=f'{args.placement} two-worker protocol overhead ABBA; token-only return; not HTTP or RDMA',
                 groups=groups, summaries=summaries)
             Path(args.output).write_text(json.dumps(report, indent=2)+'\n'); print(json.dumps(summaries))
+    except BaseException as error:
+        if rank == 0:
+            Path(args.output).write_text(json.dumps(dict(passed=False, final_report=True, error=repr(error)))+'\n')
+        raise
     finally:
         if dist.is_initialized():dist.destroy_process_group()
 

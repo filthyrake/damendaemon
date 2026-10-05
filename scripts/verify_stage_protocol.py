@@ -6,7 +6,6 @@ validation; this is not a serving transport or a performance benchmark.
 """
 import argparse
 from datetime import timedelta
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -18,16 +17,7 @@ from dllm.partition_policy import validate
 from dllm.stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP
 
 from dllm.stage_transport import StageChannel
-
-def fingerprint(model):
-    digest = hashlib.sha256(json.dumps(dict(config=model.config, context=model.max_context,
-        quantization=model.quantization), sort_keys=True).encode())
-    for group in (model.weights, model.scales):
-        for name, tensor in sorted(group.items()):
-            digest.update(json.dumps([name, str(tensor.dtype), list(tensor.shape)]).encode())
-            digest.update(memoryview(tensor.contiguous().numpy()).cast('B'))
-    return digest.digest()
-
+from dllm.stage_identity import fingerprint
 
 def commands(trace, state):
     for event in trace['trace']:
