@@ -72,8 +72,10 @@ multi-tenant service.
 K-quant qualification covers Llama 3.2 1B and Qwen3-0.6B Q4_K_M at 512
 context, with Qwen3 independent model checks also passing at 2048.
 Qwen3-1.7B's pinned Q4_K_M conversion additionally passes independent model
-checks at 512; an experimental resident cache passes model and layout checks
-at that context, with server performance and production selection qualified separately.
+checks at 2048. Its optional, admission-accounted resident cache passes
+independent extended model, layout, server and memory-release checks through
+2048 with the standard Qwen3 precision policy; a 4096 MiB budget admits
+3281.5 MiB of projection copies. Other Qwen sizes and the FP32 mode are excluded.
 Published TinyLlama Q4_K_M passes independent model and fixed/paged/batched/chunked layout
 checks through 2048, with normal HTTP and model swapping also qualified at 2048. The optional
 FP16 residual-int8 backend permits Q4/Q6 single-request decode through context

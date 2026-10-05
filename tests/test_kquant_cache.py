@@ -68,6 +68,24 @@ class KquantCacheTests(unittest.TestCase):
         self.assertTrue(torch.equal(output, torch.full((2, 3, 16), 2050, dtype=torch.float16)))
         decode.assert_not_called()
 
+    def test_qwen_scope_uses_its_own_precision_geometry_and_context(self):
+        config = dict(model_type='qwen3', hidden_size=2048, intermediate_size=6144,
+                      num_hidden_layers=28, num_attention_heads=16, num_key_value_heads=8,
+                      head_dim=128, vocab_size=151936, max_position_embeddings=40960,
+                      rope_theta=1000000)
+        args = {**self.args, 'config': config, 'precision': 'standard', 'context': 2048}
+        with patch.dict(os.environ, {'DLLM_KQUANT_DENSE_CACHE_MIB': '1'}):
+            self.assertGreater(plan(**args).bytes, 0)
+            for change in ({'context': 2049}, {'precision': 'mixed'}, {'dtype': torch.float32},
+                           {'config': {**config, 'head_dim': 64}},
+                           {'config': {**config, 'rope_theta': 10000}},
+                           {'config': {**config, 'intermediate_size': 5632}}):
+                with self.subTest(change=change):
+                    self.assertEqual(plan(**{**args, **change}).bytes, 0)
+            layouts = {**self.layouts, 'out': (6144, ((0, 16, 14, 0),))}
+            self.assertEqual(plan(**{**args, 'layouts': layouts}).bytes,
+                             2 * 16 * (2048 + 6144))
+
 
 if __name__ == '__main__':
     unittest.main()

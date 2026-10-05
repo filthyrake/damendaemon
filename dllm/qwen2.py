@@ -378,7 +378,7 @@ class Executor:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         from .kquant_cache import plan as plan_cache, build as build_cache
         cache_plan = plan_cache(c, model.weights, packed_formats, self.device, self.compute_dtype,
-                               self.llama_precision, self.context,
+                               self.qwen3_precision if c['model_type'] == 'qwen3' else self.llama_precision, self.context,
                                free - device_weight_bytes - kv_bytes - self.packed_workspace_bytes - 512 * 1024**2)
         self.packed_cache_bytes = cache_plan.bytes
         self.w = {}

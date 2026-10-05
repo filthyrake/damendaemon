@@ -538,6 +538,14 @@ aggregate output tokens/s) and 4–9% lower single-request latency, with matchin
 outputs and tested model swaps/reloads. Packed weights remain authoritative;
 this is an explicit memory-for-speed tradeoff, qualified through context 2048.
 
+The pinned Qwen3-1.7B Q4_K_M conversion also supports this cache through context
+2048 in its standard Qwen3 precision mode. Use
+`DLLM_KQUANT_DENSE_CACHE_MIB=4096`; the selected projections occupy 3281.5 MiB.
+Normal A2 serving reduces four-request latency about 22% (84 to 107 aggregate
+output tokens/s), with exact output agreement and verified reloads, swaps and
+insufficient-budget fallback. This remains an optional additional allocation;
+it does not enable caching for all Qwen architectures or contexts.
+
 For Llama 3.2 1B Q4_K_M/Q5_K_M, an independent FP32 mode addresses the observed
 long-context FP16 numerical gap. An optional FP32 residual library accelerates
 its decode without rounding inputs or output to FP16:

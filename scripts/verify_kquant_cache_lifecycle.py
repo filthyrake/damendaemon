@@ -22,11 +22,14 @@ def main():
                         help='exercise normal dense execution with independently expanded weights, no cache hook')
     parser.add_argument('--production-cache', action='store_true', help='verify normal cache selection and budget fallback')
     parser.add_argument('--cache-mib', type=int, help='cache budget; defaults to 2048 for production, 4096 for experiment')
+    parser.add_argument('--context', type=int, default=2048)
     args = parser.parse_args()
     if args.expanded_control and args.production_cache:
         parser.error('choose either expanded control or production cache')
     if args.cache_mib is not None and (args.cache_mib <= 1 or args.expanded_control):
         parser.error('--cache-mib must exceed one and requires a cache test')
+    if args.context < 512:
+        parser.error('--context must be at least 512')
     cache_mib = args.cache_mib if args.cache_mib is not None else (2048 if args.production_cache else 4096)
     os.environ.pop('DLLM_KQUANT_DENSE_CACHE_MIB', None)
     require_gpu()
@@ -34,10 +37,11 @@ def main():
     report = dict(experiment=None if args.expanded_control or args.production_cache else kquant_dense_cache.install_validation_dispatch(),
                   expanded_control=args.expanded_control,
                   production_cache=args.production_cache,
+                  context=args.context,
                   passed=False, cycles=[], device=torch.cuda.get_device_name())
     with open(args.model, 'rb') as handle:
         report['model_sha256'] = hashlib.file_digest(handle, 'sha256').hexdigest()
-    source = GgufWeights(args.model, 2048, 'none')
+    source = GgufWeights(args.model, args.context, 'none')
     if args.expanded_control:
         from verify_kquant_runtime import expanded
         source = expanded(source)

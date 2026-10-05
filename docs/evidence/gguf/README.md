@@ -1788,8 +1788,8 @@ The broader validation-only cache admits 3,440,902,144 bytes under its 4 GiB
 cap. `qwen3-medium-cache-layout-512-a2.json` passes all 128 fixed/paged,
 eager/graph, batch 1/2/4 and chunked-prefill comparisons, worst relative RMS
 0.2716%. This is a new model/shape qualification, not a long-context or
-production-cache qualification. Normal cache selection remains TinyLlama-only;
-server speed and release behavior are evaluated separately before promotion.
+production-cache qualification. The subsequent normal-path qualification is
+recorded below; these initial prototype checks alone did not establish it.
 
 `qwen3-medium-cache-reference-extended-512-a2.json` additionally passes 96
 independent comparisons over multi-turn, Unicode, code and longer raw prompts;
@@ -1825,3 +1825,41 @@ and a positive-but-insufficient 1 MiB fallback. All executor/weight/cache weak
 references expire after each unload; allocated GPU memory returns to exactly
 25,559,040 bytes each time. This retained workspace is stable across all three
 cycles and the cached model tensors are released.
+
+### Normal Qwen3-1.7B resident cache through 2048
+
+Normal selection now includes the tested Qwen3-1.7B geometry, standard Qwen3
+precision, CUDA FP16 matrix storage and Q4_K/Q6_K projections through context
+2048. `DLLM_KQUANT_DENSE_CACHE_MIB=4096` admits 3,440,902,144 bytes (3281.5 MiB).
+It uses the same all-or-nothing free-memory/budget accounting and unchanged
+single-row decode as TinyLlama. Other Qwen geometries, longer contexts and
+FP32 execution remain excluded. Unit coverage checks these independent scope
+boundaries; the full cache-change regression suite passes 321 tests.
+
+`qwen3-medium-cache-production-reference-2048-a2.json` passes 96 extended HF
+comparisons with normal selection required, and
+`qwen3-medium-cache-production-layout-2048-a2.json` passes 128 layout checks.
+Maximum independent relative RMS is 0.7620%, layout RMS 0.2716%; all greedy
+decisions agree. `qwen3-medium-cache-production-release-a2.json` repeats two
+cached activations plus a positive insufficient-budget fallback; every model
+reference is released and all three unloaded states retain the same 24.375 MiB
+of CUDA workspace.
+
+`qwen3-medium-cache-production-http-2048-a2.json` uses the normal CLI for all
+A/B/B/A phases. Reported cache bytes are exactly zero/3,440,902,144/3,440,902,144/zero.
+Every output, host/disk reload, cross-model swap, cancellation, streaming and
+concurrent-chat gate passes.
+
+| Input / concurrency | Original seconds | Cached seconds | Original output tokens/s | Cached output tokens/s |
+| --- | ---: | ---: | ---: | ---: |
+| 16 / 1 | 0.344322 | 0.301089 | 46.51 | 53.14 |
+| 129 / 1 | 0.373782 | 0.340511 | 42.81 | 46.99 |
+| 2032 / 1 | 0.822428 | 0.790881 | 19.45 | 20.23 |
+| 129 / 2 | 0.537348 | 0.514001 | 59.55 | 62.26 |
+| 129 / 4 | 0.763758 | 0.597789 | 83.80 | 107.06 |
+
+These pooled warm-trial medians include prefill. Four-request latency falls
+21.7%; single-request latency falls 3.8–12.6% in this workload. Idle coalescing
+is zero on both sides. The 2048-context test is separate from the earlier
+512-context prototype run; timings across those runs are not a matched
+comparison. This is not a llama.cpp/vLLM performance parity claim.
