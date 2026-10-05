@@ -1761,3 +1761,32 @@ seconds. These include activation and generation, with only two observations
 per action. Filesystem caches were not flushed. They prove usable reload paths,
 not a statistically established hot-swap improvement; control disk reloads
 were faster in this small sample (2.145/2.356 seconds).
+
+### Larger Qwen3-1.7B K-quant qualification
+
+The cached HF checkpoint `Qwen/Qwen3-1.7B` revision
+`70d244cc86ccca08cf5af4e1e306ecf908b1ad5e` was exported as F16, then quantized
+as Q4_K_M using the unchanged reference tooling. The converter matches revision
+`836d57176dc699a726c55418e4f96b8ca628e1bf`, SHA256
+`e9a1da876330bbce9687541ab31736542a01b4ac43c6686126514a50f122fb7f`.
+The quantizer binary SHA256 is
+`6718881be431d1ed3539ccec5a98f2adb04b89ae2e29d0b70b016a73e5920202`.
+The resulting `qwen3-medium-import-q4_k_m.gguf` SHA256 is
+`d8a2811d8568778c79219100c92fe540889d54e1dbb2d6e5ed9c1c44d2b3a55d`.
+It contains 169 Q4_K, 29 Q6_K and 113 F32 tensors. This is a generated fixture,
+not a claim that every published Qwen GGUF behaves identically.
+
+At 512 context, `qwen3-medium-kquant-reference-512-a2.json` passes all 64
+independent HF comparisons with exact greedy agreement, maximum absolute logit
+error 0.1328125 and relative RMS 0.6857%. The experimental resident-cache run
+`qwen3-medium-cache-reference-512-a2.json` passes the same gates. Both use the
+standard Qwen3 policy: FP16 matrices with FP32 residual/nonlinear operations.
+The independent reference runs first and releases GPU residency before dllm
+executes; its logits remain available for comparison.
+
+The broader validation-only cache admits 3,440,902,144 bytes under its 4 GiB
+cap. `qwen3-medium-cache-layout-512-a2.json` passes all 128 fixed/paged,
+eager/graph, batch 1/2/4 and chunked-prefill comparisons, worst relative RMS
+0.2716%. This is a new model/shape qualification, not a long-context or
+production-cache qualification. Normal cache selection remains TinyLlama-only;
+server speed and release behavior are evaluated separately before promotion.

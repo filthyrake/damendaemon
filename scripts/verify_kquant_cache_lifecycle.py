@@ -21,9 +21,13 @@ def main():
     parser.add_argument('--expanded-control', action='store_true',
                         help='exercise normal dense execution with independently expanded weights, no cache hook')
     parser.add_argument('--production-cache', action='store_true', help='verify normal cache selection and budget fallback')
+    parser.add_argument('--cache-mib', type=int, help='cache budget; defaults to 2048 for production, 4096 for experiment')
     args = parser.parse_args()
     if args.expanded_control and args.production_cache:
         parser.error('choose either expanded control or production cache')
+    if args.cache_mib is not None and (args.cache_mib <= 1 or args.expanded_control):
+        parser.error('--cache-mib must exceed one and requires a cache test')
+    cache_mib = args.cache_mib if args.cache_mib is not None else (2048 if args.production_cache else 4096)
     os.environ.pop('DLLM_KQUANT_DENSE_CACHE_MIB', None)
     require_gpu()
     torch.set_num_threads(4)
@@ -40,8 +44,7 @@ def main():
     prompt = source.raw_tokens('Explain how the ocean influences coastal weather.')
     previous_released = None
     caps = ((1, 1, 1) if args.expanded_control else
-            (2048 * 1024**2, 2048 * 1024**2, 1024**2) if args.production_cache else
-            (3 * 1024**3, 3 * 1024**3, 1))
+            (cache_mib * 1024**2, cache_mib * 1024**2, 1024**2))
     try:
         with torch.inference_mode():
             for cycle, cap in enumerate(caps):
