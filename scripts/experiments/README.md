@@ -73,3 +73,15 @@ layout about 3.9–8.2x slower on A2, despite lower temporary memory. It is reje
 and is not wired into serving. This result concerns this layout and hardware,
 not every possible packed GEMM. Evidence:
 `docs/evidence/gpt-oss/context-4k/gpt-oss-packed-prefill-projection-a2.json`.
+
+## Resident K-quant projection cache
+
+`kquant_dense_cache.py` keeps optional FP16 projection copies inside each
+executor for validation only. Packed weights and single-row decode remain
+unchanged. The broader experiment now accepts block-aligned Q4_K/Q6_K widths
+under a 4 GiB cap so the Qwen3-1.7B fixture can be evaluated; it is not GPU
+admission-accounted and does not change normal runtime qualification.
+`verify_gguf_reference.py --experimental-dense-cache` requires a nonempty cache
+and checks independently expanded HF logits. Layout and HTTP comparisons have
+separate gates. Normal `DLLM_KQUANT_DENSE_CACHE_MIB` remains restricted to its
+qualified model scopes in `dllm/kquant_cache.py`.

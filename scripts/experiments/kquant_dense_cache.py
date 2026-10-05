@@ -9,7 +9,7 @@ from pathlib import Path
 
 import torch
 
-CACHE_LIMIT = 3 * 1024**3
+CACHE_LIMIT = 4 * 1024**3
 
 
 def install_validation_dispatch():
@@ -30,7 +30,7 @@ def install_validation_dispatch():
         selected = {}
         for name, layout in (packed_formats or {}).items():
             width, spec = layout
-            if (name != 'embed' and width in (2048, 5632)
+            if (name != 'embed' and width % 256 == 0
                     and all(kind in (12, 14) for _, _, kind, _ in spec)):
                 selected[id(weights[name])] = (weights[name], layout)
         required = sum(2 * layout[0] * layout[1][-1][1] for _, layout in selected.values())
@@ -49,6 +49,6 @@ def install_validation_dispatch():
     Linear.__init__ = initialize
     Linear.__call__ = multiply
     return dict(kind='experimental resident FP16 projection cache', byte_cap=CACHE_LIMIT,
-                scope='CUDA Q4_K/Q6_K widths 2048/5632; rows greater than one',
+                scope='CUDA Q4_K/Q6_K block-aligned widths; rows greater than one',
                 production_admission_accounts_for_cache=False,
                 source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
