@@ -14,12 +14,13 @@ from experiments.moe_grouped import prepare_routes, linear
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', required=True)
+    parser.add_argument('--block-rows', type=int, choices=(16, 32), default=16)
     args = parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
     torch.manual_seed(342)
     torch.backends.cuda.matmul.allow_tf32 = False
-    report = dict(passed=False, cases=[], device=torch.cuda.get_device_name(),
+    report = dict(passed=False, block_rows=args.block_rows, cases=[], device=torch.cuda.get_device_name(),
         source_sha256=hashlib.sha256(Path('scripts/experiments/moe_grouped.py').read_bytes()).hexdigest(),
         scope='synthetic grouped projections; independent FP32 dense reference; not runtime registration')
     try:
@@ -29,7 +30,7 @@ def main():
                 selected = (torch.zeros((rows,top),device='cuda',dtype=torch.long) if concentrated else
                             torch.randint(experts,(rows,top),device='cuda'))
                 # Repeated routes, empty experts, and nonmultiple row/output tiles.
-                routes = prepare_routes(selected,experts)
+                routes = prepare_routes(selected,experts,args.block_rows)
                 expected_counts = torch.bincount(selected.cpu().reshape(-1),minlength=experts)
                 torch.testing.assert_close(routes.counts.cpu().long(),expected_counts)
                 original = torch.randn(experts*outputs,width).half()*.1

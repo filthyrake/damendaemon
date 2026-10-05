@@ -400,6 +400,31 @@ checks at one and three resident-model capacities: repeat outputs, mixed-model
 concurrency, host restoration, thinking controls and disconnect/rejection
 recovery all pass (`olmoe-grouped-service-a2.json`).
 
+
+### OLMoE device-counted grouped projection experiment
+
+An isolated A2 experiment keeps route counts, expert tile assignment and Q8
+expert projections on the GPU, using TF32x3 matrix products with FP32 outputs.
+It passes all 82 independent whole-model oracle checks (worst relative RMS
+0.000242%), but changes reduction order and is not bitwise equivalent. The
+normal runtime still uses the qualified stable grouping above.
+
+Against that improved runtime, alternating same-resident-weight measurements
+show prefill medians of 0.175 vs 0.327 seconds at 32 input tokens and 0.325 vs
+0.440 seconds at 128. At 512 and 1024 tokens the experiment is slower: 1.018 vs
+0.799 and 1.950 vs 1.338 seconds. Boundary checks also win at 1/4/16/64/129
+but regress at 256 tokens (0.557 vs 0.533 seconds). These are direct prefill
+measurements, not HTTP throughput. No default selection is enabled yet.
+
+Evidence: [independent oracle](evidence/architectures/olmoe-device-grouped-reference-a2.json),
+[dispatch source fingerprint](evidence/architectures/olmoe-device-grouped-reference-dispatch.json),
+[prefill comparison](evidence/architectures/olmoe-device-grouped-prefill-a2.json),
+and [boundary comparison](evidence/architectures/olmoe-device-grouped-boundary-a2.json).
+The first comparison's candidate fingerprint identifies the normal module;
+its accompanying dispatch report identifies the actual experimental source.
+The boundary report records the experimental source directly.
+
+
 ## Q8 short-prefill latency
 
 Fused dequantization/Tensor Core multiplication now handles 2–128 FP16 rows;

@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import importlib.util
+import inspect
 import json
 from pathlib import Path
 import time
@@ -20,6 +21,7 @@ def main():
     parser.add_argument('--baseline-source', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--lengths', type=int, nargs='+', default=[32, 128, 512, 1024])
+    parser.add_argument('--comparison', choices=('bitwise', 'numerical'), default='bitwise')
     args = parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
@@ -34,16 +36,30 @@ def main():
     report = dict(passed=False, model=args.model, device=torch.cuda.get_device_name(),
                   backend=executor.kernel_backend, quantization=source.quantization,
                   scope='same resident weights and prompts; control/candidate/candidate/control; prefill only',
+                  comparison=args.comparison,
                   baseline_sha256=hashlib.sha256(Path(args.baseline_source).read_bytes()).hexdigest(),
-                  candidate_sha256=hashlib.sha256(Path('dllm/moe.py').read_bytes()).hexdigest(),
+                  candidate_source=inspect.getsourcefile(methods['candidate']),
+                  candidate_sha256=hashlib.sha256(Path(inspect.getsourcefile(methods['candidate'])).read_bytes()).hexdigest(),
                   cases=[])
     corpus = source.raw_tokens('The library contains books about oceans and mountains. ')
+    def check(actual, target):
+        value = actual.cpu()
+        error = value.float()-target.float()
+        rms = (error.square().mean()/target.float().square().mean().clamp_min(1e-12)).sqrt().item()
+        maximum = error.abs().max().item()
+        exact = torch.equal(value, target)
+        greedy = torch.equal(value.argmax(-1), target.argmax(-1))
+        if args.comparison == 'bitwise':
+            torch.testing.assert_close(value, target, rtol=0, atol=0)
+        elif not (bool(torch.isfinite(value).all()) and rms < .01 and maximum < .5 and greedy):
+            raise AssertionError('prefill numerical comparison failed')
+        return dict(bitwise_equal=exact, relative_rms=rms, max_absolute=maximum, greedy_equal=greedy)
     try:
         for length in args.lengths:
             if not 0 < length <= 2048:
                 raise ValueError('invalid prompt length')
             prompt = (corpus*((length+len(corpus)-1)//len(corpus)))[:length]
-            case = dict(prompt_tokens=length, rounds=[], profiles={})
+            case = dict(prompt_tokens=length, rounds=[], profiles={}, peak_extra_allocated_bytes={})
             report['cases'].append(case)
             target = None
             for kind in ('control', 'candidate'):
@@ -53,7 +69,7 @@ def main():
                 if target is None:
                     target = actual.cpu()
                 else:
-                    torch.testing.assert_close(actual.cpu(), target, rtol=0, atol=0)
+                    check(actual, target)
             for kind in ('control', 'candidate', 'candidate', 'control'):
                 executor.experts = MethodType(methods[kind], executor)
                 for trial in range(3):
@@ -62,13 +78,16 @@ def main():
                     actual = executor.prefill(prompt)
                     torch.cuda.synchronize()
                     elapsed = time.perf_counter()-started
-                    torch.testing.assert_close(actual.cpu(), target, rtol=0, atol=0)
-                    case['rounds'].append(dict(kind=kind, trial=trial, seconds=elapsed, bitwise_equal=True))
+                    comparison = check(actual, target)
+                    case['rounds'].append(dict(kind=kind, trial=trial, seconds=elapsed, **comparison))
             for kind in ('control', 'candidate'):
                 executor.experts = MethodType(methods[kind], executor)
+                resident = torch.cuda.memory_allocated()
+                torch.cuda.reset_peak_memory_stats()
                 with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU]) as profile:
                     executor.prefill(prompt)
                     torch.cuda.synchronize()
+                case['peak_extra_allocated_bytes'][kind] = torch.cuda.max_memory_allocated()-resident
                 case['profiles'][kind] = [dict(name=e.key,calls=e.count,self_cpu_us=e.self_cpu_time_total)
                     for e in profile.key_averages() if any(part in e.key for part in ('nonzero','bincount','sort','Synchronize'))]
             print(json.dumps(case), flush=True)

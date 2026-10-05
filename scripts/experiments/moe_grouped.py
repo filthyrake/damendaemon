@@ -111,16 +111,18 @@ def linear(x, weight, scales, routes, outputs, shared_input):
     return result
 
 
-def install_validation_dispatch():
+def install_validation_dispatch(block_rows=16):
     """Explicit bounded whole-model experiment; decode keeps its qualified path."""
     import hashlib
     from pathlib import Path
     from dllm.moe import OlmoeExecutor
     if torch.cuda.get_device_name() != 'NVIDIA A2':
         raise ValueError('grouped MoE experiment is limited to A2')
+    if block_rows not in (16, 32):
+        raise ValueError('unsupported grouped experiment tile size')
     original = OlmoeExecutor.experts
     report = dict(kind='experimental device-counted grouped Q8 prefill',
-                  selected_calls=0, fallback_calls=0, workspace_limit_bytes=256*1024**2,
+                  block_rows=block_rows, selected_calls=0, fallback_calls=0, workspace_limit_bytes=256*1024**2,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
 
     def experts(self, hidden, layer, prefill):
@@ -137,7 +139,7 @@ def install_validation_dispatch():
         probabilities, selected = self._linear(hidden, self.w[f'{layer}.router']).softmax(-1).topk(c['num_experts_per_tok'], dim=-1)
         if c['norm_topk_prob']:
             probabilities = probabilities/probabilities.sum(-1, keepdim=True)
-        routes = prepare_routes(selected, c['num_experts'])
+        routes = prepare_routes(selected, c['num_experts'], block_rows)
         packed = linear(hidden, up, self._expert_scales(up), routes, 2*c['intermediate_size'], True)
         activated = self.kernels.swiglu(packed, True)
         del packed

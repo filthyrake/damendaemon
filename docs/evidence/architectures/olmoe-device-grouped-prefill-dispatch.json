@@ -1,0 +1,18 @@
+{
+  "kind": "experimental device-counted grouped Q8 prefill",
+  "selected_calls": 512,
+  "fallback_calls": 304,
+  "workspace_limit_bytes": 268435456,
+  "source_sha256": "607333b012e744dc5d05ae3211c117d57780ca70b7fa45590dadb61d26ff4752",
+  "script": "scripts/profile_moe_prefill.py",
+  "arguments": [
+    "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+    "--baseline-source",
+    "results/moe-stable-prefill.py",
+    "--comparison",
+    "numerical",
+    "--output",
+    "results/olmoe-device-grouped-prefill-a2.json"
+  ],
+  "completed": true
+}
