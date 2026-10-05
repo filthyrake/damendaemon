@@ -35,6 +35,9 @@ def main():
     report = dict(experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=512,
                   model=str(Path(args.model).resolve()), host_bytes=source.bytes, comparisons=checks,
                   scope='layout equivalence to single-request fixed eager; independent model accuracy is separate')
+    kquant_path = os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
+    if kquant_path:
+        report['native_kquant_library'] = dict(path=kquant_path,sha256=hashlib.sha256(Path(kquant_path).read_bytes()).hexdigest())
     library = os.environ.get('DLLM_Q4_CUDA_LIBRARY')
     if library:
         report['native_q4_library'] = dict(path=library, sha256=hashlib.sha256(Path(library).read_bytes()).hexdigest())

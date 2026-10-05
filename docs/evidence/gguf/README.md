@@ -1220,3 +1220,52 @@ is prepared for separate measurement; bounded idle-group admission is tracked in
 
 The complete local suite passes 306 tests, including four deterministic FIFO,
 cancellation, deadline and wakeup checks for the isolated #47 admission wrapper.
+
+
+### Published TinyLlama positional SentencePiece
+
+The unchanged publisher file `TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF`, revision
+`52e7645ba7c309695bec7ac98f4f005b139cf465`, file
+`tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf`, has SHA256
+`9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0`
+and 668,788,096 bytes. Its ordinary token scores are all zero. The previous
+static-rank adapter correctly rejected it: resolving equal scores by token
+rank changes the file's native positional merge behavior.
+
+`PositionalSentencePieceTokenizer` now reconstructs an identity-normalized BPE
+model from GGUF metadata and uses the standalone native C++ SentencePiece
+library for score ties. Explicit special-token partitioning and prefix policy
+preserve GGUF semantics; Rust handles vocabulary lookup and byte decoding.
+Serialized state retains the native model, including through checkpoint load.
+The optional GGUF extra includes SentencePiece 0.2.2 and protobuf; no external
+inference engine or original tokenizer sidecar is used. Arbitrary normalizers,
+Unigram, positional unused-token semantics and structured-output integration
+remain outside the qualified scope and fail explicitly.
+
+`tinyllama-q4-k-m-tokenizer-reference.json` passes the existing expanded corpus:
+512 encodings, 1,024 full decodings and 512 generated continuations. A second
+seed-9167 adversarial corpus (`tinyllama-positional-requests.jsonl`) combines
+overlapping ordinary pieces, explicit controls, repeated whitespace, Unicode,
+combining marks and NUL. Its captured native oracle and
+`tinyllama-positional-reference.json` pass another 1,536 encodings, 3,072 full
+decodings and 1,536 continuations. Both verify serialization round trips against
+the unchanged pinned llama.cpp public vocabulary API. These checks follow the
+published GGUF scores, not the original HF tokenizer's different scores.
+
+Initial independent model accuracy passes all 64 checks in
+`tinyllama-q4-k-m-reference-a2.json`: maximum absolute error 0.04296875,
+relative RMS 0.32765%, exact greedy agreement. Independent dequantization uses
+`gguf.quants`, with HF eager Llama execution configured from
+`TinyLlama/TinyLlama-1.1B-Chat-v1.0` revision
+`fe8a4ea1ffedaf415f4da2f062534de366a451e6`. The file contains 135 Q4_K,
+21 Q6_K and 45 F32 tensors, with 22 layers, hidden width 2048, intermediate
+width 5632, 32 query heads and 4 KV heads. Testing uses the A2, mixed FP16
+matrix/FP32 residual precision, native K-quant decode and context 512.
+Extended accuracy, execution layouts and serving are separate qualification
+steps. The local suite passes 307 tests.
+
+The distinct single-dot prefill sweep in `q4-prefill-single-dot-a2.json` is
+rejected for performance: even its fastest passing large-matrix tiles are
+roughly 5–7 times slower than production expansion plus dense GEMM. Tile
+compilation failures remain in the report. No prefill dispatch changes follow
+from this experiment.

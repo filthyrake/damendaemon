@@ -1,0 +1,969 @@
+{
+  "kernel": "single-dot",
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "cases": [
+    {
+      "outputs": 6144,
+      "width": 4096,
+      "rows": 129,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00022884224017616361,
+          "max_absolute": 0.00390625,
+          "registers": 168,
+          "spills": 2,
+          "passed": true,
+          "ms": 15.265371322631836
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00022884224017616361,
+          "max_absolute": 0.00390625,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 9.951502799987793
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00022884224017616361,
+          "max_absolute": 0.00390625,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 7.216367244720459
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00022884224017616361,
+          "max_absolute": 0.00390625,
+          "registers": 174,
+          "spills": 0,
+          "passed": true,
+          "ms": 9.966814041137695
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 1.2452375888824463
+    },
+    {
+      "outputs": 6144,
+      "width": 4096,
+      "rows": 258,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 27.673486709594727
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 16.55109214782715
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 10.433199882507324
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 174,
+          "spills": 0,
+          "passed": true,
+          "ms": 15.989832878112793
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 1.6464742422103882
+    },
+    {
+      "outputs": 6144,
+      "width": 4096,
+      "rows": 400,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 39.788570404052734
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 23.45111656188965
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 14.065104484558105
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 174,
+          "spills": 0,
+          "passed": true,
+          "ms": 22.64145278930664
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 1.9052406549453735
+    },
+    {
+      "outputs": 4096,
+      "width": 4096,
+      "rows": 129,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00022858005831949413,
+          "max_absolute": 0.00390625,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 10.175283432006836
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00022858005831949413,
+          "max_absolute": 0.00390625,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 6.838259696960449
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00022858005831949413,
+          "max_absolute": 0.00390625,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 4.694746971130371
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00022858005831949413,
+          "max_absolute": 0.00390625,
+          "registers": 173,
+          "spills": 0,
+          "passed": true,
+          "ms": 6.643630027770996
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 0.8554248809814453
+    },
+    {
+      "outputs": 4096,
+      "width": 4096,
+      "rows": 258,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 18.460033416748047
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 11.040146827697754
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 7.197682857513428
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 173,
+          "spills": 0,
+          "passed": true,
+          "ms": 10.661897659301758
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 1.1136705875396729
+    },
+    {
+      "outputs": 4096,
+      "width": 4096,
+      "rows": 400,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 26.740924835205078
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 15.517346382141113
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 9.38351821899414
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 173,
+          "spills": 0,
+          "passed": true,
+          "ms": 15.312289237976074
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 1.2757458686828613
+    },
+    {
+      "outputs": 28672,
+      "width": 4096,
+      "rows": 129,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00022850907407701015,
+          "max_absolute": 0.00390625,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 71.17668151855469
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00022850907407701015,
+          "max_absolute": 0.00390625,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 46.20182800292969
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00022850907407701015,
+          "max_absolute": 0.00390625,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 32.477134704589844
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00022850907407701015,
+          "max_absolute": 0.00390625,
+          "registers": 174,
+          "spills": 0,
+          "passed": true,
+          "ms": 45.12544250488281
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 5.727236747741699
+    },
+    {
+      "outputs": 28672,
+      "width": 4096,
+      "rows": 258,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 128.4925079345703
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 77.2682113647461
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 48.557769775390625
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 174,
+          "spills": 0,
+          "passed": true,
+          "ms": 74.59547424316406
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 7.257991790771484
+    },
+    {
+      "outputs": 28672,
+      "width": 4096,
+      "rows": 400,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 185.36997985839844
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 108.26374816894531
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 64.91449737548828
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 174,
+          "spills": 0,
+          "passed": true,
+          "ms": 104.5295639038086
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 8.925394058227539
+    },
+    {
+      "outputs": 4096,
+      "width": 14336,
+      "rows": 129,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0003825696185231209,
+          "max_absolute": 0.0078125,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 35.73747634887695
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0003825696185231209,
+          "max_absolute": 0.0078125,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 23.929534912109375
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0003825696185231209,
+          "max_absolute": 0.0078125,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 16.294153213500977
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0003825696185231209,
+          "max_absolute": 0.0078125,
+          "registers": 173,
+          "spills": 0,
+          "passed": true,
+          "ms": 23.247100830078125
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 2.738311767578125
+    },
+    {
+      "outputs": 4096,
+      "width": 14336,
+      "rows": 258,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00038391759153455496,
+          "max_absolute": 0.0078125,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 64.71095275878906
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00038391759153455496,
+          "max_absolute": 0.0078125,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 38.35114288330078
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00038391759153455496,
+          "max_absolute": 0.0078125,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 25.055049896240234
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00038391759153455496,
+          "max_absolute": 0.0078125,
+          "registers": 173,
+          "spills": 0,
+          "passed": true,
+          "ms": 37.21845245361328
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 3.689551830291748
+    },
+    {
+      "outputs": 4096,
+      "width": 14336,
+      "rows": 400,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 93.74039459228516
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 178,
+          "spills": 0,
+          "passed": true,
+          "ms": 54.0616340637207
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 180,
+          "spills": 0,
+          "passed": true,
+          "ms": 32.60725402832031
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "registers": 173,
+          "spills": 0,
+          "passed": true,
+          "ms": 53.4559211730957
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 4.3896403312683105
+    },
+    {
+      "outputs": 113,
+      "width": 4096,
+      "rows": 129,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0004119319492019713,
+          "max_absolute": 0.0078125,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.3289787471294403
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0004119319492019713,
+          "max_absolute": 0.0078125,
+          "registers": 237,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.3479842245578766
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0004119319492019713,
+          "max_absolute": 0.0078125,
+          "registers": 255,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.36921316385269165
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0004119319492019713,
+          "max_absolute": 0.0078125,
+          "registers": 236,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.6373375058174133
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 0.06575091183185577
+    },
+    {
+      "outputs": 113,
+      "width": 4096,
+      "rows": 258,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00045217445585876703,
+          "max_absolute": 0.00390625,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.6068128347396851
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.00045217445585876703,
+          "max_absolute": 0.00390625,
+          "registers": 237,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.34883570671081543
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00045217445585876703,
+          "max_absolute": 0.00390625,
+          "registers": 255,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.369742751121521
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.00045217445585876703,
+          "max_absolute": 0.00390625,
+          "registers": 236,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.6380100846290588
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 0.1206764355301857
+    },
+    {
+      "outputs": 113,
+      "width": 4096,
+      "rows": 400,
+      "candidates": [
+        {
+          "bm": 32,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0003730328462552279,
+          "max_absolute": 0.00390625,
+          "registers": 168,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.893631637096405
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 128,
+          "warps": 4,
+          "relative_rms": 0.0003730328462552279,
+          "max_absolute": 0.00390625,
+          "registers": 237,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.6577380895614624
+        },
+        {
+          "bm": 128,
+          "bn": 64,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0003730328462552279,
+          "max_absolute": 0.00390625,
+          "registers": 255,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.3711172044277191
+        },
+        {
+          "bm": 64,
+          "bn": 128,
+          "bk": 128,
+          "warps": 8,
+          "relative_rms": 0.0003730328462552279,
+          "max_absolute": 0.00390625,
+          "registers": 236,
+          "spills": 0,
+          "passed": true,
+          "ms": 0.6399239301681519
+        },
+        {
+          "bm": 64,
+          "bn": 64,
+          "bk": 256,
+          "warps": 4,
+          "passed": false,
+          "error": "OutOfResources(131072, 101376, 'shared memory')"
+        }
+      ],
+      "production_ms": 0.13594688475131989
+    }
+  ],
+  "scope": "synthetic Q4 prefill; existing FP16 coefficient policy; no production dispatch changes",
+  "passed": false
+}

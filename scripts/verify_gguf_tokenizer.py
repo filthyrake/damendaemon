@@ -10,6 +10,7 @@ import time
 from urllib.request import Request, urlopen
 
 from tokenizers import Tokenizer
+from dllm.gguf_sentencepiece import restore_tokenizer
 from dllm.gguf_model import plan
 
 
@@ -29,7 +30,7 @@ CASES = [
 def main():
     p = argparse.ArgumentParser(); p.add_argument('gguf'); p.add_argument('--llama-server', required=True)
     p.add_argument('--hf-tokenizer'); args = p.parse_args()
-    source = plan(args.gguf); tokenizer = Tokenizer.from_str(source.tokenizer_json)
+    source = plan(args.gguf); tokenizer = restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
     hf = Tokenizer.from_file(args.hf_tokenizer) if args.hf_tokenizer else None
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]

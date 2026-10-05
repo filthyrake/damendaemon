@@ -4,10 +4,9 @@ import hashlib
 import json
 from pathlib import Path
 
-from tokenizers import Tokenizer
+from dllm.gguf_sentencepiece import restore_tokenizer
 from dllm.gguf_model import tokenizer
 from gguf import GGUFReader
-from dllm.gguf_sentencepiece import SentencePieceTokenizer
 
 
 def digest(path):
@@ -25,8 +24,8 @@ def main():
     args = parser.parse_args()
     metadata = {key: value.contents() for key, value in GGUFReader(args.model).fields.items()}
     runtime, _, _ = tokenizer(metadata)
-    serialized = Tokenizer.from_str(runtime.to_str())
-    restored = SentencePieceTokenizer(serialized) if metadata.get('tokenizer.ggml.model') == 'llama' and metadata.get('tokenizer.ggml.add_space_prefix', True) else serialized
+    serialized = getattr(runtime, "backend_tokenizer", runtime)
+    restored = restore_tokenizer(runtime.to_str(), metadata.get('tokenizer.ggml.model') == 'llama' and metadata.get('tokenizer.ggml.add_space_prefix', True))
     requests = [json.loads(line) for line in Path(args.requests).read_text().splitlines()]
     references = [json.loads(line) for line in Path(args.reference).read_text().splitlines()]
     if len(requests) != len(references):raise ValueError('request/reference count mismatch')

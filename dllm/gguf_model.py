@@ -91,11 +91,12 @@ def bpe_tokenizer(metadata):
 
 def tokenizer(metadata):
     sentencepiece = metadata.get('tokenizer.ggml.model') == 'llama'
+    native = None
     if sentencepiece:
         if metadata.get('general.architecture') != 'llama':
             raise ValueError('GGUF SentencePiece currently requires the llama architecture')
         from .gguf_sentencepiece import build
-        result, tokens, types, vocab, llama = build(metadata)
+        result, tokens, types, vocab, llama, native = build(metadata)
     else:
         result, tokens, types, vocab, llama = bpe_tokenizer(metadata)
     for i, (text, kind) in enumerate(zip(tokens, types)):
@@ -133,7 +134,10 @@ def tokenizer(metadata):
             added.append((text, vocab[text]))
     if added:
         result.post_processor = processors.TemplateProcessing(single=prefix + ['$A'] + suffix, special_tokens=added)
-    if sentencepiece and metadata.get('tokenizer.ggml.add_space_prefix', True):
+    if native is not None:
+        from .gguf_sentencepiece import PositionalSentencePieceTokenizer
+        result = PositionalSentencePieceTokenizer(result, native, metadata.get('tokenizer.ggml.add_space_prefix', True))
+    elif sentencepiece and metadata.get('tokenizer.ggml.add_space_prefix', True):
         from .gguf_sentencepiece import SentencePieceTokenizer
         result = SentencePieceTokenizer(result)
     return result, special, frozenset(eos)
@@ -303,10 +307,8 @@ class GgufWeights(ModelWeights):
         if not 1 <= max_context <= self.config['max_position_embeddings']:
             raise ValueError('context exceeds model position limit')
         self.max_context = max_context
-        tokenizer = Tokenizer.from_str(source.tokenizer_json)
-        if source.sentencepiece_prefix:
-            from .gguf_sentencepiece import SentencePieceTokenizer
-            tokenizer = SentencePieceTokenizer(tokenizer)
+        from .gguf_sentencepiece import restore_tokenizer
+        tokenizer = restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
         self.configure_tokenizer(tokenizer, source.template, source.special_tokens)
         self.eos = set(source.eos)
         weights, scales = {}, {}

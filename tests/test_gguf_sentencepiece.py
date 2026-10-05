@@ -94,7 +94,7 @@ class SentencePieceGgufTests(unittest.TestCase):
             writer.add_tokenizer_model('llama')
             writer.add_token_list(source['tokenizer.ggml.tokens'])
             writer.add_token_types(source['tokenizer.ggml.token_type'])
-            writer.add_token_scores(source['tokenizer.ggml.scores'])
+            writer.add_token_scores([0.] * len(source['tokenizer.ggml.scores']))
             writer.add_bos_token_id(1); writer.add_eos_token_id(2); writer.add_unk_token_id(0)
             writer.add_chat_template("{{ bos_token }}{{ messages[0]['content'] }}")
             config = dict(model_type='llama', hidden_size=32, intermediate_size=64,
@@ -109,12 +109,39 @@ class SentencePieceGgufTests(unittest.TestCase):
             self.assertEqual(model.tokenizer.decode([1, 264]), ' ab')
             self.assertEqual(model.chat_tokens([{'role': 'user', 'content': 'ab'}]), [1, 264])
 
+    def test_positional_ties_roundtrip_and_special_boundaries(self):
+        from dllm.gguf_sentencepiece import restore_tokenizer
+        source = metadata()
+        source['tokenizer.ggml.tokens'] += ['c', 'bc']
+        source['tokenizer.ggml.token_type'] += [1, 1]
+        source['tokenizer.ggml.scores'] += [-10., -3.]
+        result, _, _ = tokenizer(source)
+        restored = restore_tokenizer(result.to_str())
+        for candidate in (result, restored):
+            # ab and bc have equal scores: earliest text position wins.
+            self.assertEqual(candidate.encode('abc').ids, [1, 264, 266])
+            self.assertEqual(candidate.encode('bcab', add_special_tokens=False).ids, [259, 267, 262])
+            self.assertEqual(candidate.encode('abc</s>abc').ids, [1, 264, 266, 2, 264, 266])
+            self.assertEqual(candidate.encode('').ids, [1])
+            self.assertEqual(candidate.encode('', add_special_tokens=False).ids, [])
+            self.assertEqual(candidate.decode_generated([264, 266]), ' abc')
+            for text in ('  abc ', 'café 👋', 'a\x00b'):
+                self.assertEqual(candidate.decode(candidate.encode(text, add_special_tokens=False).ids), text)
+        self.assertEqual(result.decode(result.encode('<user>abc', add_special_tokens=False).ids), '<user> abc')
+        from dllm.structured import Constraint
+        with self.assertRaisesRegex(ValueError, 'positional SentencePiece'):
+            Constraint(SimpleNamespace(tokenizer=result), '{}')
+        source['tokenizer.ggml.add_space_prefix'] = False
+        source['tokenizer.ggml.add_bos_token'] = False
+        source['tokenizer.ggml.add_eos_token'] = True
+        result, _, _ = tokenizer(source)
+        self.assertEqual(restore_tokenizer(result.to_str()).encode('abc').ids, [262, 266, 2])
+
     def test_invalid_vocab_and_unsupported_normalization_are_rejected(self):
         mutations = [
             lambda m: m.pop('tokenizer.ggml.scores'),
             lambda m: m['tokenizer.ggml.scores'].append(0.),
             lambda m: m['tokenizer.ggml.scores'].__setitem__(260, math.nan),
-            lambda m: m['tokenizer.ggml.scores'].__setitem__(263, -3.),
             lambda m: m['tokenizer.ggml.tokens'].__setitem__(260, 'b'),
             lambda m: m['tokenizer.ggml.token_type'].__setitem__(3, 1),
             lambda m: m.update({'tokenizer.ggml.unknown_token_id': 1}),

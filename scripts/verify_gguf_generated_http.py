@@ -15,10 +15,9 @@ import time
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-from tokenizers import Tokenizer
+from dllm.gguf_sentencepiece import restore_tokenizer
 from dllm.bench import events
 from dllm.gguf_model import plan
-from dllm.gguf_sentencepiece import SentencePieceTokenizer
 
 
 def main():
@@ -29,8 +28,7 @@ def main():
         raise ValueError('requires passing same-checkpoint independent token trace')
     with Path(args.model).open('rb') as stream:checksum=hashlib.file_digest(stream,'sha256').hexdigest()
     if checksum!=reference['sha256']:raise ValueError('model differs from reference')
-    source=plan(args.model);tokenizer=Tokenizer.from_str(source.tokenizer_json)
-    if source.sentencepiece_prefix:tokenizer=SentencePieceTokenizer(tokenizer)
+    source=plan(args.model);tokenizer=restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
     decode=getattr(tokenizer,'decode_generated',tokenizer.decode)
     output=Path(args.output);report=dict(passed=False,model_sha256=checksum,cases=[],
         reference=args.reference,benchmark=args.benchmark,scope='normal HTTP continuation decoding against independently qualified token traces')

@@ -15,6 +15,7 @@ from urllib.error import URLError
 from urllib.request import Request,urlopen
 
 from tokenizers import Tokenizer
+from dllm.gguf_sentencepiece import restore_tokenizer
 from dllm.bench import events,llama_context
 from dllm.gguf_model import plan
 
@@ -61,7 +62,7 @@ def main():
     residual=Path(residual_argument).resolve() if residual_argument else None
     swap_model=Path(args.swap_model).resolve() if args.swap_model else model
     output=Path(args.output)
-    tokenizer=Tokenizer.from_str(plan(model).tokenizer_json)
+    source=plan(model);tokenizer=restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
     base_tokens=tokenizer.encode('Binary search repeatedly halves a sorted range. A detailed explanation follows: ',
                                 add_special_tokens=True).ids
     prompts={length:(base_tokens*((length+len(base_tokens)-1)//len(base_tokens)))[:length] for length in (16,129,400)}

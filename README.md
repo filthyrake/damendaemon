@@ -885,8 +885,12 @@ Llama-style identity-normalized SentencePiece BPE is also accepted for the
 chat template need no HF sidecar files. Mistral's pinned original tokenizer
 passes native llama.cpp encoding/decoding checks. A vocabulary-corrected Mistral
 7B Q4 comparator passes independent full-logit and runtime-layout checks on A2
-at 512 context; broader qualification remains in issue #46. Placeholder/tied non-whitespace merge scores,
-Unigram and custom normalization are rejected explicitly.
+at 512 context. Tied merge scores use native C++ SentencePiece, reconstructed
+from the embedded vocabulary without an HF sidecar. The published TinyLlama
+1.1B Chat Q4_K_M passes independent tokenizer and initial 512-context model
+checks; broader qualification remains in issue #46. Structured output on the
+positional tokenizer, unused tokens on that path, Unigram and custom
+normalization are rejected explicitly.
 
 The embedded Qwen2 BPE tokenizer and chat template need no HF sidecar files.
 GGUF tokenization follows llama.cpp's Qwen2 behavior, including preserving

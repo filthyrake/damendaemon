@@ -103,6 +103,8 @@ def prepare_options(response_format, stops, thinking, ignore_eos=False):
 
 class Constraint:
     def __init__(self, model, schema):
+        if hasattr(model.tokenizer, "native_model"):
+            raise ValueError("structured output is not yet qualified for positional SentencePiece GGUF tokenizers")
         try:
             import xgrammar as xgr
             from transformers import PreTrainedTokenizerFast

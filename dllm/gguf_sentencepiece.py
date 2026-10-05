@@ -6,12 +6,16 @@
 """Reconstruct Llama-style SentencePiece BPE from standalone GGUF metadata.
 
 Score-ordered merge reconstruction follows the approach in Apache-2.0
-Transformers convert_slow_tokenizer.generate_merges; runtime uses tokenizers
-only. GGUF whitespace/special-token behavior is checked against llama.cpp's
+Transformers convert_slow_tokenizer.generate_merges. Runtime uses Rust tokenizers
+for unique scores and native C++ SentencePiece for positional score ties. GGUF whitespace/special-token behavior is checked against llama.cpp's
 MIT-licensed llm_tokenizer_spm_session, pin 836d57176dc699a726c55418e4f96b8ca628e1bf.
 This supports the Llama SPM BPE convention, not arbitrary SentencePiece models.
 """
+import base64
+import json
 import math
+import re
+from types import SimpleNamespace
 
 from tokenizers import Tokenizer, decoders, models, normalizers
 
@@ -51,6 +55,7 @@ def build(metadata):
     # then score and split lengths, preserves the established conversion order.
     merges = []
     scored_pieces = {}
+    positional = False
     for text, score, kind in zip(tokens, scores, types):
         if kind != 1:
             continue
@@ -59,7 +64,7 @@ def build(metadata):
         if splits:
             previous = scored_pieces.get(score)
             if previous is not None and not (set(previous) == {'▁'} and set(text) == {'▁'}):
-                raise ValueError('GGUF SentencePiece tied merge scores require positional BPE support')
+                positional = True
             scored_pieces[score] = text
         splits.sort(key=lambda pair: (vocab[pair[0]], vocab[pair[1]]))
         merges.extend((left, right, score) for left, right in splits)
@@ -73,7 +78,8 @@ def build(metadata):
     if prefix:
         decoding.append(decoders.Strip(' ', 1, 0))
     result.decoder = decoders.Sequence(decoding)
-    return result, tokens, types, vocab, True
+    native = native_model(tokens, types, scores, unknown) if positional else None
+    return result, tokens, types, vocab, True, native
 
 
 class SentencePieceTokenizer:
@@ -108,3 +114,94 @@ class SentencePieceTokenizer:
 
     def decode_batch(self, sequences, skip_special_tokens=True):
         return [self.decode(ids, skip_special_tokens=skip_special_tokens) for ids in sequences]
+
+
+def native_model(tokens, types, scores, unknown):
+    """Build an identity-normalized BPE model for native positional score ties."""
+    try:
+        from sentencepiece import sentencepiece_model_pb2 as proto
+    except ImportError as error:
+        raise ValueError('GGUF tied SentencePiece scores require dllm[gguf] native tokenizer dependencies') from error
+    if 5 in types:
+        raise ValueError("positional SentencePiece with unused tokens is not yet supported")
+    model = proto.ModelProto()
+    model.trainer_spec.model_type = proto.TrainerSpec.BPE
+    model.trainer_spec.vocab_size = len(tokens)
+    model.trainer_spec.byte_fallback = True
+    model.trainer_spec.unk_id = unknown
+    model.trainer_spec.unk_piece = tokens[unknown]
+    # These tokens are added explicitly using the GGUF postprocessor policy.
+    model.trainer_spec.bos_id = -1
+    model.trainer_spec.eos_id = -1
+    model.trainer_spec.pad_id = -1
+    model.normalizer_spec.name = 'identity'
+    model.normalizer_spec.add_dummy_prefix = False
+    model.normalizer_spec.remove_extra_whitespaces = False
+    model.normalizer_spec.escape_whitespaces = False
+    for index, (text, kind, score) in enumerate(zip(tokens, types, scores)):
+        piece = model.pieces.add()
+        piece.piece, piece.score = text, score
+        piece.type = proto.ModelProto.SentencePiece.UNKNOWN if index == unknown else kind
+    return model.SerializeToString()
+
+
+class PositionalSentencePieceTokenizer(SentencePieceTokenizer):
+    """Native C++ score BPE, with explicit GGUF special-token boundaries.
+
+    Rust retains ID lookup and byte decoding. Its static-rank encoder is never
+    used for prompts on this path; serialized state preserves the native model.
+    """
+    def __init__(self, backend, model, prefix=True):
+        super().__init__(backend)
+        try:
+            from sentencepiece import SentencePieceProcessor
+        except ImportError as error:
+            raise ValueError('GGUF tied SentencePiece scores require dllm[gguf] native tokenizer dependencies') from error
+        self.native_model = model
+        self.space_prefix = prefix
+        self._processor = SentencePieceProcessor(model_proto=model)
+        self._pieces = {token.content: index for index, token in backend.get_added_tokens_decoder().items()}
+        self._partition = re.compile('(' + '|'.join(re.escape(text) for text in sorted(self._pieces, key=len, reverse=True)) + ')')
+        policy = json.loads(backend.to_str()).get('post_processor')
+        self._prefix, self._suffix = [], []
+        if policy:
+            target = self._prefix
+            for entry in policy['single']:
+                if 'Sequence' in entry:
+                    target = self._suffix
+                else:
+                    target.extend(policy['special_tokens'][entry['SpecialToken']['id']]['ids'])
+
+    def encode(self, text, add_special_tokens=True):
+        if not isinstance(text, str):
+            raise TypeError('GGUF tokenizer input must be text')
+        ids = list(self._prefix) if add_special_tokens else []
+        for fragment in self._partition.split(text):
+            if not fragment:
+                continue
+            if fragment in self._pieces:
+                ids.append(self._pieces[fragment])
+            else:
+                normalized = ('▁' if self.space_prefix else '') + fragment.replace(' ', '▁')
+                ids.extend(self._processor.encode(normalized, out_type=int))
+        if add_special_tokens:
+            ids.extend(self._suffix)
+        return SimpleNamespace(ids=ids)
+
+    def encode_batch(self, sequences, add_special_tokens=True):
+        return [self.encode(text, add_special_tokens=add_special_tokens) for text in sequences]
+
+    def to_str(self, pretty=False):
+        return json.dumps(dict(dllm_sentencepiece=1, backend=self.backend_tokenizer.to_str(),
+            model=base64.b64encode(self.native_model).decode('ascii'), prefix=self.space_prefix),
+            indent=2 if pretty else None)
+
+
+def restore_tokenizer(serialized, prefix=False):
+    """Restore both static-rank and native positional GGUF tokenizer state."""
+    state = json.loads(serialized)
+    if state.get('dllm_sentencepiece') == 1:
+        return PositionalSentencePieceTokenizer(Tokenizer.from_str(state['backend']),
+            base64.b64decode(state['model'], validate=True), state['prefix'])
+    backend = Tokenizer.from_str(serialized)
+    return SentencePieceTokenizer(backend) if prefix else backend
