@@ -51,5 +51,36 @@ class BatchWaitExperimentTests(unittest.TestCase):
         runtime.condition.wait.assert_called_once()
         self.assertEqual(list(runtime.pending),[finished,cancelled,incoming])
 
+    def test_real_condition_wakes_for_arrival_cancellation_and_shutdown(self):
+        class ObservedCondition(threading.Condition):
+            def wait(self, timeout=None):
+                waiting.set()
+                return super().wait(timeout)
+
+        for action in ('arrival', 'barrier', 'cancel', 'close'):
+            with self.subTest(action=action):
+                waiting=threading.Event()
+                first=request()
+                runtime=self.runtime()
+                runtime.condition=ObservedCondition()
+                incoming=request('b' if action=='barrier' else 'a')
+                worker=threading.Thread(target=wait_for_batch,args=(runtime,first,10))
+                worker.start()
+                try:
+                    self.assertTrue(waiting.wait(timeout=2))
+                    with runtime.condition:
+                        if action in ('arrival','barrier'):runtime.pending.append(incoming)
+                        elif action=='cancel':first.cancelled.set()
+                        else:runtime.closed=True
+                        runtime.condition.notify_all()
+                    worker.join(timeout=2)
+                    self.assertFalse(worker.is_alive(), 'notification did not release admission wait')
+                    self.assertEqual(list(runtime.pending),[incoming] if action in ('arrival','barrier') else [])
+                finally:
+                    with runtime.condition:
+                        runtime.closed=True
+                        runtime.condition.notify_all()
+                    worker.join(timeout=2)
+
 
 if __name__=='__main__':unittest.main()

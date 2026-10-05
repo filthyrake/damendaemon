@@ -34,6 +34,7 @@ def main():
     comparison.add_argument('--residual-library',help='compare production with the isolated residual-int8 candidate')
     comparison.add_argument('--residual-f32-library',help='compare ordinary packed FP32 with the isolated FP32 candidate')
     parser.add_argument('--production-q4-residual',action='store_true',help='exercise normal per-model Q4 integer-dot selection')
+    parser.add_argument('--production-residual',action='store_true',help='exercise normal per-model FP16 K-quant residual selection')
     parser.add_argument('--production-prefill-f32',action='store_true',help='exercise normal per-executor compensated prefill selection')
     parser.add_argument('--prefill-f32',action='store_true',help='compare production FP32 residual decode with experimental compensated prefill')
     parser.add_argument('--production-residual-f32',action='store_true',help='exercise normal CLI per-executor FP32 selection')
@@ -50,6 +51,7 @@ def main():
         parser.error('--native-format q4 requires a Q4 engine, kernel or admission comparison')
     if args.q4_residual_library and args.native_format!='q4':parser.error('Q4 candidate requires --native-format q4')
     if args.production_q4_residual and not args.q4_residual_library:parser.error('--production-q4-residual requires --q4-residual-library')
+    if args.production_residual and not args.residual_library:parser.error('--production-residual requires --residual-library')
     if args.production_prefill_f32:args.prefill_f32=True
     if args.prefill_f32:args.production_residual_f32=True
     if args.production_residual_f32 and not args.residual_f32_library:
@@ -104,6 +106,9 @@ def main():
         DLLM_QWEN3_PRECISION='float32' if precision=='float32' else 'standard',
         DLLM_SPECULATIVE_TOKENS='0',DLLM_QUANTIZATION='none',OMP_NUM_THREADS='4')
     production_residual=os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
+    if args.production_residual:
+        environment.pop('DLLM_KQUANT_RESIDUAL_LIBRARY',None)
+        production_residual=None
     if production_residual:
         report['production_residual_library']=dict(path=production_residual,sha256=digest(production_residual))
     report['experimental_batch2_q6']=bool(args.residual_library and os.environ.get('DLLM_EXPERIMENTAL_RESIDUAL_BATCH2')=='1')
@@ -128,6 +133,8 @@ def main():
             phase_environment=environment.copy()
             if args.batch_wait_ms and engine==counterpart:
                 phase_environment['DLLM_EXPERIMENTAL_BATCH_WAIT_MS']=str(args.batch_wait_ms)
+            if args.production_residual and engine==counterpart:
+                phase_environment['DLLM_KQUANT_RESIDUAL_LIBRARY']=str(residual)
             if args.q4_residual_library and engine==counterpart:
                 phase_environment['DLLM_Q4_RESIDUAL_LIBRARY' if args.production_q4_residual else 'DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY']=str(residual)
             if args.production_residual_f32 and engine==counterpart:
@@ -141,7 +148,7 @@ def main():
                         'residual-int8-v2':'scripts.experiments.serve_residual',
                         'residual-int8-fp32':'scripts.experiments.serve_residual_f32'}.get(engine,
                         'scripts.experiments.serve_float32' if precision=='float32' else 'dllm')
-                if args.production_q4_residual:module='dllm'
+                if args.production_q4_residual or args.production_residual:module='dllm'
                 if args.production_residual_f32 and (args.production_prefill_f32 or not (args.prefill_f32 and engine==counterpart)):module='dllm'
                 command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
                     '--context','512','--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
@@ -221,6 +228,8 @@ def main():
                         run['kernel_backend']=restored['dllm_timing']['kernel_backend']
                         if args.production_q4_residual:
                             assert ('+cuda-q4-residual' in run['kernel_backend']) == (engine==counterpart)
+                        if args.production_residual:
+                            assert ('+cuda-kquant-residual' in run['kernel_backend']) == (engine==counterpart)
                         if args.production_prefill_f32:
                             assert ('compensated-kquant-prefill-f32' in run['kernel_backend']) == (engine==counterpart)
                         checks['host_restore']=True
