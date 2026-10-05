@@ -29,11 +29,15 @@ def main():
     comparison.add_argument('--llama-server')
     comparison.add_argument('--residual-library',help='compare production with the isolated residual-int8 candidate')
     comparison.add_argument('--residual-f32-library',help='compare ordinary packed FP32 with the isolated FP32 candidate')
+    parser.add_argument('--production-prefill-f32',action='store_true',help='exercise normal per-executor compensated prefill selection')
+    parser.add_argument('--prefill-f32',action='store_true',help='compare production FP32 residual decode with experimental compensated prefill')
     parser.add_argument('--production-residual-f32',action='store_true',help='exercise normal CLI per-executor FP32 selection')
     parser.add_argument('--lifecycle',action='store_true',help='also check dllm cancellation, swapping and reloads after timing')
     parser.add_argument('--native-library',required=True);parser.add_argument('--output',required=True)
     args=parser.parse_args()
     if args.lifecycle and args.llama_server:parser.error('--lifecycle requires a dllm candidate comparison')
+    if args.production_prefill_f32:args.prefill_f32=True
+    if args.prefill_f32:args.production_residual_f32=True
     if args.production_residual_f32 and not args.residual_f32_library:
         parser.error('--production-residual-f32 requires --residual-f32-library')
     precision='float32' if args.residual_f32_library else 'mixed'
@@ -58,8 +62,15 @@ def main():
         dllm_precision='FP32 matrices, residual/nonlinear and KV' if precision=='float32' else 'mixed: FP16 matrices, FP32 residual/nonlinear',output_tokens=16,
         prompts=prompts,warmup_rounds=3,measured_rounds=6,runs=[])
     report['production_residual_f32']=args.production_residual_f32
+    report['experimental_prefill_f32']=args.prefill_f32 and not args.production_prefill_f32
+    report['production_prefill_f32']=args.production_prefill_f32
+    if args.prefill_f32:
+        report['experimental_arithmetic']='FP32 prefill rows >=128; scaled high/low FP16 operands, three products; same production residual decode in both engines'
+        report['prefill_source_sha256']=digest(Path(__file__).parent/'experiments/kquant_prefill_f32.py')
+        report['prefill_kernel_sha256']=digest(Path(__file__).resolve().parents[1]/'dllm/kquant_prefill_kernels.py')
     environment=os.environ.copy()
     environment.pop('DLLM_KQUANT_RESIDUAL_F32_LIBRARY',None)
+    environment.pop('DLLM_KQUANT_PREFILL_F32',None)
     environment.update(DLLM_DEVICE='cuda',DLLM_KQUANT_CUDA_LIBRARY=str(library),DLLM_LLAMA_PRECISION=precision,
         DLLM_QWEN3_PRECISION='float32' if precision=='float32' else 'standard',
         DLLM_SPECULATIVE_TOKENS='0',DLLM_QUANTIZATION='none',OMP_NUM_THREADS='4')
@@ -74,6 +85,9 @@ def main():
         variable='DLLM_EXPERIMENTAL_RESIDUAL_F32_LIBRARY' if precision=='float32' else 'DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY'
         environment[variable]=str(residual)
     if precision=='float32':environment['NVIDIA_TF32_OVERRIDE']='0'
+    if args.prefill_f32:
+        counterpart='compensated-prefill-fp32'
+        environment['DLLM_KQUANT_RESIDUAL_F32_LIBRARY']=str(residual)
     try:
         for phase,engine in enumerate(('dllm',counterpart,counterpart,'dllm')):
             with socket.socket() as reservation:
@@ -83,11 +97,14 @@ def main():
             phase_environment=environment.copy()
             if args.production_residual_f32 and engine==counterpart:
                 phase_environment['DLLM_KQUANT_RESIDUAL_F32_LIBRARY']=str(residual)
+            if args.production_prefill_f32 and engine==counterpart:
+                phase_environment['DLLM_KQUANT_PREFILL_F32']='1'
             if engine!='llama.cpp':
-                module={'residual-int8-v2':'scripts.experiments.serve_residual',
+                module={'compensated-prefill-fp32':'scripts.experiments.serve_prefill_f32',
+                        'residual-int8-v2':'scripts.experiments.serve_residual',
                         'residual-int8-fp32':'scripts.experiments.serve_residual_f32'}.get(engine,
                         'scripts.experiments.serve_float32' if precision=='float32' else 'dllm')
-                if args.production_residual_f32:module='dllm'
+                if args.production_residual_f32 and (args.production_prefill_f32 or not (args.prefill_f32 and engine==counterpart)):module='dllm'
                 command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
                     '--context','512','--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
                     '--prefill-chunk-size','0','--prefix-cache-tokens','0']
@@ -163,6 +180,9 @@ def main():
                         json_post('/v1/models/unload',dict(model='a'))
                         restored=json_post('/v1/completions',body)
                         assert restored['dllm_timing']['source_tier']=='host' and restored['choices'][0]['text']==expected
+                        run['kernel_backend']=restored['dllm_timing']['kernel_backend']
+                        if args.production_prefill_f32:
+                            assert ('compensated-kquant-prefill-f32' in run['kernel_backend']) == (engine==counterpart)
                         checks['host_restore']=True
                         json_post('/v1/models/register',dict(model='b',path=str(model),quantization='none'))
                         other=json_post('/v1/completions',{**body,'model':'b'})

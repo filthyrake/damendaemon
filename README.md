@@ -531,6 +531,20 @@ cover 512. Q4 A2 server measurements show 1.41–1.95x speedup over ordinary pac
 FP32. This is a different precision policy from the faster FP16 option above;
 FP32 prompt processing remains a performance target.
 
+The same Llama FP32 scope also has optional compensated prompt processing:
+
+```sh
+export DLLM_KQUANT_PREFILL_F32=1
+```
+
+This selects prompts of at least 128 rows at widths 2048/8192. Packed weights
+are decoded directly into scaled high/low FP16 components, then three Tensor
+Core products accumulate in FP32. This is a numerically qualified approximation
+to the unrounded FP32 coefficients. Short prompts retain ordinary processing.
+The option is independent of the residual decode library; enabling both combines
+their gains. Backend status adds `compensated-kquant-prefill-f32`. Weights remain
+packed while resident; the high/low buffers are temporary per projection.
+
 See the [K-quant qualification and performance evidence](docs/evidence/gguf/README.md).
 
 ### Prepared weight cache

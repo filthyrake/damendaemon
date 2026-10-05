@@ -181,7 +181,11 @@ def main():
     if residual_path:
         residual_library=dict(path=residual_path,selected=residual_selected,
             sha256=hashlib.sha256(Path(residual_path).read_bytes()).hexdigest() if residual_selected else None)
-    report = dict(passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
+    prefill_kernel=None
+    if 'compensated-kquant-prefill-f32' in precision['backend']:
+        from dllm import kquant_prefill_kernels
+        prefill_kernel=hashlib.sha256(Path(kquant_prefill_kernels.__file__).read_bytes()).hexdigest()
+    report = dict(production_prefill_kernel_sha256=prefill_kernel, passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
                   precision=precision, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
                   benchmark_report=args.benchmark_report, steps=steps,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,

@@ -73,7 +73,8 @@ FP16 residual-int8 backend retains a 512-context Q4/Q6 single-request scope.
 Q5_K_M and longer Llama contexts retain documented mixed/FP16 numerical gaps.
 The explicit Llama FP32 mode passes independent Q4_K_M/Q5_K_M model checks at
 2048 context. Its separate optional FP32 residual CUDA backend accelerates
-one through four rows; fixed/paged/graph/chunk and server/lifecycle proof covers
+one through four rows. Separate opt-in compensated FP32 prefill targets prompts
+of at least 128 rows in the same Llama scope. Fixed/paged/graph/chunk and server/lifecycle proof covers
 512 context. These checkpoint-specific results do not establish qualification
 for every model using these block formats.
 

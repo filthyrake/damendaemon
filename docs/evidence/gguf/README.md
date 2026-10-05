@@ -929,3 +929,42 @@ page-pool limit. `llama32-q4-k-m-fp32-long-baseline-capacity-control-a2.json`
 preserves that harness failure. The extended recipe now releases completed
 requests before the chunk case; this does not increase the pool or weaken
 admission. The original 512-context replay recipe remains unchanged.
+
+After correcting the harness lifecycle, the long-prefill replay passes all 100
+fixed/paged/graph/batch/chunk cases, maximum RMS 0.0362%, with identical greedy
+decisions (`llama32-q4-k-m-fp32-long-baseline-a2.json` and
+`llama32-q4-k-m-prefill-f32-replay-a2.json`). This recipe uses 128/256/384-token
+prompts and 128-token chunks so it exercises the candidate prefill threshold.
+
+The incremental server comparison `llama32-q4-k-m-prefill-f32-http-a2.json`
+uses production FP32 residual decode in both engines, changing only prefill.
+All text and lifecycle checks pass. Baseline/candidate medians are
+0.248215/0.248818 s (16/1, unchanged path), 0.363922/0.321678 s (129/1),
+0.568369/0.473856 s (400/1), and 0.624352/0.544167 s (129/2). The changed cases
+improve 12–17% beyond the residual decode gain.
+
+A subsequent targeted range check found that multiplying the accumulator by
+one operand's scale before the other can overflow on finite 2^115 inputs even
+when the final result is representable. The failing
+`kquant-prefill-range-original-a2.json` is retained; that implementation is in
+commit e65219f. Rescaling now combines the power-of-two exponents and uses
+`ldexp` once. Production promotion requires range, model and server confirmation
+of that corrected implementation; the earlier HTTP gain alone is insufficient.
+
+The corrected range report `kquant-prefill-range-fixed-a2.json` passes every
+case from 2^-140 through 2^115 against FP64 products of the same decoded FP32
+weights. Repeated matrix profiling remains 22–38% faster at 129/400 rows
+(`kquant-prefill-fp16x3-range-fixed-profile-a2.jsonl`). Corrected Q4 extended and
+Q5 initial/extended independent HF suites all pass at 2048 context, with exact
+greedy agreement; Q5's worst RMS is 0.1754%.
+
+The corrected kernels now live in `dllm/kquant_prefill_kernels.py`. The
+experimental entry point calls the same implementation. The normal executor's
+separate per-model selector uses `DLLM_KQUANT_PREFILL_F32=1` only for CUDA Llama
+hidden width 2048, FP32 precision, context <=2048, Q4/Q6 or Q5/Q6 layouts, and
+rows >=128 at widths 2048/8192. Decode and dense-weight dispatch stay separate.
+The normal production range, Q4/Q5 100-case long-prefill replay, and Q4
+independent 2048-context model reports pass. Backend labels and kernel hashes
+are retained in the `*-prefill-f32-production-*` reports. Normal-server timing
+and lifecycle confirmation of this final dispatch are recorded separately when
+complete. The local regression suite passes 289 tests.

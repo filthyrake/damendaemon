@@ -387,6 +387,7 @@ class Executor:
             self.linear = self.dense_linear
         self.quant_linear = None
         self.packed_decode = None
+        self.packed_prefill = None
         if model.scales or packed_formats:
             from .quantization import Linear
             from .native_kquant_residual import select
@@ -395,7 +396,11 @@ class Executor:
                 from .native_kquant_residual_f32 import select as select_fp32
                 self.packed_decode = select_fp32(c, packed_formats, self.device, self.compute_dtype,
                                                 self.llama_precision, self.context)
-            self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats, self.packed_decode)
+            from .kquant_prefill import select as select_prefill
+            self.packed_prefill = select_prefill(c, packed_formats, self.device, self.compute_dtype,
+                                                self.llama_precision, self.context)
+            self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats,
+                                       self.packed_decode, self.packed_prefill)
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
@@ -432,6 +437,8 @@ class Executor:
             if self.packed_decode is not None:
                 self.kernel_backend += ('+cuda-kquant-residual-f32' if self.compute_dtype == torch.float32
                                         else '+cuda-kquant-residual')
+            if self.packed_prefill is not None:
+                self.kernel_backend += '+compensated-kquant-prefill-f32'
             if (self.compute_dtype==torch.float16 and os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
                     and any(name!='embed' and all(kind in (12,13,14) for _,_,kind,_ in layout[1])
                             for name,layout in packed_formats.items())):
