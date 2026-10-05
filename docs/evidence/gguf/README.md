@@ -1198,7 +1198,15 @@ HF logit comparisons (worst RMS 0.2233%, exact greedy agreement) and all 128
 runtime-layout comparisons. Reports carry the final library hash and selected
 `+cuda-q4-residual` backend. All 96 extended independent checks also pass
 (worst RMS 0.4182%, exact greedy agreement), matching the isolated candidate.
-Normal-server confirmation is recorded separately when complete. The four new CPU regression tests cover
+Normal-server confirmation passes in
+`mistral-spm-q4-residual-production-http-a2.json`: both phases use the normal
+CLI, backend assertions confirm selection, and every output and lifecycle check
+passes. Combined A/B/B/A baseline/candidate median seconds are 0.7180/0.5875
+(16 input tokens, concurrency 1), 1.0301/0.8947 (129/1), 1.2459/1.1149
+(400/1), and 1.5222/1.5172 (129/2). Thus the production opt-in preserves the
+11–18% single-request latency reduction, with the unchanged batch-two path
+approximately tied. These remain comparisons within dllm, not llama.cpp parity.
+The four new CPU regression tests cover
 ABI rejection, CPU-buffer rejection, opt-in/topology/precision/context gates,
 per-executor path binding and unchanged dense/batch fallback. The complete
 local suite passed 302 tests before the separate admission-experiment tests.
