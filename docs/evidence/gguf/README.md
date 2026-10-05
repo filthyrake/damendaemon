@@ -1162,3 +1162,22 @@ still give no compelling general improvement. Both compiled variants have no
 local-memory spills (40 registers for rows 2/3/4, 48 for row 1 in the first
 variant). The model experiment retains the original measured single-row scope;
 no batched production selector is added based on these results.
+
+The isolated candidate's full A/B/B/A HTTP comparison passes in
+`mistral-spm-q4-residual-http-a2.json`: all generated text matches the ordinary
+native Q4 path, and every phase passes host restore, Mistral↔Qwen3 swapping,
+disk reload, cancellation recovery and streamed/concurrent chat. Both use the
+same Q4 file and mixed policy; only the explicitly reported decode arithmetic
+changes. Six measured rounds per workload per phase, after three warmups:
+
+| Input / concurrency | Ordinary native Q4 | Integer-dot candidate |
+| --- | ---: | ---: |
+| 16 / 1 | 0.716963 s | 0.584562 s |
+| 129 / 1 | 1.028997 s | 0.895928 s |
+| 400 / 1 | 1.246418 s | 1.110303 s |
+| 129 / 2 | 1.520831 s | 1.508158 s |
+
+Single-request latency improves 11–18%; the unchanged batch-two path is
+approximately tied. These are dllm-versus-dllm results, not new llama.cpp parity
+claims. Normal per-model dispatch requires separate confirmation from this
+validation-only server entry point.

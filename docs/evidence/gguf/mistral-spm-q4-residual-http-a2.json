@@ -1,0 +1,3857 @@
+{
+  "native_format": "q4",
+  "model": "/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+  "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
+  "native_library": "/home/damen/dllm-dev/build-kquant/libdllm-q4.so",
+  "native_library_sha256": "29dffba1428aab9846a5b71464855a4d48e6fbd6b9ec8a89a47f64b1ef0dd063",
+  "llama_server": null,
+  "llama_server_sha256": null,
+  "residual_library": "/home/damen/dllm-dev/results/libdllm-q4-residual.so",
+  "residual_library_sha256": "df0ac87a0ad07cbdb97c506063b922e7c0668fa31b37a55a97dbf5d4af1be55b",
+  "experimental_arithmetic": "Q4 single-row integer dot; two dyadic int8 activation terms; FP32 coefficient scaling rather than rounded FP16 coefficients",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "context_per_slot": 512,
+  "slots": 4,
+  "kv_dtype": "float16",
+  "dllm_precision": "mixed: FP16 matrices, FP32 residual/nonlinear",
+  "output_tokens": 16,
+  "prompts": {
+    "16": [
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747
+    ],
+    "129": [
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819
+    ],
+    "400": [
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952,
+      2819,
+      28723,
+      330,
+      10537,
+      13268,
+      6104,
+      28747,
+      28705,
+      1,
+      365,
+      3239,
+      3472,
+      20253,
+      10846,
+      1855,
+      264,
+      17952
+    ]
+  },
+  "warmup_rounds": 3,
+  "measured_rounds": 6,
+  "runs": [
+    {
+      "phase": 0,
+      "engine": "dllm",
+      "command": [
+        "/home/damen/dllm-dev/venv/bin/python",
+        "-m",
+        "dllm",
+        "serve",
+        "--model",
+        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "--port",
+        "44765",
+        "--context",
+        "512",
+        "--batch-size",
+        "4",
+        "--kv-cache-tokens",
+        "0",
+        "--gpu-models",
+        "1",
+        "--prefill-chunk-size",
+        "0",
+        "--prefix-cache-tokens",
+        "0"
+      ],
+      "log": "results/mistral-spm-q4-residual-http-a2-0-dllm.log",
+      "cases": [
+        {
+          "prompt_tokens": 16,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 14.85598825798661,
+              "requests": [
+                {
+                  "seconds": 14.854705703008221,
+                  "first_output_seconds": 14.214453616004903,
+                  "post_first_output_tokens_per_second": 23.428271933024174,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 1.0770067747864815
+            },
+            {
+              "warmup": true,
+              "seconds": 0.7123512960097287,
+              "requests": [
+                {
+                  "seconds": 0.7119287149980664,
+                  "first_output_seconds": 0.05647394400148187,
+                  "post_first_output_tokens_per_second": 22.884874233493317,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.460828090893916
+            },
+            {
+              "warmup": true,
+              "seconds": 0.7094309840031201,
+              "requests": [
+                {
+                  "seconds": 0.7090339580026921,
+                  "first_output_seconds": 0.056602790995384566,
+                  "post_first_output_tokens_per_second": 22.990931087496612,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.553286169877282
+            },
+            {
+              "warmup": false,
+              "seconds": 0.7082583330047783,
+              "requests": [
+                {
+                  "seconds": 0.7079436109925155,
+                  "first_output_seconds": 0.057043676992179826,
+                  "post_first_output_tokens_per_second": 23.045016931884135,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.590627253364143
+            },
+            {
+              "warmup": false,
+              "seconds": 0.7114640329964459,
+              "requests": [
+                {
+                  "seconds": 0.7111552210117225,
+                  "first_output_seconds": 0.057331629999680445,
+                  "post_first_output_tokens_per_second": 22.941968148903534,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.488838870200382
+            },
+            {
+              "warmup": false,
+              "seconds": 0.7127528290002374,
+              "requests": [
+                {
+                  "seconds": 0.7124564770056168,
+                  "first_output_seconds": 0.057023796995054,
+                  "post_first_output_tokens_per_second": 22.885645555174737,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.44817466728662
+            },
+            {
+              "warmup": false,
+              "seconds": 0.709992919000797,
+              "requests": [
+                {
+                  "seconds": 0.7096630529995309,
+                  "first_output_seconds": 0.05751135299215093,
+                  "post_first_output_tokens_per_second": 23.000783406422546,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.53543601887956
+            },
+            {
+              "warmup": false,
+              "seconds": 0.712127986989799,
+              "requests": [
+                {
+                  "seconds": 0.7118247890030034,
+                  "first_output_seconds": 0.05847712300601415,
+                  "post_first_output_tokens_per_second": 22.958680011675625,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.467871355025395
+            },
+            {
+              "warmup": false,
+              "seconds": 0.7102724500000477,
+              "requests": [
+                {
+                  "seconds": 0.710012130002724,
+                  "first_output_seconds": 0.0565521670068847,
+                  "post_first_output_tokens_per_second": 22.954734565881136,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.52656709407626
+            }
+          ],
+          "median_seconds": 0.7108682414982468,
+          "median_aggregate_output_tokens_per_second": 22.50770298213832
+        },
+        {
+          "prompt_tokens": 129,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.2744447330042021,
+              "requests": [
+                {
+                  "seconds": 1.2739037279970944,
+                  "first_output_seconds": 0.6227228509960696,
+                  "post_first_output_tokens_per_second": 23.03507447743493,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.554487131257378
+            },
+            {
+              "warmup": true,
+              "seconds": 1.0167894920014078,
+              "requests": [
+                {
+                  "seconds": 1.016531343004317,
+                  "first_output_seconds": 0.3623414790054085,
+                  "post_first_output_tokens_per_second": 22.929123218615057,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.73580384717218
+            },
+            {
+              "warmup": true,
+              "seconds": 1.0182663499872433,
+              "requests": [
+                {
+                  "seconds": 1.017978417003178,
+                  "first_output_seconds": 0.36044506200414617,
+                  "post_first_output_tokens_per_second": 22.81253093239975,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.71298118630793
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0203599969972856,
+              "requests": [
+                {
+                  "seconds": 1.0200142649991903,
+                  "first_output_seconds": 0.3599645180074731,
+                  "post_first_output_tokens_per_second": 22.725559805703902,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.680740177079446
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0208529060037108,
+              "requests": [
+                {
+                  "seconds": 1.0204139059933368,
+                  "first_output_seconds": 0.35879601299529895,
+                  "post_first_output_tokens_per_second": 22.671696395678474,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.673168882512678
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0214165590004995,
+              "requests": [
+                {
+                  "seconds": 1.02098803500121,
+                  "first_output_seconds": 0.3586122720007552,
+                  "post_first_output_tokens_per_second": 22.645756137048906,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.664519885654384
+            },
+            {
+              "warmup": false,
+              "seconds": 1.023556127998745,
+              "requests": [
+                {
+                  "seconds": 1.0231674389942782,
+                  "first_output_seconds": 0.3589579529943876,
+                  "post_first_output_tokens_per_second": 22.583236638692735,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.631775886372903
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0227908830129309,
+              "requests": [
+                {
+                  "seconds": 1.022371398008545,
+                  "first_output_seconds": 0.35874355300620664,
+                  "post_first_output_tokens_per_second": 22.603029865250978,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.643471471770752
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0240884780068882,
+              "requests": [
+                {
+                  "seconds": 1.0236524209904019,
+                  "first_output_seconds": 0.35907857900019735,
+                  "post_first_output_tokens_per_second": 22.57085526429897,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.623650049397764
+            }
+          ],
+          "median_seconds": 1.0221037210067152,
+          "median_aggregate_output_tokens_per_second": 15.653995678712569
+        },
+        {
+          "prompt_tokens": 400,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.2378396240092115,
+              "requests": [
+                {
+                  "seconds": 1.2370485089923022,
+                  "first_output_seconds": 0.563765824001166,
+                  "post_first_output_tokens_per_second": 22.278903548807996,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.925745540587844
+            },
+            {
+              "warmup": true,
+              "seconds": 1.2318934950017137,
+              "requests": [
+                {
+                  "seconds": 1.2315515609952854,
+                  "first_output_seconds": 0.559596502003842,
+                  "post_first_output_tokens_per_second": 22.322921450303433,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.988135796575289
+            },
+            {
+              "warmup": true,
+              "seconds": 1.2351158849924104,
+              "requests": [
+                {
+                  "seconds": 1.234693474994856,
+                  "first_output_seconds": 0.5620469129935373,
+                  "post_first_output_tokens_per_second": 22.299972745524258,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.954250037921193
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2345909269934054,
+              "requests": [
+                {
+                  "seconds": 1.2340540510049323,
+                  "first_output_seconds": 0.5638979549985379,
+                  "post_first_output_tokens_per_second": 22.382844966103054,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.95975828930214
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2333436150074704,
+              "requests": [
+                {
+                  "seconds": 1.2328194309957325,
+                  "first_output_seconds": 0.561945460998686,
+                  "post_first_output_tokens_per_second": 22.35889402605088,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.972864824782093
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2348095100023784,
+              "requests": [
+                {
+                  "seconds": 1.2344657380017452,
+                  "first_output_seconds": 0.5625337199890055,
+                  "post_first_output_tokens_per_second": 22.323686917558977,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.957464184066078
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2359488810034236,
+              "requests": [
+                {
+                  "seconds": 1.2356353420036612,
+                  "first_output_seconds": 0.5630025010032114,
+                  "post_first_output_tokens_per_second": 22.300427641459702,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.945519224881016
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2357614119973732,
+              "requests": [
+                {
+                  "seconds": 1.2354191450140206,
+                  "first_output_seconds": 0.5638416660076473,
+                  "post_first_output_tokens_per_second": 22.33547203249448,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.947483102048837
+            },
+            {
+              "warmup": false,
+              "seconds": 1.237294557999121,
+              "requests": [
+                {
+                  "seconds": 1.2368629559932742,
+                  "first_output_seconds": 0.5633178220014088,
+                  "post_first_output_tokens_per_second": 22.270222503279427,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.93143972594064
+            }
+          ],
+          "median_seconds": 1.2352854609998758,
+          "median_aggregate_output_tokens_per_second": 12.952473643057457
+        },
+        {
+          "prompt_tokens": 129,
+          "concurrency": 2,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.5173720290040364,
+              "requests": [
+                {
+                  "seconds": 1.4734995570033789,
+                  "first_output_seconds": 0.36362166100298055,
+                  "post_first_output_tokens_per_second": 13.515000212234712,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.515167145000305,
+                  "first_output_seconds": 0.7637907239986816,
+                  "post_first_output_tokens_per_second": 19.963362677796344,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.08909310856611
+            },
+            {
+              "warmup": true,
+              "seconds": 1.5167894730111584,
+              "requests": [
+                {
+                  "seconds": 1.4745233509893296,
+                  "first_output_seconds": 0.3650003829970956,
+                  "post_first_output_tokens_per_second": 13.519323558613335,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5153702669922495,
+                  "first_output_seconds": 0.7651109409925994,
+                  "post_first_output_tokens_per_second": 19.993087030293037,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.09719283354005
+            },
+            {
+              "warmup": true,
+              "seconds": 1.5169788810017053,
+              "requests": [
+                {
+                  "seconds": 1.5163774629909312,
+                  "first_output_seconds": 0.7648076269979356,
+                  "post_first_output_tokens_per_second": 19.958225146411802,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4726500309916446,
+                  "first_output_seconds": 0.36253558499447536,
+                  "post_first_output_tokens_per_second": 13.512120353074163,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.094558665753784
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5182119840028463,
+              "requests": [
+                {
+                  "seconds": 1.47572473299806,
+                  "first_output_seconds": 0.3644219590059947,
+                  "post_first_output_tokens_per_second": 13.497671697620634,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5173626940086251,
+                  "first_output_seconds": 0.7649700040055905,
+                  "post_first_output_tokens_per_second": 19.936397840254802,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.07742550920347
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2372964789974503,
+              "requests": [
+                {
+                  "seconds": 1.236253303999547,
+                  "first_output_seconds": 0.4778101650008466,
+                  "post_first_output_tokens_per_second": 19.777356045178365,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.2362864309980068,
+                  "first_output_seconds": 0.4763780979992589,
+                  "post_first_output_tokens_per_second": 19.739222941281675,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 25.862839297763767
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5190470489906147,
+              "requests": [
+                {
+                  "seconds": 1.5186885080038337,
+                  "first_output_seconds": 0.7642903530067997,
+                  "post_first_output_tokens_per_second": 19.883399635380833,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4758665459958138,
+                  "first_output_seconds": 0.3622831019893056,
+                  "post_first_output_tokens_per_second": 13.470027846348202,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.065838626435927
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5214755639899522,
+              "requests": [
+                {
+                  "seconds": 1.4787094730127137,
+                  "first_output_seconds": 0.3643312770000193,
+                  "post_first_output_tokens_per_second": 13.460421294737113,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5202307959989412,
+                  "first_output_seconds": 0.7655060390097788,
+                  "post_first_output_tokens_per_second": 19.874795229773277,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.032214225039848
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5201865840062965,
+              "requests": [
+                {
+                  "seconds": 1.5196781260019634,
+                  "first_output_seconds": 0.7661439099902054,
+                  "post_first_output_tokens_per_second": 19.906196269879725,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4765040219936054,
+                  "first_output_seconds": 0.3630279989884002,
+                  "post_first_output_tokens_per_second": 13.471327347953032,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.050047630118712
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5186636540020118,
+              "requests": [
+                {
+                  "seconds": 1.5181985849922057,
+                  "first_output_seconds": 0.7656529679952655,
+                  "post_first_output_tokens_per_second": 19.93234650659189,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4752290500036906,
+                  "first_output_seconds": 0.3632844170060707,
+                  "post_first_output_tokens_per_second": 13.489880300570782,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.071156813210735
+            }
+          ],
+          "median_seconds": 1.5188553514963132,
+          "median_aggregate_output_tokens_per_second": 21.06849771982333
+        }
+      ],
+      "lifecycle": {
+        "host_restore": true,
+        "model_swap": true,
+        "swap_sample": " Binary search is a method of finding a specific element in a sorted array by repeatedly",
+        "disk_reload": true,
+        "cancellation_recovery": true,
+        "chat_stream_and_concurrency": true,
+        "chat_sample": " Binary search is an efficient algorithm for finding a specific value or range of values within a sorted list or array by repeatedly dividing the search interval in half until"
+      },
+      "kernel_backend": "triton+q4_0+cuda-gemv"
+    },
+    {
+      "phase": 1,
+      "engine": "q4-residual-int8",
+      "command": [
+        "/home/damen/dllm-dev/venv/bin/python",
+        "-m",
+        "scripts.experiments.serve_q4_residual",
+        "serve",
+        "--model",
+        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "--port",
+        "37619",
+        "--context",
+        "512",
+        "--batch-size",
+        "4",
+        "--kv-cache-tokens",
+        "0",
+        "--gpu-models",
+        "1",
+        "--prefill-chunk-size",
+        "0",
+        "--prefix-cache-tokens",
+        "0"
+      ],
+      "log": "results/mistral-spm-q4-residual-http-a2-1-q4-residual-int8.log",
+      "cases": [
+        {
+          "prompt_tokens": 16,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 14.322085355001036,
+              "requests": [
+                {
+                  "seconds": 14.32121464300144,
+                  "first_output_seconds": 13.796099971004878,
+                  "post_first_output_tokens_per_second": 28.56518928135798,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 1.1171557495580113
+            },
+            {
+              "warmup": true,
+              "seconds": 0.5849968800030183,
+              "requests": [
+                {
+                  "seconds": 0.5845746519917157,
+                  "first_output_seconds": 0.05691902899707202,
+                  "post_first_output_tokens_per_second": 28.427632240265673,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.350573220010077
+            },
+            {
+              "warmup": true,
+              "seconds": 0.5835052259935765,
+              "requests": [
+                {
+                  "seconds": 0.5830553790001431,
+                  "first_output_seconds": 0.0585140499897534,
+                  "post_first_output_tokens_per_second": 28.59641208501016,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.420491346509614
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5887065579881892,
+              "requests": [
+                {
+                  "seconds": 0.5881761820055544,
+                  "first_output_seconds": 0.057006692004506476,
+                  "post_first_output_tokens_per_second": 28.239573775162437,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.178226202672942
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5824668029963505,
+              "requests": [
+                {
+                  "seconds": 0.5819126479909755,
+                  "first_output_seconds": 0.057496606998029165,
+                  "post_first_output_tokens_per_second": 28.603244041884214,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.469376654072164
+            },
+            {
+              "warmup": false,
+              "seconds": 0.583995781998965,
+              "requests": [
+                {
+                  "seconds": 0.5836516889976338,
+                  "first_output_seconds": 0.0569767779961694,
+                  "post_first_output_tokens_per_second": 28.480566829123735,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.397458154977492
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5842327610007487,
+              "requests": [
+                {
+                  "seconds": 0.58385319399531,
+                  "first_output_seconds": 0.0578804399992805,
+                  "post_first_output_tokens_per_second": 28.518587485832455,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.3863450803292
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5837888800015207,
+              "requests": [
+                {
+                  "seconds": 0.5833138419984607,
+                  "first_output_seconds": 0.05765124500612728,
+                  "post_first_output_tokens_per_second": 28.535414324368926,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.40716815290884
+            },
+            {
+              "warmup": false,
+              "seconds": 0.585172863007756,
+              "requests": [
+                {
+                  "seconds": 0.5847194250090979,
+                  "first_output_seconds": 0.057178214003215544,
+                  "post_first_output_tokens_per_second": 28.433797563225333,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.342347896587157
+            }
+          ],
+          "median_seconds": 0.5841142714998568,
+          "median_aggregate_output_tokens_per_second": 27.391901617653346
+        },
+        {
+          "prompt_tokens": 129,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.179825446990435,
+              "requests": [
+                {
+                  "seconds": 1.1787710149947088,
+                  "first_output_seconds": 0.6539882979996037,
+                  "post_first_output_tokens_per_second": 28.583258392901516,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 13.561328110707985
+            },
+            {
+              "warmup": true,
+              "seconds": 0.8900712570030009,
+              "requests": [
+                {
+                  "seconds": 0.8895956199994544,
+                  "first_output_seconds": 0.3641824669903144,
+                  "post_first_output_tokens_per_second": 28.548961734384037,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.97608885144131
+            },
+            {
+              "warmup": true,
+              "seconds": 0.8953950599970995,
+              "requests": [
+                {
+                  "seconds": 0.8949816759995883,
+                  "first_output_seconds": 0.363826558997971,
+                  "post_first_output_tokens_per_second": 28.240337934943263,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.869207364235212
+            },
+            {
+              "warmup": false,
+              "seconds": 0.895034802990267,
+              "requests": [
+                {
+                  "seconds": 0.8945388019928942,
+                  "first_output_seconds": 0.36331383099604864,
+                  "post_first_output_tokens_per_second": 28.236624441528882,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.876399829978443
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8941678470000625,
+              "requests": [
+                {
+                  "seconds": 0.8935420470079407,
+                  "first_output_seconds": 0.3611840910016326,
+                  "post_first_output_tokens_per_second": 28.176530153749145,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.893732204395494
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8937492379918694,
+              "requests": [
+                {
+                  "seconds": 0.8932998070085887,
+                  "first_output_seconds": 0.36122853599954396,
+                  "post_first_output_tokens_per_second": 28.191711932789197,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.902113165377102
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8953351149975788,
+              "requests": [
+                {
+                  "seconds": 0.8949594240111765,
+                  "first_output_seconds": 0.3613218780083116,
+                  "post_first_output_tokens_per_second": 28.108966680390726,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.870403753842794
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8991754140006378,
+              "requests": [
+                {
+                  "seconds": 0.8988271330017596,
+                  "first_output_seconds": 0.36398059799103066,
+                  "post_first_output_tokens_per_second": 28.04542802114087,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.794080833251797
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8922419580048881,
+              "requests": [
+                {
+                  "seconds": 0.8919166489940835,
+                  "first_output_seconds": 0.3619365850026952,
+                  "post_first_output_tokens_per_second": 28.30295141110013,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.932355519098266
+            }
+          ],
+          "median_seconds": 0.8946013249951648,
+          "median_aggregate_output_tokens_per_second": 17.88506601718697
+        },
+        {
+          "prompt_tokens": 400,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.1124092509999173,
+              "requests": [
+                {
+                  "seconds": 1.11191932100337,
+                  "first_output_seconds": 0.5703562080016127,
+                  "post_first_output_tokens_per_second": 27.697602809132473,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.383195739893385
+            },
+            {
+              "warmup": true,
+              "seconds": 1.1049767619988415,
+              "requests": [
+                {
+                  "seconds": 1.1046769469976425,
+                  "first_output_seconds": 0.563563345989678,
+                  "post_first_output_tokens_per_second": 27.720611664646036,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.479942520290553
+            },
+            {
+              "warmup": true,
+              "seconds": 1.1062816999910865,
+              "requests": [
+                {
+                  "seconds": 1.1059421009995276,
+                  "first_output_seconds": 0.5634344289865112,
+                  "post_first_output_tokens_per_second": 27.649378568862165,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.4628623976415
+            },
+            {
+              "warmup": false,
+              "seconds": 1.106729193998035,
+              "requests": [
+                {
+                  "seconds": 1.1063094069977524,
+                  "first_output_seconds": 0.564976025998476,
+                  "post_first_output_tokens_per_second": 27.709357166023445,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.457014495298845
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1073564360121964,
+              "requests": [
+                {
+                  "seconds": 1.1070079439959954,
+                  "first_output_seconds": 0.566185467003379,
+                  "post_first_output_tokens_per_second": 27.735533632794606,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.448825581055978
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1077007770072669,
+              "requests": [
+                {
+                  "seconds": 1.107403007990797,
+                  "first_output_seconds": 0.5664925639866851,
+                  "post_first_output_tokens_per_second": 27.731023067260228,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.444334004376197
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1076176979986485,
+              "requests": [
+                {
+                  "seconds": 1.10723556499579,
+                  "first_output_seconds": 0.5669293209939497,
+                  "post_first_output_tokens_per_second": 27.76203341442212,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.445417429597196
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1085101809876505,
+              "requests": [
+                {
+                  "seconds": 1.1082003580086166,
+                  "first_output_seconds": 0.5667664830107242,
+                  "post_first_output_tokens_per_second": 27.704214111203125,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.433787144602013
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1084441830025753,
+              "requests": [
+                {
+                  "seconds": 1.1080012260063086,
+                  "first_output_seconds": 0.566317122997134,
+                  "post_first_output_tokens_per_second": 27.69141630088772,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.434646548154447
+            }
+          ],
+          "median_seconds": 1.1076592375029577,
+          "median_aggregate_output_tokens_per_second": 14.444875716986697
+        },
+        {
+          "prompt_tokens": 129,
+          "concurrency": 2,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.5044800500036217,
+              "requests": [
+                {
+                  "seconds": 1.4688498769974103,
+                  "first_output_seconds": 0.3624435499950778,
+                  "post_first_output_tokens_per_second": 13.557406202331286,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.502515095009585,
+                  "first_output_seconds": 0.7548330900026485,
+                  "post_first_output_tokens_per_second": 20.0620048356799,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.26980680130851
+            },
+            {
+              "warmup": true,
+              "seconds": 1.2430855429993244,
+              "requests": [
+                {
+                  "seconds": 1.2425952299963683,
+                  "first_output_seconds": 0.4787435500038555,
+                  "post_first_output_tokens_per_second": 19.637320166851016,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.2415502700023353,
+                  "first_output_seconds": 0.47748286100977566,
+                  "post_first_output_tokens_per_second": 19.63177570913258,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 25.742395750810683
+            },
+            {
+              "warmup": true,
+              "seconds": 1.242061131997616,
+              "requests": [
+                {
+                  "seconds": 1.2416557619872037,
+                  "first_output_seconds": 0.47572947399748955,
+                  "post_first_output_tokens_per_second": 19.584130007300963,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.2406423530046595,
+                  "first_output_seconds": 0.47456181900633965,
+                  "post_first_output_tokens_per_second": 19.58018685282623,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 25.763627228664795
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2408388159965398,
+              "requests": [
+                {
+                  "seconds": 1.2403906410036143,
+                  "first_output_seconds": 0.47594635900168214,
+                  "post_first_output_tokens_per_second": 19.622097192901872,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.2391232240042882,
+                  "first_output_seconds": 0.4758263489929959,
+                  "post_first_output_tokens_per_second": 19.65159362112951,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 25.789006265330464
+            },
+            {
+              "warmup": false,
+              "seconds": 1.508326985000167,
+              "requests": [
+                {
+                  "seconds": 1.4728373519901652,
+                  "first_output_seconds": 0.3633741289959289,
+                  "post_first_output_tokens_per_second": 13.520051579103065,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5071323149895761,
+                  "first_output_seconds": 0.7571185679989867,
+                  "post_first_output_tokens_per_second": 19.99963342030344,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.215558906145578
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5079899210104486,
+              "requests": [
+                {
+                  "seconds": 1.4727990179962944,
+                  "first_output_seconds": 0.3638261269952636,
+                  "post_first_output_tokens_per_second": 13.526029465391195,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5068295859964564,
+                  "first_output_seconds": 0.7573450259951642,
+                  "post_first_output_tokens_per_second": 20.013754519471536,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.22030098089646
+            },
+            {
+              "warmup": false,
+              "seconds": 1.506079893995775,
+              "requests": [
+                {
+                  "seconds": 1.5056752779928502,
+                  "first_output_seconds": 0.7575083629926667,
+                  "post_first_output_tokens_per_second": 20.04900203318443,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4700187420094153,
+                  "first_output_seconds": 0.36317433899967,
+                  "post_first_output_tokens_per_second": 13.552040340278914,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.247212798984336
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5091213039995637,
+              "requests": [
+                {
+                  "seconds": 1.5085778079956071,
+                  "first_output_seconds": 0.7579983579926193,
+                  "post_first_output_tokens_per_second": 19.984559928919303,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4731248059979407,
+                  "first_output_seconds": 0.3633407070010435,
+                  "post_first_output_tokens_per_second": 13.51614247632317,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.204392195108294
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5077256660006242,
+              "requests": [
+                {
+                  "seconds": 1.5071911599952728,
+                  "first_output_seconds": 0.757671819999814,
+                  "post_first_output_tokens_per_second": 20.012825819932658,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4717211090028286,
+                  "first_output_seconds": 0.3630967149947537,
+                  "post_first_output_tokens_per_second": 13.530281383913644,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.22402020579966
+            }
+          ],
+          "median_seconds": 1.5078577935055364,
+          "median_aggregate_output_tokens_per_second": 21.22216059334806
+        }
+      ],
+      "lifecycle": {
+        "host_restore": true,
+        "model_swap": true,
+        "swap_sample": " Binary search is a method of finding a specific element in a sorted array by repeatedly",
+        "disk_reload": true,
+        "cancellation_recovery": true,
+        "chat_stream_and_concurrency": true,
+        "chat_sample": " Binary search is an efficient algorithm for finding a specific value or range of values within a sorted list or array by repeatedly dividing the search interval in half until"
+      },
+      "kernel_backend": "triton+q4_0+cuda-gemv"
+    },
+    {
+      "phase": 2,
+      "engine": "q4-residual-int8",
+      "command": [
+        "/home/damen/dllm-dev/venv/bin/python",
+        "-m",
+        "scripts.experiments.serve_q4_residual",
+        "serve",
+        "--model",
+        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "--port",
+        "47233",
+        "--context",
+        "512",
+        "--batch-size",
+        "4",
+        "--kv-cache-tokens",
+        "0",
+        "--gpu-models",
+        "1",
+        "--prefill-chunk-size",
+        "0",
+        "--prefix-cache-tokens",
+        "0"
+      ],
+      "log": "results/mistral-spm-q4-residual-http-a2-2-q4-residual-int8.log",
+      "cases": [
+        {
+          "prompt_tokens": 16,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 14.23168579499179,
+              "requests": [
+                {
+                  "seconds": 14.231029509013752,
+                  "first_output_seconds": 13.708079415009706,
+                  "post_first_output_tokens_per_second": 28.683425382239186,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 1.1242519143888414
+            },
+            {
+              "warmup": true,
+              "seconds": 0.5838233289978234,
+              "requests": [
+                {
+                  "seconds": 0.58336118599982,
+                  "first_output_seconds": 0.05701140400196891,
+                  "post_first_output_tokens_per_second": 28.498159423691448,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.405550969443446
+            },
+            {
+              "warmup": true,
+              "seconds": 0.5832214100082638,
+              "requests": [
+                {
+                  "seconds": 0.5828422739868984,
+                  "first_output_seconds": 0.057541350994142704,
+                  "post_first_output_tokens_per_second": 28.555061191481787,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.433835118935864
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5867064730118727,
+              "requests": [
+                {
+                  "seconds": 0.5861337820097106,
+                  "first_output_seconds": 0.05706676701083779,
+                  "post_first_output_tokens_per_second": 28.35179584958998,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.270876896693487
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5837463170028059,
+              "requests": [
+                {
+                  "seconds": 0.583273251002538,
+                  "first_output_seconds": 0.05736470599367749,
+                  "post_first_output_tokens_per_second": 28.52206936426043,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.409166506009996
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5855837319977582,
+              "requests": [
+                {
+                  "seconds": 0.5852671790053137,
+                  "first_output_seconds": 0.05662711200420745,
+                  "post_first_output_tokens_per_second": 28.37469374028475,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.323163410661916
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5832562849973328,
+              "requests": [
+                {
+                  "seconds": 0.58287962799659,
+                  "first_output_seconds": 0.05586118499923032,
+                  "post_first_output_tokens_per_second": 28.46200204055316,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.432194751357315
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5848902910074685,
+              "requests": [
+                {
+                  "seconds": 0.58442170098715,
+                  "first_output_seconds": 0.057155873990268447,
+                  "post_first_output_tokens_per_second": 28.448648161847814,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.35555752248877
+            },
+            {
+              "warmup": false,
+              "seconds": 0.5871866850065999,
+              "requests": [
+                {
+                  "seconds": 0.5866701479972107,
+                  "first_output_seconds": 0.057444751990260556,
+                  "post_first_output_tokens_per_second": 28.343311022441956,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 27.24857427552221
+            }
+          ],
+          "median_seconds": 0.5852370115026133,
+          "median_aggregate_output_tokens_per_second": 27.339360466575343
+        },
+        {
+          "prompt_tokens": 129,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.1640548750001471,
+              "requests": [
+                {
+                  "seconds": 1.1631177460076287,
+                  "first_output_seconds": 0.6358363019971875,
+                  "post_first_output_tokens_per_second": 28.44780557023162,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 13.745056477683647
+            },
+            {
+              "warmup": true,
+              "seconds": 0.8934881330060307,
+              "requests": [
+                {
+                  "seconds": 0.8928770549973706,
+                  "first_output_seconds": 0.3645438459934667,
+                  "post_first_output_tokens_per_second": 28.391173873549114,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.90734471891638
+            },
+            {
+              "warmup": true,
+              "seconds": 0.8953187149891164,
+              "requests": [
+                {
+                  "seconds": 0.894910572009394,
+                  "first_output_seconds": 0.36434667800494935,
+                  "post_first_output_tokens_per_second": 28.271806976511566,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.870731095121247
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8967035039968323,
+              "requests": [
+                {
+                  "seconds": 0.8961297600035323,
+                  "first_output_seconds": 0.3644863720110152,
+                  "post_first_output_tokens_per_second": 28.21440149315113,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.843133130052454
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8973620220058365,
+              "requests": [
+                {
+                  "seconds": 0.8967666560056387,
+                  "first_output_seconds": 0.36469835600291844,
+                  "post_first_output_tokens_per_second": 28.19186935196724,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.830039167732835
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8976279479975346,
+              "requests": [
+                {
+                  "seconds": 0.8970736490009585,
+                  "first_output_seconds": 0.3635537289956119,
+                  "post_first_output_tokens_per_second": 28.115163909624364,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.824756944893995
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8968002519977745,
+              "requests": [
+                {
+                  "seconds": 0.8962952610017965,
+                  "first_output_seconds": 0.3636458399996627,
+                  "post_first_output_tokens_per_second": 28.161111997040752,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.84120818917846
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8963188469933812,
+              "requests": [
+                {
+                  "seconds": 0.895857153009274,
+                  "first_output_seconds": 0.36241278900706675,
+                  "post_first_output_tokens_per_second": 28.119146085753627,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.850790545876084
+            },
+            {
+              "warmup": false,
+              "seconds": 0.8955378599930555,
+              "requests": [
+                {
+                  "seconds": 0.8951312720018905,
+                  "first_output_seconds": 0.3620666110073216,
+                  "post_first_output_tokens_per_second": 28.139175408877513,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 17.866357989738226
+            }
+          ],
+          "median_seconds": 0.8967518779973034,
+          "median_aggregate_output_tokens_per_second": 17.842170659615455
+        },
+        {
+          "prompt_tokens": 400,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.125250302007771,
+              "requests": [
+                {
+                  "seconds": 1.1241187539999373,
+                  "first_output_seconds": 0.5778413319931133,
+                  "post_first_output_tokens_per_second": 27.45857579999457,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.219058614293536
+            },
+            {
+              "warmup": true,
+              "seconds": 1.1097794850065839,
+              "requests": [
+                {
+                  "seconds": 1.1092458400089527,
+                  "first_output_seconds": 0.5640764670097269,
+                  "post_first_output_tokens_per_second": 27.514384965314814,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.417278582064506
+            },
+            {
+              "warmup": true,
+              "seconds": 1.111409585995716,
+              "requests": [
+                {
+                  "seconds": 1.1110045480018016,
+                  "first_output_seconds": 0.5661683510115836,
+                  "post_first_output_tokens_per_second": 27.531210449788286,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.396132804330223
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1120968040049775,
+              "requests": [
+                {
+                  "seconds": 1.1116811420070007,
+                  "first_output_seconds": 0.5675812660047086,
+                  "post_first_output_tokens_per_second": 27.568467962556216,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.38723674268233
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1123791049903957,
+              "requests": [
+                {
+                  "seconds": 1.111943734009401,
+                  "first_output_seconds": 0.5685944300057599,
+                  "post_first_output_tokens_per_second": 27.606550499785833,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.383585531425588
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1128548230044544,
+              "requests": [
+                {
+                  "seconds": 1.1123611390066799,
+                  "first_output_seconds": 0.5692897910048487,
+                  "post_first_output_tokens_per_second": 27.62068014670776,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.377436903048725
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1148265770025318,
+              "requests": [
+                {
+                  "seconds": 1.1143729150062427,
+                  "first_output_seconds": 0.5695490390062332,
+                  "post_first_output_tokens_per_second": 27.531833057917858,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.352008043277625
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1158858699927805,
+              "requests": [
+                {
+                  "seconds": 1.1154268290119944,
+                  "first_output_seconds": 0.5725022030092077,
+                  "post_first_output_tokens_per_second": 27.62814446350608,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.3383839066835
+            },
+            {
+              "warmup": false,
+              "seconds": 1.1160037020017626,
+              "requests": [
+                {
+                  "seconds": 1.1154987269983394,
+                  "first_output_seconds": 0.5704257519973908,
+                  "post_first_output_tokens_per_second": 27.51925097730977,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 14.336870004374529
+            }
+          ],
+          "median_seconds": 1.1138407000034931,
+          "median_aggregate_output_tokens_per_second": 14.364722473163175
+        },
+        {
+          "prompt_tokens": 129,
+          "concurrency": 2,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.511599101999309,
+              "requests": [
+                {
+                  "seconds": 1.4756664960004855,
+                  "first_output_seconds": 0.36399832100141793,
+                  "post_first_output_tokens_per_second": 13.493235065412016,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.509693554995465,
+                  "first_output_seconds": 0.7576441120036179,
+                  "post_first_output_tokens_per_second": 19.945497120942104,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.169634169321323
+            },
+            {
+              "warmup": true,
+              "seconds": 1.5089190480066463,
+              "requests": [
+                {
+                  "seconds": 1.473381967007299,
+                  "first_output_seconds": 0.36475539300590754,
+                  "post_first_output_tokens_per_second": 13.530254778090114,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5078856330073904,
+                  "first_output_seconds": 0.7587816470040707,
+                  "post_first_output_tokens_per_second": 20.023922286182476,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.207234438635737
+            },
+            {
+              "warmup": true,
+              "seconds": 1.511880773003213,
+              "requests": [
+                {
+                  "seconds": 1.4765353100083303,
+                  "first_output_seconds": 0.36475843100924976,
+                  "post_first_output_tokens_per_second": 13.491915764163329,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.510848948993953,
+                  "first_output_seconds": 0.7595574619917898,
+                  "post_first_output_tokens_per_second": 19.96561954914952,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.165690159836426
+            },
+            {
+              "warmup": false,
+              "seconds": 1.514408868009923,
+              "requests": [
+                {
+                  "seconds": 1.5138410060026217,
+                  "first_output_seconds": 0.7606886199937435,
+                  "post_first_output_tokens_per_second": 19.916288228851442,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.478155587989022,
+                  "first_output_seconds": 0.3650557659857441,
+                  "post_first_output_tokens_per_second": 13.475880333000203,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.13035698348164
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2527408579917392,
+              "requests": [
+                {
+                  "seconds": 1.251772315998096,
+                  "first_output_seconds": 0.482903267009533,
+                  "post_first_output_tokens_per_second": 19.509173922051225,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.251776097007678,
+                  "first_output_seconds": 0.4816349330067169,
+                  "post_first_output_tokens_per_second": 19.47694877400591,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 25.543990040605042
+            },
+            {
+              "warmup": false,
+              "seconds": 1.514582857998903,
+              "requests": [
+                {
+                  "seconds": 1.5141059430025052,
+                  "first_output_seconds": 0.7610160290059866,
+                  "post_first_output_tokens_per_second": 19.91794036969315,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4780466530064587,
+                  "first_output_seconds": 0.36453799600712955,
+                  "post_first_output_tokens_per_second": 13.47093253897265,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.127929601870076
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5169613319885684,
+              "requests": [
+                {
+                  "seconds": 1.5165161339973565,
+                  "first_output_seconds": 0.7610179549956229,
+                  "post_first_output_tokens_per_second": 19.854448914516283,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4806340340001043,
+                  "first_output_seconds": 0.36499103500682395,
+                  "post_first_output_tokens_per_second": 13.445161233060674,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.094802698794926
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5206603359984001,
+              "requests": [
+                {
+                  "seconds": 1.4855336990003707,
+                  "first_output_seconds": 0.36577849999594036,
+                  "post_first_output_tokens_per_second": 13.395785090648776,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.519770859988057,
+                  "first_output_seconds": 0.7618176559917629,
+                  "post_first_output_tokens_per_second": 19.790139972907006,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.043489622546232
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2537911679974059,
+              "requests": [
+                {
+                  "seconds": 1.2525396519922651,
+                  "first_output_seconds": 0.48237173398956656,
+                  "post_first_output_tokens_per_second": 19.47627218607078,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.253068552003242,
+                  "first_output_seconds": 0.4816398810071405,
+                  "post_first_output_tokens_per_second": 19.44444193476937,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 25.522591653848856
+            }
+          ],
+          "median_seconds": 1.514495863004413,
+          "median_aggregate_output_tokens_per_second": 21.129143292675856
+        }
+      ],
+      "lifecycle": {
+        "host_restore": true,
+        "model_swap": true,
+        "swap_sample": " Binary search is a method of finding a specific element in a sorted array by repeatedly",
+        "disk_reload": true,
+        "cancellation_recovery": true,
+        "chat_stream_and_concurrency": true,
+        "chat_sample": " Binary search is an efficient algorithm for finding a specific value or range of values within a sorted list or array by repeatedly dividing the search interval in half until"
+      },
+      "kernel_backend": "triton+q4_0+cuda-gemv"
+    },
+    {
+      "phase": 3,
+      "engine": "dllm",
+      "command": [
+        "/home/damen/dllm-dev/venv/bin/python",
+        "-m",
+        "dllm",
+        "serve",
+        "--model",
+        "a=/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+        "--port",
+        "54235",
+        "--context",
+        "512",
+        "--batch-size",
+        "4",
+        "--kv-cache-tokens",
+        "0",
+        "--gpu-models",
+        "1",
+        "--prefill-chunk-size",
+        "0",
+        "--prefix-cache-tokens",
+        "0"
+      ],
+      "log": "results/mistral-spm-q4-residual-http-a2-3-dllm.log",
+      "cases": [
+        {
+          "prompt_tokens": 16,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 14.44744036400516,
+              "requests": [
+                {
+                  "seconds": 14.446532578993356,
+                  "first_output_seconds": 13.795505079004215,
+                  "post_first_output_tokens_per_second": 23.04050136169394,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 1.107462609076618
+            },
+            {
+              "warmup": true,
+              "seconds": 0.7266222259931965,
+              "requests": [
+                {
+                  "seconds": 0.7261593689909205,
+                  "first_output_seconds": 0.05797744898882229,
+                  "post_first_output_tokens_per_second": 22.44897617096987,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.019695279937405
+            },
+            {
+              "warmup": true,
+              "seconds": 0.7185727000032784,
+              "requests": [
+                {
+                  "seconds": 0.7181696879997617,
+                  "first_output_seconds": 0.05638276100216899,
+                  "post_first_output_tokens_per_second": 22.66590557787577,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.266362192617393
+            },
+            {
+              "warmup": false,
+              "seconds": 0.721172782999929,
+              "requests": [
+                {
+                  "seconds": 0.7207181379926624,
+                  "first_output_seconds": 0.058463077002670616,
+                  "post_first_output_tokens_per_second": 22.649883532149687,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.186084080216286
+            },
+            {
+              "warmup": false,
+              "seconds": 0.7243671929900302,
+              "requests": [
+                {
+                  "seconds": 0.7238282040052582,
+                  "first_output_seconds": 0.05919395500677638,
+                  "post_first_output_tokens_per_second": 22.56880385355264,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.08824496034322
+            },
+            {
+              "warmup": false,
+              "seconds": 0.7285983559995657,
+              "requests": [
+                {
+                  "seconds": 0.7280542739899829,
+                  "first_output_seconds": 0.0589942369988421,
+                  "post_first_output_tokens_per_second": 22.41951270540258,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 21.95997269037145
+            },
+            {
+              "warmup": false,
+              "seconds": 0.7240670299943304,
+              "requests": [
+                {
+                  "seconds": 0.7235102150007151,
+                  "first_output_seconds": 0.05984517799515743,
+                  "post_first_output_tokens_per_second": 22.60176318415036,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.09740167305406
+            },
+            {
+              "warmup": false,
+              "seconds": 0.725368694998906,
+              "requests": [
+                {
+                  "seconds": 0.7249171200091951,
+                  "first_output_seconds": 0.05859749800583813,
+                  "post_first_output_tokens_per_second": 22.511718857837312,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.057748163537898
+            },
+            {
+              "warmup": false,
+              "seconds": 0.7252795029926347,
+              "requests": [
+                {
+                  "seconds": 0.7248358549986733,
+                  "first_output_seconds": 0.05887992501084227,
+                  "post_first_output_tokens_per_second": 22.524012963251327,
+                  "usage": {
+                    "prompt_tokens": 16,
+                    "completion_tokens": 16,
+                    "total_tokens": 32
+                  },
+                  "text": "\n\n1. First, we need a sorted range. If the range is"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 22.060460738213475
+            }
+          ],
+          "median_seconds": 0.7248233479913324,
+          "median_aggregate_output_tokens_per_second": 22.07435284927835
+        },
+        {
+          "prompt_tokens": 129,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.2757700369984377,
+              "requests": [
+                {
+                  "seconds": 1.274818925987347,
+                  "first_output_seconds": 0.6131583359965589,
+                  "post_first_output_tokens_per_second": 22.670233389914962,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.541445194655871
+            },
+            {
+              "warmup": true,
+              "seconds": 1.0331650720036123,
+              "requests": [
+                {
+                  "seconds": 1.0324908920010785,
+                  "first_output_seconds": 0.3651507809991017,
+                  "post_first_output_tokens_per_second": 22.477294190331634,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.48639267195829
+            },
+            {
+              "warmup": true,
+              "seconds": 1.032283765001921,
+              "requests": [
+                {
+                  "seconds": 1.031820826989133,
+                  "first_output_seconds": 0.36462698299146723,
+                  "post_first_output_tokens_per_second": 22.482221823456275,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.499614100750897
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0339063930005068,
+              "requests": [
+                {
+                  "seconds": 1.0334496470022714,
+                  "first_output_seconds": 0.364193023997359,
+                  "post_first_output_tokens_per_second": 22.41292724553269,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.475288776932977
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0350196969957324,
+              "requests": [
+                {
+                  "seconds": 1.0347318099957192,
+                  "first_output_seconds": 0.36268649699923117,
+                  "post_first_output_tokens_per_second": 22.3199235377725,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.458643005965877
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0370685599918943,
+              "requests": [
+                {
+                  "seconds": 1.036726058999193,
+                  "first_output_seconds": 0.3623441960080527,
+                  "post_first_output_tokens_per_second": 22.242591064755644,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.428102458457573
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0379423490085173,
+              "requests": [
+                {
+                  "seconds": 1.0375314389966661,
+                  "first_output_seconds": 0.36145532700174954,
+                  "post_first_output_tokens_per_second": 22.186851056960265,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.41511435127762
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0381331980024697,
+              "requests": [
+                {
+                  "seconds": 1.0376628180092666,
+                  "first_output_seconds": 0.36248016500030644,
+                  "post_first_output_tokens_per_second": 22.21621058116986,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.412280457639248
+            },
+            {
+              "warmup": false,
+              "seconds": 1.0383927840011893,
+              "requests": [
+                {
+                  "seconds": 1.0380013899994083,
+                  "first_output_seconds": 0.36119604799023364,
+                  "post_first_output_tokens_per_second": 22.162945634369215,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 15.408427568562221
+            }
+          ],
+          "median_seconds": 1.0375054545002058,
+          "median_aggregate_output_tokens_per_second": 15.421608404867596
+        },
+        {
+          "prompt_tokens": 400,
+          "concurrency": 1,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.2616828850004822,
+              "requests": [
+                {
+                  "seconds": 1.2608434750000015,
+                  "first_output_seconds": 0.5756709480046993,
+                  "post_first_output_tokens_per_second": 21.892296332691178,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.681475028484583
+            },
+            {
+              "warmup": true,
+              "seconds": 1.251589277992025,
+              "requests": [
+                {
+                  "seconds": 1.2512903269962408,
+                  "first_output_seconds": 0.5688052240002435,
+                  "post_first_output_tokens_per_second": 21.97850170524231,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.78374645847833
+            },
+            {
+              "warmup": true,
+              "seconds": 1.2552022599993506,
+              "requests": [
+                {
+                  "seconds": 1.2548669740062905,
+                  "first_output_seconds": 0.5716645479988074,
+                  "post_first_output_tokens_per_second": 21.955425550312235,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.74694964300676
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2568627180007752,
+              "requests": [
+                {
+                  "seconds": 1.2564041720033856,
+                  "first_output_seconds": 0.5709503340040101,
+                  "post_first_output_tokens_per_second": 21.88331171035571,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.730109478822278
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2564431749924552,
+              "requests": [
+                {
+                  "seconds": 1.2560190429940121,
+                  "first_output_seconds": 0.5702031749970047,
+                  "post_first_output_tokens_per_second": 21.871759899357492,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.73436023089232
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2568702610005857,
+              "requests": [
+                {
+                  "seconds": 1.2565281269926345,
+                  "first_output_seconds": 0.5713624199997867,
+                  "post_first_output_tokens_per_second": 21.892514244231695,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.730033080154598
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2564420440030517,
+              "requests": [
+                {
+                  "seconds": 1.256057663995307,
+                  "first_output_seconds": 0.5722175309929298,
+                  "post_first_output_tokens_per_second": 21.93495127895317,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.734371693758076
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2555421279976144,
+              "requests": [
+                {
+                  "seconds": 1.255069573991932,
+                  "first_output_seconds": 0.5717473089898704,
+                  "post_first_output_tokens_per_second": 21.951575074104667,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.743499117403092
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2586948099924484,
+              "requests": [
+                {
+                  "seconds": 1.258329974996741,
+                  "first_output_seconds": 0.5732136599981459,
+                  "post_first_output_tokens_per_second": 21.894092538185667,
+                  "usage": {
+                    "prompt_tokens": 400,
+                    "completion_tokens": 16,
+                    "total_tokens": 416
+                  },
+                  "text": " range. A detailed explanation follows:  Binary search repeatedly halves a sorted"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 12.711580180501414
+            }
+          ],
+          "median_seconds": 1.2566529464966152,
+          "median_aggregate_output_tokens_per_second": 12.7322348548573
+        },
+        {
+          "prompt_tokens": 129,
+          "concurrency": 2,
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 1.5368430639937287,
+              "requests": [
+                {
+                  "seconds": 1.4928882339881966,
+                  "first_output_seconds": 0.36679093199199997,
+                  "post_first_output_tokens_per_second": 13.32034094514744,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5349262849922525,
+                  "first_output_seconds": 0.7703440420009429,
+                  "post_first_output_tokens_per_second": 19.618556587601123,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 20.821904818858318
+            },
+            {
+              "warmup": true,
+              "seconds": 1.5360304579953663,
+              "requests": [
+                {
+                  "seconds": 1.4924575579934753,
+                  "first_output_seconds": 0.36729411299165804,
+                  "post_first_output_tokens_per_second": 13.331396488779257,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.534922089005704,
+                  "first_output_seconds": 0.7708649859996513,
+                  "post_first_output_tokens_per_second": 19.632040512397634,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 20.832920228523577
+            },
+            {
+              "warmup": true,
+              "seconds": 1.537257044998114,
+              "requests": [
+                {
+                  "seconds": 1.493539838003926,
+                  "first_output_seconds": 0.365939064999111,
+                  "post_first_output_tokens_per_second": 13.302580451437796,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5360356819874141,
+                  "first_output_seconds": 0.7709780359873548,
+                  "post_first_output_tokens_per_second": 19.60636571430179,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 20.816297511285278
+            },
+            {
+              "warmup": false,
+              "seconds": 1.2570539659936912,
+              "requests": [
+                {
+                  "seconds": 1.2567139279999537,
+                  "first_output_seconds": 0.48357711199787445,
+                  "post_first_output_tokens_per_second": 19.401481975163964,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.2552446339977905,
+                  "first_output_seconds": 0.4828846849995898,
+                  "post_first_output_tokens_per_second": 19.420996673190967,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 25.456345443931877
+            },
+            {
+              "warmup": false,
+              "seconds": 1.535637028995552,
+              "requests": [
+                {
+                  "seconds": 1.4917029940115754,
+                  "first_output_seconds": 0.3650925760011887,
+                  "post_first_output_tokens_per_second": 13.314274180501773,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5346778370003449,
+                  "first_output_seconds": 0.7702019569987897,
+                  "post_first_output_tokens_per_second": 19.6212861548614,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 20.838257606311398
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5363651360094082,
+              "requests": [
+                {
+                  "seconds": 1.492608222994022,
+                  "first_output_seconds": 0.36597183099365793,
+                  "post_first_output_tokens_per_second": 13.31396722714346,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5352235979953548,
+                  "first_output_seconds": 0.7701034829951823,
+                  "post_first_output_tokens_per_second": 19.60476493288458,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 20.828382036263573
+            },
+            {
+              "warmup": false,
+              "seconds": 1.5371446529898094,
+              "requests": [
+                {
+                  "seconds": 1.4936395830009133,
+                  "first_output_seconds": 0.36667721399862785,
+                  "post_first_output_tokens_per_second": 13.31011612506609,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5361201259947848,
+                  "first_output_seconds": 0.7716803929943126,
+                  "post_first_output_tokens_per_second": 19.62221395939755,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 20.817819544672446
+            },
+            {
+              "warmup": false,
+              "seconds": 1.540559511995525,
+              "requests": [
+                {
+                  "seconds": 1.540151737004635,
+                  "first_output_seconds": 0.7726856010121992,
+                  "post_first_output_tokens_per_second": 19.544836308123234,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.4961927190015558,
+                  "first_output_seconds": 0.3672204140020767,
+                  "post_first_output_tokens_per_second": 13.286419811694957,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 20.771674025464684
+            },
+            {
+              "warmup": false,
+              "seconds": 1.538247071992373,
+              "requests": [
+                {
+                  "seconds": 1.4944578489958076,
+                  "first_output_seconds": 0.3667346849979367,
+                  "post_first_output_tokens_per_second": 13.301136731840971,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                },
+                {
+                  "seconds": 1.5372617280081613,
+                  "first_output_seconds": 0.7719643880118383,
+                  "post_first_output_tokens_per_second": 19.600224927048707,
+                  "usage": {
+                    "prompt_tokens": 129,
+                    "completion_tokens": 16,
+                    "total_tokens": 145
+                  },
+                  "text": ". A detailed explanation follows:  Binary search repeatedly halves a sorted range"
+                }
+              ],
+              "aggregate_output_tokens_per_second": 20.802899990931145
+            }
+          ],
+          "median_seconds": 1.5367548944996088,
+          "median_aggregate_output_tokens_per_second": 20.82310079046801
+        }
+      ],
+      "lifecycle": {
+        "host_restore": true,
+        "model_swap": true,
+        "swap_sample": " Binary search is a method of finding a specific element in a sorted array by repeatedly",
+        "disk_reload": true,
+        "cancellation_recovery": true,
+        "chat_stream_and_concurrency": true,
+        "chat_sample": " Binary search is an efficient algorithm for finding a specific value or range of values within a sorted list or array by repeatedly dividing the search interval in half until"
+      },
+      "kernel_backend": "triton+q4_0+cuda-gemv"
+    }
+  ],
+  "swap_model": {
+    "path": "/home/damen/dllm-dev/baselines/qwen3-small-import-q4_k_m.gguf",
+    "sha256": "9467d0bfdf4673a4182a6a02e8a66a89f1e2b5e214fcb120f1dc5068b83468df"
+  },
+  "production_residual_f32": false,
+  "experimental_prefill_f32": false,
+  "production_prefill_f32": false,
+  "experimental_batch2_q6": false,
+  "all_generated_texts_equal": true,
+  "passed": true
+}
