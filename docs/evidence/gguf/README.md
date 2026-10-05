@@ -1349,3 +1349,28 @@ shutdown notifications remain authoritative. CPU integration verifies option
 bounds and one call per group across multiple decode steps. The full local
 suite passes 313 tests. Normal-command A/B/B/A confirmation on both checkpoints
 is recorded separately when complete.
+
+
+Final normal-command confirmation passes on both checkpoints in
+`mistral-spm-q4-admission-production-1ms-a2.json` and
+`tinyllama-q4-k-m-admission-production-1ms-a2.json`. All four phases invoke
+`python -m dllm serve`; recorded arguments select 0/1/1/0 ms. Every generated
+text and lifecycle gate passes. Combined median total seconds are:
+
+| Input / concurrency | Mistral default | Mistral 1 ms | TinyLlama default | TinyLlama 1 ms |
+|---|---:|---:|---:|---:|
+| 16 / 1 | 0.7140 | 0.7213 | 0.2089 | 0.2083 |
+| 129 / 1 | 1.0257 | 1.0351 | 0.2341 | 0.2348 |
+| 400 / 1 | 1.2405 | 1.2536 | 0.2745 | 0.2752 |
+| 129 / 2 | 1.5256 | 1.2518 | 0.3441 | 0.2954 |
+| 129 / 4 | 1.7985 | 1.8078 | 0.4937 | 0.4941 |
+
+The normal option reduces two-request latency by 17.9% and 14.1%, respectively.
+Four-request total latency remains tied. Single-request first nonempty output
+median differences are 1.09/2.59/6.93 ms for Mistral and 0.92/1.11/1.06 ms for
+TinyLlama across 16/129/400-token inputs. These are observed end-to-end
+measurements, not a claim that all variation is caused by the 1 ms timer.
+The option remains disabled by default. Context, kernels, precision and weights
+are identical within each comparison; this is not a new cross-engine parity
+claim. The implementation and validation complete the bounded opt-in scope of
+issue #47; wider scheduling/performance work remains open.

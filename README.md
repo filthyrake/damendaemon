@@ -907,8 +907,9 @@ allowing closely arriving requests to share prompt processing. The default is
 0 (disabled), and the supported range is 0–10 ms. It does not wait between active
 decode steps or cross queued model/management barriers.
 
-Isolated A2 comparisons reduce two-request latency by 13.6% for TinyLlama and
-17.5% for Mistral, with four-request total latency roughly tied. Single-request
-first output costs about 1–4 ms; coalescing can also delay the earliest request's
-first output while bringing later requests forward. Normal CLI confirmation
-is in progress; see [the measured tradeoffs](docs/evidence/gguf/README.md).
+Normal A2 server comparisons reduce two-request latency by 14% for TinyLlama
+and 18% for Mistral, with four-request total latency roughly tied. Observed
+single-request first-output differences are about 1 ms for TinyLlama and
+1–7 ms for Mistral; coalescing can also delay the earliest concurrent request's
+first output while bringing later requests forward. See
+[the measured tradeoffs](docs/evidence/gguf/README.md).
