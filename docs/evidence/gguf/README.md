@@ -734,3 +734,52 @@ selection is consequently restricted to configured context capacities at most
 CUDA control is being evaluated to distinguish a residual-kernel regression
 from the existing long-context precision behavior. This result does not erase
 the passing 512-context proofs or establish a successful long-context fallback.
+
+The ordinary CUDA control
+`llama32-q4-k-m-native-reference-2048-a2.json` also fails on the same teacher
+trace: maximum RMS 1.8766%, with exact greedy decisions. Its metadata confirms
+that the residual option is unselected at 2048 context. The near-identical
+result localizes the issue beyond the residual kernel itself; precision controls
+are retained separately as they complete.
+
+Repeated batch-two profiling across layers 0 and 2 is retained in
+`kquant-residual-batch2-repeat-profile-a2.jsonl`. Three measurements per projection
+confirm approximately 20% lower Q6 down-projection latency and 11% lower Q6 head
+latency, while the Q4 down projection regresses. A validation-only candidate
+therefore adds only two-row, pure-Q6 `(width, outputs)` shapes `(8192, 2048)` and
+`(2048, 128256)` to the already-tested single-row policy. It is selected only by
+`DLLM_EXPERIMENTAL_RESIDUAL_BATCH2=1` with the explicit validation entry point.
+
+`llama32-q4-k-m-residual-batch2-runtime-a2.json` passes all 100 single/two/four-row
+fixed/paged/graph/chunk comparisons (maximum RMS 0.173%) and HTTP/lifecycle checks.
+Its concurrency-two packed/expanded medians are 0.361/0.366 s. This does not yet
+establish an incremental gain over the production single-row residual option;
+batched residual production dispatch remains disabled.
+
+The direct incremental comparison
+`llama32-q4-k-m-batch2-incremental-http-a2.json` compares production single-row
+residual dispatch against the additional isolated batch-two shapes. All text
+matches. Concurrency-two medians are 0.367534 versus 0.363293 s, approximately
+1.15% lower latency. Unchanged single-request cases vary by roughly -0.6% to
++0.8%; this small incremental result is insufficient to promote another dispatch
+policy. The candidate stays validation-only.
+
+Long-context controls are retained in
+`llama32-q4-k-m-context2048-control-{float32-reference,standard,expanded}.json`.
+The mixed path versus higher-precision HF reaches 2.2715% RMS; standard precision
+also fails; expanding the exact coefficients reproduces the ordinary packed
+result at 1.8766% RMS. All greedy decisions remain equal. The independent rotary
+probe (`llama32-gguf-rotary-control.json`) finds maximum frequency error
+1.16e-10 and maximum phase error 2.38e-7 radians at position 2047. These controls
+point beyond packed decoding and the imported rotary-factor vector; they do not
+establish a passing long-context arithmetic policy.
+
+The validation script now has an explicit `--weight-rounding kquant-float32`
+policy for investigating the existing FP32 executor. Independent dequantization
+retains unrounded FP32 K-quant projection coefficients while embeddings and
+unquantized vectors preserve the loader's FP16 storage values. A tied packed
+embedding/head therefore needs separate reference tensors under this policy.
+The flag requires an FP32 HF reference and rejects uncovered legacy Q4_0/Q8_0
+combinations. The prior `float16` reference policy remains the default; no
+historical failed result or threshold is changed. Unit tests cover tied storage,
+independent coefficients, vectors and rejected format combinations.

@@ -23,7 +23,9 @@ from dllm.runtime import make_executor
 from dllm.device import empty_cache, device_name
 
 
-def reference_weights(path):
+def reference_weights(path, rounding='float16'):
+    if rounding not in ('float16','kquant-float32'):
+        raise ValueError('unsupported reference weight rounding')
     reader = GGUFReader(path)
     state = {}
     architecture = reader.fields['general.architecture'].contents()
@@ -35,6 +37,7 @@ def reference_weights(path):
     for axis in ('q', 'k', 'v'):
         for kind in ('weight', 'bias'): layer[f'attn_{axis}.{kind}'] = f'self_attn.{axis}_proj.{kind}'
     types = {}
+    tied_head = None
     for tensor in reader.tensors:
         if tensor.name == 'rope_freqs.weight':
             continue  # HF independently constructs the Llama3 rotary schedule.
@@ -49,9 +52,16 @@ def reference_weights(path):
             heads = reader.fields[key].contents()
             shape = value.shape
             value = value.reshape(heads,shape[0]//heads//2,2,*shape[1:]).swapaxes(1,2).reshape(shape)
-        state[target] = torch.from_numpy(value.copy()).to(torch.float16)
+        decoded = torch.from_numpy(value.copy())
+        if rounding=='kquant-float32' and int(tensor.tensor_type) in (2,8):
+            raise ValueError('FP32 K-quant oracle does not cover legacy Q4_0/Q8_0 matrices')
+        exact_kquant = rounding=='kquant-float32' and int(tensor.tensor_type) in (12,13,14)
+        if tensor.name=='token_embd.weight' and exact_kquant:
+            tied_head=decoded
+        state[target] = decoded if exact_kquant and tensor.name!='token_embd.weight' else decoded.half()
         types[tensor.tensor_type.name] = types.get(tensor.tensor_type.name, 0) + 1
-    if 'lm_head.weight' not in state: state['lm_head.weight'] = state['model.embed_tokens.weight']
+    if 'lm_head.weight' not in state:
+        state['lm_head.weight'] = tied_head if tied_head is not None else state['model.embed_tokens.weight']
     embedding_type = next(t.tensor_type.name for t in reader.tensors if t.name == "token_embd.weight")
     return state, types, embedding_type
 
@@ -60,6 +70,8 @@ def main():
     p = argparse.ArgumentParser(); p.add_argument('gguf'); p.add_argument('hf_config'); p.add_argument('--output', required=True)
     p.add_argument('--benchmark-report',help='validate the exact prompt IDs and output length from an engine comparison')
     p.add_argument('--context',type=int,default=512,help='context capacity; must be at least 512')
+    p.add_argument('--weight-rounding',choices=('float16','kquant-float32'),default='float16',
+                   help='explicit coefficient policy; FP32 K projections retain FP16 embedding/vector values')
     p.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
@@ -67,6 +79,8 @@ def main():
     p.add_argument('--experimental-residual', action='store_true')
     args = p.parse_args(); torch.set_num_threads(4)
     if args.context < 512:p.error('--context must be at least 512')
+    if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
+        p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
     if args.experimental_residual:
         from experiments.kquant_residual import install_validation_dispatch
@@ -81,7 +95,7 @@ def main():
     config.tie_word_embeddings = False
     with no_init_weights():
         reference = AutoModelForCausalLM.from_config(config, torch_dtype=torch.float16, attn_implementation='eager')
-    state, formats, embedding_type = reference_weights(args.gguf)
+    state, formats, embedding_type = reference_weights(args.gguf,args.weight_rounding)
     reference.load_state_dict(state, strict=True, assign=True); del state
     reference.eval().to(device="cuda", dtype=getattr(torch, args.reference_dtype))
     cases = []
@@ -154,7 +168,7 @@ def main():
                   precision=precision, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
                   benchmark_report=args.benchmark_report, steps=steps,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
-                  weight_rounding='float16', tf32=False, formats=formats, embedding_type=embedding_type,
+                  weight_rounding=args.weight_rounding, tf32=False, formats=formats, embedding_type=embedding_type,
                   teacher_trace=args.teacher_trace,expanded_control=args.expanded_control,
                   host_bytes=source.bytes, experiment=experiment, production_residual_library=residual_library, cases=cases)
     Path(args.output).write_text(json.dumps(report, indent=2)+'\n')

@@ -51,6 +51,12 @@ def main():
     environment=os.environ.copy()
     environment.update(DLLM_DEVICE='cuda',DLLM_KQUANT_CUDA_LIBRARY=str(library),DLLM_LLAMA_PRECISION='mixed',
         DLLM_SPECULATIVE_TOKENS='0',DLLM_QUANTIZATION='none',OMP_NUM_THREADS='4')
+    production_residual=os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
+    if production_residual:
+        report['production_residual_library']=dict(path=production_residual,sha256=digest(production_residual))
+    report['experimental_batch2_q6']=bool(residual and os.environ.get('DLLM_EXPERIMENTAL_RESIDUAL_BATCH2')=='1')
+    if report['experimental_batch2_q6']:
+        report['experimental_arithmetic']+='; batch-two pure Q6 at (width, outputs)=(8192,2048) or (2048,128256)'
     counterpart='residual-int8-v2' if residual else 'llama.cpp'
     if residual:environment['DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY']=str(residual)
     try:

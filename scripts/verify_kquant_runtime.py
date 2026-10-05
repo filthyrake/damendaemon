@@ -82,7 +82,7 @@ def main():
                 report['packed_backend']=b.kernel_backend
                 report['packed_workspace_reserve_bytes']=b.packed_workspace_bytes
                 prompts=[[9707,11,1879,0]*size for size in (1,4,8,16)]
-                for count in (1,4):
+                for count in (1,2,4):
                     slots=list(range(count))
                     expected=a.prefill_batch(prompts[:count],slots)
                     actual=b.prefill_batch(prompts[:count],slots)
