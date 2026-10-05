@@ -15,8 +15,9 @@ import torch.distributed as dist
 from dllm.qwen2 import ModelWeights
 from dllm.layer_stage import LayerStage
 from dllm.partition_policy import validate
-from dllm.stage_protocol import Command, StageState, HEADER_WORDS, PREFILL, DECODE, RELEASE, STOP
+from dllm.stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP
 
+from dllm.stage_transport import StageChannel
 
 def fingerprint(model):
     digest = hashlib.sha256(json.dumps(dict(config=model.config, context=model.max_context,
@@ -50,6 +51,7 @@ def main():
     parser.add_argument('--quantization', choices=('none', 'q8_0'), default='none')
     parser.add_argument('--output', required=True)
     parser.add_argument('--inject-stale-sequence', action='store_true')
+    parser.add_argument('--token-completion', action='store_true')
     args = parser.parse_args()
     rank, local_rank = int(os.environ['RANK']), int(os.environ['LOCAL_RANK'])
     if int(os.environ['WORLD_SIZE']) != 2:parser.error('exactly two workers required')
@@ -57,7 +59,7 @@ def main():
     report = dict(passed=False, final_report=False, rank=rank, checks=[], commands=0,
         device=torch.cuda.get_device_name(), quantization=args.quantization,
         scope='coordinator-driven NCCL control correctness; not serving or performance',
-        reads_reference_trace=rank == 0)
+        reads_reference_trace=rank == 0, token_completion=args.token_completion)
     output = Path(args.output.format(rank=rank))
     output.write_text(json.dumps(report, indent=2)+'\n')
     state = StageState(1, 512)
@@ -74,6 +76,7 @@ def main():
         dist.all_gather(peers, local)
         if not torch.equal(peers[0], peers[1]):raise ValueError('worker model identity mismatch')
         report['model_sha256'] = identity.hex()
+        channel = StageChannel(state, rank)
         source = None
         if rank == 0:
             trace = torch.load(args.trace, map_location='cpu', weights_only=True)
@@ -86,19 +89,10 @@ def main():
                 operation, tokens, entries, targets = next(source)
                 sequence = state.sequence
                 if args.inject_stale_sequence and sequence == 3:sequence -= 1
-                wire = Command(state.epoch, sequence, operation, len(tokens), tuple(entries)).encode()
-                header = torch.tensor(wire, dtype=torch.int64, device='cuda')
+                request = Command(state.epoch, sequence, operation, len(tokens), tuple(entries))
             else:
-                header = torch.empty(HEADER_WORDS, dtype=torch.int64, device='cuda')
-            dist.broadcast(header, 0)
-            validation_error = None
-            try:command = state.begin(header.cpu().tolist())
-            except (ValueError, RuntimeError) as error:validation_error = error
-            admission = torch.tensor([int(validation_error is None)], device='cuda')
-            dist.all_reduce(admission, op=dist.ReduceOp.MIN)
-            if not admission.item():
-                state.poison()
-                raise ValueError('stage command rejected before activation transfer') from validation_error
+                request = None
+            command = channel.begin(request)
             slots = [entry[0] for entry in command.entries]
             if command.operation in (PREFILL, DECODE):
                 positions = (torch.arange(command.rows, device='cuda') if command.operation == PREFILL else
@@ -133,11 +127,14 @@ def main():
                         report['checks'].append(dict(operation=command.operation, slot=slots[row],
                             relative_rms=relative, max_absolute=absolute, greedy_match=match,
                             passed=relative < .01 and absolute < .5 and match))
-            # Acknowledgement occurs after device work, before ownership commits.
-            torch.cuda.synchronize()
-            completed = torch.ones(1, dtype=torch.int64, device='cuda')
-            dist.all_reduce(completed, op=dist.ReduceOp.MIN)
-            state.commit(command)
+            if args.token_completion and command.operation in (PREFILL, DECODE):
+                rows = 1 if command.operation == PREFILL else command.rows
+                returned = logits.argmax(-1) if rank == 1 else torch.empty(rows, dtype=torch.int64, device='cuda')
+                channel.complete_tokens(command, returned)
+                if rank == 0 and not torch.equal(returned, logits.argmax(-1)):
+                    raise AssertionError('returned tokens differ from final-stage logits')
+            else:
+                channel.finish(command)
             report['commands'] += 1
             if state.closed:break
         passed = rank == 1 or bool(report['checks']) and all(c['passed'] for c in report['checks'])

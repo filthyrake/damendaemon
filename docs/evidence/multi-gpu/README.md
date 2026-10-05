@@ -248,3 +248,51 @@ service. Full logits return to the coordinator solely for validation, adding
 communication that a serving design must avoid. No throughput or cross-host
 qualification is inferred from these runs. Existing same-host HTTP serving
 still uses its in-process partition executor.
+
+## Reusable transport and token completion
+
+`StageChannel` now owns fixed-size control exchange and completion fences.
+Collective completion reads its result on the host before committing ownership;
+merely enqueueing a CUDA collective is insufficient for that host-side contract.
+For prefill/decode, a typed int64 token reply can instead act as completion:
+rank one samples on the output GPU, rank zero receives token IDs, and both wait
+for CUDA transfer completion before committing. Release/stop retain an explicit
+collective acknowledgement. The channel requires a trusted two-rank NCCL group
+whose model identity and timeout have already been established.
+
+The extracted collective path passes all 82 Q8 reference checks. Token completion
+passes all 82 checks each at FP16 and Q8, including reordered/shrinking batches,
+slot replacement, and exact agreement between returned tokens and final logits.
+The extracted token-completion path also rejects the injected stale third
+command on both workers after exactly two completions
+(`qwen2-token-ack-stale-rank*.json`). The validation harness still returns full logits separately for its independent
+numerical comparisons; the performance harness returns only token IDs.
+
+Two separate A2/A30 Q8 ABBA experiments use the same pinned checkpoint, 12/12
+placement, context 512, batch one, 255 prompt tokens and 32 generated tokens.
+Each group has two warmups and six measured requests, giving 12 measurements
+per mode; every warmup and measured output matches exactly between modes.
+
+The initial control-overhead experiment (`qwen2-channel-q8-abba.json`) compares
+a fixed-workload worker pair against dynamic validated commands:
+
+| Median metric | Fixed workload | Validated control |
+| --- | ---: | ---: |
+| First token | 18.62 ms | 20.09 ms |
+| Full generation | 104.78 ms | 124.37 ms |
+| Decode | 360.46 tokens/s | 297.62 tokens/s |
+
+The subsequent matched completion experiment (`qwen2-token-ack-q8-abba.json`)
+keeps validation enabled in both modes:
+
+| Median metric | Separate completion collective | Token reply completion |
+| --- | ---: | ---: |
+| First token | 18.81 ms | 18.42 ms |
+| Full generation | 122.14 ms | 116.49 ms |
+| Decode | 299.56 tokens/s | 315.99 tokens/s |
+
+Token completion improves decode by 5.5% and reduces full-generation latency
+by 4.6% in the second experiment. Control overhead remains a performance target.
+These are sequential same-host worker measurements, not HTTP throughput,
+cross-network performance, an upstream comparison, or an RDMA claim. Local
+completion-ownership and failed-fence regressions bring the suite to 384 tests.
