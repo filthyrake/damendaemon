@@ -15,12 +15,23 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
     const half* weight_scales = ws + static_cast<size_t>(row)*(k/32);
     float accum[Rows] = {};
     for (int packed_column=lane*4; packed_column<k/2; packed_column+=128) {
+#ifdef DLLM_Q4_RESIDUAL_BYPASS_L1
+        // Weight bytes are consumed once; keep the small reused activation
+        // arrays in L1 instead. This variant is measured independently.
+        const uint32_t packed=__ldcg(reinterpret_cast<const uint32_t*>(weights+packed_column));
+#else
         const uint32_t packed=*reinterpret_cast<const uint32_t*>(weights+packed_column);
+#endif
         uint32_t lo=packed & 0x0f0f0f0fu, hi=(packed>>4) & 0x0f0f0f0fu;
         lo=(lo & 0x07070707u) | ((~lo & 0x08080808u)*31u);
         hi=(hi & 0x07070707u) | ((~hi & 0x08080808u)*31u);
         const int column=(packed_column/16)*32+packed_column%16;
+#ifdef DLLM_Q4_RESIDUAL_BYPASS_L1
+        const float scale=__half2float(__ushort_as_half(__ldcg(
+            reinterpret_cast<const unsigned short*>(weight_scales+packed_column/16))));
+#else
         const float scale=__half2float(weight_scales[packed_column/16]);
+#endif
         #pragma unroll
         for (int r=0; r<Rows; ++r) {
             const int index=r*k+column;

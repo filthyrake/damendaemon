@@ -1145,3 +1145,20 @@ Build the experiment separately with CUDA `nvcc -O3 -std=c++17 -arch=sm_86
 Set `DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY=PATH.so` only in an explicit validation
 process. `scripts/profile_q4_residual.py` reproduces matrix checks and timing;
 full-model verifiers use `--experimental-q4-residual`.
+
+The first single-row integer-dot candidate passes all 96 extended independent
+HF checks (maximum absolute 0.085938, RMS 0.4182%, exact greedy agreement) and all
+128 runtime-layout checks (worst RMS 0.2653%). Reports are
+`mistral-spm-q4-residual-reference-extended-a2.json` and
+`mistral-spm-q4-residual-layout-a2.json`. End-to-end comparison is separate.
+
+A diagnostic `DLLM_Q4_RESIDUAL_BYPASS_L1` compile-time variant keeps weight loads
+out of L1; it is a distinct binary and never overwrites the active candidate.
+`q4-residual-cache-matrices-a2.json` passes the same 108 matrix gates. The
+batch-two down projection improves from the first experiment's 0.9055 ms to
+0.4166 ms (production is 0.4337 ms in the second run), consistent with cache
+pressure contributing to that regression. Other large batch-two/four cases
+still give no compelling general improvement. Both compiled variants have no
+local-memory spills (40 registers for rows 2/3/4, 48 for row 1 in the first
+variant). The model experiment retains the original measured single-row scope;
+no batched production selector is added based on these results.
