@@ -62,3 +62,31 @@ for serving. It executes stages sequentially and copies their activations. It
 does not yet have a network control protocol, worker recovery, pipeline
 scheduling, or a capacity/speedup qualification. The small checkpoint fits on a
 single GPU; this proof must not be represented as a larger-model capacity win.
+
+## Separate workers and cross-network model execution
+
+`verify_distributed_stages.py` runs the same contiguous stages in two processes,
+using NCCL typed activation tensors and grouped asynchronous P2P with completion
+waits. Workers load a trusted local reference trace; no network object/pickle
+collective is used. A fixed 32-byte trace/configuration digest is compared before
+activation transfers. This is a test harness, not a general request protocol or
+model-weight authentication scheme.
+
+The same-host A2/A30 two-process run passes all 82 independent output-stage
+checks. Rank zero has no output head and therefore records no local logits
+checks; its pass flag reflects the collective result. An intentional trace-byte
+mismatch is rejected on both workers before any model activation transfer, with
+`ValueError('worker trace/configuration mismatch')`. Those expected-failure
+reports are retained as `qwen2-distributed-mismatch-rank*.json`.
+
+The cross-host A2 / desktop RTX 3090 run then passes all 82 output-stage checks:
+worst relative RMS 0.006666, maximum absolute error 0.065430, and every greedy
+token matches. See `qwen2-crosshost-stage-rank*.json`. Both workers used Torch
+2.6.0+cu124 and NCCL 2.21.5 with Socket requested. This establishes actual
+cross-network decoder execution with independent correctness evidence, not
+RDMA, serving readiness, recovery, capacity benefit, or speedup.
+
+The three approved peer-only temporary rules were reused within the original
+one-hour authorization window, with expiry shortened to stay inside that window.
+All were removed again immediately after the model proof; both rich-rule lists
+were checked afterward. No permanent firewall/router changes were made.
