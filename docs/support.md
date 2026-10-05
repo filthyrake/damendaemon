@@ -56,7 +56,7 @@ Model licenses remain those of their respective publishers.
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
 | Reranking | Bounded query/document lists, raw relevance scores, stable top_n ranking and optional returned text; no silent truncation |
 | Embeddings | Text/token-ID inputs, float/base64 output for the qualified BERT sentence encoder |
-| Weight formats | Hugging Face safetensors; standalone Qwen2/Qwen3/Llama 3 BPE GGUF F16/F32/Q4_0/Q8_0; Llama-style SentencePiece BPE including native positional score ties (Mistral Q4 and published TinyLlama Q4_K_M model/layout/serving proof through 2048 context); experimental CUDA Q4_K/Q5_K/Q6_K with mixed fused projections; own on-load Q8_0/Q4_0 conversion where supported; checkpoint-native GPT-OSS MXFP4; initial CUDA Qwen2 AWQ GEMM 4-bit/group-128 import |
+| Weight formats | Hugging Face safetensors; standalone Qwen2/Qwen3/Llama 3 BPE GGUF F16/F32/Q4_0/Q8_0; Llama-style SentencePiece BPE including native positional score ties (Mistral Q4 and published TinyLlama Q4_K_M model/layout/serving proof through 2048 context); experimental CUDA Q4_K/Q5_K/Q6_K with mixed fused projections; own on-load Q8_0/Q4_0 conversion where supported; checkpoint-native GPT-OSS MXFP4; CUDA Qwen2/Qwen3 AWQ GEMM 4-bit/group-128 import |
 | Chat templates | Checkpoint defaults or explicit per-model sandboxed UTF-8 overrides; stable through eviction/reload |
 | Position schemes | Standard/linear/Llama3 RoPE, fixture-qualified static YaRN; learned positions; partial rotary; ALiBi |
 
@@ -116,7 +116,11 @@ AWQ scope is pinned Qwen2.5-0.5B-Instruct-AWQ on CUDA A2 through context 2048,
 with checkpoint-native four-bit GEMM packing and group size 128. Independent HF
 SDPA, fixed/paged/graph/batched/chunked and server lifecycle checks pass. Eager
 FP16 reference differences remain documented; no general AWQ architecture or
-engine performance parity is claimed. The optional native Marlin backend is limited to the qualified small Qwen2
-geometry on NVIDIA A2 through context 2048; its packed storage replaces the
+engine performance parity is claimed. Qwen3-4B-AWQ now passes the full 128-check
+FP32-reference gate through context 2048 with Triton and native Marlin; Qwen3
+retains its existing mixed precision policy. Separate layout and lifecycle
+qualification is recorded in the evidence as it completes. The optional native
+Marlin backend is limited to the qualified small Qwen2 and Qwen3-4B geometries
+on NVIDIA A2 through context 2048 and batch capacity four; its packed storage replaces the
 original GPU format and native scratch is included in admission.
 See [AWQ evidence](evidence/awq/README.md).

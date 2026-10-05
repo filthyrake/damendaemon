@@ -6,7 +6,7 @@ from dllm.awq_model import plan
 
 def fingerprint(path):
     path = Path(path).resolve()
-    prepared = plan(path, allow_qwen3=True)
+    prepared = plan(path)
     hashes = {}
     for file in prepared.identities:
         if file.exists():

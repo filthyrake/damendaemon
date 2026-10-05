@@ -9,6 +9,7 @@ import torch
 from safetensors import safe_open
 from dllm.awq_model import AwqWeights, config
 from dllm.runtime import make_executor, require_gpu
+from dllm.models import load
 from scripts.awq_reference_cache import fingerprint
 
 
@@ -35,7 +36,7 @@ def load_oracle(cache, reference_report, model):
             if metadata['checkpoint'].get(name) != digest:
                 raise ValueError('checkpoint changed during oracle creation')
         targets = {name: reader.get_tensor(name) for name in reader.keys()}
-    vocab = config(model, allow_qwen3=True)['vocab_size']
+    vocab = config(model)['vocab_size']
     if any(not isinstance(ids, list) or not ids or any(type(token) is not int or not 0 <= token < vocab for token in ids)
            for ids in metadata['prompts']):
         raise ValueError('invalid oracle input tokens')
@@ -61,7 +62,9 @@ def main():
     if args.experimental_awq_marlin:
         from experiments.awq_marlin_dispatch import install_validation_dispatch
         experiment = install_validation_dispatch(args.experimental_awq_marlin)
-    source = AwqWeights(args.model, metadata['context'], 'none', allow_qwen3=True)
+    source = load(args.model, metadata['context'], 'none')
+    if not isinstance(source, AwqWeights):
+        raise ValueError('cached AWQ qualification requires the ordinary AWQ factory')
     report = dict(passed=False, experiment=experiment, context=metadata['context'],
                   oracle_sha256=cache_hash, oracle=metadata, cases=[],
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())

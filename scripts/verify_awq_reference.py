@@ -62,7 +62,6 @@ def main():
                         help='independent HF attention implementation; recorded as qualification scope')
     parser.add_argument('--experimental-awq-decode', action='store_true')
     parser.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
-    parser.add_argument('--experimental-qwen3-awq', action='store_true')
     parser.add_argument('--experimental-qwen3-fp16', action='store_true')
     parser.add_argument('--require-awq-marlin', action='store_true')
     parser.add_argument('--require-awq-decode', action='store_true', help='assert ordinary A2 decode selection')
@@ -102,10 +101,10 @@ def main():
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32 = False
     path = Path(args.model)
-    source = AwqWeights(path, args.context, 'none', allow_qwen3=args.experimental_qwen3_awq)
+    source = AwqWeights(path, args.context, 'none')
     if args.experimental_qwen3_fp16:
-        if not args.experimental_qwen3_awq:
-            parser.error('FP16 rounding requires Qwen3 AWQ qualification')
+        if source.config['model_type'] != 'qwen3':
+            parser.error('FP16 rounding requires Qwen3 AWQ')
         source.awq_fp16_rounding = True
     if args.require_awq_decode:
         from dllm.awq_decode_policy import use_small_rows
@@ -128,7 +127,7 @@ def main():
                               for w, b in zip(weight.split(sizes), biases)], -1)
         awq_kernels.linear = separate_products
     report = dict(passed=False, diagnostic_expanded_products=args.diagnostic_expanded_products,
-                  experiment=experiment, experimental_qwen3_awq=args.experimental_qwen3_awq,
+                  experiment=experiment,
                   experimental_qwen3_fp16=args.experimental_qwen3_fp16,
                   require_awq_decode=args.require_awq_decode,
                   diagnostic_rounded_attention=args.diagnostic_rounded_attention,

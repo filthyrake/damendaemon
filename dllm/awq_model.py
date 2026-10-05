@@ -15,14 +15,12 @@ from .qwen2 import ModelWeights, weight_files
 from .quantization import mode
 
 
-def config(path, *, allow_qwen3=False):
+def config(path):
     raw = json.loads((Path(path)/'config.json').read_text())
     group = group_size(raw.get('quantization_config'))
-    architectures = {'qwen2': ['Qwen2ForCausalLM']}
-    if allow_qwen3:
-        architectures['qwen3'] = ['Qwen3ForCausalLM']
+    architectures = {'qwen2': ['Qwen2ForCausalLM'], 'qwen3': ['Qwen3ForCausalLM']}
     if raw.get('model_type') not in architectures or raw.get('architectures') != architectures[raw['model_type']]:
-        raise ValueError('AWQ requires Qwen2 or an explicitly enabled qualification architecture')
+        raise ValueError('AWQ requires a Qwen2 or Qwen3 dense decoder')
     if type(raw.get('tie_word_embeddings', False)) is not bool:
         raise ValueError('invalid AWQ tied-embedding declaration')
     c = decoder_config({k: v for k, v in raw.items() if k != 'quantization_config'})
@@ -85,12 +83,12 @@ class Plan:
             raise ValueError('AWQ checkpoint changed during import')
 
 
-def plan(path, *, allow_qwen3=False):
+def plan(path):
     path = Path(path).resolve()
     identities = {path/name: identity(path/name) for name in
                   ('config.json', 'model.safetensors.index.json', 'tokenizer.json',
                    'tokenizer_config.json', 'generation_config.json', 'chat_template.jinja')}
-    c = config(path, allow_qwen3=allow_qwen3)
+    c = config(path)
     dense_dtypes = ('F16', 'BF16') if c['model_type'] == 'qwen3' else ('F16',)
     expected = {name: (shape, dense_dtypes) for _, entries in dense_groups(c) for name, shape in entries}
     if c.get('tie_word_embeddings'):
@@ -143,10 +141,10 @@ def weight_bytes(path, quantization=None):
 
 
 class AwqWeights(ModelWeights):
-    def __init__(self, path, max_context, quantization=None, *, allow_qwen3=False):
+    def __init__(self, path, max_context, quantization=None):
         if mode(quantization) != 'none' or selected_device() != 'cuda':
             raise ValueError('AWQ requires CUDA and checkpoint-native quantization')
-        prepared = plan(path, allow_qwen3=allow_qwen3)
+        prepared = plan(path)
         self.path, self.config = prepared.path, prepared.config
         c = self.config
         if type(max_context) is not int or not 1 <= max_context <= c['max_position_embeddings']:

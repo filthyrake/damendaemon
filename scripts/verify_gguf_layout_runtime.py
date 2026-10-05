@@ -27,7 +27,6 @@ def paged_capacity(context, lengths):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model'); parser.add_argument('--output', required=True)
-    parser.add_argument('--experimental-qwen3-awq', action='store_true')
     parser.add_argument('--experimental-qwen3-fp16', action='store_true')
     parser.add_argument('--awq-qualification', action='store_true',
                         help='exercise isolated AWQ loader without enabling normal registration')
@@ -45,6 +44,8 @@ def main():
     experiments.add_argument('--experimental-expand-tiles', action='store_true')
     experiments.add_argument('--experimental-dense-cache', action='store_true')
     args = parser.parse_args()
+    if args.experimental_qwen3_fp16 and not args.awq_qualification:
+        parser.error('Qwen3 FP16 diagnostic requires AWQ qualification')
     if args.context<512:parser.error('--context must be at least 512')
     lengths = args.prompt_lengths or (4, 128, args.context//2, args.context-128)
     if args.chunk_size < 1:
@@ -83,7 +84,7 @@ def main():
     require_gpu(); torch.set_num_threads(4); torch.backends.cuda.matmul.allow_tf32 = False
     if args.awq_qualification:
         from dllm.awq_model import AwqWeights
-        source = AwqWeights(args.model, args.context, 'none', allow_qwen3=args.experimental_qwen3_awq)
+        source = AwqWeights(args.model, args.context, 'none')
         if args.experimental_qwen3_fp16:
             source.awq_fp16_rounding = True
     else:

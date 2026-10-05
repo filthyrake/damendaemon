@@ -47,23 +47,22 @@ class AwqModelTests(unittest.TestCase):
             values = {name: value.to(torch.bfloat16) if name.endswith('.weight') else value
                       for name, value in values.items()}
             save_file(values, str(path/'model.safetensors'))
-            with self.assertRaises(ValueError):
-                AwqWeights(path, 64, 'none')
-            model = AwqWeights(path, 64, 'none', allow_qwen3=True)
+            from dllm.models import load
+            model = load(path, 64, 'none')
             self.assertNotIn('0.qkv.bias', model.weights)
             self.assertEqual(model.weights['embed'].dtype, torch.bfloat16)
-            self.assertEqual(model.bytes, plan(path, allow_qwen3=True).host_bytes)
+            self.assertEqual(model.bytes, plan(path).host_bytes)
             self.assertEqual(tuple(model.weights['0.q_norm'].shape), (64,))
             self.assertEqual(tuple(model.weights['0.k_norm'].shape), (64,))
             values['model.embed_tokens.weight'][0, 0] = 1e10
             save_file(values, str(path/'model.safetensors'))
             with self.assertRaisesRegex(ValueError, 'FP16 execution range'):
-                AwqWeights(path, 64, 'none', allow_qwen3=True)
+                AwqWeights(path, 64, 'none')
             values['model.embed_tokens.weight'][0, 0] = 1
             del values['model.layers.0.self_attn.k_norm.weight']
             save_file(values, str(path/'model.safetensors'))
             with self.assertRaisesRegex(ValueError, 'missing AWQ tensors'):
-                AwqWeights(path, 64, 'none', allow_qwen3=True)
+                AwqWeights(path, 64, 'none')
 
     def test_shared_factory_preserves_packed_checkpoint_and_rejects_other_formats(self):
         from dllm import models as factory
@@ -148,7 +147,8 @@ class AwqModelTests(unittest.TestCase):
                 weight_bytes(path, 'q4_0')
             with patch.dict('os.environ', {'DLLM_DEVICE': 'mps'}), self.assertRaisesRegex(ValueError, 'CUDA'):
                 weight_bytes(path, 'none')
-            c['model_type'] = 'qwen3'
+            c['model_type'] = 'mistral'
+            c['architectures'] = ['MistralForCausalLM']
             (path/'config.json').write_text(json.dumps(c))
             with self.assertRaisesRegex(ValueError, 'Qwen2'):
                 config(path)

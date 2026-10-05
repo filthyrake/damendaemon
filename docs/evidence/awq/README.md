@@ -379,3 +379,30 @@ One observed AWQ host restore takes 0.7939 seconds versus its initial disk
 activation of 3.5747 seconds; these are single lifecycle observations, not a
 controlled swap-speed benchmark. Raw source tiers, backends and timings are
 retained in `awq-qwen3-gguf-cross-model-lifecycle-a2.json`.
+
+## Qwen3-4B AWQ full FP32-reference gate
+
+The complete eight-prompt gate through context 2048 now passes all 128 checks
+for ordinary Triton execution (worst RMS 0.5337%, maximum absolute 0.204526).
+An exact copy of each independent oracle logit vector is reused for graph
+checks. A content-pinned safetensors oracle permits later backends to use those
+same results without repeating expensive layer-offloaded reference execution.
+Its hash is `16974fdbe92285bc0dd5c853fe9292b7d0087ddf5f94bf05e40a52c51c01b1d7`.
+The oracle binds tensor/config/tokenizer contents and creation metadata, and
+its replay checker verifies the creation-report hash, complete 64-vector
+schema, FP32 dtype, finite values and valid input IDs. The integrity tests reject
+changed checkpoint contents, changed cache bytes, partial suites and wrong dtype.
+One earlier full reference run was intentionally interrupted to enable this
+cache; it is not used as qualification evidence.
+
+Native Marlin also passes all 128 checks against that oracle (worst RMS 0.6664%,
+maximum absolute 0.122904), including the ordinary model factory and selected
+`triton+awq-marlin` backend. GPU weights total 2665925632 bytes. This uses the
+existing Qwen3 FP32 residual/elementwise policy with FP16 matrices and KV, not
+the experimental FP16-intermediate candidate. All 347 local regressions pass.
+Normal factory registration and native geometry selection now include this
+Qwen3 architecture/checkpoint scope; layout and HTTP lifecycle proof follow.
+
+Ordinary Qwen3 AWQ Triton execution also passes all 128 fixed/paged,
+eager/graph, batch-1/2/4 and chunked-layout comparisons through context 2048;
+worst relative RMS is 0.8259%, with exact greedy agreement.

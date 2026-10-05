@@ -88,12 +88,16 @@ class Library:
 
 
 def qualified_scope(config, device, dtype, context, max_batch=1):
-    return (device == 'cuda' and dtype == torch.float16 and 0 < context <= 2048 and 1 <= max_batch <= 4
-            and config.get('model_type') == 'qwen2'
-            and all(config.get(key) == value for key, value in dict(
-                hidden_size=896, intermediate_size=4864, num_hidden_layers=24,
-                num_attention_heads=14, num_key_value_heads=2,
-                head_dim=64, vocab_size=151936).items()))
+    geometries = {
+        'qwen2': dict(hidden_size=896, intermediate_size=4864, num_hidden_layers=24,
+                      num_attention_heads=14, num_key_value_heads=2, head_dim=64, vocab_size=151936),
+        'qwen3': dict(hidden_size=2560, intermediate_size=9728, num_hidden_layers=36,
+                      num_attention_heads=32, num_key_value_heads=8, head_dim=128, vocab_size=151936),
+    }
+    shape = geometries.get(config.get('model_type'))
+    return (device == 'cuda' and dtype == torch.float16 and 0 < context <= 2048
+            and 1 <= max_batch <= 4 and shape is not None
+            and all(config.get(key) == value for key, value in shape.items()))
 
 
 def select(config, device, dtype, context, max_batch=1):

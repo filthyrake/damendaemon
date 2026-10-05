@@ -25,6 +25,16 @@ class NativeAwqSelectionTests(unittest.TestCase):
                 self.assertFalse(qualified_scope(*args))
                 self.assertIsNone(select(*args))
 
+    def test_qwen3_geometry_and_batch_boundaries(self):
+        qwen3 = dict(model_type='qwen3', hidden_size=2560, intermediate_size=9728,
+                     num_hidden_layers=36, num_attention_heads=32, num_key_value_heads=8,
+                     head_dim=128, vocab_size=151936)
+        self.assertTrue(qualified_scope(qwen3, 'cuda', torch.float16, 2048, 4))
+        self.assertFalse(qualified_scope(qwen3, 'cuda', torch.float16, 2049, 4))
+        self.assertFalse(qualified_scope(qwen3, 'cuda', torch.float16, 2048, 5))
+        for key in qwen3:
+            self.assertFalse(qualified_scope({**qwen3, key: None}, 'cuda', torch.float16, 2048, 4))
+
     def test_opt_in_and_hardware_gate(self):
         args = (CONFIG, 'cuda', torch.float16, 2048)
         with patch.dict(os.environ, {}, clear=True), \
