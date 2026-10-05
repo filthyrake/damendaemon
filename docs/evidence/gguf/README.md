@@ -475,3 +475,46 @@ comparisons per path, no greedy mismatches, maximum relative RMS 0.824% and
 maximum absolute error 0.137. The unchanged gates remain <1% and <0.5.
 The initial and extended prompts, source checkpoint and 512-token scope are
 unchanged. No broader architecture/context/hardware claim is implied.
+
+## Same-file llama.cpp comparison
+
+`llama32-q4-k-m-engines-a2.json` runs dllm with the optional CUDA library and
+the unchanged pinned llama.cpp server sequentially on A2 in A/B/B/A order.
+Each phase uses three warmup rounds and six measured rounds per case, identical
+token IDs, exactly 16 output tokens, four slots, FP16 KV and 512 context per slot.
+The comparator's `/props` confirms its actual slot limit; checkpoint, binary and
+native-library hashes are recorded. These are matched stored-weight/KV formats,
+not a claim that different engines use identical intermediate arithmetic.
+
+llama.cpp prompt caching is disabled in every request; dllm prefix reuse and
+speculation are disabled. `llama32-q4-k-m-engine-controls-a2.json` records the
+reference device/offload lines and all 90 prompt-evaluation lengths across its
+two phases: every request recomputed its complete 16/129/400-token input.
+All generated text matches across engines, including the warmups.
+
+| Input / concurrency | dllm latency | llama.cpp latency | dllm aggregate output tok/s | llama.cpp aggregate output tok/s |
+|---|---:|---:|---:|---:|
+| 16 / 1 | 0.242 s | 0.164 s | 65.99 | 97.79 |
+| 129 / 1 | 0.263 s | 0.184 s | 60.72 | 87.02 |
+| 400 / 1 | 0.298 s | 0.244 s | 53.68 | 65.62 |
+| 129 / 2 | 0.379 s | 0.232 s | 84.51 | 138.09 |
+
+Medians pool the twelve measured rounds per engine/case. Aggregate throughput
+includes prompt processing and all requests in a round. dllm remains about
+22–63% slower. At 400 input tokens, first visible output is approximately
+0.100 s versus 0.102 s; the remaining gap is predominantly decoding. Shorter
+prompts also expose dllm's temporary-expansion prefill cost. These measurements
+do not establish parity or extrapolate to longer output/context or larger batches.
+
+## Q5_K_M qualification gap
+
+The same pinned F16 checkpoint was converted with the unchanged CPU reference
+quantizer to Q5_K_M, SHA256
+`e593d886d3cbdfed7a7c3c650866a7506d29f2e7d16218409316773f47c91db7`.
+It contains 96 Q5_K and 17 Q6_K tensors. The initial native CUDA HF comparison
+is retained in `llama32-q5-k-m-reference-cuda-initial-a2.json` and **fails** the
+existing 1% relative-RMS gate: maximum 1.0343%, absolute error 0.08594, with all
+64 greedy decisions equal. The failure occurs at a forced post-EOS step in the
+short arithmetic trace; ordinary generation through EOS and the longer raw
+traces stay below the gate. The threshold is unchanged and complete Q5_K_M
+qualification is not claimed. Issue #45 tracks diagnosis and remaining proof.
