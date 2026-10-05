@@ -886,3 +886,11 @@ normal `dllm` CLI in every phase. Ordinary/candidate FP32 medians are:
 These represent 30–49% lower latency for the measured Q5 workloads. The raw
 report is `llama32-q5-k-m-residual-f32-production-http-a2.json`; its library hash,
 commands, exact prompts, measured rounds and lifecycle outcomes are retained.
+
+Q4's normal-CLI confirmation also passes every output and lifecycle check in
+`llama32-q4-k-m-residual-f32-production-http-a2.json`. Ordinary/production FP32
+medians are 0.483638/0.248301 s (16/1), 0.598773/0.365971 s (129/1),
+0.805575/0.572631 s (400/1), and 0.895685/0.628896 s (129/2). This reproduces
+29–49% lower latency without the experimental wrapper. Both production replay
+reports identify the FP32 residual backend; the server reports retain the exact
+CMake-built library hash and the normal CLI command for each phase.
