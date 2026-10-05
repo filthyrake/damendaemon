@@ -521,6 +521,14 @@ the normal runtime; prefix-cache and service behavior require separate proof.
 See [chunked oracle](evidence/architectures/olmoe-chunk128-reference-a2.json)
 and [dispatch provenance](evidence/architectures/olmoe-chunk128-reference-dispatch.json).
 
+The same isolated offset implementation also passes 48 independently computed
+CPU FP32 eager-reference checks for bounded prefix reuse. These cover exact
+hits, divergent suffixes, shorter prefix restoration, slot/decode isolation,
+eviction and the 512-token snapshot budget; worst relative RMS is 0.000110%.
+The snapshots remain copied per-executor KV state, not shared pages. See
+[prefix numerical proof](evidence/architectures/olmoe-prefix-experiment-a2.json)
+and [experimental dispatch](evidence/architectures/olmoe-prefix-experiment-dispatch.json).
+
 
 ## Q8 short-prefill latency
 
