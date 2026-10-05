@@ -66,18 +66,28 @@ def _rope_store(X, COS, SIN, POS, Q, K, V, QW, KW,
         if NORM:
             inv = tl.rsqrt(tl.sum(x * x, 0) / D + EPS)
             weight = tl.load((QW if head < H else KW) + cols, cols < D, other=0).to(tl.float32)
-            x = x * inv * weight
+            x = x * inv
+            if not PRECISE:
+                x = x.to(tl.float16).to(tl.float32)
+            x = x * weight
+            if not PRECISE:
+                x = x.to(tl.float16).to(tl.float32)
             other_cols = (cols + D // 2) % D
             other = tl.load(X + base + other_cols, cols < D, other=0).to(tl.float32)
             other_weight = tl.load((QW if head < H else KW) + other_cols, cols < D, other=0).to(tl.float32)
-            other = other * inv * other_weight
+            other = other * inv
+            if not PRECISE:
+                other = other.to(tl.float16).to(tl.float32)
+            other = other * other_weight
+            if not PRECISE:
+                other = other.to(tl.float16).to(tl.float32)
         else:
             other = tl.load(X + base + (cols + D // 2) % D, cols < D, other=0).to(tl.float32)
         other = tl.where(cols < D // 2, -other, other)
         cos = tl.load(COS + position * D + cols, cols < D, other=0).to(tl.float32)
         sin = tl.load(SIN + position * D + cols, cols < D, other=0).to(tl.float32)
         a, b = x * cos, other * sin
-        if not NORM and not PRECISE:
+        if not PRECISE:
             a = a.to(tl.float16).to(tl.float32)
             b = b.to(tl.float16).to(tl.float32)
         rotated = a + b
@@ -256,18 +266,28 @@ def _rope_batch(X, COS, SIN, POS, SLOTS, Q, K, V, QW, KW, TMPK, TMPV, MATERIALIZ
         if NORM:
             inv = tl.rsqrt(tl.sum(x * x, 0) / D + EPS)
             weight = tl.load((QW if head < H else KW) + cols, cols < D, other=0).to(tl.float32)
-            x = x * inv * weight
+            x = x * inv
+            if not PRECISE:
+                x = x.to(tl.float16).to(tl.float32)
+            x = x * weight
+            if not PRECISE:
+                x = x.to(tl.float16).to(tl.float32)
             other_cols = (cols + RD // 2) % RD
             other = tl.load(X + base + other_cols, cols < D, other=0).to(tl.float32)
             other_weight = tl.load((QW if head < H else KW) + other_cols, cols < D, other=0).to(tl.float32)
-            other = other * inv * other_weight
+            other = other * inv
+            if not PRECISE:
+                other = other.to(tl.float16).to(tl.float32)
+            other = other * other_weight
+            if not PRECISE:
+                other = other.to(tl.float16).to(tl.float32)
         else:
             other = tl.load(X + base + (cols + RD // 2) % RD, cols < D, other=0).to(tl.float32)
         other = tl.where(cols < RD // 2, -other, other)
         cos = tl.load(COS + position * RD + cols, cols < RD, other=1).to(tl.float32)
         sin = tl.load(SIN + position * RD + cols, cols < RD, other=0).to(tl.float32)
         a, b = x * cos, other * sin
-        if not NORM and not PRECISE:
+        if not PRECISE:
             a = a.to(tl.float16).to(tl.float32)
             b = b.to(tl.float16).to(tl.float32)
         if head < H:

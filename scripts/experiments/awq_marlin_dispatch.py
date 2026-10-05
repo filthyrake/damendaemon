@@ -17,11 +17,11 @@ def install_validation_dispatch(path):
             super().__init__(weights, *args, **kwargs)
             if not self.awq:
                 return
-            # Executor's transfer dictionary retains old packed tensors until
-            # construction returns. Admit that transient overlap explicitly.
+            # Executor now releases transfer aliases before this constructor.
+            # Account for one replacement plus conversion temporaries.
             matrices = list(self.awq.values())
-            replacement = sum(t.numel()*t.element_size() for m in matrices
-                              for t in (m.weight, m.scales, m.zeros))
+            replacement = max(sum(t.numel()*t.element_size()
+                                  for t in (m.weight, m.scales, m.zeros)) for m in matrices)
             scratch_bytes = 4*library.sms*64*256*4 + 4*library.sms*4
             temporary = max(m.inputs*m.outputs*2 for m in matrices)
             free, _ = torch.cuda.mem_get_info()

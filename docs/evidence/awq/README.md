@@ -325,3 +325,19 @@ RMS 1.6652%), retaining exact greedy tokens. It removes packed GEMM and fused
 projection shape as sole explanations. A separate FP16 residual/normalization/
 rotary rounding candidate is under test; ordinary Qwen3 execution is unchanged.
 See `qwen3-4b-awq-expanded-separate-512-a2.json`.
+
+Explicit FP16 residual, RMS/QK normalization and rotary rounding improves the
+ordinary packed path to 126/128 checks: all RMS errors are below 1%, all greedy
+tokens match, but the 504-token prefill exceeds the unchanged absolute gate
+(0.5234375, repeated in graph mode). The flag remains experimental. The first
+native attempt stops at the experiment's conservative all-projection repacking
+guard; its report is retained separately. The experiment is being updated to
+account for sequential replacement after transfer aliases are released, as the
+normal native integration already does.
+
+With sequential native repacking admitted, the Marlin + FP16 rounding run also
+passes 126/128 checks and all greedy tokens, but fails the same 504-token
+prefill (1.5321% RMS, 0.671875 maximum absolute error). Native Qwen3 remains
+unqualified. The next diagnostic traces that prompt with original-shaped dense
+products and explicit FP16 rounding; the checker records selected case IDs so
+a focused diagnostic cannot be mistaken for the complete suite.

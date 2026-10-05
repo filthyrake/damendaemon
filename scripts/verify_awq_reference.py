@@ -50,12 +50,14 @@ def main():
     parser.add_argument('model')
     parser.add_argument('--upstream-source', required=True)
     parser.add_argument('--context', type=int, default=2048)
+    parser.add_argument('--case-indices', type=int, nargs='+', choices=range(8), default=list(range(8)))
     parser.add_argument('--output', required=True)
     parser.add_argument('--reference-attention', choices=('eager', 'sdpa'), default='eager',
                         help='independent HF attention implementation; recorded as qualification scope')
     parser.add_argument('--experimental-awq-decode', action='store_true')
     parser.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     parser.add_argument('--experimental-qwen3-awq', action='store_true')
+    parser.add_argument('--experimental-qwen3-fp16', action='store_true')
     parser.add_argument('--require-awq-marlin', action='store_true')
     parser.add_argument('--require-awq-decode', action='store_true', help='assert ordinary A2 decode selection')
     parser.add_argument('--diagnostic-expanded-products', action='store_true',
@@ -89,6 +91,10 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     path = Path(args.model)
     source = AwqWeights(path, args.context, 'none', allow_qwen3=args.experimental_qwen3_awq)
+    if args.experimental_qwen3_fp16:
+        if not args.experimental_qwen3_awq:
+            parser.error('FP16 rounding requires Qwen3 AWQ qualification')
+        source.awq_fp16_rounding = True
     if args.require_awq_decode:
         from dllm.awq_decode_policy import use_small_rows
         matrix = source.awq_matrices['0.qkv.weight']
@@ -111,10 +117,11 @@ def main():
         awq_kernels.linear = separate_products
     report = dict(passed=False, diagnostic_expanded_products=args.diagnostic_expanded_products,
                   experiment=experiment, experimental_qwen3_awq=args.experimental_qwen3_awq,
+                  experimental_qwen3_fp16=args.experimental_qwen3_fp16,
                   require_awq_decode=args.require_awq_decode,
                   diagnostic_rounded_attention=args.diagnostic_rounded_attention,
                   diagnostic_separate_products=args.diagnostic_separate_products,
-                  context=args.context, cases=[], model=str(path.resolve()),
+                  context=args.context, selected_cases=args.case_indices, cases=[], model=str(path.resolve()),
                   host_bytes=source.bytes, torch=torch.__version__, device=torch.cuda.get_device_name(),
                   reference='pinned upstream AWQ coefficient decoder; independent HF FP16 model execution',
                   reference_attention=args.reference_attention,
@@ -208,9 +215,11 @@ def main():
                 report['workspace_reserve_bytes'] = executor.packed_workspace_bytes
                 report['precision'] = dict(matrix=str(executor.compute_dtype), residual=str(executor.residual_dtype))
                 for index, ids in enumerate(prompts):
+                    if index not in args.case_indices:
+                        continue
                     handles, reference_layers, actual_layers = [], [], []
                     reference_parts, actual_parts = {}, {}
-                    if args.diagnostic_layer_trace and not graph and index == 0:
+                    if args.diagnostic_layer_trace and not graph and index == args.case_indices[0]:
                         def record_reference(module, inputs):
                             reference_layers.append(inputs[0].detach().cpu())
                         for layer in [*reference.model.layers, reference.model.norm]:
@@ -219,7 +228,9 @@ def main():
                         for name, module in [('norm1', first.input_layernorm), ('norm2', first.post_attention_layernorm),
                                              ('q', first.self_attn.q_proj), ('k', first.self_attn.k_proj),
                                              ('v', first.self_attn.v_proj), ('out', first.self_attn.o_proj),
-                                             ('gate', first.mlp.gate_proj), ('up', first.mlp.up_proj), ('down', first.mlp.down_proj)]:
+                                             ('gate', first.mlp.gate_proj), ('up', first.mlp.up_proj), ('down', first.mlp.down_proj)] + (
+                                             [('q_normalized', first.self_attn.q_norm), ('k_normalized', first.self_attn.k_norm)]
+                                             if hasattr(first.self_attn, 'q_norm') else []):
                             def record_part(module, inputs, output, name=name):
                                 reference_parts[name] = output.detach().cpu().squeeze(0)
                             handles.append(module.register_forward_hook(record_part))
@@ -250,7 +261,7 @@ def main():
                             result = original_attention(query, key, value, query_start)
                             if attention_calls == 0:
                                 from transformers.models.qwen2.modeling_qwen2 import apply_rotary_pos_emb, repeat_kv
-                                rq, rk, rv = [reference_parts[name].cuda().view(1, len(ids), -1, executor.dim).transpose(1, 2)
+                                rq, rk, rv = [reference_parts.get(name+'_normalized', reference_parts[name]).cuda().view(1, len(ids), -1, executor.dim).transpose(1, 2)
                                               for name in ('q', 'k', 'v')]
                                 positions = torch.arange(len(ids), device='cuda')[None, :]
                                 cos, sin = reference.model.rotary_emb(rq, positions)
@@ -259,6 +270,10 @@ def main():
                                 mask = positions[:, :, None] >= positions[:, None, :]
                                 scores = scores.masked_fill(~mask[:, None], torch.finfo(scores.dtype).min)
                                 ra = scores.softmax(-1, dtype=torch.float32).half() @ repeat_kv(rv, executor.heads//executor.kv_heads)
+                                if args.reference_attention == 'sdpa':
+                                    ra = torch.nn.functional.scaled_dot_product_attention(
+                                        rq, repeat_kv(rk, executor.heads//executor.kv_heads),
+                                        repeat_kv(rv, executor.heads//executor.kv_heads), is_causal=True)
                                 report['first_attention_parts'] = []
                                 for name, observed, target in [('query', query, rq), ('key', key, rk), ('value', value, rv), ('attention', result, ra)]:
                                     delta = observed.float()-target.float()

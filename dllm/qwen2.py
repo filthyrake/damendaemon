@@ -298,6 +298,10 @@ class Executor:
             self.dense_precision = 'float32'
             self.compute_dtype = torch.float32
             self.precise = self.rotary_precise = True
+        if getattr(model, 'awq_fp16_rounding', False):
+            if c['model_type'] != 'qwen3' or not getattr(model, 'awq_matrices', {}) or self.compute_dtype != torch.float16:
+                raise ValueError('AWQ FP16 rounding qualification requires Qwen3 FP16 AWQ')
+            self.precise = self.rotary_precise = False
         self.residual_dtype = torch.float32 if self.precise else self.compute_dtype
         selected = kernels or os.environ.get("DLLM_KERNELS", "auto")
         if selected not in ("auto", "torch", "triton", "metal"):
