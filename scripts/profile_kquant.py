@@ -24,9 +24,14 @@ def main():
     p.add_argument('--native-only',action='store_true')
     p.add_argument('--layers',type=int,nargs='+',default=[0],help='decoder layers to profile')
     p.add_argument('--rows',type=int,nargs='+',choices=(1,2,3,4),help='explicit decode batch sizes')
+    p.add_argument('--prefill-rows',type=int,nargs='+',help='profile only the specified prefill lengths, each greater than four')
     p.add_argument('--float32-experimental',action='store_true',help='compare isolated FP32 candidate against ordinary packed FP32')
     p.add_argument('--residual',action='store_true',help='include isolated residual-int8 candidate')
     args=p.parse_args()
+    if args.prefill_rows and (args.rows or args.decode_tuning or args.native_only or args.residual or args.float32_experimental):
+        p.error('--prefill-rows cannot be combined with decode-only options')
+    if args.prefill_rows and any(rows<=4 for rows in args.prefill_rows):
+        p.error('--prefill-rows must all exceed four')
     if args.float32_experimental and args.residual:p.error('select only one residual arithmetic experiment')
     if args.residual or args.float32_experimental:args.native_only=True
     dtype=torch.float32 if args.float32_experimental else torch.float16
@@ -39,7 +44,7 @@ def main():
             weight=model.weights[name].cuda();layout=model.packed_formats[name]
             width,spec=layout;outputs=spec[-1][1]
             dense=expand(weight,layout,dtype)
-            for rows in (args.rows or ((1,4) if args.decode_tuning or args.native_only else (1,4,129))):
+            for rows in (args.prefill_rows or args.rows or ((1,4) if args.decode_tuning or args.native_only else (1,4,129))):
                 x=torch.randn(rows,width,device='cuda',dtype=dtype)
                 expected=torch.nn.functional.linear(x,dense)
                 variants={'current':lambda:linear(x,weight,layout),

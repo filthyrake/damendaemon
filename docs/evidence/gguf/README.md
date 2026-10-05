@@ -1530,3 +1530,23 @@ FP16-rounded coefficients: all 96 logit checks pass, every greedy token agrees,
 and eager/graph paths agree. Worst relative RMS is 0.73287%, maximum absolute
 error 0.072265625. This validates dllm against its declared arithmetic reference;
 it does not establish bitwise cross-engine arithmetic or general answer quality.
+
+
+### TinyLlama projection and short-prefill probes
+
+`tinyllama-kquant-projections-a2.jsonl` and
+`tinyllama-kquant-short-prefill-a2.jsonl` use the unchanged published checkpoint
+and `scripts/profile_kquant.py`. All matrix results pass the existing 0.1%
+relative RMS gate against resident FP16-expanded coefficients. Timings are CUDA
+event measurements of ten graph replays after warmup; these isolated probes
+are not HTTP or full-model performance claims.
+
+At 129 rows, the tested fused packed tiles are slower than expansion plus GEMM
+for all five projections. At 16/32 rows, the best existing tile improves the
+layer-zero gate/up projection by roughly 16–17%, while QKV is tied or slower.
+At 64 rows, all tested fused tiles regress. `--prefill-rows` now permits these
+explicit prefill lengths without also rerunning decode tuning. The head's
+multi-row probes are synthetic matrix cases: normal prefill projects only the
+last hidden row, so those head timings must not be added to model latency.
+These findings do not change production dispatch. Expansion tile efficiency is
+being measured separately before choosing a candidate for model qualification.
