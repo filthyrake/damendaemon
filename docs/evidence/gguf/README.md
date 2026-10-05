@@ -817,3 +817,36 @@ across these cases. Single-row head time falls from 5.283 to 1.831 ms, and
 four-row head time from 8.249 to 4.423 ms. These are matrix timings, not a
 whole-model speed claim; full batching/lifecycle and HTTP comparisons remain
 necessary before production integration.
+
+The extended Q4 2048-context suite now passes 96 additional independent HF
+comparisons, with exact greedy agreement and maximum RMS 0.142%
+(`llama32-q4-k-m-residual-f32-reference-2048-extended-a2.json`). Q5's initial
+64-check FP32 suite also passes, maximum RMS 0.128%; its historical mixed/FP16
+failure remains a separate open qualification boundary.
+
+`verify_kquant_fp32_replay.py` records ordinary packed FP32 outputs in a separate
+process, then replays identical teacher tokens through the candidate. Q4 passes
+100 fixed/paged, graph/eager, one/two/four-row and chunked-prefill comparisons at
+512 context, maximum RMS 0.0362%, with all greedy decisions equal. The archive
+hash and recipe are retained in `llama32-q4-k-m-fp32-packed-baseline-a2.json` and
+`llama32-q4-k-m-residual-f32-replay-a2.json`. This isolates runtime behavior;
+independent model accuracy comes from the HF reports above.
+
+The actual server comparison `llama32-q4-k-m-residual-f32-http-a2.json` uses
+ordinary packed FP32 versus candidate FP32, A/B/B/A isolated processes, identical
+checkpoint/prompt IDs, FP32 KV, 512 context, 16 output tokens, three warmups and
+six measured rounds per phase/case. IEEE FP32 library settings are explicit.
+All generated text matches. Median request latency:
+
+| Input tokens / concurrency | Ordinary FP32 | Candidate FP32 | Speedup |
+| --- | ---: | ---: | ---: |
+| 16 / 1 | 0.483025 s | 0.247496 s | 1.95x |
+| 129 / 1 | 0.596491 s | 0.362491 s | 1.65x |
+| 400 / 1 | 0.801102 s | 0.568457 s | 1.41x |
+| 129 / 2 | 0.891643 s | 0.623102 s | 1.43x |
+
+Every phase also passes host restore, alias swapping with one GPU-resident model,
+disk reload, and early stream cancellation followed by recovery. This gain is
+over dllm's ordinary FP32 path; it is not a same-precision win over llama.cpp or
+the earlier FP16 residual option. FP32 prefill remains expensive. The candidate
+is still validation-only while Q5 coverage and production integration proceed.

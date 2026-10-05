@@ -28,13 +28,18 @@ def main():
     comparison=parser.add_mutually_exclusive_group(required=True)
     comparison.add_argument('--llama-server')
     comparison.add_argument('--residual-library',help='compare production with the isolated residual-int8 candidate')
+    comparison.add_argument('--residual-f32-library',help='compare ordinary packed FP32 with the isolated FP32 candidate')
+    parser.add_argument('--lifecycle',action='store_true',help='also check dllm cancellation, swapping and reloads after timing')
     parser.add_argument('--native-library',required=True);parser.add_argument('--output',required=True)
     args=parser.parse_args()
+    if args.lifecycle and args.llama_server:parser.error('--lifecycle requires a dllm candidate comparison')
+    precision='float32' if args.residual_f32_library else 'mixed'
     if not os.environ.get('CUDA_VISIBLE_DEVICES','').startswith('GPU-') or ',' in os.environ['CUDA_VISIBLE_DEVICES']:
         raise RuntimeError('select exactly one GPU UUID before benchmarking')
     model=Path(args.model).resolve();library=Path(args.native_library).resolve()
     llama=Path(args.llama_server).resolve() if args.llama_server else None
-    residual=Path(args.residual_library).resolve() if args.residual_library else None
+    residual_argument=args.residual_library or args.residual_f32_library
+    residual=Path(residual_argument).resolve() if residual_argument else None
     output=Path(args.output)
     tokenizer=Tokenizer.from_str(plan(model).tokenizer_json)
     base_tokens=tokenizer.encode('Binary search repeatedly halves a sorted range. A detailed explanation follows: ',
@@ -44,21 +49,26 @@ def main():
         native_library_sha256=digest(library),llama_server=str(llama) if llama else None,llama_server_sha256=digest(llama) if llama else None,
         residual_library=str(residual) if residual else None,
         residual_library_sha256=digest(residual) if residual else None,
-        experimental_arithmetic='two dyadic int8 activation terms; FP16 single-row width-2048 K-quants' if residual else None,
-        gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=512,slots=4,kv_dtype='float16',
-        dllm_precision='mixed: FP16 matrices, FP32 residual/nonlinear',output_tokens=16,
+        experimental_arithmetic=('two dyadic int8 activation terms; FP32 rows 1-4, widths 2048/8192' if precision=='float32'
+                                else 'two dyadic int8 activation terms; FP16 single-row width-2048 K-quants') if residual else None,
+        gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=512,slots=4,kv_dtype='float32' if precision=='float32' else 'float16',
+        dllm_precision='FP32 matrices, residual/nonlinear and KV' if precision=='float32' else 'mixed: FP16 matrices, FP32 residual/nonlinear',output_tokens=16,
         prompts=prompts,warmup_rounds=3,measured_rounds=6,runs=[])
     environment=os.environ.copy()
-    environment.update(DLLM_DEVICE='cuda',DLLM_KQUANT_CUDA_LIBRARY=str(library),DLLM_LLAMA_PRECISION='mixed',
+    environment.update(DLLM_DEVICE='cuda',DLLM_KQUANT_CUDA_LIBRARY=str(library),DLLM_LLAMA_PRECISION=precision,
+        DLLM_QWEN3_PRECISION='float32' if precision=='float32' else 'standard',
         DLLM_SPECULATIVE_TOKENS='0',DLLM_QUANTIZATION='none',OMP_NUM_THREADS='4')
     production_residual=os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
     if production_residual:
         report['production_residual_library']=dict(path=production_residual,sha256=digest(production_residual))
-    report['experimental_batch2_q6']=bool(residual and os.environ.get('DLLM_EXPERIMENTAL_RESIDUAL_BATCH2')=='1')
+    report['experimental_batch2_q6']=bool(args.residual_library and os.environ.get('DLLM_EXPERIMENTAL_RESIDUAL_BATCH2')=='1')
     if report['experimental_batch2_q6']:
         report['experimental_arithmetic']+='; batch-two pure Q6 at (width, outputs)=(8192,2048) or (2048,128256)'
-    counterpart='residual-int8-v2' if residual else 'llama.cpp'
-    if residual:environment['DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY']=str(residual)
+    counterpart='residual-int8-fp32' if precision=='float32' else 'residual-int8-v2' if residual else 'llama.cpp'
+    if residual:
+        variable='DLLM_EXPERIMENTAL_RESIDUAL_F32_LIBRARY' if precision=='float32' else 'DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY'
+        environment[variable]=str(residual)
+    if precision=='float32':environment['NVIDIA_TF32_OVERRIDE']='0'
     try:
         for phase,engine in enumerate(('dllm',counterpart,counterpart,'dllm')):
             with socket.socket() as reservation:
@@ -66,7 +76,9 @@ def main():
             base=f'http://127.0.0.1:{port}'
             log_path=output.with_name(output.stem+f'-{phase}-{engine}.log')
             if engine!='llama.cpp':
-                module='scripts.experiments.serve_residual' if engine=='residual-int8-v2' else 'dllm'
+                module={'residual-int8-v2':'scripts.experiments.serve_residual',
+                        'residual-int8-fp32':'scripts.experiments.serve_residual_f32'}.get(engine,
+                        'scripts.experiments.serve_float32' if precision=='float32' else 'dllm')
                 command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
                     '--context','512','--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
                     '--prefill-chunk-size','0','--prefix-cache-tokens','0']
@@ -130,6 +142,34 @@ def main():
                         case['median_seconds']=statistics.median(r['seconds'] for r in measured)
                         case['median_aggregate_output_tokens_per_second']=statistics.median(
                             r['aggregate_output_tokens_per_second'] for r in measured)
+                    if args.lifecycle:
+                        def post(route,body):
+                            return urlopen(Request(base+route,data=json.dumps(body).encode(),
+                                headers={'Content-Type':'application/json'}),timeout=300)
+                        def json_post(route,body):
+                            with post(route,body) as response:return json.load(response)
+                        body=dict(model='a',prompt=prompts[129],temperature=0,max_tokens=16)
+                        expected=next(c for c in run['cases'] if c['prompt_tokens']==129 and c['concurrency']==1)['rounds'][3]['requests'][0]['text']
+                        checks={};run['lifecycle']=checks
+                        json_post('/v1/models/unload',dict(model='a'))
+                        restored=json_post('/v1/completions',body)
+                        assert restored['dllm_timing']['source_tier']=='host' and restored['choices'][0]['text']==expected
+                        checks['host_restore']=True
+                        json_post('/v1/models/register',dict(model='b',path=str(model),quantization='none'))
+                        other=json_post('/v1/completions',{**body,'model':'b'})
+                        restored=json_post('/v1/completions',body)
+                        assert other['choices'][0]['text']==expected and restored['choices'][0]['text']==expected
+                        assert restored['dllm_timing']['source_tier']=='host'
+                        checks['alias_swap']=True
+                        json_post('/v1/models/unload',dict(model='a',release_host=True))
+                        restored=json_post('/v1/completions',body)
+                        assert restored['dllm_timing']['source_tier']=='disk' and restored['choices'][0]['text']==expected
+                        checks['disk_reload']=True
+                        with post('/v1/completions',{**body,'stream':True,'max_tokens':256}) as response:
+                            next(events(response))
+                        recovered=json_post('/v1/completions',body)
+                        assert recovered['choices'][0]['text']==expected
+                        checks['cancellation_recovery']=True
                 finally:
                     process.terminate()
                     try:process.wait(timeout=20)
