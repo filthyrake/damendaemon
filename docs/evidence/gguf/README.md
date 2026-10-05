@@ -1573,3 +1573,15 @@ batched/chunked layout comparisons. Reports are
 hash. The hook preserves fallback for other widths, formats and precisions.
 The benchmark's `--expand-tiles` option selects an explicit experimental server
 module only in candidate phases; normal CLI dispatch remains unchanged.
+
+
+`tinyllama-expand-tiles-http-a2.json` completes the isolated A/B/B/A server
+comparison at 2048 context. Every output and lifecycle gate passes. Original /
+experimental pooled median seconds are 0.204434/0.203463 (16/1),
+0.232034/0.229498 (129/1), 0.545350/0.541215 (2032/1),
+0.340064/0.336078 (129/2), and 0.492983/0.488826 (129/4).
+Observed request-latency gains are only 0.5–1.2%, despite the larger isolated
+expansion gain. Long-prompt baseline medians also vary from 0.541503 to 0.546988
+between phases. This remains an experiment: no production option or default
+change is justified by a single small effect. The normal decode path is the
+same in both sides, and this does not measure stacking with residual decode.

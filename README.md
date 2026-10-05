@@ -522,8 +522,9 @@ numerical gate remains open. The option changes arithmetic without changing
 stored weights. A2 Llama 3.2 1B Q4_K_M tests measured 7–11% lower single-request
 HTTP latency than ordinary CUDA, with concurrency two roughly tied. Other
 hardware, model sizes and long contexts are not qualified by those results.
-Published TinyLlama Q4_K_M passes model/layout proof through 2048 context and
-normal 512-context serving checks, with 5.7–8.5% lower single-request latency.
+Published TinyLlama Q4_K_M passes model/layout and normal serving proof through
+2048 context. The residual path lowers single-request latency 5.7–8.5% in the
+512-context workload and 2.7–8.1% in the separate 2048-context workload.
 Other Llama models retain the 512-context residual-selection limit.
 Backend status includes `cuda-kquant-residual` when selected.
 
@@ -892,8 +893,11 @@ passes native llama.cpp encoding/decoding checks. A vocabulary-corrected Mistral
 at 512 context. Tied merge scores use native C++ SentencePiece, reconstructed
 from the embedded vocabulary without an HF sidecar. The published TinyLlama
 1.1B Chat Q4_K_M passes independent tokenizer and model/layout checks through
-2048 context, plus server lifecycle checks at 512 including matching llama.cpp output. It remains
-26–79% slower in the measured workloads; broader qualification remains in issue #46. Structured output on the
+2048 context, including server lifecycle checks and cross-model swapping. It
+matches llama.cpp output in the 512-context workload while remaining 26–79%
+slower there. The 2048-context comparison retains long-prompt and concurrent
+output differences; independent HF checks agree with dllm on those exact prompts.
+Broader qualification remains in issue #46. Structured output on the
 positional tokenizer, unused tokens on that path, Unigram and custom
 normalization are rejected explicitly.
 

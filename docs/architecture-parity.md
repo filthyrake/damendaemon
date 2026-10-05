@@ -1364,5 +1364,10 @@ Q4_K_M passes 2,048 native encoding, 4,096 full decoding and 2,048 continuation
 checks, 160 independent model checks and 128 runtime-layout checks at context
 512. Its normal server passes lifecycle checks and matches llama.cpp output at
 concurrency 1/2/4, while remaining 26–79% slower on those measured workloads.
+Subsequent normal model/layout and HTTP lifecycle proof reaches 2048 context,
+including cross-model swaps. The same-file llama.cpp comparison at that context
+retains long-prompt and concurrent output differences; all 96 independent HF
+checks on those exact prompts agree with dllm. The optional residual path lowers
+single-request latency 2.7–8.1% versus original dllm in that separate workload.
 This does not establish general SentencePiece, unused-token or grammar support
 on the positional path, longer-window semantics or performance parity.
