@@ -10,11 +10,16 @@ from .vision_positions import image_positions, rotary_tables
 
 
 class VisionHybridExecutor(HybridExecutor):
+    requires_full_prefill=True
     def __init__(self, model, *, max_batch=4, use_graph=False):
         self.pending=None
         self.rotary=None
         self.image_offsets=torch.zeros(max_batch,dtype=torch.long,device='cuda')
         super().__init__(model,use_graph=use_graph,max_batch=max_batch)
+        self.vision=None
+        if getattr(model,'vision_weights',None) is not None:
+            from .vision_qwen35 import VisionEncoder
+            self.vision=VisionEncoder(model.vision_weights,device=self.device)
 
     def rotate(self,x,positions):
         if self.rotary is None:return super().rotate(x,positions)
@@ -25,9 +30,23 @@ class VisionHybridExecutor(HybridExecutor):
         return torch.cat((rotated*cos+torch.cat((-right,left),-1)*sin,rest),-1).half()
 
     def prefill(self,tokens,slot=0):
+        from .vision_model import ImagePrompt
+        if isinstance(tokens,ImagePrompt):
+            if not tokens or len(tokens)>self.context or type(slot) is not int or not 0<=slot<self.max_batch:
+                raise ValueError('invalid image prompt or cache slot')
+            if self.vision is None:raise ValueError('image weights are not loaded')
+            features=self.vision.encode(tokens.pixels,tokens.grids)
+            return self.prefill_images(tokens,features,tokens.grids,slot)
         result=super().prefill(tokens,slot)
         self.image_offsets[slot]=0
         return result
+
+    def prefill_batch(self,prompts,slots):
+        if (not prompts or len(prompts)!=len(slots) or len(set(slots))!=len(slots)
+                or any(not p or len(p)>self.context for p in prompts)
+                or any(type(slot) is not int or not 0<=slot<self.max_batch for slot in slots)):
+            raise ValueError('invalid image/text prefill batch')
+        return torch.cat([self.prefill(prompt,slot) for prompt,slot in zip(prompts,slots)])
 
     @torch.inference_mode()
     def prefill_images(self,tokens,features,grids,slot=0):

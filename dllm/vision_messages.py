@@ -5,6 +5,7 @@ multimodal serving; callers still need a qualified image-capable executor.
 """
 import base64
 import binascii
+import copy
 import hashlib
 import io
 import warnings
@@ -22,7 +23,7 @@ class ImageMessages:
     identities: tuple
 
 
-def decode_image_messages(messages, *, max_images=4, max_bytes=8*1024*1024, max_pixels=16*1024*1024):
+def _parse_image_messages(messages, *, max_images=4, max_bytes=8*1024*1024, max_pixels=16*1024*1024):
     if any(type(value) is not int or value<1 for value in (max_images,max_bytes,max_pixels)):
         raise ValueError('invalid image input limits')
     if not isinstance(messages,list) or not messages:
@@ -66,7 +67,17 @@ def decode_image_messages(messages, *, max_images=4, max_bytes=8*1024*1024, max_
             encoded.append((data,formats[prefix]))
             text.append(marker)
         normalized.append({**message,'content':''.join(text)})
-    normalized=validate_messages(normalized)
+    return validate_messages(normalized),encoded
+
+
+def validate_image_messages(messages):
+    """Validate bounded content without decoding pixels on a request thread."""
+    _parse_image_messages(messages)
+    return copy.deepcopy(messages)
+
+
+def decode_image_messages(messages, *, max_images=4, max_bytes=8*1024*1024, max_pixels=16*1024*1024):
+    normalized,encoded=_parse_image_messages(messages,max_images=max_images,max_bytes=max_bytes,max_pixels=max_pixels)
     if not encoded:return ImageMessages(normalized,(),())
     try:
         from PIL import Image, ImageOps

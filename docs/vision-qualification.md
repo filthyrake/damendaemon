@@ -155,3 +155,24 @@ The image-aware execution class now lives in `dllm.vision_hybrid` and shares
 dispatch remains unchanged. Both FP16 and Q8 variants pass all 54 independent
 checks again with four request slots and graph replay after this consolidation.
 The local suite now has 363 passing tests.
+
+## Inline chat-to-model bridge
+
+`VisionModelWeights` explicitly owns text and vision host weights and includes
+both in its byte count. It decodes inline image messages, expands placeholders,
+and returns an `ImagePrompt` with the full token count and prepared pixels.
+The reusable executor owns the corresponding vision GPU weights. Text-only
+requests retain the original text model's marker rejection behavior. Image
+requests with tool calls remain rejected. Request validation can check content
+without decoding pixels, leaving pixel decoding for the inference worker.
+
+The complete inline PNG chat path passes all 54 Q8 independent comparisons again
+with four slots and CUDA graphs. Expanded prompt token IDs exactly match the
+independent tokenizer/processor construction. Worst relative RMS is 0.00437896.
+All 364 local tests pass. This bridge is still explicitly constructed by the
+verifier; normal model loading, server validation, and serving dispatch have not
+been changed to enable it.
+
+Next integration work belongs to issue #50: opt-in model/HTTP dispatch, accurate
+residency and release checks, malformed-request recovery, streaming/cancellation,
+and actual HTTP measurements. Keep the intermediate encoder limitations visible.

@@ -18,22 +18,28 @@ def main():
     parser.add_argument('--output',required=True)
     parser.add_argument('--graph',action='store_true')
     parser.add_argument('--batch-size',type=int,choices=(1,2,3,4),default=3)
+    parser.add_argument('--messages',action='store_true',help='exercise inline PNG chat messages and model-owned vision weights')
     args=parser.parse_args()
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
     reference=torch.load(args.reference,weights_only=True)
     model=ModelWeights(reference['model'],1024,quantization=reference.get('text_quantization','none'))
+    if args.messages:
+        from dllm.vision_model import VisionModelWeights
+        model=VisionModelWeights(model,VisionWeights(reference['model']))
     executor=ImageHybridExecutor(model,max_batch=args.batch_size,use_graph=args.graph)
-    vision=VisionEncoder(VisionWeights(reference['model']))
+    vision=executor.vision if args.messages else VisionEncoder(VisionWeights(reference['model']))
     report=dict(passed=False,scope='experimental multimodal computation; not serving qualification',
                 graph=args.graph,
                 batch_capacity=args.batch_size,
+                inline_messages=args.messages,
                 text_quantization=reference.get('text_quantization','none'),
                 device=torch.cuda.get_device_name(),torch=str(torch.__version__),checks=[],
                 reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                     ('dllm/vision_qwen35.py','dllm/vision_inputs.py','dllm/vision_positions.py',
-                     'dllm/hybrid.py','dllm/vision_hybrid.py','scripts/experiments/vision_qwen35.py')})
+                     'dllm/hybrid.py','dllm/vision_hybrid.py','dllm/vision_model.py',
+                     'dllm/vision_messages.py','scripts/experiments/vision_qwen35.py')})
     def check(actual,target,label):
         actual=actual.float().cpu().reshape(-1)
         target=target.reshape(-1)
@@ -50,7 +56,21 @@ def main():
         for start in range(0,len(reference['cases']),args.batch_size):
             cases=reference['cases'][start:start+args.batch_size]
             for slot,case in enumerate(cases):
-                if case['grids']:
+                if args.messages:
+                    import base64
+                    import io
+                    from PIL import Image
+                    content=[]
+                    for image in case['images']:
+                        encoded=io.BytesIO()
+                        Image.fromarray(image.numpy()).save(encoded,format='PNG')
+                        content.append(dict(type='image_url',image_url=dict(url='data:image/png;base64,'+
+                            base64.b64encode(encoded.getvalue()).decode('ascii'))))
+                    content.append(dict(type='text',text='Describe the colors and shapes in these images.'))
+                    prompt=model.chat_tokens([dict(role='user',content=content)],enable_thinking=False)
+                    if prompt!=case['tokens']:raise AssertionError('image chat prompt differs from independent token expansion')
+                    actual=executor.prefill(prompt,slot)
+                elif case['grids']:
                     pixels,grids=prepare_images(case['images'])
                     features=vision.encode(pixels,grids)
                     actual=executor.prefill_images(case['tokens'],features,grids,slot)

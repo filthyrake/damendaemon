@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from PIL import Image
-from dllm.vision_messages import decode_image_messages
+from dllm.vision_messages import decode_image_messages,validate_image_messages
 
 
 def image_part(color='red',format_name='PNG',size=(8,6)):
@@ -17,6 +17,14 @@ def image_part(color='red',format_name='PNG',size=(8,6)):
 
 
 class VisionMessageTests(unittest.TestCase):
+    def test_request_validation_does_not_decode_pixels(self):
+        messages=[dict(role='user',content=[image_part()])]
+        with patch('PIL.Image.open') as opened:
+            copied=validate_image_messages(messages)
+            opened.assert_not_called()
+        self.assertEqual(copied,messages)
+        self.assertIsNot(copied,messages)
+
     def test_order_identity_and_input_preservation(self):
         messages=[dict(role='user',content=[dict(type='text',text='Compare '),image_part('red'),
                                            dict(type='text',text=' with '),image_part('blue')])]
