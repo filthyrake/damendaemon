@@ -1585,3 +1585,36 @@ expansion gain. Long-prompt baseline medians also vary from 0.541503 to 0.546988
 between phases. This remains an experiment: no production option or default
 change is justified by a single small effect. The normal decode path is the
 same in both sides, and this does not measure stacking with residual decode.
+
+
+### TinyLlama concurrent decode bottleneck and launch geometry
+
+`tinyllama-decode-b2-a2.json` and `tinyllama-decode-b4-a2.json` profile ordinary
+native K-quant decode at context 512. Packed matrix kernels account for 11.635
+of 12.229 ms GPU time per two-request decode step (95.15%), and 17.953 of
+18.739 ms per four-request step (95.81%). Profiling overhead makes these
+bottleneck measurements distinct from unprofiled HTTP latency.
+
+`tinyllama-kquant-launch-a2.json` compares the installed binary with separately
+compiled 64/128/256-thread blocks, on five actual checkpoint projections and
+one/two/four input rows. Every one of 120 comparisons preserves output bits,
+including bias; forward/reverse library order brackets the candidates with the
+original control. The rebuilt 128-thread control is approximately tied. The
+other geometries offer no broad improvement and sometimes regress by 1–3%.
+Default launch geometry remains 128 threads. Reproduce with
+`scripts/profile_kquant_launch.py`; compile isolated variants using
+`-DDLLM_KQUANT_THREADS=64` or `256`, retaining `--fmad=false` and `sm_86`.
+These are matrix experiments, not new qualified model or HTTP paths.
+
+
+`tinyllama-kquant-cache-policy-a2.json` retains a second native comparison:
+ordinary weight loads versus explicit L1-bypassing loads. All 90 actual-matrix
+checks preserve output bits. Cache bypass is slower by roughly 3–16% across
+these cases, so it is not selected. The rebuilt unflagged control is roughly
+tied with the installed binary. `DLLM_KQUANT_BYPASS_L1` is a compile-time
+experiment only; normal builds retain ordinary loads and 128-thread blocks.
+`kquant-rebuilt-control-coefficients-a2.json` independently probes the rebuilt
+unflagged library against GGUF dequantization, including mixed segment alignment
+and tail rows, with all coefficient checks passing. The installed library is
+unchanged. No runtime setting or performance improvement is claimed from either
+launch-geometry or cache-policy sweep.

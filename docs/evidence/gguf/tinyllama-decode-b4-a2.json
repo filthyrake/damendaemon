@@ -1,0 +1,78 @@
+{
+  "batch_size": 4,
+  "backend": "triton+mixed+cuda-kquant-gemv",
+  "host_preparation_seconds": 4.710075956012588,
+  "executor_activation_seconds": 2.5772819859848823,
+  "context": 512,
+  "steps": 16,
+  "graph": true,
+  "kernel_calls_per_decode_step": 282.0,
+  "kernel_time_us_per_decode_step": 18738.915874999955,
+  "kernels": [
+    {
+      "name": "void kquant_gemv<12, 4>(__half const*, unsigned char const*, __half const*, __half*, int, int, int, int)",
+      "calls": 1248,
+      "total_us": 239433.6239999994
+    },
+    {
+      "name": "void kquant_gemv<14, 4>(__half const*, unsigned char const*, __half const*, __half*, int, int, int, int)",
+      "calls": 336,
+      "total_us": 47816.91399999998
+    },
+    {
+      "name": "_attention",
+      "calls": 352,
+      "total_us": 6735.212999999778
+    },
+    {
+      "name": "void at::native::unrolled_elementwise_kernel<at::native::CUDAFunctor_add<float>, std::array<char*, 3ul>, 4, TrivialOffsetCalculator<2, unsigned int>, TrivialOffsetCalculator<1, unsigned int>, at::native::memory::LoadWithCast<2>, at::native::memory::StoreWithCast<1> >(int, at::native::CUDAFunctor_add<float>, std::array<char*, 3ul>, TrivialOffsetCalculator<2, unsigned int>, TrivialOffsetCalculator<1, unsigned int>, at::native::memory::LoadWithCast<2>, at::native::memory::StoreWithCast<1>)",
+      "calls": 704,
+      "total_us": 2301.19600000024
+    },
+    {
+      "name": "_rms",
+      "calls": 720,
+      "total_us": 1143.829000000187
+    },
+    {
+      "name": "_rope_batch",
+      "calls": 352,
+      "total_us": 795.2239999998274
+    },
+    {
+      "name": "_swiglu",
+      "calls": 352,
+      "total_us": 680.7570000000269
+    },
+    {
+      "name": "_merge",
+      "calls": 352,
+      "total_us": 632.5309999999336
+    },
+    {
+      "name": "void at::native::reduce_kernel<512, 1, at::native::ReduceOp<c10::Half, at::native::ArgMaxOps<float>, unsigned int, long, 4> >(at::native::ReduceOp<c10::Half, at::native::ArgMaxOps<float>, unsigned int, long, 4>)",
+      "calls": 16,
+      "total_us": 193.85500000001775
+    },
+    {
+      "name": "void at::native::vectorized_elementwise_kernel<4, at::native::FillFunctor<long>, std::array<char*, 1ul> >(int, at::native::FillFunctor<long>, std::array<char*, 1ul>)",
+      "calls": 32,
+      "total_us": 40.41899999984162
+    },
+    {
+      "name": "_embedding",
+      "calls": 16,
+      "total_us": 29.026000000023487
+    },
+    {
+      "name": "Memcpy DtoH (Device -> Pageable)",
+      "calls": 16,
+      "total_us": 15.040000000044529
+    },
+    {
+      "name": "Memcpy HtoD (Pinned -> Device)",
+      "calls": 16,
+      "total_us": 5.026000000027125
+    }
+  ]
+}

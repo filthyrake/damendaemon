@@ -5,6 +5,23 @@
 #include <cuda_fp16.h>
 #include <cstdint>
 
+// Override only for isolated launch-geometry measurements. Normal builds retain
+// four warp-owned output rows per block and exactly the same arithmetic.
+#ifndef DLLM_KQUANT_THREADS
+#define DLLM_KQUANT_THREADS 128
+#endif
+static_assert(DLLM_KQUANT_THREADS >= 32 && DLLM_KQUANT_THREADS <= 1024
+              && DLLM_KQUANT_THREADS % 32 == 0, "threads must be whole CUDA warps");
+
+template<typename T>
+__device__ __forceinline__ T weight_load(const T* pointer) {
+#ifdef DLLM_KQUANT_BYPASS_L1
+    return __ldcg(pointer);
+#else
+    return *pointer;
+#endif
+}
+
 template<int Kind, int Rows>
 __global__ void kquant_gemv(const half* __restrict__ x,
                           const uint8_t* __restrict__ weights,
@@ -20,21 +37,23 @@ __global__ void kquant_gemv(const half* __restrict__ x,
     const int packed_column = lane * 4;
     for (int block = 0; block < k / 256; ++block) {
         const uint8_t* data = row_weights + block * bytes;
-        const float d = __half2float(*reinterpret_cast<const half*>(data + (Kind == 14 ? 208 : 0)));
-        const float dm = Kind == 14 ? 0.f : __half2float(*reinterpret_cast<const half*>(data + 2));
+        const float d = __half2float(__ushort_as_half(weight_load(
+            reinterpret_cast<const uint16_t*>(data + (Kind == 14 ? 208 : 0)))));
+        const float dm = Kind == 14 ? 0.f : __half2float(__ushort_as_half(weight_load(
+            reinterpret_cast<const uint16_t*>(data + 2))));
         // Q6_K rows are only two-byte aligned. Two halfword loads are safe for
         // every segment offset, including a Q4_K segment after an odd Q6_K row.
         const int quant_offset = Kind == 12 ? 16 : Kind == 13 ? 48 : 0;
         const uint8_t* quant = data + quant_offset + packed_column;
-        const uint32_t packed = static_cast<uint32_t>(*reinterpret_cast<const uint16_t*>(quant))
-            | (static_cast<uint32_t>(*reinterpret_cast<const uint16_t*>(quant + 2)) << 16);
+        const uint32_t packed = static_cast<uint32_t>(weight_load(reinterpret_cast<const uint16_t*>(quant)))
+            | (static_cast<uint32_t>(weight_load(reinterpret_cast<const uint16_t*>(quant + 2))) << 16);
         uint32_t extra = 0;
         if constexpr (Kind != 12) {
             const int extra_offset = Kind == 13 ? 16 + packed_column % 32
                 : 128 + (packed_column / 64) * 32 + packed_column % 32;
             const uint8_t* high = data + extra_offset;
-            extra = static_cast<uint32_t>(*reinterpret_cast<const uint16_t*>(high))
-                | (static_cast<uint32_t>(*reinterpret_cast<const uint16_t*>(high + 2)) << 16);
+            extra = static_cast<uint32_t>(weight_load(reinterpret_cast<const uint16_t*>(high)))
+                | (static_cast<uint32_t>(weight_load(reinterpret_cast<const uint16_t*>(high + 2))) << 16);
         }
         #pragma unroll
         for (int side = 0; side < 2; ++side) {
@@ -44,12 +63,13 @@ __global__ void kquant_gemv(const half* __restrict__ x,
             int high_shift = 0;
             if constexpr (Kind == 12 || Kind == 13) {
                 const int group = column / 32, index = group % 4;
-                const int sc = data[4 + index], mn = data[8 + index], shared = data[12 + index];
+                const int sc = weight_load(data + 4 + index), mn = weight_load(data + 8 + index),
+                          shared = weight_load(data + 12 + index);
                 scale = __fmul_rn(d, static_cast<float>(group < 4 ? sc & 63 : (shared & 15) | ((sc >> 2) & 48)));
                 minimum = __fmul_rn(dm, static_cast<float>(group < 4 ? mn & 63 : (shared >> 4) | ((mn >> 2) & 48)));
                 high_shift = group;
             } else {
-                scale = __fmul_rn(d, static_cast<float>(static_cast<int8_t>(data[192 + column / 16])));
+                scale = __fmul_rn(d, static_cast<float>(static_cast<int8_t>(weight_load(data + 192 + column / 16))));
                 high_shift = (column % 128 / 32) * 2;
             }
             #pragma unroll
@@ -86,7 +106,8 @@ __global__ void kquant_gemv(const half* __restrict__ x,
 template<int Kind>
 void launch(const half* x, const uint8_t* weights, const half* bias, half* output,
             int rows, int n, int k, int first, int count, cudaStream_t stream) {
-    const dim3 block(128), grid((count + 3) / 4);
+    constexpr int warps = DLLM_KQUANT_THREADS / 32;
+    const dim3 block(DLLM_KQUANT_THREADS), grid((count + warps - 1) / warps);
     #define LAUNCH(R) kquant_gemv<Kind,R><<<grid,block,0,stream>>>(x,weights,bias,output,n,k,first,count)
     switch (rows) {
         case 1: LAUNCH(1); break;

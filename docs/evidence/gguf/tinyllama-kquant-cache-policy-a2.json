@@ -1,0 +1,724 @@
+{
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "device": "NVIDIA A2",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "torch": "2.6.0+cu124",
+  "triton": "3.2.0",
+  "libraries": {
+    "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so": "2896d777ef22e1658e1f3f2cae1b67126bf886f071a624f241f1ee816638a61c",
+    "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so": "cab6db49f8e39f5f4b68672ece97f1a402efd420499274dbcaad304f3b3fb97a",
+    "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so": "5f59d2406e8556ecbfc1bb76b9f58ff49c978d89def4740c395060dfd139f59a"
+  },
+  "scope": "actual packed weights; bitwise original-output gate; isolated matrix timings",
+  "cases": [
+    {
+      "name": "0.qkv.weight",
+      "width": 2048,
+      "outputs": 2560,
+      "rows": 1,
+      "formats": [
+        [
+          0,
+          2304,
+          12,
+          0
+        ],
+        [
+          2304,
+          2560,
+          14,
+          2654208
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.054635513573884964
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.054592061787843704
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.059264712035655975
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.05923140048980713
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.0546824112534523
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.05457230284810066
+        }
+      ]
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 2048,
+      "outputs": 2560,
+      "rows": 2,
+      "formats": [
+        [
+          0,
+          2304,
+          12,
+          0
+        ],
+        [
+          2304,
+          2560,
+          14,
+          2654208
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.06733991950750351
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.06736653298139572
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.07600449025630951
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.07618701457977295
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.0677306279540062
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.06776324659585953
+        }
+      ]
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 2048,
+      "outputs": 2560,
+      "rows": 4,
+      "formats": [
+        [
+          0,
+          2304,
+          12,
+          0
+        ],
+        [
+          2304,
+          2560,
+          14,
+          2654208
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.09835280478000641
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.0983208492398262
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.10324927419424057
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.10329874604940414
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.09836457669734955
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.09833969175815582
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "width": 2048,
+      "outputs": 2048,
+      "rows": 1,
+      "formats": [
+        [
+          0,
+          2048,
+          12,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.04248533770442009
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.042536165565252304
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.04632168263196945
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.04621667042374611
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.042549051344394684
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.04257061332464218
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "width": 2048,
+      "outputs": 2048,
+      "rows": 2,
+      "formats": [
+        [
+          0,
+          2048,
+          12,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.050756800919771194
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.05072544142603874
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.058627087622880936
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.058735065162181854
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.050853431224823
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.05077188089489937
+        }
+      ]
+    },
+    {
+      "name": "0.out",
+      "width": 2048,
+      "outputs": 2048,
+      "rows": 4,
+      "formats": [
+        [
+          0,
+          2048,
+          12,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.07874202728271484
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.07843188941478729
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.08223263919353485
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.08204453438520432
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.07853898406028748
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.07881438732147217
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "width": 2048,
+      "outputs": 11264,
+      "rows": 1,
+      "formats": [
+        [
+          0,
+          11264,
+          12,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.22562725841999054
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.2254287451505661
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.24517831206321716
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.2452278435230255
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.2256387174129486
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.22569632530212402
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "width": 2048,
+      "outputs": 11264,
+      "rows": 2,
+      "formats": [
+        [
+          0,
+          11264,
+          12,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.26944833993911743
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.2691120505332947
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.30470919609069824
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.30457285046577454
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.2690787613391876
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.2689064145088196
+        }
+      ]
+    },
+    {
+      "name": "0.gate_up",
+      "width": 2048,
+      "outputs": 11264,
+      "rows": 4,
+      "formats": [
+        [
+          0,
+          11264,
+          12,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.4143857955932617
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.4161165654659271
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.4323050081729889
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.43213003873825073
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.4160805642604828
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.4157029688358307
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "width": 5632,
+      "outputs": 2048,
+      "rows": 1,
+      "formats": [
+        [
+          0,
+          2048,
+          14,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.11757560074329376
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.11665143817663193
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.12586823105812073
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.12588828802108765
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.11664032936096191
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.11754029989242554
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "width": 5632,
+      "outputs": 2048,
+      "rows": 2,
+      "formats": [
+        [
+          0,
+          2048,
+          14,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.1460418701171875
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.14659427106380463
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.15155291557312012
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.15139266848564148
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.14666464924812317
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.14653101563453674
+        }
+      ]
+    },
+    {
+      "name": "0.down",
+      "width": 5632,
+      "outputs": 2048,
+      "rows": 4,
+      "formats": [
+        [
+          0,
+          2048,
+          14,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.19308550655841827
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.18994268774986267
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.2048533856868744
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.20483143627643585
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.19064369797706604
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.19375619292259216
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "width": 2048,
+      "outputs": 32000,
+      "rows": 1,
+      "formats": [
+        [
+          0,
+          32000,
+          14,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.6726325750350952
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.6674997210502625
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.7149897813796997
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.7149789333343506
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.6661492586135864
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.6723782420158386
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "width": 2048,
+      "outputs": 32000,
+      "rows": 2,
+      "formats": [
+        [
+          0,
+          32000,
+          14,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.7883955836296082
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.7900984883308411
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.8372974395751953
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 0.8372683525085449
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 0.7904566526412964
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 0.7893881797790527
+        }
+      ]
+    },
+    {
+      "name": "head",
+      "width": 2048,
+      "outputs": 32000,
+      "rows": 4,
+      "formats": [
+        [
+          0,
+          32000,
+          14,
+          0
+        ]
+      ],
+      "rounds": [
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 1.1164640188217163
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 1.0987589359283447
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 1.1721187829971313
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-bypass.so",
+          "passed": true,
+          "ms": 1.1713244915008545
+        },
+        {
+          "library": "/home/damen/dllm-dev/results/libdllm-kquant-cache-control.so",
+          "passed": true,
+          "ms": 1.0996639728546143
+        },
+        {
+          "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+          "passed": true,
+          "ms": 1.1171505451202393
+        }
+      ]
+    }
+  ],
+  "passed": true
+}
