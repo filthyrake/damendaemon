@@ -968,3 +968,26 @@ independent 2048-context model reports pass. Backend labels and kernel hashes
 are retained in the `*-prefill-f32-production-*` reports. Normal-server timing
 and lifecycle confirmation of this final dispatch are recorded separately when
 complete. The local regression suite passes 289 tests.
+
+Final normal-server confirmation passes for both Q4 and Q5 in
+`llama32-q{4,5}-k-m-prefill-f32-production-http-a2.json`. Both phases use the
+normal CLI; backend assertions confirm residual decode in both engines and
+compensated prefill only in the candidate. Every generated text and lifecycle
+check passes. These corrected-kernel A/B/B/A medians compare residual decode
+alone against residual decode plus compensated prefill:
+
+| Model | Input / concurrency | Decode only | Decode + prefill |
+| --- | --- | ---: | ---: |
+| Q4_K_M | 16 / 1 | 0.248831 s | 0.249036 s |
+| Q4_K_M | 129 / 1 | 0.364477 s | 0.323720 s |
+| Q4_K_M | 400 / 1 | 0.570949 s | 0.479223 s |
+| Q4_K_M | 129 / 2 | 0.626377 s | 0.546656 s |
+| Q5_K_M | 16 / 1 | 0.275045 s | 0.274001 s |
+| Q5_K_M | 129 / 1 | 0.391113 s | 0.355199 s |
+| Q5_K_M | 400 / 1 | 0.598608 s | 0.509351 s |
+| Q5_K_M | 129 / 2 | 0.652573 s | 0.577975 s |
+
+The changed longer-prompt cases improve 9–16%; the unchanged 16-token path is
+approximately tied. This is an incremental FP32 gain, not a cross-engine or
+cross-precision parity claim. Independent model coverage extends to 2048;
+server, paging and lifecycle evidence remains at 512 context.

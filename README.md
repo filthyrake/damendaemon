@@ -542,7 +542,8 @@ are decoded directly into scaled high/low FP16 components, then three Tensor
 Core products accumulate in FP32. This is a numerically qualified approximation
 to the unrounded FP32 coefficients. Short prompts retain ordinary processing.
 The option is independent of the residual decode library; enabling both combines
-their gains. Backend status adds `compensated-kquant-prefill-f32`. Weights remain
+their gains. Normal-server A2 Q4/Q5 tests show an additional 9–16% lower latency
+on the measured 129/400-token workloads, with short prompts approximately tied. Backend status adds `compensated-kquant-prefill-f32`. Weights remain
 packed while resident; the high/low buffers are temporary per projection.
 
 See the [K-quant qualification and performance evidence](docs/evidence/gguf/README.md).
