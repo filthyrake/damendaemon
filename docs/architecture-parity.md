@@ -438,10 +438,22 @@ OLMoE geometry, context at most 2048, batch capacity at most four and prompts
 of 1–128 tokens. Longer prompts and other configurations retain the previous
 path. The integrated runtime passes all 82 independent checks including mixed
 short/long prompts and reused decode slots (worst relative RMS 0.000389%);
-349 local tests pass, including selection boundaries. Streaming HTTP performance
-and mixed-model lifecycle qualification are in progress. See
+349 local tests pass, including selection boundaries. Mixed-model lifecycle
+qualification is in progress. See
 [normal-runtime oracle](evidence/architectures/olmoe-device-grouped-normal-reference-a2.json)
 and [source fingerprints](evidence/architectures/olmoe-device-grouped-normal-source.json).
+
+The normal streaming server also passes repeated control/candidate/candidate/control
+measurements with 32 identical input IDs and 32 output tokens. Median total
+latency falls from 0.634/1.209/2.382 seconds to 0.460/0.861/1.668 seconds at
+concurrency 1/2/4 (27.4/28.8/30.0%). Aggregate output throughput including prefill
+rises from 50.44/52.70/53.46 to 69.46/73.89/76.58 tokens/s. Responses and token
+counts are identical throughout. Single-request first output improves from
+0.361 to 0.188 seconds; C4 improves from 1.449 to 0.751 seconds. C2 first-output
+control medians vary between phases (0.719 vs 0.540 seconds), so its aggregate
+59% reduction includes admission timing variation. These are warm short-prompt
+service results, not decode-only throughput or a cross-runtime comparison.
+See [HTTP measurements and phase medians](evidence/architectures/olmoe-device-grouped-http-summary-a2.json).
 
 
 ## Q8 short-prefill latency
