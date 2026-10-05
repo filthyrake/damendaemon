@@ -12,6 +12,11 @@ from .vision_positions import image_positions, rotary_tables
 class VisionHybridExecutor(HybridExecutor):
     requires_full_prefill=True
     def __init__(self, model, *, max_batch=4, use_graph=False):
+        from .device import selected_device
+        if (selected_device()!='cuda' or not torch.cuda.is_available()
+                or torch.cuda.get_device_name()!='NVIDIA A2' or not 1<=max_batch<=4
+                or model.max_context>1024):
+            raise ValueError('experimental vision requires NVIDIA A2, context <=1024, and at most four slots')
         self.pending=None
         self.rotary=None
         self.image_offsets=torch.zeros(max_batch,dtype=torch.long,device='cuda')

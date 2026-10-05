@@ -136,7 +136,12 @@ def handler_for(runtime):
                 if raw:
                     sampling['raw_prompt'] = validate_raw(body.get('prompt'))
                 else:
-                    messages=validate_messages(messages)
+                    from .vision_policy import enabled as vision_enabled
+                    if vision_enabled():
+                        from .vision_messages import validate_image_messages
+                        messages=validate_image_messages(messages)
+                    else:
+                        messages=validate_messages(messages)
                 options = body.get("stream_options", {})
                 if not isinstance(options, dict) or set(options) - {"include_usage"}:
                     raise ValueError("unsupported stream options")

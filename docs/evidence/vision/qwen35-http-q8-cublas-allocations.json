@@ -1,0 +1,315 @@
+[
+  {
+    "address": 140038079774720,
+    "size": 8519680,
+    "requested_size": 8519680,
+    "state": "active_allocated",
+    "frames": [
+      {
+        "name": "torch::unwind::unwind()",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "torch::CapturedTraceback::gather(bool, bool, bool)",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "torch::cuda::(anonymous namespace)::gather_with_cpp()",
+        "filename": "memory_snapshot.cpp",
+        "line": 0
+      },
+      {
+        "name": "c10::cuda::CUDACachingAllocator::Native::DeviceCachingAllocator::malloc(signed char, unsigned long, CUstream_st*)",
+        "filename": "CUDACachingAllocator.cpp",
+        "line": 0
+      },
+      {
+        "name": "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::malloc(void**, signed char, unsigned long, CUstream_st*)",
+        "filename": "",
+        "line": 0
+      },
+      {
+        "name": "c10::cuda::CUDACachingAllocator::Native::NativeCachingAllocator::allocate(unsigned long)",
+        "filename": "",
+        "line": 0
+      },
+      {
+        "name": "at::cuda::getNewWorkspace()",
+        "filename": "",
+        "line": 0
+      },
+      {
+        "name": "at::cuda::getCurrentCUDABlasHandle()",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "void at::cuda::blas::gemm_internal_cublas<c10::Half>(char, char, long, long, long, at::OpMathType<c10::Half>::type, c10::Half const*, long, c10::Half const*, long, at::OpMathType<c10::Half>::type, c10::Half*, long)",
+        "filename": "",
+        "line": 0
+      },
+      {
+        "name": "void at::cuda::blas::gemm<c10::Half>(char, char, long, long, long, at::OpMathType<c10::Half>::type, c10::Half const*, long, c10::Half const*, long, at::OpMathType<c10::Half>::type, c10::Half*, long)",
+        "filename": "",
+        "line": 0
+      },
+      {
+        "name": "at::native::(anonymous namespace)::addmm_out_cuda_impl(at::Tensor&, at::Tensor const&, at::Tensor const&, at::Tensor const&, c10::Scalar const&, c10::Scalar const&, at::native::(anonymous namespace)::Activation)",
+        "filename": "Blas.cpp",
+        "line": 0
+      },
+      {
+        "name": "at::native::structured_mm_out_cuda::impl(at::Tensor const&, at::Tensor const&, at::Tensor const&)",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "at::(anonymous namespace)::wrapper_CUDA_mm(at::Tensor const&, at::Tensor const&)",
+        "filename": "RegisterCUDA.cpp",
+        "line": 0
+      },
+      {
+        "name": "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&), &at::(anonymous namespace)::wrapper_CUDA_mm>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&> >, at::Tensor (at::Tensor const&, at::Tensor const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&)",
+        "filename": "RegisterCUDA.cpp",
+        "line": 0
+      },
+      {
+        "name": "at::_ops::mm::call(at::Tensor const&, at::Tensor const&)",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "at::native::_matmul_impl(at::Tensor&, at::Tensor const&, at::Tensor const&)",
+        "filename": "LinearAlgebra.cpp",
+        "line": 0
+      },
+      {
+        "name": "at::native::matmul(at::Tensor const&, at::Tensor const&)",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&), &at::(anonymous namespace)::(anonymous namespace)::wrapper_CompositeImplicitAutograd__matmul>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&> >, at::Tensor (at::Tensor const&, at::Tensor const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&)",
+        "filename": "RegisterCompositeImplicitAutograd.cpp",
+        "line": 0
+      },
+      {
+        "name": "at::_ops::matmul::call(at::Tensor const&, at::Tensor const&)",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "at::native::linear(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&), &at::(anonymous namespace)::(anonymous namespace)::wrapper_CompositeImplicitAutograd__linear>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&> >, at::Tensor (at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+        "filename": "RegisterCompositeImplicitAutograd.cpp",
+        "line": 0
+      },
+      {
+        "name": "at::_ops::linear::call(at::Tensor const&, at::Tensor const&, std::optional<at::Tensor> const&)",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "torch::autograd::THPVariable_linear(_object*, _object*, _object*)",
+        "filename": "python_nn_functions.cpp",
+        "line": 0
+      },
+      {
+        "name": "PyToken_OneChar",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "_PyObject_MakeTpCall",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "linear",
+        "filename": "/home/damen/dllm-dev/dllm/quantized_kernels.py",
+        "line": 82
+      },
+      {
+        "name": "_PyEval_EvalFrameDefault",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "_PyFunction_Vectorcall",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "_PyObject_FastCallDictTstate",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "_PyObject_Call_Prepend",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "_PyObject_RealIsInstance",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "_PyObject_MakeTpCall",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "__call__",
+        "filename": "/home/damen/dllm-dev/dllm/quantization.py",
+        "line": 144
+      },
+      {
+        "name": "_PyEval_EvalFrameDefault",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "_PyFunction_Vectorcall",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "linear_attention",
+        "filename": "/home/damen/dllm-dev/dllm/hybrid.py",
+        "line": 193
+      },
+      {
+        "name": "_PyEval_EvalFrameDefault",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "_PyFunction_Vectorcall",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "forward_embeddings",
+        "filename": "/home/damen/dllm-dev/dllm/hybrid.py",
+        "line": 272
+      },
+      {
+        "name": "_PyEval_EvalFrameDefault",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "PyObject_CallFinalizer",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "PyObject_CallFinalizerFromDealloc",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "forward",
+        "filename": "/home/damen/dllm-dev/dllm/vision_hybrid.py",
+        "line": 93
+      },
+      {
+        "name": "_PyEval_EvalFrameDefault",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "PyObject_CallFinalizer",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "PyObject_CallFinalizerFromDealloc",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "_PyThreadState_Prealloc",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "PyGILState_Ensure",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "start_thread",
+        "filename": "??",
+        "line": 0
+      },
+      {
+        "name": "__clone3",
+        "filename": "",
+        "line": 0
+      },
+      {
+        "name": "decorate_context",
+        "filename": "/home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/utils/_contextlib.py",
+        "line": 116
+      },
+      {
+        "name": "prefill_images",
+        "filename": "/home/damen/dllm-dev/dllm/vision_hybrid.py",
+        "line": 70
+      },
+      {
+        "name": "decorate_context",
+        "filename": "/home/damen/dllm-dev/venv/lib64/python3.11/site-packages/torch/utils/_contextlib.py",
+        "line": 116
+      },
+      {
+        "name": "prefill",
+        "filename": "/home/damen/dllm-dev/dllm/vision_hybrid.py",
+        "line": 44
+      },
+      {
+        "name": "<listcomp>",
+        "filename": "/home/damen/dllm-dev/dllm/vision_hybrid.py",
+        "line": 54
+      },
+      {
+        "name": "prefill_batch",
+        "filename": "/home/damen/dllm-dev/dllm/vision_hybrid.py",
+        "line": 54
+      },
+      {
+        "name": "_group",
+        "filename": "/home/damen/dllm-dev/dllm/scheduler.py",
+        "line": 632
+      },
+      {
+        "name": "_work",
+        "filename": "/home/damen/dllm-dev/dllm/scheduler.py",
+        "line": 703
+      },
+      {
+        "name": "run",
+        "filename": "/usr/lib64/python3.11/threading.py",
+        "line": 982
+      },
+      {
+        "name": "_bootstrap_inner",
+        "filename": "/usr/lib64/python3.11/threading.py",
+        "line": 1045
+      },
+      {
+        "name": "_bootstrap",
+        "filename": "/usr/lib64/python3.11/threading.py",
+        "line": 1002
+      }
+    ]
+  }
+]

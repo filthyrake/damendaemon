@@ -24,7 +24,7 @@ class RuntimeTests(unittest.TestCase):
         self.gpu.start()
         self.modules = patch.dict("sys.modules", {
             "torch": SimpleNamespace(cuda=SimpleNamespace(
-                synchronize=lambda: None, empty_cache=lambda: None)),
+                synchronize=lambda: None, empty_cache=lambda: None,is_initialized=lambda:False)),
             "dllm.models": SimpleNamespace(load=Weights,is_gguf=lambda _:False,weight_bytes=lambda _,**kwargs:100,config=lambda _: {"max_position_embeddings":2048}),
             "dllm.qwen2": SimpleNamespace(ModelWeights=Weights, Executor=Executor,
                                           weight_bytes=lambda _: 100),

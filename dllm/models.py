@@ -79,4 +79,9 @@ def load(path,context,quantization=None):
         from .encoder import EncoderWeights
         return EncoderWeights(path,context,quantization=quantization)
     from .qwen2 import ModelWeights
+    from .vision_policy import enabled,eligible
+    if enabled() and eligible(config(path)):
+        from .vision_model import VisionModelWeights
+        from .vision_qwen35 import VisionWeights
+        return VisionModelWeights(ModelWeights(path,context,quantization=quantization),VisionWeights(path))
     return ModelWeights(path,context,quantization=quantization)

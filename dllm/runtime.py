@@ -78,14 +78,18 @@ class Runtime:
             return list(self.models)
 
     def _status(self):
+        import torch
         from .chat_template import override_metadata
         with self.registry_lock:
             models = [{'id': alias, 'quantization':self.quantizations[alias], 'residency': 'gpu' if alias in self.gpu else 'host' if alias in self.host else 'disk',
                        'chat_template': override_metadata(self.chat_templates[alias]),
                        'host_weight_bytes': self.host[alias].bytes if alias in self.host else None,
+                       'vision_host_weight_bytes': getattr(getattr(self.host.get(alias),'vision_weights',None),'bytes',0),
+                       'vision_gpu_weight_bytes': getattr(getattr(self.gpu.get(alias),'vision',None),'bytes',0),
                        'gpu_projection_cache_bytes': getattr(self.gpu.get(alias), 'packed_cache_bytes', 0)}
                       for alias in self.models]
         return {'models': models, 'device': selected_device(), 'context': self.context,
+                'cuda_allocated_bytes': torch.cuda.memory_allocated() if torch.cuda.is_initialized() else None,
                 'host_cached_bytes': sum(model.bytes for model in self.host.values()),
                 'host_budget_bytes': self.host_bytes, 'gpu_model_limit': self.gpu_limit,
                 'host_model_limit': self.host_limit}
@@ -441,6 +445,9 @@ def make_executor(model, use_graph=True, max_batch=None, **kwargs):
         from .hybrid import HybridExecutor
         if kwargs.pop('fuse_projections', True) is False:
             raise ValueError('unfused projection mode is not available for hybrid execution')
+        if getattr(model,'vision_weights',None) is not None:
+            from .vision_hybrid import VisionHybridExecutor
+            return VisionHybridExecutor(model,use_graph=use_graph,max_batch=max_batch or 1,**kwargs)
         return HybridExecutor(model, use_graph, max_batch or 1, **kwargs)
     if max_batch is not None:
         from .batch import BatchExecutor

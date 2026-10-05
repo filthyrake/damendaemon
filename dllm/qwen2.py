@@ -41,6 +41,8 @@ def weight_bytes(path,quantization=None):
     quantization=mode(quantization)
     quantized = quantization != 'none'
     config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
+    from .vision_policy import enabled as vision_enabled,eligible as vision_eligible
+    include_vision=vision_eligible(config) and vision_enabled()
     if quantization=='q4_0' and config['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
         raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
     if config['model_type'] in ('gpt2','gpt_neox','bloom') and quantized:
@@ -52,6 +54,14 @@ def weight_bytes(path,quantization=None):
     for file in weight_files(path):
         with safe_open(str(file), framework="pt", device="cpu") as reader:
             for key in reader.keys():
+                if key.startswith('mtp.'):
+                    continue
+                if key.startswith('model.visual.'):
+                    if include_vision:
+                        shape=reader.get_slice(key).get_shape()
+                        projection=key.endswith('.weight') and key!='model.visual.pos_embed.weight' and '.norm' not in key
+                        total+=math.prod(shape)*(2 if projection else 4)
+                    continue
                 if config['model_type']=='gpt2' and key.endswith(('attn.bias','attn.masked_bias')):
                     continue
                 if config['model_type']=='gpt_neox' and key.endswith(('attention.bias','attention.masked_bias','rotary_emb.inv_freq')):
@@ -68,7 +78,8 @@ def weight_bytes(path,quantization=None):
                 if quantized and len(shape) == 2 and not is_embedding and shape[1] % 32 == 0:
                     total += math.prod(shape)//(2 if quantization=='q4_0' else 1) + 2 * shape[0] * (shape[1] // 32)
                 else:
-                    total += element_bytes * math.prod(shape)
+                    tensor_bytes=4 if config['model_type']=='qwen3_5_text' and len(shape)==1 else element_bytes
+                    total += tensor_bytes * math.prod(shape)
     if quantized and embedding is not None and not has_head:
         if config.get('tie_word_embeddings'):
             total += math.prod(embedding)//(2 if quantization=='q4_0' else 1) + 2 * embedding[0] * (embedding[1] // 32)

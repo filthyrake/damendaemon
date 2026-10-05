@@ -149,11 +149,29 @@ Sampling accepts finite `temperature >= 0`, `top_p` in `(0, 1]`, nonnegative int
 `top_k` (zero disables it), and an optional unsigned 64-bit `seed`. Temperature
 defaults to zero and retains the greedy fast path. Seeds belong to requests;
 batching and cancellation do not share RNG state. Exact outputs can still vary
-across devices, kernels, and precision. Unsupported fields such as tools and
-multimodal inputs are rejected.
+across devices, kernels, and precision. Unsupported request fields and content
+types are rejected; image inputs require the experimental opt-in below.
 Qwen3.5 has a separate hybrid executor with FP32 recurrent state, causal
 convolution, gated attention, partial RoPE, and FP32 vocabulary accumulation.
-Vision, MoE, dynamic rotary scaling, and quantization remain unsupported.
+Q8 text projections are supported on the qualified CUDA path. Hybrid MoE and
+dynamic rotary scaling remain unsupported. Still-image serving is experimental
+and opt-in for the qualified Qwen3.5-0.8B geometry on NVIDIA A2:
+
+```sh
+python -m pip install -e '.[runtime,vision]'
+DLLM_EXPERIMENTAL_VISION=1 DLLM_QUANTIZATION=q8_0 dllm serve \
+  --model vision=/path/to/Qwen3.5-0.8B-snapshot --context 1024 --batch-size 4
+```
+
+Select the A2 UUID through `CUDA_VISIBLE_DEVICES` as for other CUDA runs.
+`/v1/chat/completions` accepts user content lists with `text` and `image_url`
+parts; image URLs must be inline PNG/JPEG data URLs with `detail: "auto"`.
+The existing 1 MiB HTTP body limit applies. FP16 text is available by omitting
+`DLLM_QUANTIZATION`; vision retains its separate FP16-storage/FP32-arithmetic
+policy. Image tool calls, video/audio, remote image URLs, prefix snapshots,
+and chunked image prefill are unsupported. Other model families keep their
+existing text execution. See [image qualification](docs/vision-qualification.md)
+for independent output checks, lifecycle proof, and intermediate encoder limits.
 Gemma 3 text has a separate full-precision correctness path with alternating
 sliding/full attention, GELU gating and its own normalization; the pinned 270M
 checkpoint passes CUDA and Metal reference replay, including 511/512/513-token

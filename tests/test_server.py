@@ -1,7 +1,9 @@
 from http.server import ThreadingHTTPServer
 import json
+import os
 import threading
 import unittest
+from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -79,6 +81,21 @@ class FakeRuntime:
 
 
 class ServerTests(unittest.TestCase):
+    def test_image_http_validation_requires_opt_in_and_leaves_pixels_to_worker(self):
+        messages=[{'role':'user','content':[{'type':'image_url','image_url':
+            {'url':'data:image/png;base64,iVBORw0KGgo='}}]}]
+        with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'0'}):
+            with self.assertRaises(HTTPError) as error:self.post(messages=messages)
+            self.assertEqual(error.exception.code,400)
+        with patch.dict(os.environ,{'DLLM_EXPERIMENTAL_VISION':'1'}), \
+                patch('dllm.vision_messages.decode_image_messages') as decode:
+            with self.post(messages=messages) as response:
+                self.assertEqual(json.load(response)['choices'][0]['message']['content'],'Hello world')
+            decode.assert_not_called()
+            messages[0]['content'][0]['image_url']['url']='data:image/png;base64,???'
+            with self.assertRaises(HTTPError) as error:self.post(messages=messages)
+            self.assertEqual(error.exception.code,400)
+
     @classmethod
     def setUpClass(cls):
         cls.runtime = FakeRuntime()

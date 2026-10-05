@@ -132,10 +132,9 @@ class HybridExecutor:
         self.cos, self.sin = angles.cos(), angles.sin()
         self.arange = torch.arange(self.context, device=self.device)
         if self.fused:
+            from .cuda_warmup import warmup_stream
             probe = torch.zeros(1, dtype=torch.long, device=self.device)
-            stream = torch.cuda.Stream()
-            stream.wait_stream(torch.cuda.current_stream())
-            with torch.cuda.stream(stream), torch.inference_mode():
+            with warmup_stream(), torch.inference_mode():
                 try:
                     self.forward_batch(probe, probe, probe)
                 except (ImportError, FileNotFoundError, subprocess.CalledProcessError) as error:
@@ -146,10 +145,10 @@ class HybridExecutor:
                     self.fused = None
                     self.kernel_backend = 'torch-hybrid'
                     print(f'dllm: hybrid kernel toolchain unavailable ({type(error).__name__}); using torch kernels', file=sys.stderr)
-            torch.cuda.current_stream().wait_stream(stream)
             torch.cuda.synchronize()
         self.batch_graphs = {}
         if use_graph:
+            from .cuda_warmup import warmup_stream
             for size in range(1, max_batch+1):
                 metadata = torch.zeros((3, size), dtype=torch.long, device=self.device)
                 ids, positions, slots = metadata.unbind(0)
@@ -157,12 +156,9 @@ class HybridExecutor:
                 staging = torch.empty((3, size), dtype=torch.long, pin_memory=True)
                 values = (ctypes.c_int64 * (3*size)).from_address(staging.data_ptr())
                 copied = torch.cuda.Event()
-                stream = torch.cuda.Stream()
-                stream.wait_stream(torch.cuda.current_stream())
-                with torch.cuda.stream(stream), torch.inference_mode():
+                with warmup_stream(), torch.inference_mode():
                     for _ in range(3):
                         self.forward_batch(ids, positions, slots)
-                torch.cuda.current_stream().wait_stream(stream)
                 torch.cuda.synchronize()
                 graph = torch.cuda.CUDAGraph()
                 with torch.inference_mode(), torch.cuda.graph(graph):

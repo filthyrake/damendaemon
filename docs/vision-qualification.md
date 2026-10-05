@@ -1,7 +1,9 @@
 # Qwen3.5 still-image qualification
 
-Tracked in GitHub issue #50. This is an experimental standalone encoder, **not
-multimodal serving support**. No normal model registry or execution path uses it.
+Tracked in GitHub issue #50. Experimental still-image HTTP serving is now
+opt-in on NVIDIA A2 for Qwen3.5-0.8B, with FP16 or Q8 text weights. See the
+final section for current scope and lifecycle evidence. Earlier sections record
+the qualification sequence, including unresolved intermediate numerical limits.
 
 The first implementation reads the vision tensors from Qwen3.5-0.8B revision
 `2fc06364715b967f1860aea9cf38778875588b17`. Projections use FP16 storage with
@@ -176,3 +178,41 @@ been changed to enable it.
 Next integration work belongs to issue #50: opt-in model/HTTP dispatch, accurate
 residency and release checks, malformed-request recovery, streaming/cancellation,
 and actual HTTP measurements. Keep the intermediate encoder limitations visible.
+
+## Opt-in HTTP serving
+
+`DLLM_EXPERIMENTAL_VISION=1` activates this backend for the qualified Qwen3.5
+1024-wide, 24-layer geometry. Execution is restricted to NVIDIA A2, context at
+most 1024, and at most four slots. Other text-model geometries retain their
+normal execution. Install the `vision` extra for PNG/JPEG decoding. HTTP retains
+its 1 MiB request limit; content validation does not decode pixels on HTTP
+threads. Image decoding and expanded prompt accounting occur on the admitted
+inference worker. Chunked prefill and prefix snapshots are explicitly rejected.
+
+Live FP16 and Q8 service checks cover six independent image/text fixtures, exact
+eight-token output and prompt usage, mixed concurrent requests, streaming output
+and usage, client disconnect followed by a changed image, malformed base64 and
+image-file recovery, alias switching, host restore, and complete unload/reload.
+Text and vision host weights are jointly counted; status exposes vision host/GPU
+weight bytes and actual CUDA allocated bytes. The pre-load estimate keeps vision
+storage independent of text quantization and excludes unused MTP weights.
+
+The FP16 lifecycle test exposed a hybrid warmup-stream issue: creating fresh
+streams for each graph/model retained additional cuBLAS workspaces on reload.
+Hybrid warmup now uses the existing serialized per-device stream helper. After
+all model weights are unloaded, allocator traces identify only persistent
+cuBLAS workspaces: 8,519,680 bytes for the Q8 run and 25,559,040 for FP16. Repeated
+inference/unload cycles leave exactly the same allocation, with zero host-model
+bytes and zero vision GPU weight bytes. The runtime does not clear private
+cuBLAS state or invalidate live graph workspaces. Traces and raw HTTP checks are
+retained under `evidence/vision/`; diagnostic tracing runs are not performance
+benchmarks. Intermediate encoder absolute-error limitations remain unchanged.
+
+Final ordinary-server runs (without allocation tracing) pass all 20 checks in
+both precision modes; the local regression suite passes 366 tests. Reports are
+`qwen35-vision-http-q8-final.json` and `qwen35-vision-http-f16-final.json`.
+For the square image with eight output tokens, three warm Q8 HTTP requests took
+119.8, 342.1, and 119.4 ms; FP16 took 138.2, 138.5, and 137.5 ms. The Q8 outlier
+is retained and requires investigation. These short service checks include HTTP
+and image decoding and are not a controlled cross-runtime performance comparison.
+They must not be combined with the earlier 32-token core-only measurements.
