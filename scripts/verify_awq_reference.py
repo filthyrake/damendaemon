@@ -14,6 +14,7 @@ from transformers import AutoConfig, AutoModelForCausalLM
 from transformers.modeling_utils import no_init_weights
 
 from dllm.awq_model import AwqWeights
+from dllm.qwen2 import weight_files
 from dllm.runtime import make_executor, require_gpu
 
 
@@ -54,6 +55,7 @@ def main():
                         help='independent HF attention implementation; recorded as qualification scope')
     parser.add_argument('--experimental-awq-decode', action='store_true')
     parser.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
+    parser.add_argument('--experimental-qwen3-awq', action='store_true')
     parser.add_argument('--require-awq-marlin', action='store_true')
     parser.add_argument('--require-awq-decode', action='store_true', help='assert ordinary A2 decode selection')
     parser.add_argument('--diagnostic-expanded-products', action='store_true',
@@ -86,7 +88,7 @@ def main():
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32 = False
     path = Path(args.model)
-    source = AwqWeights(path, args.context, 'none')
+    source = AwqWeights(path, args.context, 'none', allow_qwen3=args.experimental_qwen3_awq)
     if args.require_awq_decode:
         from dllm.awq_decode_policy import use_small_rows
         matrix = source.awq_matrices['0.qkv.weight']
@@ -108,7 +110,7 @@ def main():
                               for w, b in zip(weight.split(sizes), biases)], -1)
         awq_kernels.linear = separate_products
     report = dict(passed=False, diagnostic_expanded_products=args.diagnostic_expanded_products,
-                  experiment=experiment,
+                  experiment=experiment, experimental_qwen3_awq=args.experimental_qwen3_awq,
                   require_awq_decode=args.require_awq_decode,
                   diagnostic_rounded_attention=args.diagnostic_rounded_attention,
                   diagnostic_separate_products=args.diagnostic_separate_products,
@@ -119,8 +121,13 @@ def main():
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   loader_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_model.py').read_bytes()).hexdigest(),
                   kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/awq_kernels.py').read_bytes()).hexdigest())
-    with (path/'model.safetensors').open('rb') as stream:
-        report['model_sha256'] = hashlib.file_digest(stream, 'sha256').hexdigest()
+    shards = weight_files(path)
+    report['checkpoint_sha256'] = {}
+    for shard in shards:
+        with shard.open('rb') as stream:
+            report['checkpoint_sha256'][shard.name] = hashlib.file_digest(stream, 'sha256').hexdigest()
+    if len(shards) == 1:
+        report['model_sha256'] = report['checkpoint_sha256'][shards[0].name]
     try:
         upstream = Path(args.upstream_source).read_text()
         dependency = 'from vllm.triton_utils import tl, triton'
@@ -135,21 +142,32 @@ def main():
             sys.modules[spec.name] = module
             spec.loader.exec_module(module)
             state = {}
-            with torch.no_grad(), safe_open(str(path/'model.safetensors'), framework='pt', device='cpu') as reader:
-                for name in reader.keys():
-                    if name.endswith(('.qzeros', '.scales')):
+            with torch.no_grad():
+                packed = {}
+                for shard in shards:
+                    with safe_open(str(shard), framework='pt', device='cpu') as reader:
+                        for name in reader.keys():
+                            if name in packed:
+                                raise ValueError('duplicate reference checkpoint tensor')
+                            packed[name] = reader.get_tensor(name)
+                for name in list(packed):
+                    if name not in packed or name.endswith(('.qzeros', '.scales')):
                         continue
                     if name.endswith('.qweight'):
                         prefix = name.rsplit('.', 1)[0]
-                        weight, scales, zeros = (reader.get_tensor(prefix+suffix).cuda()
-                                                  for suffix in ('.qweight', '.scales', '.qzeros'))
+                        weight, scales, zeros = (packed.pop(prefix+suffix).cuda()
+                                                for suffix in ('.qweight', '.scales', '.qzeros'))
                         decoded = module.awq_dequantize_triton(weight, scales, zeros)
                         state[prefix+'.weight'] = decoded.T.contiguous().cpu()
                         del weight, scales, zeros, decoded
                     else:
-                        state[name] = reader.get_tensor(name)
+                        state[name] = packed.pop(name).to(torch.float16)
+                if packed:
+                    raise ValueError('unconsumed reference checkpoint tensors')
         config = AutoConfig.from_pretrained(path, local_files_only=True, trust_remote_code=False)
         del config.quantization_config
+        if config.tie_word_embeddings and 'lm_head.weight' not in state:
+            state['lm_head.weight'] = state['model.embed_tokens.weight']
         config.tie_word_embeddings = False
         with no_init_weights():
             reference = AutoModelForCausalLM.from_config(config, torch_dtype=torch.float16, attn_implementation=args.reference_attention)

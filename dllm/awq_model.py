@@ -15,11 +15,14 @@ from .qwen2 import ModelWeights, weight_files
 from .quantization import mode
 
 
-def config(path):
+def config(path, *, allow_qwen3=False):
     raw = json.loads((Path(path)/'config.json').read_text())
     group = group_size(raw.get('quantization_config'))
-    if raw.get('model_type') != 'qwen2' or raw.get('architectures') != ['Qwen2ForCausalLM']:
-        raise ValueError('AWQ currently requires a Qwen2 dense decoder')
+    architectures = {'qwen2': ['Qwen2ForCausalLM']}
+    if allow_qwen3:
+        architectures['qwen3'] = ['Qwen3ForCausalLM']
+    if raw.get('model_type') not in architectures or raw.get('architectures') != architectures[raw['model_type']]:
+        raise ValueError('AWQ requires Qwen2 or an explicitly enabled qualification architecture')
     if type(raw.get('tie_word_embeddings', False)) is not bool:
         raise ValueError('invalid AWQ tied-embedding declaration')
     c = decoder_config({k: v for k, v in raw.items() if k != 'quantization_config'})
@@ -53,9 +56,13 @@ def dense_groups(c):
         prefix = f'model.layers.{layer}.'
         yield f'{layer}.norm1', [(prefix+'input_layernorm.weight', (hidden,))]
         yield f'{layer}.norm2', [(prefix+'post_attention_layernorm.weight', (hidden,))]
-        yield f'{layer}.qkv.bias', [(prefix+'self_attn.'+name+'_proj.bias', (heads*c['head_dim'],))
-                                   for name, heads in (('q', c['num_attention_heads']),
-                                                       ('k', c['num_key_value_heads']), ('v', c['num_key_value_heads']))]
+        if c['model_type'] == 'qwen2':
+            yield f'{layer}.qkv.bias', [(prefix+'self_attn.'+name+'_proj.bias', (heads*c['head_dim'],))
+                                       for name, heads in (('q', c['num_attention_heads']),
+                                                           ('k', c['num_key_value_heads']), ('v', c['num_key_value_heads']))]
+        if c['model_type'] == 'qwen3':
+            for kind in ('q', 'k'):
+                yield f'{layer}.{kind}_norm', [(prefix+f'self_attn.{kind}_norm.weight', (c['head_dim'],))]
 
 
 def identity(path):
@@ -78,20 +85,21 @@ class Plan:
             raise ValueError('AWQ checkpoint changed during import')
 
 
-def plan(path):
+def plan(path, *, allow_qwen3=False):
     path = Path(path).resolve()
     identities = {path/name: identity(path/name) for name in
                   ('config.json', 'model.safetensors.index.json', 'tokenizer.json',
                    'tokenizer_config.json', 'generation_config.json', 'chat_template.jinja')}
-    c = config(path)
-    expected = {name: (shape, 'F16') for _, entries in dense_groups(c) for name, shape in entries}
+    c = config(path, allow_qwen3=allow_qwen3)
+    dense_dtypes = ('F16', 'BF16') if c['model_type'] == 'qwen3' else ('F16',)
+    expected = {name: (shape, dense_dtypes) for _, entries in dense_groups(c) for name, shape in entries}
     if c.get('tie_word_embeddings'):
-        expected['lm_head.weight'] = ((c['vocab_size'], c['hidden_size']), 'F16')
+        expected['lm_head.weight'] = ((c['vocab_size'], c['hidden_size']), dense_dtypes)
     for _, entries in projection_groups(c):
         for prefix, inputs, outputs in entries:
-            expected[prefix+'.qweight'] = ((inputs, outputs//8), 'I32')
-            expected[prefix+'.qzeros'] = ((inputs//128, outputs//8), 'I32')
-            expected[prefix+'.scales'] = ((inputs//128, outputs), 'F16')
+            expected[prefix+'.qweight'] = ((inputs, outputs//8), ('I32',))
+            expected[prefix+'.qzeros'] = ((inputs//128, outputs//8), ('I32',))
+            expected[prefix+'.scales'] = ((inputs//128, outputs), ('F16',))
     tensors = {}
     try:
         files = weight_files(path)
@@ -103,7 +111,8 @@ def plan(path):
             for name in source.keys():
                 view = source.get_slice(name)
                 signature = (tuple(view.get_shape()), view.get_dtype())
-                if name in tensors or name not in expected or signature != expected[name]:
+                if (name in tensors or name not in expected or signature[0] != expected[name][0]
+                        or signature[1] not in expected[name][1]):
                     raise ValueError(f'unexpected AWQ tensor or schema: {name}')
                 tensors[name] = (file, *signature)
     missing = set(expected) - tensors.keys()
@@ -134,10 +143,10 @@ def weight_bytes(path, quantization=None):
 
 
 class AwqWeights(ModelWeights):
-    def __init__(self, path, max_context, quantization=None):
+    def __init__(self, path, max_context, quantization=None, *, allow_qwen3=False):
         if mode(quantization) != 'none' or selected_device() != 'cuda':
             raise ValueError('AWQ requires CUDA and checkpoint-native quantization')
-        prepared = plan(path)
+        prepared = plan(path, allow_qwen3=allow_qwen3)
         self.path, self.config = prepared.path, prepared.config
         c = self.config
         if type(max_context) is not int or not 1 <= max_context <= c['max_position_embeddings']:
@@ -172,6 +181,9 @@ class AwqWeights(ModelWeights):
             values = [state.pop(name) for name, _ in entries]
             if any(not bool(torch.isfinite(value).all()) for value in values):
                 raise ValueError(f'nonfinite AWQ dense tensor: {target}')
+            if any(value.dtype == torch.bfloat16 and float(value.abs().max()) > torch.finfo(torch.float16).max
+                   for value in values):
+                raise ValueError(f'AWQ dense tensor exceeds FP16 execution range: {target}')
             self.weights[target] = values[0] if len(values) == 1 else torch.cat(values)
         if c.get('tie_word_embeddings'):
             head = state.pop('lm_head.weight', None)

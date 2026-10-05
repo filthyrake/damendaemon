@@ -33,6 +33,38 @@ def fixture(path):
 
 
 class AwqModelTests(unittest.TestCase):
+    def test_qwen3_qualification_requires_norms_without_qkv_bias(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            c, values = fixture(path)
+            c.update(model_type='qwen3', architectures=['Qwen3ForCausalLM'], attention_bias=False)
+            (path/'config.json').write_text(json.dumps(c))
+            for name in list(values):
+                if name.endswith('_proj.bias'):
+                    del values[name]
+            for kind in ('q', 'k'):
+                values[f'model.layers.0.self_attn.{kind}_norm.weight'] = torch.ones(64, dtype=torch.float16)
+            values = {name: value.to(torch.bfloat16) if name.endswith('.weight') else value
+                      for name, value in values.items()}
+            save_file(values, str(path/'model.safetensors'))
+            with self.assertRaises(ValueError):
+                AwqWeights(path, 64, 'none')
+            model = AwqWeights(path, 64, 'none', allow_qwen3=True)
+            self.assertNotIn('0.qkv.bias', model.weights)
+            self.assertEqual(model.weights['embed'].dtype, torch.bfloat16)
+            self.assertEqual(model.bytes, plan(path, allow_qwen3=True).host_bytes)
+            self.assertEqual(tuple(model.weights['0.q_norm'].shape), (64,))
+            self.assertEqual(tuple(model.weights['0.k_norm'].shape), (64,))
+            values['model.embed_tokens.weight'][0, 0] = 1e10
+            save_file(values, str(path/'model.safetensors'))
+            with self.assertRaisesRegex(ValueError, 'FP16 execution range'):
+                AwqWeights(path, 64, 'none', allow_qwen3=True)
+            values['model.embed_tokens.weight'][0, 0] = 1
+            del values['model.layers.0.self_attn.k_norm.weight']
+            save_file(values, str(path/'model.safetensors'))
+            with self.assertRaisesRegex(ValueError, 'missing AWQ tensors'):
+                AwqWeights(path, 64, 'none', allow_qwen3=True)
+
     def test_shared_factory_preserves_packed_checkpoint_and_rejects_other_formats(self):
         from dllm import models as factory
         with tempfile.TemporaryDirectory() as directory:

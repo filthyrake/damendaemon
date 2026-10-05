@@ -303,3 +303,19 @@ The ordinary decode profile measures 3.615 ms of CUDA kernel time per step:
 in attention/norm/rotary/elementwise work. Profiling uses a different prompt
 and profiler instrumentation; it explains costs rather than replacing HTTP
 timing. The earlier original AWQ profile spent about 5.037 ms in packed GEMMs.
+
+## Qwen3 AWQ qualification in progress
+
+Pinned official `Qwen/Qwen3-4B-AWQ` revision
+`74d4bd2bd4bff9cafc9345221320bffb08b406a3` adds bias-free projections, Q/K
+normalization, separate query/head dimensions, and BF16 dense tensors alongside
+FP16 scales. The isolated loader flag handles these schemas and rejects BF16
+dense values outside the declared FP16 execution range. Default registration
+still rejects Qwen3 AWQ while qualification is incomplete.
+
+The first 512-context independent HF SDPA comparison passes 122/128 numerical
+checks and matches all 128 greedy tokens. Six checks exceed the unchanged
+1% RMS or 0.5 absolute-error gate (three prompt/step combinations repeated in
+eager/graph mode). Worst observed RMS is about 1.27%. The failed report is
+retained, and precision/product diagnostics are in progress; this is not a
+qualified Qwen3 AWQ runtime claim. All 344 local regression tests pass.

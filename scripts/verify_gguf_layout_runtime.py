@@ -27,6 +27,7 @@ def paged_capacity(context, lengths):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model'); parser.add_argument('--output', required=True)
+    parser.add_argument('--experimental-qwen3-awq', action='store_true')
     parser.add_argument('--awq-qualification', action='store_true',
                         help='exercise isolated AWQ loader without enabling normal registration')
     parser.add_argument('--context',type=int,default=512,help='context capacity, at least 512')
@@ -81,7 +82,7 @@ def main():
     require_gpu(); torch.set_num_threads(4); torch.backends.cuda.matmul.allow_tf32 = False
     if args.awq_qualification:
         from dllm.awq_model import AwqWeights
-        source = AwqWeights(args.model, args.context, 'none')
+        source = AwqWeights(args.model, args.context, 'none', allow_qwen3=args.experimental_qwen3_awq)
     else:
         source = GgufWeights(args.model, args.context, 'none')
     corpus = source.raw_tokens('The library contains books about oceans and mountains. ')
