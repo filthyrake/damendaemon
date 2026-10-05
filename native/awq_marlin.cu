@@ -13,6 +13,12 @@ template<int Blocks, bool Small = false>
 constexpr auto kernel = dllm_marlin::Marlin<
     vllm::kFloat16.id(), vllm::kU4.id(), vllm::kFloat16.id(), vllm::kFloat16.id(),
     128, Blocks, 8, 4, Small, 4, 8, false>;
+#ifdef DLLM_AWQ_EXPERIMENT_WIDE
+// Isolated tuning build: leave the qualified default and prompt kernels intact.
+constexpr auto wide_decode = dllm_marlin::Marlin<
+    vllm::kFloat16.id(), vllm::kU4.id(), vllm::kFloat16.id(), vllm::kFloat16.id(),
+    256, 1, 8, 8, true, 4, 8, false>;
+#endif
 }
 
 extern "C" int dllm_awq_marlin_abi() { return 2; }
@@ -30,6 +36,10 @@ extern "C" int dllm_awq_marlin_init(int* sms, int* shared) {
     status = cudaDeviceGetAttribute(shared, cudaDevAttrMaxSharedMemoryPerBlockOptin, device);
     if (status != cudaSuccess) return status;
     int budget = *shared/2-1024;
+#ifdef DLLM_AWQ_EXPERIMENT_WIDE
+    status = cudaFuncSetAttribute(wide_decode, cudaFuncAttributeMaxDynamicSharedMemorySize, *shared);
+    if (status != cudaSuccess) return status;
+#endif
     status = cudaFuncSetAttribute(kernel<1, true>, cudaFuncAttributeMaxDynamicSharedMemorySize, budget);
     if (status != cudaSuccess) return status;
     status = cudaFuncSetAttribute(kernel<1>, cudaFuncAttributeMaxDynamicSharedMemorySize, budget);
@@ -67,9 +77,18 @@ extern "C" int dllm_awq_marlin_gemm(const void* input, const void* weights,
         const int blocks_m = rows > 32 ? 4 : rows > 16 ? 2 : 1;
         auto function = rows <= 8 ? kernel<1, true> :
                         blocks_m == 1 ? kernel<1> : blocks_m == 2 ? kernel<2> : kernel<4>;
-        const int budget = blocks_m == 4 ? shared : shared/2-1024;
-        const int blocks = blocks_m == 4 ? sms : sms*2;
-        function<<<blocks, 128, budget, static_cast<cudaStream_t>(stream)>>>(
+        int budget = blocks_m == 4 ? shared : shared/2-1024;
+        int blocks = blocks_m == 4 ? sms : sms*2;
+        int threads = 128;
+#ifdef DLLM_AWQ_EXPERIMENT_WIDE
+        if (rows <= 8) {
+            function = wide_decode;
+            budget = shared;
+            blocks = sms;
+            threads = 256;
+        }
+#endif
+        function<<<blocks, threads, budget, static_cast<cudaStream_t>(stream)>>>(
             reinterpret_cast<const int4*>(a), static_cast<const int4*>(weights),
             reinterpret_cast<int4*>(c), static_cast<int4*>(scratch), static_cast<const int4*>(bias),
             nullptr, static_cast<const int4*>(scales), nullptr, static_cast<const int4*>(zeros),
