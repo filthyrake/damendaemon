@@ -1503,3 +1503,30 @@ An ocean/weather corpus was the first alternative preflighted to produce all
 and equality/length gates were not changed. These synthetic repeated-token
 prompts measure runtime behavior, not answer quality; no latency comparison
 across different prompt corpora is claimed.
+
+
+### TinyLlama same-file llama.cpp comparison at 2048
+
+`tinyllama-q4-k-m-llama-http-2048-ocean-a2.json` preserves a failed output
+equality gate. Every run completed the requested 16 output tokens, but the
+2032-token prompt diverges near the end, and llama.cpp produces two distinct
+texts across the four-request workload. dllm is consistent across those runs.
+All dllm lifecycle checks pass. This is not an output-equivalent benchmark win.
+
+| Input tokens / concurrency | dllm median seconds | llama.cpp median seconds |
+| --- | ---: | ---: |
+| 16 / 1 | 0.207917 | 0.128954 |
+| 129 / 1 | 0.233868 | 0.157290 |
+| 2032 / 1 | 0.543775 | 0.588973 |
+| 129 / 2 | 0.341767 | 0.194465 |
+| 129 / 4 | 0.492808 | 0.321245 |
+
+The same unchanged checkpoint, prompt IDs, output lengths, FP16 KV, context
+capacity and A/B/B/A protocol are recorded in the report. These timings retain
+useful diagnostic evidence, but the long and four-request outputs differ.
+`tinyllama-q4-k-m-ocean-reference-2048-a2.json` then independently replays all
+three exact prompt sequences against HF with independently dequantized,
+FP16-rounded coefficients: all 96 logit checks pass, every greedy token agrees,
+and eager/graph paths agree. Worst relative RMS is 0.73287%, maximum absolute
+error 0.072265625. This validates dllm against its declared arithmetic reference;
+it does not establish bitwise cross-engine arithmetic or general answer quality.
