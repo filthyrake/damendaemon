@@ -496,7 +496,10 @@ It shares the existing forward implementation, keeps attention/cache segments
 separate and retains the sequential path outside that bound. Both independent
 suites pass on the integrated code: 234 regrouped checks and the original 82
 mixed-length checks. All 350 local tests pass, including selection boundaries.
-Refreshed mixed-model lifecycle proof is pending. See [normal batch gate](evidence/architectures/olmoe-packed-normal-batch-reference-a2.json),
+Refreshed mixed-model lifecycle proof also passes with Qwen2.5, Qwen3.5 hybrid
+and OLMoE at one and three GPU-resident models, including host restores, mixed
+concurrency and disconnect/rejection recovery. See
+[service evidence](evidence/architectures/olmoe-packed-service-a2.json), [normal batch gate](evidence/architectures/olmoe-packed-normal-batch-reference-a2.json),
 [original model gate](evidence/architectures/olmoe-packed-normal-full-reference-a2.json)
 and [source fingerprints](evidence/architectures/olmoe-packed-normal-source.json).
 
