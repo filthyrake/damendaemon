@@ -33,15 +33,33 @@ def attention(q, k, v, positions, slots, block):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', required=True)
+    parser.add_argument('--stream', action='store_true', help='include experimental grouped online softmax')
+    parser.add_argument('--tensorcore', action='store_true', help='include grouped tensor-core products')
     args = parser.parse_args()
     require_gpu()
     if torch.cuda.get_device_name() != 'NVIDIA A2':
         raise RuntimeError('this tuning experiment is limited to A2')
     torch.set_num_threads(4)
     torch.manual_seed(781)
+    variants = {str(block): (lambda q, k, v, positions, slots, block=block:
+                attention(q, k, v, positions, slots, block)) for block in (64, 128, 256)}
+    if args.stream:
+        from attention_stream import attention as stream_attention
+        for group, block in ((1, 64), (4, 32), (4, 64)):
+            variants[f'stream-g{group}-b{block}'] = (lambda q, k, v, positions, slots, group=group, block=block:
+                stream_attention(q, k, v, positions, slots, block, group))
+    if args.tensorcore:
+        from attention_tensorcore import attention as tensorcore_attention
+        for block in (64, 128):
+            variants[f'tensorcore-b{block}'] = (lambda q, k, v, positions, slots, block=block:
+                tensorcore_attention(q, k, v, positions, slots, block))
     report = dict(passed=False, device=torch.cuda.get_device_name(), cases=[],
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   scope='fixed-cache Qwen3 geometry only; independent FP32 math SDPA; no runtime policy change')
+    if args.stream:
+        report['stream_source_sha256'] = hashlib.sha256(Path(__file__).with_name('attention_stream.py').read_bytes()).hexdigest()
+    if args.tensorcore:
+        report['tensorcore_source_sha256'] = hashlib.sha256(Path(__file__).with_name('attention_tensorcore.py').read_bytes()).hexdigest()
     try:
         with torch.inference_mode():
             for batch in (1, 4):
@@ -60,14 +78,16 @@ def main():
                             enable_gqa=True).half()
                     case = dict(batch=batch, position=position, checks=[], rounds=[])
                     report['cases'].append(case)
-                    for block in (64, 128, 256):
-                        actual = attention(q, k, v, positions, slots, block)
+                    for name, function in variants.items():
+                        actual = function(q, k, v, positions, slots)
                         torch.testing.assert_close(actual, expected, atol=.003, rtol=.01)
-                        case['checks'].append(dict(block=block, max_absolute=(actual-expected).abs().max().item()))
-                    for block in (256, 128, 64, 64, 128, 256):
+                        case['checks'].append(dict(variant=name, max_absolute=(actual-expected).abs().max().item()))
+                    order = list(variants)
+                    for name in order + list(reversed(order)):
+                        function = variants[name]
                         ms = triton.testing.do_bench_cudagraph(
-                            lambda: attention(q, k, v, positions, slots, block), rep=100)
-                        case['rounds'].append(dict(block=block, milliseconds=ms))
+                            lambda: function(q, k, v, positions, slots), rep=100)
+                        case['rounds'].append(dict(variant=name, milliseconds=ms))
                     print(json.dumps(case), flush=True)
         report['passed'] = True
     except Exception as error:

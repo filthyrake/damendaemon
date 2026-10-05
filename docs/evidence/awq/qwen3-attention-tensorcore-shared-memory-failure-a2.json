@@ -1,0 +1,33 @@
+{
+  "passed": false,
+  "device": "NVIDIA A2",
+  "cases": [
+    {
+      "batch": 1,
+      "position": 0,
+      "checks": [
+        {
+          "variant": "64",
+          "max_absolute": 0.0
+        },
+        {
+          "variant": "128",
+          "max_absolute": 0.0
+        },
+        {
+          "variant": "256",
+          "max_absolute": 0.0
+        },
+        {
+          "variant": "tensorcore-b64",
+          "max_absolute": 0.0
+        }
+      ],
+      "rounds": []
+    }
+  ],
+  "source_sha256": "3930500779e872ff4c55836b2632da01e7ec211488276359a387d82e75614fed",
+  "scope": "fixed-cache Qwen3 geometry only; independent FP32 math SDPA; no runtime policy change",
+  "tensorcore_source_sha256": "5184b9bfd71561c909f050e542463c96c0a7efa422cf554a7b63bcfcb139f046",
+  "error": "OutOfResources(139264, 101376, 'shared memory')"
+}
