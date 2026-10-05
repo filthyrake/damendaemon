@@ -54,6 +54,7 @@ def main():
                         help='independent HF attention implementation; recorded as qualification scope')
     parser.add_argument('--experimental-awq-decode', action='store_true')
     parser.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
+    parser.add_argument('--require-awq-marlin', action='store_true')
     parser.add_argument('--require-awq-decode', action='store_true', help='assert ordinary A2 decode selection')
     parser.add_argument('--diagnostic-expanded-products', action='store_true',
                         help='isolate packed GEMM errors using temporary expanded FP16 products')
@@ -175,7 +176,8 @@ def main():
         with torch.inference_mode():
             for graph in (False, True):
                 executor = make_executor(source, use_graph=graph)
-                if executor.kernel_backend != 'triton+awq-gemm':
+                expected_backend = 'triton+awq-marlin' if args.require_awq_marlin else 'triton+awq-gemm'
+                if executor.kernel_backend != expected_backend:
                     raise AssertionError(f'AWQ backend was not selected: {executor.kernel_backend}')
                 gpu_tensors = [*executor.w.values(), *executor.quant_linear.scales.values(),
                                *(m.zeros for m in executor.quant_linear.awq.values())]
@@ -183,6 +185,8 @@ def main():
                 if actual_bytes != source.bytes:
                     raise AssertionError('GPU packed weight storage disagrees with host admission')
                 report['gpu_weight_bytes'] = actual_bytes
+                report['backend'] = executor.kernel_backend
+                report['native_workspace_bytes'] = getattr(executor.quant_linear, 'native_workspace_bytes', 0)
                 report['workspace_reserve_bytes'] = executor.packed_workspace_bytes
                 report['precision'] = dict(matrix=str(executor.compute_dtype), residual=str(executor.residual_dtype))
                 for index, ids in enumerate(prompts):

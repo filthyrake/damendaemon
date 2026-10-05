@@ -116,4 +116,7 @@ AWQ scope is pinned Qwen2.5-0.5B-Instruct-AWQ on CUDA A2 through context 2048,
 with checkpoint-native four-bit GEMM packing and group size 128. Independent HF
 SDPA, fixed/paged/graph/batched/chunked and server lifecycle checks pass. Eager
 FP16 reference differences remain documented; no general AWQ architecture or
-engine performance parity is claimed. See [AWQ evidence](evidence/awq/README.md).
+engine performance parity is claimed. The optional native Marlin backend is limited to the qualified small Qwen2
+geometry on NVIDIA A2 through context 2048; its packed storage replaces the
+original GPU format and native scratch is included in admission.
+See [AWQ evidence](evidence/awq/README.md).

@@ -455,6 +455,18 @@ release/reload also pass. Eager FP16 attention has documented numerical
 differences, and this is not a general AWQ quality or performance-parity claim.
 See [the exact evidence and limitations](docs/evidence/awq/README.md).
 
+For the qualified Qwen2.5-0.5B AWQ geometry on NVIDIA A2, an optional native
+Marlin backend replaces GPU packing and uses shared, accounted scratch memory.
+Build it with `-DDLLM_BUILD_AWQ_MARLIN=ON -DCMAKE_CUDA_ARCHITECTURES=86`, then set
+`DLLM_AWQ_MARLIN_LIBRARY` to the absolute path of `libdllm-awq-marlin.so` before
+starting dllm. The backend reports `triton+awq-marlin`; other devices, model
+geometries, contexts above 2048 and batch capacities above four retain the regular
+AWQ path. A missing or
+incompatible library in the selected scope fails explicitly. The vendored
+Marlin device kernels retain their Apache-2.0 license and attribution; there
+is no vLLM inference runtime dependency. Unset the variable to use Triton.
+
+
 ### Static YaRN configurations
 
 Dense Qwen2/Qwen3/Llama/Mistral checkpoints may use static `rope_scaling` with

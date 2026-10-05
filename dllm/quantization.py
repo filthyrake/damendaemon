@@ -84,7 +84,7 @@ def prepare(weights, quantization=None):
 
 
 class Linear:
-    def __init__(self, weights, host_scales, device, fallback, packed_formats=None, packed_decode=None, packed_prefill=None, q4_decode=None, packed_cache=None, awq_matrices=None):
+    def __init__(self, weights, host_scales, device, fallback, packed_formats=None, packed_decode=None, packed_prefill=None, q4_decode=None, packed_cache=None, awq_matrices=None, native_awq=None):
         copies = {key: value.to(device) for key, value in {id(t):t for t in host_scales.values()}.items()}
         self.scales = {id(weights[name]): copies[id(value)] for name, value in host_scales.items()}
         self.awq = {}
@@ -93,6 +93,12 @@ class Linear:
             self.awq = {id(weights[name]): Matrix(weights[name], matrix.zeros.to(device),
                                                  self.scales[id(weights[name])], matrix.inputs, matrix.outputs, matrix.group)
                         for name, matrix in awq_matrices.items()}
+        self.native_awq = native_awq
+        if native_awq is not None:
+            from .native_awq import replace_packing
+            # Drop transfer aliases before replacing each projection.
+            copies.clear()
+            replace_packing(self, weights, native_awq)
         self.formats = {id(weights[name]): layout for name, layout in (packed_formats or {}).items()}
         self.fallback = fallback
         self.packed_decode = packed_decode
@@ -102,6 +108,11 @@ class Linear:
 
     def __call__(self, x, weight, bias=None):
         if self.awq and id(weight) in self.awq:
+            if self.native_awq is not None:
+                matrix = self.awq[id(weight)]
+                if bias is not matrix.bias:
+                    raise ValueError('native AWQ bias identity mismatch')
+                return self.native_awq.linear(x, matrix)
             from .awq_kernels import linear
             return linear(x, self.awq[id(weight)], bias)
         if id(weight) in self.formats:

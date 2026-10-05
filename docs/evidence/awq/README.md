@@ -275,3 +275,22 @@ A subsequent matched vLLM refresh measures 0.2856/0.3734/0.3681 seconds and
 interleaved engine comparison. It differs from the earlier vLLM run, especially
 at concurrency two. The native candidate closes much of this checkpoint's gap,
 but these varying measurements do not establish general engine parity.
+
+## Optional normal native backend
+
+`DLLM_AWQ_MARLIN_LIBRARY` now selects native execution for the measured Qwen2
+geometry on NVIDIA A2, context at most 2048 and batch capacity at most four.
+The normal path passes 128 independent reference and 128 layout checks, with
+backend `triton+awq-marlin`, unchanged 458314496-byte weight storage and a
+20054176-byte packed workspace reserve including 2621600 native scratch bytes.
+Transfer aliases are released before sequential per-projection replacement, so
+construction no longer retains all original GPU packed weights until completion.
+
+Normal-server lifecycle validation passes all release and HTTP checks. Three
+cycles release all tracked tensors and return to 25559040 bytes; resident
+allocation varies from 591163904 to 592603648 bytes, and that variation is
+retained in the report. The documented optional CMake target builds successfully.
+All 343 local regression tests pass; scope tests cover unsupported geometry,
+context, precision, hardware, absent opt-in and explicit incompatible-library
+failure. Batch-capacity exclusion was also checked after limiting selection to
+four. A final serving confirmation uses the CMake-built library.

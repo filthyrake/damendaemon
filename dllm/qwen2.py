@@ -384,6 +384,15 @@ class Executor:
             for name,(width,spec) in packed_formats.items() if name!='embed'),default=0)
         self.packed_workspace_bytes = max(self.packed_workspace_bytes,
                                          max((m.inputs*m.outputs*2 for m in awq_matrices.values()), default=0))
+        native_awq = None
+        if awq_matrices:
+            from .native_awq import select as select_awq, workspace_bytes as awq_workspace_bytes
+            native_awq = select_awq(c, self.device, self.compute_dtype, self.context, max_batch)
+            if native_awq is not None:
+                # Repacking is sequential after transfer aliases are released.
+                # Existing dense-projection reserve covers one packed replacement
+                # and its zero/scale permutation temporaries; scratch is additional.
+                self.packed_workspace_bytes += awq_workspace_bytes(native_awq)
         if device_weight_bytes + kv_bytes + self.packed_workspace_bytes + 512 * 1024**2 > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         from .kquant_cache import plan as plan_cache, build as build_cache
@@ -398,6 +407,7 @@ class Executor:
                 dtype = device_dtype(name, tensor)
                 copies[id(tensor)] = tensor.to(device=self.device, dtype=dtype)
             self.w[name] = copies[id(tensor)]
+        copies.clear()
         if self.dense_precision != 'standard':
             self.linear = self.dense_linear
         self.quant_linear = None
@@ -420,7 +430,7 @@ class Executor:
                                       self.llama_precision, self.context)
             self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats,
                                        self.packed_decode, self.packed_prefill, self.q4_decode,
-                                       packed_cache=build_cache(cache_plan, self.w, packed_formats), awq_matrices=awq_matrices)
+                                       packed_cache=build_cache(cache_plan, self.w, packed_formats), awq_matrices=awq_matrices, native_awq=native_awq)
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
@@ -451,7 +461,8 @@ class Executor:
             torch.cuda.synchronize()
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if model.scales or packed_formats:
-            self.kernel_backend += '+'+('awq-gemm' if awq_matrices else model.quantization)
+            self.kernel_backend += '+'+('awq-marlin' if native_awq is not None else
+                                        'awq-gemm' if awq_matrices else model.quantization)
             if self.packed_cache_bytes:
                 self.kernel_backend += '+resident-kquant-cache'
             if self.q4_decode is not None:
