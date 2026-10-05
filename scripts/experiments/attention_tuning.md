@@ -51,3 +51,9 @@ match. More precise probability products did not solve the full-model layout
 sensitivity. Neither grouped candidate is promoted, and no HTTP throughput
 claim is made for either. The existing split attention algorithm at block 128
 is being checked separately against the same unchanged gate.
+
+Split-128 also fails four layout checks at batch-four step two (maximum RMS
+1.2965%), despite matching greedy choices. It is not promoted. The repeated
+sensitivity motivates a grouped split-256 candidate that retains the existing
+softmax partition and checks bitwise equality to split-256 in addition to the
+independent FP32 reference. This is a distinct experiment, not a relaxed gate.

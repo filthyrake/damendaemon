@@ -10,18 +10,23 @@ import sys
 import torch
 from dllm import kernels
 from scripts.experiments.attention_tensorcore import attention
+from scripts.experiments.attention_tiles import attention as split_attention
 
 
-def install_validation_dispatch(block):
+def install_validation_dispatch(block, kind='tensorcore'):
     if block not in (64, 128):
         raise ValueError('unsupported experiment block')
+    if kind not in ('tensorcore', 'split'):
+        raise ValueError('unsupported attention experiment')
     if torch.cuda.get_device_name() != 'NVIDIA A2':
         raise RuntimeError('attention experiment is limited to A2')
     original = kernels.attention
     signature = inspect.signature(original)
-    report = dict(kind='experimental fixed-cache grouped tensor-core attention',
+    source = 'attention_tensorcore.py' if kind == 'tensorcore' else 'attention_tiles.py'
+    operation = attention if kind == 'tensorcore' else split_attention
+    report = dict(kind=f'experimental fixed-cache {kind} attention',
                   block=block, captured_or_eager_calls=0, fallback_calls=0,
-                  source_sha256=hashlib.sha256(Path(__file__).with_name('attention_tensorcore.py').read_bytes()).hexdigest())
+                  source_sha256=hashlib.sha256(Path(__file__).with_name(source).read_bytes()).hexdigest())
 
     def dispatch(*values, **options):
         bound = signature.bind(*values, **options)
@@ -41,7 +46,7 @@ def install_validation_dispatch(block):
         slots = p['slots']
         if slots is None:
             slots = torch.zeros(q.shape[0], device=q.device, dtype=torch.long)
-        return attention(q, k, v, p['positions'], slots, block)
+        return operation(q, k, v, p['positions'], slots, block)
 
     kernels.attention = dispatch
     return report
@@ -51,11 +56,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--report', required=True)
     parser.add_argument('--block', type=int, choices=(64, 128), default=64)
+    parser.add_argument('--kind', choices=('tensorcore', 'split'), default='tensorcore')
     parser.add_argument('script')
     parser.add_argument('arguments', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     original = kernels.attention
-    report = install_validation_dispatch(args.block)
+    report = install_validation_dispatch(args.block, args.kind)
     report.update(script=args.script, arguments=args.arguments, completed=False)
     saved_argv = sys.argv
     try:
