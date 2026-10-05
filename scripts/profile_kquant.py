@@ -22,6 +22,8 @@ def timing(fn):
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--decode-tuning',action='store_true')
     p.add_argument('--native-only',action='store_true')
+    p.add_argument('--layers',type=int,nargs='+',default=[0],help='decoder layers to profile')
+    p.add_argument('--rows',type=int,nargs='+',choices=(1,2,3,4),help='explicit decode batch sizes')
     p.add_argument('--residual',action='store_true',help='include isolated residual-int8 candidate')
     args=p.parse_args()
     if args.residual:args.native_only=True
@@ -29,11 +31,12 @@ def main():
     torch.backends.cuda.matmul.allow_tf32=False
     model=GgufWeights(args.model,512,'none')
     with torch.inference_mode():
-        for name in ('0.qkv.weight','0.out','0.gate_up','0.down','head'):
+        names=[f'{layer}.{projection}' for layer in args.layers for projection in ('qkv.weight','out','gate_up','down')]+['head']
+        for name in names:
             weight=model.weights[name].cuda();layout=model.packed_formats[name]
             width,spec=layout;outputs=spec[-1][1]
             dense=expand(weight,layout,torch.float16)
-            for rows in ((1,4) if args.decode_tuning or args.native_only else (1,4,129)):
+            for rows in (args.rows or ((1,4) if args.decode_tuning or args.native_only else (1,4,129))):
                 x=torch.randn(rows,width,device='cuda',dtype=torch.float16)
                 expected=torch.nn.functional.linear(x,dense)
                 variants={'current':lambda:linear(x,weight,layout),
@@ -73,7 +76,7 @@ def main():
                     relative=((actual.float()-expected.float()).square().mean()/expected.float().square().mean()).sqrt().item()
                     assert torch.isfinite(actual).all() and relative<.001,(name,rows,variant,relative)
                     print(json.dumps(dict(name=name,rows=rows,width=width,outputs=outputs,
-                        variant=variant,ms=ms,relative_rms=relative)),flush=True)
+                        variant=variant,ms=ms,formats=[segment[2] for segment in spec],relative_rms=relative)),flush=True)
             del weight,dense
 
 

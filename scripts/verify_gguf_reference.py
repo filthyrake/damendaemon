@@ -58,19 +58,22 @@ def reference_weights(path):
 
 def main():
     p = argparse.ArgumentParser(); p.add_argument('gguf'); p.add_argument('hf_config'); p.add_argument('--output', required=True)
+    p.add_argument('--benchmark-report',help='validate the exact prompt IDs and output length from an engine comparison')
+    p.add_argument('--context',type=int,default=512,help='context capacity; must be at least 512')
     p.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
     p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
     p.add_argument('--experimental-residual', action='store_true')
     args = p.parse_args(); torch.set_num_threads(4)
+    if args.context < 512:p.error('--context must be at least 512')
     experiment = None
     if args.experimental_residual:
         from experiments.kquant_residual import install_validation_dispatch
         experiment = install_validation_dispatch()
     torch.backends.cuda.matmul.allow_tf32 = False
     teacher = json.loads(Path(args.teacher_trace).read_text()) if args.teacher_trace else None
-    source = GgufWeights(args.gguf, 512, 'none')
+    source = GgufWeights(args.gguf, args.context, 'none')
     if args.expanded_control:
         from verify_kquant_runtime import expanded
         source=expanded(source)
@@ -85,7 +88,7 @@ def main():
     prompts = [source.chat_tokens([{'role':'user','content':text}]) for text in
                ('What is 2 + 2? Answer with one number.', 'Reply in French: Hello, how are you?')]
     base = source.raw_tokens('The ocean influences coastal weather. Explain the process in detail. ')
-    for length in (129, 505): prompts.append((base * ((length+len(base)-1)//len(base)))[:length])
+    for length in (129, args.context-7): prompts.append((base * ((length+len(base)-1)//len(base)))[:length])
     if args.extended:
         prompts = [source.chat_tokens(messages) for messages in (
             [{'role':'system','content':'Answer briefly.'}, {'role':'user','content':'What is 17 + 25? Just the number.'}],
@@ -94,7 +97,17 @@ def main():
             [{'role':'user','content':'Translate into Spanish: The café opens at eight. 👋'}],
             [{'role':'user','content':'Write a Python function that returns the largest number in a list.'}])]
         corpus = source.raw_tokens('Library record 73 is in cabinet 7. Record 85 is in cabinet 8. Locate the requested record. ')
-        for length in (257, 385): prompts.append((corpus * ((length+len(corpus)-1)//len(corpus)))[:length])
+        for length in (257, args.context-127): prompts.append((corpus * ((length+len(corpus)-1)//len(corpus)))[:length])
+    benchmark=json.loads(Path(args.benchmark_report).read_text()) if args.benchmark_report else None
+    steps=8
+    if benchmark:
+        if args.extended:p.error('--benchmark-report cannot be combined with --extended')
+        prompts=[benchmark['prompts'][key] for key in sorted(benchmark['prompts'],key=int)]
+        steps=benchmark['output_tokens']
+        if type(steps) is not int or not 1<=steps<=256:
+            raise ValueError('invalid benchmark output length')
+        if any(not ids or len(ids)+steps-1>args.context or any(type(t) is not int or not 0<=t<source.config['vocab_size'] for t in ids) for ids in prompts):
+            raise ValueError('invalid benchmark prompt tokens or context budget')
     with torch.inference_mode():
         for graph in (False, True):
             executor = make_executor(source, use_graph=graph)
@@ -103,24 +116,29 @@ def main():
             for index, ids in enumerate(prompts):
                 expected = reference(torch.tensor([ids], device='cuda'), use_cache=True)
                 actual = executor.prefill(ids)
-                errors = []; output = []; mismatches = []; forced = []; eos_step = None
+                errors = []; output = []; actual_tokens = []; margins = []; mismatches = []; forced = []; eos_step = None
                 previous = next(c for c in teacher["cases"] if c["graph"] == graph and c["case"] == index) if teacher else None
-                for step in range(8):
+                if previous and previous['prompt_tokens'] != len(ids):
+                    raise ValueError('teacher trace uses a different prompt/context length')
+                for step in range(steps):
                     target = expected.logits[:, -1, :]
                     error = actual.float()-target.float()
                     absolute = error.abs().max().item()
                     relative = (error.square().mean()/target.float().square().mean().clamp_min(1e-12)).sqrt().item()
                     errors.append(dict(step=step, max_absolute=absolute, relative_rms=relative))
                     token = target.argmax(-1).item(); output.append(token)
+                    actual_tokens.append(actual.argmax(-1).item())
+                    best=target.float().topk(2,dim=-1).values
+                    margins.append((best[0,0]-best[0,1]).item())
                     if eos_step is None and token in source.eos: eos_step = step
                     next_input = previous["reference_tokens"][step] if previous else token
                     forced.append(next_input)
                     if token != actual.argmax(-1).item(): mismatches.append(step)
-                    if step < 7:
+                    if step < steps-1:
                         expected = reference(torch.tensor([[next_input]], device='cuda'), past_key_values=expected.past_key_values, use_cache=True)
                         actual, _ = executor.decode(next_input)
                 cases.append(dict(graph=graph, case=index, prompt_tokens=len(ids), errors=errors,
-                                  greedy_mismatches=mismatches, reference_tokens=output, teacher_tokens=forced, eos_step=eos_step))
+                                  greedy_mismatches=mismatches, reference_tokens=output, actual_tokens=actual_tokens, reference_top_two_margins=margins, teacher_tokens=forced, eos_step=eos_step))
                 del expected, actual, target, error
             del executor
             gc.collect(); empty_cache()
@@ -133,7 +151,8 @@ def main():
         residual_library=dict(path=residual_path,selected=residual_selected,
             sha256=hashlib.sha256(Path(residual_path).read_bytes()).hexdigest() if residual_selected else None)
     report = dict(passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
-                  precision=precision, suite="extended" if args.extended else "initial",
+                  precision=precision, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
+                  benchmark_report=args.benchmark_report, steps=steps,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
                   weight_rounding='float16', tf32=False, formats=formats, embedding_type=embedding_type,
                   teacher_trace=args.teacher_trace,expanded_control=args.expanded_control,

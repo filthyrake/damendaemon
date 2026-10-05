@@ -682,3 +682,45 @@ These are HTTP medians after warmup, 16 output tokens and 512 context, alternati
 six measured rounds per implementation. Packed execution is about 8–9% faster
 for single requests and 3% at concurrency two. This is a within-dllm comparison;
 it does not establish parity with another engine or qualify long Qwen3 contexts.
+
+### Same-file Qwen3 llama.cpp comparison and output divergence
+
+`qwen3-q4-k-m-engines-a2.json` records sequential dllm/llama.cpp/llama.cpp/dllm
+phases with the same file, prompt IDs, FP16 KV, four 512-token slots, 16 output
+tokens and no prompt-cache reuse. The control log counts in
+`qwen3-q4-k-m-engine-controls-a2.json` confirm all 90 reference requests
+recomputed their full input. Pinned reference binary/hash and commands are in
+the report. Medians pool twelve measured rounds per engine/case:
+
+| Input / concurrency | dllm CUDA | llama.cpp | Generated text |
+|---|---:|---:|---|
+| 16 / 1 | 0.148477 s | 0.141501 s | Different wording |
+| 129 / 1 | 0.152062 s | 0.154091 s | Identical |
+| 400 / 1 | 0.173443 s | 0.195110 s | Identical |
+| 129 / 2 | 0.216758 s | 0.203051 s | Identical |
+
+The report deliberately retains `passed: false`: its exact-output assertion
+fails on the shortest prompt. dllm continues with “a specific element” where
+llama.cpp chooses “a value.” Each engine is stable across its own phases.
+Stored weights/KV and workload match; intermediate arithmetic and the generated
+sequences do not universally match. No clean cross-engine equivalence is claimed.
+
+The diagnostic `qwen3-q4-k-m-engine-prompts-reference-a2.json` evaluates those
+exact prompt IDs and 16 decode decisions with independent gguf.quants/HF eager
+FP16 execution, graphs both off and on. All 96 greedy decisions match dllm,
+maximum RMS 0.368%. Thus the differing sequence passes dllm's independent
+reference gate; it is not evidence that dllm reproduced llama.cpp's arithmetic.
+The 400-token matched-output case is approximately 11% faster in dllm, while
+concurrency two is about 7% slower. The 129-token single case is roughly tied.
+
+`qwen3-q4-k-m-reference-cuda-2048-a2.json` extends independent numerical coverage
+to a 2041-token prompt followed by seven decode steps, with and without CUDA
+graphs. All 64 comparisons pass, maximum RMS 0.662%, exact greedy agreement.
+This is a 2048-context model-execution proof; the HTTP/paged lifecycle suite and
+performance measurements above remain at 512 context.
+
+`kquant-residual-batch23-profile-a2.jsonl` records a separate investigation of
+batch sizes two and three. Batch three regresses on every measured projection.
+Batch two shows potential gains in the sampled down projection and head but
+regresses elsewhere. These microbenchmarks do not enable batched residual
+production dispatch or establish whole-model gains.
