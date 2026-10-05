@@ -12,6 +12,24 @@ class ResidualSelectionTests(unittest.TestCase):
     config = {'model_type': 'llama', 'hidden_size': 2048}
     layouts = {'qkv': (2048, ((0, 8, 12, 0), (8, 16, 14, 9216)))}
 
+    def test_tinyllama_long_context_does_not_expand_other_model_scopes(self):
+        config=dict(self.config,intermediate_size=5632,num_hidden_layers=22,
+                    num_attention_heads=32,num_key_value_heads=4,head_dim=64,
+                    vocab_size=32000,max_position_embeddings=2048,rope_theta=10000)
+        def accepted(c=config,context=2048,layouts=self.layouts):
+            return qualified_scope(c,layouts,'cuda',torch.float16,'mixed',context)
+        self.assertTrue(accepted())
+        for changes in ({'intermediate_size':8192},{'num_hidden_layers':16},
+                        {'num_attention_heads':16},{'num_key_value_heads':8},
+                        {'head_dim':128},{'vocab_size':128256},
+                        {'max_position_embeddings':4096},{'rope_theta':500000},
+                        {'rope_scaling':{'type':'linear','factor':2}}, {'sliding_window':1024}):
+            with self.subTest(changes=changes):
+                self.assertFalse(accepted({**config,**changes}))
+        self.assertFalse(accepted(context=2049))
+        self.assertFalse(accepted(context=0))
+        self.assertFalse(accepted(layouts={'q5':(2048,((0,8,13,0),))}))
+
     def test_only_qualified_model_precision_and_formats(self):
         self.assertTrue(qualified_scope(self.config, self.layouts, 'cuda', torch.float16, 'mixed', 512))
         for config, layouts, device, dtype in (

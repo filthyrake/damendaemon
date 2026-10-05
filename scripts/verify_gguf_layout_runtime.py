@@ -6,6 +6,7 @@ HF logit verifier first. One executor is resident at a time so 7B Q4 fits an A2.
 import argparse
 import gc
 import hashlib
+from importlib.metadata import version
 import json
 import os
 from pathlib import Path
@@ -20,12 +21,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model'); parser.add_argument('--output', required=True)
     parser.add_argument('--context',type=int,default=512,help='context capacity, at least 512')
-    parser.add_argument('--experimental-q4-residual', action='store_true')
+    experiments=parser.add_mutually_exclusive_group()
+    experiments.add_argument('--experimental-q4-residual', action='store_true')
+    experiments.add_argument('--experimental-residual', action='store_true')
     args = parser.parse_args()
     if args.context<512:parser.error('--context must be at least 512')
     experiment = None
     if args.experimental_q4_residual:
         from experiments.q4_residual import install_validation_dispatch
+        experiment = install_validation_dispatch()
+    if args.experimental_residual:
+        from experiments.kquant_residual import install_validation_dispatch
         experiment = install_validation_dispatch()
     if os.environ.get('DLLM_KV_CACHE_TOKENS'):
         raise ValueError('run with no inherited KV pool override')
@@ -35,7 +41,10 @@ def main():
     prompts = [(corpus * ((n+len(corpus)-1)//len(corpus)))[:n]
                for n in (4,128,args.context//2,args.context-128)]
     traces = []; checks = []
-    report = dict(experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=args.context,
+    tokenizer_runtime=dict(kind=type(source.tokenizer).__name__)
+    if hasattr(source.tokenizer,'native_model'):
+        tokenizer_runtime.update(sentencepiece=version('sentencepiece'),protobuf=version('protobuf'))
+    report = dict(tokenizer_runtime=tokenizer_runtime, experiment=experiment, passed=False, device=device_name(), torch=torch.__version__, context=args.context,
                   prompt_lengths=[len(ids) for ids in prompts], chunk_size=128,
                   model=str(Path(args.model).resolve()), host_bytes=source.bytes, comparisons=checks,
                   scope='layout equivalence to single-request fixed eager; independent model accuracy is separate')

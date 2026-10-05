@@ -1,0 +1,763 @@
+{
+  "native_kquant_library": {
+    "path": "/home/damen/dllm-dev/build-kquant/libdllm-kquant.so",
+    "sha256": "2896d777ef22e1658e1f3f2cae1b67126bf886f071a624f241f1ee816638a61c"
+  },
+  "native_q4_residual_library": null,
+  "native_q4_library": null,
+  "serial_reference": false,
+  "reference_cache_bytes": 0,
+  "production_prefill_kernel_sha256": null,
+  "passed": true,
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "gguf": "/home/damen/.cache/huggingface/hub/models--TheBloke--TinyLlama-1.1B-Chat-v1.0-GGUF/snapshots/52e7645ba7c309695bec7ac98f4f005b139cf465/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+  "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "precision": {
+    "matrix_dtype": "torch.float16",
+    "residual_dtype": "torch.float32",
+    "nonlinear_precise": true,
+    "rotary_precise": true,
+    "backend": "triton+mixed+cuda-kquant-gemv"
+  },
+  "context": 2048,
+  "suite": "initial",
+  "benchmark_report": null,
+  "steps": 8,
+  "reference": "independent gguf.quants dequantization into HF eager llama execution",
+  "reference_dtype": "float16",
+  "weight_rounding": "float16",
+  "tf32": false,
+  "formats": {
+    "Q6_K": 21,
+    "Q4_K": 135,
+    "F32": 45
+  },
+  "embedding_type": "Q4_K",
+  "teacher_trace": null,
+  "expanded_control": false,
+  "host_bytes": 666894336,
+  "experiment": {
+    "name": "residual-int8-v2",
+    "scope": "FP16 single-row width-2048 K-quants",
+    "batch2_q6_candidate": false,
+    "library": "/home/damen/dllm-dev/build-kquant/libdllm-kquant-residual.so",
+    "sha256": "75428622468c9c4bae88402bf31b1d67409e2280039f419b1776bf4264ef3e8d",
+    "production_backend_label_excludes_experimental_override": true
+  },
+  "production_residual_library": null,
+  "cases": [
+    {
+      "graph": false,
+      "case": 0,
+      "prompt_tokens": 29,
+      "errors": [
+        {
+          "step": 0,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.001855486654676497
+        },
+        {
+          "step": 1,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.0011003278195858002
+        },
+        {
+          "step": 2,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.001098389970138669
+        },
+        {
+          "step": 3,
+          "max_absolute": 0.025390625,
+          "relative_rms": 0.0019976876210421324
+        },
+        {
+          "step": 4,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0013530364958569407
+        },
+        {
+          "step": 5,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0013345192419365048
+        },
+        {
+          "step": 6,
+          "max_absolute": 0.02294921875,
+          "relative_rms": 0.002441827906295657
+        },
+        {
+          "step": 7,
+          "max_absolute": 0.03125,
+          "relative_rms": 0.0016847342485561967
+        }
+      ],
+      "greedy_mismatches": [],
+      "reference_tokens": [
+        29906,
+        718,
+        29871,
+        29906,
+        353,
+        29871,
+        29946,
+        2
+      ],
+      "actual_tokens": [
+        29906,
+        718,
+        29871,
+        29906,
+        353,
+        29871,
+        29946,
+        2
+      ],
+      "reference_top_two_margins": [
+        1.4609375,
+        5.5390625,
+        11.21875,
+        10.0,
+        1.109375,
+        3.8125,
+        3.0625,
+        0.3046875
+      ],
+      "teacher_tokens": [
+        29906,
+        718,
+        29871,
+        29906,
+        353,
+        29871,
+        29946,
+        2
+      ],
+      "eos_step": 7
+    },
+    {
+      "graph": false,
+      "case": 1,
+      "prompt_tokens": 29,
+      "errors": [
+        {
+          "step": 0,
+          "max_absolute": 0.04150390625,
+          "relative_rms": 0.003284131409600377
+        },
+        {
+          "step": 1,
+          "max_absolute": 0.03125,
+          "relative_rms": 0.0026537072844803333
+        },
+        {
+          "step": 2,
+          "max_absolute": 0.05078125,
+          "relative_rms": 0.0026175163220614195
+        },
+        {
+          "step": 3,
+          "max_absolute": 0.025390625,
+          "relative_rms": 0.001361791044473648
+        },
+        {
+          "step": 4,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0019298108527436852
+        },
+        {
+          "step": 5,
+          "max_absolute": 0.0263671875,
+          "relative_rms": 0.0021000930573791265
+        },
+        {
+          "step": 6,
+          "max_absolute": 0.029296875,
+          "relative_rms": 0.0012963006738573313
+        },
+        {
+          "step": 7,
+          "max_absolute": 0.025390625,
+          "relative_rms": 0.001476496341638267
+        }
+      ],
+      "greedy_mismatches": [],
+      "reference_tokens": [
+        5612,
+        368,
+        297,
+        3878,
+        617,
+        423,
+        29901,
+        15043
+      ],
+      "actual_tokens": [
+        5612,
+        368,
+        297,
+        3878,
+        617,
+        423,
+        29901,
+        15043
+      ],
+      "reference_top_two_margins": [
+        0.6328125,
+        4.3515625,
+        3.875,
+        2.4453125,
+        1.1328125,
+        1.46875,
+        4.40625,
+        1.03125
+      ],
+      "teacher_tokens": [
+        5612,
+        368,
+        297,
+        3878,
+        617,
+        423,
+        29901,
+        15043
+      ],
+      "eos_step": null
+    },
+    {
+      "graph": false,
+      "case": 2,
+      "prompt_tokens": 129,
+      "errors": [
+        {
+          "step": 0,
+          "max_absolute": 0.015625,
+          "relative_rms": 0.0008545171585865319
+        },
+        {
+          "step": 1,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.0007765894406475127
+        },
+        {
+          "step": 2,
+          "max_absolute": 0.0205078125,
+          "relative_rms": 0.0010976415360346437
+        },
+        {
+          "step": 3,
+          "max_absolute": 0.06884765625,
+          "relative_rms": 0.004476443398743868
+        },
+        {
+          "step": 4,
+          "max_absolute": 0.0205078125,
+          "relative_rms": 0.0017660310259088874
+        },
+        {
+          "step": 5,
+          "max_absolute": 0.017578125,
+          "relative_rms": 0.0013568854192271829
+        },
+        {
+          "step": 6,
+          "max_absolute": 0.01953125,
+          "relative_rms": 0.0014156184624880552
+        },
+        {
+          "step": 7,
+          "max_absolute": 0.021484375,
+          "relative_rms": 0.0019430029205977917
+        }
+      ],
+      "greedy_mismatches": [],
+      "reference_tokens": [
+        297,
+        9493,
+        29889,
+        29871,
+        21628,
+        29889,
+        29871,
+        29896
+      ],
+      "actual_tokens": [
+        297,
+        9493,
+        29889,
+        29871,
+        21628,
+        29889,
+        29871,
+        29896
+      ],
+      "reference_top_two_margins": [
+        9.765625,
+        8.609375,
+        8.1328125,
+        4.1640625,
+        0.1796875,
+        0.609375,
+        0.3984375,
+        0.3125
+      ],
+      "teacher_tokens": [
+        297,
+        9493,
+        29889,
+        29871,
+        21628,
+        29889,
+        29871,
+        29896
+      ],
+      "eos_step": null
+    },
+    {
+      "graph": false,
+      "case": 3,
+      "prompt_tokens": 2041,
+      "errors": [
+        {
+          "step": 0,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.001166832516901195
+        },
+        {
+          "step": 1,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.0013042886275798082
+        },
+        {
+          "step": 2,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0012685961555689573
+        },
+        {
+          "step": 3,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.0011054693022742867
+        },
+        {
+          "step": 4,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0027070711366832256
+        },
+        {
+          "step": 5,
+          "max_absolute": 0.0240478515625,
+          "relative_rms": 0.0012726770946756005
+        },
+        {
+          "step": 6,
+          "max_absolute": 0.03515625,
+          "relative_rms": 0.001286688493564725
+        },
+        {
+          "step": 7,
+          "max_absolute": 0.04296875,
+          "relative_rms": 0.0018949421355500817
+        }
+      ],
+      "greedy_mismatches": [],
+      "reference_tokens": [
+        284,
+        14826,
+        29889,
+        12027,
+        7420,
+        278,
+        1889,
+        297
+      ],
+      "actual_tokens": [
+        284,
+        14826,
+        29889,
+        12027,
+        7420,
+        278,
+        1889,
+        297
+      ],
+      "reference_top_two_margins": [
+        16.71875,
+        10.734375,
+        12.4140625,
+        9.53125,
+        10.46875,
+        12.0546875,
+        11.734375,
+        14.4921875
+      ],
+      "teacher_tokens": [
+        284,
+        14826,
+        29889,
+        12027,
+        7420,
+        278,
+        1889,
+        297
+      ],
+      "eos_step": null
+    },
+    {
+      "graph": true,
+      "case": 0,
+      "prompt_tokens": 29,
+      "errors": [
+        {
+          "step": 0,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.001855486654676497
+        },
+        {
+          "step": 1,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.0011003278195858002
+        },
+        {
+          "step": 2,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.001098389970138669
+        },
+        {
+          "step": 3,
+          "max_absolute": 0.025390625,
+          "relative_rms": 0.0019976876210421324
+        },
+        {
+          "step": 4,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0013530364958569407
+        },
+        {
+          "step": 5,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0013345192419365048
+        },
+        {
+          "step": 6,
+          "max_absolute": 0.02294921875,
+          "relative_rms": 0.002441827906295657
+        },
+        {
+          "step": 7,
+          "max_absolute": 0.03125,
+          "relative_rms": 0.0016847342485561967
+        }
+      ],
+      "greedy_mismatches": [],
+      "reference_tokens": [
+        29906,
+        718,
+        29871,
+        29906,
+        353,
+        29871,
+        29946,
+        2
+      ],
+      "actual_tokens": [
+        29906,
+        718,
+        29871,
+        29906,
+        353,
+        29871,
+        29946,
+        2
+      ],
+      "reference_top_two_margins": [
+        1.4609375,
+        5.5390625,
+        11.21875,
+        10.0,
+        1.109375,
+        3.8125,
+        3.0625,
+        0.3046875
+      ],
+      "teacher_tokens": [
+        29906,
+        718,
+        29871,
+        29906,
+        353,
+        29871,
+        29946,
+        2
+      ],
+      "eos_step": 7
+    },
+    {
+      "graph": true,
+      "case": 1,
+      "prompt_tokens": 29,
+      "errors": [
+        {
+          "step": 0,
+          "max_absolute": 0.04150390625,
+          "relative_rms": 0.003284131409600377
+        },
+        {
+          "step": 1,
+          "max_absolute": 0.03125,
+          "relative_rms": 0.0026537072844803333
+        },
+        {
+          "step": 2,
+          "max_absolute": 0.05078125,
+          "relative_rms": 0.0026175163220614195
+        },
+        {
+          "step": 3,
+          "max_absolute": 0.025390625,
+          "relative_rms": 0.001361791044473648
+        },
+        {
+          "step": 4,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0019298108527436852
+        },
+        {
+          "step": 5,
+          "max_absolute": 0.0263671875,
+          "relative_rms": 0.0021000930573791265
+        },
+        {
+          "step": 6,
+          "max_absolute": 0.029296875,
+          "relative_rms": 0.0012963006738573313
+        },
+        {
+          "step": 7,
+          "max_absolute": 0.025390625,
+          "relative_rms": 0.001476496341638267
+        }
+      ],
+      "greedy_mismatches": [],
+      "reference_tokens": [
+        5612,
+        368,
+        297,
+        3878,
+        617,
+        423,
+        29901,
+        15043
+      ],
+      "actual_tokens": [
+        5612,
+        368,
+        297,
+        3878,
+        617,
+        423,
+        29901,
+        15043
+      ],
+      "reference_top_two_margins": [
+        0.6328125,
+        4.3515625,
+        3.875,
+        2.4453125,
+        1.1328125,
+        1.46875,
+        4.40625,
+        1.03125
+      ],
+      "teacher_tokens": [
+        5612,
+        368,
+        297,
+        3878,
+        617,
+        423,
+        29901,
+        15043
+      ],
+      "eos_step": null
+    },
+    {
+      "graph": true,
+      "case": 2,
+      "prompt_tokens": 129,
+      "errors": [
+        {
+          "step": 0,
+          "max_absolute": 0.015625,
+          "relative_rms": 0.0008545171585865319
+        },
+        {
+          "step": 1,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.0007765894406475127
+        },
+        {
+          "step": 2,
+          "max_absolute": 0.0205078125,
+          "relative_rms": 0.0010976415360346437
+        },
+        {
+          "step": 3,
+          "max_absolute": 0.06884765625,
+          "relative_rms": 0.004476443398743868
+        },
+        {
+          "step": 4,
+          "max_absolute": 0.0205078125,
+          "relative_rms": 0.0017660310259088874
+        },
+        {
+          "step": 5,
+          "max_absolute": 0.017578125,
+          "relative_rms": 0.0013568854192271829
+        },
+        {
+          "step": 6,
+          "max_absolute": 0.01953125,
+          "relative_rms": 0.0014156184624880552
+        },
+        {
+          "step": 7,
+          "max_absolute": 0.021484375,
+          "relative_rms": 0.0019430029205977917
+        }
+      ],
+      "greedy_mismatches": [],
+      "reference_tokens": [
+        297,
+        9493,
+        29889,
+        29871,
+        21628,
+        29889,
+        29871,
+        29896
+      ],
+      "actual_tokens": [
+        297,
+        9493,
+        29889,
+        29871,
+        21628,
+        29889,
+        29871,
+        29896
+      ],
+      "reference_top_two_margins": [
+        9.765625,
+        8.609375,
+        8.1328125,
+        4.1640625,
+        0.1796875,
+        0.609375,
+        0.3984375,
+        0.3125
+      ],
+      "teacher_tokens": [
+        297,
+        9493,
+        29889,
+        29871,
+        21628,
+        29889,
+        29871,
+        29896
+      ],
+      "eos_step": null
+    },
+    {
+      "graph": true,
+      "case": 3,
+      "prompt_tokens": 2041,
+      "errors": [
+        {
+          "step": 0,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.001166832516901195
+        },
+        {
+          "step": 1,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.0013042886275798082
+        },
+        {
+          "step": 2,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0012685961555689573
+        },
+        {
+          "step": 3,
+          "max_absolute": 0.0234375,
+          "relative_rms": 0.0011054693022742867
+        },
+        {
+          "step": 4,
+          "max_absolute": 0.02734375,
+          "relative_rms": 0.0027070711366832256
+        },
+        {
+          "step": 5,
+          "max_absolute": 0.0240478515625,
+          "relative_rms": 0.0012726770946756005
+        },
+        {
+          "step": 6,
+          "max_absolute": 0.03515625,
+          "relative_rms": 0.001286688493564725
+        },
+        {
+          "step": 7,
+          "max_absolute": 0.04296875,
+          "relative_rms": 0.0018949421355500817
+        }
+      ],
+      "greedy_mismatches": [],
+      "reference_tokens": [
+        284,
+        14826,
+        29889,
+        12027,
+        7420,
+        278,
+        1889,
+        297
+      ],
+      "actual_tokens": [
+        284,
+        14826,
+        29889,
+        12027,
+        7420,
+        278,
+        1889,
+        297
+      ],
+      "reference_top_two_margins": [
+        16.71875,
+        10.734375,
+        12.4140625,
+        9.53125,
+        10.46875,
+        12.0546875,
+        11.734375,
+        14.4921875
+      ],
+      "teacher_tokens": [
+        284,
+        14826,
+        29889,
+        12027,
+        7420,
+        278,
+        1889,
+        297
+      ],
+      "eos_step": null
+    }
+  ]
+}

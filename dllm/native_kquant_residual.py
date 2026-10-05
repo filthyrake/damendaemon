@@ -51,7 +51,13 @@ def linear(x,weight,layout,bias=None,*,library_path):
 
 def qualified_scope(config, layouts, device, dtype, precision, context):
     """Q5 is explicitly excluded: its forced post-EOS numerical gate is open."""
-    return (device == 'cuda' and dtype == torch.float16 and precision == 'mixed' and context <= 512
+    tinyllama = all(config.get(key)==value for key,value in dict(
+        intermediate_size=5632,num_hidden_layers=22,num_attention_heads=32,
+        num_key_value_heads=4,head_dim=64,vocab_size=32000,max_position_embeddings=2048).items())
+    tinyllama = (tinyllama and config.get('rope_scaling') is None
+                 and config.get('rope_theta',10000)==10000 and not config.get('sliding_window'))
+    context_limit=2048 if tinyllama else 512
+    return (device == 'cuda' and dtype == torch.float16 and precision == 'mixed' and 0 < context <= context_limit
             and config.get('model_type') == 'llama' and config.get('hidden_size') == 2048
             and bool(layouts)
             and {kind for _, spec in layouts.values() for _, _, kind, _ in spec} == {12, 14})

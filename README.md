@@ -515,12 +515,16 @@ export DLLM_KQUANT_RESIDUAL_LIBRARY="$PWD/build/libdllm-kquant-residual.so"
 
 Keep the ordinary K-quant library configured for fallback. The residual option
 requires CUDA, the default Llama `mixed` precision, hidden width 2048,
-a configured context of at most 512, and only Q4_K/Q6_K packed formats. It selects single-row 2048-wide projections; other shapes use the
+only Q4_K/Q6_K packed formats, and a configured context of at most 512
+(2048 for the qualified TinyLlama topology). It selects single-row 2048-wide projections; other shapes use the
 ordinary path. Q5-containing models are excluded because their independent
 numerical gate remains open. The option changes arithmetic without changing
 stored weights. A2 Llama 3.2 1B Q4_K_M tests measured 7–11% lower single-request
 HTTP latency than ordinary CUDA, with concurrency two roughly tied. Other
 hardware, model sizes and long contexts are not qualified by those results.
+Published TinyLlama Q4_K_M passes model/layout proof through 2048 context and
+normal 512-context serving checks, with 5.7–8.5% lower single-request latency.
+Other Llama models retain the 512-context residual-selection limit.
 Backend status includes `cuda-kquant-residual` when selected.
 
 For Llama 3.2 1B Q4_K_M/Q5_K_M, an independent FP32 mode addresses the observed

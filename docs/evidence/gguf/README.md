@@ -1393,7 +1393,8 @@ The pinned llama.cpp CUDA source converts inputs to Q8_1 in its
 [`mmvq` path](https://github.com/ggml-org/llama.cpp/blob/836d57176dc699a726c55418e4f96b8ca628e1bf/ggml/src/ggml-cuda/mmvq.cu),
 while dllm's qualified Q4 residual path uses two int8 terms. Same weight bytes
 and FP16 KV do not imply identical internal activation arithmetic. An independent
-single-term absmax/127 diagnostic is enabled only when building
+single-term absmax/127 diagnostic uses legacy Q4_0 matrices with Mistral-sized
+projections. It is enabled only when building
 `scripts/experiments/q4_residual.cu` with `-DDLLM_Q4_SINGLE_TERM=1`. It uses FP32
 activation scaling and is not a bitwise reimplementation of Q8_1.
 
@@ -1441,3 +1442,38 @@ its default zero in both engines and does not claim combined-policy results.
 
 The currently qualified residual selection remains bounded to context 512.
 Longer-context activation is tested separately before changing that selection.
+
+
+### Normal TinyLlama residual selection through 2048
+
+Isolated long-context replay first passes 160 independent checks and 128 layout
+checks in `tinyllama-q4-k-m-residual-experimental-*-2048-a2.json`. Production
+selection is then extended only for the tested TinyLlama topology: 22 layers,
+hidden 2048, intermediate 5632, 32 query/4 KV heads, head dimension 64,
+vocabulary 32000, declared context 2048, unscaled RoPE with theta 10000 and no
+sliding window. Other Llama models keep the 512-context limit. Q5, other
+precisions/devices, multi-row decode and non-2048-wide projections retain their
+existing exclusions or fallback. The CUDA library itself is unchanged.
+
+The final normal selection passes all 160 independent checks and all 128 layout
+checks in `tinyllama-q4-k-m-residual-production-reference-2048-a2.json`,
+`tinyllama-q4-k-m-residual-production-reference-extended-2048-a2.json` and
+`tinyllama-q4-k-m-residual-production-layout-2048-a2.json`. Normal backend
+selection and library hashes are recorded. Maximum relative RMS remains
+0.44765% initially, 0.46080% extended, and 0.10958% across layouts, with exact
+greedy agreement. CPU regression coverage rejects adjacent unqualified
+configurations; the full local suite passes 314 tests.
+
+The lab previously had SentencePiece 0.2.0 installed; earlier reports retain
+that provenance. The declared dependency is 0.2.2. After aligning the lab with
+that pin, both complete tokenizer corpora pass again in
+`tinyllama-positional-spm022-reference.json` and
+`tinyllama-q4-k-m-tokenizer-spm022-reference.json` (2,048 encodings, 4,096 full
+decodings and 2,048 continuations). The final normal model/layout reports record
+SentencePiece 0.2.2 and protobuf 4.25.8 explicitly. No vocabulary metadata or
+expected oracle outputs changed during the upgrade.
+
+The engine harness now accepts `--context` and `--long-prompt-tokens`, preserving
+its original 512/400 defaults. A normal-command server comparison uses context
+2048 and a 2032-token prompt, leaving exactly 16 output tokens of capacity.
+Those serving results are recorded separately when complete.

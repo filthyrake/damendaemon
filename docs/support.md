@@ -72,8 +72,9 @@ K-quant qualification covers Llama 3.2 1B and Qwen3-0.6B Q4_K_M at 512
 context, with Qwen3 independent model checks also passing at 2048. Published
 TinyLlama Q4_K_M passes independent model and fixed/paged/batched/chunked layout
 checks through 2048, with normal HTTP and model swapping qualified at 512. The optional
-FP16 residual-int8 backend retains a 512-context Q4/Q6 single-request scope.
-Q5_K_M and longer Llama contexts retain documented mixed/FP16 numerical gaps.
+FP16 residual-int8 backend permits Q4/Q6 single-request decode through context
+2048 for the qualified TinyLlama topology, while other models retain the 512
+limit. Q5_K_M and longer Llama 3.2 contexts retain documented mixed/FP16 numerical gaps.
 The explicit Llama FP32 mode passes independent Q4_K_M/Q5_K_M model checks at
 2048 context. Its separate optional FP32 residual CUDA backend accelerates
 one through four rows. Separate opt-in compensated FP32 prefill targets prompts

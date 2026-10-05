@@ -2,6 +2,7 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+from importlib.metadata import version
 import json
 import math
 import os
@@ -40,11 +41,16 @@ def main():
     parser.add_argument('--prefill-f32',action='store_true',help='compare production FP32 residual decode with experimental compensated prefill')
     parser.add_argument('--production-residual-f32',action='store_true',help='exercise normal CLI per-executor FP32 selection')
     parser.add_argument('--include-concurrency-four',action='store_true',help='also measure four simultaneous 129-token prompts')
+    parser.add_argument('--context',type=int,default=512,help='context capacity per slot, at least 512')
+    parser.add_argument('--long-prompt-tokens',type=int,default=400,help='length of the long single-request workload')
     parser.add_argument('--lifecycle',action='store_true',help='also check dllm cancellation, swapping and reloads after timing')
     parser.add_argument('--swap-model', help='optional different GGUF checkpoint for lifecycle swapping')
     parser.add_argument('--native-format', choices=('kquant','q4'), default='kquant', help='native decode library format')
     parser.add_argument('--native-library',required=True);parser.add_argument('--output',required=True)
     args=parser.parse_args()
+    if args.context<512:parser.error('--context must be at least 512')
+    if not 129<args.long_prompt_tokens<=args.context-16:
+        parser.error('--long-prompt-tokens must exceed 129 and leave room for 16 output tokens')
     if args.swap_model and not args.lifecycle:parser.error('--swap-model requires --lifecycle')
     if args.batch_wait_ms is not None and (not math.isfinite(args.batch_wait_ms) or not 0<args.batch_wait_ms<=10):
         parser.error('--batch-wait-ms must be >0 and <=10')
@@ -70,14 +76,18 @@ def main():
     source=plan(model);tokenizer=restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
     base_tokens=tokenizer.encode('Binary search repeatedly halves a sorted range. A detailed explanation follows: ',
                                 add_special_tokens=True).ids
-    prompts={length:(base_tokens*((length+len(base_tokens)-1)//len(base_tokens)))[:length] for length in (16,129,400)}
-    report=dict(native_format=args.native_format, model=str(model),model_sha256=digest(model),native_library=str(library),
+    prompts={length:(base_tokens*((length+len(base_tokens)-1)//len(base_tokens)))[:length]
+             for length in (16,129,args.long_prompt_tokens)}
+    tokenizer_runtime=dict(kind=type(tokenizer).__name__)
+    if hasattr(tokenizer,'native_model'):
+        tokenizer_runtime.update(sentencepiece=version('sentencepiece'),protobuf=version('protobuf'))
+    report=dict(tokenizer_runtime=tokenizer_runtime, native_format=args.native_format, model=str(model),model_sha256=digest(model),native_library=str(library),
         native_library_sha256=digest(library),llama_server=str(llama) if llama else None,llama_server_sha256=digest(llama) if llama else None,
         residual_library=str(residual) if residual else None,
         residual_library_sha256=digest(residual) if residual else None,
         experimental_arithmetic=('two dyadic int8 activation terms; FP32 rows 1-4, widths 2048/8192' if precision=='float32'
                                 else 'two dyadic int8 activation terms; FP16 single-row width-2048 K-quants') if residual else None,
-        gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=512,slots=4,kv_dtype='float32' if precision=='float32' else 'float16',
+        gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=args.context,slots=4,kv_dtype='float32' if precision=='float32' else 'float16',
         dllm_precision='FP32 matrices, residual/nonlinear and KV' if precision=='float32' else 'mixed: FP16 matrices, FP32 residual/nonlinear',output_tokens=16,
         prompts=prompts,warmup_rounds=3,measured_rounds=6,runs=[])
     if args.q4_residual_library:
@@ -85,7 +95,7 @@ def main():
     report['swap_model']=dict(path=str(swap_model),sha256=digest(swap_model)) if args.swap_model else None
     report['experimental_batch_wait_ms']=args.batch_wait_ms if not args.production_batch_wait else None
     report['production_batch_wait_ms']=args.batch_wait_ms if args.production_batch_wait else None
-    workloads=[(16,1),(129,1),(400,1),(129,2)]
+    workloads=[(16,1),(129,1),(args.long_prompt_tokens,1),(129,2)]
     if args.include_concurrency_four:workloads.append((129,4))
     report['workloads']=workloads
     report['production_q4_residual']=args.production_q4_residual
@@ -154,13 +164,13 @@ def main():
                 if args.production_q4_residual or args.production_residual or args.production_batch_wait:module='dllm'
                 if args.production_residual_f32 and (args.production_prefill_f32 or not (args.prefill_f32 and engine==counterpart)):module='dllm'
                 command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
-                    '--context','512','--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
+                    '--context',str(args.context),'--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
                     '--prefill-chunk-size','0','--prefix-cache-tokens','0']
                 if args.production_batch_wait:
                     command+=['--batch-wait-ms',str(args.batch_wait_ms if engine==counterpart else 0)]
             else:
                 command=[str(llama),'--model',str(model),'--alias','a','--host','127.0.0.1','--port',str(port),
-                    '--ctx-size','2048','--parallel','4','--kv-unified-per-slot','512','--gpu-layers','99',
+                    '--ctx-size',str(4*args.context),'--parallel','4','--kv-unified-per-slot',str(args.context),'--gpu-layers','99',
                     '--threads','4','--threads-batch','4','--flash-attn','on','--cache-type-k','f16',
                     '--cache-type-v','f16','--no-webui']
             run=dict(phase=phase,engine=engine,command=command,log=str(log_path),cases=[])
@@ -179,7 +189,7 @@ def main():
                         if time.monotonic()>deadline:raise TimeoutError(f'{engine} startup timed out')
                         time.sleep(.2)
                     if engine=='llama.cpp':
-                        run['context']=llama_context(base,512)
+                        run['context']=llama_context(base,args.context)
                         assert run['context']['total_slots']==4,run['context']
                     def request(ids):
                         body=dict(model='a',prompt=ids,temperature=0,max_tokens=16,stream=True,

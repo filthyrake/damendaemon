@@ -7,6 +7,7 @@ The host importer may use codec decoding for rare embedding-finiteness checks.
 import argparse
 import gc
 import hashlib
+from importlib.metadata import version
 import json
 import os
 from pathlib import Path
@@ -221,7 +222,10 @@ def main():
         sha256=hashlib.sha256(Path(q4_residual_path).read_bytes()).hexdigest()) if q4_residual_path else None
     kquant_path=os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
     kquant_library=dict(path=kquant_path,sha256=hashlib.sha256(Path(kquant_path).read_bytes()).hexdigest()) if kquant_path else None
-    report = dict(native_kquant_library=kquant_library, native_q4_residual_library=q4_residual_library, native_q4_library=q4_library, serial_reference=args.serial_reference, reference_cache_bytes=sum(t.numel()*t.element_size() for trace in reference_cache.values() for t in trace), production_prefill_kernel_sha256=prefill_kernel, passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
+    tokenizer_runtime=dict(kind=type(source.tokenizer).__name__)
+    if hasattr(source.tokenizer,'native_model'):
+        tokenizer_runtime.update(sentencepiece=version('sentencepiece'),protobuf=version('protobuf'))
+    report = dict(tokenizer_runtime=tokenizer_runtime, native_kquant_library=kquant_library, native_q4_residual_library=q4_residual_library, native_q4_library=q4_library, serial_reference=args.serial_reference, reference_cache_bytes=sum(t.numel()*t.element_size() for trace in reference_cache.values() for t in trace), production_prefill_kernel_sha256=prefill_kernel, passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
                   precision=precision, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
                   benchmark_report=args.benchmark_report, steps=steps,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
