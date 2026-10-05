@@ -614,6 +614,24 @@ switching with host restoration. The live test compares cached and uncached
 execution; it is not a matched before/after latency benchmark for this change.
 See [live prefix and residency proof](evidence/architectures/olmoe-q8-tiny-prefix-service-a2.json).
 
+The real HTTP control/candidate/candidate/control comparison uses one identical
+input token, 32 outputs, context 2048, batch capacity four, the default scheduler,
+and five measured rounds per phase/concurrency after an excluded warmup. Every
+response and usage record agrees. Pooled medians are:
+
+| Concurrency | Old / new total seconds | Old / new first-output ms | Old / new aggregate output tokens/s |
+|---|---:|---:|---:|
+| 1 | 0.325749 / 0.311226 | 45.187 / 29.311 | 98.157 / 102.720 |
+| 2 | 0.575578 / 0.551968 | 72.773 / 50.411 | 110.094 / 115.351 |
+| 4 | 0.995591 / 0.980277 | 96.353 / 74.412 | 127.718 / 129.327 |
+
+These modest whole-request gains are much smaller than the isolated prefill
+speedup. The C1 control phase medians vary from 0.314 to 0.359 seconds, while
+candidate phases are 0.307 and 0.313; the pooled reduction is not a uniform
+per-phase speedup. Throughput includes prefill and HTTP overhead, not decode
+alone. [Summary, phase medians and reproduction commands](evidence/architectures/olmoe-q8-tiny-http-a2.json)
+link the corresponding retained raw trials and source identities.
+
 ### OLMoE short-prefill graph experiment (not enabled)
 
 The qualified Q8 grouped path can be captured and replayed with changed input

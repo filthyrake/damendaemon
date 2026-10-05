@@ -1,0 +1,242 @@
+{
+  "passed": true,
+  "scope": "one input token, 32 output tokens; normal scheduler; alternating complete HTTP requests",
+  "quantization": "q8_0",
+  "model": {
+    "repository": "allenai/OLMoE-1B-7B-0924-Instruct",
+    "revision": "7f1c97f440f06ce36705e4f2b843edb5925f4498",
+    "path": "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498"
+  },
+  "baseline_sha256": "0efa4431ee6af1fd7d5196add94a7eae87290c0b3947c117609eae5728eff645",
+  "candidate_sha256": "1e7cf0407fc49cfd954d44a9408d2cc747a46c2bc9156e745b1bd320c7c8822c",
+  "phases": [
+    {
+      "kind": "control",
+      "iteration": "b1",
+      "files": [
+        "compare-dllm-olmoe-tiny-control-b1-c1.json",
+        "compare-dllm-olmoe-tiny-control-b1-c2.json",
+        "compare-dllm-olmoe-tiny-control-b1-c4.json"
+      ],
+      "command": [
+        "/home/damen/dllm-dev/venv/bin/python",
+        "scripts/compare_a2.py",
+        "--engines",
+        "dllm",
+        "--model-metadata",
+        "model-olmoe.json",
+        "--label",
+        "olmoe-tiny-control-b1",
+        "--context",
+        "2048",
+        "--host-gib",
+        "16",
+        "--max-tokens",
+        "32",
+        "--prompt-token-ids",
+        "results/olmoe-tiny-prompt.json",
+        "--experimental-olmoe-baseline",
+        "results/moe-before-routed-prefill.py"
+      ]
+    },
+    {
+      "kind": "candidate",
+      "iteration": "a1",
+      "files": [
+        "compare-dllm-olmoe-tiny-candidate-a1-c1.json",
+        "compare-dllm-olmoe-tiny-candidate-a1-c2.json",
+        "compare-dllm-olmoe-tiny-candidate-a1-c4.json"
+      ],
+      "command": [
+        "/home/damen/dllm-dev/venv/bin/python",
+        "scripts/compare_a2.py",
+        "--engines",
+        "dllm",
+        "--model-metadata",
+        "model-olmoe.json",
+        "--label",
+        "olmoe-tiny-candidate-a1",
+        "--context",
+        "2048",
+        "--host-gib",
+        "16",
+        "--max-tokens",
+        "32",
+        "--prompt-token-ids",
+        "results/olmoe-tiny-prompt.json"
+      ]
+    },
+    {
+      "kind": "candidate",
+      "iteration": "a2",
+      "files": [
+        "compare-dllm-olmoe-tiny-candidate-a2-c1.json",
+        "compare-dllm-olmoe-tiny-candidate-a2-c2.json",
+        "compare-dllm-olmoe-tiny-candidate-a2-c4.json"
+      ],
+      "command": [
+        "/home/damen/dllm-dev/venv/bin/python",
+        "scripts/compare_a2.py",
+        "--engines",
+        "dllm",
+        "--model-metadata",
+        "model-olmoe.json",
+        "--label",
+        "olmoe-tiny-candidate-a2",
+        "--context",
+        "2048",
+        "--host-gib",
+        "16",
+        "--max-tokens",
+        "32",
+        "--prompt-token-ids",
+        "results/olmoe-tiny-prompt.json"
+      ]
+    },
+    {
+      "kind": "control",
+      "iteration": "b2",
+      "files": [
+        "compare-dllm-olmoe-tiny-control-b2-c1.json",
+        "compare-dllm-olmoe-tiny-control-b2-c2.json",
+        "compare-dllm-olmoe-tiny-control-b2-c4.json"
+      ],
+      "command": [
+        "/home/damen/dllm-dev/venv/bin/python",
+        "scripts/compare_a2.py",
+        "--engines",
+        "dllm",
+        "--model-metadata",
+        "model-olmoe.json",
+        "--label",
+        "olmoe-tiny-control-b2",
+        "--context",
+        "2048",
+        "--host-gib",
+        "16",
+        "--max-tokens",
+        "32",
+        "--prompt-token-ids",
+        "results/olmoe-tiny-prompt.json",
+        "--experimental-olmoe-baseline",
+        "results/moe-before-routed-prefill.py"
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "concurrency": 1,
+      "control": {
+        "median_total_seconds": 0.32574889600800816,
+        "median_first_output_seconds": 0.04518742200161796,
+        "median_aggregate_tokens_per_second": 98.15697116482747,
+        "phases": [
+          {
+            "iteration": "b1",
+            "median_total_seconds": 0.3141410439857282,
+            "median_first_output_seconds": 0.04450837601325475
+          },
+          {
+            "iteration": "b2",
+            "median_total_seconds": 0.35942259698640555,
+            "median_first_output_seconds": 0.06584524500067346
+          }
+        ]
+      },
+      "candidate": {
+        "median_total_seconds": 0.3112262879876653,
+        "median_first_output_seconds": 0.02931051950145047,
+        "median_aggregate_tokens_per_second": 102.7198071382748,
+        "phases": [
+          {
+            "iteration": "a1",
+            "median_total_seconds": 0.3074421089841053,
+            "median_first_output_seconds": 0.02899091999279335
+          },
+          {
+            "iteration": "a2",
+            "median_total_seconds": 0.3126585330173839,
+            "median_first_output_seconds": 0.02966245499555953
+          }
+        ]
+      },
+      "responses_and_usage_equal": true
+    },
+    {
+      "concurrency": 2,
+      "control": {
+        "median_total_seconds": 0.5755779095052276,
+        "median_first_output_seconds": 0.07277292749495246,
+        "median_aggregate_tokens_per_second": 110.09398263484798,
+        "phases": [
+          {
+            "iteration": "b1",
+            "median_total_seconds": 0.5680472484818893,
+            "median_first_output_seconds": 0.07018096349202096
+          },
+          {
+            "iteration": "b2",
+            "median_total_seconds": 0.5848957350099226,
+            "median_first_output_seconds": 0.07314128750294913
+          }
+        ]
+      },
+      "candidate": {
+        "median_total_seconds": 0.5519682380108861,
+        "median_first_output_seconds": 0.05041073149186559,
+        "median_aggregate_tokens_per_second": 115.35066103104134,
+        "phases": [
+          {
+            "iteration": "a1",
+            "median_total_seconds": 0.5452642869931879,
+            "median_first_output_seconds": 0.04751807148568332
+          },
+          {
+            "iteration": "a2",
+            "median_total_seconds": 0.5583997869980522,
+            "median_first_output_seconds": 0.052044110008864664
+          }
+        ]
+      },
+      "responses_and_usage_equal": true
+    },
+    {
+      "concurrency": 4,
+      "control": {
+        "median_total_seconds": 0.9955914934980683,
+        "median_first_output_seconds": 0.09635311200690921,
+        "median_aggregate_tokens_per_second": 127.7176445083191,
+        "phases": [
+          {
+            "iteration": "b1",
+            "median_total_seconds": 0.9936095325101633,
+            "median_first_output_seconds": 0.09509776199411135
+          },
+          {
+            "iteration": "b2",
+            "median_total_seconds": 1.0271029235154856,
+            "median_first_output_seconds": 0.10772729251766577
+          }
+        ]
+      },
+      "candidate": {
+        "median_total_seconds": 0.9802771904942347,
+        "median_first_output_seconds": 0.07441188750090078,
+        "median_aggregate_tokens_per_second": 129.32683087225206,
+        "phases": [
+          {
+            "iteration": "a1",
+            "median_total_seconds": 0.9746501599875046,
+            "median_first_output_seconds": 0.07586210149747785
+          },
+          {
+            "iteration": "a2",
+            "median_total_seconds": 0.984427882503951,
+            "median_first_output_seconds": 0.07392983150202781
+          }
+        ]
+      },
+      "responses_and_usage_equal": true
+    }
+  ]
+}
