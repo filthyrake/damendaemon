@@ -38,6 +38,7 @@ def main():
     comparison.add_argument('--residual-library',help='compare production with the isolated residual-int8 candidate')
     comparison.add_argument('--residual-f32-library',help='compare ordinary packed FP32 with the isolated FP32 candidate')
     parser.add_argument('--production-q4-residual',action='store_true',help='exercise normal per-model Q4 integer-dot selection')
+    parser.add_argument('--production-q4-small-tiles',action='store_true',help='compare the previous Q4 prompt policy with normal A2 selection')
     parser.add_argument('--production-batch-wait',action='store_true',help='exercise normal CLI idle admission configuration')
     parser.add_argument('--production-residual',action='store_true',help='exercise normal per-model FP16 K-quant residual selection')
     parser.add_argument('--production-dense-cache',action='store_true',help='exercise normal admission-accounted resident cache')
@@ -69,6 +70,8 @@ def main():
         parser.error('--native-format q4 requires a Q4 engine, kernel or admission comparison')
     if args.q4_residual_library and args.native_format!='q4':parser.error('Q4 candidate requires --native-format q4')
     if args.q4_small_tiles and args.native_format!='q4':parser.error('Q4 tiles require --native-format q4')
+    if args.production_q4_small_tiles and not args.q4_small_tiles:
+        parser.error('--production-q4-small-tiles requires --q4-small-tiles')
     if args.production_q4_residual and not args.q4_residual_library:parser.error('--production-q4-residual requires --q4-residual-library')
     if args.production_batch_wait and not args.batch_wait_ms:parser.error('--production-batch-wait requires --batch-wait-ms')
     if args.production_residual and not args.residual_library:parser.error('--production-residual requires --residual-library')
@@ -153,6 +156,10 @@ def main():
         counterpart='q4-small-tiles'
         report['experimental_arithmetic']='unchanged FP16 coefficients; paired-dot 32-row tiles at 64/129 rows'
         report['tile_source_sha256']=digest(Path(__file__).parent/'experiments/q4_small_tiles.py')
+        report['production_q4_small_tiles']=args.production_q4_small_tiles
+        if args.production_q4_small_tiles:
+            report['experimental_arithmetic']='unchanged FP16 coefficients; normal A2 33-64-row policy versus previous prompt tiles'
+            report['tile_source_sha256']=digest(Path(__file__).resolve().parents[1]/'dllm/q4_prefill_policy.py')
     if args.batch_wait_ms:counterpart='coalesced-prefill'
     if args.expand_tiles:
         counterpart='expand-tiles'
@@ -206,6 +213,8 @@ def main():
                         'scripts.experiments.serve_float32' if precision=='float32' else 'dllm')
                 if args.production_q4_residual or args.production_residual or args.production_batch_wait:module='dllm'
                 if args.production_dense_cache:module='dllm'
+                if args.production_q4_small_tiles:
+                    module='dllm' if engine==counterpart else 'scripts.experiments.serve_q4_legacy_tiles'
                 if args.production_residual_f32 and (args.production_prefill_f32 or not (args.prefill_f32 and engine==counterpart)):module='dllm'
                 command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
                     '--context',str(args.context),'--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',

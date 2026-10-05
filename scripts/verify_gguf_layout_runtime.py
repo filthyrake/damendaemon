@@ -30,6 +30,7 @@ def main():
     parser.add_argument('--context',type=int,default=512,help='context capacity, at least 512')
     parser.add_argument('--prompt-lengths', type=int, nargs=4, help='four explicit lengths, each leaving seven decode positions')
     parser.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
+    parser.add_argument('--require-q4-small-tiles', action='store_true', help='require the normal A2 Q4 prompt policy')
     experiments=parser.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
     experiments.add_argument('--experimental-q4-residual', action='store_true')
@@ -97,6 +98,14 @@ def main():
     try:
         with torch.inference_mode():
             executor = make_executor(source, use_graph=False, max_batch=1)
+            if args.require_q4_small_tiles:
+                from dllm import q4_prefill_policy
+                weight = executor.w['0.qkv.weight']
+                if not (weight.dtype == torch.uint8 and executor.compute_dtype == torch.float16
+                        and q4_prefill_policy.use_small_tile(64, weight.shape[0], weight.shape[1]*2, weight.device)):
+                    raise ValueError('normal Q4 prompt tile policy was not selected')
+                report['q4_prompt_policy'] = dict(selected=True, source_sha256=hashlib.sha256(
+                    Path(q4_prefill_policy.__file__).read_bytes()).hexdigest())
             if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
                 raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:

@@ -111,3 +111,10 @@ operation. `q4_expand.py` loads each packed byte once and writes both decoded
 nibbles, retaining the same scale and FP16 rounding. Every projection must be
 bit-exact against the independent coefficient decoder before it is timed.
 This experiment has no production installation hook and retains no dense cache.
+
+For the normal hardware-bounded 33–64-row policy, use
+`--q4-small-tiles --production-q4-small-tiles` in the HTTP benchmark. Its control
+server disables only the new tile selector; its candidate is the ordinary
+`dllm` entrypoint. This differs from the earlier 64/129-row experimental
+override. The normal-path reference/layout verifiers accept
+`--require-q4-small-tiles` to reject a run that silently used a fallback.

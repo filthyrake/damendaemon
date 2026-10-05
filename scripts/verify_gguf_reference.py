@@ -94,6 +94,7 @@ def main():
     p.add_argument('--window-boundaries', action='store_true', help='include prompts before, at and after the declared sliding window')
     p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
     p.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
+    p.add_argument('--require-q4-small-tiles', action='store_true', help='fail unless normal A2 prompt tile selection is active for this model')
     experiments=p.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
     experiments.add_argument('--experimental-q4-residual', action='store_true')
@@ -206,9 +207,19 @@ def main():
                     del expected
         del reference
         gc.collect(); empty_cache()
+    q4_prompt_policy = None
     with torch.inference_mode():
         for graph in (False, True):
             executor = make_executor(source, use_graph=graph)
+            if args.require_q4_small_tiles:
+                from dllm import q4_prefill_policy
+                weight = executor.w['0.qkv.weight']
+                selected = (weight.dtype == torch.uint8 and executor.compute_dtype == torch.float16
+                            and q4_prefill_policy.use_small_tile(64, weight.shape[0], weight.shape[1]*2, weight.device))
+                if not selected:
+                    raise ValueError('normal Q4 prompt tile policy was not selected')
+                q4_prompt_policy = dict(selected=True, source_sha256=hashlib.sha256(
+                    Path(q4_prefill_policy.__file__).read_bytes()).hexdigest())
             if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
                 raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:
@@ -276,7 +287,7 @@ def main():
     if hasattr(source.tokenizer,'native_model'):
         tokenizer_runtime.update(sentencepiece=version('sentencepiece'),protobuf=version('protobuf'))
     report = dict(tokenizer_runtime=tokenizer_runtime, native_kquant_library=kquant_library, native_q4_residual_library=q4_residual_library, native_q4_library=q4_library, serial_reference=args.serial_reference, reference_cache_bytes=sum(t.numel()*t.element_size() for trace in reference_cache.values() for t in trace), production_prefill_kernel_sha256=prefill_kernel, passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
-                  precision=precision, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
+                  precision=precision, q4_prompt_policy=q4_prompt_policy, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
                   benchmark_report=args.benchmark_report, steps=steps,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
                   reference_prefill_chunk_size=args.reference_prefill_chunk_size,

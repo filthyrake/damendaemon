@@ -2,6 +2,7 @@
 import torch
 import triton as tr
 import triton.language as tl
+from .q4_prefill_policy import use_small_tile
 
 
 @tr.jit
@@ -88,6 +89,7 @@ def linear(x,weight,scales,bias=None):
     if x.dtype==torch.float16 and 1<=rows<=128:
         result=torch.empty((rows,n),device=x.device,dtype=x.dtype)
         bm=16 if rows<=16 else tr.next_power_of_2(rows)
+        if 32<rows<=64 and use_small_tile(rows,n,k,x.device):bm=32
         bk=128
         _gemm[(tr.cdiv(rows,bm),tr.cdiv(n,64))](x,weight,scales,weight if bias is None else bias,
             result,rows,n,k,bm,64,bk,bias is not None,num_warps=8 if bm==128 else 4,num_stages=3)

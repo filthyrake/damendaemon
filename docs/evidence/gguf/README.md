@@ -2032,3 +2032,18 @@ bit pattern, including signed zero, on all five real projections. The best
 about 5–6%, and 1024-byte tiles are effectively tied. This small isolated gain
 does not justify changing the production expansion path or another serving
 speedup claim.
+
+### Normal A2 short-prompt tile policy
+
+`dllm/q4_prefill_policy.py` now selects 32-row tiles for 33–64 input rows on
+the NVIDIA A2, limited to the five measured Mistral projection shapes. Device
+properties are cached per CUDA device; other devices and shapes retain their
+previous choice. Single-row native decode never enters this policy. The
+129/130-row experiment is not part of this selection.
+
+`mistral-q4-production-tiles-reference-a2.json` explicitly verifies that the
+normal policy was selected, then passes 112 independent HF logit comparisons
+at context 512, including 33/48/64-row prompts and eager/graph continuation.
+Worst relative RMS is 0.161%, maximum absolute error 0.0390625, and all greedy
+tokens agree. The regression suite passes 328 tests. Long-window layout and
+normal-versus-previous-policy HTTP measurements remain separate gates.
