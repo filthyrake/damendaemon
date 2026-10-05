@@ -1293,3 +1293,40 @@ rejected for performance: even its fastest passing large-matrix tiles are
 roughly 5–7 times slower than production expansion plus dense GEMM. Tile
 compilation failures remain in the report. No prefill dispatch changes follow
 from this experiment.
+
+
+### Bounded idle admission experiment
+
+`mistral-spm-q4-admission-1ms-a2.json` passes output agreement and every
+host/disk restore, cross-model swap, cancellation and chat lifecycle check.
+This uses the original native Q4 kernel in both engines; only the isolated
+idle-group wait changes. It does not include the residual-kernel speedup.
+A/B/B/A combined median total seconds (ordinary / 1 ms admission) are:
+
+| Input tokens / concurrency | Ordinary | 1 ms admission |
+|---|---:|---:|
+| 16 / 1 | 0.7171 | 0.7216 |
+| 129 / 1 | 1.0297 | 1.0354 |
+| 400 / 1 | 1.2453 | 1.2545 |
+| 129 / 2 | 1.5182 | 1.2527 |
+| 129 / 4 | 1.8034 | 1.8124 |
+
+Two-request latency improves 17.5%; four-request total latency is roughly tied.
+Single-request first nonempty output medians change from 57.72 to 58.82 ms,
+360.96 to 362.05 ms, and 567.26 to 571.65 ms for the three input lengths.
+Do not interpret this as a uniform improvement in time to first output: at
+concurrency two, the median earliest/latest first outputs within each round
+change from 365.01/763.97 ms to 480.42/481.23 ms. Coalesced prefill delays the
+first request while bringing forward the second. At concurrency four the
+latest-first-output median stays about 1.01 seconds; 1 ms does not consistently
+collect all four arrivals. These are HTTP output-chunk timings, not internal
+per-token GPU latency.
+
+The normal scheduler is unchanged. The smaller-model tradeoff is measured
+separately before considering a production option. CPU coverage now includes
+real condition-variable wakeups for arrival, another-model barriers,
+cancellation and shutdown, alongside the deterministic deadline/FIFO checks.
+The full local suite passes 309 tests, including the positional tokenizer's
+longest-special-first overlap regression. Both TinyLlama native oracle corpora
+pass again after that refinement; reports now include the native tokenizer
+version, reconstructed model hash and adapter hash.

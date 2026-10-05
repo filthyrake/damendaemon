@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
+from tokenizers import Tokenizer
 from dllm.gguf_sentencepiece import restore_tokenizer
 from dllm.gguf_model import tokenizer
 from gguf import GGUFReader
@@ -35,6 +36,12 @@ def main():
                   reference_revision='836d57176dc699a726c55418e4f96b8ca628e1bf',
                   reference_adapter_sha256=digest(Path(__file__).parent/'reference/gguf_tokenizer.cpp'),
                   hf_tokenizer_sha256=digest(args.hf_tokenizer) if hf else None, cases=[], passed=False)
+    if hasattr(runtime, 'native_model'):
+        import sentencepiece
+        from dllm import gguf_sentencepiece
+        report['native_sentencepiece'] = dict(version=sentencepiece.__version__,
+            model_sha256=hashlib.sha256(runtime.native_model).hexdigest(),
+            adapter_sha256=digest(gguf_sentencepiece.__file__))
     for request, reference in zip(requests, references):
         ids = runtime.encode(request['text'], add_special_tokens=request['add_special_tokens']).ids
         repeated = restored.encode(request['text'], add_special_tokens=request['add_special_tokens']).ids

@@ -54,7 +54,7 @@ Model licenses remain those of their respective publishers.
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense architectures; model/precision isolation |
 | Reranking | Bounded query/document lists, raw relevance scores, stable top_n ranking and optional returned text; no silent truncation |
 | Embeddings | Text/token-ID inputs, float/base64 output for the qualified BERT sentence encoder |
-| Weight formats | Hugging Face safetensors; standalone Qwen2/Qwen3/Llama 3 BPE GGUF F16/F32/Q4_0/Q8_0; Llama-style SentencePiece BPE (Mistral Q4 numerical/layout proof at 512 context); experimental CUDA Q4_K/Q5_K/Q6_K with mixed fused projections; own on-load Q8_0/Q4_0 conversion where supported; checkpoint-native GPT-OSS MXFP4 |
+| Weight formats | Hugging Face safetensors; standalone Qwen2/Qwen3/Llama 3 BPE GGUF F16/F32/Q4_0/Q8_0; Llama-style SentencePiece BPE including native positional score ties (Mistral Q4 and published TinyLlama Q4_K_M model/layout/serving proof at 512 context); experimental CUDA Q4_K/Q5_K/Q6_K with mixed fused projections; own on-load Q8_0/Q4_0 conversion where supported; checkpoint-native GPT-OSS MXFP4 |
 | Chat templates | Checkpoint defaults or explicit per-model sandboxed UTF-8 overrides; stable through eviction/reload |
 | Position schemes | Standard/linear/Llama3 RoPE, fixture-qualified static YaRN; learned positions; partial rotary; ALiBi |
 

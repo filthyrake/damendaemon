@@ -137,6 +137,20 @@ class SentencePieceGgufTests(unittest.TestCase):
         result, _, _ = tokenizer(source)
         self.assertEqual(restore_tokenizer(result.to_str()).encode('abc').ids, [262, 266, 2])
 
+    def test_longer_special_wins_even_when_it_starts_later(self):
+        source=metadata()
+        source['tokenizer.ggml.token_type'][262]=4  # ab is now user-defined.
+        source['tokenizer.ggml.scores'][264]=-5.  # Positional merge-score tie.
+        source['tokenizer.ggml.tokens'].append('bcx')
+        source['tokenizer.ggml.token_type'].append(4)
+        source['tokenizer.ggml.scores'].append(0.)
+        result, _, _=tokenizer(source)
+        self.assertEqual(result.encode('abcx',add_special_tokens=False).ids,[263,266])
+        self.assertEqual(result.encode('ab',add_special_tokens=False).ids,[262])
+        source['tokenizer.ggml.token_type'][265]=5
+        with self.assertRaisesRegex(ValueError,'unused tokens'):
+            tokenizer(source)
+
     def test_invalid_vocab_and_unsupported_normalization_are_rejected(self):
         mutations = [
             lambda m: m.pop('tokenizer.ggml.scores'),

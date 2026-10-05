@@ -14,7 +14,6 @@ This supports the Llama SPM BPE convention, not arbitrary SentencePiece models.
 import base64
 import json
 import math
-import re
 from types import SimpleNamespace
 
 from tokenizers import Tokenizer, decoders, models, normalizers
@@ -161,7 +160,7 @@ class PositionalSentencePieceTokenizer(SentencePieceTokenizer):
         self.space_prefix = prefix
         self._processor = SentencePieceProcessor(model_proto=model)
         self._pieces = {token.content: index for index, token in backend.get_added_tokens_decoder().items()}
-        self._partition = re.compile('(' + '|'.join(re.escape(text) for text in sorted(self._pieces, key=len, reverse=True)) + ')')
+        self._special_order = sorted(self._pieces, key=lambda text: len(text.encode('utf-8')), reverse=True)
         policy = json.loads(backend.to_str()).get('post_processor')
         self._prefix, self._suffix = [], []
         if policy:
@@ -176,14 +175,31 @@ class PositionalSentencePieceTokenizer(SentencePieceTokenizer):
         if not isinstance(text, str):
             raise TypeError('GGUF tokenizer input must be text')
         ids = list(self._prefix) if add_special_tokens else []
-        for fragment in self._partition.split(text):
+        # Match GGUF's global longest-special-first partitioning, including a
+        # longer special beginning inside a shorter one. Leftmost regex matching
+        # would incorrectly consume the shorter special in that case.
+        fragments = [text]
+        for piece in self._special_order:
+            divided = []
+            for fragment in fragments:
+                if isinstance(fragment, int):
+                    divided.append(fragment)
+                    continue
+                parts = fragment.split(piece)
+                for index, part in enumerate(parts):
+                    if index:
+                        divided.append(self._pieces[piece])
+                    if part:
+                        divided.append(part)
+            fragments = divided
+        for fragment in fragments:
+            if isinstance(fragment, int):
+                ids.append(fragment)
+                continue
             if not fragment:
                 continue
-            if fragment in self._pieces:
-                ids.append(self._pieces[fragment])
-            else:
-                normalized = ('▁' if self.space_prefix else '') + fragment.replace(' ', '▁')
-                ids.extend(self._processor.encode(normalized, out_type=int))
+            normalized = ('▁' if self.space_prefix else '') + fragment.replace(' ', '▁')
+            ids.extend(self._processor.encode(normalized, out_type=int))
         if add_special_tokens:
             ids.extend(self._suffix)
         return SimpleNamespace(ids=ids)

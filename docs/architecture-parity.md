@@ -1357,6 +1357,12 @@ with those vocabulary scores preserves all 291 original packed weight tensors.
 At 512 context, 160 independent HF complete-logit checks and 128 runtime-layout
 checks pass. The optional CUDA C++ decode path passes another 128 layout checks
 and 96 extended HF checks, worst RMS 0.4425%, with greedy agreement throughout.
-The older placeholder-score vocabulary is explicitly rejected; its failed
-control is retained. This does not establish general SentencePiece, arbitrary
-equal-score BPE, longer-window semantics or serving/performance parity.
+The failed static-rank control for the older placeholder-score vocabulary is
+retained. Native C++ SentencePiece now handles positional score ties without
+inventing replacement scores. The unchanged published TinyLlama 1.1B Chat
+Q4_K_M passes 2,048 native encoding, 4,096 full decoding and 2,048 continuation
+checks, 160 independent model checks and 128 runtime-layout checks at context
+512. Its normal server passes lifecycle checks and matches llama.cpp output at
+concurrency 1/2/4, while remaining 26–79% slower on those measured workloads.
+This does not establish general SentencePiece, unused-token or grammar support
+on the positional path, longer-window semantics or performance parity.
