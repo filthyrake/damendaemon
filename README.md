@@ -434,6 +434,9 @@ measured 128-token bounds. Repeated default-scheduler HTTP tests show a further
 unchanged by packing. A separate warm prefix-hit test reduces server first-token
 time for a repeated 1536-token prompt from 1792 to 6 ms. These are different
 workloads; see [OLMoE scope, measurements and independent proof](docs/architecture-parity.md#olmoe-checkpoint-qualification).
+On the measured OLMoE mixed-request workload, 128-token chunks reduce the maximum
+streaming pause from 1.80 to 0.32 seconds but increase both requests' completion
+times. Full prefill remains the default.
 
 ### Experimental packed four-bit weights
 

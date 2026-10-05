@@ -538,7 +538,7 @@ invalid continuation offsets and unchanged cache lengths on rejection. The norma
 prefix reference passes all 48 CPU FP32 eager-reference checks (worst relative
 RMS 0.003459%), and 256-token chunks pass all 82 original model checks (worst
 relative RMS 0.000582%). Actual HTTP prefix qualification passes below;
-interleaving measurements are pending.
+interleaving measurements are recorded below.
 See [normal prefix proof](evidence/architectures/olmoe-prefix-normal-a2.json) and
 [256-token chunk proof](evidence/architectures/olmoe-chunk256-normal-reference-a2.json).
 See [normal chunk gate](evidence/architectures/olmoe-chunk127-normal-reference-a2.json),
@@ -556,6 +556,22 @@ are cache-hit comparisons in two sequential phases, not uncached throughput
 or a cross-runtime comparison. Outputs, input usage and cache-hit telemetry
 match expectations, and model switches clear the old executor's cache.
 See [live prefix service proof](evidence/architectures/olmoe-prefix-service-a2.json).
+
+Actual active-stream interleaving preserves the same greedy outputs across full
+prefill and 128/256-token chunks. Three trials per setting introduce a 1536-token
+prompt while a seven-token prompt is streaming 64 output tokens; the long request
+emits eight tokens. Median results are:
+
+| Chunk tokens | Maximum active-stream gap | Long request | Short request |
+| --- | --- | --- | --- |
+| Full prefill | 1798 ms | 1.932 s | 2.554 s |
+| 128 | 318 ms | 3.669 s | 4.183 s |
+| 256 | 504 ms | 3.042 s | 3.611 s |
+
+Chunking smooths the active stream but increases both total request durations in
+this workload. Full prefill remains the default; chunking is an explicit latency
+tradeoff, not a general throughput improvement. See
+[stream arrivals and measurements](evidence/architectures/olmoe-chunk-interleaving-a2.json).
 
 
 ## Q8 short-prefill latency
