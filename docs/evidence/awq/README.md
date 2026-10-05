@@ -211,3 +211,10 @@ and rows retain their existing kernels. The final ordinary-dispatch independent
 model gate passes all 128 checks; all 341 regression tests pass, including
 hardware-cache isolation and selection-boundary tests. Final ordinary layout
 and lifecycle checks are retained separately as they complete.
+
+The final normal-path layout and lifecycle runs pass, including all 128 layout
+checks and stable release to 25559040 bytes. The ordinary server confirmation
+measures 176.5/275.6/427.0 aggregate tokens/s at concurrency 1/2/4; medians are
+0.3623/0.4635/0.5952 seconds. These confirm the improvement but are slower than
+the candidate's interleaved medians, so the raw normal-path results are retained
+alongside them rather than replaced by the better numbers.
