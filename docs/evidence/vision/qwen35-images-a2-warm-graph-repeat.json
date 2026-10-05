@@ -1,0 +1,236 @@
+{
+  "scope": "experimental warm image-to-text, no HTTP, no model load, fixed 32 tokens",
+  "graph": true,
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "cases": [
+    {
+      "name": "square",
+      "prompt_tokens": 87,
+      "output_tokens": 32,
+      "trials": [
+        {
+          "preprocessing_seconds": 0.0040733140194788575,
+          "vision_seconds": 0.018687726987991482,
+          "text_prefill_seconds": 0.036124422011198476,
+          "time_to_first_token_seconds": 0.058885463018668815,
+          "decode_seconds": 0.3387268839869648,
+          "total_seconds": 0.39761234700563364
+        },
+        {
+          "preprocessing_seconds": 0.0031299300026148558,
+          "vision_seconds": 0.016968616022495553,
+          "text_prefill_seconds": 0.03997313597938046,
+          "time_to_first_token_seconds": 0.06007168200449087,
+          "decode_seconds": 0.340175140008796,
+          "total_seconds": 0.4002468220132869
+        },
+        {
+          "preprocessing_seconds": 0.0015411900239996612,
+          "vision_seconds": 0.01889319097972475,
+          "text_prefill_seconds": 0.040145299019059166,
+          "time_to_first_token_seconds": 0.06057968002278358,
+          "decode_seconds": 0.33826968498760834,
+          "total_seconds": 0.3988493650103919
+        }
+      ],
+      "generated_ids": [
+        760,
+        2099,
+        18126,
+        264,
+        3878,
+        314,
+        2972,
+        8317,
+        22718,
+        52850,
+        332,
+        466,
+        2972,
+        21747,
+        16740,
+        93868,
+        1754,
+        22687,
+        314,
+        264,
+        19556,
+        314,
+        2972,
+        3313,
+        159034,
+        5514,
+        725,
+        264,
+        29006,
+        25,
+        271,
+        4277
+      ],
+      "median": {
+        "preprocessing_seconds": 0.0031299300026148558,
+        "vision_seconds": 0.018687726987991482,
+        "text_prefill_seconds": 0.03997313597938046,
+        "time_to_first_token_seconds": 0.06007168200449087,
+        "decode_seconds": 0.3387268839869648,
+        "total_seconds": 0.3988493650103919
+      }
+    },
+    {
+      "name": "resized",
+      "prompt_tokens": 100,
+      "output_tokens": 32,
+      "trials": [
+        {
+          "preprocessing_seconds": 0.00407378701493144,
+          "vision_seconds": 0.023590486991452053,
+          "text_prefill_seconds": 0.04567412901087664,
+          "time_to_first_token_seconds": 0.07333840301726013,
+          "decode_seconds": 0.33723914399161004,
+          "total_seconds": 0.41057754700887017
+        },
+        {
+          "preprocessing_seconds": 0.0030297969933599234,
+          "vision_seconds": 0.019912955991458148,
+          "text_prefill_seconds": 0.03482556500239298,
+          "time_to_first_token_seconds": 0.05776831798721105,
+          "decode_seconds": 0.3353123440174386,
+          "total_seconds": 0.39308066200464964
+        },
+        {
+          "preprocessing_seconds": 0.0018506399937905371,
+          "vision_seconds": 0.01988557100412436,
+          "text_prefill_seconds": 0.0351625359908212,
+          "time_to_first_token_seconds": 0.05689874698873609,
+          "decode_seconds": 0.33639592601684853,
+          "total_seconds": 0.3932946730055846
+        }
+      ],
+      "generated_ids": [
+        760,
+        2099,
+        18126,
+        264,
+        31883,
+        11,
+        7859,
+        17498,
+        15963,
+        2972,
+        8317,
+        22718,
+        20254,
+        332,
+        314,
+        1829,
+        421,
+        8869,
+        37136,
+        494,
+        799,
+        37747,
+        310,
+        2361,
+        11,
+        6611,
+        264,
+        8476,
+        321,
+        34338,
+        8851,
+        2376
+      ],
+      "median": {
+        "preprocessing_seconds": 0.0030297969933599234,
+        "vision_seconds": 0.019912955991458148,
+        "text_prefill_seconds": 0.0351625359908212,
+        "time_to_first_token_seconds": 0.05776831798721105,
+        "decode_seconds": 0.33639592601684853,
+        "total_seconds": 0.3932946730055846
+      }
+    },
+    {
+      "name": "two-images",
+      "prompt_tokens": 185,
+      "output_tokens": 32,
+      "trials": [
+        {
+          "preprocessing_seconds": 0.003927117999410257,
+          "vision_seconds": 0.042983439983800054,
+          "text_prefill_seconds": 0.052299582021078095,
+          "time_to_first_token_seconds": 0.0992101400042884,
+          "decode_seconds": 0.3365233869990334,
+          "total_seconds": 0.4357335270033218
+        },
+        {
+          "preprocessing_seconds": 0.004994243994588032,
+          "vision_seconds": 0.04297510301694274,
+          "text_prefill_seconds": 0.052315370994620025,
+          "time_to_first_token_seconds": 0.1002847180061508,
+          "decode_seconds": 0.33621889000642113,
+          "total_seconds": 0.43650360801257193
+        },
+        {
+          "preprocessing_seconds": 0.004167776991380379,
+          "vision_seconds": 0.04350960301235318,
+          "text_prefill_seconds": 0.052308901998912916,
+          "time_to_first_token_seconds": 0.09998628200264648,
+          "decode_seconds": 0.33653002997743897,
+          "total_seconds": 0.43651631198008545
+        }
+      ],
+      "generated_ids": [
+        9205,
+        1330,
+        5167,
+        4416,
+        12103,
+        321,
+        71439,
+        8851,
+        5255,
+        25,
+        271,
+        12,
+        2972,
+        1841,
+        220,
+        16,
+        64700,
+        1061,
+        369,
+        264,
+        3074,
+        11,
+        7859,
+        50717,
+        5893,
+        13,
+        1049,
+        16661,
+        314,
+        3679,
+        3349,
+        11
+      ],
+      "median": {
+        "preprocessing_seconds": 0.004167776991380379,
+        "vision_seconds": 0.042983439983800054,
+        "text_prefill_seconds": 0.052308901998912916,
+        "time_to_first_token_seconds": 0.09998628200264648,
+        "decode_seconds": 0.3365233869990334,
+        "total_seconds": 0.43650360801257193
+      }
+    }
+  ],
+  "sources": {
+    "dllm/vision_qwen35.py": "6d88cb5b47f1aeebf41a9342412efb69b46fc4cd30942ef5bbd8f22be8cb645c",
+    "dllm/vision_inputs.py": "d86dec98cff8f23235152d1c2495f462216105fe3175ec74ecf3eb4362b6b45b",
+    "dllm/vision_positions.py": "f5ca7930aa22b73192bcdeec55fab7f072c6143ec273d9ff3e10eaa164f5da54",
+    "dllm/hybrid.py": "1676dc3fb4212064f56a35b8f62968ca1a8f019354ef0307d7a2f5ba16aebf8c",
+    "scripts/experiments/vision_qwen35.py": "bc4a4b8df8f9d5bbeeca6be0ce858a64a70c8c8f36390c0bd78009616a4e7d6a"
+  },
+  "reference_sha256": "161361b2e46137cdbdae1130fffb0d4b61ef875b05ae72ef6d10e46fa24d3cac"
+}

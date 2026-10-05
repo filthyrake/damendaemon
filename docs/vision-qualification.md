@@ -99,3 +99,27 @@ decode: worst relative RMS 0.00635574, maximum absolute 0.0787911, and every
 greedy choice agrees. With identical tokens, changed pixels produce a maximum
 logit difference of 0.845695 natively versus 0.838867 independently. This tests
 executor state reuse, not a serving prefix cache (none is enabled here).
+
+## Experimental CUDA graphs and warm timing
+
+Graph-enabled decoding passes the same 54 independent checks, including changing
+image offsets and replacing an image request with text. The experiment remains
+opt-in and outside the normal runtime registry. All 357 local tests pass.
+
+An A2 ABBA comparison uses identical image fixtures, prompt IDs, checkpoint,
+precision, and fixed 32-token output. Every generated ID agrees between phases.
+Each phase excludes one warmup and retains three measured trials. Pooled medians:
+
+| Image input | Uncaptured total | Graph total | Uncaptured decode (31 tokens) | Graph decode |
+|---|---:|---:|---:|---:|
+| 256x256 square | 1.1095 s | 0.4015 s | 1.0505 s | 0.3408 s |
+| Resized image | 1.1178 s | 0.4092 s | 1.0561 s | 0.3405 s |
+| Two images | 1.1442 s | 0.4410 s | 1.0396 s | 0.3401 s |
+
+These are warm engine timings, including RGB preprocessing and device copy but
+excluding file decoding, HTTP, model loading, and graph capture. Synchronization
+separates the vision and text stages. They demonstrate a roughly threefold
+decode improvement over this experimental uncaptured path, not an advantage over
+another runtime. First-token medians are 58–102 ms uncaptured and 61–101 ms with
+graphs; graph replay targets decode. Raw trials and per-stage measurements are
+retained under `evidence/vision/qwen35-images-a2-warm*` and the ABBA summary.

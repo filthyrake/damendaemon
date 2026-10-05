@@ -16,14 +16,16 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('reference')
     parser.add_argument('--output',required=True)
+    parser.add_argument('--graph',action='store_true')
     args=parser.parse_args()
     torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32=False
     reference=torch.load(args.reference,weights_only=True)
     model=ModelWeights(reference['model'],1024)
-    executor=ImageHybridExecutor(model,max_batch=3)
+    executor=ImageHybridExecutor(model,max_batch=3,use_graph=args.graph)
     vision=VisionEncoder(VisionWeights(reference['model']))
     report=dict(passed=False,scope='experimental multimodal computation; not serving qualification',
+                graph=args.graph,
                 device=torch.cuda.get_device_name(),torch=str(torch.__version__),checks=[],
                 reference_sha256=hashlib.sha256(Path(args.reference).read_bytes()).hexdigest(),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in

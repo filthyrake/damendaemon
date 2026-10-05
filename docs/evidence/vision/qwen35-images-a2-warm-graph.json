@@ -1,0 +1,236 @@
+{
+  "scope": "experimental warm image-to-text, no HTTP, no model load, fixed 32 tokens",
+  "graph": true,
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "cases": [
+    {
+      "name": "square",
+      "prompt_tokens": 87,
+      "output_tokens": 32,
+      "trials": [
+        {
+          "preprocessing_seconds": 0.004082250001374632,
+          "vision_seconds": 0.018980108987307176,
+          "text_prefill_seconds": 0.04635344201233238,
+          "time_to_first_token_seconds": 0.06941580100101419,
+          "decode_seconds": 0.34564325300743803,
+          "total_seconds": 0.4150590540084522
+        },
+        {
+          "preprocessing_seconds": 0.001991241006180644,
+          "vision_seconds": 0.0356819529843051,
+          "text_prefill_seconds": 0.06410013401182368,
+          "time_to_first_token_seconds": 0.10177332800230943,
+          "decode_seconds": 0.3443302749947179,
+          "total_seconds": 0.44610360299702734
+        },
+        {
+          "preprocessing_seconds": 0.0022237800003495067,
+          "vision_seconds": 0.019698344985954463,
+          "text_prefill_seconds": 0.039420760003849864,
+          "time_to_first_token_seconds": 0.061342884990153834,
+          "decode_seconds": 0.3414713880047202,
+          "total_seconds": 0.40281427299487405
+        }
+      ],
+      "generated_ids": [
+        760,
+        2099,
+        18126,
+        264,
+        3878,
+        314,
+        2972,
+        8317,
+        22718,
+        52850,
+        332,
+        466,
+        2972,
+        21747,
+        16740,
+        93868,
+        1754,
+        22687,
+        314,
+        264,
+        19556,
+        314,
+        2972,
+        3313,
+        159034,
+        5514,
+        725,
+        264,
+        29006,
+        25,
+        271,
+        4277
+      ],
+      "median": {
+        "preprocessing_seconds": 0.0022237800003495067,
+        "vision_seconds": 0.019698344985954463,
+        "text_prefill_seconds": 0.04635344201233238,
+        "time_to_first_token_seconds": 0.06941580100101419,
+        "decode_seconds": 0.3443302749947179,
+        "total_seconds": 0.4150590540084522
+      }
+    },
+    {
+      "name": "resized",
+      "prompt_tokens": 100,
+      "output_tokens": 32,
+      "trials": [
+        {
+          "preprocessing_seconds": 0.002749478997429833,
+          "vision_seconds": 0.020912395004415885,
+          "text_prefill_seconds": 0.04683596600079909,
+          "time_to_first_token_seconds": 0.07049784000264481,
+          "decode_seconds": 0.3455632289987989,
+          "total_seconds": 0.4160610690014437
+        },
+        {
+          "preprocessing_seconds": 0.002602560998639092,
+          "vision_seconds": 0.021170133986743167,
+          "text_prefill_seconds": 0.04510047999792732,
+          "time_to_first_token_seconds": 0.06887317498330958,
+          "decode_seconds": 0.34443967099650763,
+          "total_seconds": 0.4133128459798172
+        },
+        {
+          "preprocessing_seconds": 0.0021343370026443154,
+          "vision_seconds": 0.020479577011428773,
+          "text_prefill_seconds": 0.041581667988793924,
+          "time_to_first_token_seconds": 0.06419558200286701,
+          "decode_seconds": 0.3436659419967327,
+          "total_seconds": 0.40786152399959974
+        }
+      ],
+      "generated_ids": [
+        760,
+        2099,
+        18126,
+        264,
+        31883,
+        11,
+        7859,
+        17498,
+        15963,
+        2972,
+        8317,
+        22718,
+        20254,
+        332,
+        314,
+        1829,
+        421,
+        8869,
+        37136,
+        494,
+        799,
+        37747,
+        310,
+        2361,
+        11,
+        6611,
+        264,
+        8476,
+        321,
+        34338,
+        8851,
+        2376
+      ],
+      "median": {
+        "preprocessing_seconds": 0.002602560998639092,
+        "vision_seconds": 0.020912395004415885,
+        "text_prefill_seconds": 0.04510047999792732,
+        "time_to_first_token_seconds": 0.06887317498330958,
+        "decode_seconds": 0.34443967099650763,
+        "total_seconds": 0.4133128459798172
+      }
+    },
+    {
+      "name": "two-images",
+      "prompt_tokens": 185,
+      "output_tokens": 32,
+      "trials": [
+        {
+          "preprocessing_seconds": 0.007477437000488862,
+          "vision_seconds": 0.04462495099869557,
+          "text_prefill_seconds": 0.05368850799277425,
+          "time_to_first_token_seconds": 0.10579089599195868,
+          "decode_seconds": 0.3441798450076021,
+          "total_seconds": 0.4499707409995608
+        },
+        {
+          "preprocessing_seconds": 0.007030679989838973,
+          "vision_seconds": 0.04433432800578885,
+          "text_prefill_seconds": 0.053017778001958504,
+          "time_to_first_token_seconds": 0.10438278599758632,
+          "decode_seconds": 0.34362345800036564,
+          "total_seconds": 0.44800624399795197
+        },
+        {
+          "preprocessing_seconds": 0.0031670549942646176,
+          "vision_seconds": 0.0443834520119708,
+          "text_prefill_seconds": 0.053203029005089775,
+          "time_to_first_token_seconds": 0.1007535360113252,
+          "decode_seconds": 0.3446685469825752,
+          "total_seconds": 0.4454220829939004
+        }
+      ],
+      "generated_ids": [
+        9205,
+        1330,
+        5167,
+        4416,
+        12103,
+        321,
+        71439,
+        8851,
+        5255,
+        25,
+        271,
+        12,
+        2972,
+        1841,
+        220,
+        16,
+        64700,
+        1061,
+        369,
+        264,
+        3074,
+        11,
+        7859,
+        50717,
+        5893,
+        13,
+        1049,
+        16661,
+        314,
+        3679,
+        3349,
+        11
+      ],
+      "median": {
+        "preprocessing_seconds": 0.007030679989838973,
+        "vision_seconds": 0.0443834520119708,
+        "text_prefill_seconds": 0.053203029005089775,
+        "time_to_first_token_seconds": 0.10438278599758632,
+        "decode_seconds": 0.3441798450076021,
+        "total_seconds": 0.44800624399795197
+      }
+    }
+  ],
+  "sources": {
+    "dllm/vision_qwen35.py": "6d88cb5b47f1aeebf41a9342412efb69b46fc4cd30942ef5bbd8f22be8cb645c",
+    "dllm/vision_inputs.py": "d86dec98cff8f23235152d1c2495f462216105fe3175ec74ecf3eb4362b6b45b",
+    "dllm/vision_positions.py": "f5ca7930aa22b73192bcdeec55fab7f072c6143ec273d9ff3e10eaa164f5da54",
+    "dllm/hybrid.py": "1676dc3fb4212064f56a35b8f62968ca1a8f019354ef0307d7a2f5ba16aebf8c",
+    "scripts/experiments/vision_qwen35.py": "bc4a4b8df8f9d5bbeeca6be0ce858a64a70c8c8f36390c0bd78009616a4e7d6a"
+  },
+  "reference_sha256": "161361b2e46137cdbdae1130fffb0d4b61ef875b05ae72ef6d10e46fa24d3cac"
+}

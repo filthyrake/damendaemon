@@ -1,0 +1,71 @@
+{
+  "scope": "ABBA warm experimental engine timing; no HTTP or loading",
+  "files": [
+    "qwen35-images-a2-warm.json",
+    "qwen35-images-a2-warm-graph.json",
+    "qwen35-images-a2-warm-graph-repeat.json",
+    "qwen35-images-a2-warm-control-repeat.json"
+  ],
+  "cases": [
+    {
+      "name": "square",
+      "same_generated_ids": true,
+      "control": {
+        "preprocessing_seconds": 0.002922193001722917,
+        "vision_seconds": 0.017081195997889154,
+        "text_prefill_seconds": 0.038154505513375625,
+        "time_to_first_token_seconds": 0.05802632050472312,
+        "decode_seconds": 1.0505435899976874,
+        "total_seconds": 1.109495529497508
+      },
+      "graph": {
+        "preprocessing_seconds": 0.0026768550014821813,
+        "vision_seconds": 0.018936649983515963,
+        "text_prefill_seconds": 0.04005921749921981,
+        "time_to_first_token_seconds": 0.060961282506468706,
+        "decode_seconds": 0.3408232640067581,
+        "total_seconds": 0.40153054750408046
+      }
+    },
+    {
+      "name": "resized",
+      "same_generated_ids": true,
+      "control": {
+        "preprocessing_seconds": 0.002755896493908949,
+        "vision_seconds": 0.020006434016977437,
+        "text_prefill_seconds": 0.03839657649223227,
+        "time_to_first_token_seconds": 0.06127446950995363,
+        "decode_seconds": 1.0561050925171003,
+        "total_seconds": 1.1178334910218837
+      },
+      "graph": {
+        "preprocessing_seconds": 0.0026760199980344623,
+        "vision_seconds": 0.02069598600792233,
+        "text_prefill_seconds": 0.043341073993360624,
+        "time_to_first_token_seconds": 0.0665343784930883,
+        "decode_seconds": 0.3404525429941714,
+        "total_seconds": 0.40921953550423495
+      }
+    },
+    {
+      "name": "two-images",
+      "same_generated_ids": true,
+      "control": {
+        "preprocessing_seconds": 0.005276350988424383,
+        "vision_seconds": 0.043657658505253494,
+        "text_prefill_seconds": 0.0530776460072957,
+        "time_to_first_token_seconds": 0.10178630250447895,
+        "decode_seconds": 1.0396070199931273,
+        "total_seconds": 1.1441584184940439
+      },
+      "graph": {
+        "preprocessing_seconds": 0.0045810104929842055,
+        "vision_seconds": 0.043921965509071015,
+        "text_prefill_seconds": 0.052666574498289265,
+        "time_to_first_token_seconds": 0.100519127008738,
+        "decode_seconds": 0.3400767439889023,
+        "total_seconds": 0.4409691974869929
+      }
+    }
+  ]
+}

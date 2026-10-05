@@ -1,4 +1,4 @@
-"""Experimental image/text fusion; not registered for serving or graph capture.
+"""Experimental image/text fusion; not registered for serving.
 
 The forward loop mirrors dllm's HybridExecutor while qualifying injected image
 features and per-slot rotary offsets. Consolidate only after independent proof.
@@ -10,11 +10,11 @@ from dllm.vision_positions import image_positions, rotary_tables
 
 
 class ImageHybridExecutor(HybridExecutor):
-    def __init__(self, model, *, max_batch=4):
+    def __init__(self, model, *, max_batch=4, use_graph=False):
         self.pending=None
         self.rotary=None
         self.image_offsets=torch.zeros(max_batch,dtype=torch.long,device='cuda')
-        super().__init__(model,use_graph=False,max_batch=max_batch)
+        super().__init__(model,use_graph=use_graph,max_batch=max_batch)
 
     def rotate(self,x,positions):
         if self.rotary is None:return super().rotate(x,positions)
@@ -84,4 +84,3 @@ class ImageHybridExecutor(HybridExecutor):
         if self.fused:
             return self.fused.output_head(normalized, self.w['head'])
         return F.linear(normalized.float(), self.w['head'].float())
-
