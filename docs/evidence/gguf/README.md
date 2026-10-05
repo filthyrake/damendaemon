@@ -1908,3 +1908,27 @@ positions: 12352 tokens rather than 12336 for this workload. A regression test
 runs those reservations through the actual `PagePool`, including all slots
 crossing page boundaries and release. This is a harness-budget correction;
 no runtime capacity check or numerical threshold was weakened.
+
+`mistral-window-layout-fixed-a2.json` passes all 128 corrected layout checks
+with prompts of 4/4095/4096/4097 tokens, fixed and paged storage, eager and CUDA
+graph execution, batches 1/2/4 and 128-token prompt chunks. Maximum relative RMS
+against fixed eager execution is 0.0737%, with exact greedy agreement. The pool
+has 12352 tokens, fewer than four full 4104-token slots, but enough for each
+request's individually rounded pages and seven decode positions. The runtime
+still stores full-context KV; this does not introduce a rolling window cache.
+
+The first HTTP source-comparison attempt stopped on a chat-tokenizer mismatch;
+its failure log is `mistral-window-runtime-tokenizer-mismatch-a2.log`.
+`mistral-window-chat-diagnostic.json` shows identical rendered templates but
+GGUF inserts token 28705 after the literal BOS marker, while the HF fast
+tokenizer does not. The unchanged native `llama-tokenize --no-bos` matches
+dllm's complete GGUF token sequence exactly (native binary SHA256 recorded).
+The tokenizer was not changed to force HF chat equivalence.
+
+The HTTP verifier retains strict source-text comparison by default. Its explicit
+`--allow-tokenizer-differences` mode records both chat inputs and checks selected
+output token pieces/bytes and usage on identical raw token IDs, while keeping
+exact GGUF streaming, concurrency, restore and reload output gates. It reports
+source chat equivalence separately instead of claiming unlike inputs should
+produce identical text. Raw timing in this mode includes requested logprobs
+and must not be compared with older unscored-request timings.
