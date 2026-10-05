@@ -70,8 +70,11 @@ compatibility. The development server is loopback-only and is not an authenticat
 multi-tenant service.
 
 K-quant qualification covers Llama 3.2 1B and Qwen3-0.6B Q4_K_M at 512
-context, with Qwen3 independent model checks also passing at 2048. Published
-TinyLlama Q4_K_M passes independent model and fixed/paged/batched/chunked layout
+context, with Qwen3 independent model checks also passing at 2048.
+Qwen3-1.7B's pinned Q4_K_M conversion additionally passes independent model
+checks at 512; an experimental resident cache passes model and layout checks
+at that context, with server performance and production selection qualified separately.
+Published TinyLlama Q4_K_M passes independent model and fixed/paged/batched/chunked layout
 checks through 2048, with normal HTTP and model swapping also qualified at 2048. The optional
 FP16 residual-int8 backend permits Q4/Q6 single-request decode through context
 2048 for the qualified TinyLlama topology, while other models retain the 512

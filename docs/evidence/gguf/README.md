@@ -1790,3 +1790,28 @@ eager/graph, batch 1/2/4 and chunked-prefill comparisons, worst relative RMS
 0.2716%. This is a new model/shape qualification, not a long-context or
 production-cache qualification. Normal cache selection remains TinyLlama-only;
 server speed and release behavior are evaluated separately before promotion.
+
+`qwen3-medium-cache-reference-extended-512-a2.json` additionally passes 96
+independent comparisons over multi-turn, Unicode, code and longer raw prompts;
+maximum absolute error is 0.1484375, relative RMS 0.7620%, with exact greedy
+agreement. No numerical tolerance was changed.
+
+The experimental A/B/B/A real-server comparison
+`qwen3-medium-cache-http-512-a2.json` passes every generated-output and lifecycle
+gate, including actual 1.7B/0.6B switching, host restore, disk reload,
+cancellation recovery, streaming and concurrent chat.
+
+| Input / concurrency | Original seconds | Cached seconds | Original output tokens/s | Cached output tokens/s |
+| --- | ---: | ---: | ---: | ---: |
+| 16 / 1 | 0.330635 | 0.308053 | 48.39 | 51.94 |
+| 129 / 1 | 0.368352 | 0.342680 | 43.44 | 46.69 |
+| 400 / 1 | 0.426845 | 0.397954 | 37.48 | 40.21 |
+| 129 / 2 | 0.533733 | 0.511980 | 59.96 | 62.50 |
+| 129 / 4 | 0.756703 | 0.593068 | 84.58 | 107.91 |
+
+Medians pool measured rounds from both phases, excluding warmups. Throughput
+includes prefill. Four-request latency falls 21.6%, single-request latency
+6.8–7.0%; this is within-dllm performance with additional residency, not a
+cross-engine comparison. Cached host-restore requests took 1.535/1.712 seconds,
+switches back 1.800/1.973 seconds and disk-reload requests 3.770/5.009 seconds.
+Only two observations per action are available; no hot-swap speedup is claimed.
