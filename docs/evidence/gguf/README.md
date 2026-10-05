@@ -2047,3 +2047,11 @@ at context 512, including 33/48/64-row prompts and eager/graph continuation.
 Worst relative RMS is 0.161%, maximum absolute error 0.0390625, and all greedy
 tokens agree. The regression suite passes 328 tests. Long-window layout and
 normal-versus-previous-policy HTTP measurements remain separate gates.
+
+`mistral-q4-production-tiles-layout-a2.json` confirms normal policy selection
+and passes all 128 layout comparisons at context 4104, using prompts
+33/64/4095/4097 and the established 128-token chunks. Greedy choices agree;
+worst relative RMS is 0.0737%. Because 128-token chunks largely bypass the new
+33–64-row launch choice, an additional 58-token chunk run targets the policy
+throughout long-prompt processing, including the final 37-token chunk crossing
+the 4096-token attention window.
