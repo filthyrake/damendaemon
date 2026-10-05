@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--batch-size', type=int, choices=(1,2,4), default=1)
     parser.add_argument('--quantization', default=None)
     parser.add_argument('--output')
+    parser.add_argument('--prompt-token-ids', help='JSON token IDs matching a serving benchmark')
     parser.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     args = parser.parse_args()
     require_gpu()
@@ -35,7 +36,11 @@ def main():
     executor = make_executor(model, use_graph=not args.eager, max_batch=args.batch_size)
     torch.cuda.synchronize()
     activation_seconds = time.perf_counter()-started
-    prompt = model.chat_tokens([{"role": "user", "content": "Explain matrix multiplication in detail."}])
+    prompt = (json.loads(Path(args.prompt_token_ids).read_text()) if args.prompt_token_ids else
+              model.chat_tokens([{"role": "user", "content": "Explain matrix multiplication in detail."}]))
+    if (not isinstance(prompt, list) or not prompt or
+            any(type(token) is not int or token < 0 or token >= model.config['vocab_size'] for token in prompt)):
+        raise ValueError('profile requires nonempty valid token IDs')
     if len(prompt)+3+args.steps > args.context:raise ValueError('profile exceeds context')
     slots = list(range(args.batch_size))
     token = (executor.prefill(prompt).argmax(-1).item() if args.batch_size==1 else
@@ -62,7 +67,8 @@ def main():
                      key=lambda value: value["total_us"], reverse=True)
     report = {"experiment":experiment, "batch_size":args.batch_size, "backend":executor.kernel_backend,
                       "host_preparation_seconds":host_seconds, "executor_activation_seconds":activation_seconds,
-                      "context": args.context, "steps": args.steps, "graph": not args.eager,
+                      "context": args.context, "prompt_token_ids": prompt,
+                      "steps": args.steps, "graph": not args.eager,
                       "kernel_calls_per_decode_step": sum(k["calls"] for k in ordered) / args.steps,
                       "kernel_time_us_per_decode_step": sum(k["total_us"] for k in ordered) / args.steps,
                       "kernels": ordered}

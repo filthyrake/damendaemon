@@ -439,3 +439,21 @@ first-output medians are 0.1031/0.1854/0.3840 seconds versus
 for example native concurrency-four varies from 148.85 to 146.67 tokens/s.
 This establishes improvement over dllm's Triton path on this workload; a
 separate matching vLLM measurement is still required for that comparison.
+
+The refreshed vLLM phase completes with identical output text and token counts:
+51.69/96.71/169.93 aggregate tokens/s at concurrency 1/2/4. Relative to the
+repeated native medians above, dllm remains 2.3/8.4/13.0% behind in throughput.
+vLLM response medians are 1.2377/1.3146/1.5016 seconds, first-output medians
+0.1065/0.1517/0.3391 seconds. This is one five-round vLLM phase, not an
+interleaved engine comparison. Both use FP16 matrices/KV; dllm retains its
+qualified Qwen3 FP32 residual/elementwise policy while vLLM uses requested dtype
+half. Internal arithmetic is therefore not identical. Commands and raw trials
+are retained in the `compare-vllm-qwen3-4b-awq-vllm*` files.
+
+Matching-prompt native decode profiles identify the next optimization target.
+Batch-one records 17.658 ms summed CUDA kernel time per step: Marlin 11.555 ms,
+vocabulary projection 4.687 ms, attention 0.795 ms. Batch-four records 19.773 ms:
+Marlin 11.773 ms, vocabulary projection 4.704 ms, attention 2.418 ms. Profiles
+are diagnostic instrumented runs, separate from HTTP timing. Both retain the
+129 benchmark IDs in their reports. A wider small-row Marlin configuration is
+being tested separately; it is not enabled in the qualified library.

@@ -1,0 +1,33 @@
+{
+  "command": [
+    "/home/damen/dllm-dev/baselines/vllm-venv/bin/vllm",
+    "serve",
+    "/home/damen/dllm-dev/baselines/awq-qwen3/models--Qwen--Qwen3-4B-AWQ/snapshots/74d4bd2bd4bff9cafc9345221320bffb08b406a3",
+    "--served-model-name",
+    "a",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "40929",
+    "--dtype",
+    "half",
+    "--max-model-len",
+    "2048",
+    "--max-num-seqs",
+    "4",
+    "--gpu-memory-utilization",
+    "0.5",
+    "--no-enable-prefix-caching",
+    "--generation-config",
+    "vllm"
+  ],
+  "model": {
+    "repository": "Qwen/Qwen3-4B-AWQ",
+    "revision": "74d4bd2bd4bff9cafc9345221320bffb08b406a3",
+    "path": "/home/damen/dllm-dev/baselines/awq-qwen3/models--Qwen--Qwen3-4B-AWQ/snapshots/74d4bd2bd4bff9cafc9345221320bffb08b406a3"
+  },
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "runtime_environment": {
+    "DLLM_DEVICE": "cuda"
+  }
+}
