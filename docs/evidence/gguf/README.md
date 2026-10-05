@@ -1992,3 +1992,27 @@ prompt lengths 64/129/256/384. Greedy choices agree and the worst relative RMS
 is 0.456%. The independent reference report contains 80 full-logit comparisons.
 Real HTTP timing and lifecycle checks are the next gate; no production kernel
 selection changes are included in these results.
+
+`mistral-q4-small-tiles-http-a2.json` completes the isolated candidate's HTTP
+A/B/B/A check at context 512, with three warmups and six measured rounds per
+phase/workload. All generated text agrees across runs; streaming, concurrency,
+host restore, alias switching, cancellation and disk reload pass in all phases.
+Pooled measured medians (seconds; first output is measured at the HTTP client):
+
+| Input / concurrency | Control request | Candidate request | Control first output | Candidate first output |
+|---|---:|---:|---:|---:|
+| 16 / 1 | 0.709752 | 0.722669 | 0.059404 | 0.059818 |
+| 64 / 1 | 0.847277 | 0.820592 | 0.187257 | 0.149421 |
+| 129 / 1 | 1.038214 | 1.000931 | 0.378026 | 0.332356 |
+| 400 / 1 | 1.326204 | 1.341141 | 0.655848 | 0.661508 |
+| 129 / 2 | 1.548572 | 1.475719 | 0.511142 | 0.515910 |
+| 129 / 4 | 1.861456 | 1.830334 | 1.070583 | 1.032098 |
+
+At 64/129 input tokens, single-request first output improves 20.2%/12.1%,
+while total latency improves 3.15%/3.59%. Unchanged 16/400-row single-request
+controls regress 1.1–1.8%, showing the size of run variation. Batched results
+remain sensitive to scheduler grouping; no broad concurrent or cross-engine
+parity claim follows. These are ordinary native Q4 decode kernels on both
+sides, with no resident dense cache. Intermediate row counts still need
+measurement before replacing the isolated shape-specific experiment with a
+general runtime selection rule.
