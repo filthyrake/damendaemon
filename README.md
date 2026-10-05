@@ -887,8 +887,9 @@ passes native llama.cpp encoding/decoding checks. A vocabulary-corrected Mistral
 7B Q4 comparator passes independent full-logit and runtime-layout checks on A2
 at 512 context. Tied merge scores use native C++ SentencePiece, reconstructed
 from the embedded vocabulary without an HF sidecar. The published TinyLlama
-1.1B Chat Q4_K_M passes independent tokenizer and initial 512-context model
-checks; broader qualification remains in issue #46. Structured output on the
+1.1B Chat Q4_K_M passes independent tokenizer, 512-context model/layout and
+server lifecycle checks, including matching llama.cpp output. It remains
+26–79% slower in the measured workloads; broader qualification remains in issue #46. Structured output on the
 positional tokenizer, unused tokens on that path, Unigram and custom
 normalization are rejected explicitly.
 

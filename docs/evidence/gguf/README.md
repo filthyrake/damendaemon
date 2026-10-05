@@ -1266,8 +1266,27 @@ All 96 extended independent checks also pass in
 relative RMS 0.46157%, exact greedy agreement). All 128 execution-layout checks
 pass in `tinyllama-q4-k-m-layout-a2.json` (worst relative RMS 0.09839%), covering
 batches 1/2/4, eager/graphs, fixed/paged KV and chunked prefill. Both reports
-record the native K-quant library hash. Serving is a separate qualification
-step. The local suite passes 307 tests.
+record the native K-quant library hash. The local suite passes 307 tests.
+
+The same published file passes all output and lifecycle checks in
+`tinyllama-q4-k-m-http-a2.json`: A/B/B/A phases, three warmup and six measured
+rounds per phase, 16 output tokens, context 512 per slot, four slots and FP16 KV.
+Both dllm phases pass host restore, disk reload, cancellation recovery,
+streaming/concurrent chat and a real TinyLlama -> Qwen3 -> TinyLlama swap.
+All measured generated texts match the pinned llama.cpp server. Combined median
+seconds (dllm / llama.cpp) are:
+
+| Input tokens / concurrency | dllm | llama.cpp |
+|---|---:|---:|
+| 16 / 1 | 0.2064 | 0.1297 |
+| 129 / 1 | 0.2336 | 0.1577 |
+| 400 / 1 | 0.2740 | 0.2180 |
+| 129 / 2 | 0.3414 | 0.1905 |
+| 129 / 4 | 0.4940 | 0.3185 |
+
+Thus serving compatibility passes for these workloads, while dllm remains
+26–79% slower. Matching output does not establish performance parity or qualify
+long contexts, arbitrary SPM checkpoints or structured generation.
 
 The distinct single-dot prefill sweep in `q4-prefill-single-dot-a2.json` is
 rejected for performance: even its fastest passing large-matrix tiles are
