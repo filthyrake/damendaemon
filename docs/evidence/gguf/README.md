@@ -1663,3 +1663,16 @@ Post-fix `tinyllama-dense-cache-warmup-reference-a2.json` and
 128 layout checks successfully, with unchanged maximum errors. These checks use
 stream reuse without clearing cuBLAS workspaces. HTTP timing and hot-swap proof
 for the prototype are evaluated separately before any production cache decision.
+
+
+The completed isolated cache HTTP run, `tinyllama-dense-cache-http-a2.json`,
+passes all output and lifecycle gates, including actual TinyLlama/Qwen3 model
+swaps, disk/host reloads, cancellation, streaming and concurrent chat. Both
+sides include the warmup-stream fix. Original/cached pooled medians are
+0.208453/0.191185 seconds (16/1), 0.234636/0.214548 (129/1),
+0.545332/0.524106 (2032/1), 0.343211/0.330513 (129/2), and
+0.495083/0.387239 (129/4). Four-request latency falls 21.8%; single-request
+latency falls 3.9–8.6%. These are within-dllm gains for an additional 1.927 GiB
+of residency, not cross-engine wins or a free memory optimization. The
+prototype's performance proof is separate from normal-path admission and
+status qualification, which must pass before the cache is supported.
