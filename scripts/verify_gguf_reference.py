@@ -60,10 +60,14 @@ def main():
     p.add_argument('--reference-dtype', choices=('float16', 'float32'), default='float16')
     p.add_argument('--teacher-trace', help='hold token inputs fixed to a previous report')
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
+    p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
     args = p.parse_args(); torch.set_num_threads(4)
     torch.backends.cuda.matmul.allow_tf32 = False
     teacher = json.loads(Path(args.teacher_trace).read_text()) if args.teacher_trace else None
     source = GgufWeights(args.gguf, 512, 'none')
+    if args.expanded_control:
+        from verify_kquant_runtime import expanded
+        source=expanded(source)
     config = AutoConfig.from_pretrained(args.hf_config, local_files_only=True, trust_remote_code=False)
     config.tie_word_embeddings = False
     with no_init_weights():
@@ -120,7 +124,7 @@ def main():
                   precision=precision, suite="extended" if args.extended else "initial",
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
                   weight_rounding='float16', tf32=False, formats=formats, embedding_type=embedding_type,
-                  teacher_trace=args.teacher_trace,
+                  teacher_trace=args.teacher_trace,expanded_control=args.expanded_control,
                   host_bytes=source.bytes, cases=cases)
     Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(dict(passed=passed, sha256=sha, formats=formats,

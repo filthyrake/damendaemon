@@ -518,3 +518,39 @@ existing 1% relative-RMS gate: maximum 1.0343%, absolute error 0.08594, with all
 short arithmetic trace; ordinary generation through EOS and the longer raw
 traces stay below the gate. The threshold is unchanged and complete Q5_K_M
 qualification is not claimed. Issue #45 tracks diagnosis and remaining proof.
+
+Controlled teacher-token diagnostics are retained as
+`llama32-q5-k-m-diagnostic-{triton,expanded,float32-reference}.json`.
+The packed Triton path also fails the FP16 reference (1.0454% RMS), while the
+same coefficients expanded into dllm's dense path pass (0.561%). Native packed
+execution passes the higher-precision HF reference (0.608%) with the same forced
+inputs. This narrows the issue to accumulation/precision behavior; the latter
+result does not replace or erase the original failing gate.
+`llama32-q5-k-m-reference-cuda-extended-a2.json` additionally passes all 96
+extended FP16-reference comparisons, maximum RMS 0.700%, zero greedy mismatches.
+
+## Isolated residual-int8 experiment
+
+`scripts/experiments/kquant_residual.cu` and its validation-only wrapper test
+two dyadic int8 activation terms with integer dot products over original K-quant
+bytes. This changes arithmetic: it is not the production FP16 coefficient path.
+No production module imports or selects this experiment.
+
+`kquant-residual-matrices-a2.jsonl` passes 80 independent matrix checks,
+including changed-input graphs and wide-range inputs, at maximum RMS 0.0534%
+against the unchanged 0.1% gate; zero-input graph replay also passes.
+However, `kquant-profile-residual-a2.jsonl` shows the initial implementation
+slower on all real projections than the validated CUDA implementation. Single-row
+latency is approximately 7–45% worse, and four-row latency approximately 89–119%
+worse. It is rejected for production selection. No full-model speed or quality
+claim follows from these isolated kernel results.
+
+The initial experiment was built with:
+
+```sh
+nvcc -O3 -std=c++17 -arch=sm_86 --fmad=false -Xcompiler=-fPIC -shared \
+  scripts/experiments/kquant_residual.cu -o results/libdllm_kquant_residual.so
+```
+
+The validation scripts select it only through
+`DLLM_EXPERIMENTAL_RESIDUAL_LIBRARY`; ordinary dllm execution ignores that variable.

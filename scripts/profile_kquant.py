@@ -21,7 +21,10 @@ def timing(fn):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--decode-tuning',action='store_true')
-    p.add_argument('--native-only',action='store_true');args=p.parse_args()
+    p.add_argument('--native-only',action='store_true')
+    p.add_argument('--residual',action='store_true',help='include isolated residual-int8 candidate')
+    args=p.parse_args()
+    if args.residual:args.native_only=True
     torch.set_num_threads(4);torch.manual_seed(613)
     torch.backends.cuda.matmul.allow_tf32=False
     model=GgufWeights(args.model,512,'none')
@@ -41,6 +44,9 @@ def main():
                     assert os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
                     variants={'expanded_resident':variants['expanded_resident'],
                               'cuda_native':lambda:linear_if_enabled(x,weight,layout)}
+                    if args.residual:
+                        from experiments.kquant_residual import linear as residual_linear
+                        variants['residual_int8']=lambda:residual_linear(x,weight,layout)
                 elif rows<=4:
                     settings=((4,4),(8,4),(16,4),(8,8),(16,8)) if args.decode_tuning else ((1,4),(2,4),(4,4))
                     for bn,warps in settings:
