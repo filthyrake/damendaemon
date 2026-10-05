@@ -395,6 +395,11 @@ combined first-output percentage is not treated as an isolated kernel gain.
 Raw trials, baseline source hashes and phase medians accompany
 `olmoe-grouped-http-summary-a2.json`.
 
+The grouped OLMoE path also passes refreshed real mixed dense/hybrid/MoE service
+checks at one and three resident-model capacities: repeat outputs, mixed-model
+concurrency, host restoration, thinking controls and disconnect/rejection
+recovery all pass (`olmoe-grouped-service-a2.json`).
+
 ## Q8 short-prefill latency
 
 Fused dequantization/Tensor Core multiplication now handles 2–128 FP16 rows;
@@ -1394,8 +1399,3 @@ checks on those exact prompts agree with dllm. The optional residual path lowers
 single-request latency 2.7–8.1% versus original dllm in that separate workload.
 This does not establish general SentencePiece, unused-token or grammar support
 on the positional path, longer-window semantics or performance parity.
-
-The grouped OLMoE path also passes refreshed real mixed dense/hybrid/MoE service
-checks at one and three resident-model capacities: repeat outputs, mixed-model
-concurrency, host restoration, thinking controls and disconnect/rejection
-recovery all pass (`olmoe-grouped-service-a2.json`).
