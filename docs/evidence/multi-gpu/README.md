@@ -214,3 +214,37 @@ mode. It is not a cold disk-load, FP16 performance, arbitrary-model, or
 cross-network result. See [matched measurements](qwen2-partition-swap-q8-abba.json)
 and the `qwen2-partition-rebind-*` / `qwen2-partition-http-*-rebind-default`
 reports in this directory. The local regression suite passes 376 tests.
+
+## Coordinator-driven worker control
+
+`verify_stage_protocol.py` replaces the requirement that both workers read a
+reference trace. Rank zero drives requests; rank one reads only fixed 19-word
+int64 control records and typed activation tensors. Before requests, both ranks
+compare a SHA-256 over normalized configuration, context, precision and the
+actual prepared weight/scale bytes. This is identity checking within a trusted
+NCCL job, not network authentication.
+
+The bounded protocol admits at most four slots and context 512. It checks
+protocol version, session epoch, command sequence, operation, shape, slot
+generation and expected cache position before receiving activations. Replacing
+a slot advances its generation; release invalidates its live length. Both
+workers acknowledge completed GPU work before committing cache ownership.
+A rejected command or execution/transport failure poisons the session; a fresh
+worker pair is required. NCCL operations have a 30-second process-group timeout,
+and qualification jobs have an external 180-second deadline.
+
+A2/A30 FP16 and Q8 each pass all 82 independent logits/token checks across 35
+commands, including reordered and shrinking batches and released-slot reuse.
+Only rank zero opens the reference trace. Injecting a stale third command
+causes both workers to report failure after exactly two completed commands,
+before that command's activation transfer. The intentionally failing reports
+remain `passed: false`; they are negative-test evidence, not successful model
+runs. A fresh worker pair afterward passes all 82 Q8 checks over 35 commands
+(`qwen2-control-restart-rank*.json`). Reports for the initial and negative tests
+are `qwen2-control-{fp16,q8,stale}-rank*.json`. The local suite passes 380 tests.
+
+This is a coordinator-driven correctness harness, not a production HTTP worker
+service. Full logits return to the coordinator solely for validation, adding
+communication that a serving design must avoid. No throughput or cross-host
+qualification is inferred from these runs. Existing same-host HTTP serving
+still uses its in-process partition executor.

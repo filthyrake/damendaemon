@@ -35,4 +35,4 @@ Matched A2/A30 Q8 tests reduced median HTTP host restoration from 1.512 s to 0.2
 
 ## Network and recovery boundaries
 
-A2/desktop 3090 workers have passed independent model checks over NCCL sockets. The harness uses fixed trusted traces; it is not yet a general HTTP worker protocol. Failed jobs are reported and fresh worker pairs are verified; interrupted requests are not resumed. No available test host exposes RDMA, so RDMA and GPUDirect RDMA remain unqualified.
+A2/desktop 3090 workers have passed independent model checks over NCCL sockets. That cross-host harness uses fixed trusted traces. A separate A2/A30 proof now drives the second worker through bounded typed commands with sequence and slot-generation checks; it is not yet an HTTP worker service. Failed jobs are reported and fresh worker pairs are verified; interrupted requests are not resumed. No available test host exposes RDMA, so RDMA and GPUDirect RDMA remain unqualified.
