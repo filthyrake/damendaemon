@@ -2,6 +2,8 @@
 import argparse
 import json
 import importlib.metadata
+import os
+import sys
 import triton
 
 import numpy as np
@@ -34,8 +36,9 @@ def main():
     torch.backends.cuda.matmul.allow_tf32=False
     rng=np.random.default_rng(319); reports=[]
     with torch.inference_mode():
-        for width in (256,768,2048):
+        for width in (256,768,2048,8192):
             for kinds in ((1,),(2,),(8,),(12,),(13,),(14,),(12,14,12),(1,8,13)):
+                print(f'Checking width={width}, formats={kinds}',file=sys.stderr,flush=True)
                 parts=[];values=[];spec=[];first=0;offset=0
                 for index,kind in enumerate(kinds):
                     rows=35 if len(kinds)==1 else 17+index
@@ -56,7 +59,7 @@ def main():
                     with torch.cuda.graph(graph):output=embedding(ids,weight,layout,dtype)
                     ids.copy_(torch.tensor([0,first-1,1,first//2],device='cuda'));graph.replay()
                     assert torch.equal(output,reference[ids].half().to(dtype))
-                    for batch in (1,4,17,129):
+                    for batch in (1,2,3,4,17,129):
                         x=torch.randn(batch,width,device='cuda',dtype=dtype)
                         bias=None if batch in (1,17) else torch.randn(first,device='cuda',dtype=dtype)
                         expected=torch.nn.functional.linear(x,reference.to(dtype),bias)
@@ -77,7 +80,9 @@ def main():
                     assert relative<.001,(width,kinds,'linear graph',dtype,relative)
                     del graph,output
                 record['bitwise_dequantization']=True;record['graph_lookup_changed_ids']=True;reports.append(record)
-    print(json.dumps({'passed':True,'device':device_name(),'torch':torch.__version__,'triton':triton.__version__,'gguf':importlib.metadata.version('gguf'),'cases':reports},indent=2))
+    print(json.dumps({'passed':True,'device':device_name(),'torch':torch.__version__,'triton':triton.__version__,
+        'native_library':os.environ.get('DLLM_KQUANT_CUDA_LIBRARY'),
+        'gguf':importlib.metadata.version('gguf'),'cases':reports},indent=2))
 
 
 if __name__=='__main__':main()

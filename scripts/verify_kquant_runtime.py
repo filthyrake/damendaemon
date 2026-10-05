@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import statistics
+import sys
 import threading
 import time
 from urllib.request import Request,urlopen
@@ -50,7 +51,8 @@ def main():
     require_gpu();torch.set_num_threads(4);torch.backends.cuda.matmul.allow_tf32=False
     model=GgufWeights(args.model,512,'none');reference=expanded(model)
     report={'model':str(Path(args.model).resolve()),'device':device_name(),'torch':torch.__version__,
-            'packed_host_bytes':model.bytes,'expanded_host_bytes':reference.bytes,'comparisons':[]}
+            'packed_host_bytes':model.bytes,'expanded_host_bytes':reference.bytes,'comparisons':[],
+            'native_library':os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')}
     def compare(expected,actual,**case):
         error=actual.float()-expected.float()
         absolute=error.abs().max().item()
@@ -63,8 +65,11 @@ def main():
             if paged:os.environ['DLLM_KV_CACHE_TOKENS']='1024'
             else:os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
             for graph in (False,True):
+                print(f'Checking batching/chunking: paged={paged}, graph={graph}',file=sys.stderr,flush=True)
                 a=make_executor(reference,use_graph=graph,max_batch=4)
                 b=make_executor(model,use_graph=graph,max_batch=4)
+                report['packed_backend']=b.kernel_backend
+                report['packed_workspace_reserve_bytes']=b.packed_workspace_bytes
                 prompts=[[9707,11,1879,0]*size for size in (1,4,8,16)]
                 expected=a.prefill_batch(prompts,[0,1,2,3]);actual=b.prefill_batch(prompts,[0,1,2,3])
                 for step in range(8):
@@ -94,6 +99,7 @@ def main():
         return dict(model=alias,messages=[{'role':'user','content':'Explain binary search with a short worked example.'}],
                     temperature=0,max_tokens=32,**options)
     try:
+        print('Checking HTTP chat, streaming, concurrency and lifecycle',file=sys.stderr,flush=True)
         for alias in ('packed','expanded'):
             request('/v1/models/register',dict(model=alias,path=str(Path(args.model).resolve()),quantization='none'))
         # The comparator exists only in this validation process. Production
@@ -118,6 +124,7 @@ def main():
         assert restored['choices'][0]['message']['content']==expected
         trials=[]
         for length,concurrency in ((16,1),(129,1),(400,1),(129,2)):
+            print(f'Timing HTTP: input={length}, concurrency={concurrency}',file=sys.stderr,flush=True)
             ids=(baseline_tokens*((length+len(baseline_tokens)-1)//len(baseline_tokens)))[:length]
             def run(alias):
                 body=dict(model=alias,prompt=ids,max_tokens=16,temperature=0)

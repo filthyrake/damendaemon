@@ -372,7 +372,9 @@ class Executor:
         device_weight_bytes = sum(t.numel() * torch.empty((), dtype=dtype).element_size()
                                   for t, dtype in storage.values())
         device_weight_bytes += sum(t.numel() * t.element_size() for t in {id(t):t for t in model.scales.values()}.values())
-        if device_weight_bytes + kv_bytes + 512 * 1024**2 > free:
+        self.packed_workspace_bytes = max((width*spec[-1][1]*(4 if self.compute_dtype==torch.float32 else 2)
+            for name,(width,spec) in packed_formats.items() if name!='embed'),default=0)
+        if device_weight_bytes + kv_bytes + self.packed_workspace_bytes + 512 * 1024**2 > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         self.w = {}
         copies = {}
@@ -420,6 +422,10 @@ class Executor:
         self.kernel_backend = ("metal" if self.device == "mps" else "triton") if self.kernels else "torch"
         if model.scales or packed_formats:
             self.kernel_backend += '+'+model.quantization
+            if (self.compute_dtype==torch.float16 and os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
+                    and any(name!='embed' and all(kind in (12,13,14) for _,_,kind,_ in layout[1])
+                            for name,layout in packed_formats.items())):
+                self.kernel_backend += '+cuda-kquant-gemv'
             if (model.quantization=='q4_0' and self.compute_dtype==torch.float16
                     and os.environ.get('DLLM_Q4_CUDA_LIBRARY')
                     and any(w.ndim==2 and w.dtype==torch.uint8 and w.shape[0]>=1024 and w.shape[1]>=2048 for w in self.w.values())):

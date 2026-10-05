@@ -336,7 +336,8 @@ This initial kernel report is not a speed claim.
 branched segment implementation triggered a Triton 3.2 compiler failure;
 static segments with masked native loads passed. No whole-model expansion or
 requantization is needed by the kernels. FP32 multi-row matrix fallback expands
-one projection temporarily; FP16 products use native packed Tensor Core kernels.
+one projection temporarily; the initial FP16 implementation used native packed
+Tensor Core kernels. The optimized dispatch below supersedes that choice.
 
 ## Llama Q4_K_M integration: correctness and initial performance gap
 
@@ -379,3 +380,75 @@ Packed host weights use 799,727,744 bytes versus 2,471,628,928 bytes expanded.
 The report's `passed` field denotes numerical/functional checks, **not a
 performance gate**. Issue #45 remains open for kernel optimization and further
 qualification. Preserve this initial report when adding subsequent measurements.
+
+## K-quant decode and prompt-processing optimization
+
+The initial per-projection measurements are retained in
+`kquant-profile-initial-a2.jsonl`. Grouped header decoding, matrix-tile and
+decode block-size experiments are in `kquant-profile-grouped-a2.jsonl` and
+`kquant-profile-decode-a2.jsonl`. The format-specialization hypothesis alone did
+not explain the old tile's latency; its timing was essentially unchanged.
+Reducing repeated header work and changing execution shape produced the gains.
+Larger packed matrix tiles and wider decode blocks were not uniformly better.
+
+Default dispatch now uses packed vector products for one through four rows,
+with bounded split reductions for widths >=4096. Larger batches expand only
+the current projection for the matrix library. Persistent weights remain packed,
+and GPU admission additionally reserves the largest temporary projection.
+The original slow packed matrix kernel remains available to the profiling
+harness, not selected by production dispatch.
+
+The optional `native/kquant_gemv.cu` library uses warp-owned output rows,
+paired coefficients/inputs and safe halfword loads over original GGUF bytes.
+It performs explicit FP16 coefficient rounding followed by FP32 accumulation.
+It does not repack or requantize weights, call another inference engine, or
+change CUDA streams. The CMake `dllm-kquant` target was built on A2 with
+`CMAKE_CUDA_ARCHITECTURES=86`, Release, and `--fmad=false`.
+Set `DLLM_KQUANT_CUDA_LIBRARY` before starting the process to opt in; unsupported
+precision/layout/batch shapes retain the default path. The ABI and buffer
+layout are validated before launch. This is not an automatic runtime build.
+
+`kquant-dispatch-kernels-a2.json` and `kquant-cuda-kernels-a2.json` each pass
+384 matrix comparisons across 32 layouts, widths 256/768/2048/8192, FP16/FP32,
+batch sizes 1/2/3/4/17/129 and bias/no-bias. Maximum relative RMS is 0.0204%,
+below the unchanged 0.1% gate. Exact independent expansion/embedding and graph
+replay with changed inputs pass. `kquant-cuda-coefficients-a2.json` additionally
+compares 268,800 one-hot-probed coefficients bitwise against `gguf.quants`,
+including Q4_K/Q5_K/Q6_K and a mixed group starting on a two-byte boundary.
+Its library hash identifies the CMake build used for that proof.
+
+`kquant-profile-cuda-scalar-a2.jsonl` retains the first C++ candidate;
+`kquant-profile-cuda-vector-a2.jsonl` records the paired implementation.
+The latter single-token matrix timings are below, using the same real Llama
+Q4_K_M coefficients and CUDA-event timing over ten graph replays:
+
+| Projection | Packed CUDA | Resident expanded FP16 |
+|---|---:|---:|
+| Q/K/V | 0.074 ms | 0.090 ms |
+| Attention output | 0.051 ms | 0.063 ms |
+| Gate/up | 0.314 ms | 0.414 ms |
+| Down | 0.165 ms | 0.208 ms |
+| Output head | 2.431 ms | 3.137 ms |
+
+Four-row packed CUDA products still trail resident FP16 in this sweep.
+These are isolated matrix measurements, not complete request performance or
+comparisons against another engine. No whole-model Q5_K_M or broader-hardware
+qualification follows from these kernel results.
+
+`llama32-q4-k-m-runtime-triton-a2.json` repeats the full direct/HTTP proof on
+the optimized default path. All numerical, greedy, batching, paging, chunking,
+streaming and lifecycle checks pass; maximum relative RMS against the expanded
+comparator is 0.119%. The same alternating 16-output-token HTTP protocol gives:
+
+| Input tokens / concurrency | Optimized packed Triton | Expanded FP16 |
+|---|---:|---:|
+| 16 / 1 | 0.462 s | 0.269 s |
+| 129 / 1 | 0.486 s | 0.285 s |
+| 400 / 1 | 0.526 s | 0.324 s |
+| 129 / 2 | 0.638 s | 0.373 s |
+
+This removes most of the initial 5.5–13.0 second latency, but the default path
+still trails resident FP16 by about 62–72%. Host weights remain 799,727,744 bytes;
+the added temporary-projection reserve is 525,336,576 bytes. HTTP timings use
+fixed KV; the top-level backend label records the last direct paged-KV test.
+The optional C++ path requires its own complete request measurements.

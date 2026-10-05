@@ -1,0 +1,3066 @@
+{
+  "passed": true,
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "triton": "3.2.0",
+  "native_library": null,
+  "gguf": "0.19.0",
+  "cases": [
+    {
+      "width": 256,
+      "kinds": [
+        1
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 4.019977097868832e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.3640060103625729e-07,
+          "max_absolute": 5.960464477539062e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.1996731075214484e-07,
+          "max_absolute": 5.960464477539062e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.1699065538550713e-07,
+          "max_absolute": 4.76837158203125e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.0979557174550791e-07,
+          "max_absolute": 9.5367431640625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 256,
+      "kinds": [
+        2
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.5004799536200153e-07,
+          "max_absolute": 5.960464477539063e-08
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 4.000374431711862e-08,
+          "max_absolute": 2.384185791015625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 3.2743145084168646e-08,
+          "max_absolute": 1.1920928955078125e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 3.27334497285392e-08,
+          "max_absolute": 1.1920928955078125e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 256,
+      "kinds": [
+        8
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 7.465278599738667e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.540082479323246e-07,
+          "max_absolute": 9.5367431640625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.1072340555529081e-07,
+          "max_absolute": 9.5367431640625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.1151823287036677e-07,
+          "max_absolute": 1.430511474609375e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.2236435509294097e-07,
+          "max_absolute": 9.5367431640625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 256,
+      "kinds": [
+        12
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.2418095707289467e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.4644831480836729e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.308709869363156e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.3530581099985284e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 256,
+      "kinds": [
+        13
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 3.3991200325544924e-06,
+          "max_absolute": 0.0009765625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 2.176228832695415e-07,
+          "max_absolute": 1.239776611328125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.587643367884084e-07,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.3777602703157754e-07,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.9418436636442493e-07,
+          "max_absolute": 1.9073486328125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 256,
+      "kinds": [
+        14
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 6.1054163325025e-07,
+          "max_absolute": 0.000244140625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 7.608672945025319e-07,
+          "max_absolute": 0.00048828125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.4514021984268766e-07,
+          "max_absolute": 1.9073486328125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.8533452816882345e-07,
+          "max_absolute": 4.57763671875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.3116033414917183e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.5662277519368217e-07,
+          "max_absolute": 4.57763671875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 256,
+      "kinds": [
+        12,
+        14,
+        12
+      ],
+      "rows": 54,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.2201583388105064e-07,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 9.710483794833635e-08,
+          "max_absolute": 2.09808349609375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.1850782755118416e-07,
+          "max_absolute": 2.288818359375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.1249144193925531e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 256,
+      "kinds": [
+        1,
+        8,
+        13
+      ],
+      "rows": 54,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.0749463399406523e-06,
+          "max_absolute": 0.000244140625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 3.3773568386408215e-09,
+          "max_absolute": 9.5367431640625e-07
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.804826723628139e-07,
+          "max_absolute": 8.106231689453125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.4333592446291732e-07,
+          "max_absolute": 1.1444091796875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 2.006051147418475e-07,
+          "max_absolute": 1.1444091796875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.4883181620461983e-07,
+          "max_absolute": 1.1444091796875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 768,
+      "kinds": [
+        1
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 2.543053483350377e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.6674442804287537e-07,
+          "max_absolute": 1.0132789611816406e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.3856475788998068e-07,
+          "max_absolute": 9.5367431640625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.4360749389652483e-07,
+          "max_absolute": 9.5367431640625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.2868483167949307e-07,
+          "max_absolute": 1.430511474609375e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 768,
+      "kinds": [
+        2
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 5.412211248767562e-05,
+          "max_absolute": 0.00048828125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.3016748425798141e-06,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.700416873973154e-07,
+          "max_absolute": 1.1920928955078125e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 6.777545280556296e-08,
+          "max_absolute": 2.384185791015625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 6.105203453898866e-08,
+          "max_absolute": 2.384185791015625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 5.816307080408478e-08,
+          "max_absolute": 2.384185791015625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 768,
+      "kinds": [
+        8
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 2.3932418002914346e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.3989524916269147e-07,
+          "max_absolute": 1.5497207641601562e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.4664067293779226e-07,
+          "max_absolute": 2.86102294921875e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.3601170678612107e-07,
+          "max_absolute": 2.86102294921875e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.5525577623520803e-07,
+          "max_absolute": 2.6226043701171875e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 768,
+      "kinds": [
+        12
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 4.172696321802505e-08,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.5662394048376882e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.647351126621288e-07,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.199407222429727e-07,
+          "max_absolute": 1.1444091796875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.3138581778093794e-07,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 768,
+      "kinds": [
+        13
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.1505670727274264e-07,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.2557985940020444e-07,
+          "max_absolute": 2.288818359375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 2.1273280026434804e-07,
+          "max_absolute": 2.4318695068359375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.4788430746648373e-07,
+          "max_absolute": 2.288818359375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 768,
+      "kinds": [
+        14
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 6.873686743347207e-06,
+          "max_absolute": 0.0078125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 6.092293460824294e-06,
+          "max_absolute": 0.0078125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.271115053214089e-07,
+          "max_absolute": 3.528594970703125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.393916875258583e-07,
+          "max_absolute": 4.57763671875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.5029965538815304e-07,
+          "max_absolute": 4.57763671875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.42358388188768e-07,
+          "max_absolute": 6.103515625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 768,
+      "kinds": [
+        12,
+        14,
+        12
+      ],
+      "rows": 54,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 5.80766439384206e-08,
+          "max_absolute": 6.103515625e-05
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.9073654300427734e-07,
+          "max_absolute": 6.103515625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.0748529888360281e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.3297125178723945e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.5054885693643882e-07,
+          "max_absolute": 4.57763671875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 768,
+      "kinds": [
+        1,
+        8,
+        13
+      ],
+      "rows": 54,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 2.2913714019523468e-06,
+          "max_absolute": 0.0009765625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 2.153806462956709e-06,
+          "max_absolute": 0.0009765625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 2.1404834171789844e-07,
+          "max_absolute": 1.9073486328125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.3626474526517995e-07,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.8516615796215774e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.9404370732445386e-07,
+          "max_absolute": 2.288818359375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 2048,
+      "kinds": [
+        1
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 5.7878278170164776e-08,
+          "max_absolute": 1.9073486328125e-06
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 2.2255326825870725e-07,
+          "max_absolute": 2.3245811462402344e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.6582337991621898e-07,
+          "max_absolute": 1.9073486328125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.5372694406323717e-07,
+          "max_absolute": 2.86102294921875e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.498320330028946e-07,
+          "max_absolute": 2.384185791015625e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 2048,
+      "kinds": [
+        2
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 2.0506746523096808e-07,
+          "max_absolute": 2.384185791015625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 5.895978816283787e-08,
+          "max_absolute": 2.384185791015625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.0342387923856222e-07,
+          "max_absolute": 2.980232238769531e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 8.519869965084581e-08,
+          "max_absolute": 3.5762786865234375e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 2048,
+      "kinds": [
+        8
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 3.2617646184007754e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 2.229686515420326e-07,
+          "max_absolute": 5.7220458984375e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.4646531099060667e-07,
+          "max_absolute": 4.76837158203125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.5851902901431458e-07,
+          "max_absolute": 3.814697265625e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.7216419223586854e-07,
+          "max_absolute": 3.814697265625e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 2048,
+      "kinds": [
+        12
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.9218795443975978e-07,
+          "max_absolute": 1.9073486328125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.4026164762981352e-07,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.490342640408926e-07,
+          "max_absolute": 1.9073486328125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.6375977907046035e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 2048,
+      "kinds": [
+        13
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 4.8534343477513175e-06,
+          "max_absolute": 0.00390625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 2.306198183532615e-07,
+          "max_absolute": 6.103515625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.8091587605795212e-07,
+          "max_absolute": 3.814697265625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.8485833663817175e-07,
+          "max_absolute": 4.57763671875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.8050796768420696e-07,
+          "max_absolute": 3.4332275390625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 2048,
+      "kinds": [
+        14
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.6454863782655593e-07,
+          "max_absolute": 8.392333984375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.589813081182001e-07,
+          "max_absolute": 6.103515625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.564657452490792e-07,
+          "max_absolute": 9.1552734375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.602169135139775e-07,
+          "max_absolute": 9.1552734375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 2048,
+      "kinds": [
+        12,
+        14,
+        12
+      ],
+      "rows": 54,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 8.71804659254849e-05,
+          "max_absolute": 0.125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.1244271263421979e-05,
+          "max_absolute": 0.015625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.7371559124512714e-07,
+          "max_absolute": 6.103515625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.1565346369479812e-07,
+          "max_absolute": 8.392333984375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.938705338488944e-07,
+          "max_absolute": 6.866455078125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.6944450464961847e-07,
+          "max_absolute": 0.0001220703125
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 2048,
+      "kinds": [
+        1,
+        8,
+        13
+      ],
+      "rows": 54,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 4.783737495017704e-07,
+          "max_absolute": 0.000244140625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 7.279239980562124e-06,
+          "max_absolute": 0.00390625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 3.675485640997067e-05,
+          "max_absolute": 0.03125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 2.1585749720998137e-07,
+          "max_absolute": 3.814697265625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.518274501677297e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.4311376617115457e-07,
+          "max_absolute": 4.1961669921875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.8175258276187378e-07,
+          "max_absolute": 6.103515625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 8192,
+      "kinds": [
+        1
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 3.9612260138710553e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.7240927263628691e-07,
+          "max_absolute": 5.7220458984375e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.6434570682122285e-07,
+          "max_absolute": 4.76837158203125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.9004038165348902e-07,
+          "max_absolute": 4.76837158203125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 8192,
+      "kinds": [
+        2
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 3.1021352242532885e-07,
+          "max_absolute": 8.344650268554688e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.6671235414378316e-07,
+          "max_absolute": 7.152557373046875e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.3446418734019971e-07,
+          "max_absolute": 4.76837158203125e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.524867627722415e-07,
+          "max_absolute": 9.5367431640625e-07
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 8192,
+      "kinds": [
+        8
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.149599171412774e-08,
+          "max_absolute": 1.9073486328125e-06
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 2.53997711752163e-07,
+          "max_absolute": 1.1444091796875e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.936058851015332e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.687608204292701e-07,
+          "max_absolute": 7.62939453125e-06
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.7377765004766843e-07,
+          "max_absolute": 1.52587890625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 8192,
+      "kinds": [
+        12
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 4.240496878082922e-07,
+          "max_absolute": 8.392333984375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.4114618807070656e-07,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.725208846892201e-07,
+          "max_absolute": 3.814697265625e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.7798527096601902e-07,
+          "max_absolute": 3.8623809814453125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 8192,
+      "kinds": [
+        13
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 3.7554147525042936e-07,
+          "max_absolute": 0.00012969970703125
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.9366051162705844e-07,
+          "max_absolute": 9.1552734375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.9542085283319466e-07,
+          "max_absolute": 0.0001220703125
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.5752428339510516e-07,
+          "max_absolute": 0.0001220703125
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 8192,
+      "kinds": [
+        14
+      ],
+      "rows": 35,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 1.5411670162279734e-08,
+          "max_absolute": 3.0517578125e-05
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 3.54594106966033e-07,
+          "max_absolute": 0.000274658203125
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.5693113653014734e-07,
+          "max_absolute": 0.0001373291015625
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.817318349139896e-07,
+          "max_absolute": 0.00018310546875
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.8748923480416124e-07,
+          "max_absolute": 0.000213623046875
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 8192,
+      "kinds": [
+        12,
+        14,
+        12
+      ],
+      "rows": 54,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 0.0002032661286648363,
+          "max_absolute": 0.5
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 2.206407953053713e-05,
+          "max_absolute": 0.03125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 6.619730265811086e-05,
+          "max_absolute": 0.125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 3.1968912139745953e-07,
+          "max_absolute": 0.0002288818359375
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.7235782934221788e-07,
+          "max_absolute": 0.0001220703125
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.8198998930074595e-07,
+          "max_absolute": 0.00018310546875
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.7194660983932408e-07,
+          "max_absolute": 0.00016021728515625
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    },
+    {
+      "width": 8192,
+      "kinds": [
+        1,
+        8,
+        13
+      ],
+      "rows": 54,
+      "matmul": [
+        {
+          "dtype": "torch.float16",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 4.712185182143003e-05,
+          "max_absolute": 0.03125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 4.509312566369772e-05,
+          "max_absolute": 0.0625
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 2.836964267771691e-05,
+          "max_absolute": 0.03125
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float16",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 1,
+          "bias": false,
+          "relative_rms": 3.518944140523672e-07,
+          "max_absolute": 0.000133514404296875
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 2,
+          "bias": true,
+          "relative_rms": 1.6322087503795046e-07,
+          "max_absolute": 9.1552734375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 3,
+          "bias": true,
+          "relative_rms": 1.6804536073777854e-07,
+          "max_absolute": 7.62939453125e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 4,
+          "bias": true,
+          "relative_rms": 1.880895297290408e-07,
+          "max_absolute": 9.1552734375e-05
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 17,
+          "bias": false,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        },
+        {
+          "dtype": "torch.float32",
+          "batch": 129,
+          "bias": true,
+          "relative_rms": 0.0,
+          "max_absolute": 0.0
+        }
+      ],
+      "bitwise_dequantization": true,
+      "graph_lookup_changed_ids": true
+    }
+  ]
+}

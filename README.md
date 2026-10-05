@@ -478,6 +478,23 @@ Mistral Q4 result is 22.53 tokens/s versus 20.06 with the paired Tensor Core
 path alone, still below the matched llama.cpp result of 34.20. There is no
 runtime compilation requirement when this option is unset.
 
+GGUF Q4_K/Q5_K/Q6_K have a separate CUDA C++ decode library. It reads the
+original packed bytes, including mixed-format fused projections, and preserves
+FP16 coefficient rounding before FP32 accumulation:
+
+```sh
+cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86 -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target dllm-kquant -j2
+export DLLM_KQUANT_CUDA_LIBRARY="$PWD/build/libdllm-kquant.so"
+```
+
+Set this before starting the server. It selects native FP16 decode for batches
+of one through four when every segment uses a K-quant format. Other cases retain
+the Triton fallback. Prompt processing expands one projection temporarily for
+the matrix library; persistent weights remain packed. Admission reserves space
+for that largest temporary projection in addition to the usual workspace.
+See the [K-quant qualification and performance evidence](docs/evidence/gguf/README.md).
+
 ### Prepared weight cache
 
 Set `DLLM_WEIGHT_CACHE=/path/to/trusted/cache` before starting dllm to reuse

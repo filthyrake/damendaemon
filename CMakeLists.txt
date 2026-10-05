@@ -10,3 +10,8 @@ add_library(dllm-q4 SHARED native/q4_gemv.cu)
 target_compile_features(dllm-q4 PRIVATE cuda_std_17)
 target_link_libraries(dllm-q4 PRIVATE CUDA::cudart)
 target_compile_options(dllm-q4 PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3>)
+
+add_library(dllm-kquant SHARED native/kquant_gemv.cu)
+target_compile_features(dllm-kquant PRIVATE cuda_std_17)
+target_link_libraries(dllm-kquant PRIVATE CUDA::cudart)
+target_compile_options(dllm-kquant PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3> $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
