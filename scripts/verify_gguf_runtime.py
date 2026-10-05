@@ -28,7 +28,7 @@ from dllm.prompts import decode_output
 
 def decoded_trace(model, tokens):
     stop = next((i for i, token in enumerate(tokens) if token in model.eos), None)
-    visible = tokens if stop is None else tokens[:stop]
+    visible = tokens if stop is None else tokens[:stop+1]
     return dict(text=decode_output(model, visible), completion_tokens=len(tokens) if stop is None else stop+1)
 
 
