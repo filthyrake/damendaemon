@@ -105,3 +105,9 @@ model, layout and HTTP validation. Use `--experimental-q4-small-tiles` in the
 reference/layout verifiers or `--q4-small-tiles --native-format q4` in the engine
 benchmark. Include `--extra-prompt-tokens 64` in reference and HTTP workloads;
 the existing control lengths remain. Normal serving does not import this code.
+
+`../profile_q4_expansion.py` separately measures the long-prompt expansion
+operation. `q4_expand.py` loads each packed byte once and writes both decoded
+nibbles, retaining the same scale and FP16 rounding. Every projection must be
+bit-exact against the independent coefficient decoder before it is timed.
+This experiment has no production installation hook and retains no dense cache.
