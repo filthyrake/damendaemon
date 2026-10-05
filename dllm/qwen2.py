@@ -391,6 +391,10 @@ class Executor:
             from .quantization import Linear
             from .native_kquant_residual import select
             self.packed_decode = select(c, packed_formats, self.device, self.compute_dtype, self.llama_precision, self.context)
+            if self.packed_decode is None:
+                from .native_kquant_residual_f32 import select as select_fp32
+                self.packed_decode = select_fp32(c, packed_formats, self.device, self.compute_dtype,
+                                                self.llama_precision, self.context)
             self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats, self.packed_decode)
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
@@ -426,7 +430,8 @@ class Executor:
         if model.scales or packed_formats:
             self.kernel_backend += '+'+model.quantization
             if self.packed_decode is not None:
-                self.kernel_backend += '+cuda-kquant-residual'
+                self.kernel_backend += ('+cuda-kquant-residual-f32' if self.compute_dtype == torch.float32
+                                        else '+cuda-kquant-residual')
             if (self.compute_dtype==torch.float16 and os.environ.get('DLLM_KQUANT_CUDA_LIBRARY')
                     and any(name!='embed' and all(kind in (12,13,14) for _,_,kind,_ in layout[1])
                             for name,layout in packed_formats.items())):

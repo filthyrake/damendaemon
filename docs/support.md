@@ -67,12 +67,15 @@ process-local. The HTTP API is a supported subset, not full OpenAI or Ollama API
 compatibility. The development server is loopback-only and is not an authenticated
 multi-tenant service.
 
-K-quant qualification currently covers Llama 3.2 1B and Qwen3-0.6B Q4_K_M at
-512 context. An optional residual-int8 CUDA backend accelerates the qualified
-Llama single-request scope; Qwen3 retains ordinary K-quant CUDA dispatch.
-Q5_K_M passes runtime/lifecycle tests but retains a forced post-EOS FP16-reference
-numerical failure; neither these results nor block-format decoding establishes
-qualification for every model using these formats.
+K-quant qualification covers Llama 3.2 1B and Qwen3-0.6B Q4_K_M at 512
+context, with Qwen3 independent model checks also passing at 2048. The optional
+FP16 residual-int8 backend retains a 512-context Q4/Q6 single-request scope.
+Q5_K_M and longer Llama contexts retain documented mixed/FP16 numerical gaps.
+The explicit Llama FP32 mode passes independent Q4_K_M/Q5_K_M model checks at
+2048 context. Its separate optional FP32 residual CUDA backend accelerates
+one through four rows; fixed/paged/graph/chunk and server/lifecycle proof covers
+512 context. These checkpoint-specific results do not establish qualification
+for every model using these block formats.
 
 Performance is workload-specific. Comparable results include losses as well as
 wins; a passing numerical gate is not a claim of throughput parity. In particular,

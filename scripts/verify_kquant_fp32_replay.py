@@ -30,7 +30,7 @@ def main():
     mode.add_argument('--write-reference');mode.add_argument('--reference')
     parser.add_argument('--experimental-residual-f32',action='store_true')
     parser.add_argument('--output',required=True);args=parser.parse_args()
-    if args.write_reference and args.experimental_residual_f32:
+    if args.write_reference and (args.experimental_residual_f32 or os.environ.get('DLLM_KQUANT_RESIDUAL_F32_LIBRARY')):
         parser.error('the reference must use ordinary packed FP32 dispatch')
     require_gpu();torch.set_num_threads(4);torch.backends.cuda.matmul.allow_tf32=False
     experiment=None
@@ -42,6 +42,9 @@ def main():
                   model_type=source.config['model_type'])
     report=dict(**metadata,device=device_name(),torch=torch.__version__,experiment=experiment,
                 mode='compare' if args.reference else 'write ordinary packed FP32 baseline',comparisons=[],passed=False)
+    production_library=os.environ.get('DLLM_KQUANT_RESIDUAL_F32_LIBRARY')
+    if production_library:
+        report['production_library']=dict(path=production_library,sha256=digest(production_library))
     reference=np.load(args.reference,allow_pickle=False) if args.reference else None
     saved={};visited=set()
     try:

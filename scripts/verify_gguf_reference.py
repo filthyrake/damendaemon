@@ -167,7 +167,9 @@ def main():
             gc.collect(); empty_cache()
     with Path(args.gguf).open('rb') as file: sha = hashlib.file_digest(file, 'sha256').hexdigest()
     passed = all(not c['greedy_mismatches'] and all(e['max_absolute'] < .5 and e['relative_rms'] < .01 for e in c['errors']) for c in cases)
-    residual_path=os.environ.get('DLLM_KQUANT_RESIDUAL_LIBRARY')
+    residual_variable=('DLLM_KQUANT_RESIDUAL_F32_LIBRARY' if 'cuda-kquant-residual-f32' in precision['backend']
+                       else 'DLLM_KQUANT_RESIDUAL_LIBRARY')
+    residual_path=os.environ.get(residual_variable)
     residual_selected='cuda-kquant-residual' in precision['backend']
     residual_library=None
     if residual_path:

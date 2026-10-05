@@ -850,3 +850,39 @@ disk reload, and early stream cancellation followed by recovery. This gain is
 over dllm's ordinary FP32 path; it is not a same-precision win over llama.cpp or
 the earlier FP16 residual option. FP32 prefill remains expensive. The candidate
 is still validation-only while Q5 coverage and production integration proceed.
+
+
+Q5's extended FP32 independent suite also passes all 96 comparisons at 2048
+context (maximum RMS 0.1754%, absolute 0.01534). Its separate baseline/replay
+reports pass all 100 runtime cases with maximum RMS 0.0564% and exact greedy
+agreement. See `llama32-q5-k-m-residual-f32-reference-2048-extended-a2.json`,
+`llama32-q5-k-m-fp32-packed-baseline-a2.json`, and
+`llama32-q5-k-m-residual-f32-replay-a2.json`.
+
+
+## Opt-in FP32 production dispatch
+
+The FP32 arithmetic now lives in `native/kquant_residual_f32.cu`, built as
+`dllm-kquant-residual-f32`. The experimental source includes that implementation.
+`DLLM_KQUANT_RESIDUAL_F32_LIBRARY` selects a per-executor callback only for CUDA
+Llama hidden width 2048, FP32 precision, context <=2048, and Q4/Q6 or Q5/Q6
+layouts. Shapes outside rows 1–4 and widths 2048/8192 fall back. ABI 101 remains
+separate from FP16 ABI 1; loaded modules stay alive for captured CUDA graphs.
+No global production monkeypatch is used. Unit tests enforce precision, family,
+context, format, shape, opt-in and per-executor library boundaries.
+
+Both `llama32-q{4,5}-k-m-residual-f32-production-replay-a2.json` reports pass the
+100-case runtime gate with the normal `cuda-kquant-residual-f32` backend label.
+The Q5 production HTTP comparison passes all output/lifecycle checks using the
+normal `dllm` CLI in every phase. Ordinary/candidate FP32 medians are:
+
+| Input tokens / concurrency | Ordinary FP32 | Production residual FP32 |
+| --- | ---: | ---: |
+| 16 / 1 | 0.536503 s | 0.273409 s |
+| 129 / 1 | 0.650599 s | 0.388951 s |
+| 400 / 1 | 0.853740 s | 0.595127 s |
+| 129 / 2 | 0.942085 s | 0.648724 s |
+
+These represent 30–49% lower latency for the measured Q5 workloads. The raw
+report is `llama32-q5-k-m-residual-f32-production-http-a2.json`; its library hash,
+commands, exact prompts, measured rounds and lifecycle outcomes are retained.

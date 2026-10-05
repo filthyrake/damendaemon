@@ -29,10 +29,13 @@ def main():
     comparison.add_argument('--llama-server')
     comparison.add_argument('--residual-library',help='compare production with the isolated residual-int8 candidate')
     comparison.add_argument('--residual-f32-library',help='compare ordinary packed FP32 with the isolated FP32 candidate')
+    parser.add_argument('--production-residual-f32',action='store_true',help='exercise normal CLI per-executor FP32 selection')
     parser.add_argument('--lifecycle',action='store_true',help='also check dllm cancellation, swapping and reloads after timing')
     parser.add_argument('--native-library',required=True);parser.add_argument('--output',required=True)
     args=parser.parse_args()
     if args.lifecycle and args.llama_server:parser.error('--lifecycle requires a dllm candidate comparison')
+    if args.production_residual_f32 and not args.residual_f32_library:
+        parser.error('--production-residual-f32 requires --residual-f32-library')
     precision='float32' if args.residual_f32_library else 'mixed'
     if not os.environ.get('CUDA_VISIBLE_DEVICES','').startswith('GPU-') or ',' in os.environ['CUDA_VISIBLE_DEVICES']:
         raise RuntimeError('select exactly one GPU UUID before benchmarking')
@@ -54,7 +57,9 @@ def main():
         gpu_uuid=os.environ['CUDA_VISIBLE_DEVICES'],context_per_slot=512,slots=4,kv_dtype='float32' if precision=='float32' else 'float16',
         dllm_precision='FP32 matrices, residual/nonlinear and KV' if precision=='float32' else 'mixed: FP16 matrices, FP32 residual/nonlinear',output_tokens=16,
         prompts=prompts,warmup_rounds=3,measured_rounds=6,runs=[])
+    report['production_residual_f32']=args.production_residual_f32
     environment=os.environ.copy()
+    environment.pop('DLLM_KQUANT_RESIDUAL_F32_LIBRARY',None)
     environment.update(DLLM_DEVICE='cuda',DLLM_KQUANT_CUDA_LIBRARY=str(library),DLLM_LLAMA_PRECISION=precision,
         DLLM_QWEN3_PRECISION='float32' if precision=='float32' else 'standard',
         DLLM_SPECULATIVE_TOKENS='0',DLLM_QUANTIZATION='none',OMP_NUM_THREADS='4')
@@ -75,10 +80,14 @@ def main():
                 reservation.bind(('127.0.0.1',0));port=reservation.getsockname()[1]
             base=f'http://127.0.0.1:{port}'
             log_path=output.with_name(output.stem+f'-{phase}-{engine}.log')
+            phase_environment=environment.copy()
+            if args.production_residual_f32 and engine==counterpart:
+                phase_environment['DLLM_KQUANT_RESIDUAL_F32_LIBRARY']=str(residual)
             if engine!='llama.cpp':
                 module={'residual-int8-v2':'scripts.experiments.serve_residual',
                         'residual-int8-fp32':'scripts.experiments.serve_residual_f32'}.get(engine,
                         'scripts.experiments.serve_float32' if precision=='float32' else 'dllm')
+                if args.production_residual_f32:module='dllm'
                 command=[sys.executable,'-m',module,'serve','--model',f'a={model}','--port',str(port),
                     '--context','512','--batch-size','4','--kv-cache-tokens','0','--gpu-models','1',
                     '--prefill-chunk-size','0','--prefix-cache-tokens','0']
@@ -91,7 +100,7 @@ def main():
             report['runs'].append(run)
             print(f'Starting phase {phase}: {engine}',file=sys.stderr,flush=True)
             with log_path.open('w') as log:
-                process=subprocess.Popen(command,env=environment,stdout=log,stderr=subprocess.STDOUT)
+                process=subprocess.Popen(command,env=phase_environment,stdout=log,stderr=subprocess.STDOUT)
                 try:
                     deadline=time.monotonic()+180
                     while True:

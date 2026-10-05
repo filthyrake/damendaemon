@@ -511,6 +511,26 @@ HTTP latency than ordinary CUDA, with concurrency two roughly tied. Other
 hardware, model sizes and long contexts are not qualified by those results.
 Backend status includes `cuda-kquant-residual` when selected.
 
+For Llama 3.2 1B Q4_K_M/Q5_K_M, an independent FP32 mode addresses the observed
+long-context FP16 numerical gap. An optional FP32 residual library accelerates
+its decode without rounding inputs or output to FP16:
+
+```sh
+cmake --build build --target dllm-kquant-residual-f32 -j2
+export DLLM_LLAMA_PRECISION=float32
+export DLLM_KQUANT_RESIDUAL_F32_LIBRARY="$PWD/build/libdllm-kquant-residual-f32.so"
+```
+
+Selection requires CUDA, Llama hidden width 2048, FP32 execution, context at most
+2048, and Q4_K/Q6_K or Q5_K/Q6_K layouts. It handles one through four rows at
+widths 2048/8192; other projections retain ordinary FP32 execution. Persistent
+weights remain packed. The separate ABI prevents mixing FP16 and FP32 buffers.
+Backend status includes `cuda-kquant-residual-f32`. Independent model checks
+cover 2048 context; paging, batching, swapping and HTTP measurements currently
+cover 512. Q4 A2 server measurements show 1.41–1.95x speedup over ordinary packed
+FP32. This is a different precision policy from the faster FP16 option above;
+FP32 prompt processing remains a performance target.
+
 See the [K-quant qualification and performance evidence](docs/evidence/gguf/README.md).
 
 ### Prepared weight cache
