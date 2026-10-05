@@ -1261,8 +1261,13 @@ relative RMS 0.32765%, exact greedy agreement. Independent dequantization uses
 21 Q6_K and 45 F32 tensors, with 22 layers, hidden width 2048, intermediate
 width 5632, 32 query heads and 4 KV heads. Testing uses the A2, mixed FP16
 matrix/FP32 residual precision, native K-quant decode and context 512.
-Extended accuracy, execution layouts and serving are separate qualification
-steps. The local suite passes 307 tests.
+All 96 extended independent checks also pass in
+`tinyllama-q4-k-m-reference-extended-a2.json` (maximum absolute error 0.0546875,
+relative RMS 0.46157%, exact greedy agreement). All 128 execution-layout checks
+pass in `tinyllama-q4-k-m-layout-a2.json` (worst relative RMS 0.09839%), covering
+batches 1/2/4, eager/graphs, fixed/paged KV and chunked prefill. Both reports
+record the native K-quant library hash. Serving is a separate qualification
+step. The local suite passes 307 tests.
 
 The distinct single-dot prefill sweep in `q4-prefill-single-dot-a2.json` is
 rejected for performance: even its fastest passing large-matrix tiles are

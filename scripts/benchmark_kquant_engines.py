@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--production-prefill-f32',action='store_true',help='exercise normal per-executor compensated prefill selection')
     parser.add_argument('--prefill-f32',action='store_true',help='compare production FP32 residual decode with experimental compensated prefill')
     parser.add_argument('--production-residual-f32',action='store_true',help='exercise normal CLI per-executor FP32 selection')
+    parser.add_argument('--include-concurrency-four',action='store_true',help='also measure four simultaneous 129-token prompts')
     parser.add_argument('--lifecycle',action='store_true',help='also check dllm cancellation, swapping and reloads after timing')
     parser.add_argument('--swap-model', help='optional different GGUF checkpoint for lifecycle swapping')
     parser.add_argument('--native-format', choices=('kquant','q4'), default='kquant', help='native decode library format')
@@ -79,6 +80,9 @@ def main():
         report['experimental_arithmetic']='Q4 single-row integer dot; two dyadic int8 activation terms; FP32 coefficient scaling rather than rounded FP16 coefficients'
     report['swap_model']=dict(path=str(swap_model),sha256=digest(swap_model)) if args.swap_model else None
     report['experimental_batch_wait_ms']=args.batch_wait_ms
+    workloads=[(16,1),(129,1),(400,1),(129,2)]
+    if args.include_concurrency_four:workloads.append((129,4))
+    report['workloads']=workloads
     report['production_q4_residual']=args.production_q4_residual
     report['production_residual_f32']=args.production_residual_f32
     report['experimental_prefill_f32']=args.prefill_f32 and not args.production_prefill_f32
@@ -187,7 +191,7 @@ def main():
                         assert usage['prompt_tokens']==len(ids) and usage['completion_tokens']==16,usage
                         return dict(seconds=elapsed,first_output_seconds=first,
                             post_first_output_tokens_per_second=15/(elapsed-first),usage=usage,text=text)
-                    for length,concurrency in ((16,1),(129,1),(400,1),(129,2)):
+                    for length,concurrency in workloads:
                         print(f'Phase {phase}: input={length}, concurrency={concurrency}',file=sys.stderr,flush=True)
                         case=dict(prompt_tokens=length,concurrency=concurrency,rounds=[])
                         run['cases'].append(case)
