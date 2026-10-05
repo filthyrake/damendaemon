@@ -319,3 +319,9 @@ checks and matches all 128 greedy tokens. Six checks exceed the unchanged
 eager/graph mode). Worst observed RMS is about 1.27%. The failed report is
 retained, and precision/product diagnostics are in progress; this is not a
 qualified Qwen3 AWQ runtime claim. All 344 local regression tests pass.
+
+The separate expanded-product diagnostic also fails (124/128 checks, worst
+RMS 1.6652%), retaining exact greedy tokens. It removes packed GEMM and fused
+projection shape as sole explanations. A separate FP16 residual/normalization/
+rotary rounding candidate is under test; ordinary Qwen3 execution is unchanged.
+See `qwen3-4b-awq-expanded-separate-512-a2.json`.
