@@ -16,27 +16,41 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model')
     parser.add_argument('--output', required=True)
+    variant = parser.add_mutually_exclusive_group()
+    variant.add_argument('--gemv', action='store_true', help='test direct small-row reductions instead of split-K MMA')
+    variant.add_argument('--gemm-tiles', action='store_true', help='test wider output tiles with original packed MMA')
+    parser.add_argument('--rows', type=int, choices=(1, 2, 3, 4), nargs='+', default=[1, 2, 4])
     args = parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
     torch.manual_seed(917)
     torch.backends.cuda.matmul.allow_tf32 = False
     source = AwqWeights(args.model, 2048, 'none')
+    candidate = awq_splitk
+    choices = (2, 4, 8, 16)
+    if args.gemv:
+        from experiments import awq_gemv
+        candidate, choices = awq_gemv, (32, 64, 128)
+    if args.gemm_tiles:
+        from experiments import awq_tiles
+        candidate, choices = awq_tiles, (64, 128, 256)
     report = dict(passed=False, cases=[], device=torch.cuda.get_device_name(),
                   scope='standalone packed projection accuracy and timing; not serving throughput',
-                  candidate_sha256=hashlib.sha256(Path(awq_splitk.__file__).read_bytes()).hexdigest())
+                  gemv=args.gemv, gemm_tiles=args.gemm_tiles,
+                  source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                  candidate_sha256=hashlib.sha256(Path(candidate.__file__).read_bytes()).hexdigest())
     try:
         with torch.inference_mode():
             for name in ('0.qkv.weight', '0.out', '0.gate_up', '0.down'):
                 host = source.awq_matrices[name]
                 matrix = Matrix(host.weight.cuda(), host.zeros.cuda(), host.scales.cuda(), host.inputs, host.outputs)
                 dense = host.dequantize().cuda().float()
-                for rows in (1, 2, 4):
+                for rows in args.rows:
                     case = dict(name=name, inputs=matrix.inputs, outputs=matrix.outputs, rows=rows, checks=[], rounds=[])
                     report['cases'].append(case)
                     functions = {'production': lambda: linear(x, matrix, bias)}
-                    for splits in (2, 4, 8, 16):
-                        functions[str(splits)] = lambda splits=splits: awq_splitk.linear(x, matrix, bias, splits)
+                    for choice in choices:
+                        functions[str(choice)] = lambda choice=choice: candidate.linear(x, matrix, bias, choice)
                     for exponent in (-10, 0, 8):
                         x = (torch.randn(rows, matrix.inputs, device='cuda')*2.**exponent).half()
                         for biased in (False, True):

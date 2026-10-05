@@ -1,0 +1,46 @@
+{
+  "passed": false,
+  "cases": [
+    {
+      "name": "0.qkv.weight",
+      "inputs": 896,
+      "outputs": 1152,
+      "rows": 1,
+      "checks": [
+        {
+          "kind": "production",
+          "exponent": -10,
+          "biased": false,
+          "relative_rms": 1.1206975614186376e-05,
+          "max_absolute": 4.76837158203125e-07,
+          "passed": true
+        },
+        {
+          "kind": "64",
+          "exponent": -10,
+          "biased": false,
+          "relative_rms": 1.1206975614186376e-05,
+          "max_absolute": 4.76837158203125e-07,
+          "passed": true
+        },
+        {
+          "kind": "128",
+          "exponent": -10,
+          "biased": false,
+          "relative_rms": 1.1206975614186376e-05,
+          "max_absolute": 4.76837158203125e-07,
+          "passed": true
+        }
+      ],
+      "rounds": []
+    }
+  ],
+  "device": "NVIDIA A2",
+  "scope": "standalone packed projection accuracy and timing; not serving throughput",
+  "gemv": false,
+  "gemm_tiles": true,
+  "source_sha256": "3ecf0729b1ce24b6d968b112db430049a41cb731779e5740adc0decb78b66e1a",
+  "candidate_sha256": "9a02b0bb570446fd7c1fb7dbe38f7b9306e7a02ae29297bee2671e21c022596e",
+  "error": "OutOfResources(106496, 101376, 'shared memory')",
+  "checkpoint_sha256": "c50d807b7bed7ff314308972e0f4bcf4e5a70bc60ad88fc7df53940831ed0c1b"
+}

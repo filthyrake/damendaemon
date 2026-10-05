@@ -159,3 +159,13 @@ the dense output head 1.626 ms. Profiling overhead and its shorter prompt make
 these diagnostic timings distinct from HTTP measurements. Split-K candidates
 are isolated under `scripts/experiments/awq_splitk.py`; normal dispatch is
 unchanged until separate matrix, model, layout and serving gates pass.
+
+The first split-K matrix sweep passes 360 checks, but improves down-projections
+only about 19% and regresses QKV/gate-up. A separate direct small-row reduction
+passes 288 checks. Its 128-output tile reduces single-row gate/up from about
+108 to 60 microseconds and down from about 71.5 to 30.7 microseconds; four-row
+gains are much smaller and QKV regresses. Both reports are retained under
+`qwen25-small-{splitk,gemv}-matrices-a2.json`; neither is a serving result.
+The first wider-MMA-tile trial requested 106496 bytes of shared memory, above
+A2's 101376-byte limit. Its failure is retained; reduced pipeline stages are
+being measured separately.
