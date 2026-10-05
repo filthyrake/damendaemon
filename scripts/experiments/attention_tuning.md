@@ -57,3 +57,11 @@ Split-128 also fails four layout checks at batch-four step two (maximum RMS
 sensitivity motivates a grouped split-256 candidate that retains the existing
 softmax partition and checks bitwise equality to split-256 in addition to the
 independent FP32 reference. This is a distinct experiment, not a relaxed gate.
+
+Grouped split-256 and thread-count-only variants pass their independent
+numerical checks but fail to improve timing and are not consistently bitwise
+identical to the current kernel. At batch four/position 2047, grouped two/four
+heads take about 4.686/11.336 ms versus 0.584 ms for the existing path. At
+position 256, eight/sixteen warps take 0.144/0.166 ms versus 0.125 ms. These
+variants remain isolated experiments. No attention change from this tuning
+series is promoted to the qualified runtime.

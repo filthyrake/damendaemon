@@ -13,7 +13,7 @@ from dllm.kernels import _attention, _merge
 from dllm.runtime import require_gpu
 
 
-def attention(q, k, v, positions, slots, block):
+def attention(q, k, v, positions, slots, block, warps=4):
     batch, heads, _, dim = q.shape
     _, kv_heads, context, _ = k.shape
     splits = triton.cdiv(context, block)
@@ -24,7 +24,7 @@ def attention(q, k, v, positions, slots, block):
         q, k, v, positions, slots, out, partial, lse,
         positions, False, positions, False, positions, 0, 1.,
         positions, False, context, 0, heads, kv_heads, dim, context,
-        splits, block, True, 0, dim**-.5, triton.next_power_of_2(dim), num_warps=4)
+        splits, block, True, 0, dim**-.5, triton.next_power_of_2(dim), num_warps=warps)
     _merge[(batch*heads,)](partial, lse, out, positions, False, heads, dim,
         splits, triton.next_power_of_2(splits), triton.next_power_of_2(dim))
     return out
@@ -35,6 +35,8 @@ def main():
     parser.add_argument('--output', required=True)
     parser.add_argument('--stream', action='store_true', help='include experimental grouped online softmax')
     parser.add_argument('--tensorcore', action='store_true', help='include grouped tensor-core products')
+    parser.add_argument('--grouped-split', action='store_true', help='preserve split-256 arithmetic while sharing KV reads')
+    parser.add_argument('--warps', action='store_true', help='preserve split-256 arithmetic with more threads')
     args = parser.parse_args()
     require_gpu()
     if torch.cuda.get_device_name() != 'NVIDIA A2':
@@ -53,6 +55,15 @@ def main():
         for block in (64, 128):
             variants[f'tensorcore-b{block}'] = (lambda q, k, v, positions, slots, block=block:
                 tensorcore_attention(q, k, v, positions, slots, block))
+    if args.grouped_split:
+        from attention_grouped_split import attention as grouped_attention
+        for group in (2, 4):
+            variants[f'grouped-split-g{group}'] = (lambda q, k, v, positions, slots, group=group:
+                grouped_attention(q, k, v, positions, slots, group))
+    if args.warps:
+        for warps in (8, 16):
+            variants[f'split256-w{warps}'] = (lambda q, k, v, positions, slots, warps=warps:
+                attention(q, k, v, positions, slots, 256, warps))
     report = dict(passed=False, device=torch.cuda.get_device_name(), cases=[],
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   scope='fixed-cache Qwen3 geometry only; independent FP32 math SDPA; no runtime policy change')
@@ -60,6 +71,8 @@ def main():
         report['stream_source_sha256'] = hashlib.sha256(Path(__file__).with_name('attention_stream.py').read_bytes()).hexdigest()
     if args.tensorcore:
         report['tensorcore_source_sha256'] = hashlib.sha256(Path(__file__).with_name('attention_tensorcore.py').read_bytes()).hexdigest()
+    if args.grouped_split:
+        report['grouped_split_source_sha256'] = hashlib.sha256(Path(__file__).with_name('attention_grouped_split.py').read_bytes()).hexdigest()
     try:
         with torch.inference_mode():
             for batch in (1, 4):
@@ -78,10 +91,12 @@ def main():
                             enable_gqa=True).half()
                     case = dict(batch=batch, position=position, checks=[], rounds=[])
                     report['cases'].append(case)
+                    baseline = attention(q, k, v, positions, slots, 256)
                     for name, function in variants.items():
                         actual = function(q, k, v, positions, slots)
                         torch.testing.assert_close(actual, expected, atol=.003, rtol=.01)
-                        case['checks'].append(dict(variant=name, max_absolute=(actual-expected).abs().max().item()))
+                        case['checks'].append(dict(variant=name, max_absolute=(actual-expected).abs().max().item(),
+                                                  equal_to_split256=torch.equal(actual, baseline)))
                     order = list(variants)
                     for name in order + list(reversed(order)):
                         function = variants[name]
