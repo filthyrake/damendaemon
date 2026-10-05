@@ -1,8 +1,8 @@
 # AWQ checkpoint format groundwork
 
 GitHub issue #49 tracks import and execution qualification. The format module
-is not yet connected to model registration or inference; AWQ runtime support
-and performance parity are not claimed by these host checks.
+is connected to an isolated packed executor but not normal model registration;
+AWQ runtime support and performance parity are not yet claimed.
 
 Checkpoint: `Qwen/Qwen2.5-0.5B-Instruct-AWQ`, pinned revision
 `db09cd27ead7fee40cdee309693cf83601b9c899`. Its published configuration selects
@@ -64,3 +64,11 @@ unsupported formats and changed sources. Five additional loader tests cover
 these failures, tied-head disagreement, nonfinite scales and unsupported
 devices/conversions. Runtime registration and full-model GPU validation remain
 separate gates.
+
+The independent full-model harness initially failed while assembling HF
+parameters from inference-mode tensors. Its second attempt reached decoding
+but incorrectly treated the executor's `(logits, token)` return as a tensor.
+Both harness failures are retained in the `reference-assembly-failure` and
+`reference-interface-failure` reports. Repairs use ordinary no-grad reference
+weights with gradients disabled and unpack the existing decode interface;
+they do not change model arithmetic or accuracy thresholds.

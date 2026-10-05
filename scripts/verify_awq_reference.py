@@ -53,7 +53,7 @@ def main():
             sys.modules[spec.name] = module
             spec.loader.exec_module(module)
             state = {}
-            with torch.inference_mode(), safe_open(str(path/'model.safetensors'), framework='pt', device='cpu') as reader:
+            with torch.no_grad(), safe_open(str(path/'model.safetensors'), framework='pt', device='cpu') as reader:
                 for name in reader.keys():
                     if name.endswith(('.qzeros', '.scales')):
                         continue
@@ -71,6 +71,7 @@ def main():
         config.tie_word_embeddings = False
         with no_init_weights():
             reference = AutoModelForCausalLM.from_config(config, torch_dtype=torch.float16, attn_implementation='eager')
+        reference.requires_grad_(False)
         reference.load_state_dict(state, strict=True, assign=True)
         del state
         reference.eval().to('cuda', dtype=torch.float16)
@@ -117,7 +118,7 @@ def main():
                         if step < 7:
                             expected = reference(torch.tensor([[token]], device='cuda'),
                                                  past_key_values=expected.past_key_values, use_cache=True)
-                            actual = executor.decode(token)
+                            actual, _ = executor.decode(token)
                     print(json.dumps(dict(graph=graph, case=index, prompt_tokens=len(ids),
                                           passed=all(c['passed'] for c in case['checks']))), flush=True)
                 del executor, actual, expected, gpu_tensors
