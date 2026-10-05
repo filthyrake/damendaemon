@@ -1,0 +1,22 @@
+{
+  "kind": "experimental Q4 OLMoE; FP16 routers and embeddings; FP32 arithmetic",
+  "model_loads": 1,
+  "reference_loads": 0,
+  "routed_calls": 608,
+  "host_weight_bytes": [
+    4043595776
+  ],
+  "source_sha256": "c61d39273366f4ac0fbb23508c644bbde754052aa00b05c0bf13e28511be83ce",
+  "kernel_sha256": "62bde22a7409349b7640fb745eae131450e3b2f677b2282f8292e687b31abd5b",
+  "prefill_attention": {
+    "kind": "quadratic FP32 eager attention diagnostic; not a performance claim",
+    "calls": 112,
+    "source_sha256": "e1e0eca5d757950c684f1f0f23d3e5bb5d4edfa78641138aebec36a1802e37b6"
+  },
+  "script": "scripts/replay_reference.py",
+  "arguments": [
+    "results/olmoe-q4-router-f16-golden512.pt"
+  ],
+  "completed": false,
+  "error": "SystemExit(1)"
+}

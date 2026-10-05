@@ -22,13 +22,15 @@ def main():
     parser.add_argument('--output', required=True)
     parser.add_argument('--lengths', type=int, nargs='+', default=[32, 128, 512, 1024])
     parser.add_argument('--comparison', choices=('bitwise', 'numerical'), default='bitwise')
+    parser.add_argument('--quantization', choices=('q8_0', 'q4_0'), default='q8_0',
+                        help='Q4 OLMoE requires the explicit experimental runner')
     args = parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
     spec = importlib.util.spec_from_file_location('dllm.moe_baseline', args.baseline_source)
     baseline = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(baseline)
-    source = load(args.model, 2048, 'q8_0')
+    source = load(args.model, 2048, args.quantization)
     executor = make_executor(source, max_batch=4)
     if not isinstance(executor, OlmoeExecutor):
         raise ValueError('benchmark requires OLMoE')

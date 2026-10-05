@@ -1,0 +1,39 @@
+{
+  "kind": "experimental Q4 OLMoE; FP16 routers and embeddings; FP32 arithmetic",
+  "model_loads": 1,
+  "reference_loads": 0,
+  "routed_calls": 608,
+  "host_weight_bytes": [
+    4043595776
+  ],
+  "source_sha256": "c61d39273366f4ac0fbb23508c644bbde754052aa00b05c0bf13e28511be83ce",
+  "kernel_sha256": "62bde22a7409349b7640fb745eae131450e3b2f677b2282f8292e687b31abd5b",
+  "grouped_prefill": {
+    "kind": "experimental grouped Q4 expert prefill",
+    "selected_calls": 896,
+    "fallback_calls": 304,
+    "workspace_limit_bytes": 268435456,
+    "source_sha256": "2a8b23ad9d679578f4fc228631b96790440e87a38a7e16ff9265ab0b64408ca5"
+  },
+  "script": "scripts/profile_moe_prefill.py",
+  "arguments": [
+    "/home/damen/.cache/huggingface/hub/models--allenai--OLMoE-1B-7B-0924-Instruct/snapshots/7f1c97f440f06ce36705e4f2b843edb5925f4498",
+    "--baseline-source",
+    "results/moe-before-packed-prefill.py",
+    "--quantization",
+    "q4_0",
+    "--comparison",
+    "numerical",
+    "--lengths",
+    "1",
+    "4",
+    "16",
+    "32",
+    "128",
+    "256",
+    "512",
+    "--output",
+    "results/olmoe-q4-grouped-prefill-a2.json"
+  ],
+  "completed": true
+}

@@ -624,6 +624,39 @@ tie-handling heuristic or relaxed threshold has been introduced. See
 [aligned coefficient and route diagnosis](evidence/architectures/olmoe-q4-aligned-diagnostic-a2.json)
 and [diagnostic dispatch](evidence/architectures/olmoe-q4-aligned-diagnostic-dispatch.json).
 
+Two further controls replay the original retained trace: explicit FP32 eager
+prefill attention and grouped Q4 expert prefill each reproduce the same single
+decode failure (approximately 4.232% RMS), with all greedy tokens agreeing.
+Neither control is promoted. See [eager attention](evidence/architectures/olmoe-q4-eager-attention-a2.json)
+and [grouped Q4 replay](evidence/architectures/olmoe-q4-grouped-replay-a2.json).
+
+Same-resident alternating control/candidate/candidate/control prefill trials
+show a short-prompt benefit and long-prompt regression. All measured outputs
+agree greedily, with worst control/candidate RMS 6.543e-7. These are comparisons
+between two experimental Q4 implementations, not independent qualification or
+HTTP throughput results. Warmups and profiling are excluded from timings.
+
+| Prompt tokens | Original Q4 prefill seconds | Grouped Q4 seconds |
+|---|---:|---:|
+| 1 | 0.066390 | 0.047909 |
+| 4 | 0.177307 | 0.114942 |
+| 16 | 0.324656 | 0.204374 |
+| 32 | 0.365194 | 0.211311 |
+| 128 | 0.439237 | 0.394514 |
+| 256 | 0.526651 | 0.674340 |
+| 512 | 0.792316 | 1.241064 |
+
+Thus the grouped prototype is not a universal replacement; normal Q4 OLMoE
+remains disabled. [Raw alternating trials and synchronization profiles](evidence/architectures/olmoe-q4-grouped-prefill-a2.json)
+and [dispatch/source identity](evidence/architectures/olmoe-q4-grouped-prefill-dispatch.json)
+retain both gains and regressions.
+
+An additional FP64 normalization control, retaining FP32 output and other
+arithmetic, reproduces the same single failure (4.232% RMS). It is diagnostic
+only and is not promoted. [Replay](evidence/architectures/olmoe-q4-fp64-norm-a2.json)
+and [control identity](evidence/architectures/olmoe-q4-fp64-norm-dispatch.json)
+preserve this negative result. Q4 OLMoE qualification remains open in issue #23.
+
 
 ## Q8 short-prefill latency
 

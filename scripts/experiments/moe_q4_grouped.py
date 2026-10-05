@@ -54,3 +54,43 @@ def linear(x, weight, scales, routes, outputs, shared_input):
         routes.starts,routes.tile_ends,result,routes.experts,routes.top,outputs,x.shape[-1],
         shared_input,routes.block_rows,64,64,tr.next_power_of_2(routes.experts),num_warps=4,num_stages=2)
     return result
+
+
+def install_validation_dispatch():
+    """Opt-in model experiment, installed after the Q4 construction policy."""
+    import hashlib
+    from pathlib import Path
+    from dllm.moe import OlmoeExecutor
+    from dllm.grouped_moe import prepare_routes
+    if torch.cuda.get_device_name() != 'NVIDIA A2':
+        raise ValueError('grouped Q4 model experiment is limited to A2')
+    original = OlmoeExecutor.experts
+    report = dict(kind='experimental grouped Q4 expert prefill', selected_calls=0,
+                  fallback_calls=0, workspace_limit_bytes=256*1024**2,
+                  source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
+
+    def experts(self, hidden, layer, prefill):
+        c = self.c
+        up, down = self.w[f'{layer}.experts_up'], self.w[f'{layer}.experts_down']
+        rows = hidden.shape[0]*c['num_experts_per_tok']
+        scratch = rows*max(3*c['intermediate_size'], c['intermediate_size']+c['hidden_size'])*4 + 16*1024**2
+        if (not prefill or hidden.dtype != torch.float32 or up.dtype != torch.uint8
+                or down.dtype != torch.uint8 or not 1 <= hidden.shape[0] <= 2048
+                or c['num_experts'] > 256 or scratch > report['workspace_limit_bytes']):
+            report['fallback_calls'] += 1
+            return original(self, hidden, layer, prefill)
+        report['selected_calls'] += 1
+        probabilities, selected = self._linear(hidden,self.w[f'{layer}.router']).softmax(-1).topk(
+            c['num_experts_per_tok'],dim=-1)
+        if c['norm_topk_prob']:
+            probabilities = probabilities/probabilities.sum(-1,keepdim=True)
+        routes = prepare_routes(selected,c['num_experts'])
+        packed = linear(hidden,up,self._expert_scales(up),routes,2*c['intermediate_size'],True)
+        activated = self.kernels.swiglu(packed,True)
+        del packed
+        projected = linear(activated,down,self._expert_scales(down),routes,c['hidden_size'],False)
+        del activated
+        return self.expert_kernels.combine(projected,probabilities)
+
+    OlmoeExecutor.experts = experts
+    return report
