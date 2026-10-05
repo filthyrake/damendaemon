@@ -52,6 +52,8 @@ def main():
     parser.add_argument('--output', required=True)
     parser.add_argument('--diagnostic-expanded-products', action='store_true',
                         help='isolate packed GEMM errors using temporary expanded FP16 products')
+    parser.add_argument('--diagnostic-separate-products', action='store_true',
+                        help='use original Q/K/V and gate/up matrix shapes for expanded products')
     parser.add_argument('--diagnostic-rounded-attention', action='store_true',
                         help='isolate eager FP16 attention rounding from fused attention')
     parser.add_argument('--diagnostic-layer-trace', action='store_true',
@@ -70,8 +72,24 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     path = Path(args.model)
     source = AwqWeights(path, args.context, 'none')
+    if args.diagnostic_separate_products:
+        if not args.diagnostic_expanded_products:
+            parser.error('separate products requires diagnostic expanded products')
+        from dllm import awq_kernels
+        c = source.config
+        q, kv = c['num_attention_heads']*c['head_dim'], c['num_key_value_heads']*c['head_dim']
+        def separate_products(x, matrix, bias=None):
+            weight = awq_kernels.expand(matrix)
+            sizes = ([q, kv, kv] if matrix.inputs == c['hidden_size'] and matrix.outputs == q+2*kv else
+                     [c['intermediate_size']]*2 if matrix.inputs == c['hidden_size'] and matrix.outputs == 2*c['intermediate_size'] else
+                     [matrix.outputs])
+            biases = [None]*len(sizes) if bias is None else bias.split(sizes)
+            return torch.cat([torch.nn.functional.linear(x, w.contiguous(), b)
+                              for w, b in zip(weight.split(sizes), biases)], -1)
+        awq_kernels.linear = separate_products
     report = dict(passed=False, diagnostic_expanded_products=args.diagnostic_expanded_products,
                   diagnostic_rounded_attention=args.diagnostic_rounded_attention,
+                  diagnostic_separate_products=args.diagnostic_separate_products,
                   context=args.context, cases=[], model=str(path.resolve()),
                   host_bytes=source.bytes, torch=torch.__version__, device=torch.cuda.get_device_name(),
                   reference='pinned upstream AWQ coefficient decoder; independent HF eager FP16 model execution',
@@ -115,7 +133,12 @@ def main():
         reference.requires_grad_(False)
         reference.load_state_dict(state, strict=True, assign=True)
         del state
-        reference.eval().to('cuda', dtype=torch.float16)
+        # Parameters are already FP16. Casting the whole module also truncates
+        # HF's intentionally FP32 rotary frequencies, corrupting the oracle.
+        reference.eval().to('cuda')
+        if reference.model.rotary_emb.inv_freq.dtype != torch.float32:
+            raise AssertionError('reference rotary frequencies must retain FP32')
+        report['reference_rotary_dtype'] = str(reference.model.rotary_emb.inv_freq.dtype)
         prompts = [source.chat_tokens(messages) for messages in (
             [{'role': 'user', 'content': 'What is 2 + 2? Answer with one number.'}],
             [{'role': 'user', 'content': 'Remember the code ZX-914.'},

@@ -93,3 +93,13 @@ relative RMS, while the attention output projection differs by 0.7651%.
 `qwen25-small-reference-layer-trace-a2.json` and
 `qwen25-small-reference-parts-a2.json` retain the intermediate measurements.
 These are localization results, not evidence that a single cause is resolved.
+
+Further inspection found an oracle defect: `.to('cuda', dtype=float16)` cast
+HF's deliberately FP32 rotary-frequency buffer along with its parameters.
+The corrected verifier moves already-FP16 parameters to CUDA without a dtype
+cast and asserts that rotary frequencies remain FP32. All earlier model
+comparisons above used the flawed oracle and remain diagnostic history only.
+The corrected normal-runtime run, `qwen25-small-reference-rotary-fixed-a2.json`,
+still fails: 118/128 checks pass, worst relative RMS 3.3295%, maximum absolute
+error 0.85157. Fixing the oracle did not qualify the runtime. Original-shape
+and rounded-attention controls are being repeated against the corrected oracle.
