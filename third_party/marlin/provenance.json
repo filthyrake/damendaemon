@@ -1,0 +1,55 @@
+{
+  "repository": "https://github.com/vllm-project/vllm",
+  "revision": "84bcbc62644356270aaaa5e2d0237d03adc9bb3a",
+  "license": "Apache-2.0",
+  "files": {
+    "marlin.cuh": {
+      "upstream_path": "csrc/libtorch_stable/quantization/marlin/marlin.cuh",
+      "upstream_sha256": "edaa19c541dfbe5e06e547c0be5bcdc1b78b4bbc68d596b72c41a932e2366926",
+      "adaptation": "unchanged",
+      "vendored_sha256": "edaa19c541dfbe5e06e547c0be5bcdc1b78b4bbc68d596b72c41a932e2366926"
+    },
+    "marlin_dtypes.cuh": {
+      "upstream_path": "csrc/libtorch_stable/quantization/marlin/marlin_dtypes.cuh",
+      "upstream_sha256": "15b90a65eadb200a3f7165e2e0d7d899f36d4993b20dbd89093ef2cea274da71",
+      "adaptation": "unchanged",
+      "vendored_sha256": "15b90a65eadb200a3f7165e2e0d7d899f36d4993b20dbd89093ef2cea274da71"
+    },
+    "dequant.h": {
+      "upstream_path": "csrc/libtorch_stable/quantization/marlin/dequant.h",
+      "upstream_sha256": "39c4640d2de39374ef5d96e7fa27701a675922113c3f5b05d45369321090e728",
+      "adaptation": "unchanged",
+      "vendored_sha256": "39c4640d2de39374ef5d96e7fa27701a675922113c3f5b05d45369321090e728"
+    },
+    "marlin_mma.h": {
+      "upstream_path": "csrc/libtorch_stable/quantization/marlin/marlin_mma.h",
+      "upstream_sha256": "bf863d252bfc468eaff42b2c1bda583c5e6ab97ceacf0ac248c164564ddcce9b",
+      "adaptation": "unchanged",
+      "vendored_sha256": "bf863d252bfc468eaff42b2c1bda583c5e6ab97ceacf0ac248c164564ddcce9b"
+    },
+    "kernel.h": {
+      "upstream_path": "csrc/libtorch_stable/quantization/marlin/kernel.h",
+      "upstream_sha256": "484cdcce20793d67d3428d64704b0439210b300e03b335bca602c152e2ae1f96",
+      "adaptation": "unchanged",
+      "vendored_sha256": "484cdcce20793d67d3428d64704b0439210b300e03b335bca602c152e2ae1f96"
+    },
+    "marlin_template.h": {
+      "upstream_path": "csrc/libtorch_stable/quantization/marlin/marlin_template.h",
+      "upstream_sha256": "972ffd66fdfb6781dad13daea1167981821a78b86a93d865baa2b3c3ed11cd19",
+      "adaptation": "unchanged",
+      "vendored_sha256": "972ffd66fdfb6781dad13daea1167981821a78b86a93d865baa2b3c3ed11cd19"
+    },
+    "core/scalar_type.hpp": {
+      "upstream_path": "csrc/core/scalar_type.hpp",
+      "upstream_sha256": "8d3671759c43a0219f51e3a1f32c94ef5d70ecc99e264100f4015a781d94bb99",
+      "adaptation": "replace only Torch exception-header include with standalone check adapter",
+      "vendored_sha256": "467f4c2d72621bde0c95189171d1eb338b1d09686f3353098b1120960ee48174"
+    },
+    "awq_repack.cuh": {
+      "upstream_path": "csrc/libtorch_stable/quantization/marlin/awq_marlin_repack.cu",
+      "upstream_sha256": "56da4be466ba60291338a738a2cb6e494f3d5f57b9190b9d1770248ad69a64ff",
+      "adaptation": "retain namespace device-kernel section, parameterize namespace, omit Torch binding, add provenance header",
+      "vendored_sha256": "973f494161eb47436ca3cc6c48ac37bcbbc6fa7ac3f8d8fa6ca9a7d8165df5f4"
+    }
+  }
+}

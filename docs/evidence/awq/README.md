@@ -218,3 +218,18 @@ measures 176.5/275.6/427.0 aggregate tokens/s at concurrency 1/2/4; medians are
 0.3623/0.4635/0.5952 seconds. These confirm the improvement but are slower than
 the candidate's interleaved medians, so the raw normal-path results are retained
 alongside them rather than replaced by the better numbers.
+
+## Standalone Marlin experiment
+
+`third_party/marlin/` retains pinned Apache-2.0 device kernels, their headers,
+license and source hashes. `native/awq_marlin.cu` supplies a narrow CUDA C ABI;
+its shared library has no Torch/vLLM shared-library dependency. The optional
+CMake target is off by default and normal inference does not use it.
+
+The initial one-to-sixteen-row matrix run passes all 144 independent checks,
+including bias/no-bias and three activation magnitudes. Worst relative RMS is
+0.0405%. At four rows, gate/up falls from about 107.5 to 33.8 microseconds and
+down from 55.2 to 16.5 microseconds compared with the newly promoted dllm path.
+These are standalone projection results, excluding format preparation; they
+do not yet establish full-model accuracy, memory admission, hot-swap behavior
+or serving throughput. See `qwen25-small-marlin-matrices-a2.json`.

@@ -30,3 +30,13 @@ add_library(dllm-q4-residual SHARED native/q4_residual.cu)
 target_compile_features(dllm-q4-residual PRIVATE cuda_std_17)
 target_link_libraries(dllm-q4-residual PRIVATE CUDA::cudart)
 target_compile_options(dllm-q4-residual PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3>)
+
+option(DLLM_BUILD_AWQ_MARLIN_EXPERIMENT "Build isolated Marlin AWQ kernel experiment" OFF)
+if(DLLM_BUILD_AWQ_MARLIN_EXPERIMENT)
+    add_library(dllm-awq-marlin SHARED native/awq_marlin.cu)
+    target_include_directories(dllm-awq-marlin PRIVATE third_party/marlin)
+    target_compile_features(dllm-awq-marlin PRIVATE cuda_std_17)
+    target_link_libraries(dllm-awq-marlin PRIVATE CUDA::cudart)
+    target_compile_options(dllm-awq-marlin PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3>
+        $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
+endif()
