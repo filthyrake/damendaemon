@@ -17,7 +17,7 @@ separately. The [Q4 network comparison](evidence/quantization/cuda/q4-arithmetic
 shows why this distinction matters. Generic `dllm bench` does not do that warmup
 for you.
 
-## Qualified baseline results
+## Historical baseline results
 
 Profiling identified excessive small-kernel launches in the first executor.
 Fused normalization, RoPE/cache writes, activation, and attention reduced decode
@@ -93,3 +93,37 @@ CUDA_VISIBLE_DEVICES=GPU-your-device-uuid /tmp/dllm-cuda-probe
 
 The first A2 measurements and their limitations are in
 [the hardware evidence](a2-hardware.md).
+
+## Modern Qwen3.5 engineering comparison
+
+Active performance work targets Qwen3 or newer, prioritizing Qwen3.5.
+`scripts/run_modern_abba.py` owns four sequential fresh-server phases on the
+authorized single-APU host: dllm, llama.cpp, llama.cpp, dllm. The workload is
+fixed at context 4096, input lengths 128/512/2048, 128 output tokens, concurrency
+one/four, three warmups and ten measured rounds per phase and cell. Groups of
+two/three receive additional warmups. Explicit raw token IDs prevent different
+chat templates from silently changing the input. Early EOS or incomplete
+streams fail the run; identical EOS logit suppression is confined to benchmark
+requests. Logs and partial failures remain in the output directory.
+
+The runner requires immutable model/engine pins and a hardware label. It creates
+a new output directory, takes a task benchmark lock, and stops only its own
+server process groups on completion or error. This does not reserve the GPU
+against other services. No downloads, conversion or compilation should overlap
+the timed phases. See [AMD setup and comparator artifact proof](amd.md).
+
+After all four phases complete:
+
+```sh
+PYTHONPATH=. python scripts/summarize_modern_abba.py /path/to/abba-results \
+  --output /path/to/abba-results/comparison.json
+```
+
+The summarizer rejects missing rounds, changed input IDs and changed manifests.
+It records per-cell latency and aggregate throughput, within-engine text
+stability, and cross-engine exact-text differences. It deliberately leaves
+`competitive_pass` unknown: current engine arithmetic differs, client-visible
+post-first-output throughput is a proxy, and internal decode/peak-memory
+telemetry remains a separate scorecard gate. Server-ready time also has different
+semantics: dllm loads on its first request while llama.cpp preloads. It must not
+be presented as a matched cold-model-start result.
