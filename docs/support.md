@@ -4,6 +4,11 @@ This page describes implemented behavior. [GitHub Issues](https://github.com/fil
 track remaining work; numerical and performance reports are linked below.
 Configuration acceptance alone is not checkpoint qualification.
 
+Active development targets **Qwen3 and newer, prioritizing Qwen3.5**. Older
+entries below preserve existing qualification evidence; additional older-model
+tuning and qualification are deferred. The current acceptance gates live in
+[the parity milestones](https://github.com/filthyrake/dllm/issues/3).
+
 ## Qualified model families
 
 | Family | Checkpoints exercised | GPU validation | Important boundary |

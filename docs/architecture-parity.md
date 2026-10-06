@@ -1,7 +1,9 @@
 # Architecture qualification beyond the initial decoder matrix
 
-GitHub issue #3 tracks broader coverage; #5 tracks scaled rotary and Llama
-qualification. This document records evidence, not a replacement task tracker.
+[GitHub issue #3](https://github.com/filthyrake/dllm/issues/3) defines the current
+parity milestones. Active work targets Qwen3 and newer, prioritizing Qwen3.5.
+This document preserves historical qualification evidence, including older
+models; its section order is not the current work priority or a task tracker.
 
 ## Llama 3.2
 
