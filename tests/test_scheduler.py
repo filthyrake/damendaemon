@@ -669,7 +669,7 @@ class CompletionRaceTests(unittest.TestCase):
         from dllm.scheduler import Pending
         runtime=BatchedRuntime.__new__(BatchedRuntime)
         runtime.models={'a':'model'};runtime.admission=threading.BoundedSemaphore(1)
-        runtime.condition=threading.Condition();runtime.pending=deque();runtime.requests=set();runtime.closed=False
+        runtime.condition=threading.Condition();runtime.pending=deque();runtime.requests=set();runtime.closed=False;runtime.draining=False
         request=Pending('a',[],1)
         class RacingQueue(queue.Queue):
             raced=False

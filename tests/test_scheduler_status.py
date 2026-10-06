@@ -229,6 +229,14 @@ class SchedulerStatusTests(unittest.TestCase):
             self.assertEqual(error.exception.code, 501)
             self.assertIn('unavailable', json.load(error.exception)['error'])
             error.exception.close()
+            from urllib.request import Request
+            for body, expected in ((b'{}', 501), (b'{"force":true}', 400)):
+                request = Request(f'http://127.0.0.1:{server.server_port}/v1/scheduler/drain',
+                                  data=body, headers={'Content-Type': 'application/json'})
+                with self.assertRaises(HTTPError) as error:
+                    urlopen(request, timeout=1)
+                self.assertEqual(error.exception.code, expected)
+                error.exception.close()
         finally:
             server.shutdown()
             server.server_close()
