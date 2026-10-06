@@ -11,7 +11,7 @@ from dllm.quantization import Linear
 
 class NativeQ4MarlinTests(unittest.TestCase):
     def test_abi_rejection_precedes_device_init(self):
-        for abi in (0,2,201,202):
+        for abi in (0,3,201,202):
             library=Mock()
             library.dllm_q4_marlin_abi.return_value=abi
             with patch('ctypes.CDLL',return_value=library):
@@ -24,9 +24,9 @@ class NativeQ4MarlinTests(unittest.TestCase):
             shared._obj.value=101376
             return 0
         libraries=[]
-        for _ in range(2):
+        for abi in (1,2):
             library=Mock()
-            library.dllm_q4_marlin_abi.return_value=1
+            library.dllm_q4_marlin_abi.return_value=abi
             library.dllm_q4_marlin_init.side_effect=initialize
             libraries.append(library)
         with patch('ctypes.CDLL',side_effect=libraries), \
@@ -35,10 +35,26 @@ class NativeQ4MarlinTests(unittest.TestCase):
             first,second=Library('/first'),Library('/second')
         self.assertIs(first.lib,libraries[0])
         self.assertIs(second.lib,libraries[1])
+        self.assertEqual((first.abi,second.abi),(1,2))
         self.assertIsNone(first.scratch)
         self.assertEqual(first.workspace_bytes,2621600)
         with self.assertRaisesRegex(ValueError,'activation'):
-            first.linear(torch.ones(1,128,dtype=torch.float16),Mock())
+                first.linear(torch.ones(1,128,dtype=torch.float16),Mock())
+
+    def test_selected_library_abi_controls_admitted_layout_bytes(self):
+        original=LayoutPlan(('projection',),100,120,20,50)
+        args=({}, {}, {}, 'q4_0','cuda',torch.float16,'mixed',512,4,True)
+        for abi in (1,2):
+            library=Mock(abi=abi)
+            with patch.dict(os.environ,{'DLLM_Q4_MARLIN_LIBRARY':'/qualified'}), \
+                 patch('torch.cuda.get_device_name',return_value='NVIDIA A2'), \
+                 patch('dllm.native_q4_marlin.plan',return_value=original), \
+                 patch('dllm.native_q4_marlin.Library',return_value=library):
+                actual,selected=select(*args)
+            self.assertIs(actual,library)
+            self.assertEqual(selected.overhead_bytes,20 if abi==1 else 0)
+            self.assertEqual(selected.prepared_bytes,120 if abi==1 else 100)
+            self.assertEqual(selected.repack_peak_bytes,50)
 
     def test_disabled_or_unqualified_selection_does_not_load_library(self):
         args=({}, {}, {}, 'q4_0','cuda',torch.float16,'mixed',512,4,True)

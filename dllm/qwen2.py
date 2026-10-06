@@ -423,6 +423,7 @@ class Executor:
             self.compute_dtype, self.llama_precision, self.context, max_batch,
             self.fuse_projections and self.kernels is not None and not packed_formats and not awq_matrices)
         self.packed_layout_overhead_bytes = q4_marlin_plan.overhead_bytes
+        self.q4_marlin_abi = native_q4_marlin.abi if native_q4_marlin is not None else None
         device_weight_bytes += self.packed_layout_overhead_bytes
         if native_q4_marlin is not None:
             self.packed_workspace_bytes += q4_marlin_plan.repack_peak_bytes + native_q4_marlin.workspace_bytes

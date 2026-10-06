@@ -19,6 +19,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('model')
     parser.add_argument('--output',required=True)
+    parser.add_argument('--expected-abi',type=int,choices=(1,2))
     args=parser.parse_args()
     require_gpu()
     torch.set_num_threads(4)
@@ -48,7 +49,10 @@ def main():
             assert torch.cuda.memory_allocated()==before
         report['required_bytes']=rejected.required_memory_bytes
         report['layout_overhead_bytes']=rejected.packed_layout_overhead_bytes
-        assert rejected.packed_layout_overhead_bytes==111099904
+        report['abi']=rejected.q4_marlin_abi
+        assert rejected.q4_marlin_abi in (1,2)
+        if args.expected_abi is not None:assert rejected.q4_marlin_abi==args.expected_abi
+        assert rejected.packed_layout_overhead_bytes==(111099904 if rejected.q4_marlin_abi==1 else 0)
         report['workspace_reserve_bytes']=rejected.packed_workspace_bytes
         assert rejected.packed_workspace_bytes==81920512+2621600
         del rejected
@@ -62,7 +66,7 @@ def main():
                 assert len(linear.q4_marlin)==129
                 refs=[weakref.ref(executor),weakref.ref(linear),weakref.ref(linear.native_q4_marlin)]
                 refs += [weakref.ref(t) for matrix in linear.q4_marlin.values()
-                         for t in (matrix.weight,matrix.scales,matrix.zeros)]
+                         for t in (matrix.weight,matrix.scales,matrix.zeros) if t is not None]
                 refs += [weakref.ref(linear.native_q4_marlin.scratch),weakref.ref(linear.native_q4_marlin.locks)]
                 logits=executor.prefill(prompt)
                 tokens=[]

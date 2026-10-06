@@ -13,12 +13,12 @@
 namespace {
 template<int Blocks, bool Small = false>
 constexpr auto kernel = dllm_q4_marlin_device::Marlin<
-    vllm::kFloat16.id(), vllm::kU4.id(), vllm::kFloat16.id(), vllm::kFloat16.id(),
+    vllm::kFloat16.id(), vllm::kU4B8.id(), vllm::kFloat16.id(), vllm::kFloat16.id(),
     128, Blocks, 8, 4, Small, 4, 2, false>;
 
 }
 
-extern "C" int dllm_q4_marlin_abi() { return 1; }
+extern "C" int dllm_q4_marlin_abi() { return 2; }
 
 extern "C" int dllm_q4_marlin_init(int* sms, int* shared) {
     if (!sms || !shared) return cudaErrorInvalidValue;
@@ -59,7 +59,7 @@ extern "C" int dllm_q4_marlin_gemm(const void* input, const void* weights,
                                     const void* scales, const void* zeros, const void* bias,
                                     void* output, void* scratch, void* locks,
                                     int m, int n, int k, int sms, int shared, void* stream) {
-    if (!input || !weights || !scales || !zeros || !output || !scratch || !locks
+    if (!input || !weights || !scales || !output || !scratch || !locks
             || m < 1 || k <= 0 || n <= 0 || k%128 || n%128 || sms <= 0 || shared <= 0)
         return cudaErrorInvalidValue;
     // The device kernel handles parallel full M tiles. Keep a partial tail in

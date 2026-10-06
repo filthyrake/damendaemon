@@ -177,10 +177,16 @@ cmake --build build --target dllm-q4-marlin -j2
 export DLLM_Q4_MARLIN_LIBRARY="$PWD/build/libdllm-q4-marlin.so"
 ```
 
+The completed integrated results below refer to **ABI 1**. New builds produce
+**ABI 2**, whose implicit zero point removes the extra projection storage; its
+integrated admission and serving qualification is in progress. The loader keeps
+ABI 1 compatibility and reports the selected version as `q4_marlin_abi`.
+
 Unsupported configurations retain existing dispatch. Qualified models replace
 GPU projection layouts while host weights stay canonical for model swapping.
-Admission reserves 105.95 MiB of net layout overhead, the largest temporary
-repack, and a shared executor-owned workspace before GPU weight transfer.
+Admission reserves 105.95 MiB of net layout overhead for ABI 1 (zero for ABI 2),
+the largest temporary repack, and a shared executor-owned workspace before GPU
+weight transfer.
 Status exposes `gpu_packed_layout_overhead_bytes`; selected backend names include
 `cuda-q4-marlin`. The library uses the attributed kernels in `third_party/marlin`
 and does not depend on the vLLM runtime. Scaled coefficients round to FP16,

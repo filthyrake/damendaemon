@@ -29,6 +29,16 @@ class Q4MarlinPolicyTests(unittest.TestCase):
         self.assertEqual(selected.repack_peak_bytes,81920512)
         self.assertLess(selected.overhead_bytes+selected.repack_peak_bytes,selected.canonical_bytes//20)
 
+    def test_implicit_zero_points_remove_only_persistent_zero_storage(self):
+        explicit=plan(**self.args)
+        implicit=explicit.without_zero_points()
+        self.assertEqual(implicit.names,explicit.names)
+        self.assertEqual(implicit.canonical_bytes,explicit.canonical_bytes)
+        self.assertEqual(implicit.prepared_bytes,explicit.canonical_bytes)
+        self.assertEqual(implicit.overhead_bytes,0)
+        self.assertEqual(implicit.repack_peak_bytes,explicit.repack_peak_bytes)
+        self.assertEqual(explicit.overhead_bytes,111099904)
+
     def test_unqualified_precision_hardware_context_and_geometry_fall_back(self):
         changes=({'device':'mps'},{'device_name':'NVIDIA A30'},{'dtype':torch.float32},
             {'precision':'float32'},{'context':0},{'context':513},{'max_batch':0},

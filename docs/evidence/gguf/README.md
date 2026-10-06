@@ -2548,8 +2548,8 @@ CMake-built library SHA:
 `kU4B8` instantiation with the qualified ABI 1 explicit-zero-point Marlin kernel.
 It retains the same source coefficients, signed FP16 scales, repacking and
 launch shapes; the constant integer zero point eight is part of the device
-kernel type instead of a resident tensor. Normal Q4 Marlin dispatch rejects
-ABI 2 until separate integration qualification is complete.
+kernel type instead of a resident tensor. These are isolated ABI 2 results; runtime qualification is recorded separately
+below.
 
 All 210 candidate **and control** arithmetic checks pass at rows
 1/2/4/16/64/129/400, activation exponents −14/0/10, with and without bias.
@@ -2564,3 +2564,13 @@ at one row, 1.032–1.035x at two, 1.031–1.034x at four, 1.026–1.041x at 16,
 timings, not full-model serving gains. Omitting the constant tensors would
 remove 111,099,904 bytes from this model's prepared projections. Independent
 model, layout and serving/lifecycle gates remain required before promotion.
+
+
+`mistral-q4-marlin-symmetric-reference-a2.json` passes all 96 independent HF
+comparisons with zero greedy-token mismatches, maximum relative RMS 0.005255.
+`mistral-q4-marlin-symmetric-layout-a2.json` passes all 128 runtime-layout checks,
+maximum relative RMS 0.001449. Both use the isolated replacement installer and
+report 3,999,596,544 prepared bytes replacing the same canonical byte count:
+zero net projection-layout overhead. They have the same numerical measurements
+as the qualified explicit-zero-point path. Serving and integrated ABI 2
+admission/compatibility checks are still in progress.

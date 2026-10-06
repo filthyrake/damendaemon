@@ -154,7 +154,8 @@ def main():
             if args.require_q4_marlin:
                 assert '+cuda-q4-marlin' in executor.kernel_backend,executor.kernel_backend
                 assert len(executor.quant_linear.q4_marlin)==129
-                assert executor.packed_layout_overhead_bytes==111099904
+                assert executor.q4_marlin_abi in (1,2)
+                assert executor.packed_layout_overhead_bytes==(111099904 if executor.q4_marlin_abi==1 else 0)
             if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
                 raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:
@@ -169,6 +170,7 @@ def main():
                 if not experiment.get('prepared_weight_bytes',experiment['additional_prepared_bytes']):
                     raise ValueError('Q4 Marlin experiment selected no projections')
             report['backend'] = executor.kernel_backend
+            report['q4_marlin_abi'] = getattr(executor,'q4_marlin_abi',None)
             report['resident_projection_cache_bytes'] = getattr(executor, 'packed_cache_bytes', 0)
             report['precision'] = dict(matrix=str(executor.compute_dtype), residual=str(executor.residual_dtype))
             for ids in prompts:
@@ -193,7 +195,8 @@ def main():
                     if args.require_q4_marlin:
                         assert '+cuda-q4-marlin' in executor.kernel_backend
                         assert len(executor.quant_linear.q4_marlin)==129
-                        assert executor.packed_layout_overhead_bytes==111099904
+                        assert executor.q4_marlin_abi in (1,2)
+                        assert executor.packed_layout_overhead_bytes==(111099904 if executor.q4_marlin_abi==1 else 0)
                     for count in (1, 2, 4):
                         slots = list(range(count))
                         actual = executor.prefill_batch(prompts[:count], slots)

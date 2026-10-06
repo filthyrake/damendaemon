@@ -238,7 +238,8 @@ def main():
             if args.require_q4_marlin:
                 assert '+cuda-q4-marlin' in executor.kernel_backend,executor.kernel_backend
                 assert len(executor.quant_linear.q4_marlin)==129
-                assert executor.packed_layout_overhead_bytes==111099904
+                assert executor.q4_marlin_abi in (1,2)
+                assert executor.packed_layout_overhead_bytes==(111099904 if executor.q4_marlin_abi==1 else 0)
             if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
                 raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:
@@ -256,7 +257,8 @@ def main():
                 raise ValueError('FP32 experiment requires an FP32 executor policy')
             precision = dict(matrix_dtype=str(executor.compute_dtype), residual_dtype=str(executor.residual_dtype),
                              resident_projection_cache_bytes=getattr(executor, 'packed_cache_bytes', 0),
-                             nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise, backend=executor.kernel_backend)
+                             nonlinear_precise=executor.precise, rotary_precise=executor.rotary_precise, backend=executor.kernel_backend,
+                             q4_marlin_abi=getattr(executor,"q4_marlin_abi",None))
             for index, ids in enumerate(prompts):
                 expected = None if args.serial_reference else reference_prefill(reference, torch.tensor([ids], device='cuda'), args.reference_prefill_chunk_size)
                 actual = executor.prefill(ids)
@@ -328,7 +330,7 @@ def main():
                   host_bytes=source.bytes, experiment=experiment, production_residual_library=residual_library, cases=cases)
     marlin_path=os.environ.get('DLLM_Q4_MARLIN_LIBRARY')
     if marlin_path:
-        report['native_q4_marlin_library']=dict(path=marlin_path,selected='+cuda-q4-marlin' in precision['backend'],
+        report['native_q4_marlin_library']=dict(path=marlin_path,selected='+cuda-q4-marlin' in precision['backend'],abi=precision.get('q4_marlin_abi'),
             sha256=hashlib.sha256(Path(marlin_path).read_bytes()).hexdigest())
     Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(dict(passed=passed, sha256=sha, formats=formats,

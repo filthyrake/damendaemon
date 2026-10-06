@@ -1,5 +1,5 @@
 """Qualified Q4 Marlin layout plan, calculated before GPU weight transfer."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import torch
 
@@ -13,6 +13,9 @@ class LayoutPlan:
     prepared_bytes: int = 0
     overhead_bytes: int = 0
     repack_peak_bytes: int = 0
+
+    def without_zero_points(self):
+        return replace(self, prepared_bytes=self.canonical_bytes, overhead_bytes=0)
 
 
 def plan(config, weights, scales, quantization, device, dtype, precision, context,

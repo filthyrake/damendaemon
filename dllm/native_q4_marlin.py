@@ -17,13 +17,13 @@ from .q4_marlin_policy import LayoutPlan, plan
 class Prepared:
     weight: torch.Tensor
     scales: torch.Tensor
-    zeros: torch.Tensor
+    zeros: torch.Tensor | None
     inputs: int
     outputs: int
 
     @property
     def bytes(self):
-        return sum(t.numel()*t.element_size() for t in (self.weight,self.scales,self.zeros))
+        return sum(t.numel()*t.element_size() for t in (self.weight,self.scales,self.zeros) if t is not None)
 
 
 class Library:
@@ -32,7 +32,8 @@ class Library:
         ptr, integer = ctypes.c_void_p, ctypes.c_int
         self.lib.dllm_q4_marlin_abi.argtypes = []
         self.lib.dllm_q4_marlin_abi.restype = integer
-        if self.lib.dllm_q4_marlin_abi() != 1:
+        self.abi = self.lib.dllm_q4_marlin_abi()
+        if self.abi not in (1,2):
             raise ValueError('unsupported native Q4 Marlin ABI')
         self.lib.dllm_q4_marlin_init.argtypes = [ctypes.POINTER(integer)]*2
         self.lib.dllm_q4_marlin_init.restype = integer
@@ -79,7 +80,8 @@ class Library:
             packed = repack(weight)
             order = torch.tensor([i+8*j for i in range(8) for j in range(8)],device=weight.device)
             prepared_scales = scales.T.contiguous().reshape(-1,64)[:,order].reshape(k//32,n).contiguous()
-            zeros = torch.full((k//32,n//8),-2004318072,dtype=torch.int32,device=weight.device)
+            zeros = (torch.full((k//32,n//8),-2004318072,dtype=torch.int32,device=weight.device)
+                     if self.abi == 1 else None)
         return Prepared(packed,prepared_scales,zeros,k,n)
 
     def linear(self, x, matrix):
@@ -91,7 +93,7 @@ class Library:
             x = x.contiguous()
             result = torch.empty((x.shape[0],matrix.outputs),dtype=x.dtype,device=x.device)
             self.check(self.lib.dllm_q4_marlin_gemm(x.data_ptr(),matrix.weight.data_ptr(),
-                matrix.scales.data_ptr(),matrix.zeros.data_ptr(),None,result.data_ptr(),
+                matrix.scales.data_ptr(),matrix.zeros.data_ptr() if matrix.zeros is not None else None,None,result.data_ptr(),
                 self.scratch.data_ptr(),self.locks.data_ptr(),x.shape[0],matrix.outputs,
                 matrix.inputs,self.sms,self.shared,torch.cuda.current_stream(x.device).cuda_stream))
         return result
@@ -106,7 +108,8 @@ def select(config, weights, scales, quantization, device, dtype, precision, cont
                     max_batch,fused,torch.cuda.get_device_name())
     if not selected.names:
         return None, selected
-    return Library(path), selected
+    library = Library(path)
+    return library, selected.without_zero_points() if library.abi == 2 else selected
 
 
 def replace_packing(linear, weights, library, selected):
