@@ -1,0 +1,104 @@
+{
+  "passed": true,
+  "streaming": true,
+  "scope": "Real output-stage execution failure; no recovery/performance claim",
+  "sources": {
+    "dllm/distributed.py": "1d068532aec4e21856a13b0d0e55e7e1d20bdf1a9fe4ad12b9d7d41936c7c4df",
+    "dllm/distributed_serving.py": "62b78c22d22a695a4db5322e5eb58159c61a60efcccd8f1edd5b225c1a3f6fd4",
+    "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65"
+  },
+  "coordinator_error_type": "RuntimeError",
+  "requests": [
+    {
+      "request": 0,
+      "status": 200,
+      "stream_error": true,
+      "chunks": [
+        {
+          "id": "cmpl-31d7547cbdc74f2984df0441d9f36a9e",
+          "object": "text_completion",
+          "created": 1791257174,
+          "model": "a",
+          "choices": [
+            {
+              "index": 0,
+              "text": " Computers",
+              "logprobs": null,
+              "finish_reason": null
+            }
+          ]
+        },
+        {
+          "error": "model execution failed"
+        }
+      ]
+    },
+    {
+      "request": 1,
+      "status": 500,
+      "payload": {
+        "error": "model execution failed"
+      }
+    },
+    {
+      "request": 2,
+      "status": 500,
+      "payload": {
+        "error": "model execution failed"
+      }
+    },
+    {
+      "request": 3,
+      "status": 500,
+      "payload": {
+        "error": "model execution failed"
+      }
+    }
+  ],
+  "status": {
+    "device": "distributed-cuda",
+    "context": 512,
+    "models": [
+      {
+        "id": "a",
+        "residency": "gpu",
+        "quantization": "q8_0",
+        "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046"
+      }
+    ],
+    "distributed": true,
+    "stage_layers": [
+      [
+        0,
+        12
+      ],
+      [
+        12,
+        24
+      ]
+    ],
+    "max_batch_size": 4,
+    "active": false,
+    "queued": 0,
+    "completed": 0,
+    "heartbeats": 0,
+    "failed": true,
+    "closed": true
+  },
+  "closed_http_checks": [
+    {
+      "path": "/health",
+      "status": 503,
+      "payload": {
+        "status": "closed"
+      }
+    },
+    {
+      "path": "/v1/completions",
+      "status": 503,
+      "payload": {
+        "error": "distributed session is closed"
+      }
+    }
+  ]
+}

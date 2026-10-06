@@ -70,3 +70,27 @@ Batching retains a **2.09x** aggregate throughput gain at concurrency four.
 This is a matched capacity comparison within version 3, not a counterbalanced
 version-2/version-3 speed comparison. Existing GPU services remain untouched;
 A2 ends at 0 MiB and the A30's original service at 13,403 MiB.
+
+## Streamed failure over the A2/3090 network
+
+The same exception signal passes a real NCCL Socket test between the A2 and
+3090. The output stage raises during a four-request decode. Three buffered
+requests return HTTP 500. The fourth already has an HTTP 200 event stream; it
+receives its initial text followed by an explicit error frame, with no finish
+reason, final usage, or `[DONE]` marker. Health and a subsequent HTTP completion
+return 503. Status is failed/closed with zero completed, active or queued work.
+Both qualification workers exit zero through the expected exception path.
+
+The paired `qwen2-network-http-failure-v3-{coordinator,worker}.json` reports
+record the response frames, source hashes and actual four-row injected decode.
+This establishes graceful reporting for an output-stage exception while CUDA
+and NCCL remain usable. It does not establish survival of arbitrary process,
+GPU or network failures.
+
+Fresh Q8 and Q4 network sessions subsequently pass all 25 independent HTTP
+checks each (`qwen2-network-http-v3-{q8,q4}.json`). This is explicit fresh-worker
+recovery. All six workers across the three jobs exit zero. The peer-only rules
+had 600-second automatic expiry and were removed early: lab 03:25:48–03:29:17
+UTC, desktop 03:25:44–03:29:24 on 2026-10-06. Original rules are preserved;
+A2 returns to 0 MiB, A30 remains at 13,403 MiB and desktop at 10,835 MiB.
+No permanent or router changes were made; see `network-window.json`.
