@@ -1,0 +1,57 @@
+{
+  "cooling": {
+    "limit_celsius": 80,
+    "checks": 2,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4261,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4382,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1836,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 34.25,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 31.0,
+        "cutoff_celsius": 26.0
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 34.25,
+        "cutoff_celsius": 26.0
+      }
+    ],
+    "error": "thermal limit reached"
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": null,
+    "last_available_bytes": null,
+    "triggered": true,
+    "error": "RuntimeError('thermal limit reached')"
+  },
+  "limitation": "Test-only cutoff below idle temperature; no GPU work or induced heat. Normal launcher retains80C cutoff.",
+  "test_cutoff_override_celsius": 26.0,
+  "exit_code": -9,
+  "passed": true,
+  "cleanup_complete": true
+}

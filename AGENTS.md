@@ -32,3 +32,16 @@ The project is a view of GitHub Issues, not a separate task tracker.
 
 Keep upstream reference repositories unchanged unless explicitly requested.
 Preserve licenses and attribution when incorporating upstream code.
+
+Before any benchmark or sustained inference on HOMER, run the existing
+`/home/damen/fan-inference.sh on`; `strix-fan-daemon.service` is a graded curve
+and is NOT a substitute (its ramp is too slow for these workloads). Temporarily
+stop the curve daemon while the max-fan script owns the controller, then restore
+`fan-inference.sh off` and restart the daemon after testing. Do not change its
+implementation, boot enablement, or power limits separately. Verify all three
+EC fans report `fixed`, level `5`, and elevated live RPM before load. Use
+`scripts.experiments.guard_homer` for owned experiments: it fails closed on fan
+readback/RPM or CPU/GPU sensor failure, starts only below the cooldown threshold,
+and stops the owned process at its conservative thermal cutoff. Keep allocator,
+host-memory, no-swap scope and time bounds as well. A previous run hard-crashed
+thermally when this prerequisite was missed; memory guards alone are insufficient.

@@ -9,6 +9,42 @@ compensated projections, at most four slots and no graphs. Practical 32K and
 competitive concurrency remain open. See the [current roadmap](https://github.com/filthyrake/dllm/issues/3)
 and [context task](https://github.com/filthyrake/dllm/issues/68).
 
+## Mandatory HOMER cooling before experiments
+
+Before benchmarks or sustained inference, run the existing
+`/home/damen/fan-inference.sh on`. The graded `strix-fan-daemon.service` is
+**not a substitute**: the user confirmed that its ramp is too slow for these
+workloads. Suspend that daemon while the script owns the fans; restore with
+`fan-inference.sh off` and restart the daemon after tests. The existing script
+also selects the performance power profile; do not separately change power
+limits, drivers or its implementation.
+
+Verify all three EC fans are `fixed`, level `5`, and have elevated live RPM.
+After activation, observed RPM was approximately4329/4409/1850; CPU38C/GPU35C.
+Run owned experiments through `python -m scripts.experiments.guard_homer
+--report NEW.json --timeout SECONDS -- COMMAND ...` inside the existing bounded
+no-swap systemd scope. This launcher requires actual fan control/tach readback,
+both k10temp and amdgpu temperature sensors, initial80GiB host headroom, and
+startup temperatures below70C. Its conservative cutoff is80C, or10C below an
+exported lower critical limit. Fan RPM floors3000/3000/1000 detect gross cooling
+loss; they are operational guards, not a guarantee of thermal safety.
+
+Checks continue independently of GPU execution. Lost fan settings, low RPM,
+unreadable sensors, temperature cutoff or host-memory reserve failure stop only
+the owned process group. Guard reports checkpoint each second so a hard crash
+does not erase all preceding telemetry. Keep the allocator cap and outer timeout;
+software guards cannot guarantee containment of a driver or hardware failure.
+
+The user confirmed a thermal hard crash during the first integrated grouped
+attention replay because this prerequisite was missed. No prior-boot kernel log
+was available (journald was not persistent). That replay remains unqualified;
+its stdout was empty and no final guard report survived. The
+[idle proof](evidence/amd/homer-cooling-idle-proof.json) confirms real fan/sensor
+checks and clean child completion. The
+[trip proof](evidence/amd/homer-cooling-trigger-proof.json) deliberately lowered
+a test cutoff below idle temperature and killed a harmless owned child without
+GPU load or induced heat. Issue75 owns this bounded protection fix.
+
 ## Shared-memory limits and the 32K failure
 
 The Q4 path passes [84 independent numerical checks at 4K](evidence/amd/qwen38-27b-q4-native-replay4096.json).

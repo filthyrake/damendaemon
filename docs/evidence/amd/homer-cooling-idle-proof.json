@@ -1,0 +1,65 @@
+{
+  "command": [
+    "/home/damen/strixenv/bin/python",
+    "-c",
+    "import time; time.sleep(3)"
+  ],
+  "timeout_seconds": 10,
+  "cooling": {
+    "limit_celsius": 80,
+    "checks": 3,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4278,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4400,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1838,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 35.25,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 32.0,
+        "cutoff_celsius": 80
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 34.875,
+        "cutoff_celsius": 80
+      }
+    ],
+    "error": null
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 121067851776,
+    "last_available_bytes": 121069174784,
+    "triggered": false,
+    "error": null
+  },
+  "phase": "completed",
+  "cleanup_complete": true,
+  "host_available_before": 121070133248,
+  "child_pid": 3320,
+  "seconds": 3.0293956149999985,
+  "exit_code": 0,
+  "host_available_after": 121071239168
+}
