@@ -6,8 +6,15 @@
 #ifndef DLLM_Q4_SKIP_SUM
 #define DLLM_Q4_SKIP_SUM 0
 #endif
+#ifndef DLLM_Q4_SHARED_INPUTS
+#define DLLM_Q4_SHARED_INPUTS 0
+#endif
+#ifndef DLLM_Q4_STREAM_WEIGHTS
+#define DLLM_Q4_STREAM_WEIGHTS 0
+#endif
 static_assert(DLLM_Q4_LAUNCH_WARPS == 2 || DLLM_Q4_LAUNCH_WARPS == 4 ||
               DLLM_Q4_LAUNCH_WARPS == 8 || DLLM_Q4_LAUNCH_WARPS == 16);
+static_assert(DLLM_Q4_SHARED_INPUTS >= 0 && DLLM_Q4_SHARED_INPUTS <= 2);
 // Independent single-row Q4_0 integer dots with two dyadic int8 activation terms.
 // Preserve packed source coefficients; scale in FP32 rather than rounding each
 // coefficient to FP16. Explicitly selected only for the qualified model scope.
@@ -56,12 +63,36 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
                           half* output, int n, int k) {
     const int lane = threadIdx.x & 31;
     const int row = blockIdx.x*DLLM_Q4_LAUNCH_WARPS + threadIdx.x/32;
+#if DLLM_Q4_SHARED_INPUTS
+    // All warps, including tail rows, participate before the block barrier.
+    extern __shared__ __align__(16) unsigned char scratch[];
+    int8_t* shared_q1 = reinterpret_cast<int8_t*>(scratch);
+    int8_t* shared_q2 = shared_q1 + k;
+    for (int index=threadIdx.x; index<k/4; index+=blockDim.x) {
+        reinterpret_cast<int*>(shared_q1)[index] = reinterpret_cast<const int*>(q1)[index];
+        reinterpret_cast<int*>(shared_q2)[index] = reinterpret_cast<const int*>(q2)[index];
+    }
+#if DLLM_Q4_SHARED_INPUTS == 2
+    float4* shared_scales = reinterpret_cast<float4*>(scratch + 2*k);
+    for (int group=threadIdx.x; group<k/32; group+=blockDim.x)
+        shared_scales[group] = xs[group];
+#endif
+    __syncthreads();
+    q1 = shared_q1; q2 = shared_q2;
+#if DLLM_Q4_SHARED_INPUTS == 2
+    xs = shared_scales;
+#endif
+#endif
     if (row >= n) return;
     const uint8_t* weights = w + static_cast<size_t>(row)*(k/2);
     const half* weight_scales = ws + static_cast<size_t>(row)*(k/32);
     float accum[Rows] = {};
     for (int packed_column=lane*4; packed_column<k/2; packed_column+=128) {
+#if DLLM_Q4_STREAM_WEIGHTS
+        const uint32_t packed=__ldcg(reinterpret_cast<const uint32_t*>(weights+packed_column));
+#else
         const uint32_t packed=*reinterpret_cast<const uint32_t*>(weights+packed_column);
+#endif
 
         uint32_t lo=packed & 0x0f0f0f0fu, hi=(packed>>4) & 0x0f0f0f0fu;
         lo=(lo & 0x07070707u) | ((~lo & 0x08080808u)*31u);
@@ -102,7 +133,9 @@ extern "C" int dllm_q4_residual_gemv(const void* q1,const void* q2,const void* x
     if (!q1 || !q2 || !xs || !w || !ws || !output || rows!=1 || n<=0 || k<=0 || k%256)
         return cudaErrorInvalidValue;
     q4_residual<1><<<(n+DLLM_Q4_LAUNCH_WARPS-1)/DLLM_Q4_LAUNCH_WARPS,
-                       32*DLLM_Q4_LAUNCH_WARPS,0,reinterpret_cast<cudaStream_t>(stream)>>>(
+                       32*DLLM_Q4_LAUNCH_WARPS,
+                       DLLM_Q4_SHARED_INPUTS ? 2*k+(DLLM_Q4_SHARED_INPUTS==2 ? (k/32)*sizeof(float4) : 0) : 0,
+                       reinterpret_cast<cudaStream_t>(stream)>>>(
         static_cast<const int8_t*>(q1),static_cast<const int8_t*>(q2),static_cast<const float4*>(xs),
         static_cast<const uint8_t*>(w),static_cast<const half*>(ws),static_cast<const half*>(bias),
         static_cast<half*>(output),n,k);

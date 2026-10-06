@@ -2105,3 +2105,13 @@ warps 9.8–18.5% slower. Eight warps is mostly 1.6–2.0% slower, except the
 saves at most 0.1% on the large matrices (1.5% on the tiny 113-output tail case).
 No production launch or arithmetic changes follow from these results. These
 are synthetic kernel measurements, not model or serving performance claims.
+
+The follow-up `q4-residual-cache-a2.json` tests shared activation staging
+(`DLLM_Q4_SHARED_INPUTS=1`), activation-plus-scale staging (`=2`), and streaming
+packed-weight loads through L2 (`DLLM_Q4_STREAM_WEIGHTS=1`). All 180 exact-output
+and independent RMS checks pass. Shared staging slows the large 4096-wide cases
+by 18.6–26.7%, and the 14336-wide projection by 265–286%; it is rejected.
+Streaming weights improves that wide projection by 3.7% but slows the other
+large shapes by 1.5–2.1%. No broad cache policy is promoted. Four-warp calibration
+remains within 0.2% of the production control. The separate builds preserve the
+same precision and compiler options as the launch experiment.
