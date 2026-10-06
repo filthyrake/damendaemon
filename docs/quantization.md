@@ -49,10 +49,12 @@ Q4 path: `DLLM_EXPERIMENTAL_HYBRID_Q4=1`, `DLLM_HYBRID_PRECISION=compensated`,
 ROCm, no graphs, context at most 512 and at most four request slots. HOMER
 passes [Q4 primitive boundaries](evidence/amd/homer-compensated-q4-boundaries.json)
 and [Q8 regression boundaries](evidence/amd/homer-compensated-q8-regression-boundaries.json).
-Full-model Q4 logits, quality, lifecycle and other devices remain unqualified;
-follow [issue #23](https://github.com/filthyrake/dllm/issues/23). The estimated
-27B packed weight size is 15.80 GiB, before state and workspace, so this does not
-establish that the model fits a particular GPU.
+Pinned Qwen3.8-27B also passes all 84 [full-model Q4 comparisons](evidence/amd/qwen38-27b-q4-native-replay512-headfix.json)
+at 512 context, with exact greedy agreement against independently packed Q4
+weights and FP32 reference arithmetic. Actual packed weight size is 15.80 GiB,
+before state and workspace. Original-weight quality, HTTP lifecycle and other
+devices remain unqualified; follow [issue #23](https://github.com/filthyrake/dllm/issues/23).
+This does not establish fit or correctness on A30, M4 or another GPU.
 
 Independent dense model gates pass Qwen2.5-0.5B, accurate Qwen3-0.6B and
 Llama3.2-1B on A2, along with live model-switching tests. The loader currently
