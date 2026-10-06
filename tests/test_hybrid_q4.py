@@ -133,7 +133,7 @@ class HybridQ4Tests(unittest.TestCase):
             executor.norm = Mock(side_effect=lambda value, weight: value)
             executor.linear = Mock(return_value=torch.ones(1, 8))
             executor.fused = SimpleNamespace(output_head=Mock(side_effect=AssertionError('packed head entered dense kernel')))
-            actual = executor.forward_embeddings(torch.ones(1, 1, 32), None, None, True)
+            actual = executor.output_logits(torch.ones(1, 32))
             self.assertEqual(actual.shape, (1, 8))
             self.assertIs(executor.linear.call_args.args[1], executor.w['head'])
             self.assertEqual(executor.linear.call_args.args[0].dtype, torch.float32)

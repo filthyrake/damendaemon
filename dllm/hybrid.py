@@ -374,12 +374,31 @@ class HybridExecutor:
 
     @torch.inference_mode()
     def forward(self, ids, positions, slots, prefill, prefix_length=0, return_logits=True):
-        return self.forward_embeddings(F.embedding(ids, self.w['embed']).float(),positions,slots,prefill,
+        return self.forward_embeddings(self.embedding(ids),positions,slots,prefill,
                                        prefix_length, return_logits)
+
+    def embedding(self, ids):
+        return F.embedding(ids, self.w['embed']).float()
 
     def forward_embeddings(self, x, positions, slots, prefill, prefix_length=0, return_logits=True):
         """Shared text backbone after token or image/text embedding assembly."""
-        for i, kind in enumerate(self.c['layer_types']):
+        x = self.forward_layers(x, positions, slots, prefill, prefix_length)
+        return self.output_logits(x[:, -1]) if return_logits else None
+
+    def forward_layers(self, x, positions, slots, prefill, prefix_length=0,
+                       layer_start=0, layer_end=None):
+        """Execute a contiguous range using global layer indices and positions.
+
+        Returns every hidden position. The caller owns embedding, final-head
+        selection and request cursor commit across all participating ranges.
+        """
+        if layer_end is None:
+            layer_end = self.c['num_hidden_layers']
+        if (type(layer_start) is not int or type(layer_end) is not int
+                or not 0 <= layer_start < layer_end <= self.c['num_hidden_layers']):
+            raise ValueError('invalid hybrid layer range')
+        for i in range(layer_start, layer_end):
+            kind = self.c['layer_types'][i]
             if self.offload is not None:
                 self.offload.activate(i)
             from .device import selected_accelerator
@@ -397,9 +416,10 @@ class HybridExecutor:
                 gate, up = gate_up.chunk(2, -1)
                 activated = (F.silu(gate.float())*up.float()).to(self.compute_dtype)
             x = x + self.linear(activated, self.w[f'{i}.down'])
-        if not return_logits:
-            return None
-        normalized = self.norm(x[:, -1], self.w['norm'])
+        return x
+
+    def output_logits(self, hidden):
+        normalized = self.norm(hidden, self.w['norm'])
         if self.w['head'].dtype in (torch.int8, torch.uint8):
             return self.linear(normalized.float(), self.w['head'])
         if self.fused:

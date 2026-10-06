@@ -261,3 +261,14 @@ Both workers must use the same dllm revision. Startup also checks a fixed-size
 digest of prepared weights, protocol version, context, batch capacity and packing policy before
 opening the command channel. See the
 [HTTP qualification evidence](evidence/multi-gpu/README.md#resident-distributed-http).
+
+## Modern hybrid execution boundary (implementation only)
+
+`HybridExecutor.forward_layers` now executes a validated contiguous range using
+global layer indices and unchanged attention positions. Embedding and the final
+head are separate methods; the range returns every hidden position and does not
+commit request cursors. The ordinary single-device path uses these same methods.
+CPU regressions compose every split in a four-layer hybrid fixture and compare
+full prefill, subsequent decode, chunk offsets and interleaved slots. Unselected
+layers' KV, convolution and recurrent state remain untouched. This is shared
+execution code, not multi-device allocation, transport or numerical qualification.
