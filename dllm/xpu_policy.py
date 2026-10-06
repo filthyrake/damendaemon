@@ -29,16 +29,22 @@ def validate_runtime(torch):
     xpu.set_device(0)
 
 
-def validate_model(config, quantization, context=None, batch=1):
-    validate_environment()
-    if (config.get('model_type') != 'qwen3' or quantization != 'none'
-            or config.get('weight_format') or config.get('quantization_config')
-            or config.get('rope_scaling')):
-        raise ValueError('Intel bring-up requires dense Qwen3 safetensors without quantization or scaled RoPE')
-    if context is not None and (type(context) is not int or not 1 <= context <= min(2048, config['max_position_embeddings'])):
-        raise ValueError('Intel bring-up context must fit model positions and be at most 2048')
+def validate_limits(context, batch=1):
+    if type(context) is not int or not 1 <= context <= 2048:
+        raise ValueError('Intel bring-up context must be 1..2048')
     if type(batch) is not int or not 1 <= batch <= 4:
         raise ValueError('Intel bring-up batch capacity must be 1..4')
+
+
+def validate_model(config, quantization, context=None, batch=1):
+    validate_environment()
+    if (config.get('model_type') not in ('qwen3', 'qwen3_5_text') or quantization != 'none'
+            or config.get('weight_format') or config.get('quantization_config')
+            or config.get('rope_scaling')):
+        raise ValueError('Intel bring-up requires Qwen3 dense or Qwen3.5-family hybrid text safetensors without quantization or scaled RoPE')
+    validate_limits(1 if context is None else context, batch)
+    if context is not None and context > config['max_position_embeddings']:
+        raise ValueError('Intel bring-up context exceeds model positions')
 
 
 def available_memory(torch):

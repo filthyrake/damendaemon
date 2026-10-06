@@ -5,6 +5,15 @@ from .device import selected_accelerator
 
 
 def select(model, use_graph, max_batch, kernels):
+    if selected_accelerator() == 'xpu':
+        from .xpu_policy import validate_model
+        validate_model(model.config, model.quantization, model.max_context, max_batch)
+        if (os.environ.get('DLLM_HYBRID_PRECISION', 'float32') != 'float32'
+                or kernels not in ('auto', 'torch') or use_graph
+                or os.environ.get('DLLM_HYBRID_PREFILL', 'scan') != 'scan'
+                or getattr(model, 'vision_weights', None) is not None):
+            raise ValueError('Intel hybrid bring-up requires eager FP32 text without graphs or FLA')
+        return 'float32'
     mode = os.environ.get('DLLM_HYBRID_PRECISION', 'float16')
     if mode not in ('float16', 'float32', 'compensated'):
         raise ValueError('DLLM_HYBRID_PRECISION must be float16, float32 or compensated')

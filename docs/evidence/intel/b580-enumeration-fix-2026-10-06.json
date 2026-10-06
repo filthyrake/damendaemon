@@ -1,0 +1,20 @@
+{
+  "kind": "runtime enumeration diagnosis; no GPU workload or qualification",
+  "host": "rocky10-desktop",
+  "address": "10.40.100.30",
+  "user": "damen",
+  "device": "Intel Arc B580",
+  "date": "2026-10-06",
+  "compiler": "Intel oneAPI DPC++/C++ 2026.1.1",
+  "failure": "Level Zero and OpenCL adapters failed to load libumf.so.1 in ordinary SSH environment",
+  "root_cause": "Installed oneAPI UMF library path absent from shell runtime library search",
+  "resolved_library": "/opt/intel/oneapi/umf/1.1/lib/libumf.so.1",
+  "process_environment_fix": "source /opt/intel/oneapi/setvars.sh",
+  "observed_after_fix": [
+    "Level Zero V2: Intel Arc B580, driver 1.15.38646+6",
+    "OpenCL: Intel Arc B580, NEO 26.22.38646.6"
+  ],
+  "system_changes": false,
+  "qualification": false,
+  "subsequent_work": "User directed code and local tests only; no hardware qualification run launched."
+}

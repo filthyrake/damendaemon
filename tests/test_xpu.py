@@ -87,7 +87,7 @@ class XpuTests(unittest.TestCase):
     def test_model_rejection_precedes_tensor_and_tokenizer_loading(self):
         config = test_config.ConfigTests().config()
         xpu_policy.validate_model(config, 'none', 512, 4)
-        for changes, mode, context, batch in (({'model_type':'qwen3_5_text'}, 'none', 512, 1),
+        for changes, mode, context, batch in (({'model_type':'qwen3_moe'}, 'none', 512, 1),
                 ({}, 'q8_0', 512, 1), ({}, 'q4_0', 512, 1), ({}, 'none', 4096, 1),
                 ({}, 'none', 512, 5), ({'rope_scaling': {'rope_type': 'yarn'}}, 'none', 512, 1)):
             with self.assertRaises(ValueError):
@@ -131,3 +131,10 @@ class XpuTests(unittest.TestCase):
             self.assertEqual(executor.required_memory_bytes, expected)
             self.assertEqual(executor.compute_dtype, torch.float32)
             self.assertIsNone(executor.kernels)
+
+    def test_invalid_runtime_capacity_rejects_before_device_initialization(self):
+        for options in ({'context': 2049}, {'batch_size': 5}, {'batch_size': True}):
+            with patch('dllm.runtime.require_gpu') as initialize:
+                with self.assertRaisesRegex(ValueError, 'Intel'):
+                    Runtime({}, **options)
+                initialize.assert_not_called()

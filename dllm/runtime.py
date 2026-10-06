@@ -66,6 +66,10 @@ class Runtime:
     def __init__(self, models, context=1024, gpu_models=1, host_models=2,
                  host_gib=8, use_graph=True, queue_size=8, queue_timeout=120, batch_size=None, chat_templates=None,
                  quantizations=None):
+        if selected_device() == 'xpu':
+            from .xpu_policy import validate_environment, validate_limits
+            validate_environment()
+            validate_limits(context, 1 if batch_size is None else batch_size)
         from .admission import validate_queue_limits
         validate_queue_limits(queue_size, queue_timeout)
         if (min(context, gpu_models, host_models, queue_size) <= 0

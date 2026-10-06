@@ -454,7 +454,8 @@ configured position limit and batches must be between 1 and 16.
 The Intel adapter is an **unqualified development path**, tracked in issue #63.
 It routes synchronization, cache release, free-memory admission and residency
 metrics through `torch.xpu`; it does not fall back to CUDA or CPU. The initial
-eager executor accepts dense Qwen3 floating-point safetensors, uses FP32 device
+eager executor accepts dense Qwen3 and Qwen3.5-family hybrid text floating-point
+safetensors, uses FP32 device
 weights/state, limits context to 2048 and batch capacity to four, and reserves
 2 GiB of reported free device memory for the B580 desktop. This reserve is
 additional to the executor's workspace reserve and does not guarantee desktop
@@ -463,7 +464,7 @@ responsiveness under every workload.
 Development selection requires `--device xpu`, `DLLM_EXPERIMENTAL_XPU=1` and
 `ONEAPI_DEVICE_SELECTOR=level_zero:gpu`, with one visible Intel Arc B580 in an
 XPU-enabled PyTorch environment. CUDA/Metal kernels, quantization, GGUF/AWQ,
-hybrid/multimodal models, scaled RoPE, paged KV, speculative decoding and graph
+multimodal models, scaled RoPE, paged KV, speculative decoding and graph
 options are not part of this implementation. Ordinary decode graphs are disabled
 for XPU. Local tests cover admission and API routing only: neither model
 correctness, useful speed, real memory release nor the 32K product gate is
@@ -474,3 +475,14 @@ On the desktop, the installed oneAPI adapters initially failed to load because
 existing `/opt/intel/oneapi/setvars.sh` in that process resolved enumeration;
 this did not require a driver update or persistent login-environment change.
 SYCL enumeration is separate from having an XPU-enabled PyTorch installation.
+
+
+The hybrid XPU path defaults to FP32 and uses the shared eager recurrence,
+convolution and attention implementations. Its device budget counts promoted
+FP32 weights rather than the smaller host weight representation. Chunked prefill
+preserves convolution history and recurrent state across chunks, resetting only
+at offset zero; later chunks attend to the existing KV prefix. A failed chunk
+invalidates that slot's cursor so continuation is rejected until a new prompt.
+CPU tensor regressions compare full prompts against several chunk boundaries,
+subsequent decoding, interleaved slots and slot reuse. This verifies shared state
+logic; it does not qualify Intel kernels or hardware memory behavior.

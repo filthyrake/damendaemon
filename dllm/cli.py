@@ -183,9 +183,10 @@ def main():
         else:
             os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
     if args.device == 'xpu':
-        from .xpu_policy import validate_environment
+        from .xpu_policy import validate_environment, validate_limits
         try:
             validate_environment()
+            validate_limits(args.context, getattr(args, 'batch_size', 1))
         except ValueError as error:
             parser.error(str(error))
     from .runtime import Runtime

@@ -12,7 +12,7 @@ import sys
 import torch
 from torch.nn import functional as F
 
-from .device import selected_device, empty_cache, available_memory, attention as scaled_attention
+from .device import selected_device, selected_accelerator, empty_cache, available_memory, attention as scaled_attention
 
 from .batch import BatchExecutor
 
@@ -63,6 +63,8 @@ class HybridExecutor:
         # Construction has already enforced the Q4 device/precision policy.
         admitted_a30_q4 = (accelerator == 'cuda' and self.model.quantization == 'q4_0'
                            and self.hybrid_precision == 'compensated')
+        if accelerator == 'xpu' and self.fused is None:
+            return True
         return ((accelerator == 'rocm' or admitted_a30_q4) and self.fused is not None
                 and self.chunk_scan is None)
 
@@ -93,9 +95,13 @@ class HybridExecutor:
         self.hybrid_precision = select_precision(model, use_graph, max_batch, selected)
         self.compute_dtype = torch.float16 if self.hybrid_precision == 'float16' else torch.float32
         cache_element_bytes = 2 if self.compute_dtype == torch.float16 else 4
-        if self.hybrid_precision != 'float16':
+        if self.hybrid_precision != 'float16' and self.device == 'cuda':
             torch.backends.cuda.matmul.allow_tf32 = False
             torch.backends.cudnn.allow_tf32 = False
+        if self.device == 'xpu':
+            if selected not in ('auto', 'torch'):
+                raise ValueError('Intel hybrid requires eager torch kernels')
+            selected = 'torch'
         if self.device == 'mps':
             if selected == 'triton':
                 raise ValueError('Triton kernels require CUDA')
@@ -110,7 +116,7 @@ class HybridExecutor:
                     raise
         self.kernel_backend = 'triton-hybrid' if self.fused else 'torch-hybrid'
         if self.hybrid_precision != 'float16':
-            if self.fused is None:
+            if self.fused is None and selected_accelerator() != 'xpu':
                 raise ValueError('experimental hybrid precision requires Triton kernels')
             self.kernel_backend += '+' + self.hybrid_precision
         if model.scales:
@@ -148,13 +154,20 @@ class HybridExecutor:
         state_bytes = hybrid_state_bytes(c, self.context, max_batch, cache_element_bytes)
         empty_cache()
         free = available_memory()
-        if model.bytes + state_bytes + 512*1024**2 > free:
+        # Intel eager projections store FP32 matrices; host byte counts are
+        # insufficient because the source mapping retains FP16 matrices.
+        device_weight_bytes = (sum(t.numel()*4 for t in
+            {id(t): t for t in model.weights.values()}.values())
+            if self.device == 'xpu' else model.bytes)
+        self.required_memory_bytes = device_weight_bytes + state_bytes + 512*1024**2
+        if self.required_memory_bytes > free:
             raise MemoryError('insufficient GPU memory for hybrid weights, state, and workspace')
         copies = {}
         self.w = {}
         for key, value in model.weights.items():
             if id(value) not in copies:
-                copies[id(value)] = value.to(self.device)
+                copies[id(value)] = value.to(device=self.device,
+                    dtype=torch.float32 if self.device == 'xpu' else value.dtype)
             self.w[key] = copies[id(value)]
         self.linear = F.linear
         if model.scales:
@@ -273,7 +286,8 @@ class HybridExecutor:
             if self.metal_scan is not None:
                 out=self.metal_scan(q,k,v,decay,beta,self.state[i],slots,prefill)
             else:
-                state = torch.zeros_like(self.state[i].index_select(0, slots)) if prefill else self.state[i].index_select(0, slots)
+                state = (torch.zeros_like(self.state[i].index_select(0, slots))
+                         if prefill and not prefix_length else self.state[i].index_select(0, slots))
                 outputs = []
                 for t in range(length):
                     state = state * decay[:, t].exp()[..., None, None]
@@ -309,9 +323,11 @@ class HybridExecutor:
         elif prefill and prefix_length:
             from torch.nn.attention.bias import causal_lower_right
             end = prefix_length + length
+            mask = (self.arange[:end][None, :] <= positions[0, :, None]
+                    if selected_accelerator() == 'xpu' else causal_lower_right(length, end))
             out = scaled_attention(q.transpose(1, 2),
                 ck[:, :, :end].index_select(0, slots), cv[:, :, :end].index_select(0, slots),
-                attn_mask=causal_lower_right(length, end), enable_gqa=True)
+                attn_mask=mask, enable_gqa=True)
         elif prefill:
             out = scaled_attention(q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2),
                                                  is_causal=True, enable_gqa=True)
@@ -383,7 +399,7 @@ class HybridExecutor:
     @torch.inference_mode()
     def prefill_chunk(self, tokens, slot, start, final=True):
         if not self.supports_chunked_prefill or self.requires_full_prefill:
-            raise ValueError('hybrid chunked prefill requires an admitted Triton scan text path')
+            raise ValueError('hybrid chunked prefill requires an admitted scan text path')
         if (type(slot) is not int or not 0 <= slot < self.max_batch
                 or type(start) is not int or start < 0 or type(final) is not bool
                 or not tokens or start + len(tokens) > self.context
