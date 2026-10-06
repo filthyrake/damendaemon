@@ -129,3 +129,18 @@ class CapacityCliTests(unittest.TestCase):
                     patch('sys.stdout', output):
                 main()
             self.assertEqual(json.loads(output.getvalue())['pipeline_stages']['weight_dtype'], 'float32')
+
+    def test_device_budget_cli_reports_estimates_and_no_fit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture(Path(directory))
+            output = io.StringIO()
+            with patch('sys.argv', ['dllm', 'plan-hybrid', directory, '--contexts', '512', '--batches', '1',
+                                    '--device-budgets-mib', '1024', '1024']), patch('sys.stdout', output):
+                main()
+            report = json.loads(output.getvalue())['pipeline_placement']
+            self.assertEqual(report['runtime_qualification'], 'not assessed')
+            self.assertEqual(report['contexts']['512']['1']['splits'], [1])
+            no_fit = plan_local(directory, [512], [1], 'float32', device_budgets=[1, 1])
+            self.assertFalse(no_fit['pipeline_placement']['contexts']['512']['1']['storage_plan_found'])
+            with self.assertRaises(ValueError):
+                plan_local(directory, [512], [1], 'float32', layer_splits=[1], device_budgets=[2**30]*2)

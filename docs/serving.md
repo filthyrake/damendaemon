@@ -541,3 +541,13 @@ its weights and state, two bounded FP32 activation buffers, the final head's
 conversion temporary where needed, and the workspace floor. These budgets use
 the same calculation as `HybridLayerStage` admission. The planner does not
 select devices, check their available memory or qualify the proposed split.
+
+Instead of choosing boundaries manually, `--device-budgets-mib 22000 14000`
+asks the offline planner to place contiguous, nonempty stages into those ordered
+budgets. It minimizes the maximum estimated fraction of any budget consumed;
+this balances storage, not compute or transfer time. Every requested context and
+batch size gets its own result. A failed fit retains the requested limits and
+reports `storage_plan_found: false`, without silently shortening context or
+reducing users. Budgets are supplied inputs, not queried free-memory readings;
+allocator fragmentation, loading peaks and hardware/transport qualification
+remain outside the estimate. Planning is bounded to 16 stages and 256 layers.

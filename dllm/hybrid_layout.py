@@ -59,3 +59,46 @@ def stage_budget(weights, config, context, batch, cache_element_bytes, start, en
     result['required_memory_bytes'] = sum(result[name] for name in (
         'weight_bytes', 'state_bytes', 'activation_workspace_bytes', 'output_head_workspace_bytes', 'workspace_floor_bytes'))
     return result
+
+
+def choose_stage_splits(weights, config, context, batch, cache_element_bytes, budgets, fp32_weights=False):
+    """Minimize maximum estimated utilization across ordered device budgets.
+
+    Contiguous, nonempty stages only. This balances storage, not transfer or
+    compute time; the supplied budgets are inputs, never live device queries.
+    """
+    from fractions import Fraction
+    count = config['num_hidden_layers']
+    if (not isinstance(budgets, (list, tuple)) or not 1 <= len(budgets) <= min(16, count)
+            or any(type(value) is not int or value <= 0 for value in budgets)
+            or count > 256):
+        raise ValueError('stage planning requires 1..16 positive byte budgets, at least one layer per stage and at most 256 layers')
+    # (range -> shared admission budget) avoids recomputing tensor accounting
+    # for the same candidate on different participating devices.
+    candidates = {}
+    states = {0: (Fraction(0), ())}
+    for rank, limit in enumerate(budgets):
+        next_states = {}
+        last = count-(len(budgets)-rank-1)
+        for start, (score, ranges) in states.items():
+            for end in range(start+1, last+1):
+                key = (start, end)
+                if key not in candidates:
+                    candidates[key] = stage_budget(weights, config, context, batch, cache_element_bytes,
+                                                   start, end, fp32_weights)
+                required = candidates[key]['required_memory_bytes']
+                if required > limit:
+                    continue
+                candidate = (max(score, Fraction(required, limit)), (*ranges, key))
+                if end not in next_states or candidate < next_states[end]:
+                    next_states[end] = candidate
+        states = next_states
+    if count not in states:
+        return dict(storage_plan_found=False, device_budget_bytes=list(budgets),
+                    reason='No contiguous nonempty partition fits the supplied storage budgets')
+    score, ranges = states[count]
+    return dict(storage_plan_found=True, splits=[end for _, end in ranges[:-1]],
+                maximum_estimated_utilization=float(score), device_budget_bytes=list(budgets),
+                stages=[dict(candidates[key], device_budget_bytes=limit,
+                             remaining_budget_bytes=limit-candidates[key]['required_memory_bytes'])
+                        for key, limit in zip(ranges, budgets)])

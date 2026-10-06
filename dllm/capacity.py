@@ -6,14 +6,16 @@ from pathlib import Path
 from .hybrid_layout import hybrid_state_bytes
 
 
-def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536, 131072, 262144), batches=(1, 4), layer_splits=None, stage_weight_dtype='native'):
+def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536, 131072, 262144), batches=(1, 4), layer_splits=None, stage_weight_dtype='native', device_budgets=None):
     import torch
     from .config import decoder_config
     from .hybrid import load_weights
     if cache_dtype not in ('float16', 'float32'):
         raise ValueError('cache dtype must be float16 or float32')
-    if stage_weight_dtype not in ('native', 'float32') or (layer_splits is None and stage_weight_dtype != 'native'):
-        raise ValueError('stage weight dtype requires explicit stage splits and must be native or float32')
+    if stage_weight_dtype not in ('native', 'float32') or (layer_splits is None and device_budgets is None and stage_weight_dtype != 'native'):
+        raise ValueError('stage weight dtype requires stage splits or budgets and must be native or float32')
+    if layer_splits is not None and device_budgets is not None:
+        raise ValueError('choose explicit stage splits or device budgets')
     cache_element_bytes = 2 if cache_dtype == 'float16' else 4
     config = decoder_config(inventory['config'])
     if config['model_type'] != 'qwen3_5_text':
@@ -113,10 +115,18 @@ def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536,
                 cache_element_bytes, start, end, fp32_weights=stage_weight_dtype == 'float32')
                 for start, end in zip(edges, edges[1:])] for batch in batches} for context in contexts},
             limitation='Per-stage storage and workspace estimates only; excludes allocator fragmentation, loading peaks and network transport. No device fit or throughput qualification.')
+    if device_budgets is not None:
+        from .hybrid_layout import choose_stage_splits
+        result['pipeline_placement'] = dict(weight_dtype=stage_weight_dtype, weight_format='none',
+            runtime_qualification='not assessed',
+            contexts={str(context): {str(batch): choose_stage_splits(weights, config, context, batch,
+                cache_element_bytes, device_budgets, stage_weight_dtype == 'float32') for batch in batches}
+                for context in contexts},
+            limitation='Balances estimated storage across ordered input budgets, not latency or throughput. No live memory query or runtime qualification.')
     return result
 
 
-def plan_local(path, contexts, batches, cache_dtype, layer_splits=None, stage_weight_dtype='native'):
+def plan_local(path, contexts, batches, cache_dtype, layer_splits=None, stage_weight_dtype='native', device_budgets=None):
     """Inspect local safetensors headers only; never resolve or download a model."""
     from safetensors import safe_open
     from .config import decoder_config
@@ -147,7 +157,7 @@ def plan_local(path, contexts, batches, cache_dtype, layer_splits=None, stage_we
     if indexed is not None and actual != indexed:
         raise ValueError('tensor headers do not match the shard index')
     result = estimate({'config': original, 'repository': None, 'resolved_revision': None},
-                      {'files_metadata': files}, cache_dtype, contexts, batches, layer_splits, stage_weight_dtype)
+                      {'files_metadata': files}, cache_dtype, contexts, batches, layer_splits, stage_weight_dtype, device_budgets)
     result.update(local_path=str(path), source='local safetensors headers; contents not hashed',
                   workspace_admission_floor_bytes=512*1024**2)
     # The runtime's floor is admission bookkeeping, not a workspace peak bound.
