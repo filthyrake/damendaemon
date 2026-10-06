@@ -333,3 +333,10 @@ Automatic strict tool selection and multiple forced calls are not supported.
 For the bounded two-rank network path, see
 [resident distributed HTTP](multi-gpu.md#resident-distributed-http). Its greedy
 sequential queue and single-model scope are narrower than this server.
+
+Queued generation requests enforce the scheduler's queue timeout even while
+another request is inside a long prefill. A timed-out request receives HTTP503,
+is removed before execution, and returns its admission capacity. This deadline
+covers only time waiting for worker ownership; an already-owned generation is
+not interrupted when that queue deadline passes. Slow consumers retain the
+separate stream backpressure timeout.

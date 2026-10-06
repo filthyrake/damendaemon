@@ -217,7 +217,19 @@ class BatchedRuntime:
                         if request.final:
                             yield request.final
                         return
-                    request.ready.wait()
+                    # Only queued work has a queue deadline. Check ownership
+                    # under the same lock as _next so a timeout cannot cancel
+                    # a request already taken by the GPU worker.
+                    timeout = None
+                    with self.condition:
+                        if request in self.pending:
+                            timeout = request.start + self.queue_timeout - time.perf_counter()
+                            if timeout <= 0:
+                                self.pending.remove(request)
+                                self._finish(request, BusyError("request queue timeout"))
+                                self.condition.notify_all()
+                                continue
+                    request.ready.wait(timeout)
                     continue
                 with self.condition:
                     self.condition.notify_all()

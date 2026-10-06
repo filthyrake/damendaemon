@@ -214,6 +214,70 @@ class SchedulerTests(unittest.TestCase):
             server.server_close()
             thread.join(3)
 
+    def test_generation_queue_deadline_expires_without_worker_progress(self):
+        self.runtime.queue_timeout = .05
+        with ThreadPoolExecutor(2) as pool:
+            active = pool.submit(lambda: list(self.generate('a', count=2)))
+            try:
+                self.assertTrue(self.executor.entered.wait(2))
+                queued = pool.submit(lambda: list(self.generate('b', count=2)))
+                with self.assertRaisesRegex(BusyError, 'request queue timeout'):
+                    queued.result(1)
+                self.assertFalse(active.done())
+                with self.runtime.condition:
+                    self.assertFalse(self.runtime.pending)
+                    self.assertEqual(len(self.runtime.requests), 1)
+                # The expired caller releases its admission permit immediately.
+                permits = 0
+                while self.runtime.admission.acquire(blocking=False):
+                    permits += 1
+                for _ in range(permits):
+                    self.runtime.admission.release()
+                self.assertEqual(permits, 3)
+            finally:
+                self.executor.release.set()
+            self.assertEqual(active.result(2)[-1]['usage']['completion_tokens'], 2)
+        self.assertEqual(self.runtime.runtime.groups, ['a'])
+        self.assertEqual(list(self.generate('b', count=2))[-1]['usage']['completion_tokens'], 2)
+        self.assertEqual(self.runtime.runtime.groups, ['a', 'b'])
+
+    def test_http_generation_queue_deadline_returns_503_while_prefill_blocks(self):
+        from http.server import ThreadingHTTPServer
+        import json
+        from urllib.error import HTTPError
+        from urllib.request import Request, urlopen
+        from dllm.server import handler_for
+        self.runtime.queue_timeout = .05
+        server = ThreadingHTTPServer(('127.0.0.1', 0), handler_for(self.runtime))
+        thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)
+        thread.start()
+        base = f'http://127.0.0.1:{server.server_port}'
+        try:
+            with ThreadPoolExecutor(1) as pool:
+                active = pool.submit(lambda: list(self.generate('a', count=2)))
+                try:
+                    self.assertTrue(self.executor.entered.wait(2))
+                    request = Request(base+'/v1/chat/completions',
+                        data=json.dumps({'model': 'b', 'messages': [{'role': 'user', 'content': 'ok'}],
+                                         'max_tokens': 2}).encode(),
+                        headers={'Content-Type': 'application/json'})
+                    with self.assertRaises(HTTPError) as error:
+                        urlopen(request, timeout=1)
+                    self.assertEqual(error.exception.code, 503)
+                    self.assertIn('queue', json.load(error.exception)['error'])
+                    error.exception.close()
+                    with urlopen(base+'/health', timeout=1) as response:
+                        self.assertEqual(json.load(response), {'status': 'ok'})
+                    self.assertFalse(active.done())
+                finally:
+                    self.executor.release.set()
+                active.result(2)
+            self.assertEqual(self.runtime.runtime.groups, ['a'])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(2)
+
     def test_joining_requests_batch_and_report_individual_usage(self):
         with ThreadPoolExecutor(2) as pool:
             first = pool.submit(lambda: list(self.generate(count=6)))
