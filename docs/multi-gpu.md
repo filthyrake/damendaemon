@@ -96,7 +96,7 @@ CUDA_VISIBLE_DEVICES=GPU-output-worker-uuid OMP_NUM_THREADS=4 \
 NCCL_NET=Socket NCCL_SOCKET_FAMILY=AF_INET NCCL_SOCKET_IFNAME=your-interface \
   torchrun --nnodes=2 --nproc-per-node=1 --node-rank=1 \
   --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-run \
-  /other/local/model/snapshot --quantization q8_0
+  /other/local/model/snapshot --quantization q8_0 --batch-size 4
 ```
 
 Only the coordinator reads the prompt and prints output. `--raw` selects raw
@@ -168,18 +168,18 @@ A2/3090 protocol checks and an actual seven-request network session; see the
 
 `distributed-serve` keeps the qualified two-rank pair resident behind the
 existing chat/completion API. Start it under torchrun on both workers, using
-matching model snapshots, precision and dllm versions:
+matching model snapshots, precision, context, batch capacity and dllm versions:
 
 ```bash
 # Coordinator; select its GPU UUID and network interface as above.
 torchrun --nnodes=2 --nproc-per-node=1 --node-rank=0 \
   --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-serve \
-  /local/model/snapshot --quantization q8_0 --alias a --port 8000
+  /local/model/snapshot --quantization q8_0 --batch-size 4 --alias a --port 8000
 
 # Output worker; it exposes no HTTP listener.
 torchrun --nnodes=2 --nproc-per-node=1 --node-rank=1 \
   --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-serve \
-  /other/local/model/snapshot --quantization q8_0
+  /other/local/model/snapshot --quantization q8_0 --batch-size 4
 ```
 
 The coordinator listens on `127.0.0.1` only. Use its existing trusted local
@@ -188,9 +188,13 @@ access path or an SSH tunnel. It accepts `/v1/chat/completions` and
 resident precision, prepared model identity, queued/active work, completion
 count and idle heartbeats. Model activation occurs before the listener opens.
 
-Execution is greedy and sequential: concurrent HTTP requests queue, with one
-request using the distributed slot at a time. `--queue-size` bounds waiting
-requests (default 8, maximum 64); `--queue-timeout` bounds their wait for
+Execution is greedy. `--batch-size` selects 1–4 resident request slots (default
+1); set it identically on both workers. With multiple slots, active requests
+share each decode pass. Completed or canceled slots are released and can admit
+new requests while other slots continue decoding. Prompts are processed one
+at a time; prompt packing and chunked prefill are not implemented.
+
+`--queue-size` bounds waiting requests (default 8, maximum 64); `--queue-timeout` bounds their wait for
 admission (default 120 seconds, maximum 300). Full/expired queues return 503.
 Client disconnects cancel generation after the current transport operation;
 both ranks acknowledge slot release before reuse. Successful final responses
@@ -208,8 +212,12 @@ through 512 and FP16/Q8/Q4 support. Sampling changes, custom text stops,
 logprobs, structured/tool output, embeddings, reranking, distributed model
 registration/unload and hot swapping are rejected explicitly. The ordinary
 same-host server continues to provide its separate broader feature set.
-This service is not continuous batched or tensor-parallel execution.
+This service uses layer partitioning; it does not implement tensor parallelism.
+Per-request `max_batch_size` reports the largest decode batch that actually
+included that request, while status reports the configured capacity.
 
 The control protocol is now version 2, adding acknowledged idle heartbeats.
-Both workers must use the same dllm revision. See the
+Both workers must use the same dllm revision. Startup also checks a fixed-size
+digest of prepared weights, protocol version, context and batch capacity before
+opening the command channel. See the
 [HTTP qualification evidence](evidence/multi-gpu/README.md#resident-distributed-http).

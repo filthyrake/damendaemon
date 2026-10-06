@@ -2,11 +2,13 @@
 
 Launched under torchrun. The coordinator owns prompt input; the output worker
 receives only bounded control records and activations. This is a single-model,
-sequential-request command path, not the HTTP scheduler or a worker supervisor.
+bounded batched command path; the HTTP scheduler lives in distributed_serving.
 """
 from datetime import timedelta
 import json
+import hashlib
 import os
+import struct
 from pathlib import Path
 from types import SimpleNamespace
 import torch
@@ -16,13 +18,16 @@ from .layer_stage import LayerStage
 from .partition_policy import validate
 from .qwen2 import ModelWeights
 from .stage_identity import fingerprint
-from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING
+from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING, VERSION
 from .stage_setup import StageSetup
 from .stage_transport import StageChannel
 
 
 class StagePair:
-    def __init__(self, path, context, quantization, prepare_requests, session='distributed-run'):
+    def __init__(self, path, context, quantization, prepare_requests, session='distributed-run', max_batch=1):
+        if type(max_batch) is not int or not 1 <= max_batch <= 4:
+            raise ValueError('distributed batch capacity must be 1..4')
+        self.max_batch = max_batch
         self.owns_group = False
         if dist.is_initialized():raise ValueError('distributed-run requires ownership of its process group')
         if quantization not in ('none','q8_0','q4_0'):
@@ -50,24 +55,25 @@ class StagePair:
             path = Path(path).expanduser().resolve()
             if not path.is_dir():raise ValueError('distributed-run requires a local safetensors snapshot; use dllm pull first')
             config = decoder_config(json.loads((path/'config.json').read_text()))
-            validate(SimpleNamespace(config=config, max_context=context, quantization=quantization), 12, 1)
+            validate(SimpleNamespace(config=config, max_context=context, quantization=quantization), 12, max_batch)
             self.model = ModelWeights(path, context, quantization=quantization)
-            validate(self.model, 12, 1)
+            validate(self.model, 12, max_batch)
             self.requests = prepare_requests(self.model) if self.rank == 0 else None
             setup.check_peer()
             self.identity = fingerprint(self.model)
             self.stage = LayerStage(self.model, 0 if self.rank == 0 else 12,
-                                   12 if self.rank == 0 else 24, max_batch=1,
+                                   12 if self.rank == 0 else 24, max_batch=max_batch,
                                    stage_graphs=True, kernels='triton')
             setup.ready(); setup.wait_ready(); ready = True
             self.owns_group = True
             dist.init_process_group('nccl', timeout=timedelta(seconds=30),
                                     device_id=torch.device('cuda', local_rank))
-            identity = torch.tensor(list(self.identity), dtype=torch.uint8, device='cuda')
+            agreement = self.identity + struct.pack('<qqq', VERSION, context, max_batch)
+            identity = torch.tensor(list(hashlib.sha256(agreement).digest()), dtype=torch.uint8, device='cuda')
             peers = [torch.empty_like(identity) for _ in range(2)]
             dist.all_gather(peers, identity)
-            if not torch.equal(peers[0], peers[1]):raise ValueError('distributed model identity mismatch')
-            self.state = StageState(1, context, 1)
+            if not torch.equal(peers[0], peers[1]):raise ValueError('distributed model or session bounds mismatch')
+            self.state = StageState(1, context, max_batch)
             self.channel = StageChannel(self.state, self.rank)
         except BaseException as error:
             if setup is not None and not ready:
@@ -76,18 +82,39 @@ class StagePair:
             self.close()
             raise
 
-    @torch.inference_mode()
+    def _tokens(self, tokens):
+        if (not isinstance(tokens, list) or not tokens
+                or any(type(t) is not int or not 0 <= t < self.model.config['vocab_size'] for t in tokens)):
+            raise ValueError('invalid distributed token input')
+
+    def prefill(self, tokens, slot=0):
+        if self.rank != 0:raise ValueError('only coordinator submits prompts')
+        self._tokens(tokens)
+        if (type(slot) is not int or not 0 <= slot < self.max_batch
+                or self.state.lengths[slot] or len(tokens) > self.state.context):
+            raise ValueError('invalid or occupied distributed prefill slot')
+        command = Command(self.state.epoch, self.state.sequence, PREFILL, len(tokens),
+                          ((slot, self.state.generations[slot] + 1, 0),))
+        return self._exchange(command, tokens)[0]
+
+    def decode(self, tokens, slots):
+        if self.rank != 0:raise ValueError('only coordinator submits decode')
+        self._tokens(tokens)
+        if (not isinstance(slots, list) or len(slots) != len(tokens)
+                or any(type(slot) is not int or not 0 <= slot < self.max_batch for slot in slots)
+                or len(set(slots)) != len(slots)):
+            raise ValueError('invalid distributed decode slots')
+        command = Command(self.state.epoch, self.state.sequence, DECODE, len(tokens),
+                          tuple((slot, self.state.generations[slot], self.state.lengths[slot]) for slot in slots))
+        return self._exchange(command, tokens)
+
     def step(self, tokens=None):
-        request = None
-        if self.rank == 0:
-            if (not isinstance(tokens, list) or not tokens
-                    or any(type(t) is not int or not 0 <= t < self.model.config['vocab_size'] for t in tokens)):
-                raise ValueError('invalid distributed token input')
-            prefill = self.state.lengths[0] == 0
-            if (prefill and len(tokens) > self.state.context) or (not prefill and len(tokens) != 1):
-                raise ValueError('invalid distributed token shape')
-            request = Command(self.state.epoch, self.state.sequence, PREFILL if prefill else DECODE,
-                              len(tokens), ((0, self.state.generations[0] + int(prefill), self.state.lengths[0]),))
+        if self.rank == 1:return self._exchange(None, None)
+        if self.state.lengths[0] == 0:return self.prefill(tokens)
+        return self.decode(tokens, [0])[0]
+
+    @torch.inference_mode()
+    def _exchange(self, request, tokens):
         command = self.channel.begin(request)
         if command.operation in (RELEASE, STOP, PING):
             self.channel.finish(command)
@@ -96,11 +123,11 @@ class StagePair:
             prefill = command.operation == PREFILL
             if command.operation not in (PREFILL, DECODE):raise ValueError('unsupported distributed-run command')
             positions = (torch.arange(command.rows, device='cuda') if prefill else
-                         torch.tensor([command.entries[0][2]], device='cuda'))
-            slot = torch.zeros(1, dtype=torch.int64, device='cuda')
+                         torch.tensor([entry[2] for entry in command.entries], device='cuda'))
+            slots = torch.tensor([entry[0] for entry in command.entries], dtype=torch.int64, device='cuda')
             if self.rank == 0:
                 inputs = torch.tensor(tokens, device='cuda')
-                hidden = self.stage.run_prefill(inputs, positions, 0) if prefill else self.stage.run_decode(inputs, positions, slot)
+                hidden = self.stage.run_prefill(inputs, positions, command.entries[0][0]) if prefill else self.stage.run_decode(inputs, positions, slots)
                 operation = dist.P2POp(dist.isend, hidden, 1)
             else:
                 hidden = torch.empty((command.rows, self.model.config['hidden_size']),
@@ -108,12 +135,12 @@ class StagePair:
                 operation = dist.P2POp(dist.irecv, hidden, 0)
             for work in dist.batch_isend_irecv([operation]):work.wait()
             if self.rank == 1:
-                logits = self.stage.run_prefill(hidden, positions, 0) if prefill else self.stage.run_decode(hidden, positions, slot)
+                logits = self.stage.run_prefill(hidden, positions, command.entries[0][0]) if prefill else self.stage.run_decode(hidden, positions, slots)
                 result = logits.argmax(-1)
             else:
-                result = torch.empty(1, dtype=torch.int64, device='cuda')
+                result = torch.empty(1 if prefill else command.rows, dtype=torch.int64, device='cuda')
             self.channel.complete_tokens(command, result)
-            return result.item() if self.rank == 0 else None
+            return result.reshape(-1).tolist() if self.rank == 0 else None
         except BaseException:
             self.state.poison()
             raise
@@ -122,14 +149,20 @@ class StagePair:
         if self.rank != 1:raise ValueError('only the output rank runs the worker loop')
         while not self.state.closed:self.step()
 
-    def release(self):
+    def release(self, slots=None):
         """Fence completed request ownership before the resident slot is reused."""
         if self.rank != 0:raise ValueError('only coordinator releases requests')
         if self.state.failed or self.state.closed or self.state.pending is not None:
             raise RuntimeError('distributed session is not ready for release')
-        if not self.state.lengths[0]:return
+        slots = [0] if slots is None else slots
+        if (not isinstance(slots, list) or not slots
+                or any(type(slot) is not int or not 0 <= slot < self.max_batch for slot in slots)
+                or len(set(slots)) != len(slots)):
+            raise ValueError('invalid distributed release slots')
+        slots = [slot for slot in slots if self.state.lengths[slot]]
+        if not slots:return
         command = Command(self.state.epoch, self.state.sequence, RELEASE, 0,
-                          ((0, self.state.generations[0], self.state.lengths[0]),))
+                          tuple((slot, self.state.generations[slot], self.state.lengths[slot]) for slot in slots))
         self.channel.finish(self.channel.begin(command))
 
     def heartbeat(self):

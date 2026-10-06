@@ -99,6 +99,7 @@ class DistributedCliTests(unittest.TestCase):
         from dllm.stage_protocol import StageState, Command, PREFILL, RELEASE
         pair = StagePair.__new__(StagePair)
         pair.rank = 0
+        pair.max_batch = 1
         pair.state = StageState(1, 512, 1)
         pair.state.commit(pair.state.begin(Command(1, 1, PREFILL, 31, ((0, 1, 0),)).encode()))
         pair.channel = Mock()
@@ -112,3 +113,36 @@ class DistributedCliTests(unittest.TestCase):
         pair.channel.begin.assert_called_once()
         self.assertEqual(pair.state.begin(Command(1, 3, PREFILL, 255, ((0, 2, 0),)).encode()).entries,
                          ((0, 2, 0),))
+
+    def test_invalid_batch_capacity_rejects_before_cuda_or_rendezvous(self):
+        from dllm.distributed import StagePair
+        with patch('dllm.distributed.torch.cuda.is_available') as available:
+            for capacity in (0,5,True,1.5):
+                with self.subTest(capacity=capacity),self.assertRaisesRegex(ValueError,'batch capacity'):
+                    StagePair('/unused',512,'q8_0',lambda model:[],max_batch=capacity)
+            available.assert_not_called()
+
+    def test_explicit_slots_preserve_order_and_generation_across_reuse(self):
+        from dllm.distributed import StagePair
+        from dllm.stage_protocol import StageState
+        pair=StagePair.__new__(StagePair);pair.rank=0;pair.max_batch=4
+        pair.model=SimpleNamespace(config={'vocab_size':128})
+        pair.state=StageState(1,32,4)
+        commands=[]
+        def exchange(command,tokens):
+            commands.append(command)
+            pair.state.commit(pair.state.begin(command.encode()))
+            return [65]*len(command.entries)
+        pair._exchange=exchange
+        pair.channel=Mock()
+        pair.channel.begin.side_effect=lambda command:pair.state.begin(command.encode())
+        pair.channel.finish.side_effect=pair.state.commit
+        pair.prefill([1,2],3);pair.prefill([3],1)
+        self.assertEqual(pair.decode([65,65],[3,1]),[65,65])
+        self.assertEqual(commands[-1].entries,((3,1,2),(1,1,1)))
+        with self.assertRaisesRegex(ValueError,'occupied'):pair.prefill([4],3)
+        pair.release([3]);pair.prefill([4],3)
+        self.assertEqual(commands[-1].entries,((3,2,0),))
+        self.assertEqual(pair.state.lengths,[0,2,0,1])
+        for slots in ([1,1],[True],[4],[]):
+            with self.subTest(slots=slots),self.assertRaises(ValueError):pair.decode([65]*len(slots),slots)

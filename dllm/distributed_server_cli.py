@@ -13,6 +13,7 @@ def main(argv=None):
     p.add_argument('--context',type=int,default=512)
     p.add_argument('--alias',default='model')
     p.add_argument('--port',type=int,default=8000)
+    p.add_argument('--batch-size',type=int,choices=range(1,5),default=1)
     p.add_argument('--queue-size',type=int,default=8)
     p.add_argument('--queue-timeout',type=float,default=120)
     p.add_argument('--idle-timeout',type=float,default=0,help='optional coordinator shutdown after idle seconds; zero disables')
@@ -25,7 +26,7 @@ def main(argv=None):
     from .distributed import StagePair
     from .distributed_serving import DistributedRuntime
     from .server import BoundedHTTPServer,handler_for
-    pair=StagePair(args.path,args.context,args.quantization,lambda model:[],session='distributed-serve')
+    pair=StagePair(args.path,args.context,args.quantization,lambda model:[],session='distributed-serve',max_batch=args.batch_size)
     runtime=server=thread=None
     previous=None
     try:

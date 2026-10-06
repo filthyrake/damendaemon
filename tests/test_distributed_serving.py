@@ -44,7 +44,7 @@ class Pair:
     def heartbeat(self):self.calls.append(('heartbeat',threading.get_ident(),None))
 
 
-class DistributedServingTests(unittest.TestCase):
+class RuntimeHelpers:
     def start(self,runtime,**options):
         errors=[]
         def run():
@@ -60,6 +60,9 @@ class DistributedServingTests(unittest.TestCase):
         while runtime.requests.qsize()<count and time.monotonic()<deadline:time.sleep(.001)
         self.assertEqual(runtime.requests.qsize(),count)
 
+
+
+class DistributedServingTests(RuntimeHelpers, unittest.TestCase):
     def test_final_waits_for_peer_release_and_gpu_calls_have_one_owner(self):
         pair=Pair();pair.release_gate=threading.Event();runtime=DistributedRuntime(pair)
         owner,errors=self.start(runtime)
@@ -145,3 +148,119 @@ class DistributedServingTests(unittest.TestCase):
         self.assertTrue(runtime.closed.is_set())
         self.assertGreaterEqual(runtime.heartbeats,1)
         self.assertTrue(all(c[0]=='heartbeat' for c in pair.calls))
+
+
+class BatchedPair(Pair):
+    def __init__(self):
+        super().__init__()
+        self.max_batch=4
+        self.state.lengths=[0]*4
+        self.outputs=[0]*4
+        self.decode_gate=None
+        self.decode_entered=threading.Event()
+    def prefill(self,tokens,slot):
+        assert self.state.lengths[slot]==0
+        self.calls.append(('prefill',threading.get_ident(),slot))
+        self.state.lengths[slot]=len(tokens);self.outputs[slot]=65
+        return self.outputs[slot]
+    def decode(self,tokens,slots):
+        self.calls.append(('decode',threading.get_ident(),list(slots)))
+        self.decode_entered.set()
+        if self.decode_gate is not None:assert self.decode_gate.wait(2)
+        if self.fail:self.state.failed=True;raise RuntimeError('injected batch failure')
+        for token,slot in zip(tokens,slots):
+            assert token==self.outputs[slot] and self.state.lengths[slot]>0
+            self.state.lengths[slot]+=1;self.outputs[slot]+=1
+        return [self.outputs[slot] for slot in slots]
+    def release(self,slots):
+        self.calls.append(('release',threading.get_ident(),list(slots)))
+        self.release_entered.set()
+        if self.release_gate is not None:assert self.release_gate.wait(2)
+        for slot in slots:self.state.lengths[slot]=0
+        self.releases+=1
+
+
+class DistributedBatchTests(RuntimeHelpers, unittest.TestCase):
+    def test_batch_shrinks_and_all_final_results_follow_release(self):
+        pair=BatchedPair();runtime=DistributedRuntime(pair)
+        with ThreadPoolExecutor(4) as pool:
+            futures=[pool.submit(lambda n=n:list(runtime.generate('model',None,n,raw_prompt=[1])))
+                     for n in (2,5,3,4)]
+            self.queued(runtime,4);owner,errors=self.start(runtime)
+            results=[future.result(2) for future in futures]
+        self.assertEqual([''.join(e.get('text','') for e in r) for r in results],['AB','ABCDE','ABC','ABCD'])
+        self.assertEqual([r[-1]['timing']['max_batch_size'] for r in results],[4]*4)
+        self.assertEqual([c[2] for c in pair.calls if c[0]=='decode'],[[0,1,2,3],[1,2,3],[1,3],[1]])
+        self.assertEqual(pair.state.lengths,[0]*4)
+        self.assertEqual({c[1] for c in pair.calls},{owner.ident});self.assertEqual(errors,[])
+
+    def test_cancel_one_slot_during_decode_does_not_cancel_its_peers(self):
+        pair=BatchedPair();pair.decode_gate=threading.Event();runtime=DistributedRuntime(pair)
+        generation=runtime.generate('model',None,20,raw_prompt=[1])
+        with ThreadPoolExecutor(2) as pool:
+            first=pool.submit(next,generation);self.queued(runtime)
+            survivor=pool.submit(lambda:list(runtime.generate('model',None,4,raw_prompt=[2])))
+            self.queued(runtime,2);_,errors=self.start(runtime)
+            self.assertEqual(first.result(2)['text'],'A')
+            self.assertTrue(pair.decode_entered.wait(2));generation.close();pair.decode_gate.set()
+            result=survivor.result(2)
+        self.assertEqual(''.join(e.get('text','') for e in result),'ABCD')
+        self.assertEqual(pair.state.lengths,[0]*4);self.assertEqual(runtime.completed,1)
+        self.assertEqual(errors,[])
+
+    def test_batch_transport_failure_fails_every_active_request(self):
+        pair=BatchedPair();pair.fail=True;runtime=DistributedRuntime(pair)
+        with ThreadPoolExecutor(4) as pool:
+            futures=[pool.submit(lambda:list(runtime.generate('model',None,4,raw_prompt=[1]))) for _ in range(4)]
+            self.queued(runtime,4);owner,errors=self.start(runtime)
+            for future in futures:
+                with self.assertRaises(RuntimeError):future.result(2)
+        owner.join(2)
+        self.assertTrue(runtime.closed.is_set());self.assertEqual(len(errors),1)
+        self.assertFalse(any(c[0]=='release' for c in pair.calls))
+
+    def test_retired_slot_is_reused_while_long_requests_keep_decoding(self):
+        pair=BatchedPair();runtime=DistributedRuntime(pair)
+        with ThreadPoolExecutor(5) as pool:
+            futures=[pool.submit(lambda n=n:list(runtime.generate('model',None,n,raw_prompt=[1])))
+                     for n in (2,5,5,5,3)]
+            self.queued(runtime,5);_,errors=self.start(runtime)
+            results=[future.result(2) for future in futures]
+        self.assertEqual([''.join(e.get('text','') for e in r) for r in results],['AB','ABCDE','ABCDE','ABCDE','ABC'])
+        calls=[(c[0],c[2]) for c in pair.calls]
+        released=calls.index(('release',[0]))
+        self.assertEqual(calls[released+1],('prefill',0))
+        self.assertEqual(calls[released+2],('decode',[1,2,3,0]))
+        self.assertEqual(pair.state.lengths,[0]*4);self.assertEqual(errors,[])
+
+    def test_batch_finals_are_not_visible_until_release_acknowledges(self):
+        pair=BatchedPair();pair.release_gate=threading.Event();runtime=DistributedRuntime(pair)
+        with ThreadPoolExecutor(4) as pool:
+            futures=[pool.submit(lambda:list(runtime.generate('model',None,2,raw_prompt=[1]))) for _ in range(4)]
+            self.queued(runtime,4);self.start(runtime)
+            self.assertTrue(pair.release_entered.wait(2))
+            self.assertTrue(all(not future.done() for future in futures))
+            pair.release_gate.set()
+            self.assertTrue(all(future.result(2)[-1]['finish_reason']=='length' for future in futures))
+
+    def test_one_token_requests_release_without_empty_decode(self):
+        pair=BatchedPair();runtime=DistributedRuntime(pair)
+        with ThreadPoolExecutor(4) as pool:
+            futures=[pool.submit(lambda:list(runtime.generate('model',None,1,raw_prompt=[1]))) for _ in range(4)]
+            self.queued(runtime,4);self.start(runtime)
+            results=[future.result(2) for future in futures]
+        self.assertEqual([r[-1]['usage']['completion_tokens'] for r in results],[1]*4)
+        self.assertFalse(any(c[0]=='decode' for c in pair.calls))
+        self.assertEqual(pair.state.lengths,[0]*4)
+
+    def test_close_during_batch_releases_all_slots_without_success(self):
+        pair=BatchedPair();pair.decode_gate=threading.Event();runtime=DistributedRuntime(pair)
+        with ThreadPoolExecutor(4) as pool:
+            futures=[pool.submit(lambda:list(runtime.generate('model',None,8,raw_prompt=[1]))) for _ in range(4)]
+            self.queued(runtime,4);owner,errors=self.start(runtime)
+            self.assertTrue(pair.decode_entered.wait(2));runtime.close();pair.decode_gate.set()
+            for future in futures:
+                with self.assertRaises(BusyError):future.result(2)
+        owner.join(2)
+        self.assertEqual(pair.state.lengths,[0]*4);self.assertEqual(runtime.completed,0)
+        self.assertEqual(errors,[])

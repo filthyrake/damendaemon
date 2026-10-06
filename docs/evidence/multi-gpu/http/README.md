@@ -1,9 +1,9 @@
 # Resident distributed HTTP qualification
 
 Tracked in GitHub issue #51. `distributed-serve` exposes the existing loopback
-chat/completion API over a resident two-rank pair. It is a greedy sequential
-queue with a single model and slot; it is not continuous batching, distributed
-hot swapping or general architecture support.
+chat/completion API over a resident two-rank pair. The original proof below
+used a greedy sequential queue with one model and slot; it did not qualify
+continuous batching, distributed hot swapping or general architecture support.
 
 HTTP threads validate and queue requests. Only the owning thread touches the
 GPU pair. Cancellation releases the current slot after its in-flight operation;
@@ -71,3 +71,5 @@ rules at 02:46:40 and 02:49:27 on 2026-10-06. Original rules were preserved, wit
 no permanent/router change. Final GPU allocations match their starting values:
 A2 0 MiB, A30 existing service 13,403 MiB, desktop existing service 10,835 MiB.
 See `qwen2-network-http-q8.json` and the window/cleanup sidecar.
+
+The later [batched HTTP qualification](batching/README.md) covers multiple resident slots and continuous decode batching.

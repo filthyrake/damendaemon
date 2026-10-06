@@ -23,6 +23,7 @@ def parser():
     p.add_argument('model');p.add_argument('trace');p.add_argument('--output',required=True)
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
     p.add_argument('--idle-seconds',type=float,default=35)
+    p.add_argument('--batch-size',type=int,choices=range(1,5),default=1)
     p.add_argument('--worker',action='store_true')
     return p
 
@@ -30,7 +31,7 @@ def parser():
 def worker(args):
     from dllm.distributed_server_cli import main as serve
     if os.environ['RANK']!='0':
-        serve([args.model,'--quantization',args.quantization,'--alias','a','--port','0']);return
+        serve([args.model,'--quantization',args.quantization,'--alias','a','--port','0','--batch-size',str(args.batch_size)]);return
     import torch
     from tokenizers import Tokenizer
     from dllm.bench import events
@@ -47,7 +48,7 @@ def worker(args):
     for case in cases:
         for index,token in enumerate(case['tokens']):
             if token in eos:case['tokens']=case['tokens'][:index+1];break
-    report=dict(passed=False,quantization=args.quantization,model=args.model,checks=[],trials=[],statuses={},
+    report=dict(passed=False,batch_size=args.batch_size,quantization=args.quantization,model=args.model,checks=[],trials=[],statuses={},
         trace_sha256=hashlib.sha256(Path(args.trace).read_bytes()).hexdigest(),
         coordinator_devices=os.environ.get('CUDA_VISIBLE_DEVICES'),idle_seconds=args.idle_seconds,
         scope='Real two-rank greedy HTTP qualification; not a performance comparison',
@@ -77,7 +78,7 @@ def worker(args):
             assert result['choices'][0]['text']==tokenizer.decode(tokens,skip_special_tokens=True),label
             assert result['usage']['prompt_tokens']==len(case['prompt']),label
             assert result['usage']['completion_tokens']==len(tokens),label
-            assert result['dllm_timing']['max_batch_size']==1,label
+            assert 1<=result['dllm_timing']['max_batch_size']<=args.batch_size,label
             report['checks'].append(label);report['trials'].append(dict(label=label,timing=result['dllm_timing']))
         try:
             assert call('/health')['status']=='ok'
@@ -89,6 +90,14 @@ def worker(args):
             with ThreadPoolExecutor(4) as pool:
                 results=list(pool.map(lambda pair:request(pair[0],pair[1]),enumerate(counts)))
             for index,result in enumerate(results):check(result,index,counts[index],'queued-concurrent:'+str(index))
+            if args.batch_size>1:
+                assert max(result['dllm_timing']['max_batch_size'] for result in results)>1,'no decode batching observed'
+            if args.batch_size>1:
+                lengths=(2,8,4,6,3,5)
+                with ThreadPoolExecutor(6) as pool:
+                    refills=list(pool.map(lambda item:request(item[0]%len(cases),item[1]),enumerate(lengths)))
+                for index,result in enumerate(refills):
+                    check(result,index%len(cases),lengths[index],'concurrent-slot-refill:'+str(index))
             with opened('/v1/completions',{**body(),'stream':True,'stream_options':{'include_usage':True}}) as response:
                 chunks=list(events(response))
             assert chunks[-1]=='[DONE]'
@@ -134,7 +143,7 @@ def worker(args):
             runtime.close();client.join(50)
             if client.is_alive():raise TimeoutError('HTTP validation client did not terminate')
     BoundedHTTPServer.__init__=capture;DistributedRuntime.run=checked_run
-    try:serve([args.model,'--quantization',args.quantization,'--alias','a','--port','0','--queue-size','4'])
+    try:serve([args.model,'--quantization',args.quantization,'--alias','a','--port','0','--queue-size','8','--batch-size',str(args.batch_size)])
     finally:BoundedHTTPServer.__init__=original_init;DistributedRuntime.run=original_run
     if not report['passed']:raise AssertionError(report.get('error','HTTP validation failed'))
     print(json.dumps(dict(passed=True,checks=len(report['checks']),idle_seconds=args.idle_seconds)),flush=True)
