@@ -1,6 +1,8 @@
 """Optional loopback API roles and redirect-safe authenticated clients."""
 from dataclasses import dataclass, field
+import json
 import os
+import re
 import secrets
 from urllib.error import HTTPError
 from urllib.request import HTTPRedirectHandler, build_opener, urlopen
@@ -19,22 +21,73 @@ def _key(name, value):
 
 
 @dataclass(frozen=True)
+class ClientKey:
+    name: str
+    key: str = field(repr=False)
+    max_inflight: int
+
+    def __post_init__(self):
+        if not isinstance(self.name, str) or re.fullmatch(r'[A-Za-z0-9_.-]{1,64}', self.name) is None:
+            raise ValueError('client names must contain 1..64 letters, digits, dots, underscores or hyphens')
+        _key('client key', self.key)
+        if self.key is None:
+            raise ValueError('client key is required')
+        if type(self.max_inflight) is not int or not 1 <= self.max_inflight <= 128:
+            raise ValueError('client max_inflight must be an integer from 1 to 128')
+
+
+@dataclass(frozen=True)
 class AuthPolicy:
     inference_key: str | None = field(default=None, repr=False)
     admin_key: str | None = field(default=None, repr=False)
+    clients: tuple = field(default=(), repr=False)
 
     def __post_init__(self):
         _key('DLLM_API_KEY', self.inference_key)
         _key('DLLM_ADMIN_API_KEY', self.admin_key)
         if self.inference_key is not None and self.admin_key is not None and secrets.compare_digest(self.inference_key, self.admin_key):
             raise ValueError('inference and administrative keys must differ')
+        if not isinstance(self.clients, tuple) or len(self.clients) > 128 or any(not isinstance(c, ClientKey) for c in self.clients):
+            raise ValueError('configure at most 128 named clients')
+        keys = [value for value in (self.inference_key, self.admin_key) if value is not None]
+        keys.extend(c.key for c in self.clients)
+        if len(set(keys)) != len(keys) or len({c.name for c in self.clients}) != len(self.clients):
+            raise ValueError('client names and all API keys must be distinct')
 
     @classmethod
     def from_env(cls):
-        return cls(os.environ.get('DLLM_API_KEY'), os.environ.get('DLLM_ADMIN_API_KEY'))
+        clients = ()
+        text = os.environ.get('DLLM_CLIENT_KEYS')
+        if text is not None:
+            try:
+                def unique_pairs(pairs):
+                    result = {}
+                    for name, value in pairs:
+                        if name in result:
+                            raise ValueError('duplicate field')
+                        result[name] = value
+                    return result
+                raw = json.loads(text, object_pairs_hook=unique_pairs)
+                if (not isinstance(raw, dict) or not 1 <= len(raw) <= 128
+                        or any(not isinstance(value, dict) or set(value) != {'key', 'max_inflight'}
+                               for value in raw.values())):
+                    raise ValueError('invalid client configuration')
+                clients = tuple(ClientKey(name, value['key'], value['max_inflight']) for name, value in raw.items())
+            except (ValueError, TypeError):
+                raise ValueError('DLLM_CLIENT_KEYS must map distinct client names to valid key/max_inflight objects') from None
+        return cls(os.environ.get('DLLM_API_KEY'), os.environ.get('DLLM_ADMIN_API_KEY'), clients)
+
+    def client(self, headers):
+        if len(headers) != 1:
+            return None
+        scheme, separator, token = headers[0].partition(' ')
+        if not separator or scheme.lower() != 'bearer' or not token.isascii() or not 16 <= len(token) <= 512:
+            return None
+        matches = [client for client in self.clients if secrets.compare_digest(token, client.key)]
+        return matches[0] if matches else None
 
     def authorize(self, method, path, headers):
-        if self.inference_key is None and self.admin_key is None:
+        if self.inference_key is None and self.admin_key is None and not self.clients:
             return None
         if method == 'GET' and path == '/health':
             return None
@@ -45,7 +98,8 @@ class AuthPolicy:
                 or not 16 <= len(token) <= 512):
             return 401
         admin = self.admin_key is not None and secrets.compare_digest(token, self.admin_key)
-        inference = self.inference_key is not None and secrets.compare_digest(token, self.inference_key)
+        inference = ((self.inference_key is not None and secrets.compare_digest(token, self.inference_key))
+                     or self.client(headers) is not None)
         if not admin and not inference:
             return 401
         if admin or (method == 'GET' and path == '/v1/models') or (method == 'POST' and path in INFERENCE_ROUTES):

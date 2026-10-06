@@ -609,7 +609,7 @@ for administration before starting the server. Each configured key must contain
 16–512 printable ASCII characters without spaces; use independently generated
 random values. Keys are read at startup and never included in status, manifests
 or error responses. Restart to change them. If neither variable is present,
-the existing anonymous loopback behavior remains. An explicitly empty or invalid
+and no named clients are configured, the existing anonymous loopback behavior remains. An explicitly empty or invalid
 key is an error, not a request to disable authentication.
 
 Clients send `Authorization: Bearer <key>`. The inference key permits model
@@ -626,6 +626,26 @@ Management CLI commands read the admin key, falling back to the inference key
 when only that one is configured (administrative requests then receive 403).
 `dllm bench` continues to use `DLLM_API_KEY`. Authenticated CLI and benchmark
 requests refuse redirects; use the endpoint's final URL explicitly. Anonymous
-client behavior is unchanged. This adds shared credentials and two roles, not
-individual tenant identity, quotas or TLS. The server still binds only to
+client behavior is unchanged. These roles do not provide TLS or tenant data
+isolation. The server still binds only to
 `127.0.0.1`; no public listener or deployment is enabled.
+
+For separately limited inference clients, set `DLLM_CLIENT_KEYS` to a JSON object
+mapping client names to `{"key":"<independently-generated-secret>","max_inflight":2}`.
+Names contain 1–64 letters, digits, dots, underscores or hyphens. Configure at most
+128 clients, each with a distinct key meeting the rules above and an integer
+`max_inflight` from 1 to 128. Duplicate names/fields, duplicate keys, unknown fields,
+empty objects and invalid limits fail startup. Keys cannot duplicate the shared
+inference or admin credential. Restart to change client configuration.
+
+A named client has inference access only. Its limit counts outstanding inference
+HTTP requests, including body reads, queued work and streaming responses. Excess
+requests receive `429` with `Retry-After: 1` before body reads or scheduler admission.
+The slot is released when the handler finishes, including failure/disconnect
+cleanup. Limits are shared across that server's handler threads and independent
+between clients; they do not replace global connection or scheduler queue limits.
+Shared inference/admin keys retain their existing unrestricted per-client behavior,
+so omit the shared inference key when every inference client must have a cap.
+All clients can see the same registered model aliases; these limits do not provide
+token-rate fairness, per-model permissions, distributed quotas or tenant data
+isolation. Client-only configuration still protects the API; `/health` stays public.
