@@ -9,7 +9,7 @@ from dllm.quantized_metal import linear
 def main():
     torch.manual_seed(321);torch.set_num_threads(4);checks=[]
     for dtype in (torch.float32,torch.float16):
-        for rows,outputs,width in ((1,7,32),(2,31,96),(3,65,256),(4,129,768),(5,33,64),(17,65,1536),(31,13,128)):
+        for rows,outputs,width in ((1,7,32),(2,31,96),(3,65,256),(4,129,768),(5,33,64),(8,65,1536),(16,1024,4096),(17,65,1536),(31,13,128)):
             for biased in (False,True):
                 q=torch.randint(-128,128,(outputs,width),dtype=torch.int8)
                 scales=((torch.rand(outputs,width//32)-.5)*.06).half();scales[::3,0]=0

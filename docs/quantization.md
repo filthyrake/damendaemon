@@ -19,6 +19,8 @@ server's `DLLM_QUANTIZATION` default captured at startup. Policies are part of
 alias identity and remain stable across eviction/reload; register another alias
 for a different precision. Qwen2, Qwen3, Llama and Mamba-1/2 Q8 also run on Metal.
 [Metal Q8 evidence and performance limits](evidence/quantization/metal/README.md).
+Native Metal Q4/Q8 use [bounded packed short-prompt execution](evidence/quantization/metal/short-prefill/README.md)
+for FP32 activations; larger prompts keep temporary per-projection expansion.
 A Q8 decoder and an
 unquantized encoder can share one server and its GPU/host residency budgets.
 

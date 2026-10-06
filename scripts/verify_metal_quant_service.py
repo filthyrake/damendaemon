@@ -1,4 +1,4 @@
-"""Real Metal Q4 HTTP qualification against an independent CPU trace."""
+"""Real Qwen2 Metal Q4/Q8 HTTP qualification against an independent CPU trace."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
@@ -28,7 +28,7 @@ def cases_from_trace(trace):
             else:
                 assert event['tokens'][row]==active[slot]['tokens'][-1]
                 active[slot]['tokens'].append(token)
-    return [dict(prompt=c['prompt'],tokens=c['tokens'][:8]) for c in cases if len(c['tokens'])>=8]
+    return [dict(prompt=c['prompt'],tokens=c['tokens'][:8]) for c in cases if len(c['tokens'])>=4]
 
 
 def main():
@@ -44,7 +44,7 @@ def main():
             if token in eos:case['tokens']=case['tokens'][:index+1];break
     report=dict(passed=False,model=model,quantization=trace.get('reference_quantization','none'),
         trace_sha256=hashlib.sha256(Path(args.trace).read_bytes()).hexdigest(),checks=[],trials=[],statuses={},
-        scope='Metal Q4 HTTP and Q4/Q8 precision switching')
+        scope='Metal quantized HTTP and Q4/Q8 precision switching')
     with tempfile.TemporaryDirectory(prefix='dllm-metal-q4-http-') as directory:
         logpath=Path(directory)/'server.log'
         env={**os.environ,'DLLM_QUANTIZATION':report['quantization'],'DLLM_DEVICE':'mps','DLLM_METAL_WEIGHT_DTYPE':'float16'}
@@ -80,8 +80,9 @@ def main():
                 def status(label):
                     value=call('/v1/models/status');report['statuses'][label]=value;return value
                 assert status('initial')['models']==[]
-                assert report['quantization']=='q4_0'
-                for alias,quantization in (('a','q4_0'),('b','q8_0')):
+                assert report['quantization'] in ('q4_0','q8_0')
+                other='q8_0' if report['quantization']=='q4_0' else 'q4_0'
+                for alias,quantization in (('a',report['quantization']),('b',other)):
                     call('/v1/models/register',dict(model=alias,path=model,quantization=quantization))
                 for index in range(len(cases)):check(request(index),index,label='independent:'+str(index))
                 loaded=status('loaded');assert loaded['device']=='mps'
@@ -116,11 +117,11 @@ def main():
                 sampled={**chat,'temperature':.7,'top_k':20,'top_p':.9,'seed':42,'repetition_penalty':1.1}
                 assert call('/v1/chat/completions',sampled)['choices']==call('/v1/chat/completions',sampled)['choices']
                 report['checks'].append('seeded-sampling-and-penalties')
-                q8=request(alias='b')
-                assert q8['choices'][0]['text'] and q8['usage']['completion_tokens']>0
-                switched=status('q8-loaded')
-                assert next(m for m in switched['models'] if m['id']=='b')['quantization']=='q8_0'
-                report['checks'].append('q8-precision-switch-smoke')
+                other_result=request(alias='b')
+                assert other_result['choices'][0]['text'] and other_result['usage']['completion_tokens']>0
+                switched=status('other-precision-loaded')
+                assert next(m for m in switched['models'] if m['id']=='b')['quantization']==other
+                report['checks'].append('other-precision-switch-smoke')
                 restored=request();check(restored,label='host-restore')
                 assert restored['dllm_timing']['source_tier']=='host'
                 for alias in ('a','b'):call('/v1/models/unload',dict(model=alias,release_host=True))

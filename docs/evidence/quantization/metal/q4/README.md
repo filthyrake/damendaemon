@@ -3,7 +3,8 @@
 Tracked in GitHub issues #4 and #23. Normal runtime admission now supports Qwen2.5-0.5B geometry,
 standard RoPE, context through 2048 and one to four request slots.
 
-The native shader reads Q4_0 low/high nibbles directly for one to four rows,
+The native shader reads Q4_0 low/high nibbles directly for decode and
+[bounded short FP32 prompts](../short-prefill/README.md),
 using FP16 scales and FP32 accumulation. Larger prompt matrices temporarily
 expand one projection for the MPS matrix product. No persistent dequantized
 model copy is introduced. FP16 activations round coefficients and outputs to
@@ -39,7 +40,7 @@ concurrent batches, streaming, cancellation, invalid-input recovery, logprobs,
 seeded sampling, Q4/Q8 switching, host restore and disk reload. The Q8 switch
 is a lifecycle smoke check; Q4 outputs are compared with the CPU reference.
 Repeated full unloads retain the same live Metal allocation count
-(`qwen2-q4-metal-http.json`). Run `scripts/verify_metal_q4_service.py` against
+(`qwen2-q4-metal-http.json`). Run `scripts/verify_metal_quant_service.py` against
 the local CPU trace to reproduce. Performance measurements remain separate;
 these correctness results do not establish a speedup.
 

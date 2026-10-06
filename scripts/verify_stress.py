@@ -189,8 +189,9 @@ def main():
     if args.tiny_prefixes:
         # Exercise scalar lengths and packed totals on both sides of tiny
         # projection dispatch boundaries, with fresh and reused cache slots.
-        for index,lengths in enumerate(([1],[2],[4],[8],[16],[1,1],[1,2],
-                                         [1,1,1,1],[1,4],[2,2],[1,2,4])):
+        tiny_cases = [[length] for length in range(1,18)] + [
+            [1,1],[1,2],[1,1,1,1],[1,4],[2,2],[1,2,4],[3,5],[8,8],[5,11],[9,8]]
+        for index,lengths in enumerate(tiny_cases):
             slots=[(3-index+offset)%4 for offset in range(len(lengths))]
             prefill(lengths,slots)
             decode(list(reversed(slots)),4)

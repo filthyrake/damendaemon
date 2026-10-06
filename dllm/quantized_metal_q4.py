@@ -1,6 +1,7 @@
 """Native Metal Q4_0 projections; runtime admission is qualified separately."""
 import torch
 from torch.nn import functional as F
+from .metal_projection_policy import use_packed_projection
 
 
 _KERNELS = r'''
@@ -84,7 +85,7 @@ def linear(x, weight, scales, bias=None):
     shape = x.shape[:-1]
     x = x.reshape(-1, width).contiguous()
     half = x.dtype == torch.float16
-    if x.shape[0] > 4:
+    if not use_packed_projection(x.shape[0], outputs, width, not half):
         # Expand only this projection temporarily for the MPS matrix product.
         expanded = torch.empty((outputs, width), device=x.device, dtype=x.dtype)
         (library().expand_half if half else library().expand_float)(

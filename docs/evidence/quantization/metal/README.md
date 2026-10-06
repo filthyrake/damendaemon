@@ -2,7 +2,8 @@
 
 The existing signed-byte/FP16-scale Metal projection now serves Qwen2, Qwen3
 and Llama decoders. Activations, accumulation and KV remain FP32. Small batches
-read packed weights directly; prompt matrices temporarily expand one projection
+read packed weights directly, as do [bounded short FP32 prompts](short-prefill/README.md);
+larger prompt matrices temporarily expand one projection
 at a time. There is no persistent dequantized model copy. Later qualification adds [Qwen2.5-0.5B Q4](q4/README.md);
 other unqualified Metal quantization combinations still fail clearly.
 Q8 remains opt-in (`DLLM_QUANTIZATION=q8_0` or per-model registration).

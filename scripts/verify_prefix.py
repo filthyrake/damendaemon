@@ -65,6 +65,10 @@ def main():
     assert check(prompt,0)<255
     check(corpus[:600],2)
     assert check(corpus[:600],1)==512
+    for suffix_length in (5,8,9,16,17):
+        cache=PrefixCache(executor,512)
+        assert check(prompt,0)==0
+        assert check(prompt+[1]*suffix_length,1)==255
     print(json.dumps({'passed':True,'device':device_name(),'model':args.model,'checks':checks,
         'weight_quantization':model.quantization,'kernel_backend':executor.kernel_backend,
         'exact_and_divergent_prefixes':True,'slot_and_output_isolation':True,'bounded_eviction':True,

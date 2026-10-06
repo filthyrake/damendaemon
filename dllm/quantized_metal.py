@@ -1,6 +1,7 @@
 """Native Metal Q8_0 projection with FP16/FP32 activation and FP32 accumulation."""
 import torch
 from torch.nn import functional as F
+from .metal_projection_policy import use_packed_projection
 
 _SOURCE=r'''
 #include <metal_stdlib>
@@ -94,7 +95,7 @@ def linear(x,weight,scales,bias=None):
     half=x.dtype==torch.float16
     if bias is not None:bias=bias.to(x.dtype)
     shape=x.shape[:-1];x=x.reshape(-1,x.shape[-1]).contiguous()
-    if x.shape[0]>4:
+    if not use_packed_projection(x.shape[0], weight.shape[0], weight.shape[1], not half):
         expanded=torch.empty(weight.shape,device=x.device,dtype=x.dtype)
         (library().expand_half if half else library().expand)(weight,scales,expanded,weight.numel(),threads=weight.numel())
         out=F.linear(x,expanded,bias)
