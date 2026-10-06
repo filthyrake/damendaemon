@@ -22,7 +22,8 @@ def single_dot(X,W,S,BIAS,Y,M:tl.constexpr,N:tl.constexpr,K:tl.constexpr,
 
 @tr.jit
 def single_dot_paired_load(X,W,S,BIAS,Y,M:tl.constexpr,N:tl.constexpr,K:tl.constexpr,
-                          BM:tl.constexpr,BN:tl.constexpr,BK:tl.constexpr,BIASED:tl.constexpr):
+                          BM:tl.constexpr,BN:tl.constexpr,BK:tl.constexpr,BIASED:tl.constexpr,
+                          ADJACENT:tl.constexpr=False):
     rows=tl.program_id(0)*BM+tl.arange(0,BM)
     outputs=tl.program_id(1)*BN+tl.arange(0,BN)
     columns=tl.arange(0,BK)
@@ -40,7 +41,22 @@ def single_dot_paired_load(X,W,S,BIAS,Y,M:tl.constexpr,N:tl.constexpr,K:tl.const
                       (outputs[:,None]<N)&(g[None,:]<K//32),other=0).to(tl.float32)
         low=(((packed&15)-8).to(tl.float32).reshape(BN,BK//32,16)*scale[:,:,None]).to(tl.float16)
         high=(((packed>>4)-8).to(tl.float32).reshape(BN,BK//32,16)*scale[:,:,None]).to(tl.float16)
-        w=tl.join(low,high).permute(0,1,3,2).reshape(BN,BK)
+        if ADJACENT:w=tl.join(low,high).reshape(BN,BK)
+        else:w=tl.join(low,high).permute(0,1,3,2).reshape(BN,BK)
         accum+=tl.dot(x,tl.trans(w))
     if BIASED:accum+=tl.load(BIAS+outputs,outputs<N,other=0)[None,:].to(tl.float32)
     tl.store(Y+rows[:,None]*N+outputs[None,:],accum,(rows[:,None]<M)&(outputs[None,:]<N))
+
+
+@tr.jit
+def single_dot_adjacent(X,W,S,BIAS,Y,M:tl.constexpr,N:tl.constexpr,K:tl.constexpr,
+                        BM:tl.constexpr,BN:tl.constexpr,BK:tl.constexpr,BIASED:tl.constexpr):
+    single_dot_paired_load(X,W,S,BIAS,Y,M,N,K,BM,BN,BK,BIASED,True)
+
+
+def repack_adjacent(weight):
+    """Diagnostic byte permutation; values and scales are unchanged."""
+    import torch
+    blocks=weight.reshape(weight.shape[0],-1,16)
+    values=torch.cat((blocks&15,blocks>>4),dim=-1)
+    return (values[...,::2]|(values[...,1::2]<<4)).reshape(weight.shape).contiguous()

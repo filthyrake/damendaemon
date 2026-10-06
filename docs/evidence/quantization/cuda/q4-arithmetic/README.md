@@ -106,3 +106,22 @@ exact contiguous-output equality for every configuration. On the two expensive
 one-row projections, its best results are gate/up 131.32 µs versus current
 59.27 µs, and down 83.19 µs versus 45.13 µs. Reducing registers or changing
 occupancy alone does not remove the regression. No tested setting is promoted.
+
+## Adjacent-nibble layout experiment
+
+A diagnostic byte permutation packs consecutive K positions together instead
+of Q4_0's separated half-block nibbles. It preserves integer values, block
+scales and packed byte count. The corresponding kernel avoids the per-tile
+half-block transpose while preserving contiguous accumulation order.
+
+The initial A2 profile checks two body projection shapes at one/four rows and
+three layout-specific launch configurations. Every candidate exactly matches
+the original contiguous output. Best one-row timings are gate/up 65.21 µs
+versus current 59.13 µs, and down 48.65 µs versus 44.53 µs. At four rows these
+are 66.45 versus 60.43 µs and 49.94 versus 44.83 µs. The remaining gap is about
+9–11%, a substantial improvement over the earlier candidates but still a
+regression. These measurements exclude repacking cost.
+
+This layout exists only in the matrix profiler. It has no serving dispatch,
+model-level qualification, residency integration or hot-swap proof. No checkpoint
+format, production weight layout or default has changed.

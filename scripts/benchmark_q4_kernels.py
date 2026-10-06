@@ -13,40 +13,59 @@ from dllm import quantized_kernels_q4 as current
 from dllm.quantized_kernels_q4 import linear
 
 
-def profile_qwen_body(tune=False):
-    from scripts.experiments.q4_prefill import single_dot,single_dot_paired_load
-    report=dict(device=torch.cuda.get_device_name(),torch=str(torch.__version__),tuning=tune,checks=[],
+def profile_qwen_body(tune=False,adjacent=False):
+    from scripts.experiments.q4_prefill import single_dot,single_dot_paired_load,single_dot_adjacent,repack_adjacent
+    report=dict(device=torch.cuda.get_device_name(),torch=str(torch.__version__),tuning=tune,adjacent=adjacent,checks=[],
                 scope='Synthetic real-GPU Qwen2.5-0.5B body matrix profiling; not whole-model performance')
-    kernels={name:(kernel,64,4,3) for name,kernel in
+    kernels={name:(kernel,64,128,4,3) for name,kernel in
              (('paired',current._gemm),('contiguous',single_dot),('paired-load',single_dot_paired_load))}
-    if tune:
+    if tune and not adjacent:
         for bn,warps,stages in ((16,4,2),(32,4,1),(32,4,2),(32,4,3),
                                (64,4,1),(64,8,1),(64,8,2),(64,8,3)):
-            kernels[f'load-n{bn}-w{warps}-s{stages}']=(single_dot_paired_load,bn,warps,stages)
+            kernels[f'load-n{bn}-w{warps}-s{stages}']=(single_dot_paired_load,bn,128,warps,stages)
+    if adjacent:
+        for bn,warps,stages in ((32,4,1),(64,4,1),(64,4,3)):
+            kernels[f'adjacent-n{bn}-w{warps}-s{stages}']=(single_dot_adjacent,bn,128,warps,stages)
+        for bn,bk,warps,stages in ((32,64,4,3),(64,64,4,3),(64,64,4,1),(128,64,4,3),
+                                  (128,128,4,3),(128,128,8,3),(64,128,2,3),(64,128,8,3)):
+            kernels[f'adjacent-n{bn}-k{bk}-w{warps}-s{stages}']=(single_dot_adjacent,bn,bk,warps,stages)
     shapes=((9728,896),(896,4864)) if tune else ((1152,896),(896,896),(9728,896),(896,4864))
     for n,k in shapes:
         weight,scales=quantize_q4(torch.randn(n,k,device='cuda',dtype=torch.float16)*.02)
+        reordered=repack_adjacent(weight) if adjacent else None
         restored=dequantize_q4(weight,scales,torch.float16)
         for rows in ((1,4) if tune else (1,2,4,16,64)):
             x=torch.randn(rows,k,device='cuda',dtype=torch.float16)
             expected=torch.nn.functional.linear(x,restored)
             output=torch.empty_like(expected);bm=max(16,tr.next_power_of_2(rows))
             functions={};values={};case=dict(outputs=n,width=k,rows=rows,kernels={})
-            for name,(kernel,bn,warps,stages) in kernels.items():
-                def launch(kernel=kernel,bn=bn,warps=warps,stages=stages):
-                    return kernel[(tr.cdiv(rows,bm),tr.cdiv(n,bn))](x,weight,scales,weight,output,
-                        rows,n,k,bm,bn,128,False,num_warps=warps,num_stages=stages)
-                compiled=launch();values[name]=output.clone();functions[name]=launch
+            for name,(kernel,bn,bk,warps,stages) in kernels.items():
+                matrix=reordered if name.startswith('adjacent-') else weight
+                def launch(kernel=kernel,bn=bn,bk=bk,warps=warps,stages=stages,matrix=matrix):
+                    return kernel[(tr.cdiv(rows,bm),tr.cdiv(n,bn))](x,matrix,scales,matrix,output,
+                        rows,n,k,bm,bn,bk,False,num_warps=warps,num_stages=stages)
+                try:compiled=launch()
+                except Exception as error:
+                    if not name.startswith(('load-','adjacent-')):raise
+                    torch.cuda.synchronize()  # A broken CUDA context must still abort the job.
+                    case['kernels'][name]=dict(passed=False,error=repr(error));continue
+                values[name]=output.clone()
                 error=((output.float()-expected.float()).square().mean()/expected.float().square().mean()).sqrt().item()
-                assert error<.001,(n,k,rows,name,error)
-                case['kernels'][name]=dict(relative_rms=error,registers=compiled.n_regs,spills=compiled.n_spills,round_ms=[])
+                valid=error<.001
+                if not name.startswith(('load-','adjacent-')):assert valid,(n,k,rows,name,error)
+                case['kernels'][name]=dict(passed=valid,relative_rms=error,registers=compiled.n_regs,spills=compiled.n_spills,round_ms=[])
+                if valid:functions[name]=launch
             case['paired_load_matches_contiguous']=bool(torch.equal(values['contiguous'],values['paired-load']))
             assert case['paired_load_matches_contiguous'],(n,k,rows,'contiguous arithmetic changed')
-            for name in kernels:
-                if name.startswith('load-'):assert torch.equal(values['contiguous'],values[name]),(n,k,rows,name)
-            for name in (*kernels,*reversed(kernels)):
+            for name in list(functions):
+                if name.startswith(('load-','adjacent-')):
+                    exact=bool(torch.equal(values['contiguous'],values[name]))
+                    case['kernels'][name]['exact_contiguous_output']=exact
+                    if not exact:case['kernels'][name]['passed']=False;del functions[name]
+            for name in (*functions,*reversed(functions)):
                 case['kernels'][name]['round_ms'].append(tr.testing.do_bench_cudagraph(functions[name],rep=100))
-            for value in case['kernels'].values():value['median_ms']=statistics.median(value['round_ms'])
+            for value in case['kernels'].values():
+                if value.get('round_ms'):value['median_ms']=statistics.median(value['round_ms'])
             report['checks'].append(case)
             print(json.dumps(case),file=sys.stderr,flush=True)
     print(json.dumps(report,indent=2))
@@ -57,9 +76,11 @@ def main():
     p.add_argument('--baseline')
     p.add_argument('--body-candidates',action='store_true')
     p.add_argument('--tune-body',action='store_true')
+    p.add_argument('--adjacent-body',action='store_true')
     args=p.parse_args()
     require_gpu();torch.set_num_threads(4);torch.manual_seed(43)
-    if args.body_candidates or args.tune_body:return profile_qwen_body(args.tune_body)
+    if args.body_candidates or args.tune_body or args.adjacent_body:
+        return profile_qwen_body(args.tune_body or args.adjacent_body,args.adjacent_body)
     if not args.baseline:p.error('--baseline is required unless --body-candidates is selected')
     spec=importlib.util.spec_from_file_location('q4_baseline',args.baseline)
     baseline=importlib.util.module_from_spec(spec)
