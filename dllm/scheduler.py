@@ -91,6 +91,8 @@ class BatchedRuntime:
         self.pending = deque()
         self.requests = set()
         self.closed = False
+        self.draining = False
+        self.worker_busy = False
         self.worker = threading.Thread(target=self._work, name="dllm-gpu", daemon=True)
         self.worker.start()
 
@@ -107,6 +109,9 @@ class BatchedRuntime:
             now = time.perf_counter()
             return {
                 "closed": self.closed,
+                "draining": self.draining,
+                "drained": self.draining and not live and not self.worker_busy,
+                "worker_busy": self.worker_busy,
                 "queue_capacity": self.queue_capacity,
                 "batch_capacity": self.batch_size,
                 "queued_generation_requests": sum(r.command is None for r in queued),
@@ -115,6 +120,13 @@ class BatchedRuntime:
                 "worker_owned_commands": sum(r.command is not None for r in owned),
                 "oldest_queued_seconds": max((max(0, now-r.start) for r in queued), default=0),
             }
+
+    def drain(self):
+        """Stop new admission; the worker finishes previously admitted work."""
+        with self.condition:
+            self.draining = True
+            self.condition.notify_all()
+            return self.scheduler_status()
 
     def model_manifest(self):
         # Registry-only snapshot; never wait for the GPU worker or admission.
@@ -151,8 +163,8 @@ class BatchedRuntime:
         request = Pending(options.get('model') or '', None, 0, command=options)
         try:
             with self.condition:
-                if self.closed:
-                    raise BusyError('runtime is closed')
+                if self.closed or self.draining:
+                    raise BusyError('runtime is closed' if self.closed else 'runtime is draining')
                 self.requests.add(request)
                 self.pending.append(request)
                 self.condition.notify_all()
@@ -218,8 +230,8 @@ class BatchedRuntime:
         request = Pending(alias, copy.deepcopy(messages), max_tokens, enable_thinking, sampler, stops, raw_prompt, schema,tools=tools,tool_json=tool_schema is not None,reasoning_effort=reasoning_effort)
         try:
             with self.condition:
-                if self.closed:
-                    raise BusyError("runtime is closed")
+                if self.closed or self.draining:
+                    raise BusyError("runtime is closed" if self.closed else "runtime is draining")
                 self.requests.add(request)
                 self.pending.append(request)
                 self.condition.notify_all()
@@ -738,6 +750,7 @@ class BatchedRuntime:
                     first = self._next()
                 if self.closed:
                     return
+                self.worker_busy = True
             if first.command is not None:
                 try:
                     if first.command['action'] == 'embed':
@@ -756,6 +769,10 @@ class BatchedRuntime:
                     self._finish(first)
                 except Exception as error:
                     self._finish(first, error)
+                finally:
+                    with self.condition:
+                        self.worker_busy = False
+                        self.condition.notify_all()
                 continue
             try:
                 with self.runtime.session(first.alias) as (executor, tier, activation):
@@ -768,6 +785,9 @@ class BatchedRuntime:
                 # A worker local otherwise retains the previous model while the
                 # next session tries to evict it and reserve replacement VRAM.
                 executor = None
+                with self.condition:
+                    self.worker_busy = False
+                    self.condition.notify_all()
 
     def close(self):
         with self.condition:

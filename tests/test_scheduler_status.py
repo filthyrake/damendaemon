@@ -55,7 +55,7 @@ class SchedulerStatusTests(unittest.TestCase):
                     self.assertFalse(self.runtime.admission.acquire(blocking=False))
                     with urlopen(base+'/v1/scheduler/status', timeout=1) as response:
                         snapshot = json.load(response)
-                    self.assertEqual(set(snapshot), {'closed', 'queue_capacity', 'batch_capacity',
+                    self.assertEqual(set(snapshot), {'closed', 'draining', 'drained', 'worker_busy', 'queue_capacity', 'batch_capacity',
                         'queued_generation_requests', 'worker_owned_generation_requests',
                         'queued_commands', 'worker_owned_commands', 'oldest_queued_seconds'})
                     self.assertEqual(snapshot['queue_capacity'], 4)
@@ -114,6 +114,110 @@ class SchedulerStatusTests(unittest.TestCase):
                 finally:
                     release.set()
                 owned.result(1)
+
+    def wait_drained(self):
+        deadline = time.monotonic()+2
+        with self.runtime.condition:
+            while not self.runtime.scheduler_status()['drained']:
+                remaining = deadline-time.monotonic()
+                if remaining <= 0:
+                    self.fail('worker did not finish draining')
+                self.runtime.condition.wait(remaining)
+
+    def test_http_cli_drain_preserves_admitted_work_and_rejects_new_work(self):
+        from urllib.request import Request
+        from dllm.runtime import BusyError
+        server = ThreadingHTTPServer(('127.0.0.1', 0), handler_for(self.runtime))
+        thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)
+        thread.start()
+        base = f'http://127.0.0.1:{server.server_port}'
+        try:
+            with ThreadPoolExecutor(3) as pool:
+                futures = [pool.submit(self.generate, 'a')]
+                try:
+                    self.assertTrue(self.executor.entered.wait(2))
+                    futures.append(pool.submit(self.generate, 'b'))
+                    self.wait_queued(1)
+                    futures.append(pool.submit(self.runtime.manage, 'load', 'a'))
+                    self.wait_queued(2)
+                    output = io.StringIO()
+                    with patch('sys.argv', ['dllm', 'drain', '--server', base]), patch('sys.stdout', output):
+                        main()
+                    state = json.loads(output.getvalue())
+                    self.assertTrue(state['draining'])
+                    self.assertFalse(state['drained'])
+                    self.assertTrue(state['worker_busy'])
+                    self.assertEqual(state['queued_generation_requests'], 1)
+                    self.assertEqual(state['queued_commands'], 1)
+                    with self.assertRaisesRegex(BusyError, 'draining'):
+                        self.generate('a')
+                    with self.assertRaisesRegex(BusyError, 'draining'):
+                        self.runtime.manage('load', 'a')
+                    request = Request(base+'/v1/chat/completions',
+                        data=json.dumps({'model': 'a', 'messages': [{'role': 'user', 'content': 'new'}]}).encode(),
+                        headers={'Content-Type': 'application/json'})
+                    with self.assertRaises(HTTPError) as error:
+                        urlopen(request, timeout=1)
+                    self.assertEqual(error.exception.code, 503)
+                    error.exception.close()
+                    request = Request(base+'/v1/scheduler/drain', data=b'{}',
+                                      headers={'Content-Type': 'application/json'})
+                    with urlopen(request, timeout=1) as response:
+                        self.assertFalse(json.load(response)['drained'])
+                    self.assertFalse(self.executor.release.is_set())
+                finally:
+                    self.executor.release.set()
+                results = [future.result(2) for future in futures]
+                self.assertTrue(all(r[-1]['usage']['completion_tokens'] == 2 for r in results[:2]))
+                self.assertEqual(results[2], {'done': 'load'})
+            self.wait_drained()
+            self.assertTrue(self.runtime.drain()['drained'])
+            self.assertFalse(self.runtime.scheduler_status()['closed'])
+            self.assertEqual(self.runtime.runtime.groups, ['a', 'b', 'control:load'])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(2)
+
+    def test_drain_waits_for_worker_even_after_caller_is_cancelled(self):
+        with ThreadPoolExecutor(1) as pool:
+            future = pool.submit(self.generate, 'a')
+            try:
+                self.assertTrue(self.executor.entered.wait(1))
+                self.runtime.drain()
+                # Simulate the consumer's cancellation cleanup while the worker
+                # remains inside prefill; request counts alone now read zero.
+                with self.runtime.condition:
+                    request = next(iter(self.runtime.requests))
+                    request.cancelled.set()
+                    self.runtime.requests.discard(request)
+                state = self.runtime.scheduler_status()
+                self.assertEqual(state['worker_owned_generation_requests'], 0)
+                self.assertTrue(state['worker_busy'])
+                self.assertFalse(state['drained'])
+            finally:
+                self.executor.release.set()
+            self.assertEqual(future.result(2), [])
+        self.wait_drained()
+
+    def test_failed_owned_command_does_not_leave_drain_busy(self):
+        entered, release = threading.Event(), threading.Event()
+        def fail(**options):
+            entered.set()
+            if not release.wait(2):
+                raise TimeoutError('test command not released')
+            raise ValueError('command failed')
+        with patch.object(self.runtime.runtime, 'manage', side_effect=fail), ThreadPoolExecutor(1) as pool:
+            future = pool.submit(self.runtime.manage, 'load', 'a')
+            try:
+                self.assertTrue(entered.wait(1))
+                self.assertFalse(self.runtime.drain()['drained'])
+            finally:
+                release.set()
+            with self.assertRaisesRegex(ValueError, 'command failed'):
+                future.result(1)
+        self.wait_drained()
+        self.assertTrue(self.runtime.drain()['drained'])
 
     def test_unsupported_runtime_returns_explicit_unavailable_response(self):
         server = ThreadingHTTPServer(('127.0.0.1', 0), handler_for(object()))

@@ -86,12 +86,12 @@ def main():
         command.add_argument("--host-gib", type=float, default=8)
         command.add_argument("--no-graph", action="store_true")
         command.add_argument('--layer-split',type=int,help='experimental two-GPU layer split; qualified value: 12 (context <=512)')
-    for name in ('status', 'models', 'add', 'load', 'unload'):
-        management = commands.add_parser(name, help='show scheduler queue status' if name == 'status' else 'manage models on a running dllm server')
+    for name in ('status', 'drain', 'models', 'add', 'load', 'unload'):
+        management = commands.add_parser(name, help={'status': 'show scheduler queue status', 'drain': 'stop admission and finish queued work'}.get(name, 'manage models on a running dllm server'))
         management.add_argument('--server', default='http://127.0.0.1:8088')
         if name == 'models':
             management.add_argument('--save-config', metavar='FILE', help='save registered models as a restart manifest')
-        if name not in ('status', 'models'):
+        if name not in ('status', 'drain', 'models'):
             management.add_argument('model')
         if name == 'add':
             management.add_argument('path', help='local snapshot or Hugging Face repository on this host')
@@ -111,12 +111,12 @@ def main():
             manifest = load(args.model_config, resolve_model)
         except (ValueError, OSError) as error:
             parser.error(str(error))
-    if args.command in ('status', 'models', 'add', 'load', 'unload'):
+    if args.command in ('status', 'drain', 'models', 'add', 'load', 'unload'):
         from urllib.request import Request, urlopen
         action = {'status':'scheduler', 'models':'status', 'add':'register'}.get(args.command, args.command)
         if args.command == 'models' and args.save_config:
             action = 'config'
-        body = None if action in ('scheduler', 'status', 'config') else {'model': args.model}
+        body = ({} if action == 'drain' else None if action in ('scheduler', 'status', 'config') else {'model': args.model})
         if action == 'register':
             body['path'] = str(resolve_model(args.path, args.revision, args.filename))
             if args.chat_template is not None:
@@ -126,11 +126,12 @@ def main():
                 body['quantization'] = args.quantization
         if action == 'unload':
             body['release_host'] = args.release_host
-        endpoint = '/v1/scheduler/status' if action == 'scheduler' else '/v1/models/'+action
+        endpoint = ('/v1/scheduler/status' if action == 'scheduler' else
+                    '/v1/scheduler/drain' if action == 'drain' else '/v1/models/'+action)
         request = Request(args.server.rstrip('/')+endpoint,
                           data=None if body is None else json.dumps(body).encode(),
                           headers={'Content-Type':'application/json'})
-        with urlopen(request, timeout=10 if action == 'scheduler' else 300) as response:
+        with urlopen(request, timeout=10 if action in ('scheduler', 'drain') else 300) as response:
             result = json.load(response)
         if action == 'config':
             from .model_manifest import save

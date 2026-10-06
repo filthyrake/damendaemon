@@ -361,3 +361,25 @@ shutdown. Counts omit completed/cancelled work and contain no prompt content,
 tokens, model paths or request history. Runtimes without this scheduler return
 HTTP501 instead of invented zero counts. This is operational visibility, not a
 GPU-health check or sustained-user performance qualification.
+
+## Finish admitted work before stopping
+
+Run `dllm drain --server http://127.0.0.1:8088` to stop accepting new work while
+already-admitted generations and commands finish in their existing order.
+The equivalent request is `POST /v1/scheduler/drain` with JSON body `{}`.
+It returns immediately and is idempotent. New generation and queued management,
+embedding, reranking and scoring requests receive HTTP503. Existing queue and
+backpressure deadlines still apply.
+
+Poll `dllm status` until `drained` is true, then stop the process normally.
+`draining` reports that admission is stopped; `worker_busy` stays true while the
+worker owns an operation, even if its caller has cancelled. `drained` requires
+both no admitted requests and an idle worker, rather than relying on an empty
+client queue alone. Scheduler status, health, model listing and registry export
+remain readable. Model-residency status uses the command queue and is rejected
+during drain; use the scheduler view to follow progress.
+
+Drain does not shut down the process, unload model weights or cancel an owned
+GPU operation. It is one-way for this server instance; restart to admit new
+work. Forced shutdown retains the existing cancellation behavior. Runtimes
+without this scheduler return HTTP501 for drain.
