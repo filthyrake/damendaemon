@@ -469,6 +469,15 @@ host weights and matches the independent continuation. See
 `qwen2-partition-http-q4-recovery.json`. This is recovery from an ordinary
 execution exception, not proof of recovery from fatal CUDA/device faults.
 
+The matched Q4 eager/graph/graph/eager experiment uses the same A2/A30 devices,
+prepared weights, 255-token prompt, 32-token output and 512 context. Twelve
+measured requests per mode follow excluded warmups. Median decode rises from
+46.60 to 263.07 tokens/s, while complete-request time falls from 694.92 to
+149.69 ms. First-token time is 29.02 ms eager versus 31.23 ms with stage graphs.
+All measured tokens agree across modes. This proves the graph benefit at Q4;
+it is not a Q4-versus-Q8 precision comparison, HTTP throughput measurement or
+upstream-engine comparison. Raw results: `qwen2-stages-q4-graph-abba.json`.
+
 | Median network metric | Separate completion collective | Token reply completion |
 | --- | ---: | ---: |
 | First token | 20.88 ms | 20.76 ms |
