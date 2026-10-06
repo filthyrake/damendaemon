@@ -23,6 +23,9 @@ def main():
     parser.add_argument('--swap-cycles',type=int,default=2)
     parser.add_argument('--disable-thinking',action='store_true')
     parser.add_argument('--prefill-chunk-size', type=int, default=0)
+    parser.add_argument('--no-graph', action='store_true')
+    parser.add_argument('--host-gib', type=float, default=8)
+    parser.add_argument('--request-timeout', type=float, default=120)
     parser.add_argument('--output',help='persist report and per-capacity server logs')
     parser.add_argument('--candidate-q8-small-batch', action='store_true',
                         help='start each server with the isolated HOMER Q8 experiment')
@@ -31,9 +34,15 @@ def main():
         parser.error('context must be 128..4096 and swap cycles 1..20')
     if args.prefill_chunk_size < 0:
         parser.error('prefill chunk size must be nonnegative')
+    import math
+    if any(not math.isfinite(value) or value <= 0 for value in (args.host_gib, args.request_timeout)):
+        parser.error('host GiB and request timeout must be finite and positive')
     report=dict(passed=False,model_a=args.model_a,model_b=args.model_b,context=args.context,
                 swap_cycles=args.swap_cycles,reports=[],
                 prefill_chunk_size=args.prefill_chunk_size,
+                graph_requested=not args.no_graph, host_gib=args.host_gib,
+                request_timeout=args.request_timeout,
+                hybrid_precision=os.environ.get('DLLM_HYBRID_PRECISION', 'float16'),
                 rocm_aotriton_experimental=os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL'),
                 variant='hip-q8-small-batch' if args.candidate_q8_small_batch else 'ordinary')
     prompt = "Explain how matrix multiplication works in detail, with a worked example."
@@ -48,6 +57,8 @@ def main():
                 process = subprocess.Popen([
                     *entry, "serve", "--port", "0", "--context", str(args.context),
                     '--prefill-chunk-size', str(args.prefill_chunk_size),
+                    '--host-gib', str(args.host_gib),
+                    *(['--no-graph'] if args.no_graph else []),
                     "--gpu-models", str(slots), "--model", "a=" + args.model_a,
                     "--model", "b=" + args.model_b, "--model", "broken=/missing-dllm-model",
                 ], stdout=log, stderr=log)
@@ -69,7 +80,7 @@ def main():
                         if args.disable_thinking:data['chat_template_kwargs']={'enable_thinking':False}
                         data.update(extra)
                         return urlopen(Request(base + "/v1/chat/completions", data=json.dumps(data).encode(),
-                                               headers={"Content-Type": "application/json"}), timeout=120)
+                                               headers={"Content-Type": "application/json"}), timeout=args.request_timeout)
                     def status():
                         with urlopen(base+'/v1/models/status',timeout=30) as response:
                             return json.load(response)

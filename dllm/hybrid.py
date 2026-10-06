@@ -81,6 +81,13 @@ class HybridExecutor:
         selected = kernels or os.environ.get('DLLM_KERNELS', 'auto')
         if selected not in ('auto', 'triton', 'torch'):
             raise ValueError('kernels must be auto, torch, or triton')
+        from .hybrid_precision import select as select_precision
+        self.hybrid_precision = select_precision(model, use_graph, max_batch, selected)
+        self.compute_dtype = torch.float16 if self.hybrid_precision == 'float16' else torch.float32
+        cache_element_bytes = 2 if self.compute_dtype == torch.float16 else 4
+        if self.hybrid_precision != 'float16':
+            torch.backends.cuda.matmul.allow_tf32 = False
+            torch.backends.cudnn.allow_tf32 = False
         if self.device == 'mps':
             if selected == 'triton':
                 raise ValueError('Triton kernels require CUDA')
@@ -94,6 +101,10 @@ class HybridExecutor:
                 if selected == 'triton':
                     raise
         self.kernel_backend = 'triton-hybrid' if self.fused else 'torch-hybrid'
+        if self.hybrid_precision != 'float16':
+            if self.fused is None:
+                raise ValueError('experimental hybrid precision requires Triton kernels')
+            self.kernel_backend += '+' + self.hybrid_precision
         if model.scales:
             self.kernel_backend += '+q8_0'
         self.metal_scan = None
@@ -127,8 +138,8 @@ class HybridExecutor:
             self.dense_fused = dense_kernels
         full = c['layer_types'].count('full_attention')
         linear = c['num_hidden_layers'] - full
-        state_bytes = max_batch * (full * 2*self.kh*self.context*self.dim*2
-            + linear * (self.lv*self.dk*self.dv*4 + self.conv_width*c['linear_conv_kernel_dim']*2))
+        state_bytes = max_batch * (full * 2*self.kh*self.context*self.dim*cache_element_bytes
+            + linear * (self.lv*self.dk*self.dv*4 + self.conv_width*c['linear_conv_kernel_dim']*cache_element_bytes))
         empty_cache()
         free = available_memory()
         if model.bytes + state_bytes + 512*1024**2 > free:
@@ -142,13 +153,16 @@ class HybridExecutor:
         self.linear = F.linear
         if model.scales:
             from .quantization import Linear
-            self.linear = Linear(self.w, model.scales, self.device, F.linear)
+            projection = None
+            if self.hybrid_precision == 'compensated':
+                from .compensated_q8 import projection
+            self.linear = Linear(self.w, model.scales, self.device, F.linear, q8_projection=projection)
         self.kv, self.conv, self.state = {}, {}, {}
         for i, kind in enumerate(c['layer_types']):
             if kind == 'full_attention':
-                self.kv[i] = torch.zeros((2, max_batch, self.kh, self.context, self.dim), dtype=torch.float16, device=self.device)
+                self.kv[i] = torch.zeros((2, max_batch, self.kh, self.context, self.dim), dtype=self.compute_dtype, device=self.device)
             else:
-                self.conv[i] = torch.zeros((max_batch, self.conv_width, c['linear_conv_kernel_dim']), dtype=torch.float16, device=self.device)
+                self.conv[i] = torch.zeros((max_batch, self.conv_width, c['linear_conv_kernel_dim']), dtype=self.compute_dtype, device=self.device)
                 self.state[i] = torch.zeros((max_batch, self.lv, self.dk, self.dv), dtype=torch.float32, device=self.device)
         dim = c['rotary_dim']
         inv = c['rope_theta'] ** (-torch.arange(0, dim, 2, device=self.device, dtype=torch.float32)/dim)
@@ -163,7 +177,7 @@ class HybridExecutor:
                 try:
                     self.forward_batch(probe, probe, probe)
                 except (ImportError, FileNotFoundError, subprocess.CalledProcessError) as error:
-                    if selected != 'auto':
+                    if selected != 'auto' or self.hybrid_precision != 'float16':
                         raise
                     if self.chunk_scan is not None:
                         raise
@@ -194,7 +208,9 @@ class HybridExecutor:
         for tensor in (*self.conv.values(), *self.state.values(), *self.kv.values()):
             tensor.zero_()
 
-    def norm(self, x, weight, dtype=torch.float16):
+    def norm(self, x, weight, dtype=None):
+        if dtype is None:
+            dtype = self.compute_dtype
         if self.fused:
             return self.fused.norm(x, weight, self.eps, dtype)
         x = x.float()
@@ -206,7 +222,7 @@ class HybridExecutor:
         left, right = rotated.chunk(2, -1)
         cos, sin = self.cos[positions].unsqueeze(-2), self.sin[positions].unsqueeze(-2)
         rotated = rotated*cos + torch.cat((-right, left), -1)*sin
-        return torch.cat((rotated, rest), -1).half()
+        return torch.cat((rotated, rest), -1).to(self.compute_dtype)
 
     def linear_attention(self, x, i, slots, prefill, prefix_length=0):
         w = self.w
@@ -260,10 +276,10 @@ class HybridExecutor:
                 self.state[i][slots] = state
                 out = torch.stack(outputs, 1)
         if self.fused:
-            out = self.fused.norm(out, w[f'{i}.gated_norm'], self.eps, torch.float16, gate=z)
+            out = self.fused.norm(out, w[f'{i}.gated_norm'], self.eps, self.compute_dtype, gate=z)
         else:
             out = self.norm(out, w[f'{i}.gated_norm'], torch.float32) * F.silu(z.float())
-        return self.linear(out.reshape(n, length, -1).half(), w[f'{i}.out'])
+        return self.linear(out.reshape(n, length, -1).to(self.compute_dtype), w[f'{i}.out'])
 
     def attention(self, x, i, positions, slots, prefill, prefix_length=0):
         n, length, _ = x.shape
@@ -292,7 +308,7 @@ class HybridExecutor:
             out = scaled_attention(q.transpose(1, 2), ck.index_select(0, slots), cv.index_select(0, slots),
                                                  attn_mask=mask, enable_gqa=True)
         out = out.transpose(1, 2).float()*gate.float().sigmoid()
-        return self.linear(out.reshape(n, length, -1).half(), w[f'{i}.o'])
+        return self.linear(out.reshape(n, length, -1).to(self.compute_dtype), w[f'{i}.o'])
 
     @torch.inference_mode()
     def forward(self, ids, positions, slots, prefill, prefix_length=0, return_logits=True):
@@ -311,7 +327,7 @@ class HybridExecutor:
                 activated = activated.view(*gate_up.shape[:-1], -1)
             else:
                 gate, up = gate_up.chunk(2, -1)
-                activated = (F.silu(gate.float())*up.float()).half()
+                activated = (F.silu(gate.float())*up.float()).to(self.compute_dtype)
             x = x + self.linear(activated, self.w[f'{i}.down'])
         if not return_logits:
             return None

@@ -531,7 +531,52 @@ single-slot decode about 0.147 seconds. First encounters include compilation
 and must be excluded from any performance conclusion. The existing FP32 Q8
 matvec handles those small batches; the next control extends compensated
 projections to two or more rows using `DLLM_EXPERIMENT_BF16X3_MIN_ROWS=2`.
-That candidate must independently pass the same full trace before consideration.
+The [small-batch candidate](evidence/amd/qwen38-27b-q8-hip-bf16x3-small-batch-replay.json)
+also passes **84/84**, with worst RMS 0.0007781 and max absolute 0.026219.
+Its diagnostic four-slot decode settles near 0.66 seconds per step and two-slot
+decode near 0.56 seconds; single-slot decode remains near 0.15 seconds. This
+identifies a useful direction, but these sequential replays are not a controlled
+serving comparison and remain far from the intended per-user speed.
+
+A [matched-arithmetic primitive row-tile probe](evidence/amd/qwen38-q8-compensated-tiles.json)
+compares 16 versus 32 rows with warmed ABBA samples and independent FP32 checks.
+Both pass all six shapes. The 16-row tile is slower on most large projections,
+including the output head, despite doing less padded work. The default stays
+32; numerical correctness and apparent operation count alone cannot select
+the faster kernel layout.
+The [reduction-tile comparison](evidence/amd/qwen38-q8-compensated-reduction.json)
+also passes its numerical checks, but 64- and 128-wide reduction tiles are
+slower than 32 for every measured shape. Those alternatives are rejected;
+the candidate keeps the original 32-by-64-by-32 layout.
+
+The [warmed full-model ABBA comparison](evidence/amd/qwen38-27b-compensated-dispatch-abba.json)
+confirms the dispatch improvement. With the same loaded weights, prompts,
+reference targets, FP32 cache and chunk size, measured four-slot median decode
+is 1.874/1.875 seconds for A and 0.660/0.664 seconds for B. Two-slot medians
+are 1.056 seconds for A and 0.640 seconds for B; single-slot medians remain
+about 0.153 seconds. A retains FP32 matvec for batches through four rows; B uses
+the compensated approximation for two or more rows. All six passes, including
+two warmups, pass all 84 checks: **504/504**. This is a within-runtime arithmetic
+dispatch comparison, not HTTP goodput, cross-engine parity, or a long-context
+result. [Frozen experiment sources](evidence/amd/qwen38-compensated-experiment-sources.tar.gz)
+preserve the pre-integration scripts against the `6932c85` runtime base.
+
+### Opt-in integrated precision path
+
+`DLLM_HYBRID_PRECISION=compensated` now selects the candidate through the normal
+executor rather than a source-patching wrapper. The
+[integrated full replay](evidence/amd/qwen38-27b-q8-integrated-compensated-replay.json)
+passes 84/84 targets, with worst RMS 0.0007886. `float16` remains the default;
+`float32` is a slower diagnostic control. The opt-in modes currently require
+ROCm Q8 hybrid text, at most four slots, context <=512, Triton scan, and
+`--no-graph`. Vision, FLA and larger contexts are explicitly rejected.
+The backend name and replay report expose the selected mode. Memory admission
+uses the actual cache element size before allocating state. Ordinary HTTP and
+model-lifecycle verification is the next gate; the short-context numerical pass
+does not establish those behaviors or practical 32K support.
+The [existing 4K small-model GPU regression](evidence/amd/qwen35-q8-precision-default-regression4096.json)
+also passes all 84 targets with the unchanged `float16` default. That fixture
+checks regression only; it does not replace the practical 27B target.
 
 The same experimental projection also passes a bounded A30 portability check
 using PyTorch 2.6.0/CUDA 12.4. All

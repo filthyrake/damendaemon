@@ -26,4 +26,5 @@ def initialize(self, *args, **kwargs):
 
 quantized_kernels.linear = linear
 hybrid.HybridExecutor.__init__ = initialize
-runpy.run_path('scripts/replay_reference.py', run_name='__main__')
+if __name__ == '__main__':
+    runpy.run_path('scripts/replay_reference.py', run_name='__main__')
