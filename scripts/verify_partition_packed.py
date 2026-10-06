@@ -21,7 +21,9 @@ def main():
     original=LayerStage.run_prefill_packed;calls=[]
     def observed(stage,inputs,lengths,slots):
         result=original(stage,inputs,lengths,slots)
-        calls.append(dict(layers=list(stage.layer_range),lengths=list(lengths),slots=list(slots)))
+        calls.append(dict(layers=list(stage.layer_range),lengths=list(lengths),slots=list(slots),
+                          runtime_row_bounds=bool(getattr(stage.q4_linear,'runtime_rows',False)),
+                          runtime_rope_tokens=stage.runtime_rope_tokens))
         return result
     LayerStage.run_prefill_packed=observed
     previous=sys.argv
@@ -39,7 +41,7 @@ def main():
         report.update(packed_stage_calls=calls,sequential_control=args.sequential,
             trace_sha256=hashlib.sha256(Path(args.trace).read_bytes()).hexdigest(),scope='Real two-GPU packed prefill reference replay; not a performance comparison',
             sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                     ('dllm/batch.py','dllm/layer_stage.py','dllm/partition.py','dllm/partition_policy.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py')})
+                     ('dllm/batch.py','dllm/layer_stage.py','dllm/partition.py','dllm/partition_policy.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/qwen2.py')})
         Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps(dict(passed=report['passed'],checks=len(report['checks']),packed_stage_calls=len(calls),
             failures=[check for check in report['checks'] if not check['passed']])),flush=True)

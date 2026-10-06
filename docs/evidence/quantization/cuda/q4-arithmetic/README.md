@@ -591,3 +591,14 @@ though this rotary change affects prefill only, so these differences cannot be
 attributed entirely to the optimization. The run finds no warm regression in
 this workload; it is not proof of a decode-speed gain. Raw measurements are in
 `qwen2-rope-integrated-benchmark.json`.
+
+Integrated rotary private-cache ABBA trials confirm a smaller but still material
+first-use improvement: the same 15-length sweep falls from 18.49 to 14.97 seconds
+(19.0%). GPU activation/compilation increases slightly, 14.89→15.09 seconds;
+repeated sweeps are 0.334→0.330 seconds. All first/repeated output tokens match.
+The stage-scoped integration selects its runtime rotary callable after base
+construction, whereas the prototype replaced global dispatch before construction;
+their initialization paths differ. These integrated measurements supersede the
+prototype estimate for deployment decisions. Hardware, source hashes and raw
+observations are in `qwen2-rope-integrated-first-shapes-*`. Host/driver caches and
+excluded startup costs follow the same scope described above.

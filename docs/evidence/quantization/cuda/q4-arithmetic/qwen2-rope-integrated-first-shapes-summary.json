@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "order": "static/integrated/integrated/static rotary stride; Q4 runtime rows fixed on",
+  "scope": "Fresh process and private Triton compiler cache for each trial; host checkpoint/filesystem/driver caches are not reset. Same-host first-token computation, including compilation and GPU completion, without HTTP/queue/network. No steady-state throughput claim.",
+  "devices": {
+    "selected": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+    "names": [
+      "NVIDIA A2",
+      "NVIDIA A30"
+    ]
+  },
+  "tokens_identical": true,
+  "summary": [
+    {
+      "runtime_rope": false,
+      "activation_seconds": 14.891583082993748,
+      "first_sweep_seconds": 18.49025049849297,
+      "repeat_sweep_seconds": 0.333840938998037
+    },
+    {
+      "runtime_rope": true,
+      "activation_seconds": 15.087442113013822,
+      "first_sweep_seconds": 14.968315083475318,
+      "repeat_sweep_seconds": 0.3300966624519788
+    }
+  ]
+}
