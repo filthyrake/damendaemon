@@ -486,3 +486,32 @@ invalidates that slot's cursor so continuation is rejected until a new prompt.
 CPU tensor regressions compare full prompts against several chunk boundaries,
 subsequent decoding, interleaved slots and slot reuse. This verifies shared state
 logic; it does not qualify Intel kernels or hardware memory behavior.
+
+
+## Experimental host-weight layer streaming
+
+`DLLM_EXPERIMENTAL_HYBRID_OFFLOAD=1` adds synchronous host-to-device layer
+streaming to the CUDA hybrid text executor. It requires unquantized weights,
+`DLLM_KERNELS=torch`, FP16 hybrid precision and `--no-graph`, with context at most
+2048 and batch capacity at most four. This is an implementation preview under
+issue #64, verified with CPU tensor and ownership tests only. No GPU execution,
+transfer speed, practical-model quality or useful throughput is qualified.
+
+The existing host cache retains the full source model within `--host-gib`.
+Embedding, output head and final norm stay on the device; one layer at a time
+is copied synchronously. Before replacing that layer, the store synchronizes
+its device work, drops the old references and releases unused allocator cache.
+Admission budgets the fixed weights, largest layer, all request state, workspace
+reserve and the eager output head's temporary FP32 copy. Tied weights retain
+shared storage. This first implementation has no pinned staging or prefetch,
+and executes every layer on the GPU; it is not CPU layer computation.
+
+Model status includes the active streamed layer, resident and peak owned weight
+bytes, planned peak weight bytes, cumulative source bytes copied, transfer count
+and failed/closed state. Copy counters are bookkeeping, not measured PCIe
+traffic. A transfer failure poisons the store until eviction. Failed device
+synchronization retains ownership rather than claiming buffers were released.
+Closing the store releases its device and source references after successful
+synchronization. Normal host-cache eviction remains responsible for releasing
+the cached source model. Multimodal, packed quantization, sharding and graph
+execution remain rejected for this preview.

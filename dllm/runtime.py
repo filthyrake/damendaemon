@@ -133,6 +133,9 @@ class Runtime:
                        'q4_marlin_abi': getattr(self.gpu.get(alias), 'q4_marlin_abi', None),
                        'partition': getattr(self.gpu.get(alias),'residency',None),
                        'partition_rebind_count': getattr(self.gpu.get(alias),'rebind_count',None),
+                       'output_head_workspace_bytes': getattr(self.gpu.get(alias), 'output_head_workspace_bytes', 0),
+                       'weight_streaming': (self.gpu[alias].offload.status()
+                            if getattr(self.gpu.get(alias), 'offload', None) is not None else None),
                        'executor_failed': getattr(self.gpu.get(alias),'failed',False)}
                       for alias in self.models]
         from .partition_policy import selected_split

@@ -12,7 +12,7 @@ import sys
 import torch
 from torch.nn import functional as F
 
-from .device import selected_device, selected_accelerator, empty_cache, available_memory, attention as scaled_attention
+from .device import selected_device, selected_accelerator, synchronize, empty_cache, available_memory, attention as scaled_attention
 
 from .batch import BatchExecutor
 
@@ -75,6 +75,11 @@ class HybridExecutor:
     def __init__(self, model, use_graph=True, max_batch=4, kernels=None):
         if not 1 <= max_batch <= 16:
             raise ValueError('batch capacity must be between 1 and 16')
+        from .layer_stream import enabled as offload_enabled, validate as validate_offload
+        self.offload = None
+        streaming = offload_enabled()
+        if streaming:
+            validate_offload(model.config, model.quantization, model.max_context, max_batch, use_graph, kernels)
         self.device = selected_device()
         use_graph = use_graph and self.device == "cuda"
         self.model, self.c = model, model.config
@@ -159,16 +164,32 @@ class HybridExecutor:
         device_weight_bytes = (sum(t.numel()*4 for t in
             {id(t): t for t in model.weights.values()}.values())
             if self.device == 'xpu' else model.bytes)
-        self.required_memory_bytes = device_weight_bytes + state_bytes + 512*1024**2
+        layout = None
+        if streaming:
+            from .layer_stream import plan
+            layout = plan(model.weights, c['num_hidden_layers'])
+            device_weight_bytes = layout.peak_bytes
+        # Eager output logits explicitly promote the full output head to FP32.
+        # Streaming must budget that temporary in addition to resident weights.
+        self.output_head_workspace_bytes = (model.weights['head'].numel()*4
+            if streaming and model.weights['head'].dtype != torch.float32 else 0)
+        self.required_memory_bytes = (device_weight_bytes + state_bytes + 512*1024**2
+                                      + self.output_head_workspace_bytes)
         if self.required_memory_bytes > free:
             raise MemoryError('insufficient GPU memory for hybrid weights, state, and workspace')
-        copies = {}
-        self.w = {}
-        for key, value in model.weights.items():
-            if id(value) not in copies:
-                copies[id(value)] = value.to(device=self.device,
-                    dtype=torch.float32 if self.device == 'xpu' else value.dtype)
-            self.w[key] = copies[id(value)]
+        if streaming:
+            from .layer_stream import LayerWeightStore
+            self.offload = LayerWeightStore(model.weights, layout,
+                lambda tensor, device=self.device: tensor.to(device), synchronize, empty_cache)
+            self.w = self.offload.resident
+        else:
+            copies = {}
+            self.w = {}
+            for key, value in model.weights.items():
+                if id(value) not in copies:
+                    copies[id(value)] = value.to(device=self.device,
+                        dtype=torch.float32 if self.device == 'xpu' else value.dtype)
+                self.w[key] = copies[id(value)]
         self.linear = F.linear
         if model.scales:
             from .quantization import Linear
@@ -227,6 +248,14 @@ class HybridExecutor:
         # Capturing recurrent updates changes state. No captured warmup is user history.
         for tensor in (*self.conv.values(), *self.state.values(), *self.kv.values()):
             tensor.zero_()
+
+    @property
+    def failed(self):
+        return self.offload is not None and self.offload.failed
+
+    def close(self):
+        if self.offload is not None:
+            self.offload.close()
 
     def norm(self, x, weight, dtype=None):
         if dtype is None:
@@ -348,6 +377,8 @@ class HybridExecutor:
     def forward_embeddings(self, x, positions, slots, prefill, prefix_length=0, return_logits=True):
         """Shared text backbone after token or image/text embedding assembly."""
         for i, kind in enumerate(self.c['layer_types']):
+            if self.offload is not None:
+                self.offload.activate(i)
             from .device import selected_accelerator
             if selected_accelerator() == 'rocm':
                 from .rocm_policy import require_host_headroom
