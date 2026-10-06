@@ -307,3 +307,39 @@ passes both residency capacities, switching, streaming, concurrency, cancellatio
 load recovery and reload, with host cache zero and stable 32 MiB device release.
 These remain small-model development gates. They do not establish 32K context,
 long-prompt interference latency or maximum sustainable concurrency.
+
+## First actual 32K capacity and interference gate
+
+A [CPU FP32 quantized reference trace](evidence/amd/qwen35-q8-cpu-fp32-golden32768.json)
+now includes a 32,752-token prompt at 32,768 capacity. The
+[HIP replay with 512-token chunks](evidence/amd/qwen35-q8-hip-chunk512-replay32768.json)
+passes all 84 independent checks, with worst relative RMS 0.002812 and matching
+greedy choices. Reference generation alone is not a runtime pass.
+
+The real HTTP fixture separately uses exactly 32,256 prompt tokens plus 512
+output tokens, with a 128-token/512-output short stream already active before
+the long request arrives. It warms the long and short controls, then repeats
+three times. It retains raw IDs, text, SSE timestamps, request usage, environment
+and revisions. A one-second maximum visible short-stream gap is declared before
+running; this is a coarse interference gate, not the tighter multi-user SLO.
+
+The [512-token-chunk result fails that latency gate](evidence/amd/qwen35-q8-hip-http32768-chunk512-summary.json):
+all requests finish with exact token counts and control text, and the short
+stream advances during long prefill, but maximum visible gaps are
+1.291/1.170/1.188 seconds. Long first-output latency is 37.25/34.92/34.78 seconds;
+short-stream p95 gaps are 0.673/0.622/0.615 seconds. Raw reports and logs are
+retained as compressed siblings. Stalls are largest at late-prefix chunks.
+
+This establishes a small-model numerical/capacity prerequisite and exposes a
+responsiveness gap. It does not qualify practical Qwen3.8+ models, long-document
+quality, four simultaneous near-limit prompts, maximum concurrent users, or
+larger context tiers. Track those separately in #55/#59/#60.
+
+The one controlled [256-token-chunk follow-up](evidence/amd/qwen35-q8-hip-http32768-chunk256-summary.json)
+passes the same one-second ceiling in all three rounds, with exact text/counts
+and 126 short-stream progress chunks during long prefill. Maximum gaps are
+0.552/0.603/0.603 seconds; p95 gaps remain 0.440/0.471/0.475 seconds, and long
+first output remains 35.92/38.26/38.19 seconds. This mitigates the coarse stall
+gate without meeting the tighter responsiveness target. No chunk-size default
+has been changed. Investigate measured attention dispatch/cost before another
+chunk-size sweep.
