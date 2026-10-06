@@ -4,6 +4,7 @@ The partition coordinator validates serving admission. GPU weights and KV belong
 only the first stage owns embeddings and only the last owns the output head.
 """
 import copy
+from itertools import accumulate
 import torch
 from dllm.batch import BatchExecutor
 
@@ -74,6 +75,23 @@ class LayerStage(BatchExecutor):
         hidden=self.forward_hidden(self.embedding(inputs) if self.first else inputs,positions,True,slot)
         self.lengths[slot]=inputs.shape[0]
         return self.output_logits(hidden[-1:]) if self.last else hidden
+
+    @torch.inference_mode()
+    def run_prefill_packed(self,inputs,lengths,slots):
+        if (not lengths or len(lengths)!=len(slots) or len(slots)>self.max_batch
+                or any(type(length) is not int or not 1<=length<=self.context for length in lengths)
+                or any(type(slot) is not int or not 0<=slot<self.max_batch for slot in slots)
+                or len(set(slots))!=len(slots) or sum(lengths)>self.context
+                or inputs.shape[0]!=sum(lengths)):
+            raise ValueError('invalid packed stage prefill')
+        positions=torch.tensor([position for length in lengths for position in range(length)],device=self.device)
+        slot_ids=torch.tensor([slot for slot,length in zip(slots,lengths) for _ in range(length)],device=self.device)
+        hidden=self.forward_packed_hidden(self.embedding(inputs) if self.first else inputs,
+            positions,slot_ids,lengths,slots,[0]*len(slots))
+        for slot,length in zip(slots,lengths):self.lengths[slot]=length
+        if not self.last:return hidden
+        ends=torch.tensor([end-1 for end in accumulate(lengths)],device=self.device)
+        return self.output_logits(hidden.index_select(0,ends))
 
     @torch.inference_mode()
     def run_decode(self,inputs,positions,slots):

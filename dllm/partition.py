@@ -5,8 +5,9 @@ boundary; logits and sampling stay on the final GPU. A partial execution failure
 poisons the whole executor until residency replaces it.
 """
 import torch
+from .prefill import groups
 from .layer_stage import LayerStage,shard_model
-from .partition_policy import validate,rebind_enabled
+from .partition_policy import validate,rebind_enabled,packed_prefill_enabled
 
 
 def tensor_bytes(tensors):
@@ -19,6 +20,7 @@ class PartitionExecutor:
     def __init__(self,model,split,use_graph=True,max_batch=4):
         validate(model,split,max_batch)
         rebind_enabled()
+        self.packed_prefill=packed_prefill_enabled(model.quantization)
         if torch.cuda.device_count()!=2:raise ValueError('layer partition requires exactly two CUDA devices')
         self.model=model
         self.context=model.max_context
@@ -122,14 +124,19 @@ class PartitionExecutor:
             if len(prompt)>self.context:raise ValueError('prompt exceeds partition context')
         outputs=[]
         try:
-            for prompt,slot in zip(prompts,slots):
+            batches=(groups(prompts,slots,self.context) if self.packed_prefill else
+                     (([prompt],[slot]) for prompt,slot in zip(prompts,slots)))
+            for batch,assigned in batches:
+                lengths=[len(prompt) for prompt in batch]
+                flat=[token for prompt in batch for token in prompt]
                 hidden=None
                 for device,stage in enumerate(self.stages):
                     with torch.cuda.device(device):
-                        inputs=torch.tensor(prompt,device='cuda') if device==0 else hidden.to(device)
-                        hidden=stage.run_prefill(inputs,torch.arange(len(prompt),device='cuda'),slot)
+                        inputs=torch.tensor(flat,device='cuda') if device==0 else hidden.to(device)
+                        hidden=(stage.run_prefill_packed(inputs,lengths,assigned) if len(batch)>1 else
+                                stage.run_prefill(inputs,torch.arange(len(flat),device='cuda'),assigned[0]))
                 outputs.append(hidden)
-                self.lengths[slot]=len(prompt)
+                for slot,length in zip(assigned,lengths):self.lengths[slot]=length
             torch.cuda.set_device(self.output_device)
             return torch.cat(outputs)
         except BaseException:

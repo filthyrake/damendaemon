@@ -1,0 +1,1004 @@
+{
+  "passed": true,
+  "model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "context": 512,
+  "local_model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "source_slot": null,
+  "scalar": false,
+  "prefill_chunk_size": 0,
+  "device": "NVIDIA A30",
+  "torch": "2.6.0+cu124",
+  "reference_dtype": "float16",
+  "reference_torch": "2.13.0+cu130",
+  "reference_quantization": "none",
+  "weight_cache_status": "disabled",
+  "weight_quantization": "none",
+  "host_weight_bytes": 988065536,
+  "reference_attention": "sdpa",
+  "graph_requested": true,
+  "kernel_backend": "triton+layer-partition+graphs",
+  "compute_dtype": "torch.float16",
+  "qwen3_precision": null,
+  "olmoe_grouped_prefill": null,
+  "llama_precision": null,
+  "residual_dtype": "torch.float16",
+  "dense_precision": null,
+  "checks": [
+    {
+      "kind": "prefill",
+      "slot": 0,
+      "relative_rms": 0.005697767715901136,
+      "max_absolute": 0.0859375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 3,
+      "relative_rms": 0.002145427744835615,
+      "max_absolute": 0.021484375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 0,
+      "relative_rms": 0.003814729629084468,
+      "max_absolute": 0.0283203125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 2,
+      "relative_rms": 0.002682599937543273,
+      "max_absolute": 0.03302001953125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 1,
+      "relative_rms": 0.0034153456799685955,
+      "max_absolute": 0.02996826171875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.003029223531484604,
+      "max_absolute": 0.03515625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.002980508841574192,
+      "max_absolute": 0.0341796875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0018081400776281953,
+      "max_absolute": 0.02734375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0018484217580407858,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0015798707026988268,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.004608991555869579,
+      "max_absolute": 0.046875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0026847743429243565,
+      "max_absolute": 0.0390625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.002892652526497841,
+      "max_absolute": 0.03271484375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0020696697756648064,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0028614478651434183,
+      "max_absolute": 0.0322265625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0017885323613882065,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0037106156814843416,
+      "max_absolute": 0.037109375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.002281396184116602,
+      "max_absolute": 0.029296875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.005568566266447306,
+      "max_absolute": 0.0484619140625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0013103055534884334,
+      "max_absolute": 0.03424072265625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.005810500122606754,
+      "max_absolute": 0.0478515625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0015986320795491338,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.002878468483686447,
+      "max_absolute": 0.03173828125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.002263070549815893,
+      "max_absolute": 0.02734375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0021002525463700294,
+      "max_absolute": 0.0390625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0021726242266595364,
+      "max_absolute": 0.04296875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.002022129949182272,
+      "max_absolute": 0.02734375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.001629211357794702,
+      "max_absolute": 0.02734375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.002136064460501075,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0016567964339628816,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0022338484413921833,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0034615625627338886,
+      "max_absolute": 0.03143310546875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0026395730674266815,
+      "max_absolute": 0.025390625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0022578437346965075,
+      "max_absolute": 0.03515625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.003526879008859396,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.00356168276630342,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.003298454452306032,
+      "max_absolute": 0.046875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 0,
+      "relative_rms": 0.0027422781568020582,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "prefill",
+      "slot": 1,
+      "relative_rms": 0.001619918504729867,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0030530323274433613,
+      "max_absolute": 0.03515625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.002233677776530385,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.003460661042481661,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0024830119218677282,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0013792722020298243,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.002409161301329732,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0030587203800678253,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0026384559459984303,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0018984590424224734,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0023418928030878305,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0015693337190896273,
+      "max_absolute": 0.025390625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.001706323237158358,
+      "max_absolute": 0.025390625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0045202611945569515,
+      "max_absolute": 0.037109375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0024240901693701744,
+      "max_absolute": 0.037109375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0030772420577704906,
+      "max_absolute": 0.03515625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0025648705195635557,
+      "max_absolute": 0.0341796875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.002788171637803316,
+      "max_absolute": 0.02734375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0018465507309883833,
+      "max_absolute": 0.029296875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0045896265655756,
+      "max_absolute": 0.03515625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0031183413229882717,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0019506642129272223,
+      "max_absolute": 0.025390625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0012558161979541183,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0021923333406448364,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.002644758205860853,
+      "max_absolute": 0.025390625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.0020387088879942894,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.00198020925745368,
+      "max_absolute": 0.02734375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.002679897705093026,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0032420074567198753,
+      "max_absolute": 0.03515625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 2,
+      "relative_rms": 0.003154260804876685,
+      "max_absolute": 0.029296875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.001318476628512144,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.002059074817225337,
+      "max_absolute": 0.0244140625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.003204790409654379,
+      "max_absolute": 0.03515625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0019065989181399345,
+      "max_absolute": 0.02490234375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0011921788100153208,
+      "max_absolute": 0.025390625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0028035417199134827,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 0,
+      "relative_rms": 0.0031845096964389086,
+      "max_absolute": 0.029296875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0021707110572606325,
+      "max_absolute": 0.03125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0032576266676187515,
+      "max_absolute": 0.02734375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0025994384195655584,
+      "max_absolute": 0.029296875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.002356365555897355,
+      "max_absolute": 0.0283203125,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0014909983146935701,
+      "max_absolute": 0.025634765625,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.0013119783252477646,
+      "max_absolute": 0.0224609375,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "kind": "decode",
+      "slot": 3,
+      "relative_rms": 0.0014617255656048656,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    }
+  ],
+  "timings": [
+    {
+      "kind": "prefill",
+      "seconds": 0.041931298008421436,
+      "slots": [
+        0
+      ],
+      "lengths": [
+        49
+      ]
+    },
+    {
+      "kind": "prefill",
+      "seconds": 0.12031629198463634,
+      "slots": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "lengths": [
+        31,
+        255,
+        257,
+        496
+      ]
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.015347606007708237,
+      "slots": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005207679001614451,
+      "slots": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.0051052340131718665,
+      "slots": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.00516226000036113,
+      "slots": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005113382998388261,
+      "slots": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005119829002069309,
+      "slots": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005133647995535284,
+      "slots": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.00515638297656551,
+      "slots": [
+        3,
+        0,
+        2,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "prefill",
+      "seconds": 0.046475765004288405,
+      "slots": [
+        0,
+        1
+      ],
+      "lengths": [
+        496,
+        65
+      ]
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005156853992957622,
+      "slots": [
+        2,
+        0,
+        1,
+        3
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005223065993050113,
+      "slots": [
+        2,
+        0,
+        1,
+        3
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005066526005975902,
+      "slots": [
+        2,
+        0,
+        1,
+        3
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005061900010332465,
+      "slots": [
+        2,
+        0,
+        1,
+        3
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005043871002271771,
+      "slots": [
+        2,
+        0,
+        1,
+        3
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005068986996775493,
+      "slots": [
+        2,
+        0,
+        1,
+        3
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005114391999086365,
+      "slots": [
+        2,
+        0,
+        1,
+        3
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005039636977016926,
+      "slots": [
+        2,
+        0,
+        1,
+        3
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.0051296989840921015,
+      "slots": [
+        0
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.004663195024477318,
+      "slots": [
+        0
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.0046389859926421195,
+      "slots": [
+        0
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.004596576007315889,
+      "slots": [
+        0
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.0053348020010162145,
+      "slots": [
+        3,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.0049571910058148205,
+      "slots": [
+        3,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.005079152004327625,
+      "slots": [
+        3,
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.004539084999123588,
+      "slots": [
+        3
+      ],
+      "lengths": []
+    }
+  ],
+  "packed_stage_calls": [
+    {
+      "layers": [
+        0,
+        12
+      ],
+      "lengths": [
+        31,
+        255
+      ],
+      "slots": [
+        3,
+        0
+      ]
+    },
+    {
+      "layers": [
+        12,
+        24
+      ],
+      "lengths": [
+        31,
+        255
+      ],
+      "slots": [
+        3,
+        0
+      ]
+    }
+  ],
+  "scope": "Real two-GPU packed prefill reference replay; not a performance comparison",
+  "sources": {
+    "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+    "dllm/layer_stage.py": "77498f98e70328858ef4a69c5d38d0637ea7275407825fa3377e2c5f99fd91cf",
+    "dllm/partition.py": "ed4e44ea6e776cd6a2e0234664c95e651456a6f571bcd887bcbe6ce811f7d454",
+    "dllm/partition_policy.py": "8d3f66bf29b23a4da60d031ba5b69dadff2a2bcae7179c62c6615ea61b28a64e"
+  }
+}

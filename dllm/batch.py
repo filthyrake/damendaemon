@@ -132,8 +132,19 @@ class BatchExecutor(Executor):
         ids = torch.tensor([token for prompt in prompts for token in prompt], device=self.device)
         positions = torch.tensor([i for length,start in zip(lengths,starts) for i in range(start,start+length)], device=self.device)
         slot_ids = torch.tensor([slot for slot, length in zip(slots, lengths) for _ in range(length)], device=self.device)
+        x = self.forward_packed_hidden(self.embedding(ids),positions,slot_ids,lengths,slots,starts)
+        logits=None
+        if return_logits:
+            ends = torch.tensor([end - 1 for end in accumulate(lengths)], device=self.device)
+            logits = self.output_logits(x.index_select(0, ends))
+        for slot, length, start in zip(slots, lengths, starts):
+            self.lengths[slot] = start+length
+        return logits
+
+    @torch.inference_mode()
+    def forward_packed_hidden(self,x,positions,slot_ids,lengths,slots,starts):
+        """Shared packed linear work with attention isolated by prompt/slot."""
         w = self.w
-        x = self.embedding(ids)
         if not self.kernels:
             cos = self.cos[positions].view(-1, 1, 1, self.dim)
             sin = self.sin[positions].view(-1, 1, 1, self.dim)
@@ -166,13 +177,7 @@ class BatchExecutor(Executor):
                 gate, up = gate_up.chunk(2, -1)
                 activated = self.activate(gate, up)
             x = x + self.linear(activated, w[f"{i}.down"])
-        logits=None
-        if return_logits:
-            ends = torch.tensor([end - 1 for end in accumulate(lengths)], device=self.device)
-            logits = self.output_logits(x.index_select(0, ends))
-        for slot, length, start in zip(slots, lengths, starts):
-            self.lengths[slot] = start+length
-        return logits
+        return x
 
     @torch.inference_mode()
     def decode_batch(self, tokens, slots):

@@ -42,7 +42,7 @@ def main():
     model = ModelWeights(args.model_path or trace['path'], trace['context'])
     executor = make_executor(model, use_graph=not args.no_graph, max_batch=capacity)
     checks, timings = [], []
-    for event in events:
+    for event_index,event in enumerate(events):
         synchronize()
         start = time.perf_counter()
         if event['kind'] == 'prefill':
@@ -74,9 +74,12 @@ def main():
             relative = (error.square().mean().sqrt()/target.square().mean().sqrt().clamp_min(1.e-6)).item()
             absolute = error.abs().max().item()
             match = value.argmax().item() == target.argmax().item()
-            checks.append({'kind': event['kind'], 'slot': event['slots'][row], 'relative_rms': relative,
+            checks.append({'event_index':event_index,'kind': event['kind'], 'slot': event['slots'][row], 'relative_rms': relative,
                            'max_absolute': absolute, 'greedy_match': match,
                            'passed': relative < .01 and absolute < .5 and match})
+            if not checks[-1]['passed']:
+                checks[-1].update(actual_top5=list(zip(value.topk(5).indices.tolist(),value.topk(5).values.tolist())),
+                                  reference_top5=list(zip(target.topk(5).indices.tolist(),target.topk(5).values.tolist())))
     passed = all(c['passed'] for c in checks)
     print(json.dumps({'passed': passed, 'model_path': trace['path'], 'context': trace['context'],
         'local_model_path': str(model.path), 'source_slot': args.slot, 'scalar':args.scalar,

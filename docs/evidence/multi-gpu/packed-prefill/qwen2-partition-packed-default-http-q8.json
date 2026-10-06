@@ -1,0 +1,580 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "quantization": "q8_0",
+  "trace_sha256": "c3c05b9e679f12c9bfd4785832014e1c8f54dde41a549d22a71ce1313f744a4c",
+  "checks": [
+    "independent:0",
+    "independent:1",
+    "independent:2",
+    "independent:3",
+    "independent:4",
+    "independent:5",
+    "concurrent-shrinking:0",
+    "concurrent-shrinking:1",
+    "concurrent-shrinking:2",
+    "concurrent-shrinking:3",
+    "streaming-content-and-usage",
+    "cancel-and-reuse-slot",
+    "invalid-request-recovery",
+    "native-logprobs-on-output-gpu",
+    "seeded-sampling-and-penalties",
+    "second-alias",
+    "host-restore",
+    "disk-reload-after-release",
+    "repeat-release-no-per-device-allocation-growth"
+  ],
+  "trials": [
+    {
+      "label": "independent:0",
+      "wall_seconds": 6.500304623012198,
+      "timing": {
+        "source_tier": "disk",
+        "activation_seconds": 6.378266937012086,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 6.467929737002123,
+        "total_seconds": 6.49259011799586,
+        "decode_tokens_per_second": 283.85611729915354
+      }
+    },
+    {
+      "label": "independent:1",
+      "wall_seconds": 0.36463601898867637,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 5.692010745406151e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.33402058301726356,
+        "total_seconds": 0.35878330600098707,
+        "decode_tokens_per_second": 282.6829668369302
+      }
+    },
+    {
+      "label": "independent:2",
+      "wall_seconds": 0.07952437299536541,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 4.249013727530837e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.049855313991429284,
+        "total_seconds": 0.07432859198888764,
+        "decode_tokens_per_second": 286.02625282673523
+      }
+    },
+    {
+      "label": "independent:3",
+      "wall_seconds": 0.08874553799978457,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 4.075001925230026e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.05965336199733429,
+        "total_seconds": 0.08409574499819428,
+        "decode_tokens_per_second": 286.3877879564243
+      }
+    },
+    {
+      "label": "independent:4",
+      "wall_seconds": 0.07301128300605342,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 4.281027941033244e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.04281807199004106,
+        "total_seconds": 0.0675628150056582,
+        "decode_tokens_per_second": 282.8883692824005
+      }
+    },
+    {
+      "label": "independent:5",
+      "wall_seconds": 0.10091225599171594,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 1.3306998880580068e-05,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.07222872800775804,
+        "total_seconds": 0.09622222601319663,
+        "decode_tokens_per_second": 291.7457053745691
+      }
+    },
+    {
+      "label": "concurrent-shrinking:0",
+      "wall_seconds": 0.13382421599817462,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 4.05198079533875e-06,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 4,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.12295153297600336,
+        "total_seconds": 0.12911489699035883,
+        "decode_tokens_per_second": 162.24905711732086
+      }
+    },
+    {
+      "label": "concurrent-shrinking:1",
+      "wall_seconds": 0.16269389999797568,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 4,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.11928752300445922,
+        "total_seconds": 0.15616184900864027,
+        "decode_tokens_per_second": 189.8339782320711
+      }
+    },
+    {
+      "label": "concurrent-shrinking:2",
+      "wall_seconds": 0.14269314098055474,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 4,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.11836463797953911,
+        "total_seconds": 0.1361159649968613,
+        "decode_tokens_per_second": 169.0014496985226
+      }
+    },
+    {
+      "label": "concurrent-shrinking:3",
+      "wall_seconds": 0.15255286800675094,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 4,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.11714126999140717,
+        "total_seconds": 0.1460108629835304,
+        "decode_tokens_per_second": 173.19260445979273
+      }
+    },
+    {
+      "label": "cancel-and-reuse-slot",
+      "wall_seconds": 0.060335286980262026,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 2,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.02733208899735473,
+        "total_seconds": 0.055175151996081695,
+        "decode_tokens_per_second": 251.40912119905963
+      }
+    },
+    {
+      "label": "invalid-request-recovery",
+      "wall_seconds": 0.07130606300779618,
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 5.1251990953460336e-05,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.04369011800736189,
+        "total_seconds": 0.06721027800813317,
+        "decode_tokens_per_second": 297.61702300368927
+      }
+    },
+    {
+      "label": "second-alias",
+      "wall_seconds": 4.206039629003499,
+      "timing": {
+        "source_tier": "disk",
+        "activation_seconds": 4.1416757149854675,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 4.177133565972326,
+        "total_seconds": 4.201419513992732,
+        "decode_tokens_per_second": 288.2325200613255
+      }
+    },
+    {
+      "label": "host-restore",
+      "wall_seconds": 0.28076415401301347,
+      "timing": {
+        "source_tier": "host",
+        "activation_seconds": 0.2131967729947064,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 0.25187676600762643,
+        "total_seconds": 0.2763489669887349,
+        "decode_tokens_per_second": 286.0388407811668
+      }
+    },
+    {
+      "label": "disk-reload-after-release",
+      "wall_seconds": 4.512610556004802,
+      "timing": {
+        "source_tier": "disk",
+        "activation_seconds": 4.444964352995157,
+        "cached_prompt_tokens": 0,
+        "speculative_blocks": 0,
+        "speculative_proposed_drafts": 0,
+        "speculative_matched_drafts": 0,
+        "kernel_backend": "triton+layer-partition+graphs",
+        "weight_quantization": "q8_0",
+        "max_batch_size": 1,
+        "residual_dtype": "float16",
+        "first_token_seconds": 4.482545260019833,
+        "total_seconds": 4.508167610998498,
+        "decode_tokens_per_second": 273.1989740453046
+      }
+    }
+  ],
+  "statuses": {
+    "initial": {
+      "models": [
+        {
+          "id": "a",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        },
+        {
+          "id": "b",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        }
+      ],
+      "device": "cuda",
+      "context": 512,
+      "cuda_allocated_bytes": 0,
+      "cuda_devices": [
+        {
+          "index": 0,
+          "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+          "name": "NVIDIA A2",
+          "allocated_bytes": 0,
+          "reserved_bytes": 0
+        },
+        {
+          "index": 1,
+          "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+          "name": "NVIDIA A30",
+          "allocated_bytes": 0,
+          "reserved_bytes": 0
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "host_cached_bytes": 0,
+      "host_budget_bytes": 8589934592,
+      "gpu_model_limit": 1,
+      "host_model_limit": 2
+    },
+    "loaded": {
+      "models": [
+        {
+          "id": "a",
+          "quantization": "q8_0",
+          "residency": "gpu",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": 797246208,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": [
+            {
+              "device_index": 0,
+              "layers": [
+                0,
+                12
+              ],
+              "weight_bytes": 451253248,
+              "scale_bytes": 11182080,
+              "kv_bytes": 12582912
+            },
+            {
+              "device_index": 1,
+              "layers": [
+                12,
+                24
+              ],
+              "weight_bytes": 315120384,
+              "scale_bytes": 19690496,
+              "kv_bytes": 12582912
+            }
+          ],
+          "partition_rebind_count": 0,
+          "executor_failed": false
+        },
+        {
+          "id": "b",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        }
+      ],
+      "device": "cuda",
+      "context": 512,
+      "cuda_allocated_bytes": 843371520,
+      "cuda_devices": [
+        {
+          "index": 0,
+          "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+          "name": "NVIDIA A2",
+          "allocated_bytes": 484069376,
+          "reserved_bytes": 608174080
+        },
+        {
+          "index": 1,
+          "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+          "name": "NVIDIA A30",
+          "allocated_bytes": 359302144,
+          "reserved_bytes": 494927872
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "host_cached_bytes": 797246208,
+      "host_budget_bytes": 8589934592,
+      "gpu_model_limit": 1,
+      "host_model_limit": 2
+    },
+    "unloaded": {
+      "models": [
+        {
+          "id": "a",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        },
+        {
+          "id": "b",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        }
+      ],
+      "device": "cuda",
+      "context": 512,
+      "cuda_allocated_bytes": 17039360,
+      "cuda_devices": [
+        {
+          "index": 0,
+          "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+          "name": "NVIDIA A2",
+          "allocated_bytes": 8519680,
+          "reserved_bytes": 20971520
+        },
+        {
+          "index": 1,
+          "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+          "name": "NVIDIA A30",
+          "allocated_bytes": 8519680,
+          "reserved_bytes": 20971520
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "host_cached_bytes": 0,
+      "host_budget_bytes": 8589934592,
+      "gpu_model_limit": 1,
+      "host_model_limit": 2
+    },
+    "unloaded-again": {
+      "models": [
+        {
+          "id": "a",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        },
+        {
+          "id": "b",
+          "quantization": "q8_0",
+          "residency": "disk",
+          "chat_template": {
+            "source": "checkpoint",
+            "sha256": null
+          },
+          "host_weight_bytes": null,
+          "vision_host_weight_bytes": 0,
+          "vision_gpu_weight_bytes": 0,
+          "gpu_projection_cache_bytes": 0,
+          "partition": null,
+          "partition_rebind_count": null,
+          "executor_failed": false
+        }
+      ],
+      "device": "cuda",
+      "context": 512,
+      "cuda_allocated_bytes": 17039360,
+      "cuda_devices": [
+        {
+          "index": 0,
+          "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+          "name": "NVIDIA A2",
+          "allocated_bytes": 8519680,
+          "reserved_bytes": 20971520
+        },
+        {
+          "index": 1,
+          "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+          "name": "NVIDIA A30",
+          "allocated_bytes": 8519680,
+          "reserved_bytes": 20971520
+        }
+      ],
+      "mps_allocated_bytes": null,
+      "host_cached_bytes": 0,
+      "host_budget_bytes": 8589934592,
+      "gpu_model_limit": 1,
+      "host_model_limit": 2
+    }
+  },
+  "injected_stage_failure": false,
+  "allocation_diagnostics": false,
+  "scope": "same-host two-GPU HTTP qualification"
+}

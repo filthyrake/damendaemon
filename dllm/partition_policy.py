@@ -8,6 +8,13 @@ def rebind_enabled():
     return value=='1'
 
 
+def packed_prefill_enabled(quantization):
+    value=os.environ.get('DLLM_PARTITION_PACKED_PREFILL')
+    if value is None:return quantization in ('none','q8_0')
+    if value not in ('0','1'):raise ValueError('DLLM_PARTITION_PACKED_PREFILL must be 0 or 1')
+    return value=='1'
+
+
 def selected_split():
     value=os.environ.get('DLLM_EXPERIMENTAL_LAYER_SPLIT')
     if value is None:return None

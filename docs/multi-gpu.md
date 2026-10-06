@@ -164,6 +164,20 @@ sessions. Set the same precision on both workers. Q4 passes independent
 A2/3090 protocol checks and an actual seven-request network session; see the
 [distributed Q4 proof](evidence/multi-gpu/README.md#native-q4-distributed-cli).
 
+## Packed prompt processing on one host
+
+The same-host layer-partition server packs FP16/Q8 prompts by default: linear
+layers share work across prompt rows while attention and KV remain isolated.
+Each temporary group stays within the configured context budget. Set
+`DLLM_PARTITION_PACKED_PREFILL=0` for the sequential control. Q4 remains
+sequential by default because expanded short-prefix checks expose three
+pre-existing greedy-token mismatches in both modes; `1` permits explicit
+packing experiments. The original Q4 gates remain valid, but the expanded gate
+is not claimed as passed. See the [numerical and HTTP evidence](evidence/multi-gpu/packed-prefill/README.md).
+
+This applies to the same-host server. Distributed prompt processing is still
+sequential; distributed decode already supports multiple active slots.
+
 ## Resident distributed HTTP service
 
 `distributed-serve` keeps the qualified two-rank pair resident behind the
