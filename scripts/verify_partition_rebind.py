@@ -10,6 +10,7 @@ from dllm.runtime import Runtime
 
 def storage(executor):
     return [dict(weights={k:v.data_ptr() for k,v in stage.w.items()},kv=[v.data_ptr() for v in stage.kv],
+        experimental_adjacent={str(k):v.data_ptr() for k,v in getattr(stage.quant_linear,'experimental_adjacent',{}).items()},
         scales={k:v.data_ptr() for k,v in stage.quant_linear.scales.items()} if stage.quant_linear else {},
         graphs={str(k):[v[0].data_ptr(),v[1].data_ptr(),v[2].data_ptr(),id(v[3]),v[4].data_ptr()] for k,v in stage.stage_graphs.items()})
         for stage in executor.stages]
@@ -33,6 +34,7 @@ def replay(executor,trace):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('original');p.add_argument('changed');p.add_argument('--output',required=True)
+    p.add_argument('--inject-packed-refresh-failure',action='store_true')
     args=p.parse_args()
     traces={alias:torch.load(path,map_location='cpu',weights_only=True) for alias,path in (('a',args.original),('b',args.changed))}
     quantization=traces['a'].get('reference_quantization','none')
@@ -48,7 +50,13 @@ def main():
         identity=None;pointers=None
         for alias in ('a','b','a','b'):
             with runtime.session(alias) as (executor,tier,seconds):
-                if identity is None:identity=id(executor);pointers=storage(executor)
+                if identity is None:
+                    identity=id(executor);pointers=storage(executor)
+                    report['experimental_adjacent_bytes']=sum(value.numel()*value.element_size()
+                        for stage in executor.stages
+                        for value in getattr(stage.quant_linear,'experimental_adjacent',{}).values())
+                    if args.inject_packed_refresh_failure and not report['experimental_adjacent_bytes']:
+                        raise ValueError('packed refresh injection requires the explicit adjacent-cache experiment')
                 else:
                     assert id(executor)==identity and storage(executor)==pointers,'rebind replaced graph storage'
                     assert executor.lengths==[0]*4,'old request state retained'
@@ -72,6 +80,24 @@ def main():
         with runtime.session('a') as (replacement,tier,seconds):
             assert id(replacement)!=identity and replacement.rebind_count==0
             report['fresh_recovery']=dict(source_tier=tier,activation_seconds=seconds,checks=replay(replacement,traces['a']))
+        if args.inject_packed_refresh_failure:
+            from scripts.experiments import q4_adjacent_body
+            original_repack=q4_adjacent_body.repack_adjacent;refresh_calls=0
+            def fail_refresh(weight):
+                nonlocal refresh_calls
+                refresh_calls+=1
+                if refresh_calls==2:raise RuntimeError('injected packed refresh failure')
+                return original_repack(weight)
+            with patch.object(q4_adjacent_body,'repack_adjacent',fail_refresh):
+                try:runtime.manage('load','b')
+                except RuntimeError as error:assert str(error)=='injected packed refresh failure'
+                else:raise AssertionError('partial packed refresh unexpectedly succeeded')
+            assert not runtime.gpu and refresh_calls==2,'partially refreshed packed cache remained published'
+            report['packed_refresh_failure_unpublished']=True
+            with runtime.session('b') as (replacement,tier,seconds):
+                assert replacement.rebind_count==0
+                report['fresh_after_packed_refresh']=dict(source_tier=tier,activation_seconds=seconds,
+                    checks=replay(replacement,traces['b']))
         for alias in traces:runtime.manage('unload',alias,release_host=True)
         report['released_status']=runtime.manage('status')
         assert report['released_status']['host_cached_bytes']==0

@@ -21,7 +21,7 @@ def main():
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
     p.add_argument('--batch-wait-ms',type=float,default=0)
     p.add_argument('--compare',choices=('prefill','q4-body'),default='prefill')
-    p.add_argument('--body-kernel',choices=('single-dot','paired-load'),default='single-dot')
+    p.add_argument('--body-kernel',choices=('single-dot','paired-load','adjacent-gate','adjacent-all'),default='single-dot')
     p.add_argument('--output',required=True);args=p.parse_args()
     if not 0<=args.batch_wait_ms<=10:raise ValueError('invalid coalescing delay')
     if args.compare=='q4-body' and args.quantization!='q4_0':raise ValueError('Q4 body comparison requires Q4 weights')
@@ -37,7 +37,8 @@ def main():
     if args.compare=='q4-body':
         report['body_kernel']=args.body_kernel
         for name in ('dllm/quantized_kernels_q4.py','scripts/experiments/q4_prefill.py',
-                     'scripts/experiments/q4_body_single_dot.py','scripts/experiments/run_q4_body.py'):
+                     'scripts/experiments/q4_body_single_dot.py','scripts/experiments/q4_adjacent_body.py',
+                     'scripts/experiments/run_q4_body.py'):
             report['sources'][name]=hashlib.sha256(Path(name).read_bytes()).hexdigest()
     env={**os.environ,'DLLM_DEVICE':'cuda','DLLM_QUANTIZATION':args.quantization,'OMP_NUM_THREADS':'4'}
     reference=None

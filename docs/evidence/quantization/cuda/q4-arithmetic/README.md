@@ -122,6 +122,30 @@ are 66.45 versus 60.43 µs and 49.94 versus 44.83 µs. The remaining gap is abou
 9–11%, a substantial improvement over the earlier candidates but still a
 regression. These measurements exclude repacking cost.
 
-This layout exists only in the matrix profiler. It has no serving dispatch,
-model-level qualification, residency integration or hot-swap proof. No checkpoint
-format, production weight layout or default has changed.
+The initial measurements above apply only to the matrix profiler and exclude
+activation, serving and hot swaps. No checkpoint format, production weight
+layout or default has changed.
+
+A subsequent bounded sweep found an exact-output gate/up tile slightly faster
+than current kernels (58.05 versus 59.15 µs for one row, 59.43 versus 60.68 µs
+for four). The best down tile remains slower (48.52 versus 44.59 µs for one
+row). Every timing candidate first passes coefficient-error and exact-output
+checks; failed configurations are retained as failures and not timed.
+
+The explicit `adjacent-gate` model experiment changes only gate/up projections;
+it still fails three of 282 checks, at events 93, 135 and 159, and is rejected.
+`adjacent-all` changes all four body projection types and passes all 282 checks
+with graphs and 22 actual packed stage calls. It retains the current output
+head. The prototype keeps canonical Q4_0 weights plus an additional packed
+cache, so its memory use is higher; it is not a production storage format.
+Its explicit rebind hook refreshes stable cached buffers or closes the executor
+on failure.
+
+That prototype passes 19 real HTTP checks and 492 independent lifecycle checks:
+four alternating weight sessions, fresh recovery after partial canonical upload,
+and fresh recovery after a failure on the second packed-cache refresh. Both
+partially modified executors are unpublished; captured packed-buffer pointers
+remain stable across successful rebinds. Host residency releases completely.
+The additional packed cache is **178,913,280 bytes across both stages**. That
+extra allocation is specific to this experiment and must not be omitted from
+any memory claim. Performance qualification remains separate.

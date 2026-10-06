@@ -34,7 +34,7 @@ def cases_from_trace(trace):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('trace');parser.add_argument('--output',required=True)
     parser.add_argument('--inject-stage-failure',action='store_true')
-    parser.add_argument('--experimental-q4-body',nargs='?',const='single-dot',choices=('single-dot','paired-load'))
+    parser.add_argument('--experimental-q4-body',nargs='?',const='single-dot',choices=('single-dot','paired-load','adjacent-gate','adjacent-all'))
     parser.add_argument('--allocation-diagnostics',action='store_true');args=parser.parse_args()
     if args.inject_stage_failure and args.allocation_diagnostics:parser.error('choose one diagnostic mode')
     if args.experimental_q4_body and (args.inject_stage_failure or args.allocation_diagnostics):

@@ -55,6 +55,14 @@ context through 2048 and one to four request slots; other Q4 configurations
 remain CUDA-only. See [Metal Q4 qualification](evidence/quantization/metal/q4/README.md). This is on-load conversion from safetensors;
 Standalone Qwen GGUF import is available below. GPTQ import remains unsupported.
 
+The expanded short-prefix Qwen2.5-0.5B CUDA layer-partition gate currently has
+three greedy-token mismatches in both sequential and packed-prefill modes,
+despite passing its RMS/maximum-error bounds. Layer-partition Q4 prompt packing
+stays disabled by default. The first passing arithmetic variant has an
+unacceptable serving slowdown; newer packed-layout candidates remain experimental.
+Production dispatch is unchanged. See
+[the numerical investigation and performance evidence](evidence/quantization/cuda/q4-arithmetic/README.md).
+
 ## Native AWQ checkpoints
 
 CUDA can load dense Qwen2 and Qwen3 checkpoints using AWQ GEMM four-bit packing, group size 128,

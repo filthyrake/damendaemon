@@ -8,7 +8,7 @@ from scripts.experiments.q4_body_single_dot import install_validation_dispatch
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('target',choices=('serve','replay','single-replay','rebind'))
-    parser.add_argument('--body-kernel',choices=('single-dot','paired-load'),default='single-dot')
+    parser.add_argument('--body-kernel',choices=('single-dot','paired-load','adjacent-gate','adjacent-all'),default='single-dot')
     args,remaining=parser.parse_known_args()
     install_validation_dispatch(args.body_kernel)
     if args.target=='serve':
