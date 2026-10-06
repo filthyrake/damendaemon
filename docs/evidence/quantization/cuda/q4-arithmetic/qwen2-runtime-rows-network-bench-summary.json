@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "compare": "runtime-rows",
+  "scope": "A2/3090 NCCL sockets, Q4 adjacent and packed prefill fixed, input16 output32 context512 capacity4; all reachable group shapes warmed; ABBA row policy only.",
+  "summary": [
+    {
+      "runtime_row_bounds": false,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 18.899639486335218,
+      "request_ms": 147.89989950077143,
+      "aggregate_tokens_per_second": 215.60646922755902
+    },
+    {
+      "runtime_row_bounds": true,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 18.283377998159267,
+      "request_ms": 147.03804299642798,
+      "aggregate_tokens_per_second": 216.97386301997864
+    },
+    {
+      "runtime_row_bounds": false,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 27.42961399781052,
+      "request_ms": 176.1911054927623,
+      "aggregate_tokens_per_second": 355.3228751679601
+    },
+    {
+      "runtime_row_bounds": true,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 22.534981500939466,
+      "request_ms": 176.29900301108137,
+      "aggregate_tokens_per_second": 359.2398726941824
+    },
+    {
+      "runtime_row_bounds": false,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 47.48752601153683,
+      "request_ms": 208.96189149061684,
+      "aggregate_tokens_per_second": 605.273901760984
+    },
+    {
+      "runtime_row_bounds": true,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 44.14190498937387,
+      "request_ms": 204.9986310012173,
+      "aggregate_tokens_per_second": 613.237738941288
+    }
+  ],
+  "text_usage_identical": true
+}

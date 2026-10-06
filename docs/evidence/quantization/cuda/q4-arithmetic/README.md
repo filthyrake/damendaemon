@@ -491,6 +491,40 @@ activation excludes imports, host weight loading and initial CUDA context setup.
 This confirms an integrated compilation/first-use improvement, not a general
 warm-throughput or total server-startup claim.
 
+### Qualified runtime-row default
+
+A final all-shapes-warm A2/3090 HTTP ABBA comparison holds adjacent storage,
+packed prefill, context 512, capacity four and input16/output32 fixed. Only
+runtime row bounds vary. Every generated text and usage record matches.
+
+| Concurrency | Row bounds | First text, ms | Request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Static | 18.90 | 147.90 | 215.61 |
+| 1 | Selective runtime | 18.28 | 147.04 | 216.97 |
+| 2 | Static | 27.43 | 176.19 | 355.32 |
+| 2 | Selective runtime | 22.53 | 176.30 | 359.24 |
+| 4 | Static | 47.49 | 208.96 | 605.27 |
+| 4 | Selective runtime | 44.14 | 205.00 | 613.24 |
+
+Throughput differences are small (+0.6%, +1.1%, +1.3%), and actual arrival/group
+timing can affect first text. This establishes no observed warm serving
+regression in this workload, not a universal speedup. Raw reports are
+`qwen2-runtime-rows-network-bench-*`. The ten-minute peer-only firewall windows
+were removed early: lab 2026-10-06 06:34:31–06:36:23 UTC, desktop
+06:34:35–06:36:28 UTC. Existing desktop rules and baseline allocation were
+preserved. Transport was NCCL sockets; RDMA remains unverified.
+
+With integrated numerical, lifecycle, compiler-cache and warm serving gates
+passing, selective runtime row bounds become the default for qualified adjacent
+Q4 stages. `DLLM_Q4_STAGE_RUNTIME_ROWS=0` is the static control. Earlier sections
+retain the historical opt-in qualification sequence. The rotary experiment below
+is separate and is not enabled by this change.
+After promotion, the real same-host HTTP verifier passes all 19 checks with
+all three Q4 stage policy variables unset, including status assertions for the
+active row-bound policy. The local suite passes all 445 tests. Its first
+sandboxed attempt could not bind the loopback HTTP fixtures; rerunning with
+loopback access passes without code changes.
+
 ### Rotary token-stride experiment
 
 The existing rotary/cache kernel specializes its token count even though that

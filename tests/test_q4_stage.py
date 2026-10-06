@@ -57,6 +57,7 @@ class Q4StageTests(unittest.TestCase):
         for rows in (1,16,33,64):self.assertTrue(use_runtime_rows(rows,4864))
         for rows in (0,17,32,65,128,129):self.assertFalse(use_runtime_rows(rows,4864))
         for rows,width in ((0,896),(129,896),(4,1024)):self.assertFalse(use_runtime_rows(rows,width))
-        with patch.dict('os.environ',{},clear=True):self.assertFalse(runtime_rows_enabled())
+        with patch.dict('os.environ',{},clear=True):self.assertTrue(runtime_rows_enabled())
+        with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROWS':'0'}):self.assertFalse(runtime_rows_enabled())
         with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROWS':'1'}):self.assertTrue(runtime_rows_enabled())
         with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROWS':'invalid'}),self.assertRaises(ValueError):runtime_rows_enabled()

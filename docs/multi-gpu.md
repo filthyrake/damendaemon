@@ -183,6 +183,14 @@ its sequential-prefill default (the explicit prompt-packing flag still overrides
 that default). Model status reports `weight_layout`. See the
 [Q4 layout qualification and performance tradeoffs](evidence/quantization/cuda/q4-arithmetic/README.md).
 
+Qualified adjacent Q4 stages also use selective runtime row bounds to avoid
+compiling a new body kernel for every prompt length. Static bounds remain for
+down-projection tile families where GPU measurements found regressions.
+`DLLM_Q4_STAGE_RUNTIME_ROWS=0` restores entirely static bounds. This changes
+compilation behavior, not the wire protocol or stored coefficients. Same-host
+stage status exposes `runtime_row_bounds`; measured first-use savings and warm
+A2/A30 and A2/3090 comparisons are in the Q4 evidence above.
+
 ## Resident distributed HTTP service
 
 `distributed-serve` keeps the qualified two-rank pair resident behind the
