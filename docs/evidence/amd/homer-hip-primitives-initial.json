@@ -1,0 +1,70 @@
+{
+  "passed": false,
+  "scope": "HIP primitive correctness and release only; no dllm model or performance qualification",
+  "python": "3.11.13",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "hip": "7.13.26162",
+  "device": "Radeon 8060S Graphics",
+  "architecture": "gfx1151",
+  "reported_device_memory": 66017581056,
+  "mem_get_info": [
+    119276634112,
+    66017581056
+  ],
+  "script_sha256": "a4c38d80a46517ae8b3c220abf535a3fb825d597de03f08ba1f334200b2f2410",
+  "checks": [
+    {
+      "name": "matmul-0",
+      "relative_rms": 3.075979965926163e-05,
+      "max_absolute": 0.0001220703125,
+      "passed": true
+    },
+    {
+      "name": "grouped-causal-attention-0",
+      "relative_rms": 8.39427507885879e-06,
+      "max_absolute": 0.00048828125,
+      "passed": true
+    },
+    {
+      "name": "rmsnorm-0",
+      "relative_rms": 4.917228190668386e-06,
+      "max_absolute": 0.0009765625,
+      "passed": true
+    },
+    {
+      "name": "matmul-1",
+      "relative_rms": 3.246728202940965e-05,
+      "max_absolute": 0.0001220703125,
+      "passed": true
+    },
+    {
+      "name": "grouped-causal-attention-1",
+      "relative_rms": 6.4484987397502475e-06,
+      "max_absolute": 0.000244140625,
+      "passed": true
+    },
+    {
+      "name": "rmsnorm-1",
+      "relative_rms": 6.069924635617217e-06,
+      "max_absolute": 0.0009765625,
+      "passed": true
+    }
+  ],
+  "cycles": [
+    {
+      "before_allocated": 0,
+      "peak_allocated": 101416960,
+      "peak_reserved": 102760448,
+      "after_allocated": 33554432,
+      "released": false
+    },
+    {
+      "before_allocated": 33554432,
+      "peak_allocated": 101416960,
+      "peak_reserved": 102760448,
+      "after_allocated": 33554432,
+      "released": true
+    }
+  ],
+  "error": "AssertionError('HIP correctness or release gate failed')"
+}

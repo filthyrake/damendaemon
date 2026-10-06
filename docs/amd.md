@@ -45,3 +45,31 @@ actual model/performance results will be recorded here as they are obtained.
 
 The task list lives in [issue #52](https://github.com/filthyrake/dllm/issues/52);
 the project-wide completion contract is [issue #3](https://github.com/filthyrake/dllm/issues/3).
+
+## First bounded HIP primitive result
+
+The existing isolated Python 3.11 environment uses PyTorch
+`2.11.0+rocm7.13.0a20260425` / HIP `7.13.26162`, independently of the host
+`/opt/rocm` symlink. Six real-device matrix, grouped causal attention and
+normalization comparisons passed against CPU FP64 arithmetic. Peak Torch
+allocation was about 97 MiB. This is not model execution or a speed benchmark.
+
+The [initial report](evidence/amd/homer-hip-primitives-initial.json) failed its
+strict release gate: 32 MiB remained after the first operation, stable on the
+second cycle. An [explicit workspace-release diagnostic](evidence/amd/homer-hip-primitives-workspace-release.json)
+returned allocation to zero after both cycles with unchanged numerical gates.
+This identifies the retained allocation as the documented
+[HIP BLAS workspace](https://docs.pytorch.org/docs/2.14/notes/hip.html#hipblas-workspaces),
+not a retained probe tensor. The diagnostic does not change dllm's runtime
+cleanup policy; production admission must account for library workspaces.
+
+The runtime reported roughly 61.5 GiB total device memory but roughly 111 GiB
+free through its allocator API. These APU reporting differences still need an
+explicit bounded admission policy; no large allocation was attempted. The
+attention call used the available default path; experimental fast attention was
+not enabled and no fused-attention performance claim is made.
+
+Active model targets are **Qwen3 or newer, with Qwen3.5 prioritized**. Qwen3
+dense bring-up and Qwen3.5 hybrid-state correctness are separate gates. Older
+fixtures remain historical evidence and cheap regression tests, not new GPU
+qualification or tuning targets.
