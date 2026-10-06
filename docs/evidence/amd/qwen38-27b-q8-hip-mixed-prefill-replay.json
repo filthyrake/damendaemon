@@ -1,0 +1,191 @@
+{
+  "passed": false,
+  "model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "context": 512,
+  "local_model_path": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "source_slot": null,
+  "scalar": false,
+  "prefill_chunk_size": 127,
+  "device": "Radeon 8060S Graphics",
+  "accelerator": "rocm",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "reference_dtype": "float32",
+  "rocm_aotriton_experimental": "1",
+  "reference_torch": "2.11.0+rocm7.13.0a20260425",
+  "packed_cpu_reference": true,
+  "reference_quantization": "q8_0",
+  "weight_cache_status": "disabled",
+  "weight_quantization": "q8_0",
+  "host_weight_bytes": 29772773376,
+  "reference_attention": "sdpa",
+  "graph_requested": false,
+  "kernel_backend": "triton-hybrid+q8_0+diagnostic-fp32+diagnostic-fp16-prefill-projections",
+  "compute_dtype": null,
+  "qwen3_precision": null,
+  "olmoe_grouped_prefill": null,
+  "llama_precision": null,
+  "residual_dtype": "torch.float32",
+  "dense_precision": null,
+  "checks": [
+    {
+      "event_index": 0,
+      "kind": "prefill",
+      "slot": 1,
+      "relative_rms": 0.002727862447500229,
+      "max_absolute": 0.11490774154663086,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "event_index": 1,
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.02116045169532299,
+      "max_absolute": 0.5464751720428467,
+      "greedy_match": true,
+      "passed": false,
+      "actual_top5": [
+        [
+          561,
+          24.86766815185547
+        ],
+        [
+          2532,
+          14.751928329467773
+        ],
+        [
+          760,
+          13.81930160522461
+        ],
+        [
+          198,
+          13.386802673339844
+        ],
+        [
+          220,
+          13.089584350585938
+        ]
+      ],
+      "reference_top5": [
+        [
+          561,
+          24.735158920288086
+        ],
+        [
+          2532,
+          14.94683837890625
+        ],
+        [
+          760,
+          13.691038131713867
+        ],
+        [
+          198,
+          13.33285140991211
+        ],
+        [
+          220,
+          13.138648986816406
+        ]
+      ]
+    },
+    {
+      "event_index": 2,
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.007172075100243092,
+      "max_absolute": 0.16910839080810547,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "event_index": 3,
+      "kind": "decode",
+      "slot": 1,
+      "relative_rms": 0.06313483417034149,
+      "max_absolute": 1.959822654724121,
+      "greedy_match": true,
+      "passed": false,
+      "actual_top5": [
+        [
+          369,
+          27.82168197631836
+        ],
+        [
+          513,
+          16.49236488342285
+        ],
+        [
+          284,
+          15.949324607849121
+        ],
+        [
+          198,
+          14.625789642333984
+        ],
+        [
+          303,
+          13.980439186096191
+        ]
+      ],
+      "reference_top5": [
+        [
+          369,
+          29.06438636779785
+        ],
+        [
+          513,
+          18.26399803161621
+        ],
+        [
+          284,
+          16.769147872924805
+        ],
+        [
+          303,
+          15.392854690551758
+        ],
+        [
+          198,
+          15.113101959228516
+        ]
+      ]
+    }
+  ],
+  "timings": [
+    {
+      "kind": "prefill",
+      "seconds": 2.456366811878979,
+      "slots": [
+        1
+      ],
+      "lengths": [
+        496
+      ]
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.15102383866906166,
+      "slots": [
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.1468503288924694,
+      "slots": [
+        1
+      ],
+      "lengths": []
+    },
+    {
+      "kind": "decode",
+      "seconds": 0.14702274277806282,
+      "slots": [
+        1
+      ],
+      "lengths": []
+    }
+  ]
+}

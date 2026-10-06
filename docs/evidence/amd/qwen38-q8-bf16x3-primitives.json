@@ -1,0 +1,475 @@
+{
+  "passed": true,
+  "device": "Radeon 8060S Graphics",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "input_output_dtype": "float32",
+  "storage": "q8_0",
+  "candidate_products": "BF16 high/high + high/low + low/high; FP32 accumulation",
+  "control": "FP32 dequantization plus torch linear, TF32 disabled",
+  "cases": [
+    {
+      "shape": [
+        5,
+        48,
+        5120
+      ],
+      "relative_rms": 9.219713319907896e-06,
+      "max_absolute": 0.00013446807861328125,
+      "passed": true,
+      "samples": [
+        {
+          "cycle": 0,
+          "path": "control",
+          "seconds": 0.00018566381186246872
+        },
+        {
+          "cycle": 0,
+          "path": "candidate",
+          "seconds": 0.00022750254720449448
+        },
+        {
+          "cycle": 0,
+          "path": "candidate",
+          "seconds": 0.00022923294454813004
+        },
+        {
+          "cycle": 0,
+          "path": "control",
+          "seconds": 0.00019210390746593475
+        },
+        {
+          "cycle": 1,
+          "path": "control",
+          "seconds": 0.00018520373851060867
+        },
+        {
+          "cycle": 1,
+          "path": "candidate",
+          "seconds": 0.00022218283265829086
+        },
+        {
+          "cycle": 1,
+          "path": "candidate",
+          "seconds": 0.00021955277770757675
+        },
+        {
+          "cycle": 1,
+          "path": "control",
+          "seconds": 0.00018188543617725372
+        },
+        {
+          "cycle": 2,
+          "path": "control",
+          "seconds": 0.00018224399536848068
+        },
+        {
+          "cycle": 2,
+          "path": "candidate",
+          "seconds": 0.0002243034541606903
+        },
+        {
+          "cycle": 2,
+          "path": "candidate",
+          "seconds": 0.00021877232939004898
+        },
+        {
+          "cycle": 2,
+          "path": "control",
+          "seconds": 0.00017525441944599152
+        },
+        {
+          "cycle": 3,
+          "path": "control",
+          "seconds": 0.00018130522221326828
+        },
+        {
+          "cycle": 3,
+          "path": "candidate",
+          "seconds": 0.0002186829224228859
+        },
+        {
+          "cycle": 3,
+          "path": "candidate",
+          "seconds": 0.00021536275744438171
+        },
+        {
+          "cycle": 3,
+          "path": "control",
+          "seconds": 0.00017690379172563553
+        },
+        {
+          "cycle": 4,
+          "path": "control",
+          "seconds": 0.00017755478620529175
+        },
+        {
+          "cycle": 4,
+          "path": "candidate",
+          "seconds": 0.00021165329962968826
+        },
+        {
+          "cycle": 4,
+          "path": "candidate",
+          "seconds": 0.0002168836072087288
+        },
+        {
+          "cycle": 4,
+          "path": "control",
+          "seconds": 0.0001783454790711403
+        }
+      ],
+      "median_seconds": {
+        "control": 0.000181595329195261,
+        "candidate": 0.00021916255354881287
+      }
+    },
+    {
+      "shape": [
+        31,
+        14336,
+        5120
+      ],
+      "relative_rms": 9.182886969938409e-06,
+      "max_absolute": 0.000213623046875,
+      "passed": true,
+      "samples": [
+        {
+          "cycle": 0,
+          "path": "control",
+          "seconds": 0.011255910620093346
+        },
+        {
+          "cycle": 0,
+          "path": "candidate",
+          "seconds": 0.0014612246304750443
+        },
+        {
+          "cycle": 0,
+          "path": "candidate",
+          "seconds": 0.0014417245984077454
+        },
+        {
+          "cycle": 0,
+          "path": "control",
+          "seconds": 0.011397305876016617
+        },
+        {
+          "cycle": 1,
+          "path": "control",
+          "seconds": 0.011650698259472847
+        },
+        {
+          "cycle": 1,
+          "path": "candidate",
+          "seconds": 0.0014564450830221176
+        },
+        {
+          "cycle": 1,
+          "path": "candidate",
+          "seconds": 0.0014398247003555298
+        },
+        {
+          "cycle": 1,
+          "path": "control",
+          "seconds": 0.011583330109715462
+        },
+        {
+          "cycle": 2,
+          "path": "control",
+          "seconds": 0.011156992986798286
+        },
+        {
+          "cycle": 2,
+          "path": "candidate",
+          "seconds": 0.0014541242271661758
+        },
+        {
+          "cycle": 2,
+          "path": "candidate",
+          "seconds": 0.0014330856502056122
+        },
+        {
+          "cycle": 2,
+          "path": "control",
+          "seconds": 0.011585840955376625
+        },
+        {
+          "cycle": 3,
+          "path": "control",
+          "seconds": 0.012048115022480488
+        },
+        {
+          "cycle": 3,
+          "path": "candidate",
+          "seconds": 0.001494644209742546
+        },
+        {
+          "cycle": 3,
+          "path": "candidate",
+          "seconds": 0.0014286953955888748
+        },
+        {
+          "cycle": 3,
+          "path": "control",
+          "seconds": 0.01138344593346119
+        },
+        {
+          "cycle": 4,
+          "path": "control",
+          "seconds": 0.011430805549025536
+        },
+        {
+          "cycle": 4,
+          "path": "candidate",
+          "seconds": 0.0014989227056503296
+        },
+        {
+          "cycle": 4,
+          "path": "candidate",
+          "seconds": 0.0014515453949570656
+        },
+        {
+          "cycle": 4,
+          "path": "control",
+          "seconds": 0.012015936896204948
+        }
+      ],
+      "median_seconds": {
+        "control": 0.011507067829370499,
+        "candidate": 0.0014528348110616207
+      }
+    },
+    {
+      "shape": [
+        127,
+        34816,
+        5120
+      ],
+      "relative_rms": 9.217230399372056e-06,
+      "max_absolute": 0.00023746490478515625,
+      "passed": true,
+      "samples": [
+        {
+          "cycle": 0,
+          "path": "control",
+          "seconds": 0.08061344642192125
+        },
+        {
+          "cycle": 0,
+          "path": "candidate",
+          "seconds": 0.010572170838713646
+        },
+        {
+          "cycle": 0,
+          "path": "candidate",
+          "seconds": 0.010754126124083996
+        },
+        {
+          "cycle": 0,
+          "path": "control",
+          "seconds": 0.08737386669963598
+        },
+        {
+          "cycle": 1,
+          "path": "control",
+          "seconds": 0.07983841840177774
+        },
+        {
+          "cycle": 1,
+          "path": "candidate",
+          "seconds": 0.010623670183122158
+        },
+        {
+          "cycle": 1,
+          "path": "candidate",
+          "seconds": 0.010680957697331905
+        },
+        {
+          "cycle": 1,
+          "path": "control",
+          "seconds": 0.08005205355584621
+        },
+        {
+          "cycle": 2,
+          "path": "control",
+          "seconds": 0.08001254498958588
+        },
+        {
+          "cycle": 2,
+          "path": "candidate",
+          "seconds": 0.010656509548425674
+        },
+        {
+          "cycle": 2,
+          "path": "candidate",
+          "seconds": 0.010742926970124245
+        },
+        {
+          "cycle": 2,
+          "path": "control",
+          "seconds": 0.08015612978488207
+        },
+        {
+          "cycle": 3,
+          "path": "control",
+          "seconds": 0.0810932107269764
+        },
+        {
+          "cycle": 3,
+          "path": "candidate",
+          "seconds": 0.010620320215821266
+        },
+        {
+          "cycle": 3,
+          "path": "candidate",
+          "seconds": 0.010713736526668072
+        },
+        {
+          "cycle": 3,
+          "path": "control",
+          "seconds": 0.08137074206024408
+        },
+        {
+          "cycle": 4,
+          "path": "control",
+          "seconds": 0.08027292601764202
+        },
+        {
+          "cycle": 4,
+          "path": "candidate",
+          "seconds": 0.010655618272721767
+        },
+        {
+          "cycle": 4,
+          "path": "candidate",
+          "seconds": 0.01068588811904192
+        },
+        {
+          "cycle": 4,
+          "path": "control",
+          "seconds": 0.08097303379327059
+        }
+      ],
+      "median_seconds": {
+        "control": 0.08044318621978164,
+        "candidate": 0.01066873362287879
+      }
+    },
+    {
+      "shape": [
+        127,
+        5120,
+        17408
+      ],
+      "relative_rms": 3.5756645957008004e-05,
+      "max_absolute": 0.00150299072265625,
+      "passed": true,
+      "samples": [
+        {
+          "cycle": 0,
+          "path": "control",
+          "seconds": 0.04408799111843109
+        },
+        {
+          "cycle": 0,
+          "path": "candidate",
+          "seconds": 0.005590465851128101
+        },
+        {
+          "cycle": 0,
+          "path": "candidate",
+          "seconds": 0.005518878810107708
+        },
+        {
+          "cycle": 0,
+          "path": "control",
+          "seconds": 0.04416651837527752
+        },
+        {
+          "cycle": 1,
+          "path": "control",
+          "seconds": 0.04773883707821369
+        },
+        {
+          "cycle": 1,
+          "path": "candidate",
+          "seconds": 0.0058205993846058846
+        },
+        {
+          "cycle": 1,
+          "path": "candidate",
+          "seconds": 0.005507028661668301
+        },
+        {
+          "cycle": 1,
+          "path": "control",
+          "seconds": 0.045622292906045914
+        },
+        {
+          "cycle": 2,
+          "path": "control",
+          "seconds": 0.0456760311499238
+        },
+        {
+          "cycle": 2,
+          "path": "candidate",
+          "seconds": 0.00557983573526144
+        },
+        {
+          "cycle": 2,
+          "path": "candidate",
+          "seconds": 0.005474030040204525
+        },
+        {
+          "cycle": 2,
+          "path": "control",
+          "seconds": 0.04512490797787905
+        },
+        {
+          "cycle": 3,
+          "path": "control",
+          "seconds": 0.044513546861708164
+        },
+        {
+          "cycle": 3,
+          "path": "candidate",
+          "seconds": 0.00557341706007719
+        },
+        {
+          "cycle": 3,
+          "path": "candidate",
+          "seconds": 0.005495178513228893
+        },
+        {
+          "cycle": 3,
+          "path": "control",
+          "seconds": 0.045146288350224495
+        },
+        {
+          "cycle": 4,
+          "path": "control",
+          "seconds": 0.044541495852172375
+        },
+        {
+          "cycle": 4,
+          "path": "candidate",
+          "seconds": 0.005549398250877857
+        },
+        {
+          "cycle": 4,
+          "path": "candidate",
+          "seconds": 0.005524657666683197
+        },
+        {
+          "cycle": 4,
+          "path": "control",
+          "seconds": 0.04671284928917885
+        }
+      ],
+      "median_seconds": {
+        "control": 0.04513559816405177,
+        "candidate": 0.005537027958780527
+      }
+    }
+  ]
+}

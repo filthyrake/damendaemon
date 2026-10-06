@@ -486,3 +486,31 @@ then grows across later blocks; the largest increases occur at full-attention
 layers 51 and 55 (zero-based). This is evidence of late error amplification,
 not proof of a particular faulty operator. Diagnostic layer captures synchronize
 CPU copies and must not be used as performance measurements.
+
+A [full FP32 arithmetic control with packed Q8 weights](evidence/amd/qwen38-27b-q8-hip-fp32-arithmetic-replay.json)
+passes all four focused targets (worst RMS 0.0000903). The
+[cached-kernel repeat](evidence/amd/qwen38-27b-q8-hip-fp32-arithmetic-warm-replay.json)
+also passes, but its 496-token prefill takes 79.72 seconds in this diagnostic.
+[Attention-only precision promotion](evidence/amd/qwen38-27b-q8-hip-attention-fp32-replay.json)
+and [FP16 prompt projections with FP32 decoding](evidence/amd/qwen38-27b-q8-hip-mixed-prefill-replay.json)
+both retain numerical failures. None of these controls changes defaults.
+
+The independent experimental `hip_q8_bf16x3.py` projection decomposes FP32
+activations and dequantized Q8 tiles into high/low BF16 components. Three
+BF16 tensor-core products accumulate into FP32 outputs; the low/low product
+is omitted, so this is explicitly an approximation, not exact FP32 arithmetic.
+[Real HOMER primitive checks](evidence/amd/qwen38-q8-bf16x3-primitives.json)
+pass all four shapes. Relative RMS versus TF32-disabled FP32 operations stays
+below 0.000036. Five ABBA cycles per shape retain raw samples; the candidate
+is slower on the tiny 5-by-48 output, while the three larger shapes take about
+one eighth of the FP32 dequantize-and-linear control time. The arithmetic paths
+differ and this is not a cross-engine or model-serving comparison.
+
+The [actual-model candidate replay](evidence/amd/qwen38-27b-q8-hip-bf16x3-replay.json)
+passes all four fixed-token FP32 targets: worst RMS 0.0005784, max absolute
+0.017102, all greedy choices matching. It retains FP32 activations and state,
+uses compensated projections for prefill, and ordinary FP32 Q8 matvec for decode.
+Its first diagnostic prefill takes 11.76 seconds; a matched serving benchmark
+and complete numerical/lifecycle gates are still required. The full independent
+84-target control is being regenerated with eight low-priority CPU threads and
+a 2,700-second bound, retaining the 88 GiB/no-swap memory limits.
