@@ -1,0 +1,273 @@
+{
+  "model": "results/models/qwen2",
+  "device": "Apple MPS",
+  "torch": "2.13.0",
+  "backend": "metal+q4_0",
+  "context": 512,
+  "batch": 1,
+  "steps": 32,
+  "cuda_graphs": false,
+  "unprofiled_rounds": [
+    {
+      "seconds": 0.6360451249638572,
+      "aggregate_tokens_per_second": 50.31089579032364,
+      "dispatch_median_seconds": 0.0016240209806710482,
+      "readback_median_seconds": 0.018087500473484397
+    },
+    {
+      "seconds": 0.638379207928665,
+      "aggregate_tokens_per_second": 50.12694586941467,
+      "dispatch_median_seconds": 0.001602749980520457,
+      "readback_median_seconds": 0.018104729417245835
+    },
+    {
+      "seconds": 0.6381403330015019,
+      "aggregate_tokens_per_second": 50.14570987777494,
+      "dispatch_median_seconds": 0.001630666432902217,
+      "readback_median_seconds": 0.01801295852055773
+    }
+  ],
+  "host_calls": [
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'cpu' of 'torch._C.TensorBase' objects>",
+      "calls": 33,
+      "self_seconds": 0.633652081,
+      "cumulative_seconds": 0.633652081
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.tensor>",
+      "calls": 97,
+      "self_seconds": 0.025931041000000002,
+      "cumulative_seconds": 0.025931041000000002
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/quantized_metal_q4.py",
+      "line": 59,
+      "function": "linear",
+      "calls": 3201,
+      "self_seconds": 0.019195061000000003,
+      "cumulative_seconds": 0.028420576000000003
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/batch.py",
+      "line": 53,
+      "function": "forward_batch_hidden",
+      "calls": 32,
+      "self_seconds": 0.0070851410000000005,
+      "cumulative_seconds": 0.057860127000000004
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.empty>",
+      "calls": 4785,
+      "self_seconds": 0.005042637,
+      "cumulative_seconds": 0.005042637
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/metal_kernels.py",
+      "line": 181,
+      "function": "rms",
+      "calls": 1617,
+      "self_seconds": 0.004784336,
+      "cumulative_seconds": 0.006284213
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/quantization.py",
+      "line": 109,
+      "function": "__call__",
+      "calls": 3201,
+      "self_seconds": 0.004311807,
+      "cumulative_seconds": 0.034163594000000005
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/metal_kernels.py",
+      "line": 206,
+      "function": "rope_batch",
+      "calls": 792,
+      "self_seconds": 0.0034519480000000003,
+      "cumulative_seconds": 0.004450209
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/metal_kernels.py",
+      "line": 223,
+      "function": "attention",
+      "calls": 768,
+      "self_seconds": 0.003276068,
+      "cumulative_seconds": 0.00397434
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'reshape' of 'torch._C.TensorBase' objects>",
+      "calls": 7194,
+      "self_seconds": 0.0028506010000000003,
+      "cumulative_seconds": 0.0028506010000000003
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.embedding>",
+      "calls": 33,
+      "self_seconds": 0.0022570850000000003,
+      "cumulative_seconds": 0.0022570850000000003
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/metal_kernels.py",
+      "line": 189,
+      "function": "swiglu",
+      "calls": 792,
+      "self_seconds": 0.002113354,
+      "cumulative_seconds": 0.00342968
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.empty_like>",
+      "calls": 2385,
+      "self_seconds": 0.0015241200000000001,
+      "cumulative_seconds": 0.0015241200000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._nn.linear>",
+      "calls": 96,
+      "self_seconds": 0.0013703320000000001,
+      "cumulative_seconds": 0.0013703320000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'to' of 'torch._C.TensorBase' objects>",
+      "calls": 825,
+      "self_seconds": 0.0011914410000000001,
+      "cumulative_seconds": 0.0011914410000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'unbind' of 'torch._C.TensorBase' objects>",
+      "calls": 792,
+      "self_seconds": 0.001059728,
+      "cumulative_seconds": 0.001059728
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'repeat_interleave' of 'torch._C.TensorBase' objects>",
+      "calls": 48,
+      "self_seconds": 0.000826704,
+      "cumulative_seconds": 0.000826704
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'contiguous' of 'torch._C.TensorBase' objects>",
+      "calls": 6378,
+      "self_seconds": 0.0007973170000000001,
+      "cumulative_seconds": 0.0007973170000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'numel' of 'torch._C.TensorBase' objects>",
+      "calls": 6594,
+      "self_seconds": 0.00075274,
+      "cumulative_seconds": 0.00075274
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'is_contiguous' of 'torch._C.TensorBase' objects>",
+      "calls": 6402,
+      "self_seconds": 0.000711556,
+      "cumulative_seconds": 0.000711556
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 645,
+      "function": "parent",
+      "calls": 3202,
+      "self_seconds": 0.0005621210000000001,
+      "cumulative_seconds": 0.00099335
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/qwen2.py",
+      "line": 657,
+      "function": "forward_hidden",
+      "calls": 1,
+      "self_seconds": 0.00047142,
+      "cumulative_seconds": 0.005101208
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.id>",
+      "calls": 6402,
+      "self_seconds": 0.000441611,
+      "cumulative_seconds": 0.000441611
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'rpartition' of 'str' objects>",
+      "calls": 3202,
+      "self_seconds": 0.00043122900000000004,
+      "cumulative_seconds": 0.00043122900000000004
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/qwen2.py",
+      "line": 545,
+      "function": "norm",
+      "calls": 1617,
+      "self_seconds": 0.00034893200000000004,
+      "cumulative_seconds": 0.006633145
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'get' of 'dict' objects>",
+      "calls": 2400,
+      "self_seconds": 0.00032129900000000004,
+      "cumulative_seconds": 0.00032129900000000004
+    },
+    {
+      "file": "/Users/damenknight/dllm/.venv-metal/lib/python3.12/site-packages/torch/autograd/grad_mode.py",
+      "line": 290,
+      "function": "__enter__",
+      "calls": 101,
+      "self_seconds": 0.00030987200000000004,
+      "cumulative_seconds": 0.000723537
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/qwen2.py",
+      "line": 642,
+      "function": "decode_attention",
+      "calls": 768,
+      "self_seconds": 0.000289708,
+      "cumulative_seconds": 0.004264048
+    },
+    {
+      "file": "/Users/damenknight/dllm/.venv-metal/lib/python3.12/site-packages/torch/utils/_contextlib.py",
+      "line": 120,
+      "function": "decorate_context",
+      "calls": 34,
+      "self_seconds": 0.00022902500000000002,
+      "cumulative_seconds": 0.0
+    },
+    {
+      "file": "/Users/damenknight/dllm/dllm/metal_kernels.py",
+      "line": 174,
+      "function": "library",
+      "calls": 3969,
+      "self_seconds": 0.000214896,
+      "cumulative_seconds": 0.000214896
+    }
+  ],
+  "interpretation": "Host API time may include GPU waits; not a measurement of pure Python overhead. Profiled calls include prefill; unprofiled timing measures decode only."
+}

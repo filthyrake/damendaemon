@@ -42,3 +42,40 @@ Repeated full unloads retain the same live Metal allocation count
 (`qwen2-q4-metal-http.json`). Run `scripts/verify_metal_q4_service.py` against
 the local CPU trace to reproduce. Performance measurements remain separate;
 these correctness results do not establish a speedup.
+
+
+## Initial serving measurements
+
+M4, the same pinned checkpoint, 16 input IDs, context 512, 32 output tokens,
+FP16 retained unquantized storage and FP32 activations/KV. Q4 and Q8 ran
+sequentially, each with one warmup and five measured rounds. These are
+**different precision** measurements, not an equivalent-arithmetic speedup.
+No upstream engine was remeasured for this comparison.
+
+| Precision | Concurrency | Aggregate tokens/s | First text ms | Request latency ms |
+|---|---:|---:|---:|---:|
+| Q4 | 1 | 47.76 | 47.86 | 669.96 |
+| Q8 | 1 | 49.44 | 48.51 | 647.16 |
+| Q4 | 2 | 83.47 | 80.96 | 757.51 |
+| Q8 | 2 | 85.20 | 82.82 | 748.71 |
+| Q4 | 4 | 148.51 | 122.98 | 861.35 |
+| Q8 | 4 | 142.14 | 129.43 | 896.88 |
+
+Values are medians of measured rounds or requests. There is no established
+Q4 speed advantage: small differences here need counterbalanced repetition.
+Raw reports are `q4-http-c*.json` and `q8-http-c*.json`.
+
+A separate raw-prompt Q4 decode diagnostic records roughly 1.6 ms dispatch
+and 18 ms token readback per step (`q4-host-profile.json`). Readback includes
+waiting for preceding GPU execution; it is not transfer cost alone. Host API
+time likewise can contain GPU waits. This does not justify attributing the
+runtime gap to Python or predict a gain from a language rewrite.
+
+
+The isolated SIMD-group packing experiment (`q4-metal-groups.json`) checks
+64/128/256/512 threads per group with exact output equality, repeated
+counterbalanced order, and Qwen2 projection geometries at one/four rows.
+Smaller groups help the narrow output/down projections slightly, but do not
+materially improve the large vocabulary projection (roughly 4.55 ms at one
+row). Runtime launch defaults remain unchanged. This is a component benchmark,
+not a measured end-to-end optimization.
