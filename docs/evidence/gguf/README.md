@@ -2411,3 +2411,28 @@ marker identifies all-row replacement and no longer reports residual decode
 as active. Existing model accuracy limits and the pinned teacher inputs remain
 unchanged. These correctness results do not yet establish end-to-end loading
 or serving gains for the replacement implementation.
+
+
+`mistral-q4-marlin-replaced-http-a2.json` subsequently passes the matched ABBA
+HTTP and model-lifecycle comparison, with every generated text equal. Warm
+median total latency (baseline → replacement) is 542.86 → 426.01 ms for 16-token
+input, 852.67 → 578.68 ms for 129, and 1065.98 → 896.22 ms for 400; each emits
+16 tokens. At input 129, concurrency two improves 1492.87 → 800.84 ms and four
+1787.74 → 1132.74 ms. Aggregate output throughput is respectively 29.47 → 37.56,
+18.76 → 27.65, 15.01 → 17.85, 21.44 → 39.96, and 35.80 → 56.50 tokens/sec.
+Single-request post-first-output throughput improves about 23–24%.
+
+Actual Torch allocation after workloads is 4,556,852,224 → 4,676,390,400 bytes
+(+114.00 MiB including layout, workspace and graph allocations). Host-restored
+activation takes 2.218/2.252 seconds in the control and 2.162/2.253 in the
+candidate; switch-back activation 2.327/2.426 → 2.276/2.455. Corresponding full
+requests are faster because generation improves. Disk activation varies
+8.452/8.924 → 8.154/8.446 seconds; two samples do not establish a disk-loading
+speedup. The unchanged secondary model passes its lifecycle checks. This fixes
+the earlier duplicate-layout prototype's approximately nine-second loading
+regression, without retaining an extra full set of GPU projections.
+
+These remain explicit prototype results, not proof of production admission.
+The same source coefficients/scales are used, but Marlin rounds coefficients
+to FP16 while the residual control applies FP32 scaling. Independent HF logit
+and layout checks above qualify that arithmetic difference in this narrow scope.
