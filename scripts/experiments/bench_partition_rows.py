@@ -21,7 +21,7 @@ def sync():
 
 @torch.inference_mode()
 def main():
-    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('prompt');p.add_argument('--output',required=True)
+    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('prompt');p.add_argument('--output',required=True);p.add_argument('--integrated',action='store_true')
     args=p.parse_args()
     def terminate(number,frame):raise SystemExit(128+number)
     signal.signal(signal.SIGTERM,terminate)
@@ -31,7 +31,7 @@ def main():
     torch.set_num_threads(4)
     model=ModelWeights(args.model,512,quantization='q4_0')
     original=q4_stage_kernels.single_dot_adjacent
-    report=dict(passed=False,model=args.model,quantization='q4_0',context=512,capacity=4,prompt_tokens=16,output_tokens=32,
+    report=dict(passed=False,integrated=args.integrated,model=args.model,quantization='q4_0',context=512,capacity=4,prompt_tokens=16,output_tokens=32,
         devices=os.environ['CUDA_VISIBLE_DEVICES'],trials=[],
         scope='Same-host model execution ABBA. Static versus selective runtime row bounds only; adjacent weights and packed prefill fixed. Host weights loaded once; all group shapes warmed before steady-state timing. First-shape calls are observed per process/order, not an isolated cold-start comparison. No HTTP or network throughput claim.',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
@@ -41,7 +41,8 @@ def main():
     try:
         for dynamic in (False,True,True,False):
             q4_stage_kernels.single_dot_adjacent=original
-            if dynamic:install_validation_dispatch()
+            os.environ['DLLM_Q4_STAGE_RUNTIME_ROWS']=str(int(dynamic and args.integrated))
+            if dynamic and not args.integrated:install_validation_dispatch()
             sync();started=time.perf_counter()
             executor=PartitionExecutor(model,12,use_graph=True,max_batch=4)
             sync();trial=dict(dynamic=dynamic,activation_seconds=time.perf_counter()-started,first_shapes=[],runs=[])

@@ -4,6 +4,19 @@ Only qualified body projections use adjacent nibbles. The output head retains
 its existing implementation. Repacking preserves allocations captured by graphs.
 """
 import torch
+import os
+
+
+def runtime_rows_enabled():
+    value=os.environ.get('DLLM_Q4_STAGE_RUNTIME_ROWS','0')
+    if value not in ('0','1'):raise ValueError('DLLM_Q4_STAGE_RUNTIME_ROWS must be 0 or 1')
+    return value=='1'
+
+
+def use_runtime_rows(rows,width):
+    # Partially filled 32/128-row down-projection tiles lose warm speed with
+    # dynamic predicates. Retain their measured static implementation.
+    return 1<=rows<=128 and (width==896 or (width==4864 and (rows<=16 or 32<rows<=64)))
 
 
 @torch.inference_mode()
@@ -16,6 +29,7 @@ def repack_adjacent(weight):
 class StageQ4Linear:
     def __init__(self,base,weights):
         self.base=base
+        self.runtime_rows=runtime_rows_enabled()
         # Validate all projections before changing any representation. In
         # particular, a head/body alias must never silently repack the head.
         shapes={'qkv.weight':(1152,448),'out':(896,448),
@@ -42,7 +56,7 @@ class StageQ4Linear:
 
     def __call__(self,x,weight,bias=None):
         if id(weight) not in self.weights:return self.base(x,weight,bias)
-        from .q4_stage_kernels import single_dot_adjacent,expand_adjacent
+        from .q4_stage_kernels import single_dot_adjacent,single_dot_runtime_rows,expand_adjacent
         import triton as tr
         rows=x.numel()//x.shape[-1]
         scales=self.base.scales[id(weight)]
@@ -54,7 +68,8 @@ class StageQ4Linear:
         bm=max(16,tr.next_power_of_2(rows))
         bn,bk,stages=(64,64,3) if k==896 else ((32,128,1) if rows<=16 else (64,128,3))
         output=torch.empty((rows,n),device=x.device,dtype=x.dtype)
-        single_dot_adjacent[(tr.cdiv(rows,bm),tr.cdiv(n,bn))](x,weight,scales,
+        kernel=single_dot_runtime_rows if self.runtime_rows and use_runtime_rows(rows,k) else single_dot_adjacent
+        kernel[(tr.cdiv(rows,bm),tr.cdiv(n,bn))](x,weight,scales,
             weight if bias is None else bias,output,rows,n,k,bm,bn,bk,bias is not None,
             num_warps=8 if bm==128 else 4,num_stages=stages)
         return output.reshape(*shape,n)

@@ -418,3 +418,34 @@ are retained, but later trials reuse compilation/module state from earlier
 trials. They cannot establish a fair cold-start advantage. The next harness
 uses a fresh process and private Triton cache per trial; host/driver caches are
 explicitly not reset.
+
+### Independent compiler-cache model trials
+
+Four separate processes run static/selective/selective/static, each with its own
+fresh temporary Triton cache. Host checkpoint/filesystem and driver caches are
+not reset. The same model, Q4 coefficients, A2/A30 placement, context and prompt
+sequence are used; every first and repeated output token matches across trials.
+
+| Mode | Median GPU activation/compilation, s | Median first sweep across 15 lengths, s | Median repeated sweep, s |
+|---|---:|---:|---:|
+| Static row bounds | 22.77 | 48.16 | 0.357 |
+| Selective runtime bounds | 15.38 | 19.22 | 0.336 |
+
+Activation here excludes Python imports, host weight loading and initial CUDA
+context setup, which are not the optimization target. The first sweep uses
+lengths 3/5/7/11/13/17/19/23/31/33/47/63/65/95/127. Selective bounds reduce measured
+activation/compilation by 32.4% and cumulative first-sweep time by 60.1%. A new
+tile family still compiles, and retained down-projection specializations still
+incur first-use cost. These results are not end-to-end cold server startup or
+HTTP throughput, and they do not imply every prompt is faster by that ratio.
+
+`DLLM_Q4_STAGE_RUNTIME_ROWS=1` now selects an integrated runtime implementation
+of that policy. Static and dynamic entry points share one arithmetic body;
+32/128-row down-projection tile families retain static bounds. The flag defaults
+off during integrated-path qualification. The integrated kernels pass 88 GPU
+matrix cases across A2/A30 and the 282-check independent model graph gate. The
+full local suite passes 445 tests. The integrated path also passes 19 HTTP
+checks and 492 changed-weight/recovery checks, including partial upload and
+repacking failures. The shared arithmetic refactor's static control passes all
+282 independent graph checks and 22 packed stage calls. Integrated performance
+and cross-host qualification remain separate gates before default promotion.

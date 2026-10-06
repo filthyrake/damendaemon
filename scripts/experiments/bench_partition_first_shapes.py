@@ -11,10 +11,10 @@ import time
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('prompt');p.add_argument('--dynamic',action='store_true')
-    p.add_argument('--output',required=True);args=p.parse_args()
+    p.add_argument('--output',required=True);p.add_argument('--integrated',action='store_true');args=p.parse_args()
     def terminate(number,frame):raise SystemExit(128+number)
     signal.signal(signal.SIGTERM,terminate)
-    report=dict(passed=False,dynamic=args.dynamic,model=args.model,quantization='q4_0',context=512,capacity=4,first=[],repeat=[],
+    report=dict(passed=False,integrated=args.integrated,dynamic=args.dynamic,model=args.model,quantization='q4_0',context=512,capacity=4,first=[],repeat=[],
         scope='Fresh process and private Triton compiler cache for each trial; host checkpoint/filesystem/driver caches are not reset. Same-host first-token computation, including compilation and GPU completion, without HTTP/queue/network. No steady-state throughput claim.',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                  ('dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/partition.py','scripts/experiments/q4_dynamic_rows.py',__file__)})
@@ -30,7 +30,8 @@ def main():
             report['import_seconds']=time.perf_counter()-started
             assert torch.cuda.device_count()==2,'select exactly two GPUs'
             torch.set_num_threads(4)
-            if args.dynamic:install_validation_dispatch()
+            os.environ['DLLM_Q4_STAGE_RUNTIME_ROWS']=str(int(args.dynamic and args.integrated))
+            if args.dynamic and not args.integrated:install_validation_dispatch()
             def sync():
                 for device in range(2):torch.cuda.synchronize(device)
             prompt=json.loads(Path(args.prompt).read_text());assert len(prompt)==16

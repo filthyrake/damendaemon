@@ -109,6 +109,9 @@ def main():
                     from dllm.partition_policy import q4_stage_adjacent_enabled
                     layout='q4-adjacent-body' if q4_stage_adjacent_enabled(report['quantization']) else 'canonical'
                     assert all(s['weight_layout']==layout for s in loaded['models'][0]['partition'])
+                    if layout=='q4-adjacent-body':
+                        from dllm.q4_stage import runtime_rows_enabled
+                        assert all(s['runtime_row_bounds']==runtime_rows_enabled() for s in loaded['models'][0]['partition'])
                 counts=(2,8,4,6)
                 with ThreadPoolExecutor(4) as pool:
                     responses=list(pool.map(lambda pair:request(pair[0],count=pair[1]),enumerate(counts)))

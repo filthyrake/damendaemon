@@ -4,7 +4,7 @@ import triton.language as tl
 
 
 @tr.jit
-def single_dot_adjacent(X,W,S,BIAS,Y,M:tl.constexpr,N:tl.constexpr,K:tl.constexpr,
+def _adjacent_dot(X,W,S,BIAS,Y,M,N:tl.constexpr,K:tl.constexpr,
                           BM:tl.constexpr,BN:tl.constexpr,BK:tl.constexpr,BIASED:tl.constexpr):
     rows=tl.program_id(0)*BM+tl.arange(0,BM)
     outputs=tl.program_id(1)*BN+tl.arange(0,BN)
@@ -27,6 +27,18 @@ def single_dot_adjacent(X,W,S,BIAS,Y,M:tl.constexpr,N:tl.constexpr,K:tl.constexp
         accum+=tl.dot(x,tl.trans(w))
     if BIASED:accum+=tl.load(BIAS+outputs,outputs<N,other=0)[None,:].to(tl.float32)
     tl.store(Y+rows[:,None]*N+outputs[None,:],accum,(rows[:,None]<M)&(outputs[None,:]<N))
+
+
+@tr.jit
+def single_dot_adjacent(X,W,S,BIAS,Y,M:tl.constexpr,N:tl.constexpr,K:tl.constexpr,
+                        BM:tl.constexpr,BN:tl.constexpr,BK:tl.constexpr,BIASED:tl.constexpr):
+    _adjacent_dot(X,W,S,BIAS,Y,M,N,K,BM,BN,BK,BIASED)
+
+
+@tr.jit(do_not_specialize=['M'])
+def single_dot_runtime_rows(X,W,S,BIAS,Y,M,N:tl.constexpr,K:tl.constexpr,
+                            BM:tl.constexpr,BN:tl.constexpr,BK:tl.constexpr,BIASED:tl.constexpr):
+    _adjacent_dot(X,W,S,BIAS,Y,M,N,K,BM,BN,BK,BIASED)
 
 
 @tr.jit
