@@ -10,10 +10,10 @@ from dllm.batch import BatchExecutor
 
 def shard_model(model,start,end):
     c=model.config
-    if (c['model_type']!='qwen2' or model.quantization not in ('none','q8_0')
+    if (c['model_type']!='qwen2' or model.quantization not in ('none','q8_0','q4_0')
             or getattr(model,'packed_formats',{}) or getattr(model,'awq_matrices',{})
             or c.get('rope_scaling') or not 0<=start<end<=c['num_hidden_layers']):
-        raise ValueError('stage prototype requires FP16 or Q8 Qwen2 with standard RoPE')
+        raise ValueError('stage prototype requires FP16, Q8 or Q4 Qwen2 with standard RoPE')
     shard=copy.copy(model)
     shard.config={**c,'num_hidden_layers':end-start}
     names={}

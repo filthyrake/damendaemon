@@ -434,6 +434,41 @@ run-path harness. Public distributed CLI commands still use ordinary torchrun;
 this cleanup work is specific to owned local verification jobs and does not
 add cross-host worker supervision or automatic service recovery.
 
+## Native Q4 same-host partition
+
+The qualified 12/12 Qwen2.5-0.5B same-host path now admits native `q4_0` alongside
+FP16/Q8, retaining context <=512 and batch <=4. Layer sharding preserves packed
+uint8 matrices and their FP16 scales without expanding weights. GGUF/AWQ,
+paged KV, speculation and distributed Q4 CLI admission remain excluded.
+
+Independent targets use upstream GGUF Q4 quantization/dequantization and
+Transformers execution of the pinned source checkpoint. Both eager and graph
+stages pass all 82 unchanged logit/token gates: worst relative RMS 0.005299,
+maximum absolute error 0.046875, exact greedy agreement. Per-stage packed
+weights/scales/KV are respectively 361796608/11182080/12582912 bytes on A2 and
+157596416/19690496/12582912 bytes on A30. Scale tensors are checked on their
+owning device. Raw stage reports are `qwen2-stages-q4-{eager,graphs}.json`.
+
+Changed-weight A/B/A/B swaps plus recovery pass 410 independent checks. Graph,
+weight, scale and KV addresses remain stable across compatible swaps. Injected
+partial upload unpublishes the executor before a fresh rebuild, which passes
+the original reference again (`qwen2-partition-rebind-q4.json`). Activation
+timings in this lifecycle report are observations, not matched speedup evidence.
+
+The normal HTTP gate passes 20 checks including independent continuations,
+shrinking concurrent batches, streaming, cancellation/slot reuse, invalid
+input recovery, output-GPU logprobs, seeded sampling/penalties, alias restore
+and disk reload. Repeated unload returns to exactly 8519680 allocated bytes per
+GPU, all identified as retained cuBLAS workspace, with no allocation growth.
+It does not return to zero CUDA allocation. The allocation proof is
+`qwen2-partition-http-q4-allocations.json`. All 405 local tests pass.
+
+A separate injected last-stage decode failure also passes the full HTTP gate.
+The damaged executor is reported failed, then the next request rebuilds from
+host weights and matches the independent continuation. See
+`qwen2-partition-http-q4-recovery.json`. This is recovery from an ordinary
+execution exception, not proof of recovery from fatal CUDA/device faults.
+
 | Median network metric | Separate completion collective | Token reply completion |
 | --- | ---: | ---: |
 | First token | 20.88 ms | 20.76 ms |

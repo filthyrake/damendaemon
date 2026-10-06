@@ -8,7 +8,7 @@ Start with the qualified same-host configuration below. Cross-host execution rem
 
 `--layer-split 12` runs the first 12 decoder layers on the first visible GPU
 and the remaining 12 on the second. Currently qualified for Qwen2.5-0.5B,
-FP16 or dllm Q8, context up to 512 and batch size up to four. It shares the
+FP16, dllm Q8 or dllm Q4, context up to 512 and batch size up to four. It shares the
 normal HTTP scheduler, streaming, cancellation and model residency controls.
 Sampling stays on the output GPU; status includes both devices' allocations
 and per-stage weights, scales and KV bytes.
@@ -26,6 +26,12 @@ invalidates the executor; the next request rebuilds both stages from the host
 cache. Cross-host A2/3090 execution has a separate experimental correctness
 proof; it is not exposed by this serving option. RDMA remains unqualified.
 See [multi-GPU evidence and limits](evidence/multi-gpu/README.md).
+
+Set `DLLM_QUANTIZATION=q4_0` for the qualified native four-bit path. Packed
+weights and scales stay with their owning stage; this is not GGUF or AWQ
+partition support. Independent eager/graph, changed-weight swap, HTTP and
+release checks are recorded in the [Q4 qualification](evidence/multi-gpu/README.md#native-q4-same-host-partition).
+The separate distributed CLI still admits FP16/Q8 only.
 
 ## Compatible model swaps
 

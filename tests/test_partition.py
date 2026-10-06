@@ -33,6 +33,8 @@ class PartitionTests(unittest.TestCase):
             for split,batch in ((0,4),(11,4),(12,5)):
                 with self.assertRaises(ValueError):validate(model,split,batch)
             model.quantization='q4_0'
+            validate(model,12,4)
+            model.quantization='awq'
             with self.assertRaises(ValueError):validate(model,12,4)
             model=self.model();model.max_context=513
             with self.assertRaises(ValueError):validate(model,12,4)

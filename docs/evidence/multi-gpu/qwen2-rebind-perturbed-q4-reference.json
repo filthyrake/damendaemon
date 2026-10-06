@@ -1,0 +1,28 @@
+{
+  "model_path": "results/models/qwen2-rebind-perturbed",
+  "reference_dtype": "float16",
+  "reference_attention": "sdpa",
+  "architecture": "qwen2",
+  "device": "NVIDIA A2",
+  "torch": "2.13.0+cu130",
+  "reference_device": "cuda",
+  "weight_dtype": null,
+  "reference_only": true,
+  "reference_quantization": "q4_0",
+  "weight_quantization": null,
+  "prefill_chunk_size": 0,
+  "tiny_prefixes": false,
+  "context": 512,
+  "backend": null,
+  "checks": [],
+  "template_checks": [
+    {
+      "input_kind": "chat",
+      "enable_thinking": null,
+      "tokens": 49,
+      "runtime_compared": false
+    }
+  ],
+  "timings": [],
+  "passed": null
+}

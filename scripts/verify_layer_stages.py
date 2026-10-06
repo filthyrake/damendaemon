@@ -27,8 +27,11 @@ def main():
             assert ('embed' in stage.w)==(device==0)
             assert ('head' in stage.w)==(device==1)
             assert all(t.device.index==device for t in stage.w.values())
+            scales=list(stage.quant_linear.scales.values()) if stage.quant_linear else []
+            assert all(t.device.index==device for t in scales)
             residency.append(dict(device=torch.cuda.get_device_name(device),layers=[start,end],
                 weights_bytes=sum(t.numel()*t.element_size() for t in {id(t):t for t in stage.w.values()}.values()),
+                scale_bytes=sum(t.numel()*t.element_size() for t in {id(t):t for t in scales}.values()),
                 kv_bytes=sum(t.numel()*t.element_size() for t in stage.kv)))
     checks=[]; timings=[]; lengths=[0]*4
     for event in trace['trace']:

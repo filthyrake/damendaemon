@@ -31,5 +31,16 @@ class LayerStageTests(unittest.TestCase):
         model=self.model()
         for start,end in ((-1,2),(0,5),(2,2),(3,1)):
             with self.assertRaises(ValueError):shard_model(model,start,end)
-        model.quantization='q4_0'
+        model.quantization='awq'
         with self.assertRaises(ValueError):shard_model(model,0,2)
+
+    def test_q4_packed_shape_and_scale_ownership_survive_sharding(self):
+        model=self.model();model.quantization='q4_0'
+        for name in model.scales:model.weights[name]=torch.zeros(4,16,dtype=torch.uint8)
+        stage=shard_model(model,2,4)
+        self.assertEqual(stage.weights['0.out'].shape,(4,16))
+        self.assertEqual(stage.weights['0.out'].dtype,torch.uint8)
+        self.assertIs(stage.weights['0.out'],model.weights['2.out'])
+        self.assertIs(stage.scales['0.out'],model.scales['2.out'])
+        self.assertNotIn('embed',stage.weights)
+        self.assertEqual(set(stage.scales),{'0.out','1.out','head'})

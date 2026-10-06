@@ -29,11 +29,11 @@ def validate(model,split,max_batch):
         raise ValueError('layer partition serving is qualified only for Qwen2.5-0.5B geometry')
     if split!=12 or not 1<=max_batch<=4 or not 1<=model.max_context<=512:
         raise ValueError('layer partition serving requires split 12, context <=512, batch <=4')
-    if (model.quantization not in ('none','q8_0')
+    if (model.quantization not in ('none','q8_0','q4_0')
             or getattr(model,'weight_format',model.quantization)!=model.quantization
             or getattr(model,'packed_formats',{})
             or getattr(model,'awq_matrices',{}) or c.get('rope_scaling')):
-        raise ValueError('layer partition requires standard RoPE and FP16 or Q8 weights')
+        raise ValueError('layer partition requires standard RoPE and FP16, Q8 or Q4 weights')
     if (os.environ.get('DLLM_KV_CACHE_TOKENS') is not None
             or os.environ.get('DLLM_SPECULATIVE_TOKENS','0')!='0'
             or os.environ.get('DLLM_KERNELS','triton') not in ('auto','triton')):
