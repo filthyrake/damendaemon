@@ -39,6 +39,7 @@ def main():
     parser.add_argument('--experimental-hybrid-context', action='store_true', help='use the isolated issue-68 context probe, leaving production admission unchanged')
     parser.add_argument('--request-timeout', type=float, default=600)
     parser.add_argument('--first-output-budget', type=float, default=600)
+    parser.add_argument('--host-gib', type=float, help='explicit host-weight residency budget for practical checkpoints')
     args = parser.parse_args()
     if args.context < 32768 or args.chunk_size <= 0 or not 1 <= args.rounds <= 10:
         parser.error('requires context >=32768, positive chunks and 1..10 rounds')
@@ -46,6 +47,8 @@ def main():
         parser.error('declare a finite short-stream gap budget in (0,10] seconds')
     if any(not math.isfinite(value) or value <= 0 for value in (args.request_timeout, args.first_output_budget)):
         parser.error('request timeout and first-output budget must be positive and finite')
+    if args.host_gib is not None and (not math.isfinite(args.host_gib) or args.host_gib <= 0):
+        parser.error('host weight budget must be positive and finite')
     if args.batch_size == 1 and not args.capacity_only:
         parser.error('single-slot admission is only valid for --capacity-only')
     if args.experimental_hybrid_context and (not args.no_graph or args.context > 32768):
@@ -69,6 +72,7 @@ def main():
     report = dict(passed=False, qualification='context capacity only' if args.capacity_only else 'context/interference engineering fixture only',
         experimental_hybrid_context=args.experimental_hybrid_context, batch_capacity=args.batch_size,
         request_timeout=args.request_timeout, first_output_budget=args.first_output_budget,
+        host_gib=args.host_gib,
         model_revision=args.model_revision, engine_revision=args.engine_revision,
         context=args.context, output_tokens=512, prefill_chunk_size=args.chunk_size,
         gap_budget_seconds=args.gap_budget_seconds, tokenizer_sha256=hashlib.sha256(tokenizer_path.read_bytes()).hexdigest(),
@@ -83,6 +87,8 @@ def main():
         '--prefill-chunk-size', str(args.chunk_size), '--batch-size', str(args.batch_size), '--gpu-models', '1', '--model', 'a='+str(model)]
     if args.no_graph:
         command.append('--no-graph')
+    if args.host_gib is not None:
+        command.extend(('--host-gib', str(args.host_gib)))
     report['command'] = command
     process = None
     def terminate(signum, frame):
