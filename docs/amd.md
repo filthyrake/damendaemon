@@ -428,3 +428,27 @@ qualify multimodal quantization. A regression test retains that non-packable
 vision projection while checking the text projection against upstream packing.
 The completed [download record](evidence/amd/qwen38-27b-download.json) retains
 the exact snapshot and remaining disk space.
+
+The first real Qwen3.8-27B Q8 replay at 512 context **fails** the numerical gate:
+[chunk-127 replay](evidence/amd/qwen38-27b-q8-hip-chunk127-replay512.json)
+passes 68/84 checks; the [unchunked control](evidence/amd/qwen38-27b-q8-hip-full-replay512.json)
+passes 70/84. All 84 greedy choices match in both runs, but maximum relative
+RMS errors are 0.214906 and 0.103750 respectively. These are failures, not a
+support or performance qualification. Actual packed host weights match the
+29,772,773,376-byte preflight estimate.
+
+The [independent reference](evidence/amd/qwen38-27b-q8-cpu-fp16-golden512.json)
+uses CPU FP16; [run provenance](evidence/amd/qwen38-27b-reference512-run.json)
+records source hashes and resource limits. The unchunked failure means chunking
+alone does not explain the drift. A separate FP32 reference is the next
+precision control; tolerances remain unchanged.
+
+`verify_stress.py --reference-only --reference-device cpu --reference-dtype
+float32 --reference-quantization q8_0 --packed-cpu-reference` provides that
+control without full-model FP32 weight residency. It accepts only all-BF16
+Qwen3.5-family source tensors, checked before loading; the BF16 load therefore
+preserves checkpoint values. Upstream gguf-py packs each text Linear and
+expands it for individual CPU FP32 operations. Transformers retains all model
+execution; no dllm model math or quantization kernels enter this reference.
+Vision/MTP remain outside the text packing path. This validation-only mode
+rejects non-CPU or non-FP32 use and is not a hybrid-serving implementation.

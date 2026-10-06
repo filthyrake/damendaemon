@@ -50,3 +50,31 @@ class ReferenceRoundtripTests(unittest.TestCase):
                 actual = load_reference(directory, 'q8_0')
         self.assertIs(actual.model.visual.projection.weight, original_visual)
         self.assertTrue(torch.equal(actual.model.language_model.weight, expected_text))
+
+    def test_packed_fp32_reference_matches_whole_matrix(self):
+        from gguf.quants import quantize, dequantize
+        from gguf.constants import GGMLQuantizationType
+        from scripts.reference_packed_cpu import PackedReferenceLinear
+        torch.manual_seed(914)
+        original = torch.nn.Linear(96, 259, bias=True).bfloat16()
+        inputs = torch.randn(3, 96)
+        for mode in ('q8_0', 'q4_0'):
+            kind = getattr(GGMLQuantizationType, mode.upper())
+            weights = torch.from_numpy(dequantize(quantize(original.weight.detach().float().numpy(), kind), kind))
+            expected = torch.nn.functional.linear(inputs, weights, original.bias.float())
+            packed = PackedReferenceLinear(original, mode).float()
+            self.assertTrue(torch.equal(expected, packed(inputs)))
+            self.assertLess(packed.packed.numel(), original.weight.numel()*2)
+            with self.assertRaises(ValueError):
+                packed(inputs.half())
+
+    def test_packed_model_conversion_keeps_no_full_linear_weights(self):
+        from scripts.reference_packed_cpu import replace_linears, PackedReferenceLinear
+        model = torch.nn.Sequential(torch.nn.Linear(32, 64), torch.nn.SiLU(), torch.nn.Linear(64, 32)).bfloat16()
+        expected = torch.nn.Sequential(
+            PackedReferenceLinear(model[0], 'q8_0'), torch.nn.SiLU(),
+            PackedReferenceLinear(model[2], 'q8_0')).float()
+        actual = replace_linears(model, 'q8_0')
+        inputs = torch.randn(2, 32)
+        self.assertTrue(torch.equal(expected(inputs), actual(inputs)))
+        self.assertEqual(sum(p.numel() for p in actual.parameters()), 0)
