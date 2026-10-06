@@ -4,6 +4,11 @@
 
 Compare identical revisions, precision, context, output lengths, and hardware. CPU tests establish behavior, not GPU performance.
 
+The [fixed performance scorecard](https://github.com/filthyrake/dllm/issues/54)
+defines the next required workloads and competitive thresholds. These are
+targets, not results. Functional, numerical, lifecycle and performance gates
+are recorded separately; a missing or failed comparison never counts as parity.
+
 For a warm result, initialize every execution shape the measured workload can
 reach, not just one request at each concurrency. Arrival timing can make the
 first round process prompts singly and expose a packed shape only during timed

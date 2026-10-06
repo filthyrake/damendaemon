@@ -1,6 +1,6 @@
 # dllm documentation
 
-[Project overview](../README.md) · [Support matrix](support.md)
+[Project overview](../README.md) · [Support matrix](support.md) · [Parity milestones](https://github.com/filthyrake/dllm/issues/3)
 
 ## Use dllm
 
@@ -21,6 +21,8 @@ Model acceptance does not imply qualification at every context or precision.
 
 - [Architecture and residency design](architecture.md)
 - [Current support boundaries](support.md)
+- [AMD/ROCm target and current qualification status](amd.md)
+- [Fixed performance scorecard acceptance](https://github.com/filthyrake/dllm/issues/54)
 - [Upstream inference research](upstream-inference-research.md)
 
 ## Inspect qualification evidence

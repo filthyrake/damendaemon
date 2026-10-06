@@ -50,6 +50,8 @@ decode speed and concurrent throughput separately, with independent correctness
 checks and explicit qualification limits. See the linked evidence before
 extrapolating a result to another model or device.
 
-Use [GitHub Issues](https://github.com/filthyrake/dllm/issues) for bugs and work
-tracking. See [project license](LICENSE.md) and the separately retained
+The [parity milestones and acceptance gates](https://github.com/filthyrake/dllm/issues/3)
+define the ordered work; [GitHub Issues](https://github.com/filthyrake/dllm/issues)
+are the bug and task tracker. [AMD/ROCm bring-up](docs/amd.md) is planned and
+not yet qualified. See [project license](LICENSE.md) and the separately retained
 [Marlin license](third_party/marlin/LICENSE).
