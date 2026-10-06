@@ -1,0 +1,42 @@
+{
+  "left": "/home/damen/dllm-amd-dev/results/qwen38-27b-q8-cpu-fp32-fixed-slot1.input.pt",
+  "right": "/home/damen/dllm-amd-dev/results/qwen38-27b-q8-cpu-fp32-fixed-slot1.pt",
+  "left_dtype": "float16",
+  "right_dtype": "float32",
+  "checks": [
+    {
+      "event_index": 0,
+      "slot": 1,
+      "tokens": 496,
+      "relative_rms": 0.003976614214479923,
+      "max_absolute": 0.10119342803955078,
+      "greedy_match": true
+    },
+    {
+      "event_index": 1,
+      "slot": 1,
+      "tokens": 497,
+      "relative_rms": 0.02567899227142334,
+      "max_absolute": 0.9105157852172852,
+      "greedy_match": true
+    },
+    {
+      "event_index": 2,
+      "slot": 1,
+      "tokens": 498,
+      "relative_rms": 0.015092195011675358,
+      "max_absolute": 0.30722951889038086,
+      "greedy_match": true
+    },
+    {
+      "event_index": 3,
+      "slot": 1,
+      "tokens": 499,
+      "relative_rms": 0.2194880247116089,
+      "max_absolute": 7.509642124176025,
+      "greedy_match": true
+    }
+  ],
+  "unmatched_contexts": [],
+  "limitation": "Reference-to-reference precision comparison, not runtime correctness or performance."
+}

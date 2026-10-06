@@ -461,3 +461,20 @@ a numerical pass nor a model failure. Follow-up diagnostics use
 `reference_fixed_trace.py` to preserve the original token sequence for one
 failing slot and a declared final source event. Partial progress is retained
 separately, and the replay tool rejects traces explicitly marked incomplete.
+
+The [fixed-token precision comparison](evidence/amd/qwen38-27b-reference-precision-slot1.json)
+uses the original 496-token slot-1 prompt and its next three input tokens.
+FP16 versus FP32 reference logits differ by up to 0.219488 relative RMS on
+identical histories, while greedy choices agree. The
+[chunk-127 GPU replay against FP32](evidence/amd/qwen38-27b-q8-hip-fp32-fixed-slot1-replay.json)
+passes 3/4 targets, including the previously largest outlier; the first decode
+still fails at 0.020795 relative RMS and 0.525623 maximum absolute error.
+This focused slice is not the complete reordered/multi-slot gate.
+
+The [unchunked FP32 control](evidence/amd/qwen38-27b-q8-hip-fp32-fixed-slot1-full-replay.json)
+passes only the prefill target, with maximum relative RMS 0.130494. Disabling
+PyTorch's reduced-precision FP16/BF16 accumulation and TF32 in an isolated
+[control](evidence/amd/qwen38-27b-q8-hip-fp32-fixed-slot1-full-accum-replay.json)
+produces identical reported errors. That flag change is not adopted as a fix.
+The remaining diagnostic is layer-level FP32 comparison; runtime tolerances
+and defaults are unchanged.
