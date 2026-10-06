@@ -1,10 +1,16 @@
-# AWQ checkpoint format groundwork
+# AWQ checkpoint execution and qualification
 
-GitHub issue #49 tracks import and execution qualification. The format module
-is connected to packed execution and normal model dispatch. The initial scope
-is CUDA Qwen2 AWQ GEMM with four-bit weights and group size 128. Independent
-HF SDPA and runtime layout checks pass; lifecycle and matched engine performance
-remain separate gates. Eager-FP16-reference numerical parity is not claimed.
+The original bounded issue #49 contract is implemented and qualified for the
+recorded CUDA Qwen2/Qwen3 AWQ GEMM configurations below. Independent format,
+model, layout, HTTP/lifecycle and measured comparison results are retained,
+including failures and subsequent repairs. The opening sections are historical
+steps, not the current implementation backlog. Current Qwen3 FP32-reference,
+native layout/lifecycle and repeated HTTP results appear in the later sections.
+
+This is not universal AWQ or performance parity: Qwen3's vLLM comparison retains
+throughput gaps and an arithmetic-policy difference. Those performance gaps
+remain under #54, and practical modern-model expansion under #55/#53. No new GPU
+run was performed for the 2026-10-06 issue reconciliation.
 
 Checkpoint: `Qwen/Qwen2.5-0.5B-Instruct-AWQ`, pinned revision
 `db09cd27ead7fee40cdee309693cf83601b9c899`. Its published configuration selects
