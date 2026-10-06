@@ -33,6 +33,7 @@ def main():
     parser.add_argument('--context',type=int,default=512,help='context capacity, at least 512')
     parser.add_argument('--prompt-lengths', type=int, nargs=4, help='four explicit lengths, each leaving seven decode positions')
     parser.add_argument('--chunk-size', type=int, default=128, help='positive chunk length for the final prompt')
+    parser.add_argument('--require-q4-marlin',action='store_true',help='require normal Q4 Marlin layout replacement')
     parser.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     parser.add_argument('--require-q4-small-tiles', action='store_true', help='require the normal A2 Q4 prompt policy')
     parser.add_argument('--experimental-q4-marlin-replace', action='store_true')
@@ -125,6 +126,9 @@ def main():
     residual_library = os.environ.get('DLLM_Q4_RESIDUAL_LIBRARY')
     if residual_library:
         report['native_q4_residual_library'] = dict(path=residual_library,sha256=hashlib.sha256(Path(residual_library).read_bytes()).hexdigest())
+    marlin_path=os.environ.get('DLLM_Q4_MARLIN_LIBRARY')
+    if marlin_path:
+        report['native_q4_marlin_library']=dict(path=marlin_path,sha256=hashlib.sha256(Path(marlin_path).read_bytes()).hexdigest())
     def compare(actual, expected, **case):
         expected = expected.to(actual.device)
         error = actual.float()-expected.float()
@@ -143,6 +147,10 @@ def main():
                     raise ValueError('normal Q4 prompt tile policy was not selected')
                 report['q4_prompt_policy'] = dict(selected=True, source_sha256=hashlib.sha256(
                     Path(q4_prefill_policy.__file__).read_bytes()).hexdigest())
+            if args.require_q4_marlin:
+                assert '+cuda-q4-marlin' in executor.kernel_backend,executor.kernel_backend
+                assert len(executor.quant_linear.q4_marlin)==129
+                assert executor.packed_layout_overhead_bytes==111099904
             if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
                 raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:
@@ -178,6 +186,10 @@ def main():
                 for graph in (False, True):
                     print(f'Checking paged={paged}, graph={graph}', flush=True)
                     executor = make_executor(source, use_graph=graph, max_batch=4)
+                    if args.require_q4_marlin:
+                        assert '+cuda-q4-marlin' in executor.kernel_backend
+                        assert len(executor.quant_linear.q4_marlin)==129
+                        assert executor.packed_layout_overhead_bytes==111099904
                     for count in (1, 2, 4):
                         slots = list(range(count))
                         actual = executor.prefill_batch(prompts[:count], slots)

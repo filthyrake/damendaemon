@@ -165,6 +165,31 @@ Model files and packed weight layouts are unchanged. Keep the ordinary Q4
 library configured for fallback, and rebuild the residual library to use the
 new layout.
 
+An opt-in Q4_0 Marlin layout replacement is undergoing integrated qualification
+on the **A2 only**, with the same 32-layer Llama-metadata geometry above, mixed
+precision, fused projections, context 1–512 and batch sizes 1–4. It handles
+all projection rows, including single-token decode. Build and select it with:
+
+```sh
+cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86 -DCMAKE_BUILD_TYPE=Release -DDLLM_BUILD_Q4_MARLIN=ON
+cmake --build build --target dllm-q4-marlin -j2
+export DLLM_Q4_MARLIN_LIBRARY="$PWD/build/libdllm-q4-marlin.so"
+```
+
+Unsupported configurations retain existing dispatch. Qualified models replace
+GPU projection layouts while host weights stay canonical for model swapping.
+Admission reserves 105.95 MiB of net layout overhead, the largest temporary
+repack, and a shared executor-owned workspace before GPU weight transfer.
+Status exposes `gpu_packed_layout_overhead_bytes`; selected backend names include
+`cuda-q4-marlin`. The library uses the attributed kernels in `third_party/marlin`
+and does not depend on the vLLM runtime. Scaled coefficients round to FP16,
+which differs from the residual decode option's FP32 scaling.
+
+The integrated independent HF gate passes 96 comparisons with no greedy-token
+mismatches. Lifecycle, layout and normal-server integration gates are still in
+progress; prototype serving gains in [the evidence](evidence/gguf/README.md)
+must not be treated as completed integrated qualification or cross-engine parity.
+
 GGUF Q4_K/Q5_K/Q6_K have a separate CUDA C++ decode library. It reads the
 original packed bytes, including mixed-format fused projections, and preserves
 FP16 coefficient rounding before FP32 accumulation:

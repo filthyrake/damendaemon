@@ -40,3 +40,13 @@ if(DLLM_BUILD_AWQ_MARLIN OR DLLM_BUILD_AWQ_MARLIN_EXPERIMENT)
     target_compile_options(dllm-awq-marlin PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3>
         $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
 endif()
+
+option(DLLM_BUILD_Q4_MARLIN "Build optional native Marlin Q4_0 kernels" OFF)
+if(DLLM_BUILD_Q4_MARLIN)
+    add_library(dllm-q4-marlin SHARED native/q4_marlin.cu)
+    target_include_directories(dllm-q4-marlin PRIVATE third_party/marlin)
+    target_compile_features(dllm-q4-marlin PRIVATE cuda_std_17)
+    target_link_libraries(dllm-q4-marlin PRIVATE CUDA::cudart)
+    target_compile_options(dllm-q4-marlin PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3>
+        $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
+endif()

@@ -417,7 +417,17 @@ class Executor:
                 # Existing dense-projection reserve covers one packed replacement
                 # and its zero/scale permutation temporaries; scratch is additional.
                 self.packed_workspace_bytes += awq_workspace_bytes(native_awq)
-        if device_weight_bytes + kv_bytes + self.packed_workspace_bytes + 512 * 1024**2 > free:
+        from .native_q4_marlin import select as select_q4_marlin
+        native_q4_marlin, q4_marlin_plan = select_q4_marlin(
+            c, model.weights, model.scales, model.quantization, self.device,
+            self.compute_dtype, self.llama_precision, self.context, max_batch,
+            self.fuse_projections and self.kernels is not None and not packed_formats and not awq_matrices)
+        self.packed_layout_overhead_bytes = q4_marlin_plan.overhead_bytes
+        device_weight_bytes += self.packed_layout_overhead_bytes
+        if native_q4_marlin is not None:
+            self.packed_workspace_bytes += q4_marlin_plan.repack_peak_bytes + native_q4_marlin.workspace_bytes
+        self.required_memory_bytes = device_weight_bytes + kv_bytes + self.packed_workspace_bytes + 512 * 1024**2
+        if self.required_memory_bytes > free:
             raise MemoryError("insufficient GPU memory for weights, KV cache, and workspace reserve")
         from .kquant_cache import plan as plan_cache, build as build_cache
         cache_plan = plan_cache(c, model.weights, packed_formats, self.device, self.compute_dtype,
@@ -450,11 +460,13 @@ class Executor:
             self.packed_prefill = select_prefill(c, packed_formats, self.device, self.compute_dtype,
                                                 self.llama_precision, self.context)
             from .native_q4_residual import select as select_q4
-            self.q4_decode = select_q4(c, model.quantization, self.device, self.compute_dtype,
-                                      self.llama_precision, self.context)
+            if native_q4_marlin is None:
+                self.q4_decode = select_q4(c, model.quantization, self.device, self.compute_dtype,
+                                          self.llama_precision, self.context)
             self.quant_linear = Linear(self.w, model.scales, self.device, self.linear, packed_formats,
                                        self.packed_decode, self.packed_prefill, self.q4_decode,
-                                       packed_cache=build_cache(cache_plan, self.w, packed_formats), awq_matrices=awq_matrices, native_awq=native_awq)
+                                       packed_cache=build_cache(cache_plan, self.w, packed_formats), awq_matrices=awq_matrices, native_awq=native_awq,
+                                       native_q4_marlin=native_q4_marlin, q4_marlin_plan=q4_marlin_plan)
             self.linear = self.quant_linear
         self.kv = self.allocate_kv()
         rotary_config = {**c, 'head_dim':c['rotary_dim']} if c['model_type']=='gpt_neox' else c
@@ -490,6 +502,8 @@ class Executor:
                                         'awq-gemm' if awq_matrices else model.quantization)
             if self.packed_cache_bytes:
                 self.kernel_backend += '+resident-kquant-cache'
+            if native_q4_marlin is not None:
+                self.kernel_backend += '+cuda-q4-marlin'
             if self.q4_decode is not None:
                 self.kernel_backend += '+cuda-q4-residual'
             if self.packed_decode is not None:

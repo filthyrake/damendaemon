@@ -84,7 +84,7 @@ def prepare(weights, quantization=None):
 
 
 class Linear:
-    def __init__(self, weights, host_scales, device, fallback, packed_formats=None, packed_decode=None, packed_prefill=None, q4_decode=None, packed_cache=None, awq_matrices=None, native_awq=None):
+    def __init__(self, weights, host_scales, device, fallback, packed_formats=None, packed_decode=None, packed_prefill=None, q4_decode=None, packed_cache=None, awq_matrices=None, native_awq=None, native_q4_marlin=None, q4_marlin_plan=None):
         copies = {key: value.to(device) for key, value in {id(t):t for t in host_scales.values()}.items()}
         self.scales = {id(weights[name]): copies[id(value)] for name, value in host_scales.items()}
         self.awq = {}
@@ -94,6 +94,14 @@ class Linear:
                                                  self.scales[id(weights[name])], matrix.inputs, matrix.outputs, matrix.group)
                         for name, matrix in awq_matrices.items()}
         self.native_awq = native_awq
+        self.native_q4_marlin = native_q4_marlin
+        self.q4_marlin = {}
+        if native_q4_marlin is not None:
+            if awq_matrices or packed_formats or q4_decode is not None:
+                raise ValueError('Q4 Marlin replacement conflicts with another packed backend')
+            from .native_q4_marlin import replace_packing
+            copies.clear()
+            replace_packing(self, weights, native_q4_marlin, q4_marlin_plan)
         if native_awq is not None:
             from .native_awq import replace_packing
             # Drop transfer aliases before replacing each projection.
@@ -107,6 +115,12 @@ class Linear:
         self.packed_cache = packed_cache or {}
 
     def __call__(self, x, weight, bias=None):
+        if id(weight) in self.q4_marlin:
+            if bias is not None:
+                raise ValueError('qualified Q4 Marlin projections have no bias')
+            matrix = self.q4_marlin[id(weight)]
+            result = self.native_q4_marlin.linear(x.reshape(-1,x.shape[-1]),matrix)
+            return result.reshape(*x.shape[:-1],matrix.outputs)
         if self.awq and id(weight) in self.awq:
             if self.native_awq is not None:
                 matrix = self.awq[id(weight)]

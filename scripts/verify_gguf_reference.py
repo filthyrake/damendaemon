@@ -93,6 +93,7 @@ def main():
     p.add_argument('--extended', action='store_true', help='additional multi-turn, Unicode, code and raw-prefix cases')
     p.add_argument('--window-boundaries', action='store_true', help='include prompts before, at and after the declared sliding window')
     p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
+    p.add_argument('--require-q4-marlin',action='store_true',help='require normal Q4 Marlin layout replacement')
     p.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     p.add_argument('--require-q4-small-tiles', action='store_true', help='fail unless normal A2 prompt tile selection is active for this model')
     p.add_argument('--experimental-q4-marlin-replace', action='store_true')
@@ -230,6 +231,10 @@ def main():
                     raise ValueError('normal Q4 prompt tile policy was not selected')
                 q4_prompt_policy = dict(selected=True, source_sha256=hashlib.sha256(
                     Path(q4_prefill_policy.__file__).read_bytes()).hexdigest())
+            if args.require_q4_marlin:
+                assert '+cuda-q4-marlin' in executor.kernel_backend,executor.kernel_backend
+                assert len(executor.quant_linear.q4_marlin)==129
+                assert executor.packed_layout_overhead_bytes==111099904
             if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
                 raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:
@@ -317,6 +322,10 @@ def main():
                   weight_rounding=args.weight_rounding, tf32=False, formats=formats, embedding_type=embedding_type,
                   teacher_trace=args.teacher_trace,expanded_control=args.expanded_control,
                   host_bytes=source.bytes, experiment=experiment, production_residual_library=residual_library, cases=cases)
+    marlin_path=os.environ.get('DLLM_Q4_MARLIN_LIBRARY')
+    if marlin_path:
+        report['native_q4_marlin_library']=dict(path=marlin_path,selected='+cuda-q4-marlin' in precision['backend'],
+            sha256=hashlib.sha256(Path(marlin_path).read_bytes()).hexdigest())
     Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
     print(json.dumps(dict(passed=passed, sha256=sha, formats=formats,
         max_absolute=max(e['max_absolute'] for c in cases for e in c['errors']),

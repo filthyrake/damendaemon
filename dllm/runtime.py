@@ -91,6 +91,7 @@ class Runtime:
                        'vision_host_weight_bytes': getattr(getattr(self.host.get(alias),'vision_weights',None),'bytes',0),
                        'vision_gpu_weight_bytes': getattr(getattr(self.gpu.get(alias),'vision',None),'bytes',0),
                        'gpu_projection_cache_bytes': getattr(self.gpu.get(alias), 'packed_cache_bytes', 0),
+                       'gpu_packed_layout_overhead_bytes': getattr(self.gpu.get(alias), 'packed_layout_overhead_bytes', 0),
                        'partition': getattr(self.gpu.get(alias),'residency',None),
                        'partition_rebind_count': getattr(self.gpu.get(alias),'rebind_count',None),
                        'executor_failed': getattr(self.gpu.get(alias),'failed',False)}
