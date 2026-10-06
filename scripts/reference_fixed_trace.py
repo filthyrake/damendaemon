@@ -14,6 +14,7 @@ def main():
     p.add_argument('--last-event', type=int, required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--threads', type=int, default=4)
+    p.add_argument('--layers-output', type=Path)
     args = p.parse_args()
     if args.threads < 1 or args.last_event < 0:
         p.error('positive threads and nonnegative last event required')
@@ -39,6 +40,15 @@ def main():
               'reference_attention': 'sdpa', 'packed_cpu_reference': True,
               'source_trace': str(args.trace), 'source_slot': args.slot,
               'source_last_event': args.last_event, 'trace': [], 'complete': False}
+    captured, layer_events = {}, []
+    if args.layers_output:
+        def capture(index):
+            def hook(module, inputs, output):
+                value = output[0] if isinstance(output, tuple) else output
+                captured[index] = value[:, -1].detach().float().cpu().clone()
+            return hook
+        for index, layer in enumerate(model.model.language_model.layers):
+            layer.register_forward_hook(capture(index))
     cache = None
     with torch.inference_mode():
         for event in selected:
@@ -47,15 +57,20 @@ def main():
                 ids, cache = event['prompts'][0], None
             else:
                 ids = [event['tokens'][0]]
+            captured.clear()
             output = model(torch.tensor([ids]), past_key_values=cache, use_cache=True, logits_to_keep=1)
             cache = output.past_key_values
             target = output.logits[:, -1].detach().float().cpu()
             if not torch.isfinite(target).all():
                 raise ValueError('reference emitted non-finite logits')
             result['trace'].append({**event, 'targets': [target]})
+            if args.layers_output:
+                layer_events.append({'source_event_index': event['source_event_index'], 'layers': dict(captured)})
             torch.save(result, args.output.with_suffix('.partial.pt'))
     result['complete'] = True
     torch.save(result, args.output)
+    if args.layers_output:
+        torch.save({'complete': True, 'events': layer_events}, args.layers_output)
     print(json.dumps({key: value for key, value in result.items() if key != 'trace'}
                      | {'targets': len(result['trace']), 'threads': args.threads}, indent=2))
 

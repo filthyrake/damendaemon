@@ -478,3 +478,11 @@ PyTorch's reduced-precision FP16/BF16 accumulation and TF32 in an isolated
 produces identical reported errors. That flag change is not adopted as a fix.
 The remaining diagnostic is layer-level FP32 comparison; runtime tolerances
 and defaults are unchanged.
+
+The [per-layer diagnosis](evidence/amd/qwen38-27b-hip-layer-diagnosis.json)
+reproduces the uninstrumented chunk-127 logits exactly for both captured events.
+The first-decode hidden-state RMS error stays near 0.0001 through early layers,
+then grows across later blocks; the largest increases occur at full-attention
+layers 51 and 55 (zero-based). This is evidence of late error amplification,
+not proof of a particular faulty operator. Diagnostic layer captures synchronize
+CPU copies and must not be used as performance measurements.
