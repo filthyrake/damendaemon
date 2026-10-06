@@ -174,3 +174,30 @@ configuration, concurrent/streaming/cancellation checks and disk reload.
 Post-unload device allocation is 32 MiB and identical after reload/unload in
 both configurations; host cache reaches zero. Its short chat prompts do not
 replace the separate long-prompt reference proof.
+
+## Modern performance comparator preparation
+
+A clean llama.cpp source archive at
+`836d57176dc699a726c55418e4f96b8ca628e1bf` builds with host HIP 7.2 for
+`gfx1151` in the isolated task directory. Existing HOMER binaries/checkouts
+are not modified. The pinned 0.8B checkpoint converts to a Q8 GGUF with FP16
+input embeddings. Because upstream conversion omits the tied output tensor,
+a separate comparator artifact adds an explicit Q8 head to match dllm's
+projection policy. Its [byte-preservation report](evidence/amd/qwen35-q8-comparator-head.json)
+checks all 335 original tensors unchanged and the added head against independent
+GGUF quantization. This proves artifact preparation, not speed parity.
+
+The fixed `scripts/benchmark_modern_http.py` workload records exact raw input
+IDs, 128 generated tokens, 4096 context, 128/512/2048 input lengths, three
+warmups and ten measured rounds at concurrency one/four. It also warms groups
+of two/three, retains partial failures, and requires explicit model/engine/
+hardware/precision manifests. Both engines receive identical EOS suppression
+bias; shorter output is a failure. ABBA process orchestration, internal decode
+and memory telemetry, and cross-engine precision/numerical reconciliation
+remain prerequisites for a competitive verdict. Client-visible post-first-output
+rate is explicitly labeled a proxy. No AMD competitive speed result exists yet.
+
+One remaining precision distinction is convolution history: dllm retains FP16
+history while upstream llama.cpp's hybrid recurrent allocation uses FP32. Do
+not call those complete arithmetic policies identical merely because their
+projection coefficients and KV settings match.
