@@ -132,4 +132,35 @@ uses independent `gguf==0.19.0` quantization/dequantization of projection
 weights. This validates packed execution against quantized coefficients; it
 does not measure quality loss against original weights or competitive speed.
 The reference-only dependency lives in the isolated task directory on HOMER.
-Q8 lifecycle, 4K context and larger-model quantization remain separate gates.
+The [4K Q8 graph replay](evidence/amd/qwen35-q8-hip-triton-graph-replay4096.json)
+also passes all 84 checks against its [independent reference](evidence/amd/qwen35-q8-cpu-fp32-golden4096.json),
+including a 4,080-token prompt and reused slots. Worst errors remain within the
+same bounds above. Q8 lifecycle and larger-model quantization remain separate
+gates.
+
+## Reproducing the experimental path
+
+Use a separate environment containing the tested HIP PyTorch/Triton stack above.
+The generic Linux `runtime` extra pins a CUDA-oriented PyTorch version and is
+not yet a ROCm installation recipe. Do not install it into an existing HIP
+environment. ROCm packaging is still an acceptance gap.
+
+With dllm and its tokenizer/weight-loading dependencies available in that
+environment, select the one physical AMD GPU explicitly:
+
+```sh
+unset CUDA_VISIBLE_DEVICES
+export ROCR_VISIBLE_DEVICES=0
+export HIP_VISIBLE_DEVICES=0
+export DLLM_KERNELS=triton
+export DLLM_ROCM_MEMORY_GIB=8
+
+dllm run Qwen/Qwen3.5-0.8B --device rocm --context 512 \
+  --revision 2fc06364715b967f1860aea9cf38778875588b17 \
+  --thinking off --prompt 'Explain matrix multiplication briefly.'
+```
+
+For the numerically checked Q8 configuration, set `DLLM_QUANTIZATION=q8_0`.
+This on-load format is separate from GGUF import. Retain explicit context and
+device selection; neither gfx1151 qualification nor these memory limits imply
+support for other AMD devices, ROCm versions or multiple GPUs.
