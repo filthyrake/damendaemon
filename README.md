@@ -2,6 +2,11 @@
 
 Damen's independent GPU inference runtime: fast generation and quick model switching.
 
+**Follow development:** [current status and ordered next steps](https://github.com/filthyrake/dllm/issues/3),
+[active work](https://github.com/filthyrake/dllm/issues?q=is%3Aopen%20label%3Astatus%3Aactive),
+and [next tasks](https://github.com/filthyrake/dllm/issues?q=is%3Aopen%20label%3Astatus%3Anext).
+Issue bodies carry the current status; comments and linked reports preserve the evidence.
+
 dllm owns model execution, scheduling, sampling and residency. It uses
 PyTorch/cuBLAS, fused Triton kernels, native CUDA kernels and Apple Metal;
 it does not run vLLM, llama.cpp, Ollama or Transformers generation internally.
@@ -57,6 +62,7 @@ extrapolating a result to another model or device.
 
 The [parity milestones and acceptance gates](https://github.com/filthyrake/dllm/issues/3)
 define the ordered work; [GitHub Issues](https://github.com/filthyrake/dllm/issues)
-are the bug and task tracker. [AMD/ROCm bring-up](docs/amd.md) has experimental Qwen3.5 text correctness
-and lifecycle proof; quantization and competitive performance remain unqualified. See [project license](LICENSE.md) and the separately retained
+are the bug and task tracker. [AMD/ROCm bring-up](docs/amd.md) includes bounded Qwen3.5
+and opt-in Qwen3.8-27B Q8 text correctness and lifecycle evidence; practical long-context
+and competitive performance qualification remain open in [the Qwen tracker](https://github.com/filthyrake/dllm/issues/55). See [project license](LICENSE.md) and the separately retained
 [Marlin license](third_party/marlin/LICENSE).
