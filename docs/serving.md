@@ -448,3 +448,29 @@ floor is not a peak workspace bound. Allocator overhead, graphs, communication,
 host copies and loading peaks remain excluded. Local contents are not hashed,
 so the report does not assert a model revision. Contexts must fit the model's
 configured position limit and batches must be between 1 and 16.
+
+## Intel XPU implementation preview
+
+The Intel adapter is an **unqualified development path**, tracked in issue #63.
+It routes synchronization, cache release, free-memory admission and residency
+metrics through `torch.xpu`; it does not fall back to CUDA or CPU. The initial
+eager executor accepts dense Qwen3 floating-point safetensors, uses FP32 device
+weights/state, limits context to 2048 and batch capacity to four, and reserves
+2 GiB of reported free device memory for the B580 desktop. This reserve is
+additional to the executor's workspace reserve and does not guarantee desktop
+responsiveness under every workload.
+
+Development selection requires `--device xpu`, `DLLM_EXPERIMENTAL_XPU=1` and
+`ONEAPI_DEVICE_SELECTOR=level_zero:gpu`, with one visible Intel Arc B580 in an
+XPU-enabled PyTorch environment. CUDA/Metal kernels, quantization, GGUF/AWQ,
+hybrid/multimodal models, scaled RoPE, paged KV, speculative decoding and graph
+options are not part of this implementation. Ordinary decode graphs are disabled
+for XPU. Local tests cover admission and API routing only: neither model
+correctness, useful speed, real memory release nor the 32K product gate is
+qualified. No Intel runtime package is added to the existing CUDA environment.
+
+On the desktop, the installed oneAPI adapters initially failed to load because
+`libumf.so.1` was absent from the SSH shell's library search path. Sourcing the
+existing `/opt/intel/oneapi/setvars.sh` in that process resolved enumeration;
+this did not require a driver update or persistent login-environment change.
+SYCL enumeration is separate from having an XPU-enabled PyTorch installation.

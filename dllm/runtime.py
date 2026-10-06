@@ -14,6 +14,11 @@ from .prompts import decode_output
 def require_gpu():
     from .partition_policy import selected_split
     split=selected_split()
+    if selected_device() == 'xpu':
+        import torch
+        from .xpu_policy import validate_runtime
+        validate_runtime(torch)
+        return
     if selected_device() == 'mps':
         import torch
         if not torch.backends.mps.is_available():
@@ -132,7 +137,9 @@ class Runtime:
             visible=os.environ['CUDA_VISIBLE_DEVICES'].split(',')
             devices=[dict(index=i,uuid=visible[i],name=torch.cuda.get_device_name(i),
                           allocated_bytes=torch.cuda.memory_allocated(i),reserved_bytes=torch.cuda.memory_reserved(i)) for i in range(2)]
-        allocated=torch.cuda.memory_allocated() if torch.cuda.is_initialized() else None
+        cuda_initialized = selected_device() == 'cuda' and torch.cuda.is_initialized()
+        allocated=torch.cuda.memory_allocated() if cuda_initialized else None
+        xpu_initialized = selected_device() == 'xpu' and torch.xpu.is_initialized()
         if devices is not None:allocated=sum(d['allocated_bytes'] for d in devices)
         peak_allocated = torch.cuda.max_memory_allocated() if allocated is not None and devices is None else None
         return {'models': models, 'device': selected_accelerator(), 'context': self.context,
@@ -142,6 +149,9 @@ class Runtime:
                 'rocm_aotriton_experimental': os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL')
                     if selected_accelerator()=='rocm' else None,
                 'cuda_devices':devices,
+                'xpu_allocated_bytes': torch.xpu.memory_allocated() if xpu_initialized else None,
+                'xpu_reserved_bytes': torch.xpu.memory_reserved() if xpu_initialized else None,
+                'xpu_peak_allocated_bytes': torch.xpu.max_memory_allocated() if xpu_initialized else None,
                 'mps_allocated_bytes': torch.mps.current_allocated_memory() if selected_device()=='mps' else None,
                 'host_cached_bytes': sum(model.bytes for model in self.host.values()),
                 'host_budget_bytes': self.host_bytes, 'gpu_model_limit': self.gpu_limit,

@@ -87,7 +87,7 @@ def main():
     server.add_argument("--prefill-chunk-size",type=int,default=0,help="opt-in prompt token budget per decode step; 0 disables")
     server.add_argument("--prefix-cache-tokens",type=int,default=0,help="opt-in GPU prefix snapshot token budget per model")
     for command in (run, server):
-        command.add_argument("--device", choices=("cuda", "rocm", "mps"), default=os.environ.get("DLLM_DEVICE", "cuda"))
+        command.add_argument("--device", choices=("cuda", "rocm", "mps", "xpu"), default=os.environ.get("DLLM_DEVICE", "cuda"))
         command.add_argument("--context", type=int, default=1024)
         command.add_argument("--kv-cache-tokens",type=int,help="shared CUDA KV token budget, multiple of 16; 0 selects fixed slots")
         command.add_argument("--gpu-models", type=int, default=1)
@@ -182,6 +182,12 @@ def main():
             os.environ['DLLM_KV_CACHE_TOKENS'] = str(args.kv_cache_tokens)
         else:
             os.environ.pop('DLLM_KV_CACHE_TOKENS',None)
+    if args.device == 'xpu':
+        from .xpu_policy import validate_environment
+        try:
+            validate_environment()
+        except ValueError as error:
+            parser.error(str(error))
     from .runtime import Runtime
     if args.command == "run":
         models = {"model": resolve_model(args.path, args.revision, args.filename)}

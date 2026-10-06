@@ -39,7 +39,19 @@ def config(path):
     return decoder_config(value)
 
 
+def validate_device_model(path, quantization, context=None):
+    from .device import selected_device
+    if selected_device() != 'xpu':
+        return
+    if is_gguf(path):
+        raise ValueError('Intel XPU does not support GGUF import')
+    from .quantization import mode
+    from .xpu_policy import validate_model
+    validate_model(config(path), mode(quantization), context)
+
+
 def weight_bytes(path,quantization=None):
+    validate_device_model(path, quantization)
     if is_gguf(path):
         from .gguf_model import weight_bytes as estimate
         return estimate(path, quantization)
@@ -60,6 +72,7 @@ def weight_bytes(path,quantization=None):
 
 
 def load(path,context,quantization=None):
+    validate_device_model(path, quantization, context)
     if is_gguf(path):
         from .gguf_model import GgufWeights
         return GgufWeights(path, context, quantization)

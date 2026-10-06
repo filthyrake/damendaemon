@@ -1,11 +1,11 @@
-"""Explicit accelerator selection and memory lifecycle for CUDA, experimental ROCm and Apple MPS."""
+"""Explicit accelerator selection and memory lifecycle for CUDA, experimental ROCm Apple MPS and experimental Intel XPU."""
 import os
 
 
 def selected_accelerator():
     device = os.environ.get('DLLM_DEVICE', 'cuda')
-    if device not in ('cuda', 'rocm', 'mps'):
-        raise ValueError('DLLM_DEVICE must be cuda, rocm or mps')
+    if device not in ('cuda', 'rocm', 'mps', 'xpu'):
+        raise ValueError('DLLM_DEVICE must be cuda, rocm, mps or xpu')
     return device
 
 
@@ -21,7 +21,7 @@ def synchronize():
     if selected_split() is not None:
         for device in range(2):torch.cuda.synchronize(device)
         return
-    (torch.mps if selected_device() == 'mps' else torch.cuda).synchronize()
+    getattr(torch, selected_device()).synchronize()
 
 
 def empty_cache():
@@ -31,11 +31,14 @@ def empty_cache():
         for device in range(2):
             with torch.cuda.device(device):torch.cuda.empty_cache()
         return
-    (torch.mps if selected_device() == 'mps' else torch.cuda).empty_cache()
+    getattr(torch, selected_device()).empty_cache()
 
 
 def available_memory():
     import torch
+    if selected_device() == 'xpu':
+        from .xpu_policy import available_memory as xpu_available_memory
+        return xpu_available_memory(torch)
     if selected_device() == 'mps':
         return max(0, torch.mps.recommended_max_memory() - torch.mps.driver_allocated_memory())
     if selected_accelerator() == 'rocm':
@@ -66,4 +69,4 @@ def attention(q, k, v, **kwargs):
 
 def device_name():
     import torch
-    return 'Apple MPS' if selected_device() == 'mps' else torch.cuda.get_device_name()
+    return 'Apple MPS' if selected_device() == 'mps' else getattr(torch, selected_device()).get_device_name()

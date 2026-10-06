@@ -97,6 +97,9 @@ class ModelWeights:
         self.path = Path(path).resolve()
         self.config = decoder_config(json.loads((self.path / "config.json").read_text()))
         c = self.config
+        if selected_device() == 'xpu':
+            from .xpu_policy import validate_model
+            validate_model(c, self.quantization, max_context)
         self.weight_format = 'mxfp4' if c['model_type']=='gpt_oss' else self.quantization
         if c['model_type']=='gpt_oss' and self.quantization!='none':
             raise ValueError('GPT-OSS uses checkpoint-native MXFP4; conversion is unsupported')
@@ -278,6 +281,9 @@ class ModelWeights:
 class Executor:
     def __init__(self, model, use_graph=True, fuse_projections=True, kernels=None, max_batch=1):
         self.device = selected_device()
+        if self.device == 'xpu':
+            from .xpu_policy import validate_model
+            validate_model(model.config, model.quantization, model.max_context, max_batch)
         if self.device == 'mps' and model.quantization == 'q4_0':
             from .metal_q4_policy import validate as validate_metal_q4
             validate_metal_q4(model.config, model.max_context, max_batch)
@@ -295,7 +301,7 @@ class Executor:
         self.window = c.get("sliding_window") if c["model_type"] in ("phi3", "mistral", "starcoder2") else None
         self.precise = c["model_type"] in ("qwen3", "gemma3_text", "phi3", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom")
         self.rotary_precise = c["model_type"] in ("qwen3", "starcoder2", "olmoe")
-        self.compute_dtype = torch.float32 if self.device == "mps" else torch.float16
+        self.compute_dtype = torch.float32 if self.device in ("mps", "xpu") else torch.float16
         if c["model_type"] in ("gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom"):
             self.compute_dtype = torch.float32
         self.qwen3_precision = 'standard'
@@ -333,7 +339,10 @@ class Executor:
         if selected not in ("auto", "torch", "triton", "metal"):
             raise ValueError("kernels must be auto, torch, triton, or metal")
         self.kernels = None
-        if self.device == 'mps':
+        if self.device == 'xpu':
+            if selected not in ('auto', 'torch'):
+                raise ValueError('Intel XPU currently requires eager torch kernels')
+        elif self.device == 'mps':
             if selected == 'triton':
                 raise ValueError('Triton kernels require CUDA')
             if selected != 'torch':
