@@ -107,7 +107,7 @@ Each mode has six measured runs after warmup.
 
 These are matched optimization measurements: 2.50x single-request and 1.68x
 four-request decode throughput. They are not whole-request or upstream-engine
-comparisons. Reproduce with `scripts/experiments/bench_metal_q4_indices.py`;
+comparisons. Reproduce with `scripts/experiments/bench_metal_indices.py`;
 reports are `q4-metal-index32-decode-c{1,4}.json`.
 
 The optimized runtime also repeats all 19 real HTTP lifecycle checks, including

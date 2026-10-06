@@ -40,7 +40,8 @@ upstream execution. Neither failed comparison is used for throughput claims.
 | llama.cpp Q8 | 128.76 | 211.03 | 259.64 | 18.19 / 21.50 / 58.80 |
 | dllm FP16 | 60.11 | 101.69 | 178.61 | 51.35 / 87.46 / 125.16 |
 
-Q8 is slower here than dllm FP16, and dllm trails llama.cpp. This is added
+These original measurements predate the [guarded indexing optimization](index32/README.md).
+Q8 was slower here than dllm FP16, and dllm trailed llama.cpp. This is added
 lower-memory coverage, not a performance improvement. Apple timing varies;
 these are the recorded runs, not a claim about every workload. Each engine's
 text is stable across concurrency, but dllm and llama.cpp produce different text

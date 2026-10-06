@@ -12,7 +12,7 @@ def main():
         for rows,outputs,width in ((1,7,32),(2,31,96),(3,65,256),(4,129,768),(5,33,64),(17,65,1536),(31,13,128)):
             for biased in (False,True):
                 q=torch.randint(-128,128,(outputs,width),dtype=torch.int8)
-                scales=(torch.rand(outputs,width//32)*.03).half();scales[:,0]=0
+                scales=((torch.rand(outputs,width//32)-.5)*.06).half();scales[::3,0]=0
                 x=(torch.randn(rows,width)*(3 if dtype==torch.float16 else 1.e4)).to(dtype)
                 if dtype==torch.float32:x[:,-1]=1.e5  # Preserve FP32 range.
                 bias=torch.randn(outputs).to(dtype) if biased else None

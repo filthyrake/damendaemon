@@ -67,6 +67,19 @@ kernel void linear_half(device const half* x, device const char* w, device const
     }
 }
 '''
+# Keep the wide-index implementation for layouts beyond the 32-bit element range.
+_WIDE_SOURCE = _SOURCE
+_INDEX32_SOURCE = (_SOURCE[_SOURCE.index('kernel void linear('):_SOURCE.index('kernel void expand_half(')]
+                   + _SOURCE[_SOURCE.index('kernel void linear_half('):])
+for _name in ('rows', 'outputs', 'width', 'biased'):
+    _INDEX32_SOURCE = _INDEX32_SOURCE.replace('constant long& '+_name, 'constant long& '+_name+'_arg')
+_INDEX32_SOURCE = (_INDEX32_SOURCE.replace('void linear(', 'void linear_index32(')
+    .replace('void linear_half(', 'void linear_half_index32(')
+    .replace('long channel=id.x/32,batch=id.y*4;',
+             'uint rows=uint(rows_arg), outputs=uint(outputs_arg), width=uint(width_arg), biased=uint(biased_arg); '
+             'uint channel=id.x/32,batch=id.y*4;')
+    .replace('for(long d=lane;', 'for(uint d=lane;'))
+_SOURCE += _INDEX32_SOURCE
 _library=None
 
 
@@ -87,7 +100,11 @@ def linear(x,weight,scales,bias=None):
         out=F.linear(x,expanded,bias)
     else:
         out=torch.empty((x.shape[0],weight.shape[0]),device=x.device,dtype=x.dtype)
-        (library().linear_half if half else library().linear)(x,weight,scales,x if bias is None else bias,out,
+        shaders=library()
+        narrow=max(weight.numel(),x.numel(),x.shape[0]*weight.shape[0])<2**32
+        kernel=(shaders.linear_half_index32 if half else shaders.linear_index32) if narrow else (
+            shaders.linear_half if half else shaders.linear)
+        kernel(x,weight,scales,x if bias is None else bias,out,
             x.shape[0],weight.shape[0],weight.shape[1],int(bias is not None),
             threads=(((weight.shape[0]+7)//8)*256,(x.shape[0]+3)//4),group_size=(256,1))
     return out.reshape(*shape,weight.shape[0])
