@@ -159,6 +159,26 @@ Mixed-length reranking automatically avoids excessive padding when length
 partitioning halves the work. Original document indices and usage are preserved;
 [measured A2/M4 gains and limits](evidence/reranking/README.md#mixed-length-padding-reduction).
 
+## Shared MoE routing foundations
+
+The shared `dllm.expert_selection.select_experts` primitive also provides
+grouped softmax/sigmoid routing foundations for future modern MoE integration.
+It ranks contiguous groups by maximum score, or by the sum of the two highest
+scores when a correction bias is supplied. Correction bias changes selection
+only; mixture weights come from the original scores, optionally normalized and
+scaled. Grouped/biased ties prefer lower group/expert IDs. Decisions remain
+device tensors; the existing OLMoE path reuses its unchanged plain softmax/top-k
+ordering. Finite inputs representable in FP32 are required; sigmoid underflow
+to all-zero selected scores retains zero weights rather than producing NaNs.
+
+Independent CPU scalar-oracle tests cover routing semantics, reordered rows,
+ties, masking of negative adjusted scores and normalization. This is not a new
+GLM/DeepSeek model loader, shared-expert executor, kernel or GPU qualification.
+Reference semantics were checked against the read-only vLLM checkout at
+`84bcbc62644356270aaaa5e2d0237d03adc9bb3a`, file
+`vllm/model_executor/layers/fused_moe/router/grouped_topk_router.py`
+(Apache-2.0); dllm does not import that runtime.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with

@@ -71,9 +71,9 @@ class OlmoeExecutor(BatchExecutor):
         if prefill and self.grouped_prefill and 1 <= hidden.shape[0] <= 4:
             prefill = False
         width = self.c['intermediate_size']
-        probabilities,selected = self._linear(hidden,self.w[f'{layer}.router']).softmax(-1).topk(self.c['num_experts_per_tok'],dim=-1)
-        if self.c['norm_topk_prob']:
-            probabilities = probabilities/probabilities.sum(-1,keepdim=True)
+        from .expert_selection import select_experts
+        probabilities,selected = select_experts(self._linear(hidden,self.w[f'{layer}.router']),
+            self.c['num_experts_per_tok'], renormalize=self.c['norm_topk_prob'])
         up,down = self.w[f'{layer}.experts_up'],self.w[f'{layer}.experts_down']
         if prefill:
             from .moe_prefill import use_grouped_prefill
