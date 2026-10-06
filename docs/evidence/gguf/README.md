@@ -2385,3 +2385,29 @@ The largest measured additional allocation falls from 2,424,832,000 to
 validation synchronization, model activation and inference. No end-to-end
 loading speedup is claimed from this component result alone. Full-model layout
 replacement and lifecycle validation remain separate work.
+
+### All-row GPU layout replacement prototype
+
+`mistral-q4-marlin-direct-preparation-a2.json` passes all 30 single-row matrix
+checks and all ten exact original/direct prepared-buffer comparisons (weights,
+scales, zero points and optional bias). The direct adapter retains the same
+native GEMM library and uses the qualified 512-word permutation tile.
+
+`q4_marlin_replace.py` replaces each unique GPU projection and releases its
+canonical GPU weight/scale buffers as it proceeds. Host weights remain
+canonical. Replaced projections always dispatch to Marlin; unsupported bias or
+activation types fail instead of treating the new layout as ordinary Q4.
+Prepared weights total 4,110,696,448 bytes, replacing 3,999,596,544 canonical
+bytes: **111,099,904 bytes (105.95 MiB) of net layout overhead**, plus the shared
+workspace. This prototype still requires production admission integration.
+
+`mistral-q4-marlin-replaced-reference-a2.json` passes 96 independent HF logit
+comparisons with zero greedy-token mismatches, maximum absolute error 0.121216
+and relative RMS 0.005255. Both eager and graph runs prove positive candidate
+Python-dispatch counts; those counts include capture/eager calls, not every
+GPU graph replay. `mistral-q4-marlin-replaced-layout-a2.json` passes all 128
+batch/graph/paging/chunk comparisons, maximum relative RMS 0.001449. The backend
+marker identifies all-row replacement and no longer reports residual decode
+as active. Existing model accuracy limits and the pinned teacher inputs remain
+unchanged. These correctness results do not yet establish end-to-end loading
+or serving gains for the replacement implementation.

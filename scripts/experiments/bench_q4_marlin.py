@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--library', required=True)
     parser.add_argument('--rows', type=int, nargs='+', default=[2, 4, 16, 64, 129, 400])
     parser.add_argument('--residual-baseline', help='existing native residual library for single-row controls only')
+    parser.add_argument('--direct-repack', action='store_true', help='also require exact prepared weights/scales/zeros/bias against the original adapter')
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
     if any(row < 1 or row > 512 for row in args.rows):
@@ -55,7 +56,14 @@ def main():
         raise SystemExit(128+number)
     signal.signal(signal.SIGTERM, terminate)
     try:
-        library = Library(args.library)
+        reference_library = Library(args.library) if args.direct_repack else None
+        if args.direct_repack:
+            from scripts.experiments.q4_marlin_direct import DirectLibrary
+            library = DirectLibrary(args.library)
+            report['direct_repack_sources'] = {name:digest(name) for name in
+                ('scripts/experiments/q4_marlin_direct.py','scripts/experiments/q4_marlin_repack.py')}
+        else:
+            library = Library(args.library)
         report['workspace_bytes'] = sum(t.numel()*t.element_size() for t in (library.scratch, library.locks))
         for name in ('0.qkv.weight', '0.out', '0.gate_up', '0.down', 'head'):
             weight, scales = source.weights[name].cuda(), source.scales[name].cuda()
@@ -73,8 +81,16 @@ def main():
                 started = time.perf_counter()
                 prepared[biased] = library.prepare(weight, scales, bias if biased else None)
                 torch.cuda.synchronize()
+                elapsed = time.perf_counter()-started
+                exact_preparation = None
+                if reference_library is not None:
+                    reference_prepared = reference_library.prepare(weight,scales,bias if biased else None)
+                    exact_preparation = all(torch.equal(getattr(prepared[biased],key),getattr(reference_prepared,key))
+                        for key in ('weight','scales','zeros',*(['bias'] if biased else [])))
+                    assert exact_preparation, (name,biased,'prepared buffers changed')
+                    del reference_prepared
                 report['matrices'].append(dict(name=name, outputs=n, width=k, bias=biased,
-                    repack_seconds=time.perf_counter()-started,
+                    repack_seconds=elapsed, exact_original_preparation=exact_preparation,
                     canonical_bytes=weight.numel()*weight.element_size()+scales.numel()*scales.element_size(),
                     additional_prepared_bytes=prepared[biased].bytes,
                     negative_scale_count=int((scales<0).sum().item())))

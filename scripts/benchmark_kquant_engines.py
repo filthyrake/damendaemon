@@ -40,6 +40,7 @@ def main():
     comparison.add_argument('--residual-f32-library',help='compare ordinary packed FP32 with the isolated FP32 candidate')
     parser.add_argument('--production-q4-residual',action='store_true',help='exercise normal per-model Q4 integer-dot selection')
     parser.add_argument('--q4-residual-control-library',help='use this existing native residual library in control phases, instead of ordinary native Q4')
+    parser.add_argument('--q4-marlin-replace',action='store_true',help='use the isolated all-row Marlin GPU layout replacement')
     parser.add_argument('--production-q4-small-tiles',action='store_true',help='compare the previous Q4 prompt policy with normal A2 selection')
     parser.add_argument('--production-batch-wait',action='store_true',help='exercise normal CLI idle admission configuration')
     parser.add_argument('--production-residual',action='store_true',help='exercise normal per-model FP16 K-quant residual selection')
@@ -79,6 +80,8 @@ def main():
         parser.error('--q4-residual-control-library requires --production-q4-residual or --q4-marlin-library')
     if args.q4_marlin_library and (args.native_format!='q4' or not args.q4_residual_control_library):
         parser.error('--q4-marlin-library requires --native-format q4 and --q4-residual-control-library')
+    if args.q4_marlin_replace and not args.q4_marlin_library:
+        parser.error('--q4-marlin-replace requires --q4-marlin-library')
     if args.production_batch_wait and not args.batch_wait_ms:parser.error('--production-batch-wait requires --batch-wait-ms')
     if args.production_residual and not args.residual_library:parser.error('--production-residual requires --residual-library')
     if args.production_dense_cache and (not args.dense_cache or args.dense_cache_mib <= 0):
@@ -138,6 +141,11 @@ def main():
         report['production_admission_accounts_for_extra_weights']=False
         report['q4_marlin_dispatch_sha256']=digest(Path(__file__).parent/'experiments/q4_marlin_dispatch.py')
         report['q4_marlin_adapter_sha256']=digest(Path(__file__).parent/'experiments/q4_marlin.py')
+        report['q4_marlin_replaces_gpu_layout']=args.q4_marlin_replace
+        if args.q4_marlin_replace:
+            report['experimental_arithmetic']='all-row Marlin over the same Q4 coefficients/scales, rounded FP16 coefficients; control uses qualified residual single-row FP32 coefficient scaling'
+            report['q4_marlin_replacement_sources']={name:digest(Path(__file__).parent/'experiments'/name)
+                for name in ('q4_marlin_replace.py','q4_marlin_direct.py','q4_marlin_repack.py')}
     report['production_residual_f32']=args.production_residual_f32
     report['experimental_prefill_f32']=args.prefill_f32 and not args.production_prefill_f32
     report['production_prefill_f32']=args.production_prefill_f32
@@ -151,6 +159,7 @@ def main():
     environment.pop('DLLM_KQUANT_PREFILL_F32',None)
     environment.pop('DLLM_EXPERIMENTAL_Q4_RESIDUAL_LIBRARY',None)
     environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY',None)
+    environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_REPLACE',None)
     environment.pop('DLLM_Q4_RESIDUAL_LIBRARY',None)
     environment.pop('DLLM_EXPERIMENTAL_BATCH_WAIT_MS',None)
     environment.pop('DLLM_Q4_CUDA_LIBRARY',None)
@@ -170,7 +179,7 @@ def main():
         report['experimental_arithmetic']+='; batch-two pure Q6 at (width, outputs)=(8192,2048) or (2048,128256)'
     counterpart='residual-int8-fp32' if precision=='float32' else 'residual-int8-v2' if residual else 'llama.cpp'
     if args.q4_residual_library:counterpart='q4-residual-int8'
-    if args.q4_marlin_library:counterpart='q4-marlin'
+    if args.q4_marlin_library:counterpart='q4-marlin-replaced' if args.q4_marlin_replace else 'q4-marlin'
     if args.q4_small_tiles:
         counterpart='q4-small-tiles'
         report['experimental_arithmetic']='unchanged FP16 coefficients; paired-dot 32-row tiles at 64/129 rows'
@@ -212,6 +221,7 @@ def main():
                 phase_environment['DLLM_Q4_RESIDUAL_LIBRARY']=str(control)
             if args.q4_marlin_library and engine==counterpart:
                 phase_environment['DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY']=str(marlin)
+                if args.q4_marlin_replace:phase_environment['DLLM_EXPERIMENTAL_Q4_MARLIN_REPLACE']='1'
             if args.production_dense_cache and engine==counterpart:
                 phase_environment['DLLM_KQUANT_DENSE_CACHE_MIB']=str(args.dense_cache_mib)
             if args.batch_wait_ms and engine==counterpart and not args.production_batch_wait:
@@ -231,6 +241,7 @@ def main():
                         'dense-cache':'scripts.experiments.serve_dense_cache',
                         'q4-residual-int8':'scripts.experiments.serve_q4_residual',
                         'q4-marlin':'scripts.experiments.serve_q4_marlin',
+                        'q4-marlin-replaced':'scripts.experiments.serve_q4_marlin',
                         'compensated-prefill-fp32':'scripts.experiments.serve_prefill_f32',
                         'residual-int8-v2':'scripts.experiments.serve_residual',
                         'residual-int8-fp32':'scripts.experiments.serve_residual_f32'}.get(engine,
@@ -305,6 +316,9 @@ def main():
                         case['median_seconds']=statistics.median(r['seconds'] for r in measured)
                         case['median_aggregate_output_tokens_per_second']=statistics.median(
                             r['aggregate_output_tokens_per_second'] for r in measured)
+                    if args.q4_marlin_library:
+                        with urlopen(base+'/v1/models/status',timeout=30) as response:
+                            run['memory_after_workloads']=json.load(response)
                     if args.lifecycle and engine!='llama.cpp':
                         def post(route,body):
                             return urlopen(Request(base+route,data=json.dumps(body).encode(),
@@ -333,8 +347,9 @@ def main():
                         if args.production_q4_residual:
                             assert ('+cuda-q4-residual' in run['kernel_backend']) == (engine==counterpart or bool(args.q4_residual_control_library))
                         if args.q4_marlin_library:
-                            assert '+cuda-q4-residual' in run['kernel_backend']
+                            assert ('+cuda-q4-residual' in run['kernel_backend']) == (not args.q4_marlin_replace or engine!=counterpart)
                             assert ('+experimental-q4-marlin' in run['kernel_backend']) == (engine==counterpart)
+                            assert ('+experimental-q4-marlin-replaced' in run['kernel_backend']) == (args.q4_marlin_replace and engine==counterpart)
                         if args.production_residual:
                             assert ('+cuda-kquant-residual' in run['kernel_backend']) == (engine==counterpart)
                         if args.production_prefill_f32:

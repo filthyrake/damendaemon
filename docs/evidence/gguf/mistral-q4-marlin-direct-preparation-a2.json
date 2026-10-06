@@ -1,0 +1,586 @@
+{
+  "passed": true,
+  "device": "NVIDIA A2",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "torch": "2.6.0+cu124",
+  "model": "/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+  "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
+  "library": "/home/damen/dllm-dev/results/libdllm-q4-marlin-experiment.so",
+  "library_sha256": "18a80018190a1fd39b8a7a924c8e5c6fc6ff9ebdf527bf886ac98204c5a99897",
+  "scope": "Real Q4_0 projections; preserved integer coefficients/signed FP16 scales; independent FP32 accumulation over FP16-rounded coefficients, final FP16 output, TF32 disabled. Warm CUDA graph ABBA excludes one-time repacking. Prepared weights are additional resident storage. No full-model or serving claim.",
+  "sources": {
+    "scripts/experiments/q4_marlin.cu": "97084e400eeabe932bcd8ad53534f82e5bbfac5a1d626c30157994f59f28eb16",
+    "scripts/experiments/q4_marlin.py": "a23a5dbeea698b9b6dde50b1a2e47e117f73f56ab67c8a7b88f387499697ab7a",
+    "scripts/experiments/bench_q4_marlin.py": "ad933a1432b3726865f47a1ea464525fd7c6fa8a1d1cf4f56ee8f2d61b55c59e",
+    "third_party/marlin/marlin_template.h": "972ffd66fdfb6781dad13daea1167981821a78b86a93d865baa2b3c3ed11cd19",
+    "third_party/marlin/awq_repack.cuh": "973f494161eb47436ca3cc6c48ac37bcbbc6fa7ac3f8d8fa6ca9a7d8165df5f4"
+  },
+  "matrices": [
+    {
+      "name": "0.qkv.weight",
+      "outputs": 6144,
+      "width": 4096,
+      "bias": false,
+      "repack_seconds": 0.8739495740155689,
+      "exact_original_preparation": true,
+      "canonical_bytes": 14155776,
+      "additional_prepared_bytes": 14548992,
+      "negative_scale_count": 393103
+    },
+    {
+      "name": "0.qkv.weight",
+      "outputs": 6144,
+      "width": 4096,
+      "bias": true,
+      "repack_seconds": 0.0009767510055098683,
+      "exact_original_preparation": true,
+      "canonical_bytes": 14155776,
+      "additional_prepared_bytes": 14561280,
+      "negative_scale_count": 393103
+    },
+    {
+      "name": "0.out",
+      "outputs": 4096,
+      "width": 4096,
+      "bias": false,
+      "repack_seconds": 0.00490050099324435,
+      "exact_original_preparation": true,
+      "canonical_bytes": 9437184,
+      "additional_prepared_bytes": 9699328,
+      "negative_scale_count": 262662
+    },
+    {
+      "name": "0.out",
+      "outputs": 4096,
+      "width": 4096,
+      "bias": true,
+      "repack_seconds": 0.0007054730085656047,
+      "exact_original_preparation": true,
+      "canonical_bytes": 9437184,
+      "additional_prepared_bytes": 9707520,
+      "negative_scale_count": 262662
+    },
+    {
+      "name": "0.gate_up",
+      "outputs": 28672,
+      "width": 4096,
+      "bias": false,
+      "repack_seconds": 0.008265325013780966,
+      "exact_original_preparation": true,
+      "canonical_bytes": 66060288,
+      "additional_prepared_bytes": 67895296,
+      "negative_scale_count": 1836122
+    },
+    {
+      "name": "0.gate_up",
+      "outputs": 28672,
+      "width": 4096,
+      "bias": true,
+      "repack_seconds": 0.004628861992387101,
+      "exact_original_preparation": true,
+      "canonical_bytes": 66060288,
+      "additional_prepared_bytes": 67952640,
+      "negative_scale_count": 1836122
+    },
+    {
+      "name": "0.down",
+      "outputs": 4096,
+      "width": 14336,
+      "bias": false,
+      "repack_seconds": 0.005453638994367793,
+      "exact_original_preparation": true,
+      "canonical_bytes": 33030144,
+      "additional_prepared_bytes": 33947648,
+      "negative_scale_count": 917527
+    },
+    {
+      "name": "0.down",
+      "outputs": 4096,
+      "width": 14336,
+      "bias": true,
+      "repack_seconds": 0.0015601749764755368,
+      "exact_original_preparation": true,
+      "canonical_bytes": 33030144,
+      "additional_prepared_bytes": 33955840,
+      "negative_scale_count": 917527
+    },
+    {
+      "name": "head",
+      "outputs": 32000,
+      "width": 4096,
+      "bias": false,
+      "repack_seconds": 0.008479776995955035,
+      "exact_original_preparation": true,
+      "canonical_bytes": 73728000,
+      "additional_prepared_bytes": 75776000,
+      "negative_scale_count": 2023612
+    },
+    {
+      "name": "head",
+      "outputs": 32000,
+      "width": 4096,
+      "bias": true,
+      "repack_seconds": 0.004719904012745246,
+      "exact_original_preparation": true,
+      "canonical_bytes": 73728000,
+      "additional_prepared_bytes": 75840000,
+      "negative_scale_count": 2023612
+    }
+  ],
+  "checks": [
+    {
+      "name": "0.qkv.weight",
+      "rows": 1,
+      "exponent": -14,
+      "bias": false,
+      "relative_rms": 7.755444676149637e-05,
+      "control_relative_rms": 0.0,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.qkv.weight",
+      "rows": 1,
+      "exponent": -14,
+      "bias": true,
+      "relative_rms": 8.699991553839936e-07,
+      "control_relative_rms": 0.0,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.qkv.weight",
+      "rows": 1,
+      "exponent": 0,
+      "bias": false,
+      "relative_rms": 5.08683078805916e-05,
+      "control_relative_rms": 0.00010050469427369535,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.qkv.weight",
+      "rows": 1,
+      "exponent": 0,
+      "bias": true,
+      "relative_rms": 0.00018376452499069273,
+      "control_relative_rms": 4.823052586289123e-05,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.qkv.weight",
+      "rows": 1,
+      "exponent": 10,
+      "bias": false,
+      "relative_rms": 5.08683078805916e-05,
+      "control_relative_rms": 0.00010050469427369535,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.qkv.weight",
+      "rows": 1,
+      "exponent": 10,
+      "bias": true,
+      "relative_rms": 0.00035666627809405327,
+      "control_relative_rms": 9.988091915147379e-05,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.out",
+      "rows": 1,
+      "exponent": -14,
+      "bias": false,
+      "relative_rms": 0.0,
+      "control_relative_rms": 0.0,
+      "exact_production": true,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.out",
+      "rows": 1,
+      "exponent": -14,
+      "bias": true,
+      "relative_rms": 0.0,
+      "control_relative_rms": 0.0,
+      "exact_production": true,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.out",
+      "rows": 1,
+      "exponent": 0,
+      "bias": false,
+      "relative_rms": 3.1010040402179584e-05,
+      "control_relative_rms": 0.00010364090849179775,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.out",
+      "rows": 1,
+      "exponent": 0,
+      "bias": true,
+      "relative_rms": 0.00013674783986061811,
+      "control_relative_rms": 3.7984773371135816e-05,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.out",
+      "rows": 1,
+      "exponent": 10,
+      "bias": false,
+      "relative_rms": 3.1010040402179584e-05,
+      "control_relative_rms": 0.00010364090849179775,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.out",
+      "rows": 1,
+      "exponent": 10,
+      "bias": true,
+      "relative_rms": 0.00035414713784120977,
+      "control_relative_rms": 0.00010166945867240429,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.gate_up",
+      "rows": 1,
+      "exponent": -14,
+      "bias": false,
+      "relative_rms": 6.653193122474477e-05,
+      "control_relative_rms": 0.0,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.gate_up",
+      "rows": 1,
+      "exponent": -14,
+      "bias": true,
+      "relative_rms": 6.129036478341732e-08,
+      "control_relative_rms": 0.0,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.gate_up",
+      "rows": 1,
+      "exponent": 0,
+      "bias": false,
+      "relative_rms": 4.1487772250548005e-05,
+      "control_relative_rms": 0.00010280718561261892,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.gate_up",
+      "rows": 1,
+      "exponent": 0,
+      "bias": true,
+      "relative_rms": 0.0001782590406946838,
+      "control_relative_rms": 4.8305693781003356e-05,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.gate_up",
+      "rows": 1,
+      "exponent": 10,
+      "bias": false,
+      "relative_rms": 4.148777588852681e-05,
+      "control_relative_rms": 0.00010280718561261892,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.gate_up",
+      "rows": 1,
+      "exponent": 10,
+      "bias": true,
+      "relative_rms": 0.0003549090470187366,
+      "control_relative_rms": 0.00010368693619966507,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.down",
+      "rows": 1,
+      "exponent": -14,
+      "bias": false,
+      "relative_rms": 0.0001285656908294186,
+      "control_relative_rms": 0.0,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.down",
+      "rows": 1,
+      "exponent": -14,
+      "bias": true,
+      "relative_rms": 3.083047772634018e-08,
+      "control_relative_rms": 0.0,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.down",
+      "rows": 1,
+      "exponent": 0,
+      "bias": false,
+      "relative_rms": 6.334014324238524e-05,
+      "control_relative_rms": 0.00010490134445717558,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.down",
+      "rows": 1,
+      "exponent": 0,
+      "bias": true,
+      "relative_rms": 0.0002232832630397752,
+      "control_relative_rms": 5.973645602352917e-05,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.down",
+      "rows": 1,
+      "exponent": 10,
+      "bias": false,
+      "relative_rms": 6.334014324238524e-05,
+      "control_relative_rms": 0.00010490134445717558,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "0.down",
+      "rows": 1,
+      "exponent": 10,
+      "bias": true,
+      "relative_rms": 0.00037958132452331483,
+      "control_relative_rms": 0.00010213775385636836,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "head",
+      "rows": 1,
+      "exponent": -14,
+      "bias": false,
+      "relative_rms": 5.237696677795611e-05,
+      "control_relative_rms": 1.979663284146227e-05,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "head",
+      "rows": 1,
+      "exponent": -14,
+      "bias": true,
+      "relative_rms": 8.919867156009786e-08,
+      "control_relative_rms": 0.0,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "head",
+      "rows": 1,
+      "exponent": 0,
+      "bias": false,
+      "relative_rms": 4.3337680835975334e-05,
+      "control_relative_rms": 0.00010074288002215326,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "head",
+      "rows": 1,
+      "exponent": 0,
+      "bias": true,
+      "relative_rms": 0.00019874352437909693,
+      "control_relative_rms": 5.217445141170174e-05,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "head",
+      "rows": 1,
+      "exponent": 10,
+      "bias": false,
+      "relative_rms": 4.3337680835975334e-05,
+      "control_relative_rms": 0.00010074288002215326,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    },
+    {
+      "name": "head",
+      "rows": 1,
+      "exponent": 10,
+      "bias": true,
+      "relative_rms": 0.0003568569081835449,
+      "control_relative_rms": 0.00010465403465786949,
+      "exact_production": false,
+      "candidate_passed": true,
+      "control_passed": true,
+      "passed": true
+    }
+  ],
+  "timings": [
+    {
+      "name": "0.qkv.weight",
+      "rows": 1,
+      "samples_ms": {
+        "production": [
+          0.10895548015832901,
+          0.10925552994012833
+        ],
+        "marlin": [
+          0.09368692338466644,
+          0.09373010694980621
+        ]
+      },
+      "production_ms": 0.10910550504922867,
+      "marlin_ms": 0.09370851516723633
+    },
+    {
+      "name": "0.out",
+      "rows": 1,
+      "samples_ms": {
+        "production": [
+          0.07599638402462006,
+          0.07575499266386032
+        ],
+        "marlin": [
+          0.06336399167776108,
+          0.06337627023458481
+        ]
+      },
+      "production_ms": 0.07587568834424019,
+      "marlin_ms": 0.06337013095617294
+    },
+    {
+      "name": "0.gate_up",
+      "rows": 1,
+      "samples_ms": {
+        "production": [
+          0.4941648542881012,
+          0.48779815435409546
+        ],
+        "marlin": [
+          0.4105868339538574,
+          0.4106445908546448
+        ]
+      },
+      "production_ms": 0.4909815043210983,
+      "marlin_ms": 0.4106157124042511
+    },
+    {
+      "name": "0.down",
+      "rows": 1,
+      "samples_ms": {
+        "production": [
+          0.26686352491378784,
+          0.26684853434562683
+        ],
+        "marlin": [
+          0.2032744586467743,
+          0.20325317978858948
+        ]
+      },
+      "production_ms": 0.26685602962970734,
+      "marlin_ms": 0.20326381921768188
+    },
+    {
+      "name": "head",
+      "rows": 1,
+      "samples_ms": {
+        "production": [
+          0.5531743168830872,
+          0.5450176000595093
+        ],
+        "marlin": [
+          0.4569920003414154,
+          0.4570523202419281
+        ]
+      },
+      "production_ms": 0.5490959584712982,
+      "marlin_ms": 0.45702216029167175
+    }
+  ],
+  "residual_baseline": {
+    "path": "/home/damen/dllm-dev/results/libdllm-q4-paired-production.so",
+    "sha256": "b17d2b3dbcdd5346612aa835f69839915319f5bfe0532a764358e566d5a6fc1e",
+    "arithmetic": "existing two-term residual, FP32 coefficient scaling; row 1 only"
+  },
+  "direct_repack_sources": {
+    "scripts/experiments/q4_marlin_direct.py": "738de05707a037f36ffdd3f71118903ebd20eed09edbb9187b3f51d4230821dc",
+    "scripts/experiments/q4_marlin_repack.py": "46da61d05222ef18154198b31e14ee050521dc2ea341701408145aa21ed3ab9e"
+  },
+  "workspace_bytes": 2621600,
+  "candidate_passed": true,
+  "control_passed": true
+}

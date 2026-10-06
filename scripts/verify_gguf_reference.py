@@ -95,6 +95,7 @@ def main():
     p.add_argument('--expanded-control',action='store_true',help='diagnostic: expand the same coefficients before dllm execution')
     p.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     p.add_argument('--require-q4-small-tiles', action='store_true', help='fail unless normal A2 prompt tile selection is active for this model')
+    p.add_argument('--experimental-q4-marlin-replace', action='store_true')
     experiments=p.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-marlin', metavar='LIBRARY')
     experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
@@ -110,8 +111,13 @@ def main():
     if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
         p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
+    if args.experimental_q4_marlin_replace and not args.experimental_q4_marlin:
+        p.error('--experimental-q4-marlin-replace requires --experimental-q4-marlin')
     if args.experimental_q4_marlin:
-        from experiments.q4_marlin_dispatch import install_validation_dispatch
+        if args.experimental_q4_marlin_replace:
+            from experiments.q4_marlin_replace import install_validation_dispatch
+        else:
+            from experiments.q4_marlin_dispatch import install_validation_dispatch
         experiment = install_validation_dispatch(args.experimental_q4_marlin)
     if args.experimental_q4_small_tiles:
         from experiments.q4_small_tiles import install_validation_dispatch
@@ -232,6 +238,9 @@ def main():
                     raise ValueError('dense-cache experiment selected no projections')
             if args.experimental_q4_marlin:
                 experiment['additional_prepared_bytes'] = executor.quant_linear.experimental_q4_marlin_bytes
+                if args.experimental_q4_marlin_replace:
+                    experiment['prepared_weight_bytes'] = executor.quant_linear.experimental_q4_marlin_total_bytes
+                    experiment['replaced_canonical_bytes'] = executor.quant_linear.experimental_q4_marlin_replaced_bytes
                 if not experiment['additional_prepared_bytes']:
                     raise ValueError('Q4 Marlin experiment selected no projections')
             if (args.experimental_residual_f32 or args.experimental_prefill_f32) and executor.compute_dtype!=torch.float32:

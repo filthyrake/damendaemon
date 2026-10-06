@@ -1,0 +1,1233 @@
+{
+  "awq_qualification": false,
+  "tokenizer_runtime": {
+    "kind": "SentencePieceTokenizer"
+  },
+  "experiment": {
+    "kind": "experimental all-row Q4_0 Marlin layout replacement",
+    "abi": 1,
+    "library_sha256": "18a80018190a1fd39b8a7a924c8e5c6fc6ff9ebdf527bf886ac98204c5a99897",
+    "sources": {
+      "q4_marlin_replace.py": "70292f5e15fffaa7e455c86d198b13847cf8d5bd6616241cb81bfb28fb1c7486",
+      "q4_marlin_direct.py": "738de05707a037f36ffdd3f71118903ebd20eed09edbb9187b3f51d4230821dc",
+      "q4_marlin_repack.py": "46da61d05222ef18154198b31e14ee050521dc2ea341701408145aa21ed3ab9e",
+      "q4_marlin.py": "a23a5dbeea698b9b6dde50b1a2e47e117f73f56ab67c8a7b88f387499697ab7a"
+    },
+    "replaces_canonical_gpu_weights": true,
+    "host_weights_unchanged": true,
+    "production_admission_accounts_for_extra_weights": false,
+    "additional_prepared_bytes": 111099904,
+    "prepared_weight_bytes": 4110696448,
+    "replaced_canonical_bytes": 3999596544,
+    "executions": [
+      {
+        "kind": "eager_trace",
+        "dispatch_calls": 4515
+      },
+      {
+        "paged": false,
+        "graph": false,
+        "dispatch_calls": 4900
+      },
+      {
+        "paged": false,
+        "graph": true,
+        "dispatch_calls": 3352
+      },
+      {
+        "paged": true,
+        "graph": false,
+        "dispatch_calls": 4900
+      },
+      {
+        "paged": true,
+        "graph": true,
+        "dispatch_calls": 3352
+      }
+    ]
+  },
+  "passed": true,
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "context": 512,
+  "prompt_lengths": [
+    4,
+    128,
+    256,
+    384
+  ],
+  "chunk_size": 128,
+  "paged_pool_tokens": 1024,
+  "model": "/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+  "host_bytes": 4262273024,
+  "comparisons": [
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch1",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 0,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031168843270279467,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 1,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00030015732045285404,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00033607857767492533,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00030758933280594647,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002930547343567014,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0003208253183402121,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00033882929710671306,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch2",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031231288448907435,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 0,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002898896927945316,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00027200617478229105,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00027410907205194235,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000255177088547498,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00026676285779103637,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00027451489586383104,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002892384072765708,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "batch4",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002718271571211517,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 0,
+      "max_absolute": 0.03515625,
+      "relative_rms": 0.001448943163268268,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 1,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00043334104702807963,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000386268540751189,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0003298359806649387,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 4,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0002847753348760307,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00034177780617028475,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000339083926519379,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": false,
+      "kind": "chunked",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031584533280692995,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch1",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 0,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031168843270279467,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 1,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00030015732045285404,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00033607857767492533,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00030758933280594647,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002930547343567014,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0003208253183402121,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00033882929710671306,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch2",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031231288448907435,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 0,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002898896927945316,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00027200617478229105,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00027410907205194235,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000255177088547498,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00026676285779103637,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00027451489586383104,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002892384072765708,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "batch4",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002718271571211517,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 0,
+      "max_absolute": 0.03515625,
+      "relative_rms": 0.001448943163268268,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 1,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00043334104702807963,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000386268540751189,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0003298359806649387,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 4,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0002847753348760307,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00034177780617028475,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000339083926519379,
+      "greedy_equal": true
+    },
+    {
+      "paged": false,
+      "graph": true,
+      "kind": "chunked",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031584533280692995,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch1",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 0,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031168843270279467,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 1,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00030015732045285404,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00033607857767492533,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00030758933280594647,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002930547343567014,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0003208253183402121,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00033882929710671306,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch2",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031231288448907435,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 0,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002898896927945316,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00027200617478229105,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00027410907205194235,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000255177088547498,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00026676285779103637,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00027451489586383104,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002892384072765708,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "batch4",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002718271571211517,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 0,
+      "max_absolute": 0.03515625,
+      "relative_rms": 0.001448943163268268,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 1,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00043334104702807963,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000386268540751189,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0003298359806649387,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 4,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0002847753348760307,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00034177780617028475,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000339083926519379,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": false,
+      "kind": "chunked",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031584533280692995,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 0,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 1,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 2,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 3,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 4,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 5,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 6,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch1",
+      "step": 7,
+      "max_absolute": 0.0,
+      "relative_rms": 0.0,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 0,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031168843270279467,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 1,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00030015732045285404,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00033607857767492533,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00030758933280594647,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002930547343567014,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0003208253183402121,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00033882929710671306,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch2",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031231288448907435,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 0,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002898896927945316,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 1,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.00027200617478229105,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00027410907205194235,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000255177088547498,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 4,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00026676285779103637,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00027451489586383104,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002892384072765708,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "batch4",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0002718271571211517,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 0,
+      "max_absolute": 0.03515625,
+      "relative_rms": 0.001448943163268268,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 1,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00043334104702807963,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 2,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000386268540751189,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 3,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.0003298359806649387,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 4,
+      "max_absolute": 0.015625,
+      "relative_rms": 0.0002847753348760307,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 5,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00034177780617028475,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 6,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.000339083926519379,
+      "greedy_equal": true
+    },
+    {
+      "paged": true,
+      "graph": true,
+      "kind": "chunked",
+      "step": 7,
+      "max_absolute": 0.0078125,
+      "relative_rms": 0.00031584533280692995,
+      "greedy_equal": true
+    }
+  ],
+  "scope": "layout equivalence to single-request fixed eager; independent model accuracy is separate",
+  "native_q4_library": {
+    "path": "/home/damen/dllm-dev/build-kquant/libdllm-q4.so",
+    "sha256": "29dffba1428aab9846a5b71464855a4d48e6fbd6b9ec8a89a47f64b1ef0dd063"
+  },
+  "native_q4_residual_library": {
+    "path": "/home/damen/dllm-dev/results/libdllm-q4-paired-production.so",
+    "sha256": "b17d2b3dbcdd5346612aa835f69839915319f5bfe0532a764358e566d5a6fc1e"
+  },
+  "backend": "triton+q4_0+experimental-q4-marlin-replaced",
+  "resident_projection_cache_bytes": 0,
+  "precision": {
+    "matrix": "torch.float16",
+    "residual": "torch.float32"
+  },
+  "sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66"
+}
