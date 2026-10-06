@@ -57,6 +57,20 @@ def worker(args):
     if not report['passed']:raise AssertionError(report.get('error','HTTP benchmark failed'))
 
 
+def summarize(trials):
+    summary=[]
+    for concurrency in (1,2,4):
+        for batch in (1,4):
+            runs=[run for trial in trials if trial['batch_size']==batch
+                  for run in trial['results'] if run['concurrency']==concurrency]
+            samples=[sample for run in runs for sample in run['trials'] if not sample['warmup']]
+            rounds=[sample for run in runs for sample in run['rounds'] if not sample['warmup']]
+            summary.append(dict(batch_size=batch,concurrency=concurrency,samples=len(samples),
+                first_text_ms=1000*statistics.median(sample['first_output_seconds'] for sample in samples),
+                request_ms=1000*statistics.median(sample['total_seconds'] for sample in samples),
+                aggregate_tokens_per_second=statistics.median(sample['aggregate_output_tokens_per_second'] for sample in rounds)))
+    return summary
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('prompt')
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
@@ -82,17 +96,7 @@ def main():
                     if reference is None:reference=content
                     assert reference==content,'generated text or usage differs'
             report['trials'].append(data)
-        report['summary']=[]
-        for concurrency in (1,2,4):
-            for batch in (1,4):
-                runs=[run for trial in report['trials'] if trial['batch_size']==batch
-                      for run in trial['results'] if run['concurrency']==concurrency]
-                samples=[sample for run in runs for sample in run['trials'] if not sample['warmup']]
-                rounds=[sample for run in runs for sample in run['rounds'] if not sample['warmup']]
-                report['summary'].append(dict(batch_size=batch,concurrency=concurrency,samples=len(samples),
-                    first_text_ms=1000*statistics.median(sample['first_output_seconds'] for sample in samples),
-                    request_ms=1000*statistics.median(sample['total_seconds'] for sample in samples),
-                    aggregate_tokens_per_second=statistics.median(sample['aggregate_output_tokens_per_second'] for sample in rounds)))
+        report['summary']=summarize(report['trials'])
         report['passed']=True
     finally:output.write_text(json.dumps(report,indent=2)+'\n')
 

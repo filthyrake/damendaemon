@@ -60,3 +60,56 @@ The A2 returned to 0 MiB and the A30's existing service remained at 13,403 MiB.
 No firewall changes were needed for these same-host runs. The narrow model,
 context and greedy-only limits remain; this adds neither tensor parallelism nor
 distributed model switching, sampling, prompt packing or chunked prefill.
+
+## A2/3090 network batching
+
+The batched Q8 service passes all 25 HTTP checks over NCCL Socket between the
+A2 coordinator and desktop 3090. After 35 seconds idle, six acknowledged
+heartbeats and an independent continuation confirm that the resident worker is
+still usable. Both workers exit zero. The prepared Q8 identity remains
+`130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046`.
+
+The network benchmark uses the same pinned model, 16 raw input IDs, 32 output
+tokens, context 512 and capacity order 1,4,4,1 as the same-host comparison.
+Every measured response has identical text and usage across capacities. These
+runs are sequential; no other test or remote preparation runs during the timed
+samples. Existing GPU services remain present on the shared hosts.
+
+| Concurrent requests | Capacity | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---:|---:|---:|---:|---:|
+| 1 | 1 | 17.86 | 128.19 | 248.87 |
+| 1 | 4 | 17.89 | 126.41 | 252.34 |
+| 2 | 1 | 78.50 | 190.03 | 253.69 |
+| 2 | 4 | 25.76 | 179.08 | 355.45 |
+| 4 | 1 | 213.34 | 325.08 | 252.08 |
+| 4 | 4 | 44.57 | 232.39 | 546.39 |
+
+At concurrency four this is **2.17x aggregate throughput**, **79.1% lower
+median first text**, and **28.5% lower median request latency**. A single
+request remains around 127 ms. The small single-request difference is not
+claimed as a speedup. These are same-hardware capacity comparisons; neither
+this result nor the same-host table proves which GPU placement is best. This
+network has no qualified RDMA device; the transport is ordinary NCCL sockets.
+
+`qwen2-network-http-batch4-q8.json` records correctness/idle qualification;
+`qwen2-network-http-batching-benchmark.json` records every warmup, measured
+trial, model identity and source hash. Use the benchmark's `--worker` mode
+under bounded two-host torchrun launches, changing only `--batch-size` between
+runs. The `summarize` helper computes the same metrics for either topology.
+
+Native Q4 also passes all 25 network HTTP checks, with zero idle delay; both
+workers exit zero (`qwen2-network-http-batch4-q4.json`). Temporary peer-only
+TCP rules had 600-second automatic expiry. Lab rules were active from 03:06:12
+to 03:11:42 UTC; the desktop rule from 03:06:16 to 03:11:46 on 2026-10-06. All
+were removed early. The original desktop rule remains, with no permanent or
+router changes. Final allocations are A2 0 MiB, A30 existing service 13,403 MiB
+and desktop existing service 10,835 MiB. See `network-window.json`.
+
+## Startup mismatch rejection
+
+`qwen2-distributed-bounds.json` records two real A2/A30 jobs: capacity 4 versus
+1, and context 512 versus 256. Both ranks reject each mismatch with the explicit
+session-bounds error before constructing the command channel, then exit zero
+through the expected failure path. GPU allocations return to their baseline.
+Reproduce with `scripts/verify_distributed_bounds.py`; each owned torchrun job
+has a 180-second outer deadline. This proves rejection/cleanup, not performance.
