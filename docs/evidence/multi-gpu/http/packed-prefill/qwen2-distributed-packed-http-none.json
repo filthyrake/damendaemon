@@ -1,0 +1,661 @@
+{
+  "passed": true,
+  "batch_size": 4,
+  "quantization": "none",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "checks": [
+    "initial-queued-common-prefix:0",
+    "initial-queued-common-prefix:1",
+    "initial-queued-common-prefix:2",
+    "initial-queued-common-prefix:3",
+    "independent:0",
+    "independent:1",
+    "independent:2",
+    "independent:3",
+    "independent:4",
+    "independent:5",
+    "resident-reuse:1",
+    "resident-reuse:0",
+    "resident-reuse:2",
+    "resident-reuse:0",
+    "queued-concurrent:0",
+    "queued-concurrent:1",
+    "queued-concurrent:2",
+    "queued-concurrent:3",
+    "concurrent-slot-refill:0",
+    "concurrent-slot-refill:1",
+    "concurrent-slot-refill:2",
+    "concurrent-slot-refill:3",
+    "concurrent-slot-refill:4",
+    "concurrent-slot-refill:5",
+    "streaming-content-and-usage",
+    "cancel-and-reuse-slot",
+    "invalid-input-and-unsupported-feature-recovery",
+    "resident-chat-repeat",
+    "independent-after-idle"
+  ],
+  "trials": [
+    {
+      "label": "initial-queued-common-prefix:0",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.002766657999018207,
+        "first_token_seconds": 0.23281930200755596,
+        "generation_first_token_seconds": 0.23005264400853775,
+        "generation_seconds": 0.2371130299870856,
+        "release_seconds": 0.0011806630063802004,
+        "total_seconds": 0.24111974801053293,
+        "decode_tokens_per_second": 141.63531611988086,
+        "max_batch_size": 4,
+        "prefill_batch_size": 4,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "initial-queued-common-prefix:1",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.0014943040150683373,
+        "first_token_seconds": 0.23206537301302887,
+        "generation_first_token_seconds": 0.23057106899796054,
+        "generation_seconds": 0.2764922979986295,
+        "release_seconds": 0.000606705027166754,
+        "total_seconds": 0.27859583002282307,
+        "decode_tokens_per_second": 152.43494462872553,
+        "max_batch_size": 4,
+        "prefill_batch_size": 4,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "initial-queued-common-prefix:2",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.0023939459933899343,
+        "first_token_seconds": 0.23293238898622803,
+        "generation_first_token_seconds": 0.2305384429928381,
+        "generation_seconds": 0.25061434900271706,
+        "release_seconds": 0.0009251069859601557,
+        "total_seconds": 0.2539634129789192,
+        "decode_tokens_per_second": 149.43285740248825,
+        "max_batch_size": 4,
+        "prefill_batch_size": 4,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "initial-queued-common-prefix:3",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.0002435529895592481,
+        "first_token_seconds": 0.23084999699494801,
+        "generation_first_token_seconds": 0.23060644400538877,
+        "generation_seconds": 0.26413208502344787,
+        "release_seconds": 0.0007548470166511834,
+        "total_seconds": 0.26513822001288645,
+        "decode_tokens_per_second": 149.13957938363274,
+        "max_batch_size": 4,
+        "prefill_batch_size": 4,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "independent:0",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.0001783869811333716,
+        "first_token_seconds": 0.025374666991410777,
+        "generation_first_token_seconds": 0.025196280010277405,
+        "generation_seconds": 0.059443097008625045,
+        "release_seconds": 0.000660730991512537,
+        "total_seconds": 0.06028467699070461,
+        "decode_tokens_per_second": 204.39855769187952,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "independent:1",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 9.572901763021946e-05,
+        "first_token_seconds": 0.028583928011357784,
+        "generation_first_token_seconds": 0.028488198993727565,
+        "generation_seconds": 0.06218103499850258,
+        "release_seconds": 0.000648551998892799,
+        "total_seconds": 0.06292949599446729,
+        "decode_tokens_per_second": 207.7592993064741,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "independent:2",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.00011113501386716962,
+        "first_token_seconds": 0.030253336008172482,
+        "generation_first_token_seconds": 0.030142200994305313,
+        "generation_seconds": 0.06370145600521937,
+        "release_seconds": 0.0006156110030133277,
+        "total_seconds": 0.06443091301480308,
+        "decode_tokens_per_second": 208.58627516384013,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "independent:3",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.00022981601068750024,
+        "first_token_seconds": 0.04532886401284486,
+        "generation_first_token_seconds": 0.04509904800215736,
+        "generation_seconds": 0.07999641099013388,
+        "release_seconds": 0.0007679789850953966,
+        "total_seconds": 0.08099664299516007,
+        "decode_tokens_per_second": 200.5882221648601,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "independent:4",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.00011722100316546857,
+        "first_token_seconds": 0.025060610001673922,
+        "generation_first_token_seconds": 0.024943388998508453,
+        "generation_seconds": 0.05759986600605771,
+        "release_seconds": 0.0005966130120214075,
+        "total_seconds": 0.05831609101733193,
+        "decode_tokens_per_second": 214.35257692928107,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "independent:5",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 7.707602344453335e-05,
+        "first_token_seconds": 0.024536442011594772,
+        "generation_first_token_seconds": 0.02445936598815024,
+        "generation_seconds": 0.05643509200308472,
+        "release_seconds": 0.0005931619962211698,
+        "total_seconds": 0.05710895502124913,
+        "decode_tokens_per_second": 218.91606141266666,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "resident-reuse:1",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.00014218702563084662,
+        "first_token_seconds": 0.013674268004251644,
+        "generation_first_token_seconds": 0.013532080978620797,
+        "generation_seconds": 0.04625569097697735,
+        "release_seconds": 0.0005191820091567934,
+        "total_seconds": 0.04691962801734917,
+        "decode_tokens_per_second": 213.9128293104445,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "resident-reuse:0",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 7.316700066439807e-05,
+        "first_token_seconds": 0.014056816988158971,
+        "generation_first_token_seconds": 0.013983649987494573,
+        "generation_seconds": 0.045964991993969306,
+        "release_seconds": 0.0006590439879801124,
+        "total_seconds": 0.04670068799168803,
+        "decode_tokens_per_second": 218.87761928760918,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "resident-reuse:2",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.00011990999337285757,
+        "first_token_seconds": 0.016647078999085352,
+        "generation_first_token_seconds": 0.016527169005712494,
+        "generation_seconds": 0.04990190302487463,
+        "release_seconds": 0.0006640120118390769,
+        "total_seconds": 0.050688374001765624,
+        "decode_tokens_per_second": 209.7394992265989,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "resident-reuse:0",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.00019366599735803902,
+        "first_token_seconds": 0.01163786300458014,
+        "generation_first_token_seconds": 0.011444197007222101,
+        "generation_seconds": 0.043174006015760824,
+        "release_seconds": 0.0004992790054529905,
+        "total_seconds": 0.04386967601021752,
+        "decode_tokens_per_second": 220.61273668922018,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "queued-concurrent:0",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 8.533097570762038e-05,
+        "first_token_seconds": 0.02511019798112102,
+        "generation_first_token_seconds": 0.025024867005413398,
+        "generation_seconds": 0.02963445900240913,
+        "release_seconds": 0.000566604983760044,
+        "total_seconds": 0.03030251298332587,
+        "decode_tokens_per_second": 216.9389396397214,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "queued-concurrent:1",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.02452588902087882,
+        "first_token_seconds": 0.05922045500483364,
+        "generation_first_token_seconds": 0.03469456598395482,
+        "generation_seconds": 0.09936115797609091,
+        "release_seconds": 0.0005705999792553484,
+        "total_seconds": 0.12446027700207196,
+        "decode_tokens_per_second": 108.24754768043519,
+        "max_batch_size": 3,
+        "prefill_batch_size": 2,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "queued-concurrent:2",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.020608774007996544,
+        "first_token_seconds": 0.05535917199449614,
+        "generation_first_token_seconds": 0.03475039798649959,
+        "generation_seconds": 0.07580132898874581,
+        "release_seconds": 0.0007351460226345807,
+        "total_seconds": 0.09715976001461968,
+        "decode_tokens_per_second": 73.07995036302214,
+        "max_batch_size": 3,
+        "prefill_batch_size": 2,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "queued-concurrent:3",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.01931446199887432,
+        "first_token_seconds": 0.07882986901677214,
+        "generation_first_token_seconds": 0.059515407017897815,
+        "generation_seconds": 0.08798278000904247,
+        "release_seconds": 0.0006699149962514639,
+        "total_seconds": 0.10796985600609332,
+        "decode_tokens_per_second": 175.63967007266,
+        "max_batch_size": 3,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "concurrent-slot-refill:0",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.0006888869975227863,
+        "first_token_seconds": 0.031258249015081674,
+        "generation_first_token_seconds": 0.030569362017558888,
+        "generation_seconds": 0.03524534800089896,
+        "release_seconds": 0.0005817319906782359,
+        "total_seconds": 0.03653106398996897,
+        "decode_tokens_per_second": 213.85863934641165,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "concurrent-slot-refill:1",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.025543113995809108,
+        "first_token_seconds": 0.08258521600509994,
+        "generation_first_token_seconds": 0.05704210200929083,
+        "generation_seconds": 0.14182787502068095,
+        "release_seconds": 0.0006130050169304013,
+        "total_seconds": 0.16798704001121223,
+        "decode_tokens_per_second": 82.56102116400614,
+        "max_batch_size": 4,
+        "prefill_batch_size": 2,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "concurrent-slot-refill:2",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.028564553998876363,
+        "first_token_seconds": 0.08555504799005575,
+        "generation_first_token_seconds": 0.05699049399117939,
+        "generation_seconds": 0.11493894999148324,
+        "release_seconds": 0.0009624220256228,
+        "total_seconds": 0.14453043401590548,
+        "decode_tokens_per_second": 51.770145523536804,
+        "max_batch_size": 4,
+        "prefill_batch_size": 2,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "concurrent-slot-refill:3",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.03042605798691511,
+        "first_token_seconds": 0.05611461799708195,
+        "generation_first_token_seconds": 0.02568856001016684,
+        "generation_seconds": 0.12761165702249855,
+        "release_seconds": 0.0007884229999035597,
+        "total_seconds": 0.15885568599333055,
+        "decode_tokens_per_second": 49.05659410442609,
+        "max_batch_size": 4,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "concurrent-slot-refill:4",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.022164430003613234,
+        "first_token_seconds": 0.10387848800746724,
+        "generation_first_token_seconds": 0.081714058003854,
+        "generation_seconds": 0.0930018299841322,
+        "release_seconds": 0.0009639549825806171,
+        "total_seconds": 0.1161342189880088,
+        "decode_tokens_per_second": 177.1828845846963,
+        "max_batch_size": 4,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "concurrent-slot-refill:5",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.11454186800983734,
+        "first_token_seconds": 0.1300111559976358,
+        "generation_first_token_seconds": 0.015469287987798452,
+        "generation_seconds": 0.04100957399350591,
+        "release_seconds": 0.0007057689945213497,
+        "total_seconds": 0.15627413999754936,
+        "decode_tokens_per_second": 156.61531742855678,
+        "max_batch_size": 4,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "cancel-and-reuse-slot",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.0018178909958805889,
+        "first_token_seconds": 0.017300262989010662,
+        "generation_first_token_seconds": 0.015482371993130073,
+        "generation_seconds": 0.050235790986334905,
+        "release_seconds": 0.0006027810159139335,
+        "total_seconds": 0.05265883600804955,
+        "decode_tokens_per_second": 201.41903164602815,
+        "max_batch_size": 2,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "invalid-input-and-unsupported-feature-recovery",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.00016425998182967305,
+        "first_token_seconds": 0.0190906579955481,
+        "generation_first_token_seconds": 0.018926398013718426,
+        "generation_seconds": 0.05073584700585343,
+        "release_seconds": 0.0005759919877164066,
+        "total_seconds": 0.051479224988725036,
+        "decode_tokens_per_second": 220.0603978311845,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    },
+    {
+      "label": "independent-after-idle",
+      "timing": {
+        "source_tier": "gpu",
+        "activation_seconds": 0,
+        "queue_seconds": 0.0002812710008583963,
+        "first_token_seconds": 0.024780127016128972,
+        "generation_first_token_seconds": 0.024498856015270576,
+        "generation_seconds": 0.05744670602143742,
+        "release_seconds": 0.0006310500029940158,
+        "total_seconds": 0.05836141502368264,
+        "decode_tokens_per_second": 212.4569584567676,
+        "max_batch_size": 1,
+        "prefill_batch_size": 1,
+        "kernel_backend": "distributed-stage-graphs",
+        "weight_quantization": "none"
+      }
+    }
+  ],
+  "statuses": {
+    "initial": {
+      "device": "distributed-cuda",
+      "context": 512,
+      "models": [
+        {
+          "id": "a",
+          "residency": "gpu",
+          "quantization": "none",
+          "model_sha256": "864a56df3389e96fd49e20a073a020bea3e05f44f588efaec48cf5f0a98e73db"
+        }
+      ],
+      "distributed": true,
+      "stage_layers": [
+        [
+          0,
+          12
+        ],
+        [
+          12,
+          24
+        ]
+      ],
+      "max_batch_size": 4,
+      "packed_prefill": true,
+      "active": false,
+      "queued": 0,
+      "completed": 0,
+      "heartbeats": 0,
+      "failed": false,
+      "closed": false
+    },
+    "before-idle": {
+      "device": "distributed-cuda",
+      "context": 512,
+      "models": [
+        {
+          "id": "a",
+          "residency": "gpu",
+          "quantization": "none",
+          "model_sha256": "864a56df3389e96fd49e20a073a020bea3e05f44f588efaec48cf5f0a98e73db"
+        }
+      ],
+      "distributed": true,
+      "stage_layers": [
+        [
+          0,
+          12
+        ],
+        [
+          12,
+          24
+        ]
+      ],
+      "max_batch_size": 4,
+      "packed_prefill": true,
+      "active": false,
+      "queued": 0,
+      "completed": 29,
+      "heartbeats": 0,
+      "failed": false,
+      "closed": false
+    },
+    "after-idle": {
+      "device": "distributed-cuda",
+      "context": 512,
+      "models": [
+        {
+          "id": "a",
+          "residency": "gpu",
+          "quantization": "none",
+          "model_sha256": "864a56df3389e96fd49e20a073a020bea3e05f44f588efaec48cf5f0a98e73db"
+        }
+      ],
+      "distributed": true,
+      "stage_layers": [
+        [
+          0,
+          12
+        ],
+        [
+          12,
+          24
+        ]
+      ],
+      "max_batch_size": 4,
+      "packed_prefill": true,
+      "active": false,
+      "queued": 0,
+      "completed": 29,
+      "heartbeats": 6,
+      "failed": false,
+      "closed": false
+    },
+    "final": {
+      "device": "distributed-cuda",
+      "context": 512,
+      "models": [
+        {
+          "id": "a",
+          "residency": "gpu",
+          "quantization": "none",
+          "model_sha256": "864a56df3389e96fd49e20a073a020bea3e05f44f588efaec48cf5f0a98e73db"
+        }
+      ],
+      "distributed": true,
+      "stage_layers": [
+        [
+          0,
+          12
+        ],
+        [
+          12,
+          24
+        ]
+      ],
+      "max_batch_size": 4,
+      "packed_prefill": true,
+      "active": false,
+      "queued": 0,
+      "completed": 30,
+      "heartbeats": 6,
+      "failed": false,
+      "closed": false
+    }
+  },
+  "trace_sha256": "2eb468f761e7112970585ac57e4731bc35efddbca7f8b40d26d6d514d6c1add1",
+  "coordinator_devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+  "idle_seconds": 35,
+  "scope": "Real two-rank greedy HTTP qualification; not a performance comparison",
+  "sources": {
+    "dllm/distributed.py": "328eba3373919768e9dab8100983264f6e78a0cea659b2eb750b783cafd6b055",
+    "dllm/distributed_serving.py": "7ccd0f8217d55bf9a7c54c67e70fbba10ed4a15f242763c4b0bdcf0ae323b115",
+    "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+    "dllm/stage_protocol.py": "1f0dd063e08d81d1bdeb3cd3497ed835eb9f1ca84758538403b3d2ece42d9d8c"
+  }
+}

@@ -79,11 +79,19 @@ def worker(args):
             assert result['usage']['prompt_tokens']==len(case['prompt']),label
             assert result['usage']['completion_tokens']==len(tokens),label
             assert 1<=result['dllm_timing']['max_batch_size']<=args.batch_size,label
+            assert 1<=result['dllm_timing']['prefill_batch_size']<=args.batch_size,label
             report['checks'].append(label);report['trials'].append(dict(label=label,timing=result['dllm_timing']))
         try:
             assert call('/health')['status']=='ok'
             assert [m['id'] for m in call('/v1/models')['data']]==['a']
             initial=status('initial');assert initial['distributed'] and initial['models'][0]['quantization']==args.quantization
+            counts=(2,8,4,6)
+            with ThreadPoolExecutor(4) as pool:
+                initial_results=list(pool.map(lambda count:request(0,count),counts))
+            for index,result in enumerate(initial_results):
+                check(result,0,counts[index],'initial-queued-common-prefix:'+str(index))
+            if initial['packed_prefill']:
+                assert max(result['dllm_timing']['prefill_batch_size'] for result in initial_results)==args.batch_size
             for index in range(len(cases)):check(request(index),index,label='independent:'+str(index))
             for index in (1,0,2,0):check(request(index),index,label='resident-reuse:'+str(index))
             counts=(2,8,4,6)
@@ -131,6 +139,8 @@ def worker(args):
             check(request(2),2,label='independent-after-idle')
             assert call('/health')['status']=='ok'
             final=status('final');assert not final['failed'] and not final['closed']
+            if final['packed_prefill']:
+                assert any(trial['timing']['prefill_batch_size']>1 for trial in report['trials']),'packed prefill never ran'
             report['passed']=True
         except BaseException as error:report['error']=repr(error)
         finally:
@@ -138,7 +148,12 @@ def worker(args):
             runtime.close()
     def checked_run(runtime,*positional,**keywords):
         client=threading.Thread(target=qualify,args=(runtime,),daemon=True);client.start()
-        try:return original_run(runtime,*positional,**keywords)
+        try:
+            deadline=time.monotonic()+10
+            while runtime.requests.qsize()<4 and not runtime.closed.is_set() and time.monotonic()<deadline:
+                time.sleep(.001)
+            if runtime.requests.qsize()!=4:raise TimeoutError('HTTP proof did not queue its initial four requests')
+            return original_run(runtime,*positional,**keywords)
         finally:
             runtime.close();client.join(50)
             if client.is_alive():raise TimeoutError('HTTP validation client did not terminate')

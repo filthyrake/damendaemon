@@ -8,7 +8,8 @@ Each group's total rows are bounded by one configured context; larger groups
 split without changing order. The same-host FP16/Q8 path enables this by default.
 Q4 remains sequential by default. `DLLM_PARTITION_PACKED_PREFILL=0` selects the
 sequential control; `1` explicitly enables packing for experiments at any of the
-three supported precisions. This does not yet add distributed packed prefill.
+three supported precisions. The subsequent distributed implementation is
+qualified separately in [resident HTTP evidence](../http/packed-prefill/README.md).
 
 ## Correctness and lifecycle
 

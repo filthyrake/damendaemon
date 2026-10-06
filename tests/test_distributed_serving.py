@@ -264,3 +264,37 @@ class DistributedBatchTests(RuntimeHelpers, unittest.TestCase):
         owner.join(2)
         self.assertEqual(pair.state.lengths,[0]*4);self.assertEqual(runtime.completed,0)
         self.assertEqual(errors,[])
+
+
+class PackedPair(BatchedPair):
+    packed_prefill=True
+    def prefill_batch(self,prompts,slots):
+        assert len(prompts)==len(slots) and sum(map(len,prompts))<=self.model.max_context
+        assert all(self.state.lengths[slot]==0 for slot in slots)
+        self.calls.append(('prefill_batch',threading.get_ident(),list(slots)))
+        for prompt,slot in zip(prompts,slots):
+            self.state.lengths[slot]=len(prompt);self.outputs[slot]=65
+        return [65]*len(slots)
+
+
+class DistributedPackedTests(RuntimeHelpers, unittest.TestCase):
+    def test_packed_prompts_preserve_results_and_report_actual_group_size(self):
+        pair=PackedPair();runtime=DistributedRuntime(pair)
+        with ThreadPoolExecutor(4) as pool:
+            futures=[pool.submit(lambda:list(runtime.generate('model',None,3,raw_prompt=[1,2]))) for _ in range(4)]
+            self.queued(runtime,4);owner,errors=self.start(runtime)
+            results=[future.result(2) for future in futures]
+        self.assertEqual([r[-1]['timing']['prefill_batch_size'] for r in results],[4]*4)
+        self.assertEqual([''.join(e.get('text','') for e in r) for r in results],['ABC']*4)
+        self.assertEqual([c[2] for c in pair.calls if c[0]=='prefill_batch'],[[0,1,2,3]])
+        self.assertEqual({c[1] for c in pair.calls},{owner.ident});self.assertEqual(errors,[])
+
+    def test_group_budget_splits_without_reordering_requests_or_slots(self):
+        pair=PackedPair();runtime=DistributedRuntime(pair)
+        with ThreadPoolExecutor(4) as pool:
+            futures=[pool.submit(lambda:list(runtime.generate('model',None,3,raw_prompt=[1]*12))) for _ in range(4)]
+            self.queued(runtime,4);_,errors=self.start(runtime)
+            results=[future.result(2) for future in futures]
+        self.assertEqual([r[-1]['timing']['prefill_batch_size'] for r in results],[2]*4)
+        self.assertEqual([c[2] for c in pair.calls if c[0]=='prefill_batch'],[[0,1],[2,3]])
+        self.assertEqual(pair.state.lengths,[0]*4);self.assertEqual(errors,[])

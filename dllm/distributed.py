@@ -15,10 +15,10 @@ import torch
 import torch.distributed as dist
 from .config import decoder_config
 from .layer_stage import LayerStage
-from .partition_policy import validate
+from .partition_policy import validate, packed_prefill_enabled
 from .qwen2 import ModelWeights
 from .stage_identity import fingerprint
-from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING, VERSION, FAILED_TOKEN
+from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING, VERSION, FAILED_TOKEN, PREFILL_BATCH, token_rows
 from .stage_setup import StageSetup
 from .stage_transport import StageChannel
 
@@ -32,6 +32,7 @@ class StagePair:
         if dist.is_initialized():raise ValueError('distributed-run requires ownership of its process group')
         if quantization not in ('none','q8_0','q4_0'):
             raise ValueError('distributed-run is qualified only for FP16, Q8 or Q4 weights')
+        self.packed_prefill = packed_prefill_enabled(quantization) and max_batch > 1
         self.state = None
         self.channel = None
         self.stage = None
@@ -71,7 +72,7 @@ class StagePair:
             self.owns_group = True
             dist.init_process_group('nccl', timeout=timedelta(seconds=30),
                                     device_id=torch.device('cuda', local_rank))
-            agreement = self.identity + struct.pack('<qqq', VERSION, context, max_batch)
+            agreement = self.identity + struct.pack('<qqqq', VERSION, context, max_batch, int(self.packed_prefill))
             identity = torch.tensor(list(hashlib.sha256(agreement).digest()), dtype=torch.uint8, device='cuda')
             peers = [torch.empty_like(identity) for _ in range(2)]
             dist.all_gather(peers, identity)
@@ -100,6 +101,22 @@ class StagePair:
                           ((slot, self.state.generations[slot] + 1, 0),))
         return self._exchange(command, tokens)[0]
 
+    def prefill_batch(self, prompts, slots):
+        if self.rank != 0:raise ValueError('only coordinator submits prompts')
+        if (not isinstance(prompts, list) or not prompts or not isinstance(slots, list)
+                or len(prompts) != len(slots)
+                or any(type(slot) is not int or not 0 <= slot < self.max_batch for slot in slots)
+                or len(set(slots)) != len(slots)):
+            raise ValueError('invalid packed distributed prompts or slots')
+        for prompt in prompts:self._tokens(prompt)
+        if sum(map(len,prompts)) > self.state.context or any(self.state.lengths[slot] for slot in slots):
+            raise ValueError('packed distributed prompts exceed budget or occupy live slots')
+        if len(prompts) == 1:return [self.prefill(prompts[0],slots[0])]
+        if not self.packed_prefill:raise ValueError('packed distributed prefill is disabled')
+        command = Command(self.state.epoch, self.state.sequence, PREFILL_BATCH, sum(map(len,prompts)),
+                          tuple((slot,self.state.generations[slot]+1,len(prompt)) for slot,prompt in zip(slots,prompts)))
+        return self._exchange(command,[token for prompt in prompts for token in prompt])
+
     def decode(self, tokens, slots):
         if self.rank != 0:raise ValueError('only coordinator submits decode')
         self._tokens(tokens)
@@ -124,13 +141,15 @@ class StagePair:
             return None
         try:
             prefill = command.operation == PREFILL
-            if command.operation not in (PREFILL, DECODE):raise ValueError('unsupported distributed-run command')
-            positions = (torch.arange(command.rows, device='cuda') if prefill else
-                         torch.tensor([entry[2] for entry in command.entries], device='cuda'))
-            slots = torch.tensor([entry[0] for entry in command.entries], dtype=torch.int64, device='cuda')
+            if command.operation not in (PREFILL, DECODE, PREFILL_BATCH):raise ValueError('unsupported distributed-run command')
+            positions = slots = None
+            if command.operation != PREFILL_BATCH:
+                positions = (torch.arange(command.rows, device='cuda') if prefill else
+                             torch.tensor([entry[2] for entry in command.entries], device='cuda'))
+                slots = torch.tensor([entry[0] for entry in command.entries], dtype=torch.int64, device='cuda')
             if self.rank == 0:
                 inputs = torch.tensor(tokens, device='cuda')
-                hidden = self.stage.run_prefill(inputs, positions, command.entries[0][0]) if prefill else self.stage.run_decode(inputs, positions, slots)
+                hidden = self._run_stage(command, inputs, positions, slots)
                 operation = dist.P2POp(dist.isend, hidden, 1)
             else:
                 hidden = torch.empty((command.rows, self.model.config['hidden_size']),
@@ -140,24 +159,30 @@ class StagePair:
             if self.rank == 1:
                 result = self._output_tokens(command, hidden, positions, slots)
             else:
-                result = torch.empty(1 if prefill else command.rows, dtype=torch.int64, device='cuda')
+                result = torch.empty(token_rows(command), dtype=torch.int64, device='cuda')
             self.channel.complete_tokens(command, result)
             return self._result_tokens(result) if self.rank == 0 else None
         except BaseException:
             self.state.poison()
             raise
 
+    def _run_stage(self, command, inputs, positions, slots):
+        if command.operation == PREFILL_BATCH:
+            return self.stage.run_prefill_packed(inputs,[entry[2] for entry in command.entries],
+                                                [entry[0] for entry in command.entries])
+        if command.operation == PREFILL:return self.stage.run_prefill(inputs,positions,command.entries[0][0])
+        return self.stage.run_decode(inputs,positions,slots)
+
     def _output_tokens(self, command, hidden, positions, slots):
         try:
-            logits = (self.stage.run_prefill(hidden, positions, command.entries[0][0])
-                      if command.operation == PREFILL else self.stage.run_decode(hidden, positions, slots))
+            logits = self._run_stage(command, hidden, positions, slots)
             return logits.argmax(-1)
         except Exception:
             # The coordinator is already waiting for this fixed-size result.
             # Signal an execution exception on the existing transfer,
             # without adding a collective to every successful decode. A broken
             # CUDA context/transport still requires the process-owner deadline.
-            rows = 1 if command.operation == PREFILL else command.rows
+            rows = token_rows(command)
             failure = self.failure_tokens[:rows]
             self.channel.complete_tokens(command, failure)
             raise

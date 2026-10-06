@@ -29,13 +29,15 @@ def worker(args):
                 model=args.model,context=512,output_tokens=32,results=[],
                 devices=os.environ.get('CUDA_VISIBLE_DEVICES'),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                         ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py')})
+                         ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py',
+                          'dllm/batch.py','dllm/layer_stage.py','dllm/partition_policy.py')})
     def capture(server,*positional,**keywords):
         nonlocal base
         original_init(server,*positional,**keywords);base=f'http://127.0.0.1:{server.server_port}'
     def client(runtime):
         try:
             with urlopen(base+'/v1/models/status',timeout=10) as response:report['status']=json.load(response)
+            report['packed_prefill']=report['status']['packed_prefill']
             for concurrency in (1,2,4):
                 result=subprocess.run([sys.executable,'scripts/compare_llama.py',base+'/v1',
                     '--engine','dllm','--concurrency',str(concurrency),'--max-tokens','32',
@@ -57,15 +59,17 @@ def worker(args):
     if not report['passed']:raise AssertionError(report.get('error','HTTP benchmark failed'))
 
 
-def summarize(trials):
+def summarize(trials,compare='capacity'):
+    key='batch_size' if compare=='capacity' else 'packed_prefill'
+    modes=(1,4) if compare=='capacity' else (False,True)
     summary=[]
     for concurrency in (1,2,4):
-        for batch in (1,4):
-            runs=[run for trial in trials if trial['batch_size']==batch
+        for mode in modes:
+            runs=[run for trial in trials if trial[key]==mode
                   for run in trial['results'] if run['concurrency']==concurrency]
             samples=[sample for run in runs for sample in run['trials'] if not sample['warmup']]
             rounds=[sample for run in runs for sample in run['rounds'] if not sample['warmup']]
-            summary.append(dict(batch_size=batch,concurrency=concurrency,samples=len(samples),
+            summary.append(dict(**{key:mode},concurrency=concurrency,samples=len(samples),
                 first_text_ms=1000*statistics.median(sample['first_output_seconds'] for sample in samples),
                 request_ms=1000*statistics.median(sample['total_seconds'] for sample in samples),
                 aggregate_tokens_per_second=statistics.median(sample['aggregate_output_tokens_per_second'] for sample in rounds)))
@@ -76,14 +80,20 @@ def main():
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
     p.add_argument('--output',required=True);p.add_argument('--worker',action='store_true')
     p.add_argument('--batch-size',type=int,choices=(1,4),default=1)
+    p.add_argument('--compare',choices=('capacity','prefill'),default='capacity')
     args=p.parse_args()
     if args.worker:return worker(args)
     from scripts.distributed_job import run_job
-    report=dict(passed=False,scope='Same model, precision, GPU pair and HTTP workload; batch capacity only changes.',trials=[])
+    report=dict(passed=False,compare=args.compare,scope='Same model, precision, GPU pair and HTTP workload; '+
+                ('batch capacity' if args.compare=='capacity' else 'stage prefill packing')+' only changes.',trials=[])
     output=Path(args.output)
+    previous_packing=os.environ.get('DLLM_PARTITION_PACKED_PREFILL')
     try:
         reference=None
-        for index,batch in enumerate((1,4,4,1)):
+        modes=(1,4,4,1) if args.compare=='capacity' else (0,1,1,0)
+        for index,mode in enumerate(modes):
+            batch=mode if args.compare=='capacity' else 4
+            if args.compare=='prefill':os.environ['DLLM_PARTITION_PACKED_PREFILL']=str(mode)
             trial=output.with_name(output.stem+f'-{index}.json')
             command=[sys.executable,'-m','torch.distributed.run','--standalone','--nproc-per-node','2',
                 '--run-path',str(Path(__file__).resolve()),args.model,args.prompt,'--quantization',args.quantization,
@@ -96,9 +106,12 @@ def main():
                     if reference is None:reference=content
                     assert reference==content,'generated text or usage differs'
             report['trials'].append(data)
-        report['summary']=summarize(report['trials'])
+        report['summary']=summarize(report['trials'],args.compare)
         report['passed']=True
-    finally:output.write_text(json.dumps(report,indent=2)+'\n')
+    finally:
+        if previous_packing is None:os.environ.pop('DLLM_PARTITION_PACKED_PREFILL',None)
+        else:os.environ['DLLM_PARTITION_PACKED_PREFILL']=previous_packing
+        output.write_text(json.dumps(report,indent=2)+'\n')
 
 
 if __name__=='__main__':main()

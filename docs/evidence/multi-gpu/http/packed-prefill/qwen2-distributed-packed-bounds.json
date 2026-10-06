@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "scope": "Real GPU startup rejection and cleanup, not performance evidence",
+  "source_sha256": "328eba3373919768e9dab8100983264f6e78a0cea659b2eb750b783cafd6b055",
+  "checks": [
+    {
+      "passed": true,
+      "rank": 0,
+      "mismatch": "capacity",
+      "capacity": 4,
+      "context": 512,
+      "rejection": "distributed model or session bounds mismatch",
+      "device": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a"
+    },
+    {
+      "passed": true,
+      "rank": 1,
+      "mismatch": "capacity",
+      "capacity": 1,
+      "context": 512,
+      "rejection": "distributed model or session bounds mismatch",
+      "device": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a"
+    },
+    {
+      "passed": true,
+      "rank": 0,
+      "mismatch": "context",
+      "capacity": 4,
+      "context": 512,
+      "rejection": "distributed model or session bounds mismatch",
+      "device": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a"
+    },
+    {
+      "passed": true,
+      "rank": 1,
+      "mismatch": "context",
+      "capacity": 4,
+      "context": 256,
+      "rejection": "distributed model or session bounds mismatch",
+      "device": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a"
+    },
+    {
+      "passed": true,
+      "rank": 0,
+      "mismatch": "prefill_policy",
+      "capacity": 4,
+      "context": 512,
+      "rejection": "distributed model or session bounds mismatch",
+      "device": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a"
+    },
+    {
+      "passed": true,
+      "rank": 1,
+      "mismatch": "prefill_policy",
+      "capacity": 4,
+      "context": 512,
+      "rejection": "distributed model or session bounds mismatch",
+      "device": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a"
+    }
+  ]
+}

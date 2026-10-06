@@ -9,6 +9,7 @@ import threading
 import time
 
 from .prompts import encode, decode_output
+from .prefill import groups
 from .runtime import BusyError
 from .sampling import Sampling
 from .stopping import text_delta
@@ -36,6 +37,7 @@ class Active:
     done: bool = False
     finish: str = 'length'
     batch_size: int = 1
+    prefill_batch_size: int = 1
 
 
 class DistributedRuntime:
@@ -51,6 +53,7 @@ class DistributedRuntime:
         self.failure=None
         self.active=False
         self.max_batch=getattr(pair,'max_batch',1)
+        self.packed_prefill=getattr(pair,'packed_prefill',False)
         self.completed=0
         self.heartbeats=0
 
@@ -61,7 +64,7 @@ class DistributedRuntime:
         return dict(device='distributed-cuda',context=self.pair.model.max_context,
             models=[dict(id=self.alias,residency='gpu',quantization=self.pair.model.quantization,
                          model_sha256=self.pair.identity.hex())],
-            distributed=True,stage_layers=[[0,12],[12,24]],max_batch_size=self.max_batch,
+            distributed=True,stage_layers=[[0,12],[12,24]],max_batch_size=self.max_batch,packed_prefill=self.packed_prefill,
             active=self.active,queued=self.requests.qsize(),completed=self.completed,
             heartbeats=self.heartbeats,failed=self.failure is not None,closed=self.closed.is_set())
 
@@ -140,7 +143,7 @@ class DistributedRuntime:
                     generation_seconds=item.generated-item.started,
                     release_seconds=released-started,total_seconds=released-request.submitted,
                     decode_tokens_per_second=(count-1)/(item.generated-item.first) if count>1 else None,
-                    max_batch_size=item.batch_size,kernel_backend='distributed-stage-graphs',
+                    max_batch_size=item.batch_size,prefill_batch_size=item.prefill_batch_size,kernel_backend='distributed-stage-graphs',
                     weight_quantization=self.pair.model.quantization)))
             self.completed+=1
 
@@ -158,6 +161,7 @@ class DistributedRuntime:
                 free=[slot for slot in range(self.max_batch) if all(item.slot!=slot for item in active)]
                 # Admit at most one prompt per free slot before advancing decode.
                 # Short/EOS requests cannot monopolize the owner by refilling here.
+                pending=[]
                 for slot in free:
                     try:request=self.requests.get(timeout=.1) if not active else self.requests.get_nowait()
                     except queue.Empty:break
@@ -167,11 +171,24 @@ class DistributedRuntime:
                     request.started.set()
                     item=Active(request,slot,time.monotonic())
                     active.append(item);self.active=True
-                    token=(self.pair.step(request.tokens) if self.max_batch==1
-                           else self.pair.prefill(request.tokens,slot))
-                    self._advance(item,token,1)
-                    last_request=last_control=time.monotonic()
+                    pending.append(item)
+                batches=(groups([item.request.tokens for item in pending],pending,self.pair.model.max_context)
+                         if self.packed_prefill else (([item.request.tokens],[item]) for item in pending))
+                for _,items in batches:
                     if self.closed.is_set():break
+                    items=[item for item in items if not item.request.cancelled.is_set()]
+                    if not items:continue
+                    if len(items)>1:
+                        result=self.pair.prefill_batch([item.request.tokens for item in items],[item.slot for item in items])
+                    else:
+                        item=items[0]
+                        result=[self.pair.step(item.request.tokens) if self.max_batch==1 else
+                                self.pair.prefill(item.request.tokens,item.slot)]
+                    if len(result)!=len(items):raise RuntimeError('distributed prefill result size mismatch')
+                    for item,token in zip(items,result):
+                        item.prefill_batch_size=len(items)
+                        self._advance(item,token,1)
+                    last_request=last_control=time.monotonic()
                 ready=[item for item in active if not item.done and not item.request.cancelled.is_set()]
                 if ready and not self.closed.is_set():
                     tokens=[item.output[-1] for item in ready]

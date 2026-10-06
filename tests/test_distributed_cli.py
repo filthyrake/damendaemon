@@ -187,3 +187,38 @@ class DistributedCliTests(unittest.TestCase):
         result=pair._output_tokens(command,None,None,None)
         self.assertEqual(result.tolist(),[1,0])
         pair.channel.complete_tokens.assert_not_called()
+
+    def test_packed_output_failure_replies_once_per_prompt_not_activation_row(self):
+        import torch
+        from dllm.distributed import StagePair
+        from dllm.stage_protocol import Command, PREFILL_BATCH
+        pair=StagePair.__new__(StagePair);pair.stage=Mock();pair.channel=Mock()
+        pair.stage.run_prefill_packed.side_effect=RuntimeError('packed stage error')
+        pair.failure_tokens=torch.full((4,),-1,dtype=torch.int64)
+        command=Command(1,1,PREFILL_BATCH,11,((3,1,4),(0,1,7)))
+        with self.assertRaisesRegex(RuntimeError,'packed stage error'):
+            pair._output_tokens(command,None,None,None)
+        pair.stage.run_prefill_packed.assert_called_once_with(None,[4,7],[3,0])
+        pair.channel.complete_tokens.assert_called_once()
+        sent_command,payload=pair.channel.complete_tokens.call_args.args
+        self.assertEqual(sent_command,command)
+        self.assertEqual(payload.tolist(),[-1,-1])
+
+    def test_packed_prompt_metadata_is_bounded_and_result_order_is_preserved(self):
+        from dllm.distributed import StagePair
+        from dllm.stage_protocol import StageState, PREFILL_BATCH
+        pair=StagePair.__new__(StagePair);pair.rank=0;pair.max_batch=4;pair.packed_prefill=True
+        pair.model=SimpleNamespace(config={'vocab_size':128});pair.state=StageState(1,8,4)
+        pair._exchange=Mock(return_value=[65,66])
+        self.assertEqual(pair.prefill_batch([[1,2],[3,4,5]],[3,0]),[65,66])
+        command,tokens=pair._exchange.call_args.args
+        self.assertEqual(command.operation,PREFILL_BATCH)
+        self.assertEqual(command.entries,((3,1,2),(0,1,3)))
+        self.assertEqual(command.rows,5);self.assertEqual(tokens,[1,2,3,4,5])
+        pair._exchange.reset_mock()
+        for prompts,slots in (([[1]*5,[2]*4],[0,1]),([[1],[2]],[0,0]),([[1],[128]],[0,1])):
+            with self.assertRaises(ValueError):pair.prefill_batch(prompts,slots)
+        pair._exchange.assert_not_called()
+        pair.state.lengths[0]=1
+        with self.assertRaises(ValueError):pair.prefill_batch([[1],[2]],[0,1])
+        pair._exchange.assert_not_called()

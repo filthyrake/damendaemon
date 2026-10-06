@@ -74,10 +74,10 @@ the owning StagePair rejects it and poisons the session. No full vocabulary
 crosses the boundary. Send/receive and CUDA completion must
 succeed before either side commits ownership. Release/stop use finish().
 """
-        from .stage_protocol import PREFILL, DECODE
+        from .stage_protocol import PREFILL, DECODE, PREFILL_BATCH, token_rows
         try:
-            rows = 1 if command.operation == PREFILL else command.rows
-            if (self.state.pending != command or command.operation not in (PREFILL, DECODE)
+            rows = token_rows(command)
+            if (self.state.pending != command or command.operation not in (PREFILL, DECODE, PREFILL_BATCH)
                     or tokens.dtype != torch.int64 or tokens.shape != (rows,)
                     or tokens.device.type != 'cuda'
                     or tokens.device.index != torch.cuda.current_device()):

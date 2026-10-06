@@ -13,6 +13,7 @@ from pathlib import Path
 import subprocess
 import sys
 import threading
+import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -26,18 +27,22 @@ def worker(args):
     output=Path(args.output)
     if os.environ['RANK']=='1':
         from dllm.layer_stage import LayerStage
-        method='run_prefill' if args.operation=='prefill' else 'run_decode'
-        original=getattr(LayerStage,method)
-        def fail_batch(stage,inputs,positions,slots):
-            if args.operation=='prefill' or inputs.shape[0]==4:
-                output.with_name(output.stem+'-worker.json').write_text(json.dumps(dict(
-                    injected=True,operation=args.operation,rows=inputs.shape[0],rank=1,stage_layers=list(stage.layer_range)),indent=2)+'\n')
-                raise InjectedStageFailure('injected output-stage batch failure')
-            return original(stage,inputs,positions,slots)
-        setattr(LayerStage,method,fail_batch)
+        methods=('run_prefill','run_prefill_packed') if args.operation=='prefill' else ('run_decode',)
+        originals={method:getattr(LayerStage,method) for method in methods}
+        def wrap(method):
+            def fail_batch(stage,inputs,*arguments):
+                if args.operation=='prefill' or inputs.shape[0]==4:
+                    output.with_name(output.stem+'-worker.json').write_text(json.dumps(dict(
+                        injected=True,operation=args.operation,method=method,rows=inputs.shape[0],rank=1,
+                        stage_layers=list(stage.layer_range)),indent=2)+'\n')
+                    raise InjectedStageFailure('injected output-stage batch failure')
+                return originals[method](stage,inputs,*arguments)
+            return fail_batch
+        for method in methods:setattr(LayerStage,method,wrap(method))
         try:serve(options)
         except InjectedStageFailure:return
-        finally:setattr(LayerStage,method,original)
+        finally:
+            for method,original in originals.items():setattr(LayerStage,method,original)
         raise AssertionError('no batched output-stage failure was injected')
     from dllm.distributed_serving import DistributedRuntime
     from dllm.server import BoundedHTTPServer
@@ -92,7 +97,12 @@ def worker(args):
         finally:runtime.close()
     def checked(runtime,*positional,**keywords):
         thread=threading.Thread(target=client,args=(runtime,),daemon=True);thread.start()
-        try:return original_run(runtime,*positional,**keywords)
+        try:
+            deadline=time.monotonic()+10
+            while runtime.requests.qsize()<4 and not runtime.closed.is_set() and time.monotonic()<deadline:
+                time.sleep(.001)
+            if runtime.requests.qsize()!=4:raise TimeoutError('failure probe did not queue all four requests')
+            return original_run(runtime,*positional,**keywords)
         except BaseException as error:
             report['coordinator_error_type']=type(error).__name__
             raise

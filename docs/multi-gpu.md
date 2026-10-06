@@ -49,7 +49,7 @@ token-return completion on its narrow 255-prompt/32-output workload.
 See [network qualification and measurements](evidence/multi-gpu/README.md#command-driven-a23090-network-qualification).
 
 Cross-host execution remains experimental. The resident HTTP service below uses
-a separate greedy sequential queue, rather than the ordinary continuous-batching scheduler.
+a separate greedy scheduler with up to four active slots.
 Failed requests are not resumed. Reported preparation failures now propagate
 through the CPU rendezvous store before NCCL starts; unreported crashes and
 blocked preparation still need an outer process deadline. General worker
@@ -164,7 +164,7 @@ sessions. Set the same precision on both workers. Q4 passes independent
 A2/3090 protocol checks and an actual seven-request network session; see the
 [distributed Q4 proof](evidence/multi-gpu/README.md#native-q4-distributed-cli).
 
-## Packed prompt processing on one host
+## Packed prompt processing
 
 The same-host layer-partition server packs FP16/Q8 prompts by default: linear
 layers share work across prompt rows while attention and KV remain isolated.
@@ -175,8 +175,9 @@ pre-existing greedy-token mismatches in both modes; `1` permits explicit
 packing experiments. The original Q4 gates remain valid, but the expanded gate
 is not claimed as passed. See the [numerical and HTTP evidence](evidence/multi-gpu/packed-prefill/README.md).
 
-This applies to the same-host server. Distributed prompt processing is still
-sequential; distributed decode already supports multiple active slots.
+The resident distributed server also packs admitted FP16/Q8 prompts when
+multiple slots are configured. Set the packing flag identically on both workers;
+startup rejects mismatched policies. Q4 keeps the same sequential default.
 
 ## Resident distributed HTTP service
 
@@ -205,8 +206,10 @@ count and idle heartbeats. Model activation occurs before the listener opens.
 Execution is greedy. `--batch-size` selects 1–4 resident request slots (default
 1); set it identically on both workers. With multiple slots, active requests
 share each decode pass. Completed or canceled slots are released and can admit
-new requests while other slots continue decoding. Prompts are processed one
-at a time; prompt packing and chunked prefill are not implemented.
+new requests while other slots continue decoding. FP16/Q8 prompts admitted in
+the same iteration share packed prefill, bounded by one context's total rows.
+Larger groups split in order; chunked prefill is not implemented. No admission
+delay is added to wait for a fuller group.
 
 `--queue-size` bounds waiting requests (default 8, maximum 64); `--queue-timeout` bounds their wait for
 admission (default 120 seconds, maximum 300). Full/expired queues return 503.
@@ -228,16 +231,17 @@ registration/unload and hot swapping are rejected explicitly. The ordinary
 same-host server continues to provide its separate broader feature set.
 This service uses layer partitioning; it does not implement tensor parallelism.
 Per-request `max_batch_size` reports the largest decode batch that actually
-included that request, while status reports the configured capacity.
+included that request. `prefill_batch_size` reports its actual prompt group;
+status reports configured capacity and whether packing is enabled.
 
-The control protocol is version 3: acknowledged idle heartbeats plus an explicit
-output-stage failure payload. An output-stage exception can use the existing
+The control protocol is version 4: packed prompt lengths and ownership, acknowledged
+idle heartbeats, and an explicit output-stage failure payload. An output-stage exception can use the existing
 token transfer to fail the session when CUDA and the transport remain usable;
 this adds no successful-path collective. CUDA context corruption, broken
 transport or process death may still abort workers and need the outer process
 owner to terminate the job. The service does not promise graceful HTTP errors
 for those fatal failures.
 Both workers must use the same dllm revision. Startup also checks a fixed-size
-digest of prepared weights, protocol version, context and batch capacity before
+digest of prepared weights, protocol version, context, batch capacity and packing policy before
 opening the command channel. See the
 [HTTP qualification evidence](evidence/multi-gpu/README.md#resident-distributed-http).

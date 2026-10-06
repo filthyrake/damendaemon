@@ -1,5 +1,5 @@
 import unittest
-from dllm.stage_protocol import Command, StageState, decode, PREFILL, DECODE, RELEASE, STOP, PING
+from dllm.stage_protocol import Command, StageState, decode, PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, token_rows
 
 
 class StageProtocolTests(unittest.TestCase):
@@ -54,7 +54,7 @@ class StageProtocolTests(unittest.TestCase):
     def test_canonical_fixed_size_wire_and_stop(self):
         command = Command(1, 1, STOP, 0, ())
         self.assertEqual(decode(command.encode()), command)
-        for index, value in [(0, 0), (1, 99), (1, 1), (1, 2), (6, 5), (7, 0), (2, True), (3, 1 << 63)]:
+        for index, value in [(0, 0), (1, 99), (1, 1), (1, 2), (1, 3), (6, 5), (7, 0), (2, True), (3, 1 << 63)]:
             words = command.encode(); words[index] = value
             with self.subTest(index=index), self.assertRaises(ValueError):decode(words)
         with self.assertRaises(ValueError):decode(command.encode()[:-1])
@@ -78,3 +78,33 @@ class HeartbeatTests(unittest.TestCase):
         for rows,entries in ((1,()),(0,((0,1,8),))):
             with self.assertRaises(ValueError):state.begin(Command(1,3,PING,rows,entries).encode())
         self.assertIsNone(state.pending);self.assertEqual(state.lengths,[8])
+
+
+class PackedPrefillProtocolTests(unittest.TestCase):
+    def test_lengths_and_generations_commit_only_after_acknowledgement(self):
+        state=StageState(1,32,4)
+        command=Command(1,1,PREFILL_BATCH,11,((3,1,4),(0,1,7)))
+        state.begin(command.encode())
+        self.assertEqual(state.lengths,[0]*4)
+        self.assertEqual(token_rows(command),2)
+        state.commit(command)
+        self.assertEqual(state.lengths,[7,0,0,4])
+        self.assertEqual(state.generations,[1,0,0,1])
+        self.assertEqual(state.sequence,2)
+
+    def test_invalid_budget_or_ownership_rejects_without_mutation(self):
+        for rows,entries in ((9,((0,1,5),(1,1,4))),
+                             (5,((0,1,2),(1,1,2))),
+                             (4,((0,1,0),(1,1,4))),
+                             (4,((0,1,2),(0,1,2))),
+                             (4,((0,2,2),(1,1,2))),
+                             (4,((0,1,4),))):
+            state=StageState(1,8,4)
+            with self.subTest(rows=rows,entries=entries),self.assertRaises(ValueError):
+                state.begin(Command(1,1,PREFILL_BATCH,rows,entries).encode())
+            self.assertEqual(state.lengths,[0]*4);self.assertEqual(state.sequence,1)
+            self.assertIsNone(state.pending)
+        state=StageState(1,8,4)
+        state.commit(state.begin(Command(1,1,PREFILL,2,((0,1,0),)).encode()))
+        with self.assertRaises(ValueError):state.begin(Command(1,2,PREFILL_BATCH,4,((0,2,2),(1,1,2))).encode())
+        self.assertEqual(state.lengths,[2,0,0,0])

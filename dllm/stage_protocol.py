@@ -8,12 +8,12 @@ execution or transport failure poisons the epoch and requires fresh workers.
 from dataclasses import dataclass
 
 MAGIC = 0x444C4C4D
-VERSION = 3
+VERSION = 4
 # Reserved output payload for an output-stage exception with a usable transport.
 FAILED_TOKEN = -1
 MAX_SLOTS = 4
 HEADER_WORDS = 7 + 3 * MAX_SLOTS
-PREFILL, DECODE, RELEASE, STOP, PING = range(1, 6)
+PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH = range(1, 7)
 MAX_INTEGER = (1 << 63) - 1
 
 
@@ -24,6 +24,7 @@ class Command:
     operation: int
     rows: int
     # Each entry is (slot, generation, position before execution).
+    # PREFILL_BATCH uses the third word for each fresh prompt length.
     entries: tuple
 
     def encode(self):
@@ -48,7 +49,7 @@ def decode(words):
     magic, version, epoch, sequence, operation, rows, count = words[:7]
     if magic != MAGIC or version != VERSION:
         raise ValueError('unsupported stage control protocol')
-    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP, PING):
+    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH):
         raise ValueError('invalid stage epoch, sequence or operation')
     if not 0 <= count <= MAX_SLOTS or rows < 0:
         raise ValueError('invalid stage shape')
@@ -60,6 +61,13 @@ def decode(words):
                 for slot, generation, position in entries)):
         raise ValueError('invalid stage slot ownership')
     return Command(epoch, sequence, operation, rows, entries)
+
+
+def token_rows(command):
+    if command.operation == PREFILL:return 1
+    if command.operation == PREFILL_BATCH:return len(command.entries)
+    if command.operation == DECODE:return command.rows
+    raise ValueError('operation has no token result')
 
 
 class StageState:
@@ -90,6 +98,15 @@ class StageState:
             slot, generation, position = command.entries[0]
             if generation != self.generations[slot] + 1 or position != 0:
                 raise ValueError('stale stage prefill generation')
+        elif command.operation == PREFILL_BATCH:
+            if (not 2 <= len(command.entries) <= self.slots
+                    or not 1 <= command.rows <= self.context
+                    or sum(entry[2] for entry in command.entries) != command.rows):
+                raise ValueError('invalid packed stage prefill shape')
+            for slot, generation, length in command.entries:
+                if (not 1 <= length <= self.context or self.lengths[slot]
+                        or generation != self.generations[slot] + 1):
+                    raise ValueError('invalid packed stage prefill ownership')
         elif command.operation in (DECODE, RELEASE):
             if not command.entries or command.rows != (len(command.entries) if command.operation == DECODE else 0):
                 raise ValueError('invalid stage decode or release shape')
@@ -106,8 +123,11 @@ class StageState:
     def commit(self, command):
         if self.failed or self.pending is None or command != self.pending:
             raise RuntimeError('stage completion does not own pending work')
-        for slot, generation, _ in command.entries:
-            if command.operation == PREFILL:
+        for slot, generation, extent in command.entries:
+            if command.operation == PREFILL_BATCH:
+                self.generations[slot] = generation
+                self.lengths[slot] = extent
+            elif command.operation == PREFILL:
                 self.generations[slot] = generation
                 self.lengths[slot] = command.rows
             elif command.operation == DECODE:
