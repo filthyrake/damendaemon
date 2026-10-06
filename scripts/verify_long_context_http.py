@@ -20,6 +20,7 @@ import tempfile
 import threading
 import time
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 from tokenizers import Tokenizer
 if __package__:
     from .benchmark_modern_http import request
@@ -62,6 +63,22 @@ def save_report(path, report):
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
+
+
+def check_overflow(base, tokens):
+    """Reject one extra reserved output token after the same prompt succeeded."""
+    body = dict(model='a', prompt=tokens, max_tokens=513, temperature=0)
+    req = Request(base+'/v1/completions', data=json.dumps(body).encode(),
+                  headers={'Content-Type': 'application/json'})
+    try:
+        with urlopen(req, timeout=30) as response:
+            raise AssertionError(f'overflow unexpectedly returned HTTP {response.status}')
+    except HTTPError as error:
+        payload = json.loads(error.read())
+        message = payload.get('error', '')
+        assert error.code == 400 and message == 'invalid or unsupported request', payload
+        return dict(passed=True, status=error.code, response=payload,
+                    prompt_tokens=len(tokens), reserved_output_tokens=513)
 
 
 def main():
@@ -188,6 +205,7 @@ def main():
             save_report(args.output, report)
             report['warmup_long'] = run(long)
             assert report['warmup_long']['passed'], 'long warmup failed'
+            report['overflow'] = check_overflow(base, long)
             if args.capacity_only:
                 result = report['warmup_long']
                 report['feasibility_budget_passed'] = (

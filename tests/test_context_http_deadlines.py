@@ -1,15 +1,33 @@
 """Deadline/report integrity, not model or GPU performance qualification."""
 import json
+import io
 from pathlib import Path
 import tempfile
 import threading
 import unittest
 from unittest.mock import patch
+from urllib.error import HTTPError
 
-from scripts.verify_long_context_http import request_deadlines, save_report
+from scripts.verify_long_context_http import request_deadlines, save_report, check_overflow
 
 
 class ContextDeadlineTests(unittest.TestCase):
+    def test_overflow_requires_client_rejection_not_server_failure(self):
+        for status, message, accepted in (
+            (400, 'invalid or unsupported request', True),
+            (400, 'unknown model', False),
+            (503, 'invalid or unsupported request', False),
+        ):
+            with self.subTest(status=status, message=message):
+                error = HTTPError('http://localhost', status, message, {},
+                                  io.BytesIO(json.dumps({'error': message}).encode()))
+                with patch('scripts.verify_long_context_http.urlopen', side_effect=error):
+                    if accepted:
+                        self.assertTrue(check_overflow('http://localhost', [1]*10)['passed'])
+                    else:
+                        with self.assertRaises(AssertionError):
+                            check_overflow('http://localhost', [1]*10)
+
     def test_missing_first_output_expires(self):
         expired, first = threading.Event(), threading.Event()
         reasons = []
