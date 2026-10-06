@@ -2436,3 +2436,28 @@ These remain explicit prototype results, not proof of production admission.
 The same source coefficients/scales are used, but Marlin rounds coefficients
 to FP16 while the residual control applies FP32 scaling. Independent HF logit
 and layout checks above qualify that arithmetic difference in this narrow scope.
+
+
+### Integrated opt-in Q4 Marlin gates
+
+The normal `DLLM_Q4_MARLIN_LIBRARY` backend has separate evidence:
+
+- `mistral-q4-marlin-production-reference-a2.json`: 96 independent HF checks,
+  zero greedy-token mismatches, maximum relative RMS 0.005255. The selected
+  backend is `triton+q4_0+cuda-q4-marlin`.
+- `mistral-q4-marlin-production-layout-a2.json`: all 128 graph, paging,
+  batching and chunking checks pass, maximum relative RMS 0.001449. Every
+  constructed executor must select all 129 replaced projections.
+- `mistral-q4-marlin-production-admission-a2.json`: normal activation requires
+  5,263,221,408 bytes for this four-slot case. The gate rejects both zero free
+  bytes and one byte below that exact requirement before any GPU tensor
+  transfer or workspace allocation. Layout overhead is 111,099,904 bytes;
+  repack peak plus workspace reserve is 84,542,112 bytes. Two real graph-enabled
+  load/use/unload cycles reproduce eight greedy tokens and release every weakly
+  tracked executor, prepared buffer and workspace. Torch allocation returns
+  to its pre-test value after each cycle.
+
+The production library SHA is recorded in the layout and admission reports.
+The first integrated HF report predates the additional library-hash report field;
+its backend assertions and the separately built library used by that run are
+unchanged. Normal CLI HTTP performance/lifecycle qualification is in progress.

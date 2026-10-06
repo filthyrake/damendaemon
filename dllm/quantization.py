@@ -115,7 +115,7 @@ class Linear:
         self.packed_cache = packed_cache or {}
 
     def __call__(self, x, weight, bias=None):
-        if id(weight) in self.q4_marlin:
+        if self.q4_marlin and id(weight) in self.q4_marlin:
             if bias is not None:
                 raise ValueError('qualified Q4 Marlin projections have no bias')
             matrix = self.q4_marlin[id(weight)]

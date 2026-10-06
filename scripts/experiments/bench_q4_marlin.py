@@ -24,9 +24,11 @@ def main():
     parser.add_argument('--library', required=True)
     parser.add_argument('--rows', type=int, nargs='+', default=[2, 4, 16, 64, 129, 400])
     parser.add_argument('--residual-baseline', help='existing native residual library for single-row controls only')
+    parser.add_argument('--production',action='store_true',help='qualify the normal unbiased production adapter and its exact prepared buffers')
     parser.add_argument('--direct-repack', action='store_true', help='also require exact prepared weights/scales/zeros/bias against the original adapter')
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
+    if args.production and args.direct_repack:parser.error('--production excludes --direct-repack')
     if any(row < 1 or row > 512 for row in args.rows):
         parser.error('rows must be between 1 and 512')
     if args.residual_baseline and 1 not in args.rows:
@@ -56,8 +58,15 @@ def main():
         raise SystemExit(128+number)
     signal.signal(signal.SIGTERM, terminate)
     try:
-        reference_library = Library(args.library) if args.direct_repack else None
-        if args.direct_repack:
+        reference_library = Library(args.library) if args.direct_repack or args.production else None
+        biased_cases=(False,) if args.production else (False,True)
+        if args.production:
+            from dllm.native_q4_marlin import Library as ProductionLibrary
+            library=ProductionLibrary(args.library)
+            library.allocate_workspace(torch.device('cuda',torch.cuda.current_device()))
+            report['production_sources']={name:digest(name) for name in
+                ('dllm/native_q4_marlin.py','dllm/q4_marlin_repack.py','native/q4_marlin.cu')}
+        elif args.direct_repack:
             from scripts.experiments.q4_marlin_direct import DirectLibrary
             library = DirectLibrary(args.library)
             report['direct_repack_sources'] = {name:digest(name) for name in
@@ -76,10 +85,11 @@ def main():
                 return linear(value, weight, scales, offset)
             bias = torch.randn(n, dtype=torch.float16, device='cuda')
             prepared = {}
-            for biased in (False, True):
+            for biased in biased_cases:
                 torch.cuda.synchronize()
                 started = time.perf_counter()
-                prepared[biased] = library.prepare(weight, scales, bias if biased else None)
+                prepared[biased] = (library.prepare(weight,scales) if args.production else
+                                    library.prepare(weight, scales, bias if biased else None))
                 torch.cuda.synchronize()
                 elapsed = time.perf_counter()-started
                 exact_preparation = None
@@ -101,7 +111,7 @@ def main():
                 timing_scale_control_passed = True
                 for exponent in (-14, 0, 10):
                     value = (x.float()*2.**exponent).half()
-                    for biased in (False, True):
+                    for biased in biased_cases:
                         offset = bias if biased else None
                         # FP16 GEMM itself deviates in the subnormal stress
                         # case. FP32 accumulation was checked against FP64;
@@ -127,8 +137,8 @@ def main():
                     print(name, rows, 'accuracy failure; timing skipped', flush=True)
                     Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
                     continue
-                functions = dict(production=lambda:control(x, bias),
-                                 marlin=lambda:library.linear(x, prepared[True]))
+                functions = dict(production=lambda:control(x, None if args.production else bias),
+                                 marlin=lambda:library.linear(x, prepared[not args.production]))
                 samples = {key:[] for key in functions}
                 for mode in ('production','marlin','marlin','production'):
                     samples[mode].append(triton.testing.do_bench_cudagraph(functions[mode], rep=100))
