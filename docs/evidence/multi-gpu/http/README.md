@@ -51,5 +51,23 @@ owns a bounded same-host torchrun process group using `--run-path`. For a networ
 run, invoke its `--worker` mode under paired torchrun commands with an outer
 process deadline. Reports contain model/reference identity and source hashes.
 These are correctness/lifecycle gates, not matched performance measurements.
-Cross-host HTTP qualification remains separate from the earlier distributed CLI
-network proof.
+Cross-host HTTP qualification is recorded below, separately from the earlier
+distributed CLI network proof.
+
+
+## A2/3090 network HTTP proof
+
+The same Q8 service passes all 19 checks over NCCL sockets between labnode3's
+A2 and the desktop 3090. The coordinator alone reads the independent trace.
+After 35 idle seconds and six acknowledged heartbeats, an independent request
+still succeeds. Streaming, cancellation followed by slot reuse, concurrent
+queued requests, bad-input recovery and repeated chat all pass. Both workers
+exit zero. This establishes the bounded HTTP path, not batching, hot swapping,
+RDMA or a network speedup.
+
+Only peer-specific temporary TCP rules were added, each with 600-second automatic
+expiry. Lab rules were confirmed at 02:46:51 UTC and removed at 02:49:24; desktop
+rules at 02:46:40 and 02:49:27 on 2026-10-06. Original rules were preserved, with
+no permanent/router change. Final GPU allocations match their starting values:
+A2 0 MiB, A30 existing service 13,403 MiB, desktop existing service 10,835 MiB.
+See `qwen2-network-http-q8.json` and the window/cleanup sidecar.

@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "transport": "NCCL Socket, IPv4",
+  "automatic_expiry_seconds": 600,
+  "peers": [
+    {
+      "host": "labnode3",
+      "ip": "10.30.100.3",
+      "interface": "enp6s18",
+      "rules_confirmed_utc": "2026-10-06 02:46:51",
+      "rules_removed_utc": "2026-10-06 02:49:24",
+      "temporary_tcp_ports": [
+        "29571",
+        "32768-60999"
+      ],
+      "source_peer": "10.40.100.30",
+      "final_rich_rules": []
+    },
+    {
+      "host": "rocky10-desktop",
+      "ip": "10.40.100.30",
+      "interface": "enp72s0",
+      "rules_confirmed_utc": "2026-10-06 02:46:40",
+      "rules_removed_utc": "2026-10-06 02:49:27",
+      "temporary_tcp_ports": [
+        "32768-60999"
+      ],
+      "source_peer": "10.30.100.3",
+      "final_rich_rules": [
+        "rule family=\"ipv4\" source address=\"10.42.0.0/16\" accept"
+      ]
+    }
+  ],
+  "gpu_memory_mib_before_and_after": {
+    "A2": 0,
+    "A30_existing_service": 13403,
+    "3090_existing_service": 10835
+  },
+  "permanent_or_router_changes": false,
+  "scope": "Observed firewall and allocation cleanup for the Q8 network HTTP qualification"
+}
