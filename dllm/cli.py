@@ -74,6 +74,10 @@ def main():
     server.add_argument("--chat-template", action="append", metavar="NAME=FILE", help="override a named model chat template")
     server.add_argument("--port", type=int, default=8088)
     server.add_argument("--batch-size", type=int, choices=range(1, 9), default=4)
+    server.add_argument("--queue-size", type=int, default=8,
+                        help="maximum admitted requests including owned work; must fit batch size (default 8)")
+    server.add_argument("--queue-timeout", type=float, default=120,
+                        help="seconds waiting for worker ownership; not an execution deadline (default 120)")
     server.add_argument("--batch-wait-ms",type=float,default=0,help="idle prompt coalescing delay, 0..10 ms; default 0 disables")
     server.add_argument("--prefill-chunk-size",type=int,default=0,help="opt-in prompt token budget per decode step; 0 disables")
     server.add_argument("--prefix-cache-tokens",type=int,default=0,help="opt-in GPU prefix snapshot token budget per model")
@@ -102,6 +106,14 @@ def main():
         if name == 'unload':
             management.add_argument('--release-host', action='store_true')
     args = parser.parse_args()
+    if args.command == 'serve':
+        from .admission import validate_queue_limits
+        try:
+            validate_queue_limits(args.queue_size, args.queue_timeout)
+            if args.queue_size < args.batch_size:
+                raise ValueError('queue size must fit batch size')
+        except ValueError as error:
+            parser.error(str(error))
     manifest = None
     if args.command == 'serve' and args.model_config:
         if args.model or args.chat_template:
@@ -185,6 +197,8 @@ def main():
         from .scheduler import BatchedRuntime
         runtime_type = BatchedRuntime
         options["batch_size"] = args.batch_size
+        options["queue_size"] = args.queue_size
+        options["queue_timeout"] = args.queue_timeout
         options["batch_wait_ms"] = args.batch_wait_ms
         options["prefill_chunk_size"] = args.prefill_chunk_size
         options["prefix_cache_tokens"] = args.prefix_cache_tokens

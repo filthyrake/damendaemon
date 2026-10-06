@@ -383,3 +383,20 @@ Drain does not shut down the process, unload model weights or cancel an owned
 GPU operation. It is one-way for this server instance; restart to admit new
 work. Forced shutdown retains the existing cancellation behavior. Runtimes
 without this scheduler return HTTP501 for drain.
+
+Set serving admission limits explicitly when needed:
+
+```sh
+dllm serve --model chat=/path/to/pinned/snapshot --batch-size 4 \
+  --queue-size 8 --queue-timeout 30
+```
+
+`--queue-size` counts all admitted work, including worker-owned requests, and
+must be an integer at least as large as the batch size. It defaults to8.
+`--queue-timeout` defaults to120 seconds and must be finite, positive and within
+the platform thread-wait limit. It bounds waiting for worker ownership, not
+inference execution. The same setting also bounds stream backpressure and
+existing internal management waits; model-status commands retain their shorter
+one-second queue bound. These options do not increase KV capacity or change the
+HTTP connection cap. `dllm status` reports `queue_timeout_seconds` alongside
+capacity. Invalid settings fail before downloads or GPU initialization.

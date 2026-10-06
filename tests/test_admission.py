@@ -86,3 +86,30 @@ class AdmissionTests(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+
+class QueueLimitTests(unittest.TestCase):
+    def test_invalid_limits_fail_before_gpu_initialization(self):
+        from dllm.runtime import Runtime
+        from dllm.scheduler import BatchedRuntime
+        from unittest.mock import patch
+        invalid = [(value, 120) for value in (True, 1.5, 0, -1, None)]
+        invalid += [(8, value) for value in (True, 0, -1, float('nan'), float('inf'), 1e100, 10**1000, None)]
+        for constructor in (Runtime, BatchedRuntime):
+            for capacity, timeout in invalid:
+                with self.subTest(constructor=constructor, capacity=capacity, timeout=timeout), \
+                        patch('dllm.runtime.require_gpu') as gpu, self.assertRaises(ValueError):
+                    constructor({}, queue_size=capacity, queue_timeout=timeout)
+                gpu.assert_not_called()
+
+    def test_scheduler_forwards_limits_to_inner_runtime(self):
+        from dllm.scheduler import BatchedRuntime
+        from unittest.mock import patch
+        with patch('dllm.scheduler.Runtime') as inner:
+            runtime = BatchedRuntime({}, batch_size=2, queue_size=6, queue_timeout=.25)
+            try:
+                self.assertEqual(inner.call_args.kwargs['queue_size'], 6)
+                self.assertEqual(inner.call_args.kwargs['queue_timeout'], .25)
+                self.assertEqual(runtime.scheduler_status()['queue_timeout_seconds'], .25)
+            finally:
+                runtime.close()

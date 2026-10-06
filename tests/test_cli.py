@@ -46,3 +46,23 @@ class CliTests(unittest.TestCase):
                 with patch('sys.argv',args+suffix), patch('dllm.scheduler.BatchedRuntime') as runtime, patch('sys.stderr'), self.assertRaises(SystemExit):
                     main()
                 runtime.assert_not_called()
+
+    def test_serve_queue_limits_forward_and_invalid_values_fail_before_resolution(self):
+        from dllm.cli import main
+        args = ['dllm', 'serve', '--model', 'chat=/local/snapshot', '--queue-size', '12',
+                '--queue-timeout', '.25']
+        with patch('sys.argv', args), patch('dllm.scheduler.BatchedRuntime') as runtime, patch('dllm.server.serve'):
+            main()
+        self.assertEqual(runtime.call_args.kwargs['queue_size'], 12)
+        self.assertEqual(runtime.call_args.kwargs['queue_timeout'], .25)
+        for option, value in (('--queue-size', '0'), ('--queue-size', '2'),
+                              ('--queue-size', '1.5'), ('--queue-timeout', '0'),
+                              ('--queue-timeout', 'nan'), ('--queue-timeout', 'inf'),
+                              ('--queue-timeout', '1e100')):
+            with self.subTest(option=option, value=value), patch('sys.argv',
+                    ['dllm', 'serve', '--model', 'chat=Qwen/model', option, value]), \
+                    patch('dllm.cli.resolve_model') as resolve, patch('dllm.scheduler.BatchedRuntime') as runtime, \
+                    patch('sys.stderr'), self.assertRaises(SystemExit):
+                main()
+            resolve.assert_not_called()
+            runtime.assert_not_called()

@@ -17,7 +17,7 @@ from .runtime import Runtime, BusyError
 from .sampling import Sampling, Sampler, sample_rows
 from .stopping import stop_sequences, text_delta
 from .prompts import decode_output
-from .admission import wait_for_batch
+from .admission import wait_for_batch, validate_queue_limits
 
 
 @dataclass(eq=False)
@@ -61,7 +61,8 @@ class Pending:
 
 class BatchedRuntime:
     def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, prefix_cache_tokens=0, batch_wait_ms=0, **kwargs):
-        if not 1 <= batch_size <= 16 or queue_size < batch_size or queue_timeout <= 0:
+        validate_queue_limits(queue_size, queue_timeout)
+        if type(batch_size) is not int or not 1 <= batch_size <= 16 or queue_size < batch_size:
             raise ValueError("batch size must be 1..16 and fit inside the request queue")
         if type(prefill_chunk_size) is not int or prefill_chunk_size<0:
             raise ValueError('prefill chunk size must be a nonnegative integer')
@@ -75,7 +76,7 @@ class BatchedRuntime:
         from .partition_policy import selected_split
         if selected_split() is not None and (prefill_chunk_size or prefix_cache_tokens):
             raise ValueError('layer partition does not yet support chunked prefill or prefix snapshots')
-        self.runtime = Runtime(models, batch_size=batch_size, **kwargs)
+        self.runtime = Runtime(models, batch_size=batch_size, queue_size=queue_size, queue_timeout=queue_timeout, **kwargs)
         if prefill_chunk_size or prefix_cache_tokens:
             from .device import selected_device
             if selected_device()=='cuda':
@@ -113,6 +114,7 @@ class BatchedRuntime:
                 "drained": self.draining and not live and not self.worker_busy,
                 "worker_busy": self.worker_busy,
                 "queue_capacity": self.queue_capacity,
+                "queue_timeout_seconds": self.queue_timeout,
                 "batch_capacity": self.batch_size,
                 "queued_generation_requests": sum(r.command is None for r in queued),
                 "worker_owned_generation_requests": sum(r.command is None for r in owned),

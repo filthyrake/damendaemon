@@ -61,6 +61,8 @@ class Runtime:
     def __init__(self, models, context=1024, gpu_models=1, host_models=2,
                  host_gib=8, use_graph=True, queue_size=8, queue_timeout=120, batch_size=None, chat_templates=None,
                  quantizations=None):
+        from .admission import validate_queue_limits
+        validate_queue_limits(queue_size, queue_timeout)
         if (min(context, gpu_models, host_models, queue_size) <= 0
                 or host_models < gpu_models or host_gib <= 0 or queue_timeout <= 0):
             raise ValueError("invalid model, residency, context, or queue limits")
