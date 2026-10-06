@@ -353,3 +353,26 @@ performance concern; this benchmark-only warmup does not change service startup.
 The third firewall window was removed early: lab 2026-10-06
 05:41:29–05:46:04 UTC, desktop 05:41:30–05:46:05 UTC. Final rules and GPU
 allocations again match their pre-test state.
+
+## Runtime row-bound experiment
+
+`scripts/experiments/q4_dynamic_rows.py` removes exact-row specialization from
+the adjacent Q4 body kernel while retaining tile sizes and arithmetic. The
+explicit A2 matrix experiment uses its own disposable Triton compiler cache,
+primes both variants at two rows per projection, then measures first dispatch
+and warm CUDA-graph execution separately. It does not modify production dispatch.
+
+All 32 cases (four body projections, rows 2/3/4/7/16/17/19/32) exactly match the
+qualified static-row FP16 output and pass the independent dense RMS gate. Per
+projection, generated assembly variants fall from eight to two. After a tile
+shape is primed, new row counts take about 0.2–0.4 ms to dispatch dynamically
+versus roughly 280–550 ms for new static-row compilation in the fresh cache.
+The first use of a new tile still compiles. These are isolated matrix/compiler
+measurements, not whole-model startup or HTTP latency; they do not directly
+quantify the earlier disk-cache/serving first-use event.
+
+Warm performance is mostly similar, but the down projection at 17/19 rows
+regresses from about 53.9 µs to 66.7 µs (about 24%). Both variants report 168
+registers and zero spills there. A blanket replacement is therefore rejected;
+larger-row profiling and a narrower dispatch policy are required before model
+qualification. No production default has changed for this experiment.
