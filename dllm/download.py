@@ -16,7 +16,7 @@ def snapshot_files(filenames, index=None):
                 raise ValueError('checkpoint index needs string tensor names and shard paths')
             path=PurePosixPath(name)
             if (path.is_absolute() or any(part in ('','.','..') for part in name.split('/'))
-                    or any(c in name for c in '\\*?[]') or not name.endswith('.safetensors')):
+                    or any(c in name for c in '\\*?[]\x00') or not name.endswith('.safetensors')):
                 raise ValueError('invalid checkpoint shard path')
             if name not in files:raise ValueError(f'checkpoint shard missing from repository: {name}')
             weights.add(name)

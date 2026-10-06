@@ -26,13 +26,8 @@ from .rotary import inverse_frequencies, attention_factor
 
 
 def weight_files(path):
-    path = Path(path)
-    index = path / "model.safetensors.index.json"
-    names = sorted(set(json.loads(index.read_text())["weight_map"].values())) if index.exists() else ["model.safetensors"]
-    for name in names:
-        if Path(name).is_absolute() or ".." in Path(name).parts:
-            raise ValueError("weight shard escapes model directory")
-    return [path / name for name in names]
+    from .checkpoint import inspect_snapshot
+    return inspect_snapshot(path)[0]
 
 
 def weight_bytes(path,quantization=None):
@@ -121,12 +116,13 @@ class ModelWeights:
             raise ValueError('GPT-2/GPT-NeoX/BLOOM quantization is not implemented')
         if not 1 <= max_context <= c["max_position_embeddings"]:
             raise ValueError("context exceeds model position limit")
+        files = weight_files(self.path)
         from .layer_stream import enabled as offload_enabled, validate as validate_offload
         offload = offload_enabled()
         if offload:
             validate_offload(c, self.quantization, max_context)
             from .host_memory import admit_checkpoint, require_headroom
-            admit_checkpoint(weight_files(self.path))
+            admit_checkpoint(files)
         self.max_context = max_context
         self.tokenizer = Tokenizer.from_file(str(self.path / "tokenizer.json"))
         tokenizer_config = json.loads((self.path / "tokenizer_config.json").read_text())
@@ -141,7 +137,7 @@ class ModelWeights:
         if not self.eos:
             raise ValueError('model needs at least one EOS token ID')
         from .weight_cache import configured_cache
-        cache = configured_cache(self.path, c, self.quantization, weight_files(self.path))
+        cache = configured_cache(self.path, c, self.quantization, files)
         self.weight_cache_status = 'disabled' if cache is None else 'miss'
         if cache is not None:
             prepared = cache.load()
@@ -150,7 +146,7 @@ class ModelWeights:
                 self.weight_cache_status = 'hit'
                 return
         state = {}
-        for candidate in weight_files(self.path):
+        for candidate in files:
             with safe_open(str(candidate), framework="pt", device="cpu") as reader:
                 for key in reader.keys():
                     if not key.startswith(('model.visual.', 'mtp.')):

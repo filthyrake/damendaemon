@@ -128,44 +128,16 @@ def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536,
 
 def plan_local(path, contexts, batches, cache_dtype, layer_splits=None, stage_weight_dtype='native', device_budgets=None):
     """Inspect local safetensors headers only; never resolve or download a model."""
-    from safetensors import safe_open, SafetensorError
+    from .checkpoint import inspect_snapshot
     from .config import decoder_config
-    from .download import snapshot_files, INDEX
     path = Path(path).expanduser().resolve()
     original = json.loads((path/'config.json').read_text())
     if decoder_config(original)['model_type'] != 'qwen3_5_text':
         raise ValueError('capacity planner requires a supported hybrid text configuration')
-    index = json.loads((path/INDEX).read_text()) if (path/INDEX).exists() else None
-    files_on_disk = [entry.name for entry in path.iterdir() if entry.is_file()]
-    # Validate indexed relative paths before examining them on disk. The index
-    # may name nested shards that the top-level directory listing cannot see.
-    if isinstance(index, dict) and isinstance(index.get('weight_map'), dict):
-        files_on_disk.extend(name for name in index['weight_map'].values() if isinstance(name, str))
-    selected = snapshot_files(files_on_disk, index)
-    if any(not (path/name).is_file() for name in selected):
-        raise ValueError('checkpoint metadata or indexed safetensors shard is missing')
-    files = {}
-    indexed = index['weight_map'] if index is not None else None
-    actual = {}
-    for filename in selected:
-        if not filename.endswith('.safetensors'):
-            continue
-        tensors = {}
-        try:
-            with safe_open(str(path/filename), framework='pt', device='cpu') as reader:
-                for name in reader.keys():
-                    if name in actual:
-                        raise ValueError(f'duplicate tensor: {name}')
-                    view = reader.get_slice(name)
-                    if view.get_dtype() not in ('F16', 'BF16', 'F32'):
-                        raise ValueError('planner supports floating-point source checkpoints only')
-                    tensors[name] = {'shape': view.get_shape()}
-                    actual[name] = filename
-        except SafetensorError as error:
-            raise ValueError('invalid safetensors header') from error
-        files[filename] = {'tensors': tensors}
-    if indexed is not None and actual != indexed:
-        raise ValueError('tensor headers do not match the shard index')
+    _, files = inspect_snapshot(path)
+    if any(tensor['dtype'] not in ('F16', 'BF16', 'F32')
+           for shard in files.values() for tensor in shard['tensors'].values()):
+        raise ValueError('planner supports floating-point source checkpoints only')
     result = estimate({'config': original, 'repository': None, 'resolved_revision': None},
                       {'files_metadata': files}, cache_dtype, contexts, batches, layer_splits, stage_weight_dtype, device_budgets)
     result.update(local_path=str(path), source='local safetensors headers; contents not hashed',

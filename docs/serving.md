@@ -540,6 +540,15 @@ it does not imply that a requested context, cache dtype, hardware or performance
 level is admitted by the experimental execution policy. Existing fully resident
 estimate fields retain their meaning.
 
+The planner and safetensors loaders share checkpoint inventory validation.
+Indexed shard paths must be safe relative paths; every indexed shard must exist,
+and its tensor names must exactly match the index. Duplicate tensor names across
+shards, duplicate JSON fields and malformed headers are rejected before tensor
+values are loaded. Nested shards and Hugging Face cache symlinks are supported.
+Inventory retains packed dtypes for their format-specific loaders; the hybrid
+planner still accepts only floating-point source weights. Header validation does
+not hash tensor contents or protect against concurrent changes to checkpoint files.
+
 For explicit stage placement, add `--layer-splits 16 32` to `dllm plan-hybrid`.
 The boundaries are global layer indices and must be strictly increasing inside
 the model. Passing `--layer-splits` with no values reports one stage. Optional

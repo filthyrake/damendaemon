@@ -117,12 +117,12 @@ class AwqModelTests(unittest.TestCase):
             prepared = plan(path)
             index = path/'model.safetensors.index.json'
             index.write_text(json.dumps({'weight_map': {'x': '../escape.safetensors'}}))
-            with self.assertRaisesRegex(ValueError, 'escapes'):
+            with self.assertRaisesRegex(ValueError, 'invalid checkpoint shard path'):
                 plan(path)
             with self.assertRaisesRegex(ValueError, 'changed'):
                 prepared.check_source()
             index.write_text(json.dumps({'weight_map': {next(iter(values)): 'model.safetensors'}}))
-            with self.assertRaisesRegex(ValueError, 'locations'):
+            with self.assertRaisesRegex(ValueError, 'shard index'):
                 plan(path)
 
     def test_tied_head_disagreement_and_nonfinite_scales_are_rejected(self):
