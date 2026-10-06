@@ -272,3 +272,14 @@ CPU regressions compose every split in a four-layer hybrid fixture and compare
 full prefill, subsequent decode, chunk offsets and interleaved slots. Unselected
 layers' KV, convolution and recurrent state remain untouched. This is shared
 execution code, not multi-device allocation, transport or numerical qualification.
+
+`HybridLayerStage` now builds a source-weight view and allocates only the chosen
+layers' KV, recurrent and convolution state. Global indices remain unchanged;
+only the first stage owns embedding, only the last owns norm/head. Per-stage
+admission counts that stage's weight representation and state plus workspace.
+Tied embedding/head storage is counted on both stages when they live separately.
+The current building block rejects quantization, graphs and host layer streaming.
+It exposes the layer boundary, and rejects ordinary executor calls that would
+commit a stage cursor before a coordinator completes the whole request. CPU
+composition and exact allocation-count tests pass; device transfer, coordinated
+failure handling and serving admission remain separate work.

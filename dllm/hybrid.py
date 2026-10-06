@@ -74,11 +74,21 @@ class HybridExecutor:
     def requires_full_prefill(self):
         return not self.supports_chunked_prefill
 
-    def __init__(self, model, use_graph=True, max_batch=4, kernels=None):
+    def __init__(self, model, use_graph=True, max_batch=4, kernels=None, _layer_range=None):
         if not 1 <= max_batch <= 16:
             raise ValueError('batch capacity must be between 1 and 16')
         from .layer_stream import enabled as offload_enabled, validate as validate_offload
         self.offload = None
+        count = model.config['num_hidden_layers']
+        if _layer_range is not None:
+            if (not isinstance(_layer_range, tuple) or len(_layer_range) != 2
+                    or any(type(i) is not int for i in _layer_range)
+                    or not 0 <= _layer_range[0] < _layer_range[1] <= count):
+                raise ValueError('invalid hybrid stage range')
+            if (use_graph or kernels != 'torch' or model.quantization != 'none'
+                    or model.scales or offload_enabled()):
+                raise ValueError('hybrid stages require unquantized eager torch without graphs or offload')
+        self.layer_start, self.layer_end = _layer_range or (0, count)
         streaming = offload_enabled()
         if streaming:
             validate_offload(model.config, model.quantization, model.max_context, max_batch, use_graph, kernels)
@@ -158,7 +168,9 @@ class HybridExecutor:
             from . import kernels as dense_kernels
             self.dense_fused = dense_kernels
         from .capacity import hybrid_state_bytes
-        state_bytes = hybrid_state_bytes(c, self.context, max_batch, cache_element_bytes)
+        owned_config = {**c, 'num_hidden_layers': self.layer_end-self.layer_start,
+                        'layer_types': c['layer_types'][self.layer_start:self.layer_end]}
+        state_bytes = hybrid_state_bytes(owned_config, self.context, max_batch, cache_element_bytes)
         empty_cache()
         free = available_memory()
         # Intel eager projections store FP32 matrices; host byte counts are
@@ -201,7 +213,8 @@ class HybridExecutor:
             self.linear = Linear(self.w, model.scales, self.device, F.linear,
                                  q8_projection=projection, q4_projection=projection_q4)
         self.kv, self.conv, self.state = {}, {}, {}
-        for i, kind in enumerate(c['layer_types']):
+        for i in range(self.layer_start, self.layer_end):
+            kind = c['layer_types'][i]
             if kind == 'full_attention':
                 self.kv[i] = torch.zeros((2, max_batch, self.kh, self.context, self.dim), dtype=self.compute_dtype, device=self.device)
             else:
@@ -386,16 +399,18 @@ class HybridExecutor:
         return self.output_logits(x[:, -1]) if return_logits else None
 
     def forward_layers(self, x, positions, slots, prefill, prefix_length=0,
-                       layer_start=0, layer_end=None):
+                       layer_start=None, layer_end=None):
         """Execute a contiguous range using global layer indices and positions.
 
         Returns every hidden position. The caller owns embedding, final-head
         selection and request cursor commit across all participating ranges.
         """
+        if layer_start is None:
+            layer_start = self.layer_start
         if layer_end is None:
-            layer_end = self.c['num_hidden_layers']
+            layer_end = self.layer_end
         if (type(layer_start) is not int or type(layer_end) is not int
-                or not 0 <= layer_start < layer_end <= self.c['num_hidden_layers']):
+                or not self.layer_start <= layer_start < layer_end <= self.layer_end):
             raise ValueError('invalid hybrid layer range')
         for i in range(layer_start, layer_end):
             kind = self.c['layer_types'][i]
