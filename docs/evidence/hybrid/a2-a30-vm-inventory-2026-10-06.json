@@ -1,0 +1,43 @@
+{
+  "kind": "read-only VM inventory; no performance qualification",
+  "host": "labnode3",
+  "date": "2026-10-06",
+  "cpu": "Intel Xeon Platinum 8160 @ 2.10GHz",
+  "vcpus": 16,
+  "guest_numa_nodes": 1,
+  "cpu_features": [
+    "avx2",
+    "avx512f",
+    "avx512dq",
+    "avx512bw",
+    "avx512vl"
+  ],
+  "memory_total_bytes": 134458200064,
+  "memory_available_bytes": 122790023168,
+  "swap_total_bytes": 21474832384,
+  "swap_used_bytes": 18612224,
+  "gpus": [
+    {
+      "name": "A30",
+      "uuid": "GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+      "total_mib": 24576,
+      "used_mib": 13403,
+      "pci": "00000000:01:00.0"
+    },
+    {
+      "name": "A2",
+      "uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+      "total_mib": 15356,
+      "used_mib": 0,
+      "pci": "00000000:02:00.0"
+    }
+  ],
+  "gpu_topology": "PHB",
+  "physical_host_ram": "User reports approximately 1 TB DDR4; not independently inventoried here.",
+  "limitations": [
+    "Guest NUMA presentation does not establish physical host placement or memory locality.",
+    "Available memory is a snapshot, not an allocation budget.",
+    "No bandwidth, transfer, CPU inference or GPU inference measurements performed.",
+    "Preserve existing A30 service and host/guest workload headroom."
+  ]
+}
