@@ -96,7 +96,7 @@ CUDA_VISIBLE_DEVICES=GPU-output-worker-uuid OMP_NUM_THREADS=4 \
 NCCL_NET=Socket NCCL_SOCKET_FAMILY=AF_INET NCCL_SOCKET_IFNAME=your-interface \
   torchrun --nnodes=2 --nproc-per-node=1 --node-rank=1 \
   --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-run \
-  /other/local/model/snapshot --quantization q8_0 --batch-size 4
+  /other/local/model/snapshot --quantization q8_0
 ```
 
 Only the coordinator reads the prompt and prints output. `--raw` selects raw
