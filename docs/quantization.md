@@ -46,7 +46,9 @@ per-model policies can mix Q4, Q8 and unquantized models in the same server.
 
 For hybrid Qwen3.5/Qwen3.8 text, the AMD branch adds a separate experimental
 Q4 path: `DLLM_EXPERIMENTAL_HYBRID_Q4=1`, `DLLM_HYBRID_PRECISION=compensated`,
-ROCm, no graphs, context at most 512 and at most four request slots. HOMER
+ROCm, no graphs, context at most 512 and at most four request slots. An A30-only
+CUDA admission prototype uses the same opt-in and bounds; its GPU qualification
+is pending and it does not enable Q8 compensated CUDA or other NVIDIA devices. HOMER
 passes [Q4 primitive boundaries](evidence/amd/homer-compensated-q4-boundaries.json)
 and [Q8 regression boundaries](evidence/amd/homer-compensated-q8-regression-boundaries.json).
 Pinned Qwen3.8-27B also passes all 84 [full-model Q4 comparisons](evidence/amd/qwen38-27b-q4-native-replay512-headfix.json)

@@ -20,7 +20,7 @@ class HybridQ4Tests(unittest.TestCase):
 
     def test_explicit_scope_and_other_precision_guards(self):
         model = SimpleNamespace(config=self.config, max_context=512, quantization='q4_0')
-        with patch.dict('os.environ', self.env, clear=True):
+        with patch.dict('os.environ', self.env, clear=True), patch('dllm.hybrid_q4_policy.device_name', return_value='NVIDIA A2'):
             self.assertEqual(select(model, False, 4, 'triton'), 'compensated')
             for graph, batch, kernels in ((True, 4, 'triton'), (False, 5, 'triton'), (False, 4, 'torch')):
                 with self.assertRaises(ValueError):
@@ -36,6 +36,22 @@ class HybridQ4Tests(unittest.TestCase):
                 with patch.dict('os.environ', changes):
                     with self.assertRaises(ValueError):
                         select(model, False, 4, 'triton')
+
+    def test_a30_requires_q4_opt_in_and_retains_execution_bounds(self):
+        model = SimpleNamespace(config=self.config, max_context=512, quantization='q4_0')
+        with patch.dict('os.environ', self.env | {'DLLM_DEVICE': 'cuda'}, clear=True), \
+                patch('dllm.hybrid_q4_policy.device_name', return_value='NVIDIA A30'):
+            self.assertEqual(select(model, False, 4, 'triton'), 'compensated')
+            for changes in ({'max_context': 513}, {'quantization': 'q8_0'}):
+                with self.assertRaises(ValueError):
+                    select(SimpleNamespace(**(vars(model) | changes)), False, 4, 'triton')
+            with self.assertRaises(ValueError):
+                select(model, True, 4, 'triton')
+            with self.assertRaises(ValueError):
+                select(model, False, 5, 'triton')
+            with patch.dict('os.environ', {'DLLM_EXPERIMENTAL_HYBRID_Q4': '0'}):
+                with self.assertRaises(ValueError):
+                    select(model, False, 4, 'triton')
 
     def test_no_opt_in_and_wrong_architecture_rejected(self):
         with patch.dict('os.environ', {}, clear=True):
