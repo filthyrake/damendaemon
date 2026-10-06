@@ -1,0 +1,7445 @@
+{
+  "scope": "Eager head variants on identical hidden state per event; optional body arithmetic control; no performance or serving qualification claim",
+  "trace_sha256": "4e52fe2c53db975c1d383c490a694268a7f3e063eabf9eac880046b38d7bdeac",
+  "reference_dtype": "float16",
+  "packed": false,
+  "dense_body": false,
+  "single_dot_body": false,
+  "torch_norm": true,
+  "tf32": false,
+  "checks": [
+    {
+      "event_index": 0,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003745557740330696,
+          "max_absolute": 0.05078125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0037456010468304157,
+          "max_absolute": 0.05078125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0037401949521154165,
+          "max_absolute": 0.04987621307373047,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 1,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0024279358331114054,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0024279318749904633,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002416414674371481,
+          "max_absolute": 0.02103734016418457,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 1,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.005246864166110754,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.005246845539659262,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.005243400577455759,
+          "max_absolute": 0.03272390365600586,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 1,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0027243990916758776,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002724412130191922,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0027155487332493067,
+          "max_absolute": 0.034090518951416016,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 1,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002923482796177268,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0029234408866614103,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0029162426944822073,
+          "max_absolute": 0.031188368797302246,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 2,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0024979535955935717,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0024980073794722557,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0024894909001886845,
+          "max_absolute": 0.025003433227539062,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 2,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003530407790094614,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0035304029006510973,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0035244293976575136,
+          "max_absolute": 0.034758567810058594,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 2,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018182124476879835,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018181769410148263,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018054386600852013,
+          "max_absolute": 0.03101062774658203,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 2,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0026818104088306427,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0026817680336534977,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002672559581696987,
+          "max_absolute": 0.03483915328979492,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 3,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001600789139047265,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016006309306249022,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0015890380600467324,
+          "max_absolute": 0.022128582000732422,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 3,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001998741179704666,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001998801017180085,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019878987222909927,
+          "max_absolute": 0.02824854850769043,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 3,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0012887835036963224,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0012887874618172646,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0012732299510389566,
+          "max_absolute": 0.02662038803100586,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 3,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00351492571644485,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003514919662848115,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003507183399051428,
+          "max_absolute": 0.04150819778442383,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 4,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0020219881553202868,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002021967666223645,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.00201315525919199,
+          "max_absolute": 0.027677536010742188,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 4,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002793277148157358,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002793325111269951,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.00278522539883852,
+          "max_absolute": 0.03499746322631836,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 4,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0022552073933184147,
+          "max_absolute": 0.0263671875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0022553170565515757,
+          "max_absolute": 0.0263671875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0022457267623394728,
+          "max_absolute": 0.026270270347595215,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 4,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00393204391002655,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00393205089494586,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003926072269678116,
+          "max_absolute": 0.042810797691345215,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 5,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0023049472365528345,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0023049707524478436,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0022965245880186558,
+          "max_absolute": 0.02727377414703369,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 5,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003554997034370899,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0035550431348383427,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003549164393916726,
+          "max_absolute": 0.027777671813964844,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 5,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0013638492673635483,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0013639057287946343,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0013460734626278281,
+          "max_absolute": 0.02722644805908203,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 5,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0045188856311142445,
+          "max_absolute": 0.0498046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004518939182162285,
+          "max_absolute": 0.0498046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004514950793236494,
+          "max_absolute": 0.049910902976989746,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 6,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001851815963163972,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018519054865464568,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018390726763755083,
+          "max_absolute": 0.024665355682373047,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 6,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0024841814301908016,
+          "max_absolute": 0.0263671875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00248412205837667,
+          "max_absolute": 0.0263671875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0024756884668022394,
+          "max_absolute": 0.026461005210876465,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 6,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002723014447838068,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002723119920119643,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0027181515470147133,
+          "max_absolute": 0.03343343734741211,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 6,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025883722119033337,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0025884159840643406,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002577284350991249,
+          "max_absolute": 0.03161907196044922,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 7,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0031263825949281454,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003126350697129965,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0031217087525874376,
+          "max_absolute": 0.030928373336791992,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 7,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0022606942802667618,
+          "max_absolute": 0.037109375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0022606169804930687,
+          "max_absolute": 0.037109375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002249401994049549,
+          "max_absolute": 0.03666067123413086,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 7,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001302176620811224,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0013022195780649781,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001284162513911724,
+          "max_absolute": 0.023901939392089844,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 7,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003657734487205744,
+          "max_absolute": 0.048828125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0036578055005520582,
+          "max_absolute": 0.048828125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0036540033761411905,
+          "max_absolute": 0.04956650733947754,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 8,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018760638777166605,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018759494414553046,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018637822940945625,
+          "max_absolute": 0.024244308471679688,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 8,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021886141039431095,
+          "max_absolute": 0.0341796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002188557991757989,
+          "max_absolute": 0.0341796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002178759779781103,
+          "max_absolute": 0.03414177894592285,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 8,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025281799025833607,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002528255106881261,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002520882524549961,
+          "max_absolute": 0.025190353393554688,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 8,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003492773277685046,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003492819843813777,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0034848442301154137,
+          "max_absolute": 0.03920102119445801,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 9,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002113351598381996,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002113442635163665,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002104065613821149,
+          "max_absolute": 0.029273033142089844,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 9,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0031296852976083755,
+          "max_absolute": 0.03466796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003129644552245736,
+          "max_absolute": 0.03466796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0031212368048727512,
+          "max_absolute": 0.03441983461380005,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 9,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0036389343440532684,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0036389639135450125,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003632520791143179,
+          "max_absolute": 0.031028270721435547,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 9,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.004146067425608635,
+          "max_absolute": 0.05615234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004146046005189419,
+          "max_absolute": 0.05615234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004141784738749266,
+          "max_absolute": 0.056014180183410645,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 10,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0027960685547441244,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002795933512970805,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002785452175885439,
+          "max_absolute": 0.043572425842285156,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 10,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018141241744160652,
+          "max_absolute": 0.0244140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018141011241823435,
+          "max_absolute": 0.0244140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018011326901614666,
+          "max_absolute": 0.02478957176208496,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 11,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.004483895841985941,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004483812488615513,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0044753672555089,
+          "max_absolute": 0.03843331336975098,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 11,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003798102494329214,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0037981329951435328,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0037972398567944765,
+          "max_absolute": 0.04123830795288086,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 11,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021137080620974302,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00211366661824286,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0021036649122834206,
+          "max_absolute": 0.01801586151123047,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 11,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002211561892181635,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0022116051986813545,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0022016726434230804,
+          "max_absolute": 0.01952981948852539,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 12,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0019371542148292065,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019370566587895155,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019269220065325499,
+          "max_absolute": 0.028375208377838135,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 12,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002841946901753545,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0028419510927051306,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002835088176652789,
+          "max_absolute": 0.029479503631591797,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 12,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002399645745754242,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002399604069069028,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0023901895619928837,
+          "max_absolute": 0.024457931518554688,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 12,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021653997246176004,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0021653485018759966,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002155496971681714,
+          "max_absolute": 0.02493572235107422,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 13,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003209074027836323,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0032090316526591778,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0032007682602852583,
+          "max_absolute": 0.0398869514465332,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 13,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0034764425363391638,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0034763978328555822,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003471675794571638,
+          "max_absolute": 0.040074825286865234,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 13,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001962234266102314,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001962182577699423,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019531118450686336,
+          "max_absolute": 0.03078937530517578,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 13,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0024694721214473248,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0024693908635526896,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002460104413330555,
+          "max_absolute": 0.02908039093017578,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 14,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.004220281261950731,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004220247734338045,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004214264452457428,
+          "max_absolute": 0.03279221057891846,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 14,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00366925704292953,
+          "max_absolute": 0.0458984375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0036692030262202024,
+          "max_absolute": 0.0458984375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003663588548079133,
+          "max_absolute": 0.04573261737823486,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 14,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002257154555991292,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0022572253365069628,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0022467600647360086,
+          "max_absolute": 0.028350472450256348,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 14,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018880213610827923,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018879392882809043,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018766543362289667,
+          "max_absolute": 0.0255051851272583,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 15,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0036127411294728518,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003612780710682273,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003609091741964221,
+          "max_absolute": 0.03906583786010742,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 15,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00245252950116992,
+          "max_absolute": 0.03369140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0024524915497750044,
+          "max_absolute": 0.03369140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002443896606564522,
+          "max_absolute": 0.034040212631225586,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 15,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0028932513669133186,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002893245778977871,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002886600326746702,
+          "max_absolute": 0.02685403823852539,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 15,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002526988973841071,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002527018776163459,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.00251869298517704,
+          "max_absolute": 0.023183345794677734,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 16,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0019915003795176744,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019914605654776096,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019804879557341337,
+          "max_absolute": 0.03093719482421875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 16,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0022834823466837406,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0022835503332316875,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002269687131047249,
+          "max_absolute": 0.03625154495239258,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 16,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002526479074731469,
+          "max_absolute": 0.0244140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0025264720898121595,
+          "max_absolute": 0.0244140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0025178822688758373,
+          "max_absolute": 0.024393081665039062,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 16,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0020466081332415342,
+          "max_absolute": 0.021728515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0020465480629354715,
+          "max_absolute": 0.021728515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002034662291407585,
+          "max_absolute": 0.021741867065429688,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 17,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002391626825556159,
+          "max_absolute": 0.03271484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002391551388427615,
+          "max_absolute": 0.03271484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002381731756031513,
+          "max_absolute": 0.03271961212158203,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 17,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0026467242278158665,
+          "max_absolute": 0.033447265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002646781038492918,
+          "max_absolute": 0.033447265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0026379600167274475,
+          "max_absolute": 0.0335613489151001,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 17,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002095503266900778,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002095454139634967,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0020854296162724495,
+          "max_absolute": 0.025391101837158203,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 17,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0024328110739588737,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0024328515864908695,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0024240680504590273,
+          "max_absolute": 0.03330504894256592,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 18,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0031601765658706427,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0031601733062416315,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0031562275253236294,
+          "max_absolute": 0.032178401947021484,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 18,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003510991809889674,
+          "max_absolute": 0.0546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0035110185854136944,
+          "max_absolute": 0.0546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003505800850689411,
+          "max_absolute": 0.05302238464355469,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 18,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002359304577112198,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0023592726793140173,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002349369926378131,
+          "max_absolute": 0.02821815013885498,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 18,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0027574270498007536,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0027574398554861546,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0027493026573210955,
+          "max_absolute": 0.03207588195800781,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 19,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0038798307068645954,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0038799571339040995,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0038739799056202173,
+          "max_absolute": 0.04212522506713867,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 20,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003442637389525771,
+          "max_absolute": 0.0546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0034426727797836065,
+          "max_absolute": 0.0546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003436210798099637,
+          "max_absolute": 0.05622386932373047,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 21,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0028085680678486824,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0028085005469620228,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0028011223766952753,
+          "max_absolute": 0.031287193298339844,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 22,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.005240142345428467,
+          "max_absolute": 0.048828125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.005240171682089567,
+          "max_absolute": 0.048828125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.005236610770225525,
+          "max_absolute": 0.04843413829803467,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 23,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003725189482793212,
+          "max_absolute": 0.0341796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003725155023857951,
+          "max_absolute": 0.0341796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0037188678979873657,
+          "max_absolute": 0.03454160690307617,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 23,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002221132395789027,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002221137285232544,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0022108328994363546,
+          "max_absolute": 0.02371799945831299,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 24,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0031228659208863974,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0031229103915393353,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0031165936961770058,
+          "max_absolute": 0.03129076957702637,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 24,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002674821298569441,
+          "max_absolute": 0.02978515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0026748140808194876,
+          "max_absolute": 0.02978515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002666088053956628,
+          "max_absolute": 0.029652833938598633,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 25,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0014577804831787944,
+          "max_absolute": 0.0235595703125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0014577930560335517,
+          "max_absolute": 0.0235595703125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0014443101827055216,
+          "max_absolute": 0.023532509803771973,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 25,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0013371710665524006,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0013371494133025408,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0013207683805376291,
+          "max_absolute": 0.02374410629272461,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 26,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001773569150827825,
+          "max_absolute": 0.02587890625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0017736349254846573,
+          "max_absolute": 0.02587890625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017591022187843919,
+          "max_absolute": 0.02572733163833618,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 27,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0006249387515708804,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0006249454454518855,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0005924042197875679,
+          "max_absolute": 0.009191513061523438,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 28,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00412839325144887,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004128417000174522,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004123048856854439,
+          "max_absolute": 0.040628790855407715,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 29,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0036250127013772726,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003624922828748822,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0036192366387695074,
+          "max_absolute": 0.02923119068145752,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 30,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0019843641202896833,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019844183698296547,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019745563622564077,
+          "max_absolute": 0.0390934944152832,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 31,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0035237499978393316,
+          "max_absolute": 0.03021240234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003523880848661065,
+          "max_absolute": 0.03021240234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0035182051360607147,
+          "max_absolute": 0.03018862009048462,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 32,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002064380096271634,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002064371481537819,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002055457327514887,
+          "max_absolute": 0.02563762664794922,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 33,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001928488491103053,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019285096786916256,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001919408910907805,
+          "max_absolute": 0.02196192741394043,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 34,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0033656039740890265,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003365549724549055,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003358987160027027,
+          "max_absolute": 0.04398393630981445,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 35,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002366085071116686,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002366063417866826,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0023553899955004454,
+          "max_absolute": 0.028473734855651855,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 36,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029496783390641212,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002949685323983431,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002942974679172039,
+          "max_absolute": 0.048553466796875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 37,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003183613996952772,
+          "max_absolute": 0.0703125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00318358838558197,
+          "max_absolute": 0.0703125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003176693106070161,
+          "max_absolute": 0.06953907012939453,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 38,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002698921598494053,
+          "max_absolute": 0.05078125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0026989495381712914,
+          "max_absolute": 0.05078125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002690389286726713,
+          "max_absolute": 0.05132246017456055,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 39,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.004204995930194855,
+          "max_absolute": 0.05224609375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004204998258501291,
+          "max_absolute": 0.05224609375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004201026633381844,
+          "max_absolute": 0.05228221416473389,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 40,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003012279514223337,
+          "max_absolute": 0.048828125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003012201050296426,
+          "max_absolute": 0.048828125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003001761855557561,
+          "max_absolute": 0.04906272888183594,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 41,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0035652017686516047,
+          "max_absolute": 0.0458984375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0035651489160954952,
+          "max_absolute": 0.0458984375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003559315111488104,
+          "max_absolute": 0.046306729316711426,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 42,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001510975300334394,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001511018956080079,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0014984869631007314,
+          "max_absolute": 0.017815589904785156,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 43,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016303897136822343,
+          "max_absolute": 0.017578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001630311249755323,
+          "max_absolute": 0.017578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0016172947362065315,
+          "max_absolute": 0.017566323280334473,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 44,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002175311790779233,
+          "max_absolute": 0.02490234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002175470581278205,
+          "max_absolute": 0.02490234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002168642822653055,
+          "max_absolute": 0.024977028369903564,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 45,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016236869851127267,
+          "max_absolute": 0.0302734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016237512463703752,
+          "max_absolute": 0.0302734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0016103623202070594,
+          "max_absolute": 0.0305635929107666,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 46,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016429086681455374,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016428845701739192,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0016309901839122176,
+          "max_absolute": 0.027269840240478516,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 47,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029289433732628822,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00292899995110929,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002921812003478408,
+          "max_absolute": 0.030166149139404297,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 48,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001995994243770838,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019959972705692053,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019845699425786734,
+          "max_absolute": 0.023087263107299805,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 49,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029163826256990433,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0029164475854486227,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0029088128358125687,
+          "max_absolute": 0.03470182418823242,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 50,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002337896730750799,
+          "max_absolute": 0.02392578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00233794585801661,
+          "max_absolute": 0.02392578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002328629605472088,
+          "max_absolute": 0.023895621299743652,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 51,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002834524493664503,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0028345135506242514,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002825208008289337,
+          "max_absolute": 0.033009886741638184,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 52,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021865919698029757,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0021865321323275566,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002176575129851699,
+          "max_absolute": 0.023471832275390625,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 53,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002987002022564411,
+          "max_absolute": 0.0244140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0029869042336940765,
+          "max_absolute": 0.0244140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002976534888148308,
+          "max_absolute": 0.02485668659210205,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 54,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001624358701519668,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016243263380602002,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001611135434359312,
+          "max_absolute": 0.021679401397705078,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 55,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021122677717357874,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0021123753394931555,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0021010595373809338,
+          "max_absolute": 0.028717041015625,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 56,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029228224884718657,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0029227049089968204,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0029166643507778645,
+          "max_absolute": 0.035092949867248535,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 57,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002166582038626075,
+          "max_absolute": 0.0263671875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0021666635293513536,
+          "max_absolute": 0.0263671875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002158039715141058,
+          "max_absolute": 0.026352345943450928,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 58,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003158996347337961,
+          "max_absolute": 0.0380859375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0031590857543051243,
+          "max_absolute": 0.0380859375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0031534896697849035,
+          "max_absolute": 0.03767263889312744,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 59,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0017636374104768038,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001763648702763021,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017522688722237945,
+          "max_absolute": 0.022397994995117188,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 60,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0028909225948154926,
+          "max_absolute": 0.03290843963623047,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0028910257387906313,
+          "max_absolute": 0.03290843963623047,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0028826878406107426,
+          "max_absolute": 0.03290879726409912,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 61,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002234312240034342,
+          "max_absolute": 0.03125,
+          "greedy_match": false,
+          "passed": false
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002234320854768157,
+          "max_absolute": 0.03125,
+          "greedy_match": false,
+          "passed": false
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0022263750433921814,
+          "max_absolute": 0.03152894973754883,
+          "greedy_match": false,
+          "passed": false
+        }
+      },
+      "top5": {
+        "native": [
+          [
+            1251,
+            15.5625
+          ],
+          [
+            3589,
+            15.5625
+          ],
+          [
+            4143,
+            15.4765625
+          ],
+          [
+            8153,
+            15.25
+          ],
+          [
+            3039,
+            14.765625
+          ]
+        ],
+        "dense_fp16": [
+          [
+            1251,
+            15.5625
+          ],
+          [
+            3589,
+            15.5625
+          ],
+          [
+            4143,
+            15.4765625
+          ],
+          [
+            8153,
+            15.25
+          ],
+          [
+            3039,
+            14.765625
+          ]
+        ],
+        "dense_fp32": [
+          [
+            1251,
+            15.563779830932617
+          ],
+          [
+            3589,
+            15.560524940490723
+          ],
+          [
+            4143,
+            15.478119850158691
+          ],
+          [
+            8153,
+            15.251755714416504
+          ],
+          [
+            3039,
+            14.768860816955566
+          ]
+        ],
+        "reference": [
+          [
+            3589,
+            15.5625
+          ],
+          [
+            1251,
+            15.546875
+          ],
+          [
+            4143,
+            15.4765625
+          ],
+          [
+            8153,
+            15.25
+          ],
+          [
+            3039,
+            14.7578125
+          ]
+        ]
+      }
+    },
+    {
+      "event_index": 62,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00240612355992198,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0024062071461230516,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002396730473265052,
+          "max_absolute": 0.026273250579833984,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 63,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025876888539642096,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0025878390297293663,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0025791649241000414,
+          "max_absolute": 0.029346466064453125,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 64,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016699497355148196,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016700756968930364,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0016575218178331852,
+          "max_absolute": 0.023308277130126953,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 65,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018270054133608937,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018270650180056691,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018164149951189756,
+          "max_absolute": 0.029329299926757812,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 66,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016084760427474976,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016084600938484073,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001595151610672474,
+          "max_absolute": 0.020786285400390625,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 67,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0015430939383804798,
+          "max_absolute": 0.0185546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0015430992934852839,
+          "max_absolute": 0.0185546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0015296944184228778,
+          "max_absolute": 0.018372654914855957,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 68,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0019789468497037888,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019788574427366257,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019672485068440437,
+          "max_absolute": 0.017991065979003906,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 69,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021450454369187355,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00214509479701519,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0021344227716326714,
+          "max_absolute": 0.021602392196655273,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 70,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002431959845125675,
+          "max_absolute": 0.02685546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002432050183415413,
+          "max_absolute": 0.02685546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0024240543134510517,
+          "max_absolute": 0.026768505573272705,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 71,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0020941467955708504,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0020942396949976683,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002083937404677272,
+          "max_absolute": 0.02268695831298828,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 72,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021657668985426426,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002165928715839982,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002156368689611554,
+          "max_absolute": 0.023472249507904053,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 73,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002083888277411461,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0020838147029280663,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0020761427003890276,
+          "max_absolute": 0.022962570190429688,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 74,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0017589882481843233,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0017590547213330865,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017464995617046952,
+          "max_absolute": 0.02522563934326172,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 75,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0014328149845823646,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0014328781981021166,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0014169521164149046,
+          "max_absolute": 0.02244281768798828,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 76,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002093065995723009,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0020930145401507616,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0020830894354730844,
+          "max_absolute": 0.025801897048950195,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 77,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.004386128392070532,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004386242479085922,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004382798448204994,
+          "max_absolute": 0.04681682586669922,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 78,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003153999336063862,
+          "max_absolute": 0.0341796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0031540978234261274,
+          "max_absolute": 0.0341796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0031472472473978996,
+          "max_absolute": 0.033811092376708984,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 79,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003162975888699293,
+          "max_absolute": 0.0546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003163090441375971,
+          "max_absolute": 0.0546875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003153647296130657,
+          "max_absolute": 0.053034305572509766,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 80,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001812111702747643,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018120597815141082,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.00180231430567801,
+          "max_absolute": 0.036712646484375,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 81,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001909280545078218,
+          "max_absolute": 0.0341796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019092565635219216,
+          "max_absolute": 0.0341796875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018971116514876485,
+          "max_absolute": 0.03428959846496582,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 82,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003924500662833452,
+          "max_absolute": 0.0419921875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003924437798559666,
+          "max_absolute": 0.0419921875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003917176742106676,
+          "max_absolute": 0.0420759916305542,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 83,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018091949168592691,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018092734972015023,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017984415171667933,
+          "max_absolute": 0.026421546936035156,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 84,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001908262143842876,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019082193030044436,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018948463257402182,
+          "max_absolute": 0.02460336685180664,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 85,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016896389424800873,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016895887674763799,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0016775155672803521,
+          "max_absolute": 0.020305633544921875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 86,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001742678927257657,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001742665539495647,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017311697592958808,
+          "max_absolute": 0.02730083465576172,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 87,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003049838822335005,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0030497999396175146,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003041540738195181,
+          "max_absolute": 0.028519392013549805,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 88,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00238343165256083,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00238342909142375,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002374880714341998,
+          "max_absolute": 0.03454780578613281,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 89,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002382756443694234,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0023828090634196997,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002371449489146471,
+          "max_absolute": 0.03625774383544922,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 90,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0015746969729661942,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001574697089381516,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001561489887535572,
+          "max_absolute": 0.029531002044677734,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 91,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029981217812746763,
+          "max_absolute": 0.04443359375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0029982062987983227,
+          "max_absolute": 0.04443359375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.00298841530457139,
+          "max_absolute": 0.04442322254180908,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 92,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0026397802866995335,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0026397299952805042,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002632815157994628,
+          "max_absolute": 0.029266357421875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 93,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0013578905491158366,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0013579253572970629,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001340554910711944,
+          "max_absolute": 0.02057647705078125,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 94,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002086855238303542,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0020869295112788677,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002075738273561001,
+          "max_absolute": 0.025249004364013672,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 95,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0014337103348225355,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0014337474713101983,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0014186007902026176,
+          "max_absolute": 0.027731895446777344,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 96,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018993096891790628,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018993886187672615,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018884300952777267,
+          "max_absolute": 0.03039860725402832,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 97,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0035533993504941463,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0035535371862351894,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003547850763425231,
+          "max_absolute": 0.031169891357421875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 98,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003101082518696785,
+          "max_absolute": 0.0379638671875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003101069014519453,
+          "max_absolute": 0.0379638671875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0030926361214369535,
+          "max_absolute": 0.037959277629852295,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 99,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0024871472269296646,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0024870862253010273,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0024781101383268833,
+          "max_absolute": 0.03532075881958008,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 100,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0028812410309910774,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002881249412894249,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0028741084970533848,
+          "max_absolute": 0.044599056243896484,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 101,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0026544411666691303,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0026543966960161924,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0026464522816240788,
+          "max_absolute": 0.022080421447753906,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 102,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003946138545870781,
+          "max_absolute": 0.037109375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003946154378354549,
+          "max_absolute": 0.037109375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003940352238714695,
+          "max_absolute": 0.03650712966918945,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 103,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025534911546856165,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0025534103624522686,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0025457378942519426,
+          "max_absolute": 0.0305328369140625,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 104,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0031250405590981245,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0031249779276549816,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003117872169241309,
+          "max_absolute": 0.0386967658996582,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 105,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016735079698264599,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001673434511758387,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0016606977442279458,
+          "max_absolute": 0.02306365966796875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 106,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0023257301654666662,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002325743902474642,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0023164195008575916,
+          "max_absolute": 0.02605152130126953,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 107,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0019871406257152557,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00198730593547225,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001974622718989849,
+          "max_absolute": 0.02771472930908203,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 108,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001833416405133903,
+          "max_absolute": 0.02392578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018333797343075275,
+          "max_absolute": 0.02392578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018214564770460129,
+          "max_absolute": 0.02402627468109131,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 109,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025489996187388897,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0025488799437880516,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0025404125917702913,
+          "max_absolute": 0.028719425201416016,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 110,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003129955381155014,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003129929304122925,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0031240792013704777,
+          "max_absolute": 0.029879868030548096,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 111,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001502756029367447,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001502752536907792,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0014892428880557418,
+          "max_absolute": 0.01985931396484375,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 112,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0006173955043777823,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0006174156442284584,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0005820002406835556,
+          "max_absolute": 0.010842323303222656,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 112,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0006249387515708804,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0006249454454518855,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0005924042197875679,
+          "max_absolute": 0.009191513061523438,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 113,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00412839325144887,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004128417000174522,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004123047459870577,
+          "max_absolute": 0.04062831401824951,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 113,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0034990396816283464,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0034991842694580555,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0034923404455184937,
+          "max_absolute": 0.02863454818725586,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 114,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0036250127013772726,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003624922828748822,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0036192303523421288,
+          "max_absolute": 0.029231548309326172,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 114,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0015376540832221508,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0015377592062577605,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001522901700809598,
+          "max_absolute": 0.019323110580444336,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 115,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0019843641202896833,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019844183698296547,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019745538011193275,
+          "max_absolute": 0.039093971252441406,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 115,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0013814517296850681,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0013813429977744818,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0013670058688148856,
+          "max_absolute": 0.01739978790283203,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 116,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0035237499978393316,
+          "max_absolute": 0.03021240234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003523880848661065,
+          "max_absolute": 0.03021240234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003518203506246209,
+          "max_absolute": 0.03018888831138611,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 116,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0013291112845763564,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0013290088390931487,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0013136334018781781,
+          "max_absolute": 0.014123201370239258,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 117,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0017579233972355723,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0017579629784449935,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017437568167224526,
+          "max_absolute": 0.028524398803710938,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 117,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002064380096271634,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002064371481537819,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002055457327514887,
+          "max_absolute": 0.02563762664794922,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 118,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001928488491103053,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019285096786916256,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019194107735529542,
+          "max_absolute": 0.021962404251098633,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 118,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002278537256643176,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002278634114190936,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0022687751334160566,
+          "max_absolute": 0.024523258209228516,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 119,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0033656039740890265,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003365549724549055,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0033589869271963835,
+          "max_absolute": 0.043984413146972656,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 119,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025671995244920254,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002567317569628358,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.00255770655348897,
+          "max_absolute": 0.02832341194152832,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 120,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002366085071116686,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002366063417866826,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002355391625314951,
+          "max_absolute": 0.028473258018493652,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 120,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003008252242580056,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0030082862358540297,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002999440534040332,
+          "max_absolute": 0.041858673095703125,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 121,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029496783390641212,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002949685323983431,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0029429737478494644,
+          "max_absolute": 0.048553466796875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 121,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002633629832416773,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0026337122544646263,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0026239582803100348,
+          "max_absolute": 0.031988441944122314,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 122,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00071421341272071,
+          "max_absolute": 0.01171875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0007141795358620584,
+          "max_absolute": 0.01171875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0006824214360676706,
+          "max_absolute": 0.01084756851196289,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 122,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0017579233972355723,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0017579629784449935,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017437568167224526,
+          "max_absolute": 0.028524398803710938,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 122,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0006173955043777823,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0006174156442284584,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0005820002406835556,
+          "max_absolute": 0.010842323303222656,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 122,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0006249387515708804,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0006249454454518855,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0005924042197875679,
+          "max_absolute": 0.009191513061523438,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 123,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00412839325144887,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004128417000174522,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004123047459870577,
+          "max_absolute": 0.04062831401824951,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 123,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0034990396816283464,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0034991842694580555,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0034923404455184937,
+          "max_absolute": 0.02863454818725586,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 123,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002278537256643176,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002278634114190936,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0022687751334160566,
+          "max_absolute": 0.024523258209228516,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 123,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00451640086248517,
+          "max_absolute": 0.080078125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004516427405178547,
+          "max_absolute": 0.080078125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004510608501732349,
+          "max_absolute": 0.0801689624786377,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 124,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0036250127013772726,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003624922828748822,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0036192303523421288,
+          "max_absolute": 0.029231548309326172,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 124,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0015376540832221508,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0015377592062577605,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001522901700809598,
+          "max_absolute": 0.019323110580444336,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 124,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025671995244920254,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002567317569628358,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.00255770655348897,
+          "max_absolute": 0.02832341194152832,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 124,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0019372260430827737,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019373156828805804,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019262114074081182,
+          "max_absolute": 0.022332191467285156,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 125,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0019843641202896833,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019844183698296547,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019745538011193275,
+          "max_absolute": 0.039093971252441406,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 125,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0013814517296850681,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0013813429977744818,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0013670058688148856,
+          "max_absolute": 0.01739978790283203,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 125,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003008252242580056,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0030082862358540297,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002999440534040332,
+          "max_absolute": 0.041858673095703125,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 125,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0013976112240925431,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0013975730398669839,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0013803174952045083,
+          "max_absolute": 0.018859386444091797,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 126,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0035237499978393316,
+          "max_absolute": 0.03021240234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003523880848661065,
+          "max_absolute": 0.03021240234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003518203506246209,
+          "max_absolute": 0.03018888831138611,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 126,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0013291112845763564,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0013290088390931487,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0013136334018781781,
+          "max_absolute": 0.014123201370239258,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 126,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002633629832416773,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0026337122544646263,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0026239582803100348,
+          "max_absolute": 0.031988441944122314,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 126,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002871566917747259,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0028713790234178305,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0028631752356886864,
+          "max_absolute": 0.02796483039855957,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 127,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0006249387515708804,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0006249454454518855,
+          "max_absolute": 0.009765625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0005924042197875679,
+          "max_absolute": 0.009191513061523438,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 127,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001510975300334394,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001511018956080079,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0014984869631007314,
+          "max_absolute": 0.017815589904785156,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 128,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016303897136822343,
+          "max_absolute": 0.017578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001630311249755323,
+          "max_absolute": 0.017578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0016172932228073478,
+          "max_absolute": 0.017565131187438965,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 128,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00412839325144887,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004128417000174522,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004123047459870577,
+          "max_absolute": 0.04062831401824951,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 129,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002175311790779233,
+          "max_absolute": 0.02490234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002175470581278205,
+          "max_absolute": 0.02490234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002168641658499837,
+          "max_absolute": 0.024977922439575195,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 129,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0036250127013772726,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003624922828748822,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0036192303523421288,
+          "max_absolute": 0.029231548309326172,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 130,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016236869851127267,
+          "max_absolute": 0.0302734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016237512463703752,
+          "max_absolute": 0.0302734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0016103608068078756,
+          "max_absolute": 0.030563831329345703,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 130,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0019843641202896833,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019844183698296547,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019745538011193275,
+          "max_absolute": 0.039093971252441406,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 131,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016429086681455374,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016428845701739192,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001630991930142045,
+          "max_absolute": 0.027268648147583008,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 131,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0035237499978393316,
+          "max_absolute": 0.03021240234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003523880848661065,
+          "max_absolute": 0.03021240234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003518203506246209,
+          "max_absolute": 0.03018888831138611,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 132,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002064380096271634,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002064371481537819,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002055457327514887,
+          "max_absolute": 0.02563762664794922,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 132,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025107471738010645,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0025108293630182743,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0024986283387988806,
+          "max_absolute": 0.028299480676651,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 133,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002021305961534381,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0020212724339216948,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0020101997070014477,
+          "max_absolute": 0.027059555053710938,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 133,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001928488491103053,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019285096786916256,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019194107735529542,
+          "max_absolute": 0.021962404251098633,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 134,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00330793927423656,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.00330799026414752,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0033016090746968985,
+          "max_absolute": 0.031208038330078125,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 134,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0033656039740890265,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003365549724549055,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0033589869271963835,
+          "max_absolute": 0.043984413146972656,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 135,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0012107626534998417,
+          "max_absolute": 0.01953125,
+          "greedy_match": false,
+          "passed": false
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0012107613729313016,
+          "max_absolute": 0.01953125,
+          "greedy_match": false,
+          "passed": false
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001192821771837771,
+          "max_absolute": 0.01867818832397461,
+          "greedy_match": true,
+          "passed": true
+        }
+      },
+      "top5": {
+        "native": [
+          [
+            470,
+            17.9375
+          ],
+          [
+            582,
+            17.9375
+          ],
+          [
+            432,
+            17.734375
+          ],
+          [
+            323,
+            17.6875
+          ],
+          [
+            714,
+            17.59375
+          ]
+        ],
+        "dense_fp16": [
+          [
+            470,
+            17.9375
+          ],
+          [
+            582,
+            17.9375
+          ],
+          [
+            432,
+            17.734375
+          ],
+          [
+            323,
+            17.6875
+          ],
+          [
+            714,
+            17.59375
+          ]
+        ],
+        "dense_fp32": [
+          [
+            582,
+            17.94310188293457
+          ],
+          [
+            470,
+            17.935871124267578
+          ],
+          [
+            432,
+            17.737445831298828
+          ],
+          [
+            323,
+            17.684755325317383
+          ],
+          [
+            714,
+            17.588531494140625
+          ]
+        ],
+        "reference": [
+          [
+            582,
+            17.9375
+          ],
+          [
+            470,
+            17.921875
+          ],
+          [
+            432,
+            17.734375
+          ],
+          [
+            323,
+            17.6875
+          ],
+          [
+            714,
+            17.578125
+          ]
+        ]
+      }
+    },
+    {
+      "event_index": 135,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002366085071116686,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002366063417866826,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002355391625314951,
+          "max_absolute": 0.028473258018493652,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 136,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0015091069508343935,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.001509110676124692,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0014944482827559114,
+          "max_absolute": 0.022899627685546875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 136,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029496783390641212,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002949685323983431,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0029429737478494644,
+          "max_absolute": 0.048553466796875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 137,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0017579233972355723,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0017579629784449935,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017437568167224526,
+          "max_absolute": 0.028524398803710938,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 137,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002064380096271634,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002064371481537819,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002055457327514887,
+          "max_absolute": 0.02563762664794922,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 137,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016675143269822001,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016675048973411322,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001654305960983038,
+          "max_absolute": 0.019977688789367676,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 138,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021408768370747566,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0021409601904451847,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0021311191376298666,
+          "max_absolute": 0.021602869033813477,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 138,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001928488491103053,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019285096786916256,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019194107735529542,
+          "max_absolute": 0.021962404251098633,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 138,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002278537256643176,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002278634114190936,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0022687751334160566,
+          "max_absolute": 0.024523258209228516,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 139,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003425297560170293,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0034253213088959455,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.003419003915041685,
+          "max_absolute": 0.03415727615356445,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 139,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0033656039740890265,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.003365549724549055,
+          "max_absolute": 0.04296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0033589869271963835,
+          "max_absolute": 0.043984413146972656,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 139,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025671995244920254,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002567317569628358,
+          "max_absolute": 0.0283203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.00255770655348897,
+          "max_absolute": 0.02832341194152832,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 140,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021582103800028563,
+          "max_absolute": 0.026123046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0021582236513495445,
+          "max_absolute": 0.026123046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002147986786440015,
+          "max_absolute": 0.02608788013458252,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 140,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002366085071116686,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002366063417866826,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002355391625314951,
+          "max_absolute": 0.028473258018493652,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 140,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003008252242580056,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0030082862358540297,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002999440534040332,
+          "max_absolute": 0.041858673095703125,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 141,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00216833408921957,
+          "max_absolute": 0.02587890625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002168337581679225,
+          "max_absolute": 0.02587890625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002158828778192401,
+          "max_absolute": 0.026268482208251953,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 141,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029496783390641212,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002949685323983431,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0029429737478494644,
+          "max_absolute": 0.048553466796875,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 141,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002633629832416773,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0026337122544646263,
+          "max_absolute": 0.0322265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0026239582803100348,
+          "max_absolute": 0.031988441944122314,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 142,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0020804456435143948,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002080407226458192,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002069398993626237,
+          "max_absolute": 0.02473735809326172,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 142,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021924839820712805,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0021925410255789757,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0021822224371135235,
+          "max_absolute": 0.026170969009399414,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 143,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0017158749978989363,
+          "max_absolute": 0.02490234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0017158922273665667,
+          "max_absolute": 0.02490234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017021751264110208,
+          "max_absolute": 0.024959325790405273,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 143,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002847465453669429,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0028473548591136932,
+          "max_absolute": 0.041015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002840853063389659,
+          "max_absolute": 0.04088425636291504,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 144,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002133412519469857,
+          "max_absolute": 0.031494140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002133362926542759,
+          "max_absolute": 0.031494140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0021223288495093584,
+          "max_absolute": 0.031537532806396484,
+          "greedy_match": false,
+          "passed": false
+        }
+      },
+      "top5": {
+        "native": [
+          [
+            304,
+            18.5
+          ],
+          [
+            510,
+            18.5
+          ],
+          [
+            438,
+            18.390625
+          ],
+          [
+            323,
+            18.3125
+          ],
+          [
+            369,
+            18.015625
+          ]
+        ],
+        "dense_fp16": [
+          [
+            304,
+            18.5
+          ],
+          [
+            510,
+            18.5
+          ],
+          [
+            438,
+            18.390625
+          ],
+          [
+            323,
+            18.3125
+          ],
+          [
+            369,
+            18.015625
+          ]
+        ],
+        "dense_fp32": [
+          [
+            510,
+            18.494434356689453
+          ],
+          [
+            304,
+            18.492467880249023
+          ],
+          [
+            438,
+            18.383731842041016
+          ],
+          [
+            323,
+            18.30988121032715
+          ],
+          [
+            369,
+            18.010929107666016
+          ]
+        ],
+        "reference": [
+          [
+            304,
+            18.484375
+          ],
+          [
+            510,
+            18.484375
+          ],
+          [
+            438,
+            18.375
+          ],
+          [
+            323,
+            18.296875
+          ],
+          [
+            369,
+            18.0
+          ]
+        ]
+      }
+    },
+    {
+      "event_index": 144,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0022664254065603018,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0022664202842861414,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002256277482956648,
+          "max_absolute": 0.03171682357788086,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 145,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0015758367953822017,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0015758030349388719,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0015615863958373666,
+          "max_absolute": 0.03444671630859375,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 145,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.003185834502801299,
+          "max_absolute": 0.037109375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0031858114525675774,
+          "max_absolute": 0.037109375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0031808074563741684,
+          "max_absolute": 0.03711891174316406,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 146,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018983213230967522,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018984131747856736,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018831773195415735,
+          "max_absolute": 0.03704643249511719,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 146,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.004064837004989386,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.004064788110554218,
+          "max_absolute": 0.03515625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.004059841390699148,
+          "max_absolute": 0.034421682357788086,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 147,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002176281064748764,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0021763101685792208,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0021663110237568617,
+          "max_absolute": 0.02581334114074707,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 147,
+      "kind": "prefill",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00240612355992198,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0024062071461230516,
+          "max_absolute": 0.025390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002396730473265052,
+          "max_absolute": 0.026273250579833984,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 148,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025876888539642096,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0025878390297293663,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002579165855422616,
+          "max_absolute": 0.029346466064453125,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 148,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0021627412643283606,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002162603661417961,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0021529418881982565,
+          "max_absolute": 0.024293899536132812,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 149,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016699497355148196,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016700756968930364,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001657518558204174,
+          "max_absolute": 0.023308277130126953,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 149,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0025937871541827917,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0025938730686903,
+          "max_absolute": 0.029296875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0025863617192953825,
+          "max_absolute": 0.028948307037353516,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 150,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018270054133608937,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018270650180056691,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018164149951189756,
+          "max_absolute": 0.029331207275390625,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 150,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001671495265327394,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016715859528630972,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001659021363593638,
+          "max_absolute": 0.02353954315185547,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 151,
+      "kind": "decode",
+      "slot": 0,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0016084760427474976,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0016084600938484073,
+          "max_absolute": 0.021484375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0015951512614265084,
+          "max_absolute": 0.020786046981811523,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 151,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002433461369946599,
+          "max_absolute": 0.0244140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002433274406939745,
+          "max_absolute": 0.0244140625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0024239951744675636,
+          "max_absolute": 0.024231553077697754,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 152,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018700892105698586,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018701034132391214,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0018577704904600978,
+          "max_absolute": 0.02481222152709961,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 152,
+      "kind": "prefill",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029915038030594587,
+          "max_absolute": 0.027099609375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002991464687511325,
+          "max_absolute": 0.027099609375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0029861757066100836,
+          "max_absolute": 0.02719813585281372,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 153,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001514210132881999,
+          "max_absolute": 0.017578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0015142416814342141,
+          "max_absolute": 0.017578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001498880097642541,
+          "max_absolute": 0.018433332443237305,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 153,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018830784829333425,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018830684712156653,
+          "max_absolute": 0.015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001872039632871747,
+          "max_absolute": 0.016210317611694336,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 154,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0014195413095876575,
+          "max_absolute": 0.0166015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0014194638933986425,
+          "max_absolute": 0.0166015625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0014052268816158175,
+          "max_absolute": 0.017012357711791992,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 154,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0017801010981202126,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0017800801433622837,
+          "max_absolute": 0.01953125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017657651333138347,
+          "max_absolute": 0.02015399932861328,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 155,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002079119672998786,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0020790027920156717,
+          "max_absolute": 0.02734375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002068749163299799,
+          "max_absolute": 0.02769947052001953,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 155,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018586543155834079,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018586271908134222,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001847516163252294,
+          "max_absolute": 0.02287924289703369,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 156,
+      "kind": "decode",
+      "slot": 3,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0028234345372766256,
+          "max_absolute": 0.017578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0028233982156962156,
+          "max_absolute": 0.017578125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0028140584472566843,
+          "max_absolute": 0.01797616481781006,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 156,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002070115879178047,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0020700020249933004,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002059911610558629,
+          "max_absolute": 0.024100303649902344,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 157,
+      "kind": "prefill",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0017680608434602618,
+          "max_absolute": 0.0224609375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0017680525779724121,
+          "max_absolute": 0.0224609375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0017546818125993013,
+          "max_absolute": 0.022214531898498535,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 157,
+      "kind": "prefill",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.001970432000234723,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0019704399164766073,
+          "max_absolute": 0.02197265625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0019606503192335367,
+          "max_absolute": 0.02196371555328369,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 158,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0029894181061536074,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002989365253597498,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0029828264378011227,
+          "max_absolute": 0.04017829895019531,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 158,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002905246103182435,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0029052291065454483,
+          "max_absolute": 0.0390625,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0028992686420679092,
+          "max_absolute": 0.037996768951416016,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 159,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002349426504224539,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0023492940235882998,
+          "max_absolute": 0.033203125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002340271370485425,
+          "max_absolute": 0.03492259979248047,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 159,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0026485929265618324,
+          "max_absolute": 0.0321044921875,
+          "greedy_match": false,
+          "passed": false
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0026485149282962084,
+          "max_absolute": 0.0321044921875,
+          "greedy_match": false,
+          "passed": false
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0026404187083244324,
+          "max_absolute": 0.032120704650878906,
+          "greedy_match": false,
+          "passed": false
+        }
+      },
+      "top5": {
+        "native": [
+          [
+            1251,
+            15.5625
+          ],
+          [
+            3589,
+            15.5625
+          ],
+          [
+            4143,
+            15.4765625
+          ],
+          [
+            8153,
+            15.25
+          ],
+          [
+            3039,
+            14.765625
+          ]
+        ],
+        "dense_fp16": [
+          [
+            1251,
+            15.5625
+          ],
+          [
+            3589,
+            15.5625
+          ],
+          [
+            4143,
+            15.4765625
+          ],
+          [
+            8153,
+            15.25
+          ],
+          [
+            3039,
+            14.765625
+          ]
+        ],
+        "dense_fp32": [
+          [
+            1251,
+            15.564476013183594
+          ],
+          [
+            3589,
+            15.563604354858398
+          ],
+          [
+            4143,
+            15.479108810424805
+          ],
+          [
+            8153,
+            15.250595092773438
+          ],
+          [
+            3039,
+            14.764731407165527
+          ]
+        ],
+        "reference": [
+          [
+            3589,
+            15.5625
+          ],
+          [
+            1251,
+            15.546875
+          ],
+          [
+            4143,
+            15.484375
+          ],
+          [
+            8153,
+            15.25
+          ],
+          [
+            3039,
+            14.765625
+          ]
+        ]
+      }
+    },
+    {
+      "event_index": 160,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0018525708001106977,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0018524519400671124,
+          "max_absolute": 0.0234375,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.001840887009166181,
+          "max_absolute": 0.023830413818359375,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 160,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.0024350048042833805,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0024349503219127655,
+          "max_absolute": 0.046875,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002427603816613555,
+          "max_absolute": 0.046541690826416016,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 161,
+      "kind": "decode",
+      "slot": 2,
+      "variants": {
+        "native": {
+          "relative_rms": 0.00217546708881855,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.002175368135794997,
+          "max_absolute": 0.03125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.0021658791229128838,
+          "max_absolute": 0.0311431884765625,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    },
+    {
+      "event_index": 161,
+      "kind": "decode",
+      "slot": 1,
+      "variants": {
+        "native": {
+          "relative_rms": 0.002816750667989254,
+          "max_absolute": 0.0361328125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp16": {
+          "relative_rms": 0.0028166465926915407,
+          "max_absolute": 0.0361328125,
+          "greedy_match": true,
+          "passed": true
+        },
+        "dense_fp32": {
+          "relative_rms": 0.002808725694194436,
+          "max_absolute": 0.03564310073852539,
+          "greedy_match": true,
+          "passed": true
+        }
+      }
+    }
+  ],
+  "sources": {
+    "dllm/quantized_kernels_q4.py": "8823b2a64db0fab5192f8cf7e5b856b10b43e8646b067bf008f09b6b58e3733d",
+    "dllm/qwen2.py": "fc5e0140135176010c0ec100b4df1c4543886bb12c00e665190008d46298bbe6",
+    "dllm/layer_stage.py": "77498f98e70328858ef4a69c5d38d0637ea7275407825fa3377e2c5f99fd91cf",
+    "dllm/partition.py": "b8ba83ad0980691b5972a2f2c2973d04f107d917eb56d1c4a5e71d7c9e94845c",
+    "scripts/experiments/q4_prefill.py": "c6c7db490ed6a61eb64852ed4faf60c5f96a3857d7783690cc0192b57e8eb1bc",
+    "scripts/experiments/diagnose_q4_head.py": "da03d50f871a862b25c101fc2c56231daa4b9c92d839c070267f0fb03d2d69e8"
+  },
+  "summary": {
+    "native": {
+      "checks": 282,
+      "failures": 3
+    },
+    "dense_fp16": {
+      "checks": 282,
+      "failures": 3
+    },
+    "dense_fp32": {
+      "checks": 282,
+      "failures": 3
+    }
+  },
+  "completed": true
+}

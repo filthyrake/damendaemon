@@ -34,9 +34,14 @@ def cases_from_trace(trace):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('trace');parser.add_argument('--output',required=True)
     parser.add_argument('--inject-stage-failure',action='store_true')
+    parser.add_argument('--experimental-q4-body',action='store_true')
     parser.add_argument('--allocation-diagnostics',action='store_true');args=parser.parse_args()
     if args.inject_stage_failure and args.allocation_diagnostics:parser.error('choose one diagnostic mode')
+    if args.experimental_q4_body and (args.inject_stage_failure or args.allocation_diagnostics):
+        parser.error('Q4 body experiment cannot combine server overrides')
     trace=torch.load(args.trace,map_location='cpu',weights_only=True)
+    if args.experimental_q4_body and trace.get('reference_quantization')!='q4_0':
+        parser.error('Q4 body experiment requires a Q4 reference')
     cases=cases_from_trace(trace);assert len(cases)>=4
     model=trace['path'];tokenizer=Tokenizer.from_file(str(Path(model)/'tokenizer.json'))
     eos=json.loads((Path(model)/'config.json').read_text())['eos_token_id']
@@ -46,13 +51,16 @@ def main():
             if token in eos:case['tokens']=case['tokens'][:index+1];break
     report=dict(passed=False,model=model,quantization=trace.get('reference_quantization','none'),
         trace_sha256=hashlib.sha256(Path(args.trace).read_bytes()).hexdigest(),checks=[],trials=[],statuses={},
-        injected_stage_failure=args.inject_stage_failure,allocation_diagnostics=args.allocation_diagnostics,scope='same-host two-GPU HTTP qualification')
+        injected_stage_failure=args.inject_stage_failure,allocation_diagnostics=args.allocation_diagnostics,
+        experimental_q4_body=args.experimental_q4_body,scope='same-host two-GPU HTTP qualification')
     with tempfile.TemporaryDirectory(prefix='dllm-partition-http-') as directory:
         logpath=Path(directory)/'server.log'
         env={**os.environ,'DLLM_QUANTIZATION':report['quantization'],'DLLM_DEVICE':'cuda'}
         with logpath.open('w') as log:
             command=([sys.executable,__file__,'--failure-server'] if args.inject_stage_failure else
-                     [sys.executable,__file__,'--diagnostic-server'] if args.allocation_diagnostics else [sys.executable,'-m','dllm'])
+                     [sys.executable,__file__,'--diagnostic-server'] if args.allocation_diagnostics else
+                     [sys.executable,'-m','scripts.experiments.run_q4_body'] if args.experimental_q4_body else
+                     [sys.executable,'-m','dllm'])
             process=subprocess.Popen([*command,'serve','--port','0','--context','512','--layer-split','12',
                 '--batch-size','4','--batch-wait-ms','10','--gpu-models','1','--host-models','2','--host-gib','8',
                 '--model','a='+model,'--model','b='+model],stdout=log,stderr=log,env=env)

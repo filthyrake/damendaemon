@@ -20,22 +20,32 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('prompt')
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
     p.add_argument('--batch-wait-ms',type=float,default=0)
+    p.add_argument('--compare',choices=('prefill','q4-body'),default='prefill')
     p.add_argument('--output',required=True);args=p.parse_args()
     if not 0<=args.batch_wait_ms<=10:raise ValueError('invalid coalescing delay')
+    if args.compare=='q4-body' and args.quantization!='q4_0':raise ValueError('Q4 body comparison requires Q4 weights')
+    modes=('sequential','packed') if args.compare=='prefill' else ('paired','contiguous')
     report=dict(passed=False,model=args.model,quantization=args.quantization,context=512,batch_size=4,
-        batch_wait_ms=args.batch_wait_ms,output_tokens=32,trials=[],
+        batch_wait_ms=args.batch_wait_ms,compare=args.compare,output_tokens=32,trials=[],
         devices=os.environ.get('CUDA_VISIBLE_DEVICES'),
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                  ('dllm/batch.py','dllm/layer_stage.py','dllm/partition.py','dllm/partition_policy.py')},
-        scope='Same model, precision, GPU pair and HTTP workload; sequential versus packed stage prefill only.')
+        scope='Same model, precision, GPU pair and HTTP workload; '+
+              ('sequential versus packed stage prefill only.' if args.compare=='prefill' else
+               'paired versus contiguous packed Q4 body arithmetic; prompt packing disabled in both.'))
+    if args.compare=='q4-body':
+        for name in ('dllm/quantized_kernels_q4.py','scripts/experiments/q4_prefill.py',
+                     'scripts/experiments/q4_body_single_dot.py','scripts/experiments/run_q4_body.py'):
+            report['sources'][name]=hashlib.sha256(Path(name).read_bytes()).hexdigest()
     env={**os.environ,'DLLM_DEVICE':'cuda','DLLM_QUANTIZATION':args.quantization,'OMP_NUM_THREADS':'4'}
     reference=None
     try:
         with tempfile.TemporaryDirectory(prefix='dllm-partition-prefill-') as directory:
             logpath=Path(directory)/'server.log'
-            for mode in ('sequential','packed','packed','sequential'):
+            for mode in (modes[0],modes[1],modes[1],modes[0]):
                 with logpath.open('w') as log:
-                    process=subprocess.Popen([sys.executable,'-m','dllm','serve','--port','0','--context','512',
+                    module='scripts.experiments.run_q4_body' if mode=='contiguous' else 'dllm'
+                    process=subprocess.Popen([sys.executable,'-m',module,'serve','--port','0','--context','512',
                         '--layer-split','12','--batch-size','4','--batch-wait-ms',str(args.batch_wait_ms),
                         '--model','a='+args.model],
                         env={**env,'DLLM_PARTITION_PACKED_PREFILL':str(int(mode=='packed'))},
@@ -69,7 +79,7 @@ def main():
                             except subprocess.TimeoutExpired:os.killpg(process.pid,signal.SIGKILL);process.wait(10)
         report['summary']=[]
         for concurrency in (1,2,4):
-            for mode in ('sequential','packed'):
+            for mode in modes:
                 runs=[run for trial in report['trials'] if trial['mode']==mode
                       for run in trial['results'] if run['concurrency']==concurrency]
                 samples=[sample for run in runs for sample in run['trials'] if not sample['warmup']]
