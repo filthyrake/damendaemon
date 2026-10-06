@@ -50,8 +50,8 @@ def plan(weights, layer_count):
         raise ValueError('invalid streamed layer count')
     fixed, layers = [], [[] for _ in range(layer_count)]
     for name, tensor in weights.items():
-        if tensor.device.type != 'cpu' or not tensor.is_floating_point():
-            raise ValueError('layer streaming requires floating-point CPU source weights')
+        if tensor.device.type not in ('cpu', 'meta') or not tensor.is_floating_point():
+            raise ValueError('layer planning requires floating-point CPU or shape-only source weights')
         if name in ('embed', 'head', 'norm'):
             fixed.append(name)
         else:
@@ -71,6 +71,8 @@ def plan(weights, layer_count):
 
 class LayerWeightStore:
     def __init__(self, weights, layout, copy, synchronize, empty_cache):
+        if any(t.device.type != 'cpu' for t in weights.values()):
+            raise ValueError('layer execution requires actual CPU source weights')
         self.source, self.layout = weights, layout
         self.copy, self.synchronize, self.empty_cache = copy, synchronize, empty_cache
         self.resident = {}

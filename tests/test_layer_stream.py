@@ -153,3 +153,13 @@ class LayerStreamTests(unittest.TestCase):
             self.assertEqual(store.resident_bytes, 0)
         finally:
             fixture.doCleanups()
+
+    def test_meta_headers_can_plan_but_cannot_execute(self):
+        weights = {name: tensor.to('meta') for name, tensor in self.weights().items()}
+        weights['head'] = weights['embed']
+        layout = plan(weights, 2)
+        self.assertEqual(layout.peak_bytes, 224)
+        copy = Mock()
+        with self.assertRaisesRegex(ValueError, 'actual CPU'):
+            LayerWeightStore(weights, layout, copy, Mock(), Mock())
+        copy.assert_not_called()

@@ -523,3 +523,11 @@ process cancellation and rotate admitted prompts between chunks. Layer transfers
 within a chunk remain synchronous. CPU regressions cover the combined streamed
 and chunked path, including an interleaved second slot. This adds scheduling
 behavior, not a hardware latency guarantee.
+
+`dllm plan-hybrid` also reports a `layer_streaming` storage scenario using the
+same layer plan as execution: fixed weights, each layer's bytes, peak resident
+weights and the output-head FP32 temporary. Its per-context rows add state and
+the workspace floor. This scenario estimates unquantized source storage only;
+it does not imply that a requested context, cache dtype, hardware or performance
+level is admitted by the experimental execution policy. Existing fully resident
+estimate fields retain their meaning.

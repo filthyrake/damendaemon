@@ -55,6 +55,12 @@ class CapacityCliTests(unittest.TestCase):
             state = 2*1*512*16*4 + 2*16*16*4 + 64*4*4
             self.assertEqual(report['contexts']['512']['1']['state_bytes'], state)
             self.assertEqual(report['contexts']['512']['4']['state_bytes'], state*4)
+            streaming = report['layer_streaming']
+            self.assertEqual(streaming['peak_resident_weight_bytes'],
+                             streaming['fixed_weight_bytes'] + max(streaming['per_layer_weight_bytes']))
+            self.assertEqual(streaming['output_head_workspace_bytes'], 64*32*4)
+            self.assertEqual(streaming['contexts']['512']['1']['with_workspace_floor_bytes'],
+                             streaming['peak_resident_weight_bytes'] + state + 64*32*4 + 512*1024**2)
             self.assertEqual(report['runtime_qualification'], 'not assessed')
             self.assertNotIn('runtime_supported_quantization', report)
             output = io.StringIO()

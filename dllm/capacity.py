@@ -80,11 +80,18 @@ def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536,
             else:
                 total += n * tensor.element_size()
         totals[mode] = total
+    from .layer_stream import plan as plan_streaming
+    streaming = plan_streaming(weights, config['num_hidden_layers'])
+    head_workspace = weights['head'].numel()*4 if weights['head'].dtype != torch.float32 else 0
     rows = {}
+    streamed_rows = {}
     for context in contexts:
         rows[str(context)] = {}
+        streamed_rows[str(context)] = {}
         for users in batches:
             state_bytes = hybrid_state_bytes(config, context, users, cache_element_bytes)
+            streamed_rows[str(context)][str(users)] = {
+                'weights_state_and_head_workspace_bytes': streaming.peak_bytes+state_bytes+head_workspace}
             rows[str(context)][str(users)] = {
                 'state_bytes': state_bytes,
                 'weights_plus_state_bytes': {mode: size+state_bytes for mode, size in totals.items()},
@@ -92,6 +99,11 @@ def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536,
     return dict(repository=inventory['repository'], revision=inventory['resolved_revision'],
                 kv_and_convolution_dtype=cache_dtype, recurrent_dtype='float32',
                 weight_bytes=totals, estimated_storage_formats=list(totals),
+                layer_streaming=dict(weight_format='none', fixed_weight_bytes=streaming.fixed_bytes,
+                    per_layer_weight_bytes=list(streaming.layer_bytes),
+                    peak_resident_weight_bytes=streaming.peak_bytes,
+                    output_head_workspace_bytes=head_workspace, contexts=streamed_rows,
+                    limitation='Storage estimate only; active implementation has separate CUDA, FP16, eager and context limits.'),
                 runtime_qualification='not assessed', contexts=rows, mapped_tensors=len(weights),
                 excluded_tensors=len(state),
                 limitation='Shape-only text-loader and packed-storage estimate. Excludes workspace, allocator, graphs, communication, host copies and loading peaks. No weight values, inference, quality or performance validated.')
@@ -137,4 +149,8 @@ def plan_local(path, contexts, batches, cache_dtype):
             row['weights_state_and_workspace_floor_bytes'] = {
                 mode: size+result['workspace_admission_floor_bytes']
                 for mode, size in row['weights_plus_state_bytes'].items()}
+    for users in result['layer_streaming']['contexts'].values():
+        for row in users.values():
+            row['with_workspace_floor_bytes'] = (
+                row['weights_state_and_head_workspace_bytes'] + result['workspace_admission_floor_bytes'])
     return result
