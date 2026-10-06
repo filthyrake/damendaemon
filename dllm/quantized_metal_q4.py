@@ -45,8 +45,18 @@ kernel void linear_NAME(device const TYPE* x, device const uchar* w,
     }
 }
 '''
+# Preserve the general 64-bit path for tensors outside the qualified index range.
+# Metal's wide integer arithmetic is expensive inside this bandwidth-bound loop.
+_INDEX32_KERNEL = _KERNELS[_KERNELS.index('kernel void linear_NAME'):]
+for _name in ('rows', 'outputs', 'width', 'biased'):
+    _INDEX32_KERNEL = _INDEX32_KERNEL.replace('constant long& '+_name, 'constant long& '+_name+'_arg')
+_INDEX32_KERNEL = (_INDEX32_KERNEL.replace('linear_NAME(', 'linear_NAME_index32(')
+    .replace('long channel=id.x/32, batch=id.y*4;',
+             'uint rows=uint(rows_arg), outputs=uint(outputs_arg), width=uint(width_arg), biased=uint(biased_arg); '
+             'uint channel=id.x/32, batch=id.y*4;')
+    .replace('for(long d=lane;', 'for(uint d=lane;').replace('long low=', 'uint low='))
 _SOURCE = '#include <metal_stdlib>\nusing namespace metal;\n' + ''.join(
-    _KERNELS.replace('NAME', name).replace('TYPE', name) for name in ('float', 'half'))
+    (_KERNELS + _INDEX32_KERNEL).replace('NAME', name).replace('TYPE', name) for name in ('float', 'half'))
 _library = None
 
 
@@ -82,7 +92,11 @@ def linear(x, weight, scales, bias=None):
         out = F.linear(x, expanded, bias)
     else:
         out = torch.empty((x.shape[0], outputs), device=x.device, dtype=x.dtype)
-        (library().linear_half if half else library().linear_float)(
+        shaders = library()
+        narrow = max(outputs*width, x.numel(), x.shape[0]*outputs) < 2**32
+        kernel = (shaders.linear_half_index32 if half else shaders.linear_float_index32) if narrow else (
+            shaders.linear_half if half else shaders.linear_float)
+        kernel(
             x, weight, scales, x if bias is None else bias, out,
             x.shape[0], outputs, width, int(bias is not None),
             threads=(((outputs+7)//8)*256, (x.shape[0]+3)//4), group_size=(256, 1))

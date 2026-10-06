@@ -79,3 +79,37 @@ Smaller groups help the narrow output/down projections slightly, but do not
 materially improve the large vocabulary projection (roughly 4.55 ms at one
 row). Runtime launch defaults remain unchanged. This is a component benchmark,
 not a measured end-to-end optimization.
+
+
+## Guarded 32-bit indexing optimization
+
+The projection's 64-bit inner-loop indices are expensive on M4. The runtime
+now uses unsigned 32-bit indices when input, output and logical weight element
+counts are below 2^32; larger layouts retain the original wide-index shader.
+FP32/FP16 coefficient and accumulation behavior is unchanged. All 28 isolated
+FP64-reference checks and all 82 independent model checks pass again.
+
+The isolated projection experiment checks bit-identical outputs and repeats
+baseline/candidate/candidate/baseline three times per shape. At the 151936 by
+896 vocabulary matrix, one-row latency falls from 4.56 to 0.92 ms. Other
+projection shapes also improve; see `q4-metal-indices.json`.
+
+A separate full-model experiment alternates old/new/new/old three times on the
+same resident weights, M4, Q4 precision, context 512 and 16 input IDs. Each run
+produces the same 32 tokens exactly. Timing includes token readback for the 31
+decode steps after prefill; it excludes prefill, startup and HTTP overhead.
+Each mode has six measured runs after warmup.
+
+| Requests | Old decode ms | New decode ms | Old aggregate tokens/s | New aggregate tokens/s |
+|---|---:|---:|---:|---:|
+| 1 | 625.67 | 249.78 | 49.55 | 124.11 |
+| 4 | 750.73 | 445.60 | 165.18 | 278.29 |
+
+These are matched optimization measurements: 2.50x single-request and 1.68x
+four-request decode throughput. They are not whole-request or upstream-engine
+comparisons. Reproduce with `scripts/experiments/bench_metal_q4_indices.py`;
+reports are `q4-metal-index32-decode-c{1,4}.json`.
+
+The optimized runtime also repeats all 19 real HTTP lifecycle checks, including
+concurrent shrinking batches, Q4/Q8 switching and zero live Metal allocations
+after both complete unloads (`qwen2-q4-metal-index32-http.json`).
