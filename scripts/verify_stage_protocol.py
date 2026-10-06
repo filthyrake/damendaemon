@@ -8,6 +8,7 @@ import argparse
 from datetime import timedelta
 import json
 import os
+import time
 from pathlib import Path
 import torch
 import torch.distributed as dist
@@ -18,6 +19,7 @@ from dllm.stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, S
 
 from dllm.stage_transport import StageChannel
 from dllm.stage_identity import fingerprint
+from dllm.stage_setup import StageSetup
 
 def commands(trace, state):
     for event in trace['trace']:
@@ -42,6 +44,7 @@ def main():
     parser.add_argument('--output', required=True)
     parser.add_argument('--inject-stale-sequence', action='store_true')
     parser.add_argument('--token-completion', action='store_true')
+    parser.add_argument('--fail-setup-rank', type=int, choices=(0, 1))
     args = parser.parse_args()
     rank, local_rank = int(os.environ['RANK']), int(os.environ['LOCAL_RANK'])
     if int(os.environ['WORLD_SIZE']) != 2:parser.error('exactly two workers required')
@@ -53,12 +56,20 @@ def main():
     output = Path(args.output.format(rank=rank))
     output.write_text(json.dumps(report, indent=2)+'\n')
     state = StageState(1, 512)
+    setup = None; setup_finished = False; setup_started = time.perf_counter()
     try:
+        setup = StageSetup.from_torchrun(rank)
+        setup.check_peer()
         model = ModelWeights(args.model, 512, quantization=args.quantization)
         validate(model, 12, 4)
+        setup.check_peer()
         identity = fingerprint(model)
+        if rank == args.fail_setup_rank:raise RuntimeError('injected stage preparation failure')
+        setup.check_peer()
         stage = LayerStage(model, 0 if rank == 0 else 12, 12 if rank == 0 else 24,
                            max_batch=4, stage_graphs=True, kernels='triton')
+        setup.ready(); setup.wait_ready(); setup_finished = True
+        report['setup_seconds'] = time.perf_counter() - setup_started
         dist.init_process_group('nccl', timeout=timedelta(seconds=30),
                                 device_id=torch.device('cuda', local_rank))
         local = torch.tensor(list(identity), dtype=torch.uint8, device='cuda')
@@ -133,6 +144,10 @@ def main():
         report['passed'] = bool(result.item())
         if not report['passed']:raise AssertionError('independent stage protocol reference gate failed')
     except BaseException as error:
+        if setup is not None and not setup_finished:
+            try:setup.fail(error)
+            except Exception as publish_error:report['setup_publish_error'] = repr(publish_error)
+        report['setup_seconds'] = time.perf_counter() - setup_started if not setup_finished else report['setup_seconds']
         state.poison()
         report['error'] = repr(error)
         raise

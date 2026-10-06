@@ -43,5 +43,8 @@ token-return completion on its narrow 255-prompt/32-output workload.
 See [network qualification and measurements](evidence/multi-gpu/README.md#command-driven-a23090-network-qualification).
 
 This remains an experimental worker harness, not an HTTP worker service.
-Failed requests are not resumed; startup/failure supervision remains incomplete.
+Failed requests are not resumed. Reported preparation failures now propagate
+through the CPU rendezvous store before NCCL starts; unreported crashes and
+blocked preparation still need an outer process deadline. General worker
+supervision remains incomplete.
 No available test host exposes RDMA, so RDMA and GPUDirect RDMA remain unqualified.

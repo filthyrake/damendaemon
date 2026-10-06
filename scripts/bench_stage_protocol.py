@@ -19,6 +19,7 @@ from dllm.partition_policy import validate
 from dllm.stage_protocol import Command, StageState, PREFILL, DECODE
 from dllm.stage_transport import StageChannel
 from dllm.stage_identity import fingerprint
+from dllm.stage_setup import StageSetup
 
 
 def transfer(tensor, sender, rank):
@@ -40,12 +41,17 @@ def main():
     if rank == 0:
         Path(args.output).write_text(json.dumps(dict(passed=False, final_report=False))+'\n')
     torch.cuda.set_device(local_rank)
-    model = ModelWeights(args.model, 512, quantization='q8_0'); validate(model, 12, 1)
-    stage = LayerStage(model, 0 if rank == 0 else 12, 12 if rank == 0 else 24,
-                       max_batch=1, stage_graphs=True, kernels='triton')
-    dist.init_process_group('nccl', timeout=timedelta(seconds=30), device_id=torch.device('cuda', local_rank))
+    setup = None; setup_finished = False
     try:
+        setup = StageSetup.from_torchrun(rank, session='benchmark')
+        setup.check_peer()
+        model = ModelWeights(args.model, 512, quantization='q8_0'); validate(model, 12, 1)
+        setup.check_peer()
         identity = fingerprint(model)
+        stage = LayerStage(model, 0 if rank == 0 else 12, 12 if rank == 0 else 24,
+                           max_batch=1, stage_graphs=True, kernels='triton')
+        setup.ready(); setup.wait_ready(); setup_finished = True
+        dist.init_process_group('nccl', timeout=timedelta(seconds=30), device_id=torch.device('cuda', local_rank))
         local = torch.tensor(list(identity), dtype=torch.uint8, device='cuda')
         peers = [torch.empty_like(local) for _ in range(2)]; dist.all_gather(peers, local)
         if not torch.equal(peers[0], peers[1]):raise ValueError('model identity mismatch')
@@ -123,6 +129,9 @@ def main():
                 groups=groups, summaries=summaries)
             Path(args.output).write_text(json.dumps(report, indent=2)+'\n'); print(json.dumps(summaries))
     except BaseException as error:
+        if setup is not None and not setup_finished:
+            try:setup.fail(error)
+            except Exception:pass  # Preserve the original failure if the store disappeared.
         if rank == 0:
             Path(args.output).write_text(json.dumps(dict(passed=False, final_report=True, error=repr(error)))+'\n')
         raise

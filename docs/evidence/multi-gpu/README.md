@@ -343,3 +343,34 @@ rules were removed early at 23:55:07/11 UTC. Lab rich rules returned to empty;
 the desktop retained its original 10.42.0.0/16 rule. GPU allocations returned
 to baseline: A2 0 MiB, A30 13,403 MiB, desktop 10,835 MiB. No permanent firewall
 changes or existing GPU-service restarts were made.
+
+## Reported preparation failures before NCCL
+
+`StageSetup` uses torchrun's existing CPU rendezvous store to publish readiness
+or a bounded exception-type label before NCCL initialization. Prefixes separate
+agent runs, restart counts and caller-supplied setup sessions. Peers check status
+between preparation steps, then wait for both ready states. This adds no work to
+the token loop. Store operations use a five-second timeout; the preparation
+status deadline defaults to 60 seconds. A blocked loader/compiler cannot be
+interrupted by these checks, so the external process deadline remains required.
+
+A real cross-host injection after desktop weight preparation produces explicit
+final failure reports on both hosts, with zero inference commands. The A2 sees
+`peer stage preparation failed: RuntimeError`; neither process requires manual
+termination. A fresh A2/3090 pair then passes all 82 Q8 reference checks across
+35 commands (`qwen2-network-setup-restart-rank*.json`). The same-host injected
+probe was not used to claim propagation: its torchrun parent terminated the
+sibling before that sibling could write a final report.
+
+The benchmark entry point uses the same readiness guard. A short cross-host
+integration run (`qwen2-network-setup-benchmark-smoke.json`) passes exact-token
+agreement across its modes. It uses only one measured request per group and is
+not a replacement for the earlier full performance experiment. The local suite
+passes 391 tests.
+
+The second peer-only window had automatic ten-minute expiry, opened on
+2026-10-06 at 00:00:58/00:01:02 UTC and removed early at 00:04:58/00:05:02 UTC.
+Original firewall rules and all three GPU memory baselines again remain intact.
+Unreported crashes, interrupted preparation calls, in-flight network failures,
+and production worker supervision are still distinct concerns; this change
+specifically resolves the observed reported-preparation-failure path.
