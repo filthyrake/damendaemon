@@ -20,6 +20,8 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('trace')
     p.add_argument('--no-graph', action='store_true')
+    p.add_argument('--cpu-threads', type=int, choices=range(1, 33), default=4,
+                   help='bound CPU loading/quantization parallelism (default:4)')
     p.add_argument('--scalar',action='store_true',help='exercise the direct single-request decoder; requires --slot')
     p.add_argument('--prefill-chunk-size',type=int,default=0)
     p.add_argument('--slot', type=int, help='replay one original slot in isolation to reduce memory use')
@@ -30,7 +32,7 @@ def main():
     if args.scalar and args.slot is None:raise ValueError('--scalar requires --slot')
     if args.prefill_chunk_size<0:raise ValueError('invalid chunk size')
     require_gpu()
-    torch.set_num_threads(4)
+    torch.set_num_threads(args.cpu_threads)
     trace = torch.load(args.trace, map_location='cpu', weights_only=True)
     validate_replay(trace, mode(), allow_quantization_mismatch=args.allow_quantization_mismatch)
     events = trace['trace']
@@ -91,7 +93,7 @@ def main():
         'quantization_matches_reference': model.quantization == trace.get('reference_quantization', 'none'),
         'allow_quantization_mismatch': args.allow_quantization_mismatch,
         'local_model_path': str(model.path), 'source_slot': args.slot, 'scalar':args.scalar,
-        'prefill_chunk_size':args.prefill_chunk_size, 'device': device_name(), 'accelerator':selected_accelerator(), 'torch': str(torch.__version__), 'reference_dtype': trace['reference_dtype'],
+        'prefill_chunk_size':args.prefill_chunk_size, 'cpu_threads':args.cpu_threads, 'device': device_name(), 'accelerator':selected_accelerator(), 'torch': str(torch.__version__), 'reference_dtype': trace['reference_dtype'],
         'rocm_aotriton_experimental':os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL'),
         'reference_torch': trace['reference_torch'], 'packed_cpu_reference':trace.get('packed_cpu_reference',False), 'reference_quantization': trace.get('reference_quantization','none'),
         'reference_device': trace.get('reference_device'), 'packed_gpu_reference':trace.get('packed_gpu_reference',False),

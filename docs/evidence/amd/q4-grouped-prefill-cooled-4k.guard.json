@@ -1,0 +1,70 @@
+{
+  "command": [
+    "/home/damen/strixenv/bin/python",
+    "-m",
+    "scripts.experiments.hybrid_q4_context_probe",
+    "replay",
+    "../results/qwen38-27b-q4-independent-gpu-fp32-golden4096.pt",
+    "--no-graph",
+    "--prefill-chunk-size",
+    "127"
+  ],
+  "timeout_seconds": 900,
+  "cooling": {
+    "limit_celsius": 80,
+    "checks": 17,
+    "fans": [
+      {
+        "name": "fan1",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4269,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan2",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 4391,
+        "minimum_rpm": 3000
+      },
+      {
+        "name": "fan3",
+        "mode": "fixed",
+        "level": 5,
+        "rpm": 1836,
+        "minimum_rpm": 1000
+      }
+    ],
+    "maximum_observed_celsius": 85.75,
+    "sensors": [
+      {
+        "driver": "amdgpu",
+        "label": "edge",
+        "celsius": 34.0,
+        "cutoff_celsius": 80
+      },
+      {
+        "driver": "k10temp",
+        "label": "Tctl",
+        "celsius": 85.75,
+        "cutoff_celsius": 80
+      }
+    ],
+    "error": "thermal limit reached"
+  },
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 63669313536,
+    "last_available_bytes": 66196914176,
+    "triggered": true,
+    "error": "RuntimeError('thermal limit reached')"
+  },
+  "phase": "failed",
+  "cleanup_complete": true,
+  "host_available_before": 121053487104,
+  "child_pid": 3651,
+  "seconds": 16.74587685000006,
+  "exit_code": -9,
+  "host_available_after": 118425251840
+}
