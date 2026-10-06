@@ -4,12 +4,13 @@ from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
-from dllm.distributed_cli import prompt_tokens
+from dllm.distributed_cli import prompt_tokens, prepare_requests
 
 
 class DistributedCliTests(unittest.TestCase):
     def args(self, **updates):
-        values = dict(prompt_tokens_file=None, prompt=None, raw=False, max_tokens=2, context=8)
+        values = dict(prompt_tokens_file=None, requests_file=None, prompt=None, raw=False,
+                      ignore_eos=False, max_tokens=2, context=8)
         return SimpleNamespace(**(values | updates))
 
     def model(self):
@@ -59,3 +60,47 @@ class DistributedCliTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'explicit distinct GPU UUIDs'):
                 StagePair('/unused', 512, 'none', lambda model: [1])
             available.assert_not_called()
+
+    def test_session_prepares_all_requests_and_individual_budgets(self):
+        model = self.model()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'requests.json'
+            path.write_text(json.dumps([{'prompt':'chat'}, {'tokens':[1, 2], 'max_tokens':3, 'ignore_eos':True}]))
+            self.assertEqual(prepare_requests(self.args(requests_file=str(path)), model), [
+                dict(tokens=[3, 4, 5], max_tokens=2, ignore_eos=False),
+                dict(tokens=[1, 2], max_tokens=3, ignore_eos=True)])
+
+    def test_session_rejects_malformed_late_request_and_unbounded_inputs(self):
+        invalid = [[], [{}], [{'prompt':'ok', 'tokens':[1]}], [{'prompt':'ok', 'unknown':1}],
+                   [{'tokens':'text'}], [{'tokens':[1], 'raw':True}], [{'prompt':42}],
+                   [{'prompt':'ok', 'max_tokens':True}], [{'prompt':'ok', 'max_tokens':6}],
+                   [{'prompt':'ok', 'raw':1}], [{'prompt':'ok', 'ignore_eos':'yes'}],
+                   [{'prompt':'ok'}, {'prompt':'x' * 65537}], [{'prompt':'ok'}] * 65]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'requests.json'
+            args = self.args(requests_file=str(path))
+            for rows in invalid:
+                with self.subTest(rows=str(rows)[:80]):
+                    path.write_text(json.dumps(rows))
+                    with self.assertRaises(ValueError):prepare_requests(args, self.model())
+            path.write_bytes(b' ' * 1048577)
+            with self.assertRaisesRegex(ValueError, '1 MiB'):prepare_requests(args, self.model())
+
+    def test_release_completes_before_slot_reuse(self):
+        from dllm.distributed import StagePair
+        from dllm.stage_protocol import StageState, Command, PREFILL, RELEASE
+        pair = StagePair.__new__(StagePair)
+        pair.rank = 0
+        pair.state = StageState(1, 512, 1)
+        pair.state.commit(pair.state.begin(Command(1, 1, PREFILL, 31, ((0, 1, 0),)).encode()))
+        pair.channel = Mock()
+        pair.channel.begin.side_effect = lambda command: pair.state.begin(command.encode())
+        pair.channel.finish.side_effect = pair.state.commit
+        pair.release()
+        self.assertEqual(pair.channel.begin.call_args.args[0].operation, RELEASE)
+        self.assertEqual(pair.state.lengths, [0])
+        self.assertEqual(pair.state.generations, [1])
+        pair.release()
+        pair.channel.begin.assert_called_once()
+        self.assertEqual(pair.state.begin(Command(1, 3, PREFILL, 255, ((0, 2, 0),)).encode()).entries,
+                         ((0, 2, 0),))

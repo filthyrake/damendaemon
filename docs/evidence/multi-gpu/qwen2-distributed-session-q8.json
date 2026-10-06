@@ -1,0 +1,373 @@
+{
+  "passed": true,
+  "final_report": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "quantization": "q8_0",
+  "checks": [
+    {
+      "prompt_tokens": 31,
+      "passed": true,
+      "result": {
+        "text": "4: The parcel is stored in cabinet",
+        "tokens": [
+          19,
+          25,
+          576,
+          29309,
+          374,
+          9768,
+          304,
+          21921
+        ],
+        "finish_reason": "length",
+        "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+        "quantization": "q8_0",
+        "scope": "experimental two-rank sequential greedy generation",
+        "usage": {
+          "prompt_tokens": 31,
+          "completion_tokens": 8,
+          "total_tokens": 39
+        },
+        "timing": {
+          "activation_seconds": 8.337637599004665,
+          "first_token_seconds": 8.463829659012845,
+          "generation_first_token_seconds": 0.1261920600081794,
+          "generation_seconds": 0.15238181801396422,
+          "total_seconds": 8.49001941701863,
+          "decode_tokens_per_second": 267.2800565188052
+        }
+      }
+    },
+    {
+      "prompt_tokens": 255,
+      "passed": true,
+      "result": {
+        "text": "3, drawer 7.\nRecord ",
+        "tokens": [
+          18,
+          11,
+          26482,
+          220,
+          22,
+          624,
+          6471,
+          220
+        ],
+        "finish_reason": "length",
+        "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+        "quantization": "q8_0",
+        "scope": "experimental two-rank sequential greedy generation",
+        "usage": {
+          "prompt_tokens": 255,
+          "completion_tokens": 8,
+          "total_tokens": 263
+        },
+        "timing": {
+          "activation_seconds": 8.235442606994184,
+          "first_token_seconds": 8.696564398007467,
+          "generation_first_token_seconds": 0.46112179101328366,
+          "generation_seconds": 0.48760965300607495,
+          "total_seconds": 8.723052260000259,
+          "decode_tokens_per_second": 264.2719900120689
+        }
+      }
+    },
+    {
+      "prompt_tokens": 496,
+      "passed": true,
+      "result": {
+        "text": ", drawer 0.\nRecord 2",
+        "tokens": [
+          11,
+          26482,
+          220,
+          15,
+          624,
+          6471,
+          220,
+          17
+        ],
+        "finish_reason": "length",
+        "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+        "quantization": "q8_0",
+        "scope": "experimental two-rank sequential greedy generation",
+        "usage": {
+          "prompt_tokens": 496,
+          "completion_tokens": 8,
+          "total_tokens": 504
+        },
+        "timing": {
+          "activation_seconds": 8.651472689001821,
+          "first_token_seconds": 9.131329987023491,
+          "generation_first_token_seconds": 0.47985729802167043,
+          "generation_seconds": 0.5068422449985519,
+          "total_seconds": 9.158314934000373,
+          "decode_tokens_per_second": 259.40388194933405
+        }
+      }
+    },
+    {
+      "kind": "chat-eos",
+      "passed": true,
+      "result": {
+        "text": "4",
+        "tokens": [
+          19,
+          151645
+        ],
+        "finish_reason": "stop",
+        "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+        "quantization": "q8_0",
+        "scope": "experimental two-rank sequential greedy generation",
+        "usage": {
+          "prompt_tokens": 43,
+          "completion_tokens": 2,
+          "total_tokens": 45
+        },
+        "timing": {
+          "activation_seconds": 8.45668327799649,
+          "first_token_seconds": 8.588329371996224,
+          "generation_first_token_seconds": 0.13164609399973415,
+          "generation_seconds": 0.1359445239941124,
+          "total_seconds": 8.592627801990602,
+          "decode_tokens_per_second": 232.64308161534882
+        }
+      }
+    },
+    {
+      "kind": "invalid-token",
+      "passed": true,
+      "exit_code": 1
+    },
+    {
+      "kind": "resident-session-slot-reuse",
+      "passed": true,
+      "results": [
+        {
+          "text": ", drawer 0.\nRecord 2",
+          "tokens": [
+            11,
+            26482,
+            220,
+            15,
+            624,
+            6471,
+            220,
+            17
+          ],
+          "finish_reason": "length",
+          "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+          "quantization": "q8_0",
+          "scope": "experimental two-rank sequential greedy generation",
+          "usage": {
+            "prompt_tokens": 496,
+            "completion_tokens": 8,
+            "total_tokens": 504
+          },
+          "timing": {
+            "activation_seconds": 8.578648171009263,
+            "first_token_seconds": 9.109373248007614,
+            "generation_first_token_seconds": 0.5307250769983511,
+            "generation_seconds": 0.5573276930081192,
+            "total_seconds": 9.135975864017382,
+            "decode_tokens_per_second": 263.13201669451234,
+            "release_seconds": 0.0006179620104376227
+          },
+          "request_index": 0
+        },
+        {
+          "text": "4: The parcel is stored in cabinet",
+          "tokens": [
+            19,
+            25,
+            576,
+            29309,
+            374,
+            9768,
+            304,
+            21921
+          ],
+          "finish_reason": "length",
+          "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+          "quantization": "q8_0",
+          "scope": "experimental two-rank sequential greedy generation",
+          "usage": {
+            "prompt_tokens": 31,
+            "completion_tokens": 8,
+            "total_tokens": 39
+          },
+          "timing": {
+            "activation_seconds": 0,
+            "first_token_seconds": 0.062367472011828795,
+            "generation_first_token_seconds": 0.062367472011828795,
+            "generation_seconds": 0.0877237550157588,
+            "total_seconds": 0.0877237550157588,
+            "decode_tokens_per_second": 276.06569933436464,
+            "release_seconds": 0.0005628749786410481
+          },
+          "request_index": 1
+        },
+        {
+          "text": "3, drawer 7.\nRecord ",
+          "tokens": [
+            18,
+            11,
+            26482,
+            220,
+            22,
+            624,
+            6471,
+            220
+          ],
+          "finish_reason": "length",
+          "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+          "quantization": "q8_0",
+          "scope": "experimental two-rank sequential greedy generation",
+          "usage": {
+            "prompt_tokens": 255,
+            "completion_tokens": 8,
+            "total_tokens": 263
+          },
+          "timing": {
+            "activation_seconds": 0,
+            "first_token_seconds": 0.04895281099015847,
+            "generation_first_token_seconds": 0.04895281099015847,
+            "generation_seconds": 0.07482187100686133,
+            "total_seconds": 0.07482187100686133,
+            "decode_tokens_per_second": 270.59351965167326,
+            "release_seconds": 0.0005977439868729562
+          },
+          "request_index": 2
+        },
+        {
+          "text": "4: The parcel is stored in cabinet",
+          "tokens": [
+            19,
+            25,
+            576,
+            29309,
+            374,
+            9768,
+            304,
+            21921
+          ],
+          "finish_reason": "length",
+          "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+          "quantization": "q8_0",
+          "scope": "experimental two-rank sequential greedy generation",
+          "usage": {
+            "prompt_tokens": 31,
+            "completion_tokens": 8,
+            "total_tokens": 39
+          },
+          "timing": {
+            "activation_seconds": 0,
+            "first_token_seconds": 0.01616701699094847,
+            "generation_first_token_seconds": 0.01616701699094847,
+            "generation_seconds": 0.04041596900788136,
+            "total_seconds": 0.04041596900788136,
+            "decode_tokens_per_second": 288.6722690164896,
+            "release_seconds": 0.0005857649957761168
+          },
+          "request_index": 3
+        },
+        {
+          "text": ", drawer 0.\nRecord 2",
+          "tokens": [
+            11,
+            26482,
+            220,
+            15,
+            624,
+            6471,
+            220,
+            17
+          ],
+          "finish_reason": "length",
+          "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+          "quantization": "q8_0",
+          "scope": "experimental two-rank sequential greedy generation",
+          "usage": {
+            "prompt_tokens": 496,
+            "completion_tokens": 8,
+            "total_tokens": 504
+          },
+          "timing": {
+            "activation_seconds": 0,
+            "first_token_seconds": 0.029016907006734982,
+            "generation_first_token_seconds": 0.029016907006734982,
+            "generation_seconds": 0.052041654009371996,
+            "total_seconds": 0.052041654009371996,
+            "decode_tokens_per_second": 304.02071298322164,
+            "release_seconds": 0.0005681640177499503
+          },
+          "request_index": 4
+        },
+        {
+          "text": "4",
+          "tokens": [
+            19,
+            151645
+          ],
+          "finish_reason": "stop",
+          "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+          "quantization": "q8_0",
+          "scope": "experimental two-rank sequential greedy generation",
+          "usage": {
+            "prompt_tokens": 43,
+            "completion_tokens": 2,
+            "total_tokens": 45
+          },
+          "timing": {
+            "activation_seconds": 0,
+            "first_token_seconds": 0.053134210989810526,
+            "generation_first_token_seconds": 0.053134210989810526,
+            "generation_seconds": 0.05658854398643598,
+            "total_seconds": 0.05658854398643598,
+            "decode_tokens_per_second": 289.4914882198394,
+            "release_seconds": 0.0005970159836579114
+          },
+          "request_index": 5
+        },
+        {
+          "text": "4: The parcel is stored in cabinet",
+          "tokens": [
+            19,
+            25,
+            576,
+            29309,
+            374,
+            9768,
+            304,
+            21921
+          ],
+          "finish_reason": "length",
+          "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046",
+          "quantization": "q8_0",
+          "scope": "experimental two-rank sequential greedy generation",
+          "usage": {
+            "prompt_tokens": 31,
+            "completion_tokens": 8,
+            "total_tokens": 39
+          },
+          "timing": {
+            "activation_seconds": 0,
+            "first_token_seconds": 0.013905402011005208,
+            "generation_first_token_seconds": 0.013905402011005208,
+            "generation_seconds": 0.035524261998943985,
+            "total_seconds": 0.035524261998943985,
+            "decode_tokens_per_second": 323.7913564316213,
+            "release_seconds": 0.0005461599794216454
+          },
+          "request_index": 6
+        }
+      ]
+    },
+    {
+      "kind": "invalid-late-request-before-execution",
+      "passed": true,
+      "exit_code": 1
+    }
+  ],
+  "scope": "actual same-host distributed CLI; correctness/lifecycle, not a performance benchmark"
+}

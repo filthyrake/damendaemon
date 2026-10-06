@@ -112,3 +112,37 @@ qualified small Q8 workload, the 3090 alone measured 742 decode tokens/s,
 versus 290 for the A2/3090 network split and 243 for the A2 alone. The split
 does not automatically improve performance; see the
 [placement controls and measurement limits](evidence/multi-gpu/README.md#single-gpu-placement-controls).
+
+## Reuse a distributed pair for sequential requests
+
+Pass `--requests-file requests.json` on the coordinator in place of `--prompt`
+to keep weights and decode graphs resident across requests. The worker command
+stays the same and does not need the request file. Example file:
+
+```json
+[
+  {"prompt": "What is 2 + 2? Answer with just the number.", "max_tokens": 8},
+  {"prompt": "Explain binary search briefly.", "max_tokens": 64},
+  {"prompt": "The quick brown fox", "raw": true, "max_tokens": 16}
+]
+```
+
+The file is a JSON array of 1–64 requests, at most 1 MiB. Each request has
+either `prompt` text (at most 64 KiB) or a `tokens` list of valid raw vocabulary
+IDs. Optional `max_tokens`, `ignore_eos` and text-only `raw` override the
+coordinator's command-line defaults. Every request must fit the configured
+context, including its requested output. All requests are validated before
+generation starts, so a malformed later request cannot produce a partial run.
+
+The coordinator emits one JSON line per completed request, with a zero-based
+`request_index`, tokens, text, usage and timing. Both workers acknowledge cache
+release before that line is published; subsequent requests get a new slot
+generation. Weights and graphs stay resident, while prompts do not share chat
+history or cached prefixes. A final acknowledged STOP ends the pair.
+
+Only the first result includes activation time. Subsequent timings start at
+their own request; `release_seconds` is reported separately from generation
+and total time. First-use prompt-shape work can still occur on later requests.
+These sessions are sequential file-driven jobs, not concurrent serving or
+interactive chat. A failed job exits nonzero; previously emitted results do
+not imply later requests succeeded. Retain the outer job deadline.

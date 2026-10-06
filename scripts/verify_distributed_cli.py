@@ -54,6 +54,39 @@ def main():
             assert result.returncode != 0 and not result.stdout.strip()
             assert 'raw prompt must contain valid vocabulary token IDs' in result.stderr
             report['checks'].append(dict(kind='invalid-token', passed=True, exit_code=result.returncode))
+            # One resident pair handles changing prompt lengths, EOS and slot reuse.
+            session_cases = [selected[i] for i in (2, 0, 1, 0, 2)]
+            requests = [dict(tokens=case['prompt'], max_tokens=8, ignore_eos=True) for case in session_cases]
+            requests.append(dict(prompt='What is 2 + 2? Answer with just the number.', max_tokens=8))
+            requests.append(dict(tokens=selected[0]['prompt'], max_tokens=8, ignore_eos=True))
+            session_file = Path(directory)/'requests.json'
+            session_file.write_text(json.dumps(requests))
+            result = subprocess.run(launcher + ['--requests-file', str(session_file)],
+                                    capture_output=True, text=True, timeout=180, check=True)
+            results = [json.loads(line) for line in result.stdout.splitlines()]
+            assert len(results) == 7
+            for index, actual in enumerate(results):
+                assert actual['request_index'] == index
+                assert actual['timing']['release_seconds'] >= 0
+                assert (actual['timing']['activation_seconds'] > 0) == (index == 0)
+                if index == 5:
+                    assert actual['text'].strip() == '4' and actual['finish_reason'] == 'stop'
+                else:
+                    case = session_cases[index] if index < 5 else selected[0]
+                    assert actual['tokens'] == case['tokens']
+                    assert actual['text'] == tokenizer.decode(case['tokens'], skip_special_tokens=True)
+                    assert actual['usage'] == dict(prompt_tokens=len(case['prompt']), completion_tokens=8,
+                                                   total_tokens=len(case['prompt'])+8)
+                    assert actual['finish_reason'] == 'length'
+            report['checks'].append(dict(kind='resident-session-slot-reuse', passed=True, results=results))
+            requests.append(dict(tokens=[151936]))
+            session_file.write_text(json.dumps(requests))
+            result = subprocess.run(launcher + ['--requests-file', str(session_file)],
+                                    capture_output=True, text=True, timeout=180)
+            assert result.returncode != 0 and not result.stdout.strip()
+            assert 'raw prompt must contain valid vocabulary token IDs' in result.stderr
+            report['checks'].append(dict(kind='invalid-late-request-before-execution', passed=True,
+                                         exit_code=result.returncode))
         report['passed'] = True
     except BaseException as error:
         report['error'] = repr(error)

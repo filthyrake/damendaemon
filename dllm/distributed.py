@@ -2,7 +2,7 @@
 
 Launched under torchrun. The coordinator owns prompt input; the output worker
 receives only bounded control records and activations. This is a single-model,
-single-request command path, not the HTTP scheduler or a worker supervisor.
+sequential-request command path, not the HTTP scheduler or a worker supervisor.
 """
 from datetime import timedelta
 import json
@@ -16,13 +16,13 @@ from .layer_stage import LayerStage
 from .partition_policy import validate
 from .qwen2 import ModelWeights
 from .stage_identity import fingerprint
-from .stage_protocol import Command, StageState, PREFILL, DECODE, STOP
+from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP
 from .stage_setup import StageSetup
 from .stage_transport import StageChannel
 
 
 class StagePair:
-    def __init__(self, path, context, quantization, prepare_prompt):
+    def __init__(self, path, context, quantization, prepare_requests):
         self.owns_group = False
         if dist.is_initialized():raise ValueError('distributed-run requires ownership of its process group')
         self.state = None
@@ -51,7 +51,7 @@ class StagePair:
             validate(SimpleNamespace(config=config, max_context=context, quantization=quantization), 12, 1)
             self.model = ModelWeights(path, context, quantization=quantization)
             validate(self.model, 12, 1)
-            self.prompt = prepare_prompt(self.model) if self.rank == 0 else None
+            self.requests = prepare_requests(self.model) if self.rank == 0 else None
             setup.check_peer()
             self.identity = fingerprint(self.model)
             self.stage = LayerStage(self.model, 0 if self.rank == 0 else 12,
@@ -85,9 +85,9 @@ class StagePair:
             if (prefill and len(tokens) > self.state.context) or (not prefill and len(tokens) != 1):
                 raise ValueError('invalid distributed token shape')
             request = Command(self.state.epoch, self.state.sequence, PREFILL if prefill else DECODE,
-                              len(tokens), ((0, 1, self.state.lengths[0]),))
+                              len(tokens), ((0, self.state.generations[0] + int(prefill), self.state.lengths[0]),))
         command = self.channel.begin(request)
-        if command.operation == STOP:
+        if command.operation in (RELEASE, STOP):
             self.channel.finish(command)
             return None
         try:
@@ -119,6 +119,16 @@ class StagePair:
     def serve_worker(self):
         if self.rank != 1:raise ValueError('only the output rank runs the worker loop')
         while not self.state.closed:self.step()
+
+    def release(self):
+        """Fence completed request ownership before the resident slot is reused."""
+        if self.rank != 0:raise ValueError('only coordinator releases requests')
+        if self.state.failed or self.state.closed or self.state.pending is not None:
+            raise RuntimeError('distributed session is not ready for release')
+        if not self.state.lengths[0]:return
+        command = Command(self.state.epoch, self.state.sequence, RELEASE, 0,
+                          ((0, self.state.generations[0], self.state.lengths[0]),))
+        self.channel.finish(self.channel.begin(command))
 
     def stop(self):
         if self.rank != 0 or self.state is None or self.state.closed or self.state.failed:return

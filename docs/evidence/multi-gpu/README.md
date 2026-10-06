@@ -356,6 +356,36 @@ Peer-only rules had automatic ten-minute expiry, opened 2026-10-06 at
 00:42:26/28 UTC and removed early at 00:44:59/00:45:02 UTC. Original rules and
 GPU allocations were verified restored; existing services were preserved.
 
+## Bounded resident distributed sessions
+
+`distributed-run --requests-file FILE` validates a coordinator-only JSON array
+of 1–64 requests, bounded to 1 MiB, before either worker serves requests. One
+pair retains weights and decode graphs for the session. Each completed request
+uses acknowledged RELEASE before publishing its JSON result; the next prompt
+gets a new slot generation. STOP terminates the pair after the last request.
+Sessions are sequential and single-model, not distributed HTTP or model swaps.
+
+The A2/A30 front-door verifier passes seven checks at both FP16 and Q8, retaining
+the earlier independent single-request, EOS and invalid-token checks. The new
+resident case runs prompt lengths 496, 31, 255, 31, 496, a chat ending on EOS,
+and then another 31-token prompt in one worker pair. All reference continuations,
+text, usage, ordering and finish reasons match; activation is charged only once.
+An invalid eighth request is rejected before producing any output. Reports are
+`qwen2-distributed-session-{fp16,q8}.json`.
+
+The same seven-request Q8 session passes on the separate A2/3090 hosts. Only
+the coordinator has the request file; neither prompt nor reference trace is
+passed to the desktop command. Exact independent tokens and same-host text,
+usage and finish reasons match. Both workers exit successfully. Reports are
+`qwen2-network-session-q8.jsonl` and `qwen2-network-session-qualification.json`.
+These are correctness/lifecycle timings, not warm performance measurements.
+The local suite passes 401 tests.
+
+The network session window automatically expired after ten minutes if left
+alone. It opened 2026-10-06 at 00:51:45/49 UTC and was removed early at
+00:53:03/06 UTC. Original firewall rules and GPU memory baselines were verified
+unchanged. No existing GPU service was restarted.
+
 | Median network metric | Separate completion collective | Token reply completion |
 | --- | ---: | ---: |
 | First token | 20.88 ms | 20.76 ms |
