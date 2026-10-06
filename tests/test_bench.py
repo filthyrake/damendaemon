@@ -39,6 +39,10 @@ class Handler(BaseHTTPRequestHandler):
         ]
         if model != "no-usage":
             chunks.append({"choices": [], "usage": {"completion_tokens": 7}})
+        if model.startswith('queue-'):
+            values = {'queue-known': .125, 'queue-negative': -1, 'queue-nan': float('nan'),
+                      'queue-inf': float('inf'), 'queue-bool': True}
+            chunks.append({'choices': [], 'dllm_timing': {'queue_seconds': values[model]}})
         for chunk in chunks:
             self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
         if model != "truncated":
@@ -78,6 +82,18 @@ class BenchTests(unittest.TestCase):
         self.assertGreaterEqual(result.last_output_seconds, result.first_output_seconds)
         self.assertIsNotNone(result.first_output_seconds)
         self.assertGreaterEqual(result.seconds, result.first_output_seconds)
+
+    def test_server_queue_timing_is_optional_and_validated(self):
+        result = self.request('queue-known')
+        self.assertIsNone(result.error)
+        self.assertEqual(result.reported_server_queue_seconds, .125)
+        self.assertEqual(summarize([result], 1)['reported_server_queue_seconds']['p99'], .125)
+        result = self.request('normal')
+        self.assertIsNone(result.reported_server_queue_seconds)
+        self.assertIsNone(summarize([result], 1)['reported_server_queue_seconds'])
+        for model in ('queue-negative', 'queue-nan', 'queue-inf', 'queue-bool'):
+            with self.subTest(model=model):
+                self.assertEqual(self.request(model).error, 'ValueError')
 
     def test_unknown_tokens_are_not_invented(self):
         result = self.request("no-usage")

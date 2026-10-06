@@ -193,3 +193,12 @@ unless every request passes, including when HTTP succeeded but measurements
 were incomplete. Fix the profile before comparing engines; no automatic budget
 relaxation occurs. SSE transport behavior still prevents claiming per-token GPU
 latency or sustainable-user qualification from this report alone.
+
+When a server supplies `dllm_timing.queue_seconds`, the benchmark retains it as
+`reported_server_queue_seconds` and reports its successful-request distribution
+and coverage count. This is server-reported worker-queue delay, separate from
+client dispatch lag and client-observed first-output latency. Older or other
+engines may omit it; absent values remain unknown. Nonfinite, negative, boolean
+or malformed reported timings fail validation rather than contaminating the
+measurement. Queue delay is not subtracted from latency or used to relax a
+client profile.

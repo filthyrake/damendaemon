@@ -278,6 +278,31 @@ class SchedulerTests(unittest.TestCase):
             server.server_close()
             thread.join(2)
 
+    def test_queue_timing_stops_at_worker_ownership(self):
+        with ThreadPoolExecutor(2) as pool:
+            first = pool.submit(lambda: list(self.generate('a', count=2)))
+            try:
+                self.assertTrue(self.executor.entered.wait(2))
+                second = pool.submit(lambda: list(self.generate('b', count=2)))
+                self.wait_pending(1)
+                with self.runtime.condition:
+                    queued = self.runtime.pending[0]
+                    owned = next(r for r in self.runtime.requests if r is not queued)
+                    self.assertIsNone(queued.queue_seconds)
+                    owned_delay = owned.queue_seconds
+                    self.assertIsNotNone(owned_delay)
+                    # Make time in queue measurable without a sleep or changing
+                    # the worker-owned request's already-recorded timestamp.
+                    queued.start -= 1
+                self.assertEqual(owned.queue_seconds, owned_delay)
+            finally:
+                self.executor.release.set()
+            first_result, second_result = first.result(2), second.result(2)
+        self.assertEqual(first_result[-1]['timing']['queue_seconds'], owned_delay)
+        self.assertGreaterEqual(second_result[-1]['timing']['queue_seconds'], 1)
+        self.assertLessEqual(second_result[-1]['timing']['queue_seconds'],
+                             second_result[-1]['timing']['first_token_seconds'])
+
     def test_joining_requests_batch_and_report_individual_usage(self):
         with ThreadPoolExecutor(2) as pool:
             first = pool.submit(lambda: list(self.generate(count=6)))

@@ -41,6 +41,7 @@ class Result:
     output_event_gaps_seconds: list = field(default_factory=list)
     scheduled_offset_seconds: float | None = None
     dispatch_delay_seconds: float | None = None
+    reported_server_queue_seconds: float | None = None
 
 
 def events(lines):
@@ -103,6 +104,14 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                         result.output_event_gaps_seconds.append(arrived-result.last_output_seconds)
                     result.last_output_seconds = arrived
                     result.output_events += 1
+                timing = chunk.get("dllm_timing") or {}
+                if not isinstance(timing, dict):
+                    raise ValueError("invalid server timing metadata")
+                queued = timing.get("queue_seconds")
+                if queued is not None:
+                    if type(queued) not in (int, float) or not 0 <= queued < float('inf'):
+                        raise ValueError("invalid reported queue time")
+                    result.reported_server_queue_seconds = queued
                 usage = chunk.get("usage") or {}
                 tokens = usage.get("completion_tokens")
                 if tokens is not None:
@@ -156,6 +165,9 @@ def summarize(results, elapsed):
         "requests_with_output_gaps": sum(bool(r.output_event_gaps_seconds) for r in good),
         "dispatch_delay_seconds": distribution([
             r.dispatch_delay_seconds for r in results if r.dispatch_delay_seconds is not None]),
+        "reported_server_queue_seconds": distribution([
+            r.reported_server_queue_seconds for r in good if r.reported_server_queue_seconds is not None]),
+        "requests_with_server_queue_timing": sum(r.reported_server_queue_seconds is not None for r in good),
         "requests_with_first_output": sum(r.first_output_seconds is not None for r in good),
     }
 

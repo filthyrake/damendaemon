@@ -48,6 +48,7 @@ class Pending:
     slot: int = -1
     tier: str = "gpu"
     activation: float = 0
+    queue_seconds: float | None = None
     cached_tokens: int = 0
     speculative_prompt: tuple = ()
     speculative_blocks: int = 0
@@ -339,6 +340,7 @@ class BatchedRuntime:
                 "prompt_tokens": prompt_count, "completion_tokens": count,
                 "total_tokens": prompt_count + count}, "timing": {
                 "source_tier": request.tier, "activation_seconds": request.activation,
+                "queue_seconds": request.queue_seconds,
                 "cached_prompt_tokens":request.cached_tokens,
                 "speculative_blocks":request.speculative_blocks,
                 "speculative_proposed_drafts":request.speculative_proposed,
@@ -365,6 +367,7 @@ class BatchedRuntime:
             elif alias is not None and (first.command is not None or first.alias != alias):
                 return None
             else:
+                first.queue_seconds = max(0, time.perf_counter()-first.start)
                 return self.pending.popleft()
         return None
 

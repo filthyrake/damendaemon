@@ -75,7 +75,7 @@ class FakeRuntime:
                     event['logprobs']={'token':raw.decode(errors='replace'),'logprob':-.25,'bytes':list(raw),'top_logprobs':[]}
                 yield event
             yield {"finish_reason": finish, "usage": {
-                "prompt_tokens": 3, "completion_tokens": len(parts), "total_tokens": 3+len(parts)}, "timing": {}}
+                "prompt_tokens": 3, "completion_tokens": len(parts), "total_tokens": 3+len(parts)}, "timing": {"queue_seconds": .125}}
         finally:
             self.closed += 1
 
@@ -122,6 +122,19 @@ class ServerTests(unittest.TestCase):
             data = json.load(response)
         self.assertEqual(data["choices"][0]["message"]["content"], "Hello world")
         self.assertEqual(data["usage"]["completion_tokens"], 2)
+
+    def test_stream_usage_preserves_timing_without_extra_events_when_disabled(self):
+        with self.post() as response:
+            self.assertEqual(json.load(response)['dllm_timing']['queue_seconds'], .125)
+        for enabled in (False, True):
+            with self.post(stream=True, stream_options={'include_usage': enabled}) as response:
+                chunks = [json.loads(value) for value in events(response) if value != '[DONE]']
+            timed = [chunk for chunk in chunks if 'dllm_timing' in chunk]
+            self.assertEqual(len(timed), int(enabled))
+            if enabled:
+                self.assertEqual(timed[0]['dllm_timing']['queue_seconds'], .125)
+                self.assertIn('usage', timed[0])
+                self.assertEqual(timed[0]['choices'], [])
 
     def test_reasoning_stays_separate_in_stream_and_nonstream(self):
         messages=[{'role':'user','content':'reasoning'}]

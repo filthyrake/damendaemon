@@ -227,7 +227,7 @@ def handler_for(runtime):
                                 if include_usage:
                                     send_event({"id": request_id, "object": stream_object,
                                                 "created": created, "model": alias, "choices": [],
-                                                "usage": event["usage"]})
+                                                "usage": event["usage"], "dllm_timing": event["timing"]})
                         else:
                             score=event.get('logprobs')
                             if score is not None and not stream:

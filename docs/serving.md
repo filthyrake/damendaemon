@@ -416,3 +416,10 @@ name again with a corrected snapshot or precision. This differs from `unload`,
 which preserves the registration. Save the live registry again with
 `dllm models --save-config FILE` to persist the change; an old manifest still
 contains the old alias. Exporting an entirely empty registry remains unsupported.
+
+Successful batched generation timing includes `queue_seconds`: elapsed time
+from admission bookkeeping to the worker taking the request. It excludes
+activation, prompt preparation, KV-capacity waits after ownership, and decoding.
+The nonstreaming response exposes it in `dllm_timing`; streaming responses with
+`stream_options.include_usage:true` include the same `dllm_timing` extension in
+the final usage event. Disabling usage does not add a separate timing event.
