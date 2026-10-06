@@ -39,12 +39,16 @@ def resolve_model(value, revision="main", filename=None):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "distributed-run":
+        from .distributed_cli import main as distributed_main
+        return distributed_main(sys.argv[2:])
     if len(sys.argv) > 1 and sys.argv[1] == "bench":
         from .bench import main as bench_main
         return bench_main()
     parser = argparse.ArgumentParser(description="dllm: independent GPU inference runtime")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("bench", help="benchmark a streaming HTTP endpoint")
+    commands.add_parser("distributed-run", help="experimental two-rank greedy generation under torchrun")
     pull = commands.add_parser("pull", help="download a safetensors snapshot or one GGUF file from Hugging Face")
     pull.add_argument("repository")
     pull.add_argument("--revision", default="main")

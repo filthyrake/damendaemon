@@ -42,9 +42,67 @@ transfer. A matched Q8 network experiment measures 290 decode tokens/s with
 token-return completion on its narrow 255-prompt/32-output workload.
 See [network qualification and measurements](evidence/multi-gpu/README.md#command-driven-a23090-network-qualification).
 
-This remains an experimental worker harness, not an HTTP worker service.
+Cross-host execution remains experimental and is not connected to the HTTP scheduler.
 Failed requests are not resumed. Reported preparation failures now propagate
 through the CPU rendezvous store before NCCL starts; unreported crashes and
 blocked preparation still need an outer process deadline. General worker
 supervision remains incomplete.
 No available test host exposes RDMA, so RDMA and GPUDirect RDMA remain unqualified.
+
+## Run a prompt across two workers
+
+`distributed-run` is an experimental single-request, greedy command launched
+under torchrun. Prepare the same qualified Qwen2.5-0.5B-Instruct snapshot on both
+workers with `dllm pull`; paths may differ, but prepared weight identities,
+precision and context must agree. The command supports FP16 (`none`) and Q8,
+context up to 512, and a 12/12 layer split.
+
+For two GPUs on one host:
+
+```sh
+CUDA_VISIBLE_DEVICES=GPU-first-uuid,GPU-second-uuid OMP_NUM_THREADS=4 \
+  torchrun --standalone --nproc-per-node=2 --module dllm distributed-run \
+  /path/to/Qwen2.5-0.5B-Instruct --quantization q8_0 \
+  --prompt 'What is 2 + 2? Answer with just the number.' --max-tokens 32
+```
+
+For two hosts, launch one rank on each using matching rendezvous settings.
+Replace the UUIDs, coordinator IP, interface names and local model paths below.
+The qualified network transport is NCCL Socket. Use trusted peers and a bounded
+peer-only firewall window for the rendezvous port and NCCL socket connections.
+
+Coordinator host:
+
+```sh
+CUDA_VISIBLE_DEVICES=GPU-coordinator-uuid OMP_NUM_THREADS=4 \
+NCCL_NET=Socket NCCL_SOCKET_FAMILY=AF_INET NCCL_SOCKET_IFNAME=your-interface \
+  torchrun --nnodes=2 --nproc-per-node=1 --node-rank=0 \
+  --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-run \
+  /local/model/snapshot --quantization q8_0 \
+  --prompt 'Explain binary search briefly.' --max-tokens 64
+```
+
+Output-worker host:
+
+```sh
+CUDA_VISIBLE_DEVICES=GPU-output-worker-uuid OMP_NUM_THREADS=4 \
+NCCL_NET=Socket NCCL_SOCKET_FAMILY=AF_INET NCCL_SOCKET_IFNAME=your-interface \
+  torchrun --nnodes=2 --nproc-per-node=1 --node-rank=1 \
+  --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-run \
+  /other/local/model/snapshot --quantization q8_0
+```
+
+Only the coordinator reads the prompt and prints output. `--raw` selects raw
+text; `--prompt-tokens-file FILE` reads a coordinator-local JSON token list.
+`--json` emits one result containing text, token IDs, usage and timing.
+`--ignore-eos` is available for fixed-length validation. The output worker
+selects greedy tokens locally; full vocabulary logits do not cross the network.
+
+Timing separates activation from generation, but generation can still include
+first-use prompt-kernel compilation. `first_token_seconds` includes activation;
+`generation_first_token_seconds` starts after activation and is not necessarily
+a warm measurement. Model files must already be local. Each command creates a
+fresh pair; distributed model switching, HTTP scheduling, sampling controls,
+stream reconnection and automatic worker restart are not implemented by this
+command. The same-host HTTP server retains its separate residency/swap support.
+Use an outer job deadline for crashes or blocked setup that cannot report status.

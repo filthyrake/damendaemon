@@ -1,0 +1,144 @@
+{
+  "passed": true,
+  "final_report": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "quantization": "none",
+  "checks": [
+    {
+      "prompt_tokens": 31,
+      "passed": true,
+      "result": {
+        "text": "4: The parcel is stored in cabinet",
+        "tokens": [
+          19,
+          25,
+          576,
+          29309,
+          374,
+          9768,
+          304,
+          21921
+        ],
+        "finish_reason": "length",
+        "model_sha256": "864a56df3389e96fd49e20a073a020bea3e05f44f588efaec48cf5f0a98e73db",
+        "quantization": "none",
+        "scope": "experimental two-rank single-request greedy generation",
+        "usage": {
+          "prompt_tokens": 31,
+          "completion_tokens": 8,
+          "total_tokens": 39
+        },
+        "timing": {
+          "activation_seconds": 7.345567757001845,
+          "first_token_seconds": 7.514401735999854,
+          "generation_first_token_seconds": 0.16883397899800912,
+          "generation_seconds": 0.20420072099659592,
+          "total_seconds": 7.549768477998441,
+          "decode_tokens_per_second": 197.92606286097
+        }
+      }
+    },
+    {
+      "prompt_tokens": 255,
+      "passed": true,
+      "result": {
+        "text": "3, drawer 7.\nRecord ",
+        "tokens": [
+          18,
+          11,
+          26482,
+          220,
+          22,
+          624,
+          6471,
+          220
+        ],
+        "finish_reason": "length",
+        "model_sha256": "864a56df3389e96fd49e20a073a020bea3e05f44f588efaec48cf5f0a98e73db",
+        "quantization": "none",
+        "scope": "experimental two-rank single-request greedy generation",
+        "usage": {
+          "prompt_tokens": 255,
+          "completion_tokens": 8,
+          "total_tokens": 263
+        },
+        "timing": {
+          "activation_seconds": 7.160085509007331,
+          "first_token_seconds": 7.318509839009494,
+          "generation_first_token_seconds": 0.1584243300021626,
+          "generation_seconds": 0.19626340898685157,
+          "total_seconds": 7.356348917994183,
+          "decode_tokens_per_second": 184.9939318774764
+        }
+      }
+    },
+    {
+      "prompt_tokens": 496,
+      "passed": true,
+      "result": {
+        "text": ", drawer 0.\nRecord 2",
+        "tokens": [
+          11,
+          26482,
+          220,
+          15,
+          624,
+          6471,
+          220,
+          17
+        ],
+        "finish_reason": "length",
+        "model_sha256": "864a56df3389e96fd49e20a073a020bea3e05f44f588efaec48cf5f0a98e73db",
+        "quantization": "none",
+        "scope": "experimental two-rank single-request greedy generation",
+        "usage": {
+          "prompt_tokens": 496,
+          "completion_tokens": 8,
+          "total_tokens": 504
+        },
+        "timing": {
+          "activation_seconds": 7.529158972000005,
+          "first_token_seconds": 7.691080587013857,
+          "generation_first_token_seconds": 0.16192161501385272,
+          "generation_seconds": 0.19781781299388967,
+          "total_seconds": 7.726976784993894,
+          "decode_tokens_per_second": 195.0067247760592
+        }
+      }
+    },
+    {
+      "kind": "chat-eos",
+      "passed": true,
+      "result": {
+        "text": "4",
+        "tokens": [
+          19,
+          151645
+        ],
+        "finish_reason": "stop",
+        "model_sha256": "864a56df3389e96fd49e20a073a020bea3e05f44f588efaec48cf5f0a98e73db",
+        "quantization": "none",
+        "scope": "experimental two-rank single-request greedy generation",
+        "usage": {
+          "prompt_tokens": 43,
+          "completion_tokens": 2,
+          "total_tokens": 45
+        },
+        "timing": {
+          "activation_seconds": 7.059197642985964,
+          "first_token_seconds": 7.23244109400548,
+          "generation_first_token_seconds": 0.17324345101951621,
+          "generation_seconds": 0.17955252301180735,
+          "total_seconds": 7.2387501659977715,
+          "decode_tokens_per_second": 158.5019161648289
+        }
+      }
+    },
+    {
+      "kind": "invalid-token",
+      "passed": true,
+      "exit_code": 1
+    }
+  ],
+  "scope": "actual same-host distributed CLI; correctness/lifecycle, not a performance benchmark"
+}

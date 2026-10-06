@@ -374,3 +374,26 @@ Original firewall rules and all three GPU memory baselines again remain intact.
 Unreported crashes, interrupted preparation calls, in-flight network failures,
 and production worker supervision are still distinct concerns; this change
 specifically resolves the observed reported-preparation-failure path.
+
+## Actual distributed generation command
+
+`dllm distributed-run` now accepts a normal coordinator chat/raw prompt under
+torchrun. Its output worker receives bounded commands and activations, selects
+greedy tokens locally, and returns only token IDs. Both workers verify prepared
+model identity and startup readiness. STOP completes before normal shutdown.
+The command requires local snapshots, the qualified 12/12 Qwen2.5-0.5B geometry,
+FP16 or Q8, context <=512 and one request. It does not add distributed HTTP
+scheduling, model swaps, arbitrary sampling or automatic process restart.
+
+The actual CLI passes five A2/A30 checks per precision: exact independent
+reference tokens/text/usage for 31-, 255- and 496-token prompts with eight output
+tokens; a normal chat prompt with EOS handling; and rejection of an invalid
+vocabulary token. Every check launches and shuts down real worker processes.
+Reports are `qwen2-distributed-cli-{fp16,q8}.json`; the local suite passes 396
+tests. These are correctness/lifecycle runs, not performance comparisons.
+
+The first chat invocation also demonstrated why post-activation timing must not
+be called warm: lazy prompt-shape compilation can occur after model loading and
+graph capture. The command reports `generation_first_token_seconds` for that
+interval, while `first_token_seconds` includes activation. Repeated controlled
+warm workloads remain necessary for performance comparisons.
