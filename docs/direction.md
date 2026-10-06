@@ -95,6 +95,26 @@ requires real compatible endpoints and transfer proof. Cross-vendor fallbacks
 must disclose host staging and communication cost. Peer loss, partial admission,
 cancellation and model switching must release all participating resources.
 
+### CPU, host RAM and GPU together
+
+[Hybrid CPU/RAM and GPU execution #64](https://github.com/filthyrake/dllm/issues/64)
+starts with the A2/A30 VM. The user reports approximately 1 TB of DDR4 on its
+physical host, with additional RAM and cores available for future allocation.
+That is not the VM's current allocation: inventory guest resources and existing
+workload headroom before sizing an experiment or proposing resource changes.
+
+Evaluate host-resident model caching for quick swaps, active weight/expert
+offload with bounded prefetch, and CPU execution of selected layers or experts.
+These are separate capabilities. Measure memory bandwidth, PCIe transfers,
+NUMA effects and CPU execution before choosing placement. Bound pinned memory
+and all staging buffers, preserving OS and service headroom. Cancellation and
+model switching must drain transfers before buffers can be reused.
+
+Report capacity gains separately from speed. A larger model fitting in RAM
+does not establish useful per-user performance. Compare equal workloads and
+precision, retain GPU-resident controls where possible, and qualify the same
+long-context, concurrency, correctness and lifecycle gates as GPU-only paths.
+
 Multi-user service also needs session isolation, quotas, bounded queues,
 authentication for non-loopback access, observability and graceful overload.
 Those are product requirements, not permission to expose the current server.
