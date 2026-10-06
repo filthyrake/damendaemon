@@ -89,6 +89,7 @@ def main():
         'prefill_chunk_size':args.prefill_chunk_size, 'device': device_name(), 'accelerator':selected_accelerator(), 'torch': str(torch.__version__), 'reference_dtype': trace['reference_dtype'],
         'rocm_aotriton_experimental':os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL'),
         'reference_torch': trace['reference_torch'], 'packed_cpu_reference':trace.get('packed_cpu_reference',False), 'reference_quantization': trace.get('reference_quantization','none'),
+        'reference_device': trace.get('reference_device'), 'packed_gpu_reference':trace.get('packed_gpu_reference',False),
         'weight_cache_status':model.weight_cache_status, 'weight_quantization': model.quantization, 'host_weight_bytes': model.bytes, 'reference_attention': trace.get('reference_attention', 'sdpa'), 'graph_requested': not args.no_graph,
         'kernel_backend': executor.kernel_backend,
         'compute_dtype': str(executor.compute_dtype) if hasattr(executor,'compute_dtype') else None,

@@ -3,6 +3,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
+import time
 import torch
 from reference_model import load_reference
 
@@ -14,11 +15,17 @@ def main():
     p.add_argument('--last-event', type=int, required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--threads', type=int, default=4)
+    p.add_argument('--device', choices=('cpu', 'cuda'), default='cpu')
     p.add_argument('--layers-output', type=Path)
     args = p.parse_args()
     if args.threads < 1 or args.last_event < 0:
         p.error('positive threads and nonnegative last event required')
     torch.set_num_threads(args.threads)
+    if args.device == 'cuda':
+        from dllm.runtime import require_gpu
+        require_gpu()
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
     source = torch.load(args.trace, map_location='cpu', weights_only=True)
     selected = []
     for index, event in enumerate(source['trace']):
@@ -33,11 +40,16 @@ def main():
         raise ValueError('selected slice must start with prefill')
     baseline = {**source, 'trace': selected}
     torch.save(baseline, args.output.with_suffix('.input.pt'))
+    load_start = time.perf_counter()
     model = load_reference(source['path'], reference_quantization=source['reference_quantization'],
-                           packed_cpu=True, local_files_only=True, trust_remote_code=False,
-                           torch_dtype=torch.float32, attn_implementation='sdpa').eval()
+                           packed_cpu=args.device == 'cpu', packed_gpu=args.device == 'cuda',
+                           local_files_only=True, trust_remote_code=False,
+                           torch_dtype=torch.float32, attn_implementation='sdpa').to(args.device).eval()
+    load_seconds = time.perf_counter()-load_start
     result = {**source, 'reference_dtype': 'float32', 'reference_torch': str(torch.__version__),
-              'reference_attention': 'sdpa', 'packed_cpu_reference': True,
+              'reference_attention': 'sdpa', 'reference_device': args.device,
+              'cpu_threads': args.threads, 'model_load_seconds': load_seconds,
+              'packed_cpu_reference': args.device == 'cpu', 'packed_gpu_reference': args.device == 'cuda',
               'source_trace': str(args.trace), 'source_slot': args.slot,
               'source_last_event': args.last_event, 'trace': [], 'complete': False}
     captured, layer_events = {}, []
@@ -58,16 +70,19 @@ def main():
             else:
                 ids = [event['tokens'][0]]
             captured.clear()
-            output = model(torch.tensor([ids]), past_key_values=cache, use_cache=True, logits_to_keep=1)
+            event_start = time.perf_counter()
+            output = model(torch.tensor([ids], device=args.device), past_key_values=cache, use_cache=True, logits_to_keep=1)
             cache = output.past_key_values
             target = output.logits[:, -1].detach().float().cpu()
             if not torch.isfinite(target).all():
                 raise ValueError('reference emitted non-finite logits')
-            result['trace'].append({**event, 'targets': [target]})
+            result['trace'].append({**event, 'targets': [target],
+                                   'reference_seconds': time.perf_counter()-event_start})
             if args.layers_output:
                 layer_events.append({'source_event_index': event['source_event_index'], 'layers': dict(captured)})
             torch.save(result, args.output.with_suffix('.partial.pt'))
     result['complete'] = True
+    result['reference_seconds'] = sum(event['reference_seconds'] for event in result['trace'])
     torch.save(result, args.output)
     if args.layers_output:
         torch.save({'complete': True, 'events': layer_events}, args.layers_output)

@@ -78,3 +78,16 @@ class ReferenceRoundtripTests(unittest.TestCase):
         inputs = torch.randn(2, 32)
         self.assertTrue(torch.equal(expected(inputs), actual(inputs)))
         self.assertEqual(sum(p.numel() for p in actual.parameters()), 0)
+
+    def test_packed_gpu_reference_rejects_cpu_arithmetic(self):
+        from scripts.reference_packed_cpu import PackedGpuReferenceLinear, replace_linears
+        model = torch.nn.Sequential(torch.nn.Linear(32, 64)).bfloat16()
+        result = replace_linears(model, 'q8_0', gpu_arithmetic=True)
+        self.assertIsInstance(result[0], PackedGpuReferenceLinear)
+        with self.assertRaises(ValueError):
+            result(torch.ones(2, 32))
+
+    def test_reference_rejects_conflicting_storage_modes(self):
+        from scripts.reference_model import load_reference
+        with self.assertRaises(ValueError):
+            load_reference('/unused', packed_cpu=True, packed_gpu=True)

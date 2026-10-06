@@ -35,7 +35,22 @@ class PackedReferenceLinear(nn.Module):
         return torch.nn.functional.linear(inputs, weights, self.bias)
 
 
-def replace_linears(model, quantization):
+class PackedGpuReferenceLinear(PackedReferenceLinear):
+    """Independent GPU arithmetic with upstream CPU GGUF expansion per operation.
+
+    model.to(cuda) keeps packed integer storage on the GPU. Copying each packed
+    matrix to the CPU for upstream expansion is deliberately a validation cost;
+    no dllm quantization or inference kernels participate in this reference.
+    """
+    def forward(self, inputs):
+        from gguf.quants import dequantize
+        if inputs.device.type != 'cuda' or inputs.dtype != torch.float32:
+            raise ValueError('packed GPU reference requires CUDA/ROCm FP32 inputs')
+        weights = torch.from_numpy(dequantize(self.packed.cpu().numpy(), self.kind)).to(inputs.device)
+        return torch.nn.functional.linear(inputs, weights, self.bias)
+
+
+def replace_linears(model, quantization, *, gpu_arithmetic=False):
     # Traverse a name snapshot; retaining module objects would retain all source
     # matrices until the whole model had been converted.
     names = [name for name, module in model.named_modules() if isinstance(module, nn.Linear)]
@@ -45,6 +60,7 @@ def replace_linears(model, quantization):
         parent_name, _, child = name.rpartition('.')
         parent = model.get_submodule(parent_name) if parent_name else model
         original = getattr(parent, child)
-        setattr(parent, child, PackedReferenceLinear(original, quantization))
+        linear = PackedGpuReferenceLinear if gpu_arithmetic else PackedReferenceLinear
+        setattr(parent, child, linear(original, quantization))
         del original
     return model.float()

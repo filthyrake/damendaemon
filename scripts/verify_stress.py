@@ -31,7 +31,9 @@ def main():
     parser.add_argument('--reference-only', action='store_true', help='generate a reference trace without a dllm GPU executor')
     parser.add_argument('--golden-output', help='save teacher-forced inputs and FP32 reference logits for cross-environment replay')
     parser.add_argument('--reference-attention', choices=('sdpa', 'eager'), default='sdpa')
-    parser.add_argument('--packed-cpu-reference', action='store_true', help='FP32 CPU reference with per-operation upstream GGUF expansion')
+    packed_options = parser.add_mutually_exclusive_group()
+    packed_options.add_argument('--packed-cpu-reference', action='store_true', help='FP32 CPU reference with per-operation upstream GGUF expansion')
+    packed_options.add_argument('--packed-gpu-reference', action='store_true', help='FP32 GPU reference with per-operation upstream CPU GGUF expansion')
     parser.add_argument('--reference-device', choices=('cpu', 'cuda', 'mps'))
     args = parser.parse_args()
     if args.prefill_chunk_size<0:parser.error('invalid prefill chunk size')
@@ -40,6 +42,11 @@ def main():
     reference_device = args.reference_device or selected_device()
     if args.packed_cpu_reference and (not args.reference_only or reference_device != 'cpu' or args.reference_dtype != 'float32'):
         parser.error('--packed-cpu-reference requires --reference-only --reference-device cpu --reference-dtype float32')
+    if args.packed_gpu_reference and (not args.reference_only or reference_device != 'cuda' or args.reference_dtype != 'float32'):
+        parser.error('--packed-gpu-reference requires --reference-only --reference-device cuda --reference-dtype float32')
+    if args.packed_gpu_reference:
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
     if args.context < 512:
         parser.error("context must be at least 512 for boundary tests")
     require_gpu()
@@ -55,7 +62,8 @@ def main():
             tokenizer.apply_chat_template(messages, return_dict=False, add_generation_prompt=True, **options))
     else:
         model = ModelWeights(args.path, args.context)
-    reference = load_reference(args.path, reference_quantization=args.reference_quantization, packed_cpu=args.packed_cpu_reference, local_files_only=True,
+    reference = load_reference(args.path, reference_quantization=args.reference_quantization,
+        packed_cpu=args.packed_cpu_reference, packed_gpu=args.packed_gpu_reference, local_files_only=True,
         trust_remote_code=False, torch_dtype=getattr(torch, args.reference_dtype), attn_implementation=args.reference_attention).to(reference_device).eval()
     logit_options = {} if model.config['model_type'] in ('gpt2','bloom') else {'logits_to_keep':1}
     executor = None if args.reference_only else make_executor(model, max_batch=4)
@@ -77,6 +85,7 @@ def main():
     trace_metadata = dict(path=args.path, context=args.context,
         reference_dtype=args.reference_dtype, reference_torch=str(torch.__version__),
         cpu_threads=args.cpu_threads, packed_cpu_reference=args.packed_cpu_reference,
+        packed_gpu_reference=args.packed_gpu_reference, reference_device=reference_device,
         reference_quantization=args.reference_quantization, reference_attention=args.reference_attention)
 
     def checkpoint():
@@ -226,7 +235,9 @@ def main():
     print(json.dumps({'model_path': args.path, 'reference_dtype': args.reference_dtype, 'reference_attention': args.reference_attention, 'architecture': model.config['model_type'],
         'device': device_name(), 'torch': str(torch.__version__), 'reference_device': reference_device,
         'weight_dtype': str(executor.w['head'].dtype) if executor else None,
-        'reference_only': args.reference_only, 'cpu_threads':args.cpu_threads, 'packed_cpu_reference':args.packed_cpu_reference, 'reference_quantization': args.reference_quantization,
+        'reference_only': args.reference_only, 'cpu_threads':args.cpu_threads,
+        'packed_cpu_reference':args.packed_cpu_reference, 'packed_gpu_reference':args.packed_gpu_reference,
+        'reference_quantization': args.reference_quantization,
         'weight_quantization': model.quantization if executor else None,
         'prefill_chunk_size':args.prefill_chunk_size, 'tiny_prefixes':args.tiny_prefixes,
         'context': args.context, 'backend': executor.kernel_backend if executor else None, 'checks': checks,

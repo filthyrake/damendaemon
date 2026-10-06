@@ -20,7 +20,10 @@ def roundtrip_reference_weight(weight, quantization, rows_per_chunk=128):
     return restored
 
 
-def load_reference(path, reference_quantization='none', packed_cpu=False, **kwargs):
+def load_reference(path, reference_quantization='none', packed_cpu=False, packed_gpu=False, **kwargs):
+    if packed_cpu and packed_gpu:
+        raise ValueError('select one packed reference arithmetic device')
+    packed = packed_cpu or packed_gpu
     config = json.loads((Path(path) / 'config.json').read_text())
     if config['model_type'] == 'qwen3_5':
         from transformers import Qwen3_5ForConditionalGeneration
@@ -28,27 +31,30 @@ def load_reference(path, reference_quantization='none', packed_cpu=False, **kwar
     else:
         from transformers import AutoModelForCausalLM
         cls = AutoModelForCausalLM
-    if packed_cpu:
+    if packed:
         import torch
         from safetensors import safe_open
         # BF16 loading is lossless only for an all-BF16 checkpoint. Check every
         # header before allocating, rather than silently rounding FP32 sources.
         if config['model_type'] != 'qwen3_5' or reference_quantization not in ('q8_0', 'q4_0'):
-            raise ValueError('packed CPU reference requires quantized Qwen3.5 text')
+            raise ValueError('packed reference requires quantized Qwen3.5 text')
         if kwargs.get('torch_dtype') != torch.float32:
-            raise ValueError('packed CPU reference requires FP32 arithmetic')
+            raise ValueError('packed reference requires FP32 arithmetic')
         files = list(Path(path).glob('*.safetensors'))
         if not files:
-            raise ValueError('packed CPU reference requires safetensors')
+            raise ValueError('packed reference requires safetensors')
         for file in files:
             with safe_open(str(file), framework='pt', device='cpu') as reader:
                 if any(reader.get_slice(key).get_dtype() != 'BF16' for key in reader.keys()):
-                    raise ValueError('packed CPU reference requires all-BF16 source tensors')
+                    raise ValueError('packed reference requires all-BF16 source tensors')
         kwargs['torch_dtype'] = torch.bfloat16
     model = cls.from_pretrained(path, **kwargs)
-    if packed_cpu:
-        from reference_packed_cpu import replace_linears
-        return replace_linears(model, reference_quantization)
+    if packed:
+        if __package__:
+            from .reference_packed_cpu import replace_linears
+        else:
+            from reference_packed_cpu import replace_linears
+        return replace_linears(model, reference_quantization, gpu_arithmetic=packed_gpu)
     if reference_quantization in ('q8_0','q4_0'):
         import torch
         # Independent upstream quantizer; replace each Linear parameter so a
