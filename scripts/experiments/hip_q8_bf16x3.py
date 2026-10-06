@@ -31,11 +31,21 @@ def _project(X, W, S, Y, M: tl.constexpr, N: tl.constexpr, K: tl.constexpr,
 
 
 def linear(x, weight, scales):
-    if x.dtype != torch.float32 or weight.dtype != torch.int8 or x.shape[-1] % 32:
+    if x.ndim < 1 or weight.ndim != 2 or scales.ndim != 2:
+        raise ValueError('requires an input vector or batch and matrix weights/scales')
+    if x.dtype != torch.float32 or weight.dtype != torch.int8 or scales.dtype != torch.float16 or x.shape[-1] % 32:
         raise ValueError('requires FP32 input and block-aligned Q8 weights')
+    if x.shape[-1] == 0 or weight.shape[0] == 0 or weight.shape[1] != x.shape[-1] or scales.shape != (weight.shape[0], weight.shape[1]//32):
+        raise ValueError('incompatible or empty Q8 projection dimensions')
+    if x.device.type != 'cuda' or weight.device != x.device or scales.device != x.device:
+        raise ValueError('Q8 projection tensors must share a CUDA/ROCm device')
+    if not weight.is_contiguous() or not scales.is_contiguous():
+        raise ValueError('Q8 weight and scale storage must be contiguous')
     shape = x.shape[:-1]
     x = x.reshape(-1, x.shape[-1]).contiguous()
     out = torch.empty((x.shape[0], weight.shape[0]), dtype=torch.float32, device=x.device)
+    if x.shape[0] == 0:
+        return out.reshape(*shape, weight.shape[0])
     _project[(tr.cdiv(x.shape[0], 32), tr.cdiv(weight.shape[0], 64))](
         x, weight, scales, out, x.shape[0], weight.shape[0], x.shape[1], 32, 64, 32,
         num_warps=4, num_stages=2)

@@ -514,3 +514,16 @@ Its first diagnostic prefill takes 11.76 seconds; a matched serving benchmark
 and complete numerical/lifecycle gates are still required. The full independent
 84-target control is being regenerated with eight low-priority CPU threads and
 a 2,700-second bound, retaining the 88 GiB/no-swap memory limits.
+
+The same experimental projection also passes a bounded A30 portability check
+using PyTorch 2.6.0/CUDA 12.4. All
+[27 boundary cases](evidence/quantization/a30-q8-bf16x3-boundaries.json)
+pass, including row/column tile tails, zero scales, and strided inputs. Vector,
+empty-batch, and rank-three input shapes pass; twelve invalid dtype, shape,
+device, and storage combinations are rejected before kernel launch.
+[A30 primitive ABBA samples](evidence/quantization/a30-q8-bf16x3-primitives.json)
+pass the same numerical gate and show lower median time for the three large
+shapes, but higher time for the tiny 5-by-48 output. These are primitive controls
+against FP32 expansion plus linear on the same A30, not model qualification or
+an A30-versus-HOMER speed comparison. The A30 run has exited; the A2 remains
+detached and unused.
