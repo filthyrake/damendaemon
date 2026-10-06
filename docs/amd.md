@@ -99,3 +99,10 @@ replay reporter now records null for that field; numerical checks are unchanged.
 This result does not qualify fused kernels, quantized text, images, the HTTP
 lifecycle, long context or comparative performance. Those remain issue #52/#53
 gates; no old checkpoint is being substituted for the modern target.
+
+The same 84 checks now also pass with [fused eager execution](evidence/amd/qwen35-hip-triton-replay512.json)
+and [fused graph replay](evidence/amd/qwen35-hip-triton-graph-replay512.json).
+Graph replay has maximum relative RMS 0.001769
+and zero greedy mismatches. This establishes those paths only for the tested
+Qwen3.5-0.8B FP16-weight/FP32-state configuration at context 512. The timing
+fields include warmup/first-use effects and are not a matched speed comparison.

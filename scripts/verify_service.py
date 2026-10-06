@@ -18,15 +18,24 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("model_a")
     parser.add_argument("model_b")
+    parser.add_argument('--context',type=int,default=256)
+    parser.add_argument('--swap-cycles',type=int,default=2)
+    parser.add_argument('--disable-thinking',action='store_true')
+    parser.add_argument('--output',help='persist report and per-capacity server logs')
     args = parser.parse_args()
+    if not 128 <= args.context <= 4096 or not 1 <= args.swap_cycles <= 20:
+        parser.error('context must be 128..4096 and swap cycles 1..20')
+    report=dict(passed=False,model_a=args.model_a,model_b=args.model_b,context=args.context,
+                swap_cycles=args.swap_cycles,reports=[])
     prompt = "Explain how matrix multiplication works in detail, with a worked example."
-    reports = []
+    reports = report["reports"]
     for slots in (1, 2):
         with tempfile.TemporaryDirectory(prefix="dllm-proof-") as directory:
-            log_path = Path(directory) / "server.log"
+            log_path = (Path(args.output).with_suffix(f'.capacity{slots}.log')
+                        if args.output else Path(directory) / "server.log")
             with log_path.open("w") as log:
                 process = subprocess.Popen([
-                    sys.executable, "-m", "dllm", "serve", "--port", "0", "--context", "256",
+                    sys.executable, "-m", "dllm", "serve", "--port", "0", "--context", str(args.context),
                     "--gpu-models", str(slots), "--model", "a=" + args.model_a,
                     "--model", "b=" + args.model_b, "--model", "broken=/missing-dllm-model",
                 ], stdout=log, stderr=log)
@@ -45,16 +54,18 @@ def main():
                     def post(alias="a", **extra):
                         data = {"model": alias, "messages": [{"role": "user", "content": prompt}],
                                 "max_tokens": 64, "temperature": 0}
+                        if args.disable_thinking:data['chat_template_kwargs']={'enable_thinking':False}
                         data.update(extra)
                         return urlopen(Request(base + "/v1/chat/completions", data=json.dumps(data).encode(),
                                                headers={"Content-Type": "application/json"}), timeout=120)
                     trials = []
                     texts = {}
-                    for alias in ("a", "b", "a", "b", "a"):
+                    for alias in ("a", "b") * args.swap_cycles + ("a",):
                         start = time.perf_counter()
                         with post(alias) as response:
                             data = json.load(response)
                         text = data["choices"][0]["message"]["content"]
+                        assert text, "empty completion cannot establish useful model-switching proof"
                         if alias in texts:
                             assert text == texts[alias], "model switch changed deterministic output"
                         texts[alias] = text
@@ -103,6 +114,12 @@ def main():
                                     "streaming_and_recovery_passed": True,
                                     "same_model_batch": [r["dllm_timing"] for r in batched],
                                     "stream_benchmark": vars(benchmark)})
+                except Exception as error:
+                    report['error']=repr(error)
+                    report['failed_capacity']=slots
+                    report['server_log']=str(log_path)
+                    if args.output:Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
+                    raise
                 finally:
                     if process.poll() is None:
                         process.send_signal(signal.SIGINT)
@@ -111,7 +128,9 @@ def main():
                         except subprocess.TimeoutExpired:
                             process.kill()
                             process.wait()
-    print(json.dumps({"model_a": args.model_a, "model_b": args.model_b, "reports": reports}, indent=2))
+    report['passed']=True
+    if args.output:Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
+    print(json.dumps(report,indent=2))
 
 
 if __name__ == "__main__":
