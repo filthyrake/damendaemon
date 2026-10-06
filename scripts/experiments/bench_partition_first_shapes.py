@@ -37,6 +37,9 @@ def main():
             report['import_seconds']=time.perf_counter()-started
             assert torch.cuda.device_count()==2,'select exactly two GPUs'
             torch.set_num_threads(4)
+            report['devices']=dict(selected=os.environ.get('CUDA_VISIBLE_DEVICES'),
+                names=[torch.cuda.get_device_name(index) for index in range(2)])
+            report['torch']=str(torch.__version__)
             os.environ['DLLM_Q4_STAGE_RUNTIME_ROWS']=str(int(args.dynamic and args.integrated))
             os.environ['DLLM_Q4_STAGE_RUNTIME_ROPE']=str(int(args.integrated_rope_runtime_tokens))
             if args.dynamic and not args.integrated:install_validation_dispatch()

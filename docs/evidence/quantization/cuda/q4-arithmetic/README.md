@@ -574,3 +574,10 @@ The integrated static/runtime entry points pass all 68 A2 query/KV equivalence
 cases; the median dynamic/static warm-kernel ratio is 0.995 and the largest
 individual slowdown is 1.44%. `qwen2-rope-integrated-matrices.json` records the
 shared-body integration gate. Full-model and lifecycle checks are separate.
+Integrated full-model gates subsequently pass 282 independent checks each for
+active Q4 rotary reuse, static Q4, FP16 and Q8 controls, including 22 packed
+stage calls per run. The actual HTTP verifier passes 19 checks and verifies the
+active policy in stage status. Changed-weight/recovery checks also pass,
+including partial canonical upload and partial adjacent repacking failures.
+These reports use the `qwen2-rope-integrated-*` prefix. The flag remains off by
+default during integrated performance and cross-host qualification.
