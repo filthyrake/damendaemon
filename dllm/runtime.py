@@ -31,6 +31,8 @@ def require_gpu():
     if len(devices)!=count or len(set(devices))!=count or any(not value.startswith('GPU-') for value in devices):
         raise ValueError(f"set CUDA_VISIBLE_DEVICES to exactly {count} distinct GPU UUIDs")
     import torch
+    if getattr(getattr(torch, 'version', None), 'hip', None):
+        raise RuntimeError('HIP PyTorch requires explicit --device rocm selection')
     if not torch.cuda.is_available() or torch.cuda.device_count() != count:
         raise RuntimeError(f"exactly {count} CUDA GPUs must be visible")
     torch.cuda.set_device(0)

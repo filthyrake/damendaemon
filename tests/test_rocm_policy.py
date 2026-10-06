@@ -62,3 +62,10 @@ class RocmPolicyTests(unittest.TestCase):
         for value in ('0','-1','nan','inf','1e308','bad'):
             with self.subTest(value=value),patch.dict('os.environ',{'DLLM_ROCM_MEMORY_GIB':value},clear=True):
                 with self.assertRaises(ValueError):memory_limit()
+
+    def test_hip_build_cannot_bypass_apu_budget_using_cuda_selection(self):
+        torch=self.torch()
+        with patch.dict('os.environ',{'DLLM_DEVICE':'cuda','CUDA_VISIBLE_DEVICES':'GPU-example'},clear=True),patch.dict('sys.modules',{'torch':torch}):
+            with self.assertRaisesRegex(RuntimeError,'explicit'):require_gpu()
+            with self.assertRaisesRegex(RuntimeError,'explicit'):available_memory()
+            torch.cuda.set_device.assert_not_called()

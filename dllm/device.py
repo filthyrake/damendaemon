@@ -41,6 +41,8 @@ def available_memory():
     if selected_accelerator() == 'rocm':
         from .rocm_policy import available_memory as rocm_available_memory
         return rocm_available_memory(torch)
+    if getattr(getattr(torch, 'version', None), 'hip', None):
+        raise RuntimeError('HIP PyTorch requires explicit ROCm selection for memory admission')
     return torch.cuda.mem_get_info()[0]
 
 

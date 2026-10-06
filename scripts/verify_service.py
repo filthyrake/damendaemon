@@ -58,8 +58,20 @@ def main():
                         data.update(extra)
                         return urlopen(Request(base + "/v1/chat/completions", data=json.dumps(data).encode(),
                                                headers={"Content-Type": "application/json"}), timeout=120)
+                    def status():
+                        with urlopen(base+'/v1/models/status',timeout=30) as response:
+                            return json.load(response)
+                    def unload(alias):
+                        body=json.dumps(dict(model=alias,release_host=True)).encode()
+                        with urlopen(Request(base+'/v1/models/unload',data=body,
+                                headers={'Content-Type':'application/json'}),timeout=120) as response:
+                            return json.load(response)
+                    def allocated(state):
+                        key={'cuda':'cuda_allocated_bytes','rocm':'hip_allocated_bytes','mps':'mps_allocated_bytes'}[state['device']]
+                        return state[key]
                     trials = []
                     texts = {}
+                    stable_allocations = {}
                     for alias in ("a", "b") * args.swap_cycles + ("a",):
                         start = time.perf_counter()
                         with post(alias) as response:
@@ -69,8 +81,13 @@ def main():
                         if alias in texts:
                             assert text == texts[alias], "model switch changed deterministic output"
                         texts[alias] = text
+                        state=status()
+                        if len(trials)>=4:
+                            baseline=stable_allocations.setdefault(alias,allocated(state))
+                            assert allocated(state)==baseline, 'live allocation grew after swap warmup'
                         trials.append({"model": alias, "wall_seconds": time.perf_counter() - start,
-                                       "usage": data["usage"], "timing": data["dllm_timing"]})
+                                       "usage": data["usage"], "timing": data["dllm_timing"],
+                                       "allocated_bytes":allocated(state)})
                     expected_tier = "host" if slots == 1 else "gpu"
                     assert trials[2]["timing"]["source_tier"] == expected_tier
                     # Streaming matches the non-streaming result and reports real usage.
@@ -82,12 +99,12 @@ def main():
                     assert streamed == texts["a"]
                     assert parsed[-1]["usage"]["completion_tokens"] == trials[0]["usage"]["completion_tokens"]
                     # Invalid requests and load failures cannot poison the worker.
-                    for alias, extra, status in (("a", {"max_tokens": 10000}, 400), ("broken", {}, 500)):
+                    for alias, extra, expected_status in (("a", {"max_tokens": 10000}, 400), ("broken", {}, 500)):
                         try:
                             post(alias, **extra).close()
                             raise AssertionError("bad request unexpectedly succeeded")
                         except HTTPError as error:
-                            assert error.code == status, error.code
+                            assert error.code == expected_status, error.code
                             error.close()
                     # Close mid-generation and immediately ask for another model.
                     with post(stream=True) as response:
@@ -110,7 +127,20 @@ def main():
                     assert max(r["dllm_timing"]["max_batch_size"] for r in batched) == 4
                     benchmark = request_one(base + "/v1", "a", prompt, 64, 120, 0)
                     assert benchmark.error is None, benchmark.error
-                    reports.append({"gpu_models": slots, "trials": trials, "sample_text": texts,
+                    for alias in ('a','b'):unload(alias)
+                    released=status()
+                    assert released['host_cached_bytes']==0
+                    assert all(m['residency']!='gpu' for m in released['models'])
+                    with post('a') as response:
+                        reloaded=json.load(response)
+                    assert reloaded['choices'][0]['message']['content']==texts['a']
+                    assert reloaded['dllm_timing']['source_tier']=='disk'
+                    unload('a')
+                    released_again=status()
+                    assert released_again['host_cached_bytes']==0
+                    assert allocated(released_again)==allocated(released), 'reload retained additional device allocations'
+                    reports.append({"gpu_models": slots, "released_status":released,
+                                    "released_again_status":released_again, "trials": trials, "sample_text": texts,
                                     "streaming_and_recovery_passed": True,
                                     "same_model_batch": [r["dllm_timing"] for r in batched],
                                     "stream_benchmark": vars(benchmark)})

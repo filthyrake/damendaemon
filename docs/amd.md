@@ -82,7 +82,7 @@ admission. Initial scope is one gfx1151 device. The default process allocation
 budget is 8 GiB; admission also limits itself to reported free/total device
 memory and preserves 16 GiB of live host headroom. `DLLM_ROCM_MEMORY_GIB` is
 an explicit override, not permission to exceed those other bounds. This has
-462 passing local regression tests; these tests do not prove GPU speed.
+463 passing local regression tests; these tests do not prove GPU speed.
 
 The pinned Qwen3.5-0.8B revision
 `2fc06364715b967f1860aea9cf38778875588b17` passes
@@ -106,3 +106,11 @@ Graph replay has maximum relative RMS 0.001769
 and zero greedy mismatches. This establishes those paths only for the tested
 Qwen3.5-0.8B FP16-weight/FP32-state configuration at context 512. The timing
 fields include warmup/first-use effects and are not a matched speed comparison.
+
+The pinned Qwen3.5-2B revision
+`15852e8c16360a2fea060d615a32b45270f8a8fc` also passes all
+[84 fused graph checks](evidence/amd/qwen35-2b-hip-triton-graph-replay512.json)
+against its [CPU FP32 reference](evidence/amd/qwen35-2b-cpu-fp32-golden512.json),
+with zero greedy mismatches, maximum relative RMS 0.005288 and maximum
+absolute error 0.066978. Scope remains context 512 and unquantized text.
+The ordinary HTTP switching/release gate is being qualified separately.
