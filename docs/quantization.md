@@ -70,6 +70,15 @@ prompt packing. Both distributed workers must agree on both policies; model
 status reports the active layout. See
 [the numerical investigation and measured tradeoffs](evidence/quantization/cuda/q4-arithmetic/README.md).
 
+`DLLM_Q4_STAGE_RUNTIME_ROWS=1` is an opt-in compilation-latency experiment for
+those adjacent Q4 stages. It reuses compiled kernels across prompt lengths
+within selected tile families; down-projection families that regressed in GPU
+timing retain static bounds. Same-host stage status exposes `runtime_row_bounds`.
+The default is `0` while integrated performance and cross-host qualification
+continue. Prototype fresh-compiler-cache measurements reduced first-use costs;
+they did not demonstrate higher warmed throughput. The evidence page above
+separates these measurements and records the numerical and recovery gates.
+
 ## Native AWQ checkpoints
 
 CUDA can load dense Qwen2 and Qwen3 checkpoints using AWQ GEMM four-bit packing, group size 128,

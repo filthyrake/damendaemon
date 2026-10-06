@@ -449,3 +449,24 @@ checks and 492 changed-weight/recovery checks, including partial upload and
 repacking failures. The shared arithmetic refactor's static control passes all
 282 independent graph checks and 22 packed stage calls. Integrated performance
 and cross-host qualification remain separate gates before default promotion.
+
+The integrated implementation subsequently passes the same matched whole-model
+ABBA benchmark, with identical generated tokens throughout. Adjacent layout,
+packed prefill, 16 input IDs, 32 output tokens, context 512, capacity four and
+A2/A30 placement remain fixed; only runtime row bounds change.
+
+| Batch size | Row bounds | Median first token, ms | Median total, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Static | 23.12 | 144.13 | 222.03 |
+| 1 | Integrated selective | 22.88 | 140.08 | 228.45 |
+| 2 | Static | 24.34 | 138.54 | 461.96 |
+| 2 | Integrated selective | 24.27 | 137.34 | 465.98 |
+| 4 | Static | 28.68 | 144.37 | 886.63 |
+| 4 | Integrated selective | 27.38 | 142.73 | 896.79 |
+
+This run shows no warm-throughput regression, with differences of +2.9%, +0.9%
+and +1.1%. The earlier prototype comparison had small mixed differences, so
+these results do not establish a general warm-speed gain. Raw measurements are
+in `qwen2-q4-runtime-rows-benchmark.json`; this is model execution, not HTTP or
+network throughput. The independent-cache first-use results above are still
+prototype measurements and must not be relabeled as integrated-path evidence.
