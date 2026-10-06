@@ -92,9 +92,14 @@ of at least 128 rows in the same Llama scope. Fixed/paged/graph/chunk and server
 for every model using these block formats.
 
 Performance is workload-specific. Comparable results include losses as well as
-wins; a passing numerical gate is not a claim of throughput parity. In particular,
-Mistral Q4 single-request decoding still trails llama.cpp, and several concurrent
-workloads still trail vLLM. See the raw trials accompanying each comparison.
+wins; a passing numerical gate is not a claim of throughput parity. The optional
+A2 Q4 Marlin path now beats the matched llama.cpp total latency for the tested
+single-request Mistral Q4 workloads and improves four-request throughput. That
+comparison still fails strict text parity on one short prompt, and llama.cpp
+has lower first-output latency at concurrency four. These results cover the
+pinned Llama-metadata fixture at 512 context, not general Mistral support.
+Other paths retain their documented losses, including concurrent workloads
+that trail vLLM. See the [raw comparisons and limits](evidence/gguf/README.md).
 
 On the A2, legacy Q4 projections with the measured Mistral geometry use smaller
 prompt tiles at 33–64 input rows. Normal HTTP first-output latency improves
