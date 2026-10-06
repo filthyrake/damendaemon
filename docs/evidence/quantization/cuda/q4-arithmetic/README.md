@@ -480,6 +480,17 @@ calls. This uses NCCL socket transport, not RDMA. Peer-only firewall rules had
 firewall rule remained and its GPU allocation returned to 10,835 MiB. Reports
 are the `qwen2-q4-runtime-rows-network-*` JSON files in this directory.
 
+The integrated implementation also reproduces the first-use improvement in
+four independent processes/private Triton caches, in static/selective/selective/
+static order. Every first/repeated token matches across all trials. Median GPU
+activation/compilation is 21.95→14.93 seconds (32.0% lower); the first sweep over
+the same 15 prompt lengths is 47.28→18.95 seconds (59.9% lower). Repeated sweeps
+are 0.336→0.333 seconds. The `qwen2-q4-integrated-first-shapes-*` reports preserve
+raw trials and their summary. Host/filesystem/driver caches are not reset, and
+activation excludes imports, host weight loading and initial CUDA context setup.
+This confirms an integrated compilation/first-use improvement, not a general
+warm-throughput or total server-startup claim.
+
 ### Rotary token-stride experiment
 
 The existing rotary/cache kernel specializes its token count even though that
