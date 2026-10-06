@@ -54,8 +54,12 @@ and [Q8 regression boundaries](evidence/amd/homer-compensated-q8-regression-boun
 Pinned Qwen3.8-27B also passes all 84 [full-model Q4 comparisons](evidence/amd/qwen38-27b-q4-native-replay512-headfix.json)
 at 512 context, with exact greedy agreement against independently packed Q4
 weights and FP32 reference arithmetic. Actual packed weight size is 15.80 GiB,
-before state and workspace. Original-weight quality, HTTP lifecycle and other
-devices remain unqualified; follow [issue #23](https://github.com/filthyrake/dllm/issues/23).
+before state and workspace. [Ordinary HTTP lifecycle](evidence/amd/qwen38-27b-q4-service512.json)
+also passes on HOMER: streaming, four-request batching, model switching,
+cancellation/error recovery and repeated release/reload. Host weights return
+to zero and GPU allocations return to a stable 32 MiB library baseline.
+Original-weight quality and other devices remain unqualified;
+follow [issue #23](https://github.com/filthyrake/dllm/issues/23).
 This does not establish fit or correctness on A30, M4 or another GPU.
 
 Independent dense model gates pass Qwen2.5-0.5B, accurate Qwen3-0.6B and

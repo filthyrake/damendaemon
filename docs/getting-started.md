@@ -108,5 +108,9 @@ curl http://127.0.0.1:8088/v1/chat/completions \
 ```
 
 See [serving and model management](serving.md) for status, switching and release.
-Full-model Q4, 32K context and practical multimodal support are still tracked
+For the independently checked Q4 variant on HOMER, replace `DLLM_QUANTIZATION=q8_0`
+with `DLLM_QUANTIZATION=q4_0 DLLM_EXPERIMENTAL_HYBRID_Q4=1`, retaining the
+other bounds above. Packed weights use 15.80 GiB. The numerical and HTTP gates
+pass, but this is not original-weight quality or a faster-than-Q8 claim.
+32K context, practical multimodal support and other-device qualification remain
 in [the current roadmap](https://github.com/filthyrake/dllm/issues/3).
