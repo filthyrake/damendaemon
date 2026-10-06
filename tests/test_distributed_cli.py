@@ -146,3 +146,44 @@ class DistributedCliTests(unittest.TestCase):
         self.assertEqual(pair.state.lengths,[0,2,0,1])
         for slots in ([1,1],[True],[4],[]):
             with self.subTest(slots=slots),self.assertRaises(ValueError):pair.decode([65]*len(slots),slots)
+
+    def test_output_failure_payload_is_not_a_generated_token(self):
+        import torch
+        from dllm.distributed import StagePair
+        pair=StagePair.__new__(StagePair);pair.model=SimpleNamespace(config={'vocab_size':128})
+        self.assertEqual(pair._result_tokens(torch.tensor([0,65,127])),[0,65,127])
+        with self.assertRaisesRegex(RuntimeError,'output stage failed'):
+            pair._result_tokens(torch.tensor([-1,-1]))
+        for values in ([128],[-2],[65,128]):
+            with self.assertRaisesRegex(RuntimeError,'invalid distributed output'):
+                pair._result_tokens(torch.tensor(values))
+
+    def test_output_exception_uses_existing_result_transfer_before_raising(self):
+        import torch
+        from dllm.distributed import StagePair
+        from dllm.stage_protocol import Command, DECODE
+        pair=StagePair.__new__(StagePair);pair.stage=Mock();pair.channel=Mock()
+        failure=RuntimeError('injected stage error')
+        pair.stage.run_decode.side_effect=failure
+        command=Command(1,3,DECODE,2,((0,1,4),(1,1,8)))
+        payload=torch.tensor([-1,-1],dtype=torch.int64)
+        pair.failure_tokens=payload
+        with patch('dllm.distributed.torch.full',return_value=payload) as allocate:
+            with self.assertRaisesRegex(RuntimeError,'injected stage error'):
+                pair._output_tokens(command,None,None,None)
+        allocate.assert_not_called()
+        pair.channel.complete_tokens.assert_called_once()
+        sent_command,sent_payload=pair.channel.complete_tokens.call_args.args
+        self.assertEqual(sent_command,command)
+        self.assertTrue(torch.equal(sent_payload,payload))
+
+    def test_successful_output_selection_does_not_add_a_transfer(self):
+        import torch
+        from dllm.distributed import StagePair
+        from dllm.stage_protocol import Command, DECODE
+        pair=StagePair.__new__(StagePair);pair.stage=Mock();pair.channel=Mock()
+        pair.stage.run_decode.return_value=torch.tensor([[1.,3.,2.],[4.,2.,1.]])
+        command=Command(1,3,DECODE,2,((0,1,4),(1,1,8)))
+        result=pair._output_tokens(command,None,None,None)
+        self.assertEqual(result.tolist(),[1,0])
+        pair.channel.complete_tokens.assert_not_called()

@@ -113,3 +113,7 @@ session-bounds error before constructing the command channel, then exit zero
 through the expected failure path. GPU allocations return to their baseline.
 Reproduce with `scripts/verify_distributed_bounds.py`; each owned torchrun job
 has a 180-second outer deadline. This proves rejection/cleanup, not performance.
+
+The subsequent [output-stage exception proof](../failure/README.md) records
+protocol version 3, a real failure uncovered by GPU testing, explicit failure
+reporting, fresh precision gates and repeated healthy-path measurements.

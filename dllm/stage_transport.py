@@ -69,7 +69,9 @@ class StageChannel:
         """Final-stage token transfer is also the execution completion fence.
 
 Rank one supplies sampled int64 token IDs; rank zero supplies a receive buffer.
-No full vocabulary crosses the boundary. Send/receive and CUDA completion must
+A reserved negative result can report an output-stage execution exception;
+the owning StagePair rejects it and poisons the session. No full vocabulary
+crosses the boundary. Send/receive and CUDA completion must
 succeed before either side commits ownership. Release/stop use finish().
 """
         from .stage_protocol import PREFILL, DECODE

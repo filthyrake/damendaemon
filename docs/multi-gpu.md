@@ -216,7 +216,13 @@ This service uses layer partitioning; it does not implement tensor parallelism.
 Per-request `max_batch_size` reports the largest decode batch that actually
 included that request, while status reports the configured capacity.
 
-The control protocol is now version 2, adding acknowledged idle heartbeats.
+The control protocol is version 3: acknowledged idle heartbeats plus an explicit
+output-stage failure payload. An output-stage exception can use the existing
+token transfer to fail the session when CUDA and the transport remain usable;
+this adds no successful-path collective. CUDA context corruption, broken
+transport or process death may still abort workers and need the outer process
+owner to terminate the job. The service does not promise graceful HTTP errors
+for those fatal failures.
 Both workers must use the same dllm revision. Startup also checks a fixed-size
 digest of prepared weights, protocol version, context and batch capacity before
 opening the command channel. See the

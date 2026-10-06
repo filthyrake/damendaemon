@@ -8,7 +8,9 @@ execution or transport failure poisons the epoch and requires fresh workers.
 from dataclasses import dataclass
 
 MAGIC = 0x444C4C4D
-VERSION = 2
+VERSION = 3
+# Reserved output payload for an output-stage exception with a usable transport.
+FAILED_TOKEN = -1
 MAX_SLOTS = 4
 HEADER_WORDS = 7 + 3 * MAX_SLOTS
 PREFILL, DECODE, RELEASE, STOP, PING = range(1, 6)

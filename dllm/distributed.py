@@ -18,7 +18,7 @@ from .layer_stage import LayerStage
 from .partition_policy import validate
 from .qwen2 import ModelWeights
 from .stage_identity import fingerprint
-from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING, VERSION
+from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING, VERSION, FAILED_TOKEN
 from .stage_setup import StageSetup
 from .stage_transport import StageChannel
 
@@ -36,6 +36,7 @@ class StagePair:
         self.channel = None
         self.stage = None
         self.model = None
+        self.failure_tokens = None
         self.rank = int(os.environ.get('RANK', '-1'))
         local_rank = int(os.environ.get('LOCAL_RANK', '-1'))
         visible = os.environ.get('CUDA_VISIBLE_DEVICES', '').split(',')
@@ -64,6 +65,8 @@ class StagePair:
             self.stage = LayerStage(self.model, 0 if self.rank == 0 else 12,
                                    12 if self.rank == 0 else 24, max_batch=max_batch,
                                    stage_graphs=True, kernels='triton')
+            if self.rank == 1:
+                self.failure_tokens = torch.full((max_batch,), FAILED_TOKEN, dtype=torch.int64, device='cuda')
             setup.ready(); setup.wait_ready(); ready = True
             self.owns_group = True
             dist.init_process_group('nccl', timeout=timedelta(seconds=30),
@@ -135,15 +138,36 @@ class StagePair:
                 operation = dist.P2POp(dist.irecv, hidden, 0)
             for work in dist.batch_isend_irecv([operation]):work.wait()
             if self.rank == 1:
-                logits = self.stage.run_prefill(hidden, positions, command.entries[0][0]) if prefill else self.stage.run_decode(hidden, positions, slots)
-                result = logits.argmax(-1)
+                result = self._output_tokens(command, hidden, positions, slots)
             else:
                 result = torch.empty(1 if prefill else command.rows, dtype=torch.int64, device='cuda')
             self.channel.complete_tokens(command, result)
-            return result.reshape(-1).tolist() if self.rank == 0 else None
+            return self._result_tokens(result) if self.rank == 0 else None
         except BaseException:
             self.state.poison()
             raise
+
+    def _output_tokens(self, command, hidden, positions, slots):
+        try:
+            logits = (self.stage.run_prefill(hidden, positions, command.entries[0][0])
+                      if command.operation == PREFILL else self.stage.run_decode(hidden, positions, slots))
+            return logits.argmax(-1)
+        except Exception:
+            # The coordinator is already waiting for this fixed-size result.
+            # Signal an execution exception on the existing transfer,
+            # without adding a collective to every successful decode. A broken
+            # CUDA context/transport still requires the process-owner deadline.
+            rows = 1 if command.operation == PREFILL else command.rows
+            failure = self.failure_tokens[:rows]
+            self.channel.complete_tokens(command, failure)
+            raise
+
+    def _result_tokens(self, result):
+        tokens = result.reshape(-1).tolist()
+        if FAILED_TOKEN in tokens:raise RuntimeError('distributed output stage failed')
+        if any(not 0 <= token < self.model.config['vocab_size'] for token in tokens):
+            raise RuntimeError('invalid distributed output token')
+        return tokens
 
     def serve_worker(self):
         if self.rank != 1:raise ValueError('only the output rank runs the worker loop')
@@ -184,3 +208,4 @@ class StagePair:
         self.owns_group = False
         self.stage = None
         self.channel = None
+        self.failure_tokens = None

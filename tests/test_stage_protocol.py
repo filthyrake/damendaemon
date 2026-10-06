@@ -54,7 +54,7 @@ class StageProtocolTests(unittest.TestCase):
     def test_canonical_fixed_size_wire_and_stop(self):
         command = Command(1, 1, STOP, 0, ())
         self.assertEqual(decode(command.encode()), command)
-        for index, value in [(0, 0), (1, 99), (1, 1), (6, 5), (7, 0), (2, True), (3, 1 << 63)]:
+        for index, value in [(0, 0), (1, 99), (1, 1), (1, 2), (6, 5), (7, 0), (2, True), (3, 1 << 63)]:
             words = command.encode(); words[index] = value
             with self.subTest(index=index), self.assertRaises(ValueError):decode(words)
         with self.assertRaises(ValueError):decode(command.encode()[:-1])
