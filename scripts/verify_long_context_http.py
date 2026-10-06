@@ -16,6 +16,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from urllib.request import Request, urlopen
@@ -48,9 +49,19 @@ def request_deadlines(first_output, first_seconds, total_seconds, expire):
 
 
 def save_report(path, report):
-    temporary = path.with_suffix('.tmp')
-    temporary.write_text(json.dumps(report, indent=2)+'\n')
-    temporary.replace(path)
+    temporary = None
+    try:
+        # A signal handler can checkpoint while the main thread is writing.
+        # Unique temporaries prevent its report from sharing an open inode.
+        with tempfile.NamedTemporaryFile('w', dir=path.parent, prefix=path.name+'.',
+                                         suffix='.tmp', delete=False) as output:
+            temporary = Path(output.name)
+            json.dump(report, output, indent=2)
+            output.write('\n')
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def main():
@@ -139,8 +150,10 @@ def main():
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         report.update(passed=False, interrupted_signal=signum, phase='interrupted')
-        save_report(args.output, report)
-        stop_server(signal.SIGTERM)
+        try:
+            save_report(args.output, report)
+        finally:
+            stop_server(signal.SIGTERM)
         raise SystemExit(128+signum)
     signal.signal(signal.SIGTERM, terminate)
     signal.signal(signal.SIGINT, terminate)
@@ -234,16 +247,18 @@ def main():
     finally:
         report['phase'] = 'completed' if report['passed'] else report.get('phase', 'failed')
         # Keep a report even if the outer scope kills us during child cleanup.
-        save_report(args.output, report)
-        if process is not None and process.poll() is None:
-            stop_server(signal.SIGINT)
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                stop_server(signal.SIGKILL)
-                process.wait()
-        report['cleanup_complete'] = process is None or process.poll() is not None
-        save_report(args.output, report)
+        try:
+            save_report(args.output, report)
+        finally:
+            if process is not None and process.poll() is None:
+                stop_server(signal.SIGINT)
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    stop_server(signal.SIGKILL)
+                    process.wait()
+            report['cleanup_complete'] = process is None or process.poll() is not None
+            save_report(args.output, report)
     if not report['passed']:
         raise SystemExit('long-context/interference gate failed; retained report')
 

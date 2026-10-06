@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
 from scripts.verify_long_context_http import request_deadlines, save_report
 
@@ -43,4 +44,19 @@ class ContextDeadlineTests(unittest.TestCase):
             self.assertFalse(json.loads(path.read_text())['passed'])
             save_report(path, {'passed': False, 'interrupted_signal': 15})
             self.assertEqual(json.loads(path.read_text())['interrupted_signal'], 15)
+            self.assertEqual(list(Path(directory).iterdir()), [path])
+
+    def test_interrupted_write_cannot_corrupt_signal_handlers_checkpoint(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'report.json'
+            dump = json.dump
+            def interrupted(report, output, **kwargs):
+                output.write('unfinished ordinary report')
+                with patch('scripts.verify_long_context_http.json.dump', dump):
+                    save_report(path, {'passed': False, 'interrupted_signal': 15})
+                raise SystemExit(143)
+            with patch('scripts.verify_long_context_http.json.dump', interrupted):
+                with self.assertRaises(SystemExit):
+                    save_report(path, {'phase': 'long_request'})
+            self.assertEqual(json.loads(path.read_text()), {'passed': False, 'interrupted_signal': 15})
             self.assertEqual(list(Path(directory).iterdir()), [path])
