@@ -1,0 +1,74 @@
+{
+  "passed": true,
+  "compare": "prefill",
+  "scope": "Matched Q8 A2/3090 network HTTP comparison at fixed capacity four; no RDMA claim",
+  "trial_files": [
+    "qwen2-network-packed-bench-0.json",
+    "qwen2-network-packed-bench-1.json",
+    "qwen2-network-packed-bench-2.json",
+    "qwen2-network-packed-bench-3.json"
+  ],
+  "summary": [
+    {
+      "packed_prefill": false,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 18.2786565128481,
+      "request_ms": 130.75559301069006,
+      "aggregate_tokens_per_second": 243.73835258848356
+    },
+    {
+      "packed_prefill": true,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 19.336386496433988,
+      "request_ms": 133.00243849516846,
+      "aggregate_tokens_per_second": 240.09084036087646
+    },
+    {
+      "packed_prefill": false,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 28.077655500965193,
+      "request_ms": 188.8798829895677,
+      "aggregate_tokens_per_second": 332.0746626819374
+    },
+    {
+      "packed_prefill": true,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 36.73992300173268,
+      "request_ms": 188.93787350680213,
+      "aggregate_tokens_per_second": 335.09327980884564
+    },
+    {
+      "packed_prefill": false,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 51.33611001656391,
+      "request_ms": 248.19630150159355,
+      "aggregate_tokens_per_second": 507.23916335778483
+    },
+    {
+      "packed_prefill": true,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 46.06739600421861,
+      "request_ms": 220.71489150403067,
+      "aggregate_tokens_per_second": 568.6301358223188
+    }
+  ],
+  "firewall": {
+    "timeout_seconds": 600,
+    "lab_open_utc": "2026-10-06 04:11:29",
+    "desktop_open_utc": "2026-10-06 04:11:33",
+    "lab_removed_utc": "2026-10-06 04:15:49",
+    "desktop_removed_utc": "2026-10-06 04:15:53",
+    "peer_only": true
+  },
+  "final_gpu_mib": {
+    "a2": 0,
+    "a30": 13403,
+    "rtx3090": 10835
+  }
+}

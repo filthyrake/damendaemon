@@ -68,3 +68,37 @@ difference is variability. Existing services remain on the shared GPUs. This
 compares packing policies within one precision and placement, not engines,
 hardware, RDMA, or single-process versus distributed serving. Final allocations
 return to A2 0 MiB and the existing A30 service at 13,403 MiB.
+
+## A2/3090 network proof and matched measurement
+
+The same Q8 revision and context pass 29 HTTP checks across NCCL sockets. The
+initial four requests each report prefill group size four, and six acknowledged
+heartbeats span the 35-second idle interval. A 64-row output-stage packed-prefill
+failure makes all four clients fail and closes the service; both owned rank jobs
+exit cleanly from the expected failure path. The subsequent benchmark launches
+are fresh healthy sessions, not automatic recovery of the failed pair.
+
+The fixed-capacity off/on/on/off measurement repeats the same 16-input/32-output
+workload and ten measured rounds per mode/concurrency. All text and usage match.
+
+| Concurrency | Packed | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | No | 18.28 | 130.76 | 243.74 |
+| 1 | Yes | 19.34 | 133.00 | 240.09 |
+| 2 | No | 28.08 | 188.88 | 332.07 |
+| 2 | Yes | 36.74 | 188.94 | 335.09 |
+| 4 | No | 51.34 | 248.20 | 507.24 |
+| 4 | Yes | 46.07 | 220.71 | 568.63 |
+
+Concurrency four gains 12.1% throughput, with 11.1% lower request latency and
+10.3% lower first-text latency. Concurrency two has essentially unchanged
+throughput/request time but first text is 8.66 ms slower. Single-request
+differences again reflect variability on the same execution path. The packing
+flag remains available for workload-specific latency/throughput choices.
+
+The peer-only firewall rules had automatic 600-second expiry. They opened at
+04:11:29 UTC on the lab and 04:11:33 on the desktop, and were removed early at
+04:15:49/04:15:53 on 2026-10-06. Listings confirmed removal while preserving the
+desktop's existing subnet rule. Final GPU allocations were A2 0 MiB, existing
+A30 service 13,403 MiB, and existing 3090 service 10,835 MiB. No permanent or
+router rules changed. This is socket transport evidence; RDMA remains untested.
