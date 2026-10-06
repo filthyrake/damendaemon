@@ -27,9 +27,15 @@ The subsequent [4K native context replay](evidence/amd/qwen38-27b-q8-context-pro
 passes all 84 targets against that independent reference approach, including
 chunk boundaries and slot reuse. Maximum relative RMS is 0.001337 and maximum
 absolute error is 0.034421, with exact greedy agreement. This uses the isolated
-context probe; ordinary production admission remains at 512 while the 32K
-HTTP capacity gate is pending. The first 32K attempt stopped before inference
-on an undersized host-weight budget; the retry declares 40 GiB explicitly.
+context probe; ordinary production admission remains at 512. The first 32K
+attempt stopped before inference on an undersized host-weight budget. With
+40 GiB declared explicitly, the retry still sent no response bytes after more
+than 707 seconds, exceeding its 600-second first-output feasibility budget.
+The owned scope was stopped; no C4 attempt followed. The interrupted harness
+did not publish its usual report, so peak memory and completed output counts
+are unknown. [Stopped-run evidence](evidence/amd/qwen38-27b-q8-http-capacity32768-c1-host40-stopped.json)
+records the socket observation and retained log. This is a latency feasibility
+failure, not evidence of an OOM or successful 32K execution.
 
 Reference replay now rejects empty/incomplete traces and mismatched quantization
 before model loading. `--allow-quantization-mismatch` is reserved for explicit
