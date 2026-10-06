@@ -73,3 +73,29 @@ Active model targets are **Qwen3 or newer, with Qwen3.5 prioritized**. Qwen3
 dense bring-up and Qwen3.5 hybrid-state correctness are separate gates. Older
 fixtures remain historical evidence and cheap regression tests, not new GPU
 qualification or tuning targets.
+
+## Qwen3.5 text baseline on the AMD branch
+
+The experimental `codex/amd-rocm-bringup` branch adds explicit `--device rocm`,
+HIP build/device checks, rejection of NVIDIA-only libraries and shared-memory
+admission. Initial scope is one gfx1151 device. The default process allocation
+budget is 8 GiB; admission also limits itself to reported free/total device
+memory and preserves 16 GiB of live host headroom. `DLLM_ROCM_MEMORY_GIB` is
+an explicit override, not permission to exceed those other bounds. This has
+462 passing local regression tests; these tests do not prove GPU speed.
+
+The pinned Qwen3.5-0.8B revision
+`2fc06364715b967f1860aea9cf38778875588b17` passes
+[84 actual AMD comparisons](evidence/amd/qwen35-hip-torch-replay512.json) against
+a separately generated [CPU FP32 reference](evidence/amd/qwen35-cpu-fp32-golden512.json).
+There are no greedy-token mismatches; maximum relative RMS is 0.002173 and
+maximum absolute logit error is 0.025072. The gate retains RMS <0.01, absolute
+<0.5, finite logits and greedy agreement. It covers 512 context, reordered
+batches and slot reuse, using `torch-hybrid` without graph capture.
+
+A reporting-only bug initially interrupted serialization because hybrid
+executors do not expose the dense executor's `compute_dtype` attribute. The
+replay reporter now records null for that field; numerical checks are unchanged.
+This result does not qualify fused kernels, quantized text, images, the HTTP
+lifecycle, long context or comparative performance. Those remain issue #52/#53
+gates; no old checkpoint is being substituted for the modern target.
