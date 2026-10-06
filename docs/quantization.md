@@ -47,8 +47,8 @@ per-model policies can mix Q4, Q8 and unquantized models in the same server.
 For hybrid Qwen3.5/Qwen3.8 text, the AMD branch adds a separate experimental
 Q4 path: `DLLM_EXPERIMENTAL_HYBRID_Q4=1`, `DLLM_HYBRID_PRECISION=compensated`,
 ROCm, no graphs, context at most 512 and at most four request slots. An A30-only
-CUDA admission prototype uses the same opt-in and bounds; its GPU qualification
-is pending and it does not enable Q8 compensated CUDA or other NVIDIA devices. HOMER
+CUDA path uses the same opt-in and bounds; it does not enable Q8 compensated
+CUDA or other NVIDIA devices. HOMER
 passes [Q4 primitive boundaries](evidence/amd/homer-compensated-q4-boundaries.json)
 and [Q8 regression boundaries](evidence/amd/homer-compensated-q8-regression-boundaries.json).
 Pinned Qwen3.8-27B also passes all 84 [full-model Q4 comparisons](evidence/amd/qwen38-27b-q4-native-replay512-headfix.json)
@@ -60,7 +60,13 @@ cancellation/error recovery and repeated release/reload. Host weights return
 to zero and GPU allocations return to a stable 32 MiB library baseline.
 Original-weight quality and other devices remain unqualified;
 follow [issue #23](https://github.com/filthyrake/dllm/issues/23).
-This does not establish fit or correctness on A30, M4 or another GPU.
+A30 also passes all 84 [numerical comparisons](evidence/hybrid/a30-qwen38-27b-q4-native-replay512-chunks.json)
+and the [ordinary HTTP lifecycle](evidence/hybrid/a30-qwen38-27b-q4-service512.json)
+at these bounds, including four-request batching and both residency capacities.
+Repeated unload returns host weights to zero and CUDA allocations to a stable
+8.125 MiB baseline. Warm single-request decode is about 1.75 tokens/s in this
+512-context diagnostic; usable interactive speed remains work to do.
+Long context, M4 hybrid Q4 and other devices remain unqualified.
 
 Independent dense model gates pass Qwen2.5-0.5B, accurate Qwen3-0.6B and
 Llama3.2-1B on A2, along with live model-switching tests. The loader currently

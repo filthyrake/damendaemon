@@ -1,0 +1,702 @@
+{
+  "passed": true,
+  "model_a": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "model_b": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "context": 512,
+  "swap_cycles": 2,
+  "reports": [
+    {
+      "gpu_models": 1,
+      "released_status": {
+        "models": [
+          {
+            "id": "a",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          },
+          {
+            "id": "b",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          },
+          {
+            "id": "broken",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          }
+        ],
+        "device": "cuda",
+        "context": 512,
+        "cuda_allocated_bytes": 8519680,
+        "hip_allocated_bytes": null,
+        "rocm_aotriton_experimental": null,
+        "cuda_devices": null,
+        "mps_allocated_bytes": null,
+        "host_cached_bytes": 0,
+        "host_budget_bytes": 42949672960,
+        "gpu_model_limit": 1,
+        "host_model_limit": 2
+      },
+      "released_again_status": {
+        "models": [
+          {
+            "id": "a",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          },
+          {
+            "id": "b",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          },
+          {
+            "id": "broken",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          }
+        ],
+        "device": "cuda",
+        "context": 512,
+        "cuda_allocated_bytes": 8519680,
+        "hip_allocated_bytes": null,
+        "rocm_aotriton_experimental": null,
+        "cuda_devices": null,
+        "mps_allocated_bytes": null,
+        "host_cached_bytes": 0,
+        "host_budget_bytes": 42949672960,
+        "gpu_model_limit": 1,
+        "host_model_limit": 2
+      },
+      "trials": [
+        {
+          "model": "a",
+          "wall_seconds": 232.64734947299985,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 193.82428692400026,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 196.9293678879999,
+            "total_seconds": 232.610683461,
+            "decode_tokens_per_second": 1.7656299659441872
+          },
+          "allocated_bytes": 18143150080
+        },
+        {
+          "model": "b",
+          "wall_seconds": 27.25390041599985,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 21.887383107999995,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 25.042024629000025,
+            "total_seconds": 27.244332442000086,
+            "decode_tokens_per_second": 28.60635540051015
+          },
+          "allocated_bytes": 1081412608
+        },
+        {
+          "model": "a",
+          "wall_seconds": 41.10397701000011,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 5.072956877999786,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 5.283848116999707,
+            "total_seconds": 41.08944206499973,
+            "decode_tokens_per_second": 1.75950160445583
+          },
+          "allocated_bytes": 18143166464
+        },
+        {
+          "model": "b",
+          "wall_seconds": 2.9221287049999773,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 0.772247568000239,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.8119344579999961,
+            "total_seconds": 2.9136843399996906,
+            "decode_tokens_per_second": 29.9750224988994
+          },
+          "allocated_bytes": 1081412608
+        },
+        {
+          "model": "a",
+          "wall_seconds": 41.17805915000008,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "host",
+            "activation_seconds": 5.031419789000211,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 5.25442294000004,
+            "total_seconds": 41.16969581100011,
+            "decode_tokens_per_second": 1.7541283961918497
+          },
+          "allocated_bytes": 18143166464
+        }
+      ],
+      "sample_text": {
+        "a": "# Matrix Multiplication: A Detailed Explanation\n\n## 1. The Core Idea\n\nMatrix multiplication is a way of combining two matrices to produce a third matrix. It is **not** simply multiplying corresponding elements (that would be element-wise/Hadamard product). Instead, each entry in the resulting matrix is computed as the",
+        "b": "Matrix multiplication is a fundamental operation in linear algebra that allows us to combine matrices to produce new matrices. While matrix addition and scalar multiplication are simple, matrix multiplication introduces a specific rule that depends on the dimensions of the matrices involved.\n\n### The Core Rule\nThe operation is defined by the **product of two matrices $A"
+      },
+      "streaming_and_recovery_passed": true,
+      "same_model_batch": [
+        {
+          "source_tier": "host",
+          "activation_seconds": 5.227916213999833,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-hybrid+compensated+q4_0",
+          "weight_quantization": "q4_0",
+          "max_batch_size": 4,
+          "residual_dtype": "float32",
+          "first_token_seconds": 5.441930048999893,
+          "total_seconds": 19.868275700999675,
+          "decode_tokens_per_second": 4.367010296281577
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-hybrid+compensated+q4_0",
+          "weight_quantization": "q4_0",
+          "max_batch_size": 4,
+          "residual_dtype": "float32",
+          "first_token_seconds": 6.227032409000003,
+          "total_seconds": 20.07228610500033,
+          "decode_tokens_per_second": 4.55029581857353
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-hybrid+compensated+q4_0",
+          "weight_quantization": "q4_0",
+          "max_batch_size": 4,
+          "residual_dtype": "float32",
+          "first_token_seconds": 6.651198677999673,
+          "total_seconds": 20.27351810099981,
+          "decode_tokens_per_second": 4.624763085031601
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-hybrid+compensated+q4_0",
+          "weight_quantization": "q4_0",
+          "max_batch_size": 4,
+          "residual_dtype": "float32",
+          "first_token_seconds": 7.361764002999735,
+          "total_seconds": 20.845920708999984,
+          "decode_tokens_per_second": 4.672149795764828
+        }
+      ],
+      "stream_benchmark": {
+        "index": 0,
+        "model": "a",
+        "seconds": 39.569540869999855,
+        "first_output_seconds": 3.547013381999932,
+        "output_tokens": 64,
+        "error": null
+      }
+    },
+    {
+      "gpu_models": 2,
+      "released_status": {
+        "models": [
+          {
+            "id": "a",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          },
+          {
+            "id": "b",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          },
+          {
+            "id": "broken",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          }
+        ],
+        "device": "cuda",
+        "context": 512,
+        "cuda_allocated_bytes": 8519680,
+        "hip_allocated_bytes": null,
+        "rocm_aotriton_experimental": null,
+        "cuda_devices": null,
+        "mps_allocated_bytes": null,
+        "host_cached_bytes": 0,
+        "host_budget_bytes": 42949672960,
+        "gpu_model_limit": 2,
+        "host_model_limit": 2
+      },
+      "released_again_status": {
+        "models": [
+          {
+            "id": "a",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          },
+          {
+            "id": "b",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          },
+          {
+            "id": "broken",
+            "quantization": "q4_0",
+            "residency": "disk",
+            "chat_template": {
+              "source": "checkpoint",
+              "sha256": null
+            },
+            "host_weight_bytes": null,
+            "vision_host_weight_bytes": 0,
+            "vision_gpu_weight_bytes": 0,
+            "gpu_projection_cache_bytes": 0,
+            "gpu_packed_layout_overhead_bytes": 0,
+            "q4_marlin_abi": null,
+            "partition": null,
+            "partition_rebind_count": null,
+            "executor_failed": false
+          }
+        ],
+        "device": "cuda",
+        "context": 512,
+        "cuda_allocated_bytes": 8519680,
+        "hip_allocated_bytes": null,
+        "rocm_aotriton_experimental": null,
+        "cuda_devices": null,
+        "mps_allocated_bytes": null,
+        "host_cached_bytes": 0,
+        "host_budget_bytes": 42949672960,
+        "gpu_model_limit": 2,
+        "host_model_limit": 2
+      },
+      "trials": [
+        {
+          "model": "a",
+          "wall_seconds": 224.19057274900024,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 188.08502359400018,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 188.48053090299982,
+            "total_seconds": 224.17367988099977,
+            "decode_tokens_per_second": 1.7650446039051098
+          },
+          "allocated_bytes": 18143150080
+        },
+        {
+          "model": "b",
+          "wall_seconds": 9.188286662999417,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "disk",
+            "activation_seconds": 7.0358333209997,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 7.102002792999883,
+            "total_seconds": 9.180743360999259,
+            "decode_tokens_per_second": 30.306812196691073
+          },
+          "allocated_bytes": 19216862208
+        },
+        {
+          "model": "a",
+          "wall_seconds": 36.080463594999856,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 1.0701999599405099e-05,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.23931192899999587,
+            "total_seconds": 36.07110882300003,
+            "decode_tokens_per_second": 1.7582149225273496
+          },
+          "allocated_bytes": 19216862208
+        },
+        {
+          "model": "b",
+          "wall_seconds": 2.101935216000129,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 9.343999408883974e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.043051271999502205,
+            "total_seconds": 2.0945049259998996,
+            "decode_tokens_per_second": 30.709930920032278
+          },
+          "allocated_bytes": 19216862208
+        },
+        {
+          "model": "a",
+          "wall_seconds": 36.201312617999974,
+          "usage": {
+            "prompt_tokens": 26,
+            "completion_tokens": 64,
+            "total_tokens": 90
+          },
+          "timing": {
+            "source_tier": "gpu",
+            "activation_seconds": 9.46400086832e-06,
+            "cached_prompt_tokens": 0,
+            "speculative_blocks": 0,
+            "speculative_proposed_drafts": 0,
+            "speculative_matched_drafts": 0,
+            "kernel_backend": "triton-hybrid+compensated+q4_0",
+            "weight_quantization": "q4_0",
+            "max_batch_size": 1,
+            "residual_dtype": "float32",
+            "first_token_seconds": 0.25225118400067004,
+            "total_seconds": 36.193868195000505,
+            "decode_tokens_per_second": 1.7528426720678432
+          },
+          "allocated_bytes": 19216862208
+        }
+      ],
+      "sample_text": {
+        "a": "# Matrix Multiplication: A Detailed Explanation\n\n## 1. The Core Idea\n\nMatrix multiplication is a way of combining two matrices to produce a third matrix. It is **not** simply multiplying corresponding elements (that would be element-wise/Hadamard product). Instead, each entry in the resulting matrix is computed as the",
+        "b": "Matrix multiplication is a fundamental operation in linear algebra that allows us to combine matrices to produce new matrices. While matrix addition and scalar multiplication are simple, matrix multiplication introduces a specific rule that depends on the dimensions of the matrices involved.\n\n### The Core Rule\nThe operation is defined by the **product of two matrices $A"
+      },
+      "streaming_and_recovery_passed": true,
+      "same_model_batch": [
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 6.131000191089697e-06,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-hybrid+compensated+q4_0",
+          "weight_quantization": "q4_0",
+          "max_batch_size": 4,
+          "residual_dtype": "float32",
+          "first_token_seconds": 0.23673020100068243,
+          "total_seconds": 14.573405748999903,
+          "decode_tokens_per_second": 4.394324178508181
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-hybrid+compensated+q4_0",
+          "weight_quantization": "q4_0",
+          "max_batch_size": 4,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.0202128640003139,
+          "total_seconds": 14.77819892700063,
+          "decode_tokens_per_second": 4.579158585530728
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-hybrid+compensated+q4_0",
+          "weight_quantization": "q4_0",
+          "max_batch_size": 4,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.4472206899999946,
+          "total_seconds": 14.97705529400082,
+          "decode_tokens_per_second": 4.656376211825283
+        },
+        {
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "cached_prompt_tokens": 0,
+          "speculative_blocks": 0,
+          "speculative_proposed_drafts": 0,
+          "speculative_matched_drafts": 0,
+          "kernel_backend": "triton-hybrid+compensated+q4_0",
+          "weight_quantization": "q4_0",
+          "max_batch_size": 4,
+          "residual_dtype": "float32",
+          "first_token_seconds": 1.8741181770001276,
+          "total_seconds": 15.54993252300028,
+          "decode_tokens_per_second": 4.606672656274102
+        }
+      ],
+      "stream_benchmark": {
+        "index": 0,
+        "model": "a",
+        "seconds": 36.52940616700016,
+        "first_output_seconds": 0.47440231800010224,
+        "output_tokens": 64,
+        "error": null
+      }
+    }
+  ],
+  "prefill_chunk_size": 127,
+  "graph_requested": false,
+  "host_gib": 40.0,
+  "request_timeout": 300.0,
+  "hybrid_precision": "compensated",
+  "rocm_aotriton_experimental": null,
+  "variant": "ordinary"
+}
