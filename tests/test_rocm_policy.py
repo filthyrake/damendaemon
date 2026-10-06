@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import Mock,patch
 
 from dllm.device import selected_accelerator,selected_device,available_memory
-from dllm.rocm_policy import NVIDIA_LIBRARIES,validate_runtime,memory_limit,prefer_q8_small_batch_matvec
+from dllm.rocm_policy import NVIDIA_LIBRARIES,validate_runtime,memory_limit,prefer_q8_small_batch_matvec,configure_attention
 from dllm.runtime import require_gpu
 
 GIB=1024**3
@@ -12,6 +12,19 @@ ENV={'DLLM_DEVICE':'rocm','ROCR_VISIBLE_DEVICES':'0','HIP_VISIBLE_DEVICES':'0'}
 
 
 class RocmPolicyTests(unittest.TestCase):
+    def test_attention_default_and_explicit_diagnostic_override(self):
+        import os
+        key = 'TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL'
+        with patch.dict(os.environ, {}, clear=True):
+            configure_attention()
+            self.assertEqual(os.environ[key], '1')
+        with patch.dict(os.environ, {key: '0'}, clear=True):
+            configure_attention()
+            self.assertEqual(os.environ[key], '0')
+        with patch.dict(os.environ, {key: 'invalid'}, clear=True):
+            with self.assertRaises(ValueError):
+                configure_attention()
+
     def test_q8_policy_is_limited_to_qualified_architecture_and_rows(self):
         torch = self.torch()
         for rows in (1, 2, 3, 4, 5, 128):

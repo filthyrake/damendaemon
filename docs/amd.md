@@ -365,3 +365,27 @@ at every long-context shape; #60 retains full workspace admission as a gate.
 The [complete 0.8B near-32K model replay with this flag](evidence/amd/qwen35-q8-hip-flash-chunk256-replay32768.json)
 passes all 84 independent checks (worst relative RMS 0.002367). Serving,
 lifecycle and wider geometry remain separate gates.
+
+The [same 32K HTTP fixture using the experimental attention path](evidence/amd/qwen35-q8-hip-flash-http32768-chunk256-summary.json)
+passes all three rounds with exact output/counts and 126 short-stream progress
+chunks during long prefill. Long first output drops to 10.250/10.252/10.238
+seconds, maximum short-stream gaps to 0.126/0.126/0.125 seconds, and p95 gaps to
+0.106/0.106/0.105 seconds. These sequential engineering runs are not a full
+ABBA serving comparison, but preserve the same checkpoint, storage precision,
+context, prompts, output count and chunk size. They still miss the provisional
+100 ms p95 responsiveness target; practical-model quality and user saturation
+remain open.
+
+ROCm startup now enables the qualified gfx1151 attention path within the dllm
+process before requesting GPU execution. The existing gfx1151 admission guard
+remains in force. An explicit `TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=0` retains
+the diagnostic fallback; other values are rejected. This changes no host shell
+configuration or existing service. Runtime status reports the resolved setting.
+The [automatic-startup 32K replay](evidence/amd/qwen35-q8-hip-auto-flash-replay32768.json)
+passes all 84 independent checks without manually supplying the flag. The
+[normal-CLI 20-cycle lifecycle proof](evidence/amd/qwen35-q8-hip-auto-flash-service4096.json)
+passes both residency configurations, concurrency, streaming, cancellation,
+load recovery and reload, with zero tracked tensor allocation and zero host
+cache after unload/reload/unload. Driver/context memory is not measured by that
+allocator counter. The launcher may show an unset flag while the child server's
+reported resolved setting is `1`.

@@ -20,6 +20,8 @@ def require_gpu():
             raise RuntimeError('Apple MPS is not available')
         return
     if selected_accelerator() == 'rocm':
+        from .rocm_policy import configure_attention
+        configure_attention()
         import torch
         from .rocm_policy import validate_runtime
         validate_runtime(torch)
@@ -116,6 +118,8 @@ class Runtime:
         return {'models': models, 'device': selected_accelerator(), 'context': self.context,
                 'cuda_allocated_bytes': allocated if selected_accelerator()=='cuda' else None,
                 'hip_allocated_bytes': allocated if selected_accelerator()=='rocm' else None,
+                'rocm_aotriton_experimental': os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL')
+                    if selected_accelerator()=='rocm' else None,
                 'cuda_devices':devices,
                 'mps_allocated_bytes': torch.mps.current_allocated_memory() if selected_device()=='mps' else None,
                 'host_cached_bytes': sum(model.bytes for model in self.host.values()),

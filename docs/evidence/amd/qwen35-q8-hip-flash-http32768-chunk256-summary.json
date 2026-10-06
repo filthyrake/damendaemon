@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "context": 32768,
+  "output_tokens": 512,
+  "chunk_size": 256,
+  "gap_budget_seconds": 1.0,
+  "environment": {
+    "DLLM_DEVICE": "rocm",
+    "DLLM_KERNELS": "triton",
+    "DLLM_QUANTIZATION": "q8_0",
+    "DLLM_ROCM_MEMORY_GIB": "8",
+    "ROCR_VISIBLE_DEVICES": "0",
+    "HIP_VISIBLE_DEVICES": "0",
+    "TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL": "1"
+  },
+  "rounds": [
+    {
+      "index": 0,
+      "passed": true,
+      "exact_short": true,
+      "exact_long": true,
+      "short_progress_chunks": 126,
+      "long_first_output_seconds": 10.250428433530033,
+      "max_short_gap_seconds": 0.12563834339380264,
+      "p95_short_gap_seconds": 0.10566750355064869
+    },
+    {
+      "index": 1,
+      "passed": true,
+      "exact_short": true,
+      "exact_long": true,
+      "short_progress_chunks": 126,
+      "long_first_output_seconds": 10.25249447952956,
+      "max_short_gap_seconds": 0.12606990989297628,
+      "p95_short_gap_seconds": 0.10581534914672375
+    },
+    {
+      "index": 2,
+      "passed": true,
+      "exact_short": true,
+      "exact_long": true,
+      "short_progress_chunks": 126,
+      "long_first_output_seconds": 10.238251524046063,
+      "max_short_gap_seconds": 0.1252678046002984,
+      "p95_short_gap_seconds": 0.10533795412629843
+    }
+  ]
+}

@@ -11,6 +11,18 @@ NVIDIA_LIBRARIES = (
 )
 
 
+def configure_attention():
+    """Enable the qualified gfx1151 SDPA path early in an owned process.
+
+    Runtime validation below restricts ROCm execution to gfx1151. Keep an
+    explicit zero as a diagnostic fallback; do not edit the host environment.
+    """
+    key = 'TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL'
+    if os.environ.get(key, '1') not in ('0', '1'):
+        raise ValueError(f'{key} must be 0 or 1')
+    os.environ.setdefault(key, '1')
+
+
 def validate_runtime(torch):
     if not getattr(torch.version, 'hip', None):
         raise RuntimeError('ROCm selection requires a HIP build of PyTorch')
