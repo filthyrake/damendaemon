@@ -26,12 +26,14 @@ class Prepared:
 
 
 class Library:
+    abi = 1
+
     def __init__(self, path):
         self.lib = ctypes.CDLL(path)
         ptr, integer = ctypes.c_void_p, ctypes.c_int
         self.lib.dllm_q4_marlin_abi.argtypes = []
         self.lib.dllm_q4_marlin_abi.restype = integer
-        if self.lib.dllm_q4_marlin_abi() != 1:
+        if self.lib.dllm_q4_marlin_abi() != self.abi:
             raise ValueError('unsupported experimental Q4 Marlin ABI')
         self.lib.dllm_q4_marlin_init.argtypes = [ctypes.POINTER(integer)]*2
         self.lib.dllm_q4_marlin_init.restype = integer
@@ -93,7 +95,7 @@ class Library:
         x = x.contiguous()
         result = torch.empty((x.shape[0], matrix.outputs), dtype=x.dtype, device=x.device)
         self.check(self.lib.dllm_q4_marlin_gemm(x.data_ptr(), matrix.weight.data_ptr(),
-            matrix.scales.data_ptr(), matrix.zeros.data_ptr(),
+            matrix.scales.data_ptr(), matrix.zeros.data_ptr() if matrix.zeros is not None else None,
             matrix.bias.data_ptr() if matrix.bias is not None else None,
             result.data_ptr(), self.scratch.data_ptr(), self.locks.data_ptr(),
             x.shape[0], matrix.outputs, matrix.inputs, self.sms, self.shared,

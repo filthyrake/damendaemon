@@ -2490,3 +2490,33 @@ in control and 2.350/2.291 in Marlin; switch-back 2.443/2.522 → 2.287/2.430.
 Disk activation varies 9.506/9.666 → 8.465/9.549 seconds. Report full request
 timing separately from activation; these sparse lifecycle samples qualify
 functionality and the absence of the earlier large repacking regression.
+
+
+### Fresh Q4 Marlin versus pinned llama.cpp
+
+`mistral-q4-marlin-production-llama-http-a2.json` completes all four ABBA phases
+on the same GGUF hash, A2, prompt token IDs, 16 output tokens, context512 per
+slot and FP16 KV. dllm uses normal Marlin dispatch and mixed residual precision;
+llama.cpp uses its own Q4 arithmetic. The pinned llama.cpp binary hash is
+`344fe55b9043e7cd362b199a24fcbb9eba7e1d9513e17083a18df4190002401d`.
+
+| Input / concurrency | dllm total ms | llama.cpp total ms | dllm output tok/s | llama.cpp output tok/s |
+| --- | ---: | ---: | ---: | ---: |
+| 16 / 1 | 427.45 | 493.37 | 37.43 | 32.43 |
+| 129 / 1 | 577.66 | 649.12 | 27.70 | 24.65 |
+| 400 / 1 | 895.38 | 957.21 | 17.87 | 16.72 |
+| 129 / 2 | 798.81 | 803.20 | 40.06 | 39.84 |
+| 129 / 4 | 1129.12 | 1376.71 | 56.68 | 46.49 |
+
+Single-request post-first-output throughput is dllm 38.13/37.82/36.58 versus
+llama.cpp 34.80/34.56/34.28 tokens/sec. At concurrency four, llama.cpp has lower
+first-output latency (638.16 versus 690.04 ms), despite dllm's higher aggregate
+throughput. Concurrency two total time is effectively tied in this run.
+
+**The report deliberately retains `passed:false`: cross-engine text differs
+for the 16-token input.** Each engine emits one stable text per workload across
+all measured rounds and both phases; the other four workloads match between
+engines. dllm's independent HF accuracy and internal lifecycle gates pass, but
+this timing comparison does not establish exact output parity, broad model
+support, or superiority on other workloads. No assertion or threshold was
+relaxed to relabel this cross-engine comparison as a pass.

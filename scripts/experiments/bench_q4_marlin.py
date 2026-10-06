@@ -24,11 +24,16 @@ def main():
     parser.add_argument('--library', required=True)
     parser.add_argument('--rows', type=int, nargs='+', default=[2, 4, 16, 64, 129, 400])
     parser.add_argument('--residual-baseline', help='existing native residual library for single-row controls only')
+    parser.add_argument('--symmetric',action='store_true',help='test implicit zero point eight with experimental ABI 2')
+    parser.add_argument('--reference-library',help='ABI 1 library for exact prepared-buffer comparison in symmetric experiment')
     parser.add_argument('--production',action='store_true',help='qualify the normal unbiased production adapter and its exact prepared buffers')
     parser.add_argument('--direct-repack', action='store_true', help='also require exact prepared weights/scales/zeros/bias against the original adapter')
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
-    if args.production and args.direct_repack:parser.error('--production excludes --direct-repack')
+    if sum((args.production,args.direct_repack,args.symmetric))>1:parser.error('choose only one alternate adapter')
+    if args.symmetric and not args.reference_library:parser.error('--symmetric requires --reference-library')
+    if args.reference_library and not args.symmetric:parser.error('--reference-library requires --symmetric')
+    if args.symmetric and args.residual_baseline:parser.error('--symmetric uses the explicit-zero Marlin control')
     if any(row < 1 or row > 512 for row in args.rows):
         parser.error('rows must be between 1 and 512')
     if args.residual_baseline and 1 not in args.rows:
@@ -58,9 +63,18 @@ def main():
         raise SystemExit(128+number)
     signal.signal(signal.SIGTERM, terminate)
     try:
-        reference_library = Library(args.library) if args.direct_repack or args.production else None
+        reference_library = Library(args.reference_library if args.symmetric else args.library) if args.direct_repack or args.production or args.symmetric else None
         biased_cases=(False,) if args.production else (False,True)
-        if args.production:
+        if args.symmetric:
+            from scripts.experiments.q4_marlin_symmetric import SymmetricLibrary
+            library=SymmetricLibrary(args.library)
+            report['implicit_zero_point']=8
+            report['control']='qualified ABI 1 Q4 Marlin with explicit zero-point tensors; same FP16 coefficient rounding'
+            report['reference_library_sha256']=digest(args.reference_library)
+            report['symmetric_sources']={name:digest(name) for name in
+                ('scripts/experiments/q4_marlin_symmetric.cu','scripts/experiments/q4_marlin_symmetric.py',
+                 'scripts/experiments/q4_marlin_direct.py','scripts/experiments/q4_marlin_repack.py')}
+        elif args.production:
             from dllm.native_q4_marlin import Library as ProductionLibrary
             library=ProductionLibrary(args.library)
             library.allocate_workspace(torch.device('cuda',torch.cuda.current_device()))
@@ -78,7 +92,10 @@ def main():
             weight, scales = source.weights[name].cuda(), source.scales[name].cuda()
             n, k = weight.shape[0], weight.shape[1]*2
             oracle = dequantize_q4(weight, scales, torch.float16).float()
+            control_prepared={}
             def control(value, offset):
+                if args.symmetric:
+                    return reference_library.linear(value,control_prepared[offset is not None])
                 if value.shape[0] == 1 and args.residual_baseline:
                     from dllm.native_q4_residual import linear as residual_linear
                     return residual_linear(value, weight, scales, offset, library_path=args.residual_baseline)
@@ -96,8 +113,9 @@ def main():
                 if reference_library is not None:
                     reference_prepared = reference_library.prepare(weight,scales,bias if biased else None)
                     exact_preparation = all(torch.equal(getattr(prepared[biased],key),getattr(reference_prepared,key))
-                        for key in ('weight','scales','zeros',*(['bias'] if biased else [])))
+                        for key in ('weight','scales',*(() if args.symmetric else ('zeros',)),*(['bias'] if biased else [])))
                     assert exact_preparation, (name,biased,'prepared buffers changed')
+                    if args.symmetric:control_prepared[biased]=reference_prepared
                     del reference_prepared
                 report['matrices'].append(dict(name=name, outputs=n, width=k, bias=biased,
                     repack_seconds=elapsed, exact_original_preparation=exact_preparation,
@@ -147,7 +165,7 @@ def main():
                     marlin_ms=statistics.median(samples['marlin'])))
                 print(name, rows, 'candidate passed; all control failures retained', flush=True)
                 Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
-            del weight, scales, oracle, bias, prepared, x, value, expected, actual, baseline, functions
+            del weight, scales, oracle, bias, prepared, control_prepared, x, value, expected, actual, baseline, functions
         report['candidate_passed'] = all(c['candidate_passed'] for c in report['checks'])
         report['control_passed'] = all(c['control_passed'] for c in report['checks'])
         report['passed'] = report['candidate_passed'] and report['control_passed']
