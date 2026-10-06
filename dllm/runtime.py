@@ -58,7 +58,8 @@ class BusyError(Exception):
 
 class Runtime:
     def __init__(self, models, context=1024, gpu_models=1, host_models=2,
-                 host_gib=8, use_graph=True, queue_size=8, queue_timeout=120, batch_size=None, chat_templates=None):
+                 host_gib=8, use_graph=True, queue_size=8, queue_timeout=120, batch_size=None, chat_templates=None,
+                 quantizations=None):
         if (min(context, gpu_models, host_models, queue_size) <= 0
                 or host_models < gpu_models or host_gib <= 0 or queue_timeout <= 0):
             raise ValueError("invalid model, residency, context, or queue limits")
@@ -69,11 +70,18 @@ class Runtime:
         for alias, text in overrides.items():
             from .models import config
             validate_override(text, config(models[alias]))
-        require_gpu()
         from .management import quantization_mode
+        policies = dict(quantizations or {})
+        if policies.keys() - models.keys():
+            raise ValueError('quantization refers to an unknown model alias')
+        for policy in policies.values():
+            if policy is None:
+                raise ValueError('per-model quantization must be explicit')
+            quantization_mode(policy)
+        require_gpu()
         self.default_quantization = quantization_mode()
         self.models = dict(models)
-        self.quantizations = {alias:self.default_quantization for alias in self.models}
+        self.quantizations = {alias:policies.get(alias, self.default_quantization) for alias in self.models}
         self.chat_templates = {alias: overrides.get(alias) for alias in self.models}
         self.registry_lock = threading.RLock()
         self.context = context

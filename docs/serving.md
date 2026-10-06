@@ -21,6 +21,45 @@ curl http://127.0.0.1:8088/v1/chat/completions \
   -d '{"model":"small","messages":[{"role":"user","content":"What is 2+2?"}],"temperature":0,"chat_template_kwargs":{"enable_thinking":false},"max_tokens":32,"stream":true}'
 ```
 
+## Repeatable model configuration
+
+Use `dllm serve --model-config models.json` to reuse model aliases and precision
+across server restarts. For example, save this versioned JSON file:
+
+```json
+{
+  "version": 1,
+  "models": {
+    "chat": {
+      "repository": "Qwen/Qwen3.8-27B",
+      "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "quantization": "q4_0"
+    }
+  }
+}
+```
+
+Keep the device, context, experimental opt-ins and memory settings from the
+[qualified getting-started command](getting-started.md); replace its `--model`
+argument with `--model-config models.json`. The manifest does not enable a new
+architecture or change hardware admission. Every model requires explicit
+`quantization` (`none`, `q8_0` or `q4_0`), independent of the environment default.
+
+Repository sources require an immutable 40-character revision. For a GGUF
+repository, add the exact `filename`; this reuses the ordinary single-file
+download path. Alternatively, use `"path": "snapshots/my-model"` instead of
+`repository` and `revision`. Relative local paths resolve from the manifest's
+directory, not the shell's current directory. Local files remain user-owned;
+the manifest does not hash them or prevent their modification.
+
+An optional `chat_template` contains the actual override text, preserving its
+identity without depending on another editable template file. Omit it to use
+the pinned checkpoint's template. Unknown/duplicate fields, ambiguous sources
+and conflicting `--model` or `--chat-template` options are rejected. Downloads
+use the existing cache. Resource limits and environment settings remain explicit
+CLI/service settings. HTTP `add` registrations are still temporary; edit this
+file to include them on the next restart. The server never rewrites the file.
+
 For raw text or code generation, `/v1/completions` accepts `prompt` as a string
 or a nonempty array of token IDs. It shares sampling, stop sequences, streaming,
 batching, and model switching with chat. Supported base checkpoints can load

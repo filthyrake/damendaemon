@@ -70,6 +70,7 @@ def main():
                      help="Qwen3 thinking mode; auto uses the model template default")
     server = commands.add_parser("serve", help="serve named local models on loopback")
     server.add_argument("--model", action="append", metavar="NAME=PATH")
+    server.add_argument('--model-config', metavar='FILE', help='versioned JSON model manifest for repeatable startup')
     server.add_argument("--chat-template", action="append", metavar="NAME=FILE", help="override a named model chat template")
     server.add_argument("--port", type=int, default=8088)
     server.add_argument("--batch-size", type=int, choices=range(1, 9), default=4)
@@ -99,6 +100,15 @@ def main():
         if name == 'unload':
             management.add_argument('--release-host', action='store_true')
     args = parser.parse_args()
+    manifest = None
+    if args.command == 'serve' and args.model_config:
+        if args.model or args.chat_template:
+            parser.error('--model-config cannot combine with --model or --chat-template')
+        from .model_manifest import load
+        try:
+            manifest = load(args.model_config, resolve_model)
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
     if args.command in ('models', 'add', 'load', 'unload'):
         from urllib.request import Request, urlopen
         action = {'models':'status', 'add':'register'}.get(args.command, args.command)
@@ -166,6 +176,8 @@ def main():
         options["batch_wait_ms"] = args.batch_wait_ms
         options["prefill_chunk_size"] = args.prefill_chunk_size
         options["prefix_cache_tokens"] = args.prefix_cache_tokens
+        if manifest is not None:
+            models, options['quantizations'], templates = manifest
     runtime = runtime_type(models, chat_templates=templates, **options, context=args.context, gpu_models=args.gpu_models,
                       host_models=args.host_models, host_gib=args.host_gib, use_graph=not args.no_graph)
     if args.command == "serve":
