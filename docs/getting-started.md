@@ -71,3 +71,42 @@ For lower device-weight memory and faster decoding, set
 KV remain FP32; this differs from the unqualified FP16-compute tensor path.
 Prefill currently expands matrix weights to FP32 temporarily, which increases
 first-output latency. FP32 weight storage remains the default.
+
+## AMD practical-model preview
+
+The AMD branch has a bounded, opt-in Qwen3.8-27B Q8 text configuration on
+HOMER's Radeon 8060S. Use the existing tested ROCm environment described in
+[AMD qualification](amd.md); the CUDA installation commands above do not apply.
+This preview supports 512 total prompt-plus-output tokens, up to four request
+slots, and no graphs. It is not the planned 32K daily-use configuration.
+
+Download the pinned snapshot, then use the local path printed by `pull`:
+
+```sh
+dllm pull Qwen/Qwen3.8-27B --revision 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+
+ROCR_VISIBLE_DEVICES=0 HIP_VISIBLE_DEVICES=0 \
+DLLM_KERNELS=triton DLLM_QUANTIZATION=q8_0 \
+DLLM_HYBRID_PRECISION=compensated DLLM_ROCM_MEMORY_GIB=48 \
+dllm serve --device rocm --model chat=/path/printed/by/pull \
+  --context 512 --batch-size 4 --no-graph --host-gib 40
+```
+
+The host-weight budget must exceed the approximately 27.73 GiB of Q8 weights;
+its default 8 GiB is insufficient. The device budget includes execution state
+and workspace and must also preserve system headroom on a shared-memory GPU.
+These values describe HOMER, not all AMD devices. First loading includes
+on-load quantization and compilation; it can take substantially longer than
+subsequent requests.
+
+Send a short request using the ordinary API:
+
+```sh
+curl http://127.0.0.1:8088/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"chat","messages":[{"role":"user","content":"Explain what a GPU does in two sentences."}],"temperature":0,"chat_template_kwargs":{"enable_thinking":false},"max_tokens":64,"stream":true}'
+```
+
+See [serving and model management](serving.md) for status, switching and release.
+Full-model Q4, 32K context and practical multimodal support are still tracked
+in [the current roadmap](https://github.com/filthyrake/dllm/issues/3).
