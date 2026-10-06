@@ -36,7 +36,7 @@ def worker(args):
                 devices=os.environ.get('CUDA_VISIBLE_DEVICES'),
                 sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                          ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py',
-                          'dllm/batch.py','dllm/layer_stage.py','dllm/partition_policy.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py',__file__)})
+                          'dllm/batch.py','dllm/layer_stage.py','dllm/partition_policy.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/qwen2.py',__file__)})
     def capture(server,*positional,**keywords):
         nonlocal base
         original_init(server,*positional,**keywords);base=f'http://127.0.0.1:{server.server_port}'
@@ -63,6 +63,7 @@ def worker(args):
             Path(args.output).write_text(json.dumps(report,indent=2)+'\n');runtime.close()
     def measured(runtime,*positional,**keywords):
         report['runtime_row_bounds']=bool(getattr(runtime.pair.stage.q4_linear,'runtime_rows',False))
+        report['runtime_rope_tokens']=runtime.pair.stage.runtime_rope_tokens
         # Arrival timing can make a client's first "warmup" use one slot even
         # when later measured requests form a new packed shape. Warm every
         # possible group on the GPU owner before timing the HTTP rounds.
@@ -92,7 +93,7 @@ def worker(args):
 
 def summarize(trials,compare='capacity'):
     key={'capacity':'batch_size','q4-policy':'q4_stage_adjacent',
-         'prefill':'packed_prefill','runtime-rows':'runtime_row_bounds'}[compare]
+         'prefill':'packed_prefill','runtime-rows':'runtime_row_bounds','runtime-rope':'runtime_rope_tokens'}[compare]
     modes=(1,4) if compare=='capacity' else (False,True)
     summary=[]
     for concurrency in (1,2,4):
@@ -112,24 +113,27 @@ def main():
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
     p.add_argument('--output',required=True);p.add_argument('--worker',action='store_true')
     p.add_argument('--batch-size',type=int,choices=(1,4),default=1)
-    p.add_argument('--compare',choices=('capacity','prefill','q4-policy','runtime-rows'),default='capacity')
+    p.add_argument('--compare',choices=('capacity','prefill','q4-policy','runtime-rows','runtime-rope'),default='capacity')
     args=p.parse_args()
-    if args.compare in ('q4-policy','runtime-rows') and args.quantization!='q4_0':raise ValueError('Q4 policy comparison requires Q4 weights')
+    if args.compare in ('q4-policy','runtime-rows','runtime-rope') and args.quantization!='q4_0':raise ValueError('Q4 policy comparison requires Q4 weights')
     if args.worker:return worker(args)
     from scripts.distributed_job import run_job
     report=dict(passed=False,compare=args.compare,scope='Same model, precision, GPU pair and HTTP workload; '+
                 ('batch capacity' if args.compare=='capacity' else 'both Q4 body layout and stage prefill packing'
                  if args.compare=='q4-policy' else 'Q4 runtime row bounds' if args.compare=='runtime-rows'
+                 else 'Q4 runtime rotary token stride' if args.compare=='runtime-rope'
                  else 'stage prefill packing')+' changes.',trials=[])
     output=Path(args.output)
-    previous={key:os.environ.get(key) for key in ('DLLM_PARTITION_PACKED_PREFILL','DLLM_Q4_STAGE_ADJACENT','DLLM_Q4_STAGE_RUNTIME_ROWS')}
+    previous={key:os.environ.get(key) for key in ('DLLM_PARTITION_PACKED_PREFILL','DLLM_Q4_STAGE_ADJACENT','DLLM_Q4_STAGE_RUNTIME_ROWS','DLLM_Q4_STAGE_RUNTIME_ROPE')}
     try:
         reference=None
         modes=(1,4,4,1) if args.compare=='capacity' else (0,1,1,0)
         for index,mode in enumerate(modes):
             batch=mode if args.compare=='capacity' else 4
-            if args.compare=='runtime-rows':
-                os.environ.update(DLLM_PARTITION_PACKED_PREFILL='1',DLLM_Q4_STAGE_ADJACENT='1',DLLM_Q4_STAGE_RUNTIME_ROWS=str(mode))
+            if args.compare=='runtime-rope':
+                os.environ.update(DLLM_PARTITION_PACKED_PREFILL='1',DLLM_Q4_STAGE_ADJACENT='1',DLLM_Q4_STAGE_RUNTIME_ROWS='1',DLLM_Q4_STAGE_RUNTIME_ROPE=str(mode))
+            elif args.compare=='runtime-rows':
+                os.environ.update(DLLM_PARTITION_PACKED_PREFILL='1',DLLM_Q4_STAGE_ADJACENT='1',DLLM_Q4_STAGE_RUNTIME_ROWS=str(mode),DLLM_Q4_STAGE_RUNTIME_ROPE='0')
             elif args.compare!='capacity':os.environ['DLLM_PARTITION_PACKED_PREFILL']=str(mode)
             if args.compare=='q4-policy':os.environ['DLLM_Q4_STAGE_ADJACENT']=str(mode)
             trial=output.with_name(output.stem+f'-{index}.json')

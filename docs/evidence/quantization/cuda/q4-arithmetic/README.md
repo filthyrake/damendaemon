@@ -581,3 +581,13 @@ active policy in stage status. Changed-weight/recovery checks also pass,
 including partial canonical upload and partial adjacent repacking failures.
 These reports use the `qwen2-rope-integrated-*` prefix. The flag remains off by
 default during integrated performance and cross-host qualification.
+
+The integrated rotary warm ABBA comparison also preserves every generated token.
+At batches 1/2/4, static→runtime-stride aggregate output rates are
+222.10→228.35, 447.07→472.80 and 883.32→906.69 tokens/s. First-token medians
+are 22.71→22.21, 23.73→23.15 and 26.06→26.42 ms; total medians are
+144.09→140.14, 143.32→135.36 and 144.91→141.17 ms. Decode timing varies even
+though this rotary change affects prefill only, so these differences cannot be
+attributed entirely to the optimization. The run finds no warm regression in
+this workload; it is not proof of a decode-speed gain. Raw measurements are in
+`qwen2-rope-integrated-benchmark.json`.
