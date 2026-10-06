@@ -22,14 +22,16 @@ class StageChannel:
 
     def begin(self, command=None):
         try:
+            words = None
             if self.rank == 0:
                 if command is None:raise ValueError('coordinator command required')
-                self.header.copy_(torch.tensor(command.encode(), dtype=torch.int64, device='cuda'))
+                words = command.encode()
+                self.header.copy_(torch.tensor(words, dtype=torch.int64, device='cuda'))
             elif command is not None:
                 raise ValueError('worker cannot originate commands')
             dist.broadcast(self.header, 0)
             error = None
-            try:accepted = self.state.begin(self.header.cpu().tolist())
+            try:accepted = self.state.begin(self._received_words(words))
             except (ValueError, RuntimeError) as failure:error = failure
             self.acknowledgement.fill_(int(error is None))
             dist.all_reduce(self.acknowledgement, op=dist.ReduceOp.MIN)
@@ -39,6 +41,12 @@ class StageChannel:
         except BaseException:
             self.state.poison()
             raise
+
+    def _received_words(self, sent_words):
+        # The broadcast source already owns the exact encoded record. Only the
+        # receiving worker needs a device-to-host copy. Both validate admission
+        # and observe the collective result before any activation transfer.
+        return sent_words if self.rank == 0 else self.header.cpu().tolist()
 
     def finish(self, command):
         try:

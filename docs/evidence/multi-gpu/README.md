@@ -323,6 +323,39 @@ hosts. NCCL Socket is explicitly selected on lab `enp6s18` and desktop `enp72s0`
 RDMA is disabled for this test. Per-worker hardware/transport metadata accompanies
 `qwen2-network-token-ack-q8-abba.json`.
 
+## Coordinator command admission without redundant readback
+
+The coordinator now validates the encoded command it already owns instead of
+reading the just-broadcast GPU header back to the CPU. The receiving worker
+still reads and validates the transmitted header. Both workers still observe
+collective admission before transferring activations; token completion and
+cache ownership fences are unchanged.
+
+A matched A2/3090 Q8 ABBA experiment (`--compare-admission`, 12 measured requests
+per mode after warmup) compares the old readback with the local encoded record:
+
+| Admission | Median first token | Median complete request | Median decode |
+|---|---:|---:|---:|
+| Coordinator GPU readback | 21.88 ms | 128.74 ms | 289.92 tokens/s |
+| Coordinator local record | 21.83 ms | 127.53 ms | 293.89 tokens/s |
+
+The observed decode gain is small (1.4%) and is from one matched experiment;
+it is not a broad performance claim. Model, precision, context, prompt, output,
+graphs, transport and hardware are unchanged between modes. All output tokens
+match. Raw results and device identities are
+`qwen2-network-admission-q8-abba.json` and its worker sidecars.
+
+Both FP16 and Q8 independently pass all 82 numerical/token checks across 35
+commands with the new admission path. Injecting a stale third command yields
+final failure reports on both workers after exactly two completed commands,
+before activation transfer. These reports are `qwen2-network-local-record-*.json`.
+The local suite passes 398 tests, including peer rejection and admission
+completion checks. No mocked test is used as GPU performance evidence.
+
+Peer-only rules had automatic ten-minute expiry, opened 2026-10-06 at
+00:42:26/28 UTC and removed early at 00:44:59/00:45:02 UTC. Original rules and
+GPU allocations were verified restored; existing services were preserved.
+
 | Median network metric | Separate completion collective | Token reply completion |
 | --- | ---: | ---: |
 | First token | 20.88 ms | 20.76 ms |

@@ -1,7 +1,8 @@
-"""Same-host matched control-overhead experiment; final GPU returns token IDs.
+"""Matched control-overhead experiment; final GPU returns token IDs.
 
 Fixed workload vs validated control, off/on/on/off on identical two-worker
-stages. This measures the protocol cost, not HTTP throughput or network speed.
+stages. Optional comparisons isolate completion or admission overhead. This
+measures protocol cost, not HTTP throughput or RDMA capability.
 """
 import argparse
 from datetime import timedelta
@@ -22,6 +23,12 @@ from dllm.stage_identity import fingerprint
 from dllm.stage_setup import StageSetup
 
 
+class ReadbackChannel(StageChannel):
+    """Previous coordinator readback, retained only as a matched control."""
+    def _received_words(self, sent_words):
+        return self.header.cpu().tolist()
+
+
 def transfer(tensor, sender, rank):
     operation = dist.P2POp(dist.isend if rank == sender else dist.irecv, tensor, 1 - rank)
     for work in dist.batch_isend_irecv([operation]):work.wait()
@@ -33,9 +40,11 @@ def main():
     p.add_argument('model'); p.add_argument('--trace', required=True); p.add_argument('--output', required=True)
     p.add_argument('--repeats', type=int, default=6)
     p.add_argument('--compare-completion', action='store_true')
+    p.add_argument('--compare-admission', action='store_true')
     p.add_argument('--placement', choices=('same-host', 'cross-host'), default='same-host')
     args = p.parse_args()
     if args.repeats < 1:p.error('positive repetitions required')
+    if args.compare_completion and args.compare_admission:p.error('choose one comparison')
     rank, local_rank = int(os.environ['RANK']), int(os.environ['LOCAL_RANK'])
     if int(os.environ['WORLD_SIZE']) != 2:p.error('two workers required')
     if rank == 0:
@@ -71,7 +80,10 @@ def main():
         expected = None
         state = StageState(1, 512, 1); channel = StageChannel(state, rank)
         modes = ('control', 'token-ack') if args.compare_completion else ('fixed', 'control')
+        if args.compare_admission:modes = ('readback', 'local-record')
         for mode in (modes[0], modes[1], modes[1], modes[0]):
+            if args.compare_admission:
+                channel = (ReadbackChannel if mode == 'readback' else StageChannel)(state, rank)
             control = mode != 'fixed'
             runs = []
             for iteration in range(args.repeats + 2):
@@ -102,7 +114,7 @@ def main():
                         token = logits.argmax(-1)
                     else:
                         token = torch.empty(1, dtype=torch.int64, device='cuda')
-                    if mode == 'token-ack':
+                    if mode in ('token-ack', 'readback', 'local-record'):
                         channel.complete_tokens(command, token)
                     else:
                         transfer(token, 1, rank)

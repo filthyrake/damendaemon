@@ -6,6 +6,41 @@ from dllm.stage_transport import StageChannel
 
 
 class StageTransportTests(unittest.TestCase):
+    def test_coordinator_validates_local_record_and_observes_peer_admission(self):
+        channel = StageChannel.__new__(StageChannel)
+        channel.state = StageState(1, 512)
+        channel.rank = 0
+        channel.header = Mock()
+        channel.acknowledgement = Mock()
+        channel.acknowledgement.item.return_value = 1
+        command = Command(1, 1, PREFILL, 31, ((0, 1, 0),))
+        with patch('dllm.stage_transport.torch.tensor'), patch('dllm.stage_transport.dist.broadcast'), \
+                patch('dllm.stage_transport.dist.all_reduce') as admission:
+            self.assertEqual(channel.begin(command), command)
+            admission.assert_called_once()
+        channel.header.cpu.assert_not_called()
+        channel.acknowledgement.item.assert_called_once()
+        self.assertEqual(channel.state.lengths, [0] * 4)
+
+    def test_peer_rejection_poisoned_before_activation(self):
+        for rank in (0, 1):
+            channel = StageChannel.__new__(StageChannel)
+            channel.state = StageState(1, 512)
+            channel.rank = rank
+            channel.header = Mock()
+            command = Command(1, 1, PREFILL, 31, ((0, 1, 0),))
+            channel.header.cpu.return_value.tolist.return_value = command.encode()
+            channel.acknowledgement = Mock()
+            channel.acknowledgement.item.return_value = 0
+            with patch('dllm.stage_transport.torch.tensor'), patch('dllm.stage_transport.dist.broadcast'), \
+                    patch('dllm.stage_transport.dist.all_reduce'):
+                with self.assertRaisesRegex(ValueError, 'rejected before activation'):
+                    channel.begin(command if rank == 0 else None)
+            self.assertTrue(channel.state.failed)
+            self.assertIsNone(channel.state.pending)
+            self.assertEqual(channel.state.lengths, [0] * 4)
+            self.assertEqual(channel.header.cpu.call_count, rank)
+
     def pending(self):
         state = StageState(1, 512)
         command = state.begin(Command(1, 1, PREFILL, 31, ((0, 1, 0),)).encode())
