@@ -4,8 +4,11 @@ import subprocess
 import sys
 import threading
 import unittest
+import time
+from unittest.mock import patch
+from concurrent.futures import ThreadPoolExecutor
 
-from dllm.bench import Result, events, request_one, summarize, llama_context
+from dllm.bench import Result, events, request_one, summarize, llama_context, fixed_arrivals, distribution
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -31,6 +34,7 @@ class Handler(BaseHTTPRequestHandler):
         chunks = [
             {"choices": [{"delta": {"role": "assistant"}}]},
             {"choices": [{"delta": {"content": "several tokens in one chunk"}}]},
+            {"choices": [{"delta": {"reasoning_content": "another output event"}}]},
             {"choices": [{"delta": {}, "finish_reason": "stop"}]},
         ]
         if model != "no-usage":
@@ -68,6 +72,10 @@ class BenchTests(unittest.TestCase):
         result = self.request("normal")
         self.assertIsNone(result.error)
         self.assertEqual(result.output_tokens, 7)
+        self.assertEqual(result.output_events, 2)
+        self.assertEqual(len(result.output_event_gaps_seconds), 1)
+        self.assertGreaterEqual(result.output_event_gaps_seconds[0], 0)
+        self.assertGreaterEqual(result.last_output_seconds, result.first_output_seconds)
         self.assertIsNotNone(result.first_output_seconds)
         self.assertGreaterEqual(result.seconds, result.first_output_seconds)
 
@@ -110,6 +118,71 @@ class BenchTests(unittest.TestCase):
         self.assertEqual([r["model"] for r in report["results"]], ["a", "b", "a"])
         self.assertEqual(report["summary"]["succeeded"], 3)
         self.assertEqual(report["summary"]["successful_output_tokens"], 21)
+
+    def test_fixed_arrivals_drop_at_client_capacity_without_backlog(self):
+        entered, release = threading.Event(), threading.Event()
+        calls = []
+        def send(index, model):
+            calls.append(index)
+            entered.set()
+            if not release.wait(2):
+                raise TimeoutError('test did not release request')
+            return Result(index, model, .2, .1, 7)
+        with ThreadPoolExecutor(1) as pool:
+            run = pool.submit(fixed_arrivals, send, ['a', 'b'], 5, 1, 50)
+            try:
+                self.assertTrue(entered.wait(1))
+                # All later arrivals are offered during the blocked request.
+                time.sleep(.2)
+                self.assertEqual(calls, [0])
+            finally:
+                release.set()
+            results = sorted(run.result(1), key=lambda result: result.index)
+        self.assertEqual(len(results), 5)
+        self.assertEqual([r.model for r in results], ['a', 'b', 'a', 'b', 'a'])
+        self.assertEqual([r.scheduled_offset_seconds for r in results], [0, .02, .04, .06, .08])
+        self.assertEqual([r.error for r in results], [None]+['client capacity']*4)
+        self.assertIsNotNone(results[0].dispatch_delay_seconds)
+        self.assertTrue(all(r.dispatch_delay_seconds is None for r in results[1:]))
+        self.assertEqual(summarize(results, .2)['client_capacity_drops'], 4)
+
+    def test_gap_percentiles_preserve_unknown_and_exclude_failed_streams(self):
+        good = Result(0, 'a', 1, .1, 7, output_events=4,
+                      output_event_gaps_seconds=[.1, .2, .3])
+        failed = Result(1, 'a', 1, .1, 7, 'HTTP 503',
+                        output_event_gaps_seconds=[99])
+        report = summarize([good, failed], 2)
+        self.assertEqual(report['output_event_gaps_seconds'], {'p50': .2, 'p95': .3, 'p99': .3})
+        self.assertEqual(report['max_output_event_gap_seconds_per_request']['p99'], .3)
+        self.assertEqual(report['requests_with_output_gaps'], 1)
+        self.assertEqual(report['http_failures'], 1)
+        self.assertEqual(distribution(list(range(100)))['p99'], 98)
+        self.assertIsNone(summarize([Result(0, 'a', 1, .1, 7)], 1)['output_event_gaps_seconds'])
+
+    def test_output_sample_memory_is_bounded(self):
+        with patch('dllm.bench.MAX_OUTPUT_EVENTS', 1):
+            result = self.request('normal')
+        self.assertEqual(result.error, 'ValueError')
+        self.assertEqual(result.output_events, 1)
+        self.assertFalse(result.output_event_gaps_seconds)
+
+    def test_fixed_arrival_cli_reports_mode_and_usage(self):
+        process = subprocess.run([
+            sys.executable, '-S', '-m', 'dllm', 'bench', '--base-url', self.url,
+            '--models', 'a', '--requests', '3', '--concurrency', '2', '--arrival-rate', '10',
+        ], capture_output=True, text=True, timeout=10)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        report = json.loads(process.stdout)
+        self.assertEqual(report['schema_version'], 2)
+        self.assertEqual(report['workload']['arrival_mode'], 'fixed_rate')
+        self.assertEqual(report['workload']['offered_requests_per_second'], 10)
+        self.assertEqual(report['summary']['successful_output_tokens'], 21)
+        self.assertEqual(report['summary']['requests_with_output_gaps'], 3)
+        self.assertTrue(all(r['dispatch_delay_seconds'] is not None for r in report['results']))
+        for invalid in ('0', '-1', 'nan', 'inf'):
+            process = subprocess.run([sys.executable, '-S', '-m', 'dllm', 'bench',
+                '--models', 'a', '--arrival-rate', invalid], capture_output=True, timeout=5)
+            self.assertEqual(process.returncode, 2)
 
     def test_cli_failure_exit_and_report(self):
         process = subprocess.run([

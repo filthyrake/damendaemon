@@ -1,8 +1,8 @@
-"""Dependency-free, closed-loop streaming benchmark for compatible HTTP APIs."""
+"""Bounded closed-loop or fixed-arrival streaming HTTP benchmark."""
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import hashlib
 import json
 import math
@@ -14,6 +14,8 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
+
+MAX_OUTPUT_EVENTS = 100_000
 
 def llama_context(base_url, expected):
     """Fail before timing if the comparator silently capped its KV slot context."""
@@ -34,6 +36,11 @@ class Result:
     first_output_seconds: float | None = None
     output_tokens: int | None = None
     error: str | None = None
+    output_events: int = 0
+    last_output_seconds: float | None = None
+    output_event_gaps_seconds: list = field(default_factory=list)
+    scheduled_offset_seconds: float | None = None
+    dispatch_delay_seconds: float | None = None
 
 
 def events(lines):
@@ -82,12 +89,20 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                     raise ValueError("stream event must be an object")
                 if chunk.get("error"):
                     raise ValueError("server returned an error event")
-                for choice in chunk.get("choices", []):
-                    delta = choice.get("delta", {})
-                    if any(delta.get(key) for key in
-                           ("content", "reasoning_content", "reasoning", "tool_calls")):
-                        if result.first_output_seconds is None:
-                            result.first_output_seconds = time.perf_counter() - start
+                has_output = any(
+                    any(choice.get("delta", {}).get(key) for key in
+                        ("content", "reasoning_content", "reasoning", "tool_calls"))
+                    for choice in chunk.get("choices", []))
+                if has_output:
+                    if result.output_events >= MAX_OUTPUT_EVENTS:
+                        raise ValueError("output event sample limit exceeded")
+                    arrived = time.perf_counter() - start
+                    if result.first_output_seconds is None:
+                        result.first_output_seconds = arrived
+                    else:
+                        result.output_event_gaps_seconds.append(arrived-result.last_output_seconds)
+                    result.last_output_seconds = arrived
+                    result.output_events += 1
                 usage = chunk.get("usage") or {}
                 tokens = usage.get("completion_tokens")
                 if tokens is not None:
@@ -111,7 +126,8 @@ def distribution(values):
         return None
     ordered = sorted(values)
     return {"p50": statistics.median(ordered),
-            "p95": ordered[max(0, math.ceil(len(ordered) * 0.95) - 1)]}
+            "p95": ordered[max(0, math.ceil(len(ordered) * 0.95) - 1)],
+            "p99": ordered[max(0, math.ceil(len(ordered) * 0.99) - 1)]}
 
 
 def summarize(results, elapsed):
@@ -122,6 +138,8 @@ def summarize(results, elapsed):
         "requests": len(results),
         "succeeded": len(good),
         "failed": len(results) - len(good),
+        "client_capacity_drops": sum(r.error == "client capacity" for r in results),
+        "http_failures": sum(bool(r.error and r.error.startswith("HTTP ")) for r in results),
         "wall_seconds": elapsed,
         "successful_requests_per_second": len(good) / elapsed if elapsed > 0 else None,
         "successful_output_tokens": tokens,
@@ -131,8 +149,47 @@ def summarize(results, elapsed):
         "first_output_seconds": distribution([
             r.first_output_seconds for r in good if r.first_output_seconds is not None
         ]),
+        "output_event_gaps_seconds": distribution([
+            gap for r in good for gap in r.output_event_gaps_seconds]),
+        "max_output_event_gap_seconds_per_request": distribution([
+            max(r.output_event_gaps_seconds) for r in good if r.output_event_gaps_seconds]),
+        "requests_with_output_gaps": sum(bool(r.output_event_gaps_seconds) for r in good),
+        "dispatch_delay_seconds": distribution([
+            r.dispatch_delay_seconds for r in results if r.dispatch_delay_seconds is not None]),
         "requests_with_first_output": sum(r.first_output_seconds is not None for r in good),
     }
+
+
+def fixed_arrivals(send, models, requests, concurrency, rate):
+    """Offer each scheduled arrival once; never queue behind busy client slots."""
+    started = time.perf_counter()
+    results = []
+    def dispatch(index, model, scheduled):
+        delay = max(0, time.perf_counter()-started-scheduled)
+        result = send(index, model)
+        result.scheduled_offset_seconds = scheduled
+        result.dispatch_delay_seconds = delay
+        return result
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        pending = set()
+        for index in range(requests):
+            scheduled = index/rate
+            delay = started+scheduled-time.perf_counter()
+            if delay > 0:
+                time.sleep(delay)
+            completed = {future for future in pending if future.done()}
+            for future in completed:
+                results.append(future.result())
+            pending -= completed
+            model = models[index % len(models)]
+            if len(pending) >= concurrency:
+                results.append(Result(index, model, 0, error="client capacity",
+                    scheduled_offset_seconds=scheduled))
+            else:
+                pending.add(pool.submit(dispatch, index, model, scheduled))
+        for future in as_completed(pending):
+            results.append(future.result())
+    return results
 
 
 def positive_int(value):
@@ -158,6 +215,8 @@ def main():
                        help="cycle models in submission order; use concurrency 1 for switches")
     bench.add_argument("--requests", type=positive_int, default=8)
     bench.add_argument("--concurrency", type=positive_int, default=1)
+    bench.add_argument("--arrival-rate", type=positive_float,
+                       help="fixed offered requests/second; concurrency caps client in-flight requests")
     bench.add_argument("--max-tokens", type=positive_int, default=128)
     bench.add_argument("--timeout", type=positive_float, default=120,
                        help="socket inactivity timeout in seconds, not a total request deadline")
@@ -177,27 +236,37 @@ def main():
     api_key = os.environ.get("DLLM_API_KEY")
     start = time.perf_counter()
     results = []
-    # Keep only concurrency requests submitted at once, avoiding an unbounded
-    # future queue and making request-level timing match admitted client load.
-    with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-        pending = set()
-        next_index = 0
-        while next_index < args.requests or pending:
-            while next_index < args.requests and len(pending) < args.concurrency:
-                pending.add(pool.submit(
-                    request_one, args.base_url, args.models[next_index % len(args.models)],
-                    prompt, args.max_tokens, args.timeout, next_index, api_key,
-                ))
-                next_index += 1
-            future = next(as_completed(pending))
-            pending.remove(future)
-            results.append(future.result())
+    if args.arrival_rate is not None:
+        results = fixed_arrivals(
+            lambda index, model: request_one(args.base_url, model, prompt, args.max_tokens,
+                                            args.timeout, index, api_key),
+            args.models, args.requests, args.concurrency, args.arrival_rate)
+    else:
+        # Keep only concurrency requests submitted at once, avoiding an unbounded
+        # future queue and making request-level timing match admitted client load.
+        with ThreadPoolExecutor(max_workers=args.concurrency) as pool:
+            pending = set()
+            next_index = 0
+            while next_index < args.requests or pending:
+                while next_index < args.requests and len(pending) < args.concurrency:
+                    pending.add(pool.submit(
+                        request_one, args.base_url, args.models[next_index % len(args.models)],
+                        prompt, args.max_tokens, args.timeout, next_index, api_key,
+                    ))
+                    next_index += 1
+                future = next(as_completed(pending))
+                pending.remove(future)
+                results.append(future.result())
     elapsed = time.perf_counter() - start
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "label": args.label,
         "workload": {
             "base_url": args.base_url, "models": args.models,
+            "arrival_mode": "fixed_rate" if args.arrival_rate is not None else "closed_loop",
+            "offered_requests_per_second": args.arrival_rate,
+            "output_timing_unit": "SSE output event, not token",
+            "max_output_events_per_request": MAX_OUTPUT_EVENTS,
             "concurrency": args.concurrency, "max_tokens": args.max_tokens,
             "temperature": 0, "socket_timeout_seconds": args.timeout,
             "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),

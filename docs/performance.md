@@ -140,3 +140,37 @@ Direct CUDA generation (`dllm run` and `Runtime.generate`) reuses the native
 one-request decode graph. A2 measurements show 2.5–3.0× faster Qwen3-0.6B FP32
 decode and about 2% faster GPT-OSS decode versus the previous scalar dispatch;
 HTTP batching already used these graphs. [Scope and evidence](evidence/scalar-decode/README.md).
+
+## Fixed-rate HTTP load and observed stream stalls
+
+`dllm bench` defaults to closed-loop load: each completed request frees a client
+slot for the next one. Add `--arrival-rate` to offer requests on a fixed schedule
+independent of response completion:
+
+```sh
+dllm bench --base-url http://127.0.0.1:8088/v1 --models chat \
+  --requests 100 --concurrency 8 --arrival-rate 2 --max-tokens 128
+```
+
+This is an example workload, not a qualified load level. `--concurrency` caps
+client requests in flight, including those waiting inside the server; it is not
+an active-user count. Arrivals finding all client slots occupied become explicit
+`client capacity` failures rather than waiting in a hidden client queue. Results
+retain every scheduled index, including drops; any failure makes the CLI exit
+nonzero while still printing its report. HTTP failures are counted separately.
+The report includes scheduled offsets and actual dispatch delay; inspect those
+lags before treating the client as a faithful load generator. The declared
+arrival rate is not a claim that every request reached the server on time.
+Wall time and throughput include draining the last requests.
+
+Schema version2 adds p99 to latency distributions and records intervals between
+client-observed SSE output events. Role-only, finish and usage events do not
+count as output. Content, reasoning and tool-call events do. A single event may
+contain several tokens, so these gaps are **not per-token GPU timings**. Token
+throughput still uses reported completion-token usage; missing usage stays
+unknown. Successful-request summaries include pooled gap percentiles and the
+distribution of each request's largest gap; raw per-request gaps retain stalls
+and failed partial streams. Requests with fewer than two output events have no
+gap measurement, not an invented zero. Gap collection fails the request after
+100,000 output events to bound additional sample memory. These measurements do
+not automatically certify a sustained-user SLO or calculate SLO goodput.
