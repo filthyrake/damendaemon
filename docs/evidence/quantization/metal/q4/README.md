@@ -113,3 +113,15 @@ reports are `q4-metal-index32-decode-c{1,4}.json`.
 The optimized runtime also repeats all 19 real HTTP lifecycle checks, including
 concurrent shrinking batches, Q4/Q8 switching and zero live Metal allocations
 after both complete unloads (`qwen2-q4-metal-index32-http.json`).
+
+A fresh optimized HTTP run uses the same serving settings as the initial
+measurements (one warmup, five measured rounds). These timings include prefill
+and HTTP; only the decode table above is counterbalanced old versus new.
+
+| Concurrency | Aggregate tokens/s | First text ms | Request latency ms |
+|---|---:|---:|---:|
+| 1 | 107.58 | 44.16 | 297.42 |
+| 2 | 170.46 | 48.47 | 366.88 |
+| 4 | 224.52 | 105.15 | 566.08 |
+
+Raw reports: `q4-index32-http-c*.json`.
