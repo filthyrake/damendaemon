@@ -234,3 +234,32 @@ diagnosis alone.
 
 The [product context minimum is 32K](direction.md). This 4K experiment is a
 development baseline and does not qualify long-context multi-user service.
+
+## Isolated gfx1151 small-batch result
+
+The [within-dllm ABBA comparison](evidence/amd/modern-qwen35-q8-small-batch-abba01/comparison.json)
+changes only FP16 Q8 projection dispatch for two through four rows: use the
+existing multi-row matvec instead of the A2-tuned tiled matrix kernel. Ordinary,
+candidate, candidate, ordinary phases use identical checkpoint, arithmetic and
+storage policy, hardware, prompts, output length and context. Raw reports,
+manifests and logs are retained beside the summary. This measures the isolated
+experiment at revision `6c709a9`, not a change to the production default.
+
+| Input tokens | Users | Ordinary tokens/s | Candidate tokens/s | Ordinary p95 first output (s) | Candidate p95 first output (s) |
+| --- | --- | --- | --- | --- | --- |
+| 128 | 1 | 138.81 | 138.93 | 0.027 | 0.027 |
+| 128 | 4 | 194.76 | 390.53 | 0.109 | 0.110 |
+| 512 | 1 | 131.55 | 131.68 | 0.078 | 0.076 |
+| 512 | 4 | 180.83 | 338.57 | 0.323 | 0.306 |
+| 2048 | 1 | 87.29 | 88.15 | 0.592 | 0.561 |
+| 2048 | 4 | 106.82 | 148.52 | 2.363 | 2.240 |
+
+Four-user complete-round throughput improves by 2.01x, 1.87x and 1.39x;
+single-user throughput remains within about 1%. Every measured output matches
+exactly across variants and repeats. Independent quantized CPU-reference
+replays pass all 84 checks on both
+[0.8B](evidence/amd/qwen35-q8-hip-small-batch-replay4096.json) and
+[2B](evidence/amd/qwen35-2b-q8-hip-small-batch-replay4096.json).
+This is a measured serving improvement at the diagnostic 4K tier. It does not
+establish 32K support, a maximum-user SLO result or cross-engine parity.
+Promotion still requires the candidate lifecycle and resource-release gate.

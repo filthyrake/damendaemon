@@ -1,0 +1,262 @@
+{
+  "workload_passed": true,
+  "competitive_pass": null,
+  "model_revision": "2fc06364715b967f1860aea9cf38778875588b17",
+  "hardware": "HOMER-gfx1151",
+  "comparator": "dllm-candidate",
+  "rows": [
+    {
+      "prompt_tokens": 128,
+      "concurrency": 1,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.02656172774732113,
+            "p95": 0.02698352001607418
+          },
+          "request_seconds": {
+            "p50": 0.9220470036379993,
+            "p95": 0.9243585811927915
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 138.8058872720568,
+            "p95": 138.98890942173065
+          },
+          "stable_text_per_prompt": true
+        },
+        "dllm-candidate": {
+          "first_output_seconds": {
+            "p50": 0.0267390925437212,
+            "p95": 0.02732257917523384
+          },
+          "request_seconds": {
+            "p50": 0.9212088147178292,
+            "p95": 0.9251241572201252
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 138.93296507583182,
+            "p95": 139.49725882196026
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_comparator_throughput_p50": 0.9990853300819884,
+      "dllm_over_comparator_first_output_p95": 0.9875905141683331,
+      "exact_cross_engine_text": true
+    },
+    {
+      "prompt_tokens": 128,
+      "concurrency": 4,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.10777735849842429,
+            "p95": 0.10892441775649786
+          },
+          "request_seconds": {
+            "p50": 2.626234954688698,
+            "p95": 2.6437804363667965
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 194.76218548154964,
+            "p95": 195.13038668631077
+          },
+          "stable_text_per_prompt": true
+        },
+        "dllm-candidate": {
+          "first_output_seconds": {
+            "p50": 0.10773942526429892,
+            "p95": 0.10970835294574499
+          },
+          "request_seconds": {
+            "p50": 1.3068206240423024,
+            "p95": 1.3219486717134714
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 390.53357835532984,
+            "p95": 393.55083268784404
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_comparator_throughput_p50": 0.49870791213846366,
+      "dllm_over_comparator_first_output_p95": 0.9928543709918349,
+      "exact_cross_engine_text": true
+    },
+    {
+      "prompt_tokens": 512,
+      "concurrency": 1,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.07493805792182684,
+            "p95": 0.07791837397962809
+          },
+          "request_seconds": {
+            "p50": 0.9725064933300018,
+            "p95": 0.9742272887378931
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 131.55369351603923,
+            "p95": 132.02368225108947
+          },
+          "stable_text_per_prompt": true
+        },
+        "dllm-candidate": {
+          "first_output_seconds": {
+            "p50": 0.07433611201122403,
+            "p95": 0.07626272551715374
+          },
+          "request_seconds": {
+            "p50": 0.971832160372287,
+            "p95": 0.9757200619205832
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 131.67728448358696,
+            "p95": 132.41541199956754
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_comparator_throughput_p50": 0.999061410113123,
+      "dllm_over_comparator_first_output_p95": 1.0217097992662476,
+      "exact_cross_engine_text": true
+    },
+    {
+      "prompt_tokens": 512,
+      "concurrency": 4,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.2940783929079771,
+            "p95": 0.3225398054346442
+          },
+          "request_seconds": {
+            "p50": 2.827513577416539,
+            "p95": 2.8433846263214946
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 180.82879150943342,
+            "p95": 181.55507323127162
+          },
+          "stable_text_per_prompt": true
+        },
+        "dllm-candidate": {
+          "first_output_seconds": {
+            "p50": 0.29362892219796777,
+            "p95": 0.30599555745720863
+          },
+          "request_seconds": {
+            "p50": 1.506686589680612,
+            "p95": 1.531016493216157
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 338.5689506428678,
+            "p95": 342.9849454740497
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_comparator_throughput_p50": 0.5340973859713934,
+      "dllm_over_comparator_first_output_p95": 1.054066954811098,
+      "exact_cross_engine_text": true
+    },
+    {
+      "prompt_tokens": 2048,
+      "concurrency": 1,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.5598470335826278,
+            "p95": 0.5923877125605941
+          },
+          "request_seconds": {
+            "p50": 1.466761059127748,
+            "p95": 1.500537384301424
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 87.29315195172511,
+            "p95": 89.28291720651687
+          },
+          "stable_text_per_prompt": true
+        },
+        "dllm-candidate": {
+          "first_output_seconds": {
+            "p50": 0.543254850897938,
+            "p95": 0.561415839008987
+          },
+          "request_seconds": {
+            "p50": 1.4522071070969105,
+            "p95": 1.4734949162229896
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 88.14942779972642,
+            "p95": 89.4854402046655
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_comparator_throughput_p50": 0.9902860872795821,
+      "dllm_over_comparator_first_output_p95": 1.055167438108406,
+      "exact_cross_engine_text": true
+    },
+    {
+      "prompt_tokens": 2048,
+      "concurrency": 4,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 2.0944638177752495,
+            "p95": 2.3625692389905453
+          },
+          "request_seconds": {
+            "p50": 4.784825877286494,
+            "p95": 4.937385058961809
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 106.82306218906754,
+            "p95": 109.90006841145438
+          },
+          "stable_text_per_prompt": true
+        },
+        "dllm-candidate": {
+          "first_output_seconds": {
+            "p50": 2.0979498880915344,
+            "p95": 2.2397149009630084
+          },
+          "request_seconds": {
+            "p50": 3.4434174485504627,
+            "p95": 3.534726240672171
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 148.5210697814039,
+            "p95": 152.5518387457379
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_comparator_throughput_p50": 0.7192451707107398,
+      "dllm_over_comparator_first_output_p95": 1.0548526680671335,
+      "exact_cross_engine_text": true
+    }
+  ],
+  "precision_policies": {
+    "dllm": {
+      "projections": "Q8_0",
+      "input_embedding": "FP16",
+      "output_head": "Q8_0",
+      "attention_kv": "FP16",
+      "recurrent_state": "FP32",
+      "convolution_history": "FP16"
+    },
+    "dllm-candidate": {
+      "projections": "Q8_0",
+      "input_embedding": "FP16",
+      "output_head": "Q8_0",
+      "attention_kv": "FP16",
+      "recurrent_state": "FP32",
+      "convolution_history": "FP16"
+    }
+  },
+  "limitation": "Within-dllm policy experiment; numerical/lifecycle gates are separate, no cross-engine verdict."
+}
