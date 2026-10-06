@@ -1,0 +1,324 @@
+{
+  "passed": true,
+  "device": "Radeon 8060S Graphics",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "quantization": "q8_0",
+  "cases": [
+    {
+      "shape": [
+        1,
+        1,
+        32
+      ],
+      "kind": "normal",
+      "relative_rms": 3.882965984303155e-07,
+      "max_absolute": 1.7881393432617188e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        1,
+        1,
+        32
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        1,
+        1,
+        32
+      ],
+      "kind": "strided",
+      "relative_rms": 3.7314644032448996e-06,
+      "max_absolute": 8.046627044677734e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        4,
+        63,
+        64
+      ],
+      "kind": "normal",
+      "relative_rms": 3.6215053569321753e-06,
+      "max_absolute": 4.887580871582031e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        4,
+        63,
+        64
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        4,
+        63,
+        64
+      ],
+      "kind": "strided",
+      "relative_rms": 5.354938821255928e-06,
+      "max_absolute": 6.9141387939453125e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        5,
+        65,
+        96
+      ],
+      "kind": "normal",
+      "relative_rms": 4.207843630865682e-06,
+      "max_absolute": 6.414949893951416e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        5,
+        65,
+        96
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        5,
+        65,
+        96
+      ],
+      "kind": "strided",
+      "relative_rms": 4.062409516336629e-06,
+      "max_absolute": 5.364418029785156e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        31,
+        64,
+        32
+      ],
+      "kind": "normal",
+      "relative_rms": 3.882815690303687e-06,
+      "max_absolute": 5.243346095085144e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        31,
+        64,
+        32
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        31,
+        64,
+        32
+      ],
+      "kind": "strided",
+      "relative_rms": 3.5942396152677247e-06,
+      "max_absolute": 5.304813385009766e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        32,
+        65,
+        64
+      ],
+      "kind": "normal",
+      "relative_rms": 4.080702183273388e-06,
+      "max_absolute": 7.033348083496094e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        32,
+        65,
+        64
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        32,
+        65,
+        64
+      ],
+      "kind": "strided",
+      "relative_rms": 3.958429260819685e-06,
+      "max_absolute": 6.22868537902832e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        33,
+        63,
+        96
+      ],
+      "kind": "normal",
+      "relative_rms": 3.881300472130533e-06,
+      "max_absolute": 1.233816146850586e-05,
+      "passed": true
+    },
+    {
+      "shape": [
+        33,
+        63,
+        96
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        33,
+        63,
+        96
+      ],
+      "kind": "strided",
+      "relative_rms": 4.086721219209721e-06,
+      "max_absolute": 7.450580596923828e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        127,
+        65,
+        5120
+      ],
+      "kind": "normal",
+      "relative_rms": 9.215572390530724e-06,
+      "max_absolute": 0.00015306472778320312,
+      "passed": true
+    },
+    {
+      "shape": [
+        127,
+        65,
+        5120
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        127,
+        65,
+        5120
+      ],
+      "kind": "strided",
+      "relative_rms": 9.262394087272696e-06,
+      "max_absolute": 0.0001506805419921875,
+      "passed": true
+    },
+    {
+      "shape": [
+        128,
+        64,
+        96
+      ],
+      "kind": "normal",
+      "relative_rms": 4.085344698978588e-06,
+      "max_absolute": 8.225440979003906e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        128,
+        64,
+        96
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        128,
+        64,
+        96
+      ],
+      "kind": "strided",
+      "relative_rms": 3.849727818305837e-06,
+      "max_absolute": 7.867813110351562e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        129,
+        63,
+        64
+      ],
+      "kind": "normal",
+      "relative_rms": 4.081774477526778e-06,
+      "max_absolute": 7.160007953643799e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        129,
+        63,
+        64
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        129,
+        63,
+        64
+      ],
+      "kind": "strided",
+      "relative_rms": 4.116389845876256e-06,
+      "max_absolute": 8.344650268554688e-06,
+      "passed": true
+    }
+  ],
+  "rejected": [
+    "input dtype",
+    "weight dtype",
+    "scale dtype",
+    "input rank",
+    "weight rank",
+    "scale rank",
+    "width mismatch",
+    "scale shape",
+    "weight stride",
+    "scale stride",
+    "device mismatch",
+    "empty width"
+  ],
+  "shape_checks": [
+    "empty batch",
+    "vector",
+    "rank-three batch"
+  ]
+}
