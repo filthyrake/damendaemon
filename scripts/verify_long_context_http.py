@@ -155,6 +155,7 @@ def main():
         command.extend(('--host-gib', str(args.host_gib)))
     report['command'] = command
     process = None
+    watchdog = None
     def stop_server(signum):
         if process is not None and process.poll() is None:
             try:
@@ -180,6 +181,11 @@ def main():
         log_path = args.output.with_suffix('.server.log')
         with log_path.open('w') as log:
             process = subprocess.Popen(command, stdout=log, stderr=log, start_new_session=True)
+            if os.environ.get('DLLM_DEVICE') == 'rocm':
+                from scripts.experiments.host_memory_watchdog import HostMemoryWatchdog
+                report['host_memory_guard'] = {}
+                watchdog = HostMemoryWatchdog(lambda: stop_server(signal.SIGKILL),
+                                              report['host_memory_guard']).start()
             deadline = time.monotonic()+180
             base = None
             while time.monotonic() < deadline:
@@ -276,7 +282,13 @@ def main():
                     stop_server(signal.SIGKILL)
                     process.wait()
             report['cleanup_complete'] = process is None or process.poll() is not None
+            if watchdog is not None:
+                watchdog.close()
+                if report['host_memory_guard']['triggered']:
+                    report.update(passed=False, phase='host_memory_guard')
             save_report(args.output, report)
+            if watchdog is not None and report['host_memory_guard']['triggered']:
+                raise SystemExit('host memory reserve exhausted; owned server stopped')
     if not report['passed']:
         raise SystemExit('long-context/interference gate failed; retained report')
 

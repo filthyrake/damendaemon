@@ -80,6 +80,10 @@ def prepare(weights, quantization=None):
         # Replace values without snapshotting all tensors: a list of items
         # would keep every original FP16 matrix alive until conversion ends.
         for name in weights:
+            from .device import selected_accelerator
+            if selected_accelerator() == 'rocm':
+                from .rocm_policy import require_host_headroom
+                require_host_headroom()
             weight = weights[name]
             if weight.ndim == 2 and name != 'embed':
                 weights[name], scales[name] = pack(weight)

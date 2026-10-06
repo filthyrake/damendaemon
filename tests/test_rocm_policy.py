@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import Mock,patch
 
 from dllm.device import selected_accelerator,selected_device,available_memory
-from dllm.rocm_policy import NVIDIA_LIBRARIES,validate_runtime,memory_limit,prefer_q8_small_batch_matvec,configure_attention
+from dllm.rocm_policy import NVIDIA_LIBRARIES,validate_runtime,memory_limit,prefer_q8_small_batch_matvec,configure_attention,configure_allocator,require_host_headroom
 from dllm.runtime import require_gpu
 
 GIB=1024**3
@@ -46,15 +46,38 @@ class RocmPolicyTests(unittest.TestCase):
         return SimpleNamespace(version=SimpleNamespace(hip='7.13'),cuda=SimpleNamespace(
             is_available=lambda:True,device_count=lambda:1,set_device=Mock(),
             get_device_properties=lambda index:SimpleNamespace(gcnArchName='gfx1151'),
-            mem_get_info=lambda:(111*GIB,61*GIB),memory_allocated=lambda:2*GIB))
+            mem_get_info=lambda:(111*GIB,61*GIB),memory_allocated=lambda:2*GIB,
+            memory_reserved=lambda:2*GIB,get_per_process_memory_fraction=lambda device:1.0,
+            set_per_process_memory_fraction=Mock()))
 
     def test_explicit_hip_selection_uses_cuda_tensor_namespace(self):
         torch=self.torch()
-        with patch.dict('os.environ',ENV,clear=True),patch.dict('sys.modules',{'torch':torch}):
+        with patch.dict('os.environ',ENV,clear=True),patch.dict('sys.modules',{'torch':torch}),patch('dllm.rocm_policy.host_available',return_value=100*GIB):
             require_gpu()
             self.assertEqual(selected_device(),'cuda')
             self.assertEqual(selected_accelerator(),'rocm')
             torch.cuda.set_device.assert_called_once_with(0)
+            torch.cuda.set_per_process_memory_fraction.assert_called_once_with(8/61, 0)
+
+    def test_allocator_preserves_stricter_budget_and_counts_existing_reservations(self):
+        torch = self.torch()
+        torch.cuda.get_per_process_memory_fraction = lambda device: .05
+        with patch.dict('os.environ',ENV,clear=True),patch('dllm.rocm_policy.host_available',return_value=100*GIB):
+            self.assertEqual(configure_allocator(torch), int(61*GIB*.05))
+            self.assertAlmostEqual(torch.cuda.set_per_process_memory_fraction.call_args.args[0], .05)
+        torch.cuda.set_per_process_memory_fraction.reset_mock()
+        torch.cuda.memory_reserved = lambda: 9*GIB
+        with patch.dict('os.environ',ENV,clear=True),patch('dllm.rocm_policy.host_available',return_value=100*GIB),self.assertRaises(MemoryError):
+            configure_allocator(torch)
+        torch.cuda.set_per_process_memory_fraction.assert_not_called()
+
+    def test_low_host_headroom_and_failed_enforcement_fail_closed(self):
+        torch = self.torch()
+        with patch('dllm.rocm_policy.host_available',return_value=16*GIB),self.assertRaises(MemoryError):
+            require_host_headroom()
+        torch.cuda.set_per_process_memory_fraction.side_effect = RuntimeError('unsupported allocator')
+        with patch.dict('os.environ',ENV,clear=True),patch('dllm.rocm_policy.host_available',return_value=100*GIB),self.assertRaisesRegex(RuntimeError,'unsupported allocator'):
+            configure_allocator(torch)
 
     def test_mixed_visibility_and_native_libraries_reject_before_selection(self):
         cases=[{'CUDA_VISIBLE_DEVICES':'GPU-a'},{'ROCR_VISIBLE_DEVICES':'0,1'},

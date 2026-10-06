@@ -22,6 +22,10 @@ def load_weights(state, config):
     prefix = 'model.language_model.' if 'model.language_model.embed_tokens.weight' in state else 'model.'
     w = {}
     def take(name, dtype=torch.float16):
+        from .device import selected_accelerator
+        if selected_accelerator() == 'rocm':
+            from .rocm_policy import require_host_headroom
+            require_host_headroom()
         return state.pop(prefix + name).to(dtype)
     w['embed'] = take('embed_tokens.weight')
     w['norm'] = take('norm.weight', torch.float32) + 1
@@ -323,6 +327,10 @@ class HybridExecutor:
     def forward_embeddings(self, x, positions, slots, prefill, prefix_length=0, return_logits=True):
         """Shared text backbone after token or image/text embedding assembly."""
         for i, kind in enumerate(self.c['layer_types']):
+            from .device import selected_accelerator
+            if selected_accelerator() == 'rocm':
+                from .rocm_policy import require_host_headroom
+                require_host_headroom()
             h = self.norm(x, self.w[f'{i}.norm1'])
             x = x + (self.linear_attention(h, i, slots, prefill, prefix_length) if kind == 'linear_attention'
                      else self.attention(h, i, positions, slots, prefill, prefix_length))

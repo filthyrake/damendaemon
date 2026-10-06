@@ -58,6 +58,35 @@ def host_available():
     raise RuntimeError('ROCm APU admission requires Linux MemAvailable accounting')
 
 
+HOST_RESERVE = 16 * 1024**3
+
+
+def require_host_headroom():
+    available = host_available()
+    if available <= HOST_RESERVE:
+        raise MemoryError('ROCm execution would exhaust the 16 GiB host reserve')
+    return available - HOST_RESERVE
+
+
+def configure_allocator(torch):
+    """Cap the caching allocator; an admission estimate alone is not a limit.
+
+    HIP/driver allocations outside this allocator still require independent
+    host monitoring. Never loosen an already stricter caller-supplied cap.
+    """
+    headroom = require_host_headroom()
+    free, total = torch.cuda.mem_get_info()
+    reserved = torch.cuda.memory_reserved()
+    previous = torch.cuda.get_per_process_memory_fraction(0)
+    if total <= 0 or not math.isfinite(previous) or not 0 < previous <= 1:
+        raise RuntimeError('cannot establish ROCm allocator budget')
+    budget = min(memory_limit(), total * previous, free + reserved, headroom + reserved)
+    if budget <= 0 or reserved > budget:
+        raise MemoryError('existing ROCm allocations exceed the configured budget')
+    torch.cuda.set_per_process_memory_fraction(float(budget / total), 0)
+    return int(budget)
+
+
 def available_memory(torch):
     validate_runtime(torch)
     free, total = torch.cuda.mem_get_info()

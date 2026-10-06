@@ -23,9 +23,10 @@ def require_gpu():
         from .rocm_policy import configure_attention
         configure_attention()
         import torch
-        from .rocm_policy import validate_runtime
+        from .rocm_policy import validate_runtime, configure_allocator
         validate_runtime(torch)
         torch.cuda.set_device(0)
+        configure_allocator(torch)
         return
     visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
     count=2 if split is not None else 1
