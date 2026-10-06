@@ -33,7 +33,12 @@ def load_reference(path, reference_quantization='none', **kwargs):
         import torch
         # Independent upstream quantizer; replace each Linear parameter so a
         # tied output head does not also quantize the input embedding.
-        for module in model.modules():
+        for name, module in model.named_modules():
+            # This text reference follows the runtime's text-only packing.
+            # Vision and MTP weights are neither loaded nor quantized by that path.
+            if config['model_type'] == 'qwen3_5' and (
+                    name.startswith('model.visual.') or name.startswith('mtp.')):
+                continue
             if isinstance(module, torch.nn.Linear):
                 # Mamba-130M's rank-48 time-step projection does not form whole
                 # Q8/Q4 blocks. dllm retains that small matrix in FP32.

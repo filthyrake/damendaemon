@@ -418,3 +418,13 @@ python -m scripts.experiments.plan_hybrid_capacity \
   docs/evidence/amd/qwen38-27b-safetensors-metadata.json.gz \
   /tmp/qwen38-27b-capacity.json
 ```
+
+The first independent text-reference load of the real checkpoint exposed a
+[reference-only quantization failure](evidence/amd/qwen38-reference-vision-failure.log.gz):
+it attempted to pack an unused vision projection with input width 4304, which
+is not divisible by the Q8 block width. The reference loader now leaves the
+vision/MTP branches unchanged for this text-only packing path. This does not
+qualify multimodal quantization. A regression test retains that non-packable
+vision projection while checking the text projection against upstream packing.
+The completed [download record](evidence/amd/qwen38-27b-download.json) retains
+the exact snapshot and remaining disk space.

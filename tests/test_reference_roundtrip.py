@@ -28,3 +28,25 @@ class ReferenceRoundtripTests(unittest.TestCase):
     def test_invalid_chunk_size(self):
         with self.assertRaises(ValueError):
             roundtrip_reference_weight(torch.zeros(2, 32), 'q8_0', 0)
+
+    def test_text_reference_does_not_quantize_vision(self):
+        import json
+        from pathlib import Path
+        import tempfile
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from scripts.reference_model import load_reference
+        model = torch.nn.Module()
+        model.model = torch.nn.Module()
+        model.model.language_model = torch.nn.Linear(32, 8, bias=False)
+        model.model.visual = torch.nn.Module()
+        model.model.visual.projection = torch.nn.Linear(4304, 8, bias=False)
+        original_visual = model.model.visual.projection.weight
+        expected_text = roundtrip_reference_weight(model.model.language_model.weight, 'q8_0')
+        loader = SimpleNamespace(from_pretrained=lambda *args, **kwargs: model)
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, 'config.json').write_text(json.dumps({'model_type': 'qwen3_5'}))
+            with patch.dict('sys.modules', {'transformers': SimpleNamespace(Qwen3_5ForConditionalGeneration=loader)}):
+                actual = load_reference(directory, 'q8_0')
+        self.assertIs(actual.model.visual.projection.weight, original_visual)
+        self.assertTrue(torch.equal(actual.model.language_model.weight, expected_text))
