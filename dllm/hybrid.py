@@ -23,7 +23,7 @@ def load_weights(state, config):
     w = {}
     def take(name, dtype=torch.float16):
         from .device import selected_accelerator
-        if selected_accelerator() == 'rocm':
+        if state[prefix + name].device.type != 'meta' and selected_accelerator() == 'rocm':
             from .rocm_policy import require_host_headroom
             require_host_headroom()
         return state.pop(prefix + name).to(dtype)
@@ -144,10 +144,8 @@ class HybridExecutor:
         if self.fused:
             from . import kernels as dense_kernels
             self.dense_fused = dense_kernels
-        full = c['layer_types'].count('full_attention')
-        linear = c['num_hidden_layers'] - full
-        state_bytes = max_batch * (full * 2*self.kh*self.context*self.dim*cache_element_bytes
-            + linear * (self.lv*self.dk*self.dv*4 + self.conv_width*c['linear_conv_kernel_dim']*cache_element_bytes))
+        from .capacity import hybrid_state_bytes
+        state_bytes = hybrid_state_bytes(c, self.context, max_batch, cache_element_bytes)
         empty_cache()
         free = available_memory()
         if model.bytes + state_bytes + 512*1024**2 > free:

@@ -8,63 +8,7 @@ import gzip
 import json
 from pathlib import Path
 
-import torch
-from dllm.config import decoder_config
-from dllm.hybrid import load_weights
-
-
-def estimate(inventory, metadata, cache_dtype='float16'):
-    if cache_dtype not in ('float16', 'float32'):
-        raise ValueError('cache dtype must be float16 or float32')
-    cache_element_bytes = 2 if cache_dtype == 'float16' else 4
-    config = decoder_config(inventory['config'])
-    state = {}
-    for shard in metadata['files_metadata'].values():
-        for name, tensor in shard['tensors'].items():
-            if name in state:
-                raise ValueError(f'duplicate tensor: {name}')
-            state[name] = torch.empty(tensor['shape'], device='meta')
-    weights = load_weights(state, config)
-    unexpected = [name for name in state if not name.startswith(('mtp.', 'model.visual.'))]
-    if unexpected:
-        raise ValueError(f'unconsumed text tensors: {unexpected}')
-    totals = {}
-    for mode in ('none', 'q8_0', 'q4_0'):
-        total = 0
-        seen = set()
-        for name, tensor in weights.items():
-            if id(tensor) in seen:
-                continue
-            seen.add(id(tensor))
-            n = tensor.numel()
-            if mode != 'none' and tensor.ndim == 2 and name != 'embed':
-                if tensor.shape[1] % 32:
-                    raise ValueError(f'non-packable matrix: {name}')
-                total += (n if mode == 'q8_0' else n // 2) + n // 32 * 2
-            else:
-                total += n * tensor.element_size()
-        totals[mode] = total
-    full = config['layer_types'].count('full_attention')
-    linear = config['num_hidden_layers'] - full
-    recurrent = linear * (
-        config['linear_num_value_heads'] * config['linear_key_head_dim'] * config['linear_value_head_dim'] * 4)
-    convolution = linear * (2 * config['linear_num_key_heads'] * config['linear_key_head_dim']
-           + config['linear_num_value_heads'] * config['linear_value_head_dim'])
-    convolution *= config['linear_conv_kernel_dim'] * cache_element_bytes
-    contexts = {}
-    for context in (32768, 65536, 131072, 262144):
-        state_bytes = recurrent + convolution + full * 2 * config['num_key_value_heads'] * context * config['head_dim'] * cache_element_bytes
-        contexts[str(context)] = {
-            str(users): {'state_bytes': state_bytes * users,
-                         'weights_plus_state_bytes': {mode: size + state_bytes * users for mode, size in totals.items()}}
-            for users in (1, 4)
-        }
-    return dict(repository=inventory['repository'], revision=inventory['resolved_revision'],
-                kv_and_convolution_dtype=cache_dtype, recurrent_dtype='float32',
-                weight_bytes=totals, runtime_supported_quantization=['none', 'q8_0'],
-                hypothetical_only_quantization=['q4_0'], contexts=contexts, mapped_tensors=len(weights),
-                excluded_tensors=len(state),
-                limitation='Shape-only text-loader and packed-storage estimate. Excludes workspace, allocator, graphs, communication, host copies and loading peaks. No weight values, inference, quality or performance validated.')
+from dllm.capacity import estimate
 
 
 def main():

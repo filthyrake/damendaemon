@@ -53,6 +53,11 @@ def main():
     commands.add_parser("bench", help="benchmark a streaming HTTP endpoint")
     commands.add_parser("distributed-run", help="experimental two-rank greedy generation under torchrun")
     commands.add_parser("distributed-serve", help="experimental resident two-rank greedy HTTP service")
+    capacity = commands.add_parser('plan-hybrid', help='estimate hybrid text storage from local tensor headers without loading weights')
+    capacity.add_argument('path', help='local safetensors snapshot directory; no download')
+    capacity.add_argument('--contexts', type=int, nargs='+', default=[32768])
+    capacity.add_argument('--batches', type=int, nargs='+', default=[1, 4])
+    capacity.add_argument('--cache-dtype', choices=('float16', 'float32'), default='float32')
     pull = commands.add_parser("pull", help="download a safetensors snapshot or one GGUF file from Hugging Face")
     pull.add_argument("repository")
     pull.add_argument("--revision", default="main")
@@ -106,6 +111,14 @@ def main():
         if name == 'unload':
             management.add_argument('--release-host', action='store_true')
     args = parser.parse_args()
+    if args.command == 'plan-hybrid':
+        from .capacity import plan_local
+        try:
+            result = plan_local(args.path, args.contexts, args.batches, args.cache_dtype)
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
+        print(json.dumps(result, indent=2))
+        return
     if args.command == 'serve':
         from .admission import validate_queue_limits
         try:

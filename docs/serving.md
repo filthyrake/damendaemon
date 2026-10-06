@@ -423,3 +423,28 @@ activation, prompt preparation, KV-capacity waits after ownership, and decoding.
 The nonstreaming response exposes it in `dllm_timing`; streaming responses with
 `stream_options.include_usage:true` include the same `dllm_timing` extension in
 the final usage event. Disabling usage does not add a separate timing event.
+
+
+## Offline hybrid capacity planning
+
+Inspect an existing local floating-point hybrid checkpoint without downloading
+weights, reading tensor values, or initializing a GPU:
+
+```sh
+dllm plan-hybrid /path/to/local/snapshot --contexts 32768 65536 \
+  --batches 1 4 --cache-dtype float32
+```
+
+The JSON report estimates native FP16, Q8 and Q4 weight storage using the real
+text weight mapping, plus full-attention KV, FP32 recurrent state and convolution
+history. State accounting is shared with runtime admission. A tied embedding
+and packed output head are counted separately because they use different
+representations. The default cache dtype is FP32; choose FP16 explicitly to
+compare that storage scenario.
+
+These are storage estimates, not runtime support, available-memory checks or
+qualification results. The separately reported 512 MiB workspace admission
+floor is not a peak workspace bound. Allocator overhead, graphs, communication,
+host copies and loading peaks remain excluded. Local contents are not hashed,
+so the report does not assert a model revision. Contexts must fit the model's
+configured position limit and batches must be between 1 and 16.

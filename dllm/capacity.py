@@ -1,0 +1,140 @@
+"""Header-only hybrid storage planning; not execution admission or qualification."""
+import json
+from pathlib import Path
+
+
+def hybrid_state_bytes(config, context, batch_size, cache_element_bytes):
+    if (type(context) is not int or context <= 0
+            or type(batch_size) is not int or not 1 <= batch_size <= 16
+            or type(cache_element_bytes) is not int or cache_element_bytes not in (2, 4)):
+        raise ValueError('invalid hybrid state geometry')
+    full = config['layer_types'].count('full_attention')
+    linear = config['num_hidden_layers']-full
+    recurrent = config['linear_num_value_heads']*config['linear_key_head_dim']*config['linear_value_head_dim']*4
+    conv_width = (2*config['linear_num_key_heads']*config['linear_key_head_dim']
+                  + config['linear_num_value_heads']*config['linear_value_head_dim'])
+    return batch_size*(full*2*config['num_key_value_heads']*context*config['head_dim']*cache_element_bytes
+                       + linear*(recurrent+conv_width*config['linear_conv_kernel_dim']*cache_element_bytes))
+
+
+def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536, 131072, 262144), batches=(1, 4)):
+    import torch
+    from .config import decoder_config
+    from .hybrid import load_weights
+    if cache_dtype not in ('float16', 'float32'):
+        raise ValueError('cache dtype must be float16 or float32')
+    cache_element_bytes = 2 if cache_dtype == 'float16' else 4
+    config = decoder_config(inventory['config'])
+    if config['model_type'] != 'qwen3_5_text':
+        raise ValueError('capacity planner requires a supported hybrid text configuration')
+    if (not contexts or not batches
+            or any(type(c) is not int or not 1 <= c <= config['max_position_embeddings'] for c in contexts)
+            or any(type(b) is not int or not 1 <= b <= 16 for b in batches)):
+        raise ValueError('contexts must fit model positions; batch sizes must be 1..16')
+    state = {}
+    for shard in metadata['files_metadata'].values():
+        for name, tensor in shard['tensors'].items():
+            if name in state:
+                raise ValueError(f'duplicate tensor: {name}')
+            state[name] = torch.empty(tensor['shape'], device='meta')
+    try:
+        weights = load_weights(state, config)
+    except (KeyError, RuntimeError) as error:
+        raise ValueError('hybrid tensor headers do not match the text weight mapping') from error
+    h, inter = config['hidden_size'], config['intermediate_size']
+    dim, qh, kh = config['head_dim'], config['num_attention_heads'], config['num_key_value_heads']
+    lk, lv = config['linear_num_key_heads'], config['linear_num_value_heads']
+    dk, dv = config['linear_key_head_dim'], config['linear_value_head_dim']
+    conv = 2*lk*dk+lv*dv
+    expected = {'embed': (config['vocab_size'], h), 'head': (config['vocab_size'], h), 'norm': (h,)}
+    for i, kind in enumerate(config['layer_types']):
+        shapes = {'norm1': (h,), 'norm2': (h,), 'gate_up': (2*inter, h), 'down': (h, inter)}
+        if kind == 'full_attention':
+            shapes.update(qkv=(2*qh*dim+2*kh*dim, h), o=(h, qh*dim), q_norm=(dim,), k_norm=(dim,))
+        else:
+            shapes.update(qkv=(conv, h), z=(lv*dv, h), b=(lv, h), a=(lv, h),
+                          conv=(conv, 1, config['linear_conv_kernel_dim']), out=(h, lv*dv),
+                          dt=(lv,), A=(lv,), gated_norm=(dv,))
+        expected.update({f'{i}.{name}': shape for name, shape in shapes.items()})
+    for name, shape in expected.items():
+        if tuple(weights[name].shape) != shape:
+            raise ValueError(f'hybrid tensor geometry disagrees with config: {name}')
+    unexpected = [name for name in state if not name.startswith(('mtp.', 'model.visual.'))]
+    if unexpected:
+        raise ValueError(f'unconsumed text tensors: {unexpected}')
+    totals = {}
+    for mode in ('none', 'q8_0', 'q4_0'):
+        total = 0
+        seen = set()
+        for name, tensor in weights.items():
+            packed = mode != 'none' and tensor.ndim == 2 and name != 'embed'
+            identity = (id(tensor), packed)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            n = tensor.numel()
+            if packed:
+                if tensor.shape[1] % 32:
+                    raise ValueError(f'non-packable matrix: {name}')
+                total += (n if mode == 'q8_0' else n // 2) + n // 32 * 2
+            else:
+                total += n * tensor.element_size()
+        totals[mode] = total
+    rows = {}
+    for context in contexts:
+        rows[str(context)] = {}
+        for users in batches:
+            state_bytes = hybrid_state_bytes(config, context, users, cache_element_bytes)
+            rows[str(context)][str(users)] = {
+                'state_bytes': state_bytes,
+                'weights_plus_state_bytes': {mode: size+state_bytes for mode, size in totals.items()},
+            }
+    return dict(repository=inventory['repository'], revision=inventory['resolved_revision'],
+                kv_and_convolution_dtype=cache_dtype, recurrent_dtype='float32',
+                weight_bytes=totals, estimated_storage_formats=list(totals),
+                runtime_qualification='not assessed', contexts=rows, mapped_tensors=len(weights),
+                excluded_tensors=len(state),
+                limitation='Shape-only text-loader and packed-storage estimate. Excludes workspace, allocator, graphs, communication, host copies and loading peaks. No weight values, inference, quality or performance validated.')
+
+
+def plan_local(path, contexts, batches, cache_dtype):
+    """Inspect local safetensors headers only; never resolve or download a model."""
+    from safetensors import safe_open
+    from .config import decoder_config
+    from .download import snapshot_files, INDEX
+    path = Path(path).expanduser().resolve()
+    original = json.loads((path/'config.json').read_text())
+    if decoder_config(original)['model_type'] != 'qwen3_5_text':
+        raise ValueError('capacity planner requires a supported hybrid text configuration')
+    index = json.loads((path/INDEX).read_text()) if (path/INDEX).exists() else None
+    selected = snapshot_files([entry.name for entry in path.iterdir() if entry.is_file()], index)
+    files = {}
+    indexed = index['weight_map'] if index is not None else None
+    actual = {}
+    for filename in selected:
+        if not filename.endswith('.safetensors'):
+            continue
+        tensors = {}
+        with safe_open(str(path/filename), framework='pt', device='cpu') as reader:
+            for name in reader.keys():
+                if name in actual:
+                    raise ValueError(f'duplicate tensor: {name}')
+                view = reader.get_slice(name)
+                if view.get_dtype() not in ('F16', 'BF16', 'F32'):
+                    raise ValueError('planner supports floating-point source checkpoints only')
+                tensors[name] = {'shape': view.get_shape()}
+                actual[name] = filename
+        files[filename] = {'tensors': tensors}
+    if indexed is not None and actual != indexed:
+        raise ValueError('tensor headers do not match the shard index')
+    result = estimate({'config': original, 'repository': None, 'resolved_revision': None},
+                      {'files_metadata': files}, cache_dtype, contexts, batches)
+    result.update(local_path=str(path), source='local safetensors headers; contents not hashed',
+                  workspace_admission_floor_bytes=512*1024**2)
+    # The runtime's floor is admission bookkeeping, not a workspace peak bound.
+    for users in result['contexts'].values():
+        for row in users.values():
+            row['weights_state_and_workspace_floor_bytes'] = {
+                mode: size+result['workspace_admission_floor_bytes']
+                for mode, size in row['weights_plus_state_bytes'].items()}
+    return result
