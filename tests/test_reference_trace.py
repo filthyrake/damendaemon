@@ -6,10 +6,24 @@ from unittest.mock import patch
 
 import torch
 
-from scripts.reference_trace import save_trace
+from scripts.reference_trace import save_trace, validate_replay
 
 
 class ReferenceTraceTests(unittest.TestCase):
+    def test_replay_rejects_wrong_format_unless_quality_comparison_is_explicit(self):
+        trace = dict(complete=True, reference_quantization='q4_0',
+                     trace=[{'targets': [torch.ones(3)]}])
+        validate_replay(trace, 'q4_0')
+        with self.assertRaisesRegex(ValueError, 'quantization'):
+            validate_replay(trace, 'q8_0')
+        validate_replay(trace, 'q8_0', allow_quantization_mismatch=True)
+
+    def test_empty_or_incomplete_trace_cannot_pass_vacuously(self):
+        for trace in ({'trace': []}, {'trace': [{'targets': []}]},
+                      {'complete': False, 'trace': [{'targets': [torch.ones(3)]}]}):
+            with self.assertRaises(ValueError):
+                validate_replay(trace, 'none', allow_quantization_mismatch=True)
+
     def test_partial_does_not_replace_completed_trace(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'golden.pt'

@@ -44,9 +44,19 @@ Q4_0 projection weights with FP16 block scales. Input embeddings and norms keep
 their existing precision. `DLLM_QUANTIZATION=q4_0` sets the startup default;
 per-model policies can mix Q4, Q8 and unquantized models in the same server.
 
-Independent model gates pass Qwen2.5-0.5B, accurate Qwen3-0.6B and
+For hybrid Qwen3.5/Qwen3.8 text, the AMD branch adds a separate experimental
+Q4 path: `DLLM_EXPERIMENTAL_HYBRID_Q4=1`, `DLLM_HYBRID_PRECISION=compensated`,
+ROCm, no graphs, context at most 512 and at most four request slots. HOMER
+passes [Q4 primitive boundaries](evidence/amd/homer-compensated-q4-boundaries.json)
+and [Q8 regression boundaries](evidence/amd/homer-compensated-q8-regression-boundaries.json).
+Full-model Q4 logits, quality, lifecycle and other devices remain unqualified;
+follow [issue #23](https://github.com/filthyrake/dllm/issues/23). The estimated
+27B packed weight size is 15.80 GiB, before state and workspace, so this does not
+establish that the model fits a particular GPU.
+
+Independent dense model gates pass Qwen2.5-0.5B, accurate Qwen3-0.6B and
 Llama3.2-1B on A2, along with live model-switching tests. The loader currently
-allows dense Qwen2/Qwen3/Llama/Phi-3/Mistral only; acceptance alone is not a
+allows dense Qwen2/Qwen3/Llama/Phi-3/Mistral plus the explicit hybrid experiment above; acceptance alone is not a
 checkpoint qualification. Four-bit quantization is lossy: on our small authored
 171-token Qwen2 corpus, next-token agreement with the original weights was
 74.3% for Q4 versus 95.3% for Q8. This is not a broad quality evaluation.

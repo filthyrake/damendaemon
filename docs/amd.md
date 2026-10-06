@@ -23,6 +23,18 @@ for the pinned 27B model at 512 context. Reference execution took about 555
 seconds plus loading. This is validation turnaround, not serving performance;
 Q4 model execution and longer contexts are not qualified by this result.
 
+The subsequent [4K native context replay](evidence/amd/qwen38-27b-q8-context-probe-replay4096.json)
+passes all 84 targets against that independent reference approach, including
+chunk boundaries and slot reuse. Maximum relative RMS is 0.001337 and maximum
+absolute error is 0.034421, with exact greedy agreement. This uses the isolated
+context probe; ordinary production admission remains at 512 while the 32K
+HTTP capacity gate is pending. The first 32K attempt stopped before inference
+on an undersized host-weight budget; the retry declares 40 GiB explicitly.
+
+Reference replay now rejects empty/incomplete traces and mismatched quantization
+before model loading. `--allow-quantization-mismatch` is reserved for explicit
+quality comparisons against another precision; reports expose that distinction.
+
 ## First target: HOMER
 
 Read-only inspection on 2026-10-06 found:
