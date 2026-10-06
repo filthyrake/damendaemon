@@ -48,3 +48,31 @@ dispatch also passes 282 checks with real CUDA graphs and 22 observed packed
 stage calls. This is evidence for a candidate, not proof of complete equivalence
 on arbitrary prompts or a production promotion. Its serving and performance
 qualification are separate from these isolation controls.
+
+The explicit candidate passes 19 ordinary same-host HTTP checks with packed
+prefill enabled, including streaming, concurrency, cancellation and model swaps.
+Changed-weight qualification passes 410 independent checks across four alternating
+weight sessions and a fresh recovery after partial-upload failure. Three actual
+rebinds preserve captured graph storage; the partial executor is unpublished.
+These lifecycle timings are not a matched hot-swap benchmark.
+
+The same contiguous-body candidate passes 282 checks on the single A2 with
+graphs as well. However, its matched A2/A30 HTTP measurement rejects it for
+production on performance grounds. Both modes keep prompt packing disabled,
+capacity four, context 512, 16 input IDs and 32 output tokens; paired/contiguous/
+contiguous/paired launches provide ten measured rounds per mode/concurrency.
+Text and usage match. Startup/capture and warmups are excluded.
+
+| Concurrency | Body kernel | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Current paired | 28.17 | 162.48 | 196.35 |
+| 1 | Contiguous candidate | 33.41 | 859.39 | 37.21 |
+| 2 | Current paired | 43.93 | 201.69 | 312.58 |
+| 2 | Contiguous candidate | 56.86 | 912.50 | 68.90 |
+| 4 | Current paired | 107.63 | 289.04 | 438.81 |
+| 4 | Contiguous candidate | 133.22 | 988.18 | 128.48 |
+
+The first candidate's large throughput regression is unacceptable despite its
+passing correctness gates. It remains an explicit experiment; production Q4
+dispatch and conservative prompt-packing default are unchanged. Reproduce with
+`bench_partition_prefill_service.py --compare q4-body --quantization q4_0`.
