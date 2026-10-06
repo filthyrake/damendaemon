@@ -1,0 +1,33 @@
+{
+  "passed": false,
+  "final_report": true,
+  "rank": 0,
+  "checks": [
+    {
+      "operation": 1,
+      "slot": 0,
+      "relative_rms": 0.003246922977268696,
+      "max_absolute": 0.04296875,
+      "greedy_match": true,
+      "passed": true
+    },
+    {
+      "operation": 1,
+      "slot": 3,
+      "relative_rms": 0.002187101636081934,
+      "max_absolute": 0.0234375,
+      "greedy_match": true,
+      "passed": true
+    }
+  ],
+  "commands": 2,
+  "device": "NVIDIA A2",
+  "quantization": "q4_0",
+  "scope": "coordinator-driven NCCL control correctness; not serving or performance",
+  "reads_reference_trace": true,
+  "token_completion": true,
+  "setup_seconds": 8.300864321994595,
+  "model_sha256": "5344521d357deea794ab9fd3d06a6cdae292c3c0588d933899dc3e6139ff5ffe",
+  "error": "ValueError('stage command rejected before activation transfer')",
+  "epoch_failed": true
+}

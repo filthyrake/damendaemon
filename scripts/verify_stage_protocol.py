@@ -40,7 +40,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model')
     parser.add_argument('--trace', required=True, help='opened only by coordinator rank zero')
-    parser.add_argument('--quantization', choices=('none', 'q8_0'), default='none')
+    parser.add_argument('--quantization', choices=('none', 'q8_0', 'q4_0'), default='none')
     parser.add_argument('--output', required=True)
     parser.add_argument('--inject-stale-sequence', action='store_true')
     parser.add_argument('--token-completion', action='store_true')

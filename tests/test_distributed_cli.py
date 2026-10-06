@@ -65,8 +65,8 @@ class DistributedCliTests(unittest.TestCase):
         from dllm.distributed import StagePair
         with patch('dllm.distributed.dist.is_initialized', return_value=False), \
                 patch('dllm.distributed.torch.cuda.is_available') as available:
-            with self.assertRaisesRegex(ValueError, 'FP16 or Q8'):
-                StagePair('/unused', 512, 'q4_0', lambda model: [])
+            with self.assertRaisesRegex(ValueError, 'FP16, Q8 or Q4'):
+                StagePair('/unused', 512, 'awq', lambda model: [])
             available.assert_not_called()
 
     def test_session_prepares_all_requests_and_individual_budgets(self):

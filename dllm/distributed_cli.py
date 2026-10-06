@@ -77,7 +77,7 @@ def main(argv=None):
     parser.add_argument('--raw', action='store_true')
     parser.add_argument('--context', type=int, default=512)
     parser.add_argument('--max-tokens', type=int, default=32)
-    parser.add_argument('--quantization', choices=('none','q8_0'), default=os.environ.get('DLLM_QUANTIZATION','none'))
+    parser.add_argument('--quantization', choices=('none','q8_0','q4_0'), default=os.environ.get('DLLM_QUANTIZATION','none'))
     parser.add_argument('--ignore-eos', action='store_true', help='generate the full requested token count')
     parser.add_argument('--json', action='store_true', help='one coordinator result including text, token IDs and timing')
     args = parser.parse_args(argv)

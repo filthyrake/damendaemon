@@ -31,7 +31,7 @@ Set `DLLM_QUANTIZATION=q4_0` for the qualified native four-bit path. Packed
 weights and scales stay with their owning stage; this is not GGUF or AWQ
 partition support. Independent eager/graph, changed-weight swap, HTTP and
 release checks are recorded in the [Q4 qualification](evidence/multi-gpu/README.md#native-q4-same-host-partition).
-The separate distributed CLI still admits FP16/Q8 only.
+The separate distributed CLI also admits Q4 after its own network qualification.
 
 ## Compatible model swaps
 
@@ -157,3 +157,8 @@ On the measured A2/A30 Q8 three-request workload, reusing the pair reduced
 complete job time from 46.17 to 15.82 seconds, including startup and shutdown.
 This saves repeated activation work; it is not a decode-speed improvement.
 See the [matched job measurements](evidence/multi-gpu/README.md#complete-repeated-request-job-cost).
+
+FP16, Q8 and Q4 are accepted by `--quantization` for individual requests and
+sessions. Set the same precision on both workers. Q4 passes independent
+A2/3090 protocol checks and an actual seven-request network session; see the
+[distributed Q4 proof](evidence/multi-gpu/README.md#native-q4-distributed-cli).

@@ -478,6 +478,32 @@ All measured tokens agree across modes. This proves the graph benefit at Q4;
 it is not a Q4-versus-Q8 precision comparison, HTTP throughput measurement or
 upstream-engine comparison. Raw results: `qwen2-stages-q4-graph-abba.json`.
 
+## Native Q4 distributed CLI
+
+The distributed path now admits Q4 through its own explicit precision guard,
+separate from same-host partition admission. Before publication, the 3090
+single-GPU path passes all 82 independent Q4 checks, and the A2/3090 network
+pair passes those 82 checks across 35 commands. A stale third command produces
+final failure reports on both workers after exactly two completed commands,
+before activation transfer. See `qwen2-single-3090-q4-reference.json` and
+`qwen2-network-control*q4-rank*.json`.
+
+The actual Q4 CLI passes the full seven-check A2/A30 suite, including individual
+reference prompts, EOS, invalid tokens, a seven-request resident session and
+malformed later input rejected before any generation. The same seven-request
+session also passes on separate A2/3090 hosts, with exact independent tokens
+and matching text, usage, ordering, finish reasons and prepared-weight identity.
+Only the coordinator receives the request file; both workers exit normally.
+Reports are `qwen2-distributed-session-q4.json`, `qwen2-network-session-q4.jsonl`
+and `qwen2-network-q4-session-qualification.json`. These runs include first-use
+costs and are correctness evidence, not network performance measurements.
+All 406 local tests pass.
+
+The peer-only firewall window had automatic ten-minute expiry. It opened on
+2026-10-06 at 01:21:44/47 UTC and was removed early at 01:24:53/57 UTC. Original
+rules and GPU allocations were verified unchanged. No permanent firewall
+changes or existing GPU-service restarts were made.
+
 | Median network metric | Separate completion collective | Token reply completion |
 | --- | ---: | ---: |
 | First token | 20.88 ms | 20.76 ms |

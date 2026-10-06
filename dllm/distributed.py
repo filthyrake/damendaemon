@@ -25,8 +25,8 @@ class StagePair:
     def __init__(self, path, context, quantization, prepare_requests):
         self.owns_group = False
         if dist.is_initialized():raise ValueError('distributed-run requires ownership of its process group')
-        if quantization not in ('none','q8_0'):
-            raise ValueError('distributed-run is qualified only for FP16 or Q8 weights')
+        if quantization not in ('none','q8_0','q4_0'):
+            raise ValueError('distributed-run is qualified only for FP16, Q8 or Q4 weights')
         self.state = None
         self.channel = None
         self.stage = None

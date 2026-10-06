@@ -50,7 +50,7 @@ Model licenses remain those of their respective publishers.
 | Function tools | Qualified Qwen2/Qwen3 JSON calls and result history; auto/none and required/named single-call schemas; strict auto unsupported |
 | Direct choices | Unquantized Qwen2/Qwen3 candidate-token logits/probabilities without answer generation; explicit raw prompts, no calibrated confidence |
 | Batching | Continuous decode, up to 16 slots; CUDA graph replay; opt-in bounded CUDA dense paged KV with admission reservations |
-| Distributed CLI | Experimental `distributed-run` under torchrun: Qwen2.5-0.5B FP16/Q8, context <=512, local snapshots; single requests or bounded sequential resident sessions; A2/A30 FP16/Q8 and A2/3090 Q8 session proof; no distributed HTTP or model swapping |
+| Distributed CLI | Experimental `distributed-run` under torchrun: Qwen2.5-0.5B FP16/Q8/Q4, context <=512, local snapshots; single requests or bounded sequential resident sessions; A2/A30 FP16/Q8/Q4 and A2/3090 Q8/Q4 session proof; no distributed HTTP or model swapping |
 | Two-GPU serving | Opt-in same-host Qwen2.5-0.5B layer split 12/12, FP16/Q8/Q4, context <=512, batch <=4; independent reference, compatible swaps and HTTP lifecycle proof; cross-host uses the separate experimental CLI |
 | Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state; optional 0–10 ms idle prompt coalescing (default 0), with measured first-output tradeoffs |
 | Prompt graph reuse | Opt-in bounded Qwen2/Qwen3 CUDA single-prefill and candidate-scoring graphs; cold capture cost, exact shape/slot/choice keys |

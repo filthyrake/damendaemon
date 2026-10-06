@@ -29,7 +29,7 @@ def main():
     selected = [next(case for case in cases if len(case['prompt']) == length)
                 for length in (31, 255, 31)]
     precision = trace.get('reference_quantization', 'none')
-    if trace['context'] != 512 or precision not in ('none', 'q8_0'):
+    if trace['context'] != 512 or precision not in ('none', 'q8_0', 'q4_0'):
         parser.error('qualified context and precision required')
     report = dict(passed=False, final_report=False, groups=[], model=trace['path'],
                   quantization=precision, context=512, prompt_lengths=[31, 255, 31],
