@@ -119,9 +119,11 @@ def main():
                 row['short_visible_chunks_during_long_prefill'] = sum(start < t < stop for t in times)
                 gaps = [b-a for a,b in zip(times,times[1:])]
                 row['short_visible_chunk_gap_seconds'] = distribution(gaps)
+                row['max_short_visible_chunk_gap_seconds'] = max(gaps) if gaps else None
+                row['gap_budget_passed'] = bool(gaps) and max(gaps) <= args.gap_budget_seconds
                 row['passed'] = (row['short_text_matches_control'] and row['long_text_matches_control']
                     and row['short_visible_chunks_during_long_prefill'] >= 2
-                    and max(gaps, default=float('inf')) <= args.gap_budget_seconds)
+                    and row['gap_budget_passed'])
                 with urlopen(base+'/v1/models/status', timeout=30) as response:
                     row['status_after'] = json.load(response)
                 args.output.write_text(json.dumps(report, indent=2)+'\n')
