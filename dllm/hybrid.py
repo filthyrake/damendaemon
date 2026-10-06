@@ -186,9 +186,12 @@ class HybridExecutor:
         # Eager output logits explicitly promote the full output head to FP32.
         # Streaming must budget that temporary in addition to resident weights.
         self.output_head_workspace_bytes = (model.weights['head'].numel()*4
-            if streaming and model.weights['head'].dtype != torch.float32 else 0)
+            if (streaming or _layer_range is not None) and 'head' in model.weights
+            and self.device != 'xpu' and model.weights['head'].dtype != torch.float32 else 0)
+        self.stage_activation_workspace_bytes = (2*max_batch*self.context*c['hidden_size']*4
+                                                 if _layer_range is not None else 0)
         self.required_memory_bytes = (device_weight_bytes + state_bytes + 512*1024**2
-                                      + self.output_head_workspace_bytes)
+                                      + self.output_head_workspace_bytes + self.stage_activation_workspace_bytes)
         if self.required_memory_bytes > free:
             raise MemoryError('insufficient GPU memory for hybrid weights, state, and workspace')
         if streaming:

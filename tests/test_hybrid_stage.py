@@ -52,7 +52,8 @@ class HybridStageTests(unittest.TestCase):
                 actual = sum(t.numel()*t.element_size() for group in (stage.kv, stage.state, stage.conv)
                              for t in group.values())
                 self.assertEqual(actual, state_bytes)
-                self.assertEqual(stage.required_memory_bytes, stage.model.bytes+state_bytes+512*1024**2)
+                self.assertEqual(stage.required_memory_bytes, stage.model.bytes+state_bytes+512*1024**2
+                                 + 2*2*32*self.model.config['hidden_size']*4)
                 with self.assertRaises(ValueError):
                     stage.forward_layers(None, None, None, True, layer_start=0, layer_end=4)
 

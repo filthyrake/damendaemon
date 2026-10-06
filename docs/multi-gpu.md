@@ -283,3 +283,20 @@ It exposes the layer boundary, and rejects ordinary executor calls that would
 commit a stage cursor before a coordinator completes the whole request. CPU
 composition and exact allocation-count tests pass; device transfer, coordinated
 failure handling and serving admission remain separate work.
+
+The in-process `HybridPipeline` coordinator composes preconstructed stages with
+blocking hidden-state copies. It accepts chunked prefills and reordered decode
+slots and commits all stage/request cursors only after every stage synchronizes.
+A failure or cancellation after device work begins invalidates the whole
+pipeline; cancellation before work leaves it usable. Stages cannot belong to two
+coordinators. The same CPU source identity, contiguous ranges, precision and
+request limits must agree at construction. Closing synchronizes all participants
+before releasing owned tensors, and preserves ownership if synchronization fails.
+
+Stage admission additionally reserves two FP32 hidden-activation buffers at the
+configured context/batch bound and the final stage's eager FP32 head temporary.
+Status reports owned weight/state bytes and reserved workspaces separately from
+allocator telemetry. CPU regression evidence covers composition, reordered
+batches, interleaved slots, cursor commit, cancellation, failure and cleanup.
+This remains an internal unquantized eager building block: no CLI/HTTP distributed
+admission, remote transport, real-device transfer or performance claim is added.
