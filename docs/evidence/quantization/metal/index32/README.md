@@ -51,3 +51,42 @@ same precision and hardware. It is not an upstream-engine comparison or
 whole-request latency claim. Reproduce with
 `scripts/experiments/bench_metal_indices.py --quantization q8_0` and matching
 `DLLM_QUANTIZATION=q8_0`, `DLLM_DEVICE=mps`, `DLLM_METAL_WEIGHT_DTYPE=float16`.
+
+## Optimized HTTP observations
+
+Same model, precision, context, 16 input IDs and 32 outputs as above; one warmup
+and five measured rounds per concurrency. These include prefill and HTTP and
+are not a counterbalanced comparison against another runtime.
+
+| Concurrency | Aggregate tokens/s | First text ms | Request latency ms |
+|---|---:|---:|---:|
+| 1 | 87.15 | 46.43 | 367.13 |
+| 2 | 141.80 | 75.44 | 445.35 |
+| 4 | 251.76 | 110.81 | 507.90 |
+
+Raw reports: `q8-index32-http-c*.json`.
+
+The existing llama.cpp build was remeasured sequentially on the same hardware,
+pinned model, stored Q8 coefficients, context, input IDs and output count. Its
+previously qualified exact-vector GGUF is unchanged. KV storage is FP32 on both
+sides, but internal arithmetic and generated text differ: this is a practical
+runtime comparison, not arithmetic equivalence. No upstream repository changed.
+
+| llama.cpp concurrency | Aggregate tokens/s | First text ms | Request latency ms |
+|---|---:|---:|---:|
+| 1 | 127.75 | 18.63 | 250.44 |
+| 2 | 211.19 | 21.71 | 302.81 |
+| 4 | 258.32 | 34.34 | 486.63 |
+
+dllm is close in four-request throughput on this workload, but still trails
+in single/two-request throughput and first text latency. This does not establish
+overall parity. Raw reports and launch/context metadata are `llama-q8-*.json`.
+
+## Dense projection experiment not promoted
+
+The same idea was tested in the FP16-weight dense projection template. Matched
+full-model single-request decode changed only from 64.80 to 66.59 tokens/s
+(about 2.8%). The runtime dense path remains unchanged; larger component gains
+do not justify claiming a comparable whole-model improvement. The two
+`dense-metal-*.json` reports and `bench_metal_dense_indices.py` preserve the
+experiment for later investigation.
