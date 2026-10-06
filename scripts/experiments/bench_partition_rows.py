@@ -12,6 +12,7 @@ import torch
 from dllm.partition import PartitionExecutor
 from dllm.qwen2 import ModelWeights
 from dllm import q4_stage_kernels
+from dllm import kernels
 from scripts.experiments.q4_dynamic_rows import install_validation_dispatch
 
 
@@ -22,6 +23,7 @@ def sync():
 @torch.inference_mode()
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('prompt');p.add_argument('--output',required=True);p.add_argument('--integrated',action='store_true')
+    p.add_argument('--compare-rope',action='store_true',help='hold integrated row bounds on and vary only the experimental rotary stride')
     args=p.parse_args()
     def terminate(number,frame):raise SystemExit(128+number)
     signal.signal(signal.SIGTERM,terminate)
@@ -31,18 +33,26 @@ def main():
     torch.set_num_threads(4)
     model=ModelWeights(args.model,512,quantization='q4_0')
     original=q4_stage_kernels.single_dot_adjacent
-    report=dict(passed=False,integrated=args.integrated,model=args.model,quantization='q4_0',context=512,capacity=4,prompt_tokens=16,output_tokens=32,
+    original_rope=kernels._rope_store
+    report=dict(passed=False,integrated=args.integrated,comparison='rotary-stride' if args.compare_rope else 'row-bounds',model=args.model,quantization='q4_0',context=512,capacity=4,prompt_tokens=16,output_tokens=32,
         devices=os.environ['CUDA_VISIBLE_DEVICES'],trials=[],
         scope='Same-host model execution ABBA. Static versus selective runtime row bounds only; adjacent weights and packed prefill fixed. Host weights loaded once; all group shapes warmed before steady-state timing. First-shape calls are observed per process/order, not an isolated cold-start comparison. No HTTP or network throughput claim.',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                 ('dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/partition.py','scripts/experiments/q4_dynamic_rows.py',__file__)})
+                 ('dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/partition.py',
+                  'scripts/experiments/q4_dynamic_rows.py','scripts/experiments/rope_runtime_tokens.py',__file__)})
+    if args.compare_rope:
+        report['scope']='Same-host model execution ABBA. Static versus runtime rotary token stride only; integrated selective row bounds, adjacent weights and packed prefill fixed. All group shapes warmed. First-shape observations share process/cache state and are not isolated cold-start evidence. No HTTP or network throughput claim.'
     references={};first_references={}
     executor=None
     try:
         for dynamic in (False,True,True,False):
             q4_stage_kernels.single_dot_adjacent=original
-            os.environ['DLLM_Q4_STAGE_RUNTIME_ROWS']=str(int(dynamic and args.integrated))
-            if dynamic and not args.integrated:install_validation_dispatch()
+            kernels._rope_store=original_rope
+            os.environ['DLLM_Q4_STAGE_RUNTIME_ROWS']=str(int(args.compare_rope or (dynamic and args.integrated)))
+            if args.compare_rope and dynamic:
+                from scripts.experiments.rope_runtime_tokens import install_validation_dispatch as install_rope
+                install_rope()
+            elif dynamic and not args.integrated and not args.compare_rope:install_validation_dispatch()
             sync();started=time.perf_counter()
             executor=PartitionExecutor(model,12,use_graph=True,max_batch=4)
             sync();trial=dict(dynamic=dynamic,activation_seconds=time.perf_counter()-started,first_shapes=[],runs=[])
@@ -87,6 +97,7 @@ def main():
     finally:
         if executor is not None:executor.close()
         q4_stage_kernels.single_dot_adjacent=original
+        kernels._rope_store=original_rope
         Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
 
 

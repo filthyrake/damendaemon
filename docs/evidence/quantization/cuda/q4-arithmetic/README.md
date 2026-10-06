@@ -495,4 +495,8 @@ ABBA warm-kernel timing gives median dynamic/static ratios 1.000, 0.993, 0.997
 and 0.998; the largest individual slowdown is 1.7%. This establishes kernel
 equivalence and warm timing only, not whole-model or first-use latency gains.
 The raw report is `qwen2-rope-runtime-tokens-matrices.json`; model qualification
-is separate before considering any runtime integration.
+is separate before considering any runtime integration. The explicit experimental
+adapter subsequently passes the expanded A2/A30 model trace: 282 independent
+checks and 22 packed stage calls, with integrated selective Q4 row bounds held
+on. `qwen2-rope-runtime-tokens-replay.json` records this gate. Production rotary
+dispatch remains unchanged pending first-use and whole-model measurements.
