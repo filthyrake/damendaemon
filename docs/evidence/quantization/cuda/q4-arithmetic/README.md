@@ -183,3 +183,24 @@ This variant passes 282 graph/packed-prefill checks, 19 live HTTP checks and
 in-place repacking failures. Failed executors are unpublished, and fresh
 recovery matches independent reference outputs. The prototype remains separate
 from production dispatch while its complete policy is measured.
+
+The complete existing-buffer policy comparison enables adjacent body products
+and packed prompt admission together. The control retains paired body products
+and sequential prompt admission. Same weights, A2/A30 pair, context 512,
+capacity four, 16 input IDs and 32 output tokens; ABBA launches provide ten
+measured rounds per mode/concurrency. Text and usage match.
+
+| Concurrency | Policy | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Existing | 28.34 | 165.71 | 192.55 |
+| 1 | Adjacent in-place + packed | 27.62 | 167.09 | 191.01 |
+| 2 | Existing | 42.72 | 197.06 | 319.31 |
+| 2 | Adjacent in-place + packed | 45.03 | 207.85 | 304.71 |
+| 4 | Existing | 104.56 | 282.40 | 447.80 |
+| 4 | Adjacent in-place + packed | 63.84 | 239.60 | 527.13 |
+
+At concurrency four, throughput improves 17.7%, first text 39.0% and request
+latency 15.2%. Single-request throughput is roughly unchanged (-0.8%); at two
+requests it regresses 4.6% and request latency increases 5.5%. This is a combined
+arithmetic/admission policy comparison, not a kernel-only speedup. The runtime
+integration must independently pass correctness, lifecycle and serving gates.

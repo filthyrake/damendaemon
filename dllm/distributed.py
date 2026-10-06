@@ -72,7 +72,8 @@ class StagePair:
             self.owns_group = True
             dist.init_process_group('nccl', timeout=timedelta(seconds=30),
                                     device_id=torch.device('cuda', local_rank))
-            agreement = self.identity + struct.pack('<qqqq', VERSION, context, max_batch, int(self.packed_prefill))
+            agreement = self.identity + struct.pack('<qqqqq', VERSION, context, max_batch, int(self.packed_prefill),
+                                                     int(self.stage.q4_linear is not None))
             identity = torch.tensor(list(hashlib.sha256(agreement).digest()), dtype=torch.uint8, device='cuda')
             peers = [torch.empty_like(identity) for _ in range(2)]
             dist.all_gather(peers, identity)

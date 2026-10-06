@@ -88,6 +88,7 @@ class PartitionExecutor:
                     for name,target in stage.w.items():target.copy_(shard.weights[name])
                     for name,source in shard.scales.items():
                         stage.quant_linear.scales[id(stage.w[name])].copy_(source)
+                    if stage.q4_linear is not None:stage.q4_linear.refresh()
                     torch.cuda.synchronize(device)
                 stage.model=shard
                 stage.c=shard.config

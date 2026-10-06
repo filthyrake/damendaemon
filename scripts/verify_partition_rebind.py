@@ -11,6 +11,7 @@ from dllm.runtime import Runtime
 def storage(executor):
     return [dict(weights={k:v.data_ptr() for k,v in stage.w.items()},kv=[v.data_ptr() for v in stage.kv],
         experimental_adjacent={str(k):v.data_ptr() for k,v in getattr(stage.quant_linear,'experimental_adjacent',{}).items()},
+        stage_adjacent_ids=sorted(stage.q4_linear.weights) if stage.q4_linear is not None else [],
         experimental_adjacent_inplace_ids=sorted(getattr(stage.quant_linear,'experimental_adjacent_inplace_ids',set())),
         scales={k:v.data_ptr() for k,v in stage.quant_linear.scales.items()} if stage.quant_linear else {},
         graphs={str(k):[v[0].data_ptr(),v[1].data_ptr(),v[2].data_ptr(),id(v[3]),v[4].data_ptr()] for k,v in stage.stage_graphs.items()})
@@ -58,8 +59,10 @@ def main():
                         for value in getattr(stage.quant_linear,'experimental_adjacent',{}).values())
                     report['experimental_inplace_weight_count']=sum(len(getattr(stage.quant_linear,
                         'experimental_adjacent_inplace_ids',set())) for stage in executor.stages)
-                    if args.inject_packed_refresh_failure and not (report['experimental_adjacent_bytes'] or report['experimental_inplace_weight_count']):
-                        raise ValueError('packed refresh injection requires the explicit adjacent-layout experiment')
+                    report['stage_adjacent_weight_count']=sum(len(stage.q4_linear.weights)
+                        for stage in executor.stages if stage.q4_linear is not None)
+                    if args.inject_packed_refresh_failure and not (report['experimental_adjacent_bytes'] or report['experimental_inplace_weight_count'] or report['stage_adjacent_weight_count']):
+                        raise ValueError('packed refresh injection requires adjacent stage storage')
                 else:
                     assert id(executor)==identity and storage(executor)==pointers,'rebind replaced graph storage'
                     assert executor.lengths==[0]*4,'old request state retained'
@@ -84,7 +87,10 @@ def main():
             assert id(replacement)!=identity and replacement.rebind_count==0
             report['fresh_recovery']=dict(source_tier=tier,activation_seconds=seconds,checks=replay(replacement,traces['a']))
         if args.inject_packed_refresh_failure:
-            from scripts.experiments import q4_adjacent_body
+            if report['stage_adjacent_weight_count']:
+                from dllm import q4_stage as q4_adjacent_body
+            else:
+                from scripts.experiments import q4_adjacent_body
             original_repack=q4_adjacent_body.repack_adjacent;refresh_calls=0
             def fail_refresh(weight):
                 nonlocal refresh_calls

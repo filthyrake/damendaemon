@@ -39,7 +39,7 @@ def main():
         report.update(packed_stage_calls=calls,sequential_control=args.sequential,
             trace_sha256=hashlib.sha256(Path(args.trace).read_bytes()).hexdigest(),scope='Real two-GPU packed prefill reference replay; not a performance comparison',
             sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                     ('dllm/batch.py','dllm/layer_stage.py','dllm/partition.py','dllm/partition_policy.py')})
+                     ('dllm/batch.py','dllm/layer_stage.py','dllm/partition.py','dllm/partition_policy.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py')})
         Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps(dict(passed=report['passed'],checks=len(report['checks']),packed_stage_calls=len(calls),
             failures=[check for check in report['checks'] if not check['passed']])),flush=True)

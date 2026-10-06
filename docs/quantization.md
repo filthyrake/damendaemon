@@ -60,7 +60,11 @@ three greedy-token mismatches in both sequential and packed-prefill modes,
 despite passing its RMS/maximum-error bounds. Layer-partition Q4 prompt packing
 stays disabled by default. The first passing arithmetic variant has an
 unacceptable serving slowdown; newer packed-layout candidates remain experimental.
-Production dispatch is unchanged. See
+An opt-in runtime implementation is now available for this stage geometry via
+`DLLM_Q4_STAGE_ADJACENT=1`. It repacks existing device body buffers, leaves the
+output head and host checkpoint format unchanged, and refreshes the representation
+after weight rebinds. Both distributed workers must agree on the layout. The
+flag defaults off while the integrated path is qualified. See
 [the numerical investigation and performance evidence](evidence/quantization/cuda/q4-arithmetic/README.md).
 
 ## Native AWQ checkpoints

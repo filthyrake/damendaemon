@@ -21,7 +21,7 @@ def main():
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
     p.add_argument('--batch-wait-ms',type=float,default=0)
     p.add_argument('--compare',choices=('prefill','q4-body'),default='prefill')
-    p.add_argument('--body-kernel',choices=('single-dot','paired-load','adjacent-gate','adjacent-all','adjacent-inplace'),default='single-dot')
+    p.add_argument('--body-kernel',choices=('single-dot','paired-load','adjacent-gate','adjacent-all','adjacent-inplace','stage'),default='single-dot')
     p.add_argument('--candidate-packed',action='store_true')
     p.add_argument('--output',required=True);args=p.parse_args()
     if not 0<=args.batch_wait_ms<=10:raise ValueError('invalid coalescing delay')
@@ -42,7 +42,7 @@ def main():
         report['body_kernel']=args.body_kernel
         for name in ('dllm/quantized_kernels_q4.py','scripts/experiments/q4_prefill.py',
                      'scripts/experiments/q4_body_single_dot.py','scripts/experiments/q4_adjacent_body.py',
-                     'scripts/experiments/run_q4_body.py'):
+                     'scripts/experiments/run_q4_body.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py'):
             report['sources'][name]=hashlib.sha256(Path(name).read_bytes()).hexdigest()
     env={**os.environ,'DLLM_DEVICE':'cuda','DLLM_QUANTIZATION':args.quantization,'OMP_NUM_THREADS':'4'}
     reference=None
@@ -51,12 +51,17 @@ def main():
             logpath=Path(directory)/'server.log'
             for mode in (modes[0],modes[1],modes[1],modes[0]):
                 with logpath.open('w') as log:
-                    module='scripts.experiments.run_q4_body' if mode=='contiguous' else 'dllm'
-                    extra=['--body-kernel',args.body_kernel] if mode=='contiguous' else []
+                    experimental=mode=='contiguous' and args.body_kernel!='stage'
+                    module='scripts.experiments.run_q4_body' if experimental else 'dllm'
+                    extra=['--body-kernel',args.body_kernel] if experimental else []
+                    server_env={**env,'DLLM_PARTITION_PACKED_PREFILL':str(int(
+                        mode=='packed' or (mode=='contiguous' and args.candidate_packed)))}
+                    if args.compare=='q4-body':
+                        server_env['DLLM_Q4_STAGE_ADJACENT']=str(int(mode=='contiguous' and args.body_kernel=='stage'))
                     process=subprocess.Popen([sys.executable,'-m',module,*extra,'serve','--port','0','--context','512',
                         '--layer-split','12','--batch-size','4','--batch-wait-ms',str(args.batch_wait_ms),
                         '--model','a='+args.model],
-                        env={**env,'DLLM_PARTITION_PACKED_PREFILL':str(int(mode=='packed' or (mode=='contiguous' and args.candidate_packed)))},
+                        env=server_env,
                         stdout=log,stderr=log,start_new_session=True)
                     try:
                         deadline=time.monotonic()+120

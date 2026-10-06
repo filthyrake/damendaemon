@@ -33,10 +33,22 @@ def shard_model(model,start,end):
 
 class LayerStage(BatchExecutor):
     def __init__(self,model,start,end,max_batch=4,stage_graphs=False,kernels=None):
+        from .partition_policy import q4_stage_adjacent_enabled,validate
+        adjacent=q4_stage_adjacent_enabled(model.quantization)
+        if adjacent:
+            validate(model,12,max_batch)
+            if (start,end) not in ((0,12),(12,24)):raise ValueError('Q4 layout requires qualified stage ranges')
+        self.q4_linear=None
         self.first=start==0
         self.last=end==model.config['num_hidden_layers']
         self.layer_range=(start,end)
         super().__init__(shard_model(model,start,end),use_graph=False,max_batch=max_batch,kernels=kernels)
+        if adjacent:
+            if self.device!='cuda' or self.compute_dtype!=torch.float16:
+                raise ValueError('Q4 stage layout requires CUDA FP16')
+            from .q4_stage import StageQ4Linear
+            self.q4_linear=StageQ4Linear(self.quant_linear,self.w)
+            self.linear=self.q4_linear
         self.stage_graphs={}
         if stage_graphs:
             self.capture_stage_graphs()
