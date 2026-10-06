@@ -2610,4 +2610,35 @@ under the updated loader. Required bytes are 5,152,121,504 for ABI 2 and
 111,099,904 bytes; each retains 84,542,112 bytes for repack peak plus workspace.
 All tracked GPU objects release and Torch allocation returns to its initial
 value after every cycle. Existing ABI 1 libraries retain their original layout
-and budget. Integrated ABI 2 packing and normal-server comparisons are pending.
+and budget. Integrated ABI 2 packing and normal-server comparisons follow below.
+
+
+`mistral-q4-marlin-v2-matrices-a2.json` passes all 105 production ABI 2 arithmetic
+checks and all five exact prepared weight/scale comparisons, maximum relative
+RMS 0.000154. Zero-point tensors are intentionally absent. The joint report
+retains `passed:false` only for the same two established tiny-value ordinary
+control failures; `candidate_passed:true` and the explicit ABI/library hash
+identify the independently qualified candidate.
+
+`mistral-q4-marlin-v2-http-a2.json` passes the normal CLI ABI 2 versus ABI 1 ABBA
+gate. Both sides use normal selection and admission. The harness requires the
+control to report ABI 1 and 111,099,904 bytes of projection overhead, and the
+candidate ABI 2 with zero projection overhead. Every compared text and all
+host/disk restoration, real model swap, cancellation and chat checks pass.
+
+| Input / concurrency | ABI 1 total ms | ABI 2 total ms | ABI 1 output tok/s | ABI 2 output tok/s |
+| --- | ---: | ---: | ---: | ---: |
+| 16 / 1 | 430.66 | 415.95 | 37.15 | 38.47 |
+| 129 / 1 | 579.59 | 566.46 | 27.61 | 28.25 |
+| 400 / 1 | 893.98 | 878.43 | 17.90 | 18.21 |
+| 129 / 2 | 800.29 | 783.98 | 39.99 | 40.82 |
+| 129 / 4 | 1131.12 | 1112.75 | 56.58 | 57.52 |
+
+Single-request post-first-output throughput is 37.89/37.55/36.53 →
+39.26/38.73/37.71 tokens/sec. Actual post-workload allocation falls
+4,676,390,400 → 4,565,634,560 bytes (105.62 MiB). Host activation ranges
+2.281–2.405 seconds for ABI 1 and 2.218–2.375 for ABI 2; switch-back
+2.305–2.471 versus 2.434–2.513, and disk activation 9.507–9.729 versus
+9.552–9.909. These two samples per mode show no clear loading-time gain.
+The completed native upgrade retains the same hardware/model/context scope;
+longer contexts and larger aggregate prefill groups remain separate experiments.

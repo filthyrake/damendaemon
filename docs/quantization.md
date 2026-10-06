@@ -177,10 +177,10 @@ cmake --build build --target dllm-q4-marlin -j2
 export DLLM_Q4_MARLIN_LIBRARY="$PWD/build/libdllm-q4-marlin.so"
 ```
 
-The completed integrated results below refer to **ABI 1**. New builds produce
-**ABI 2**, whose implicit zero point removes the extra projection storage; its
-integrated admission and serving qualification is in progress. The loader keeps
-ABI 1 compatibility and reports the selected version as `q4_marlin_abi`.
+New builds produce **ABI 2**, whose implicit zero point removes the extra
+projection storage. Both versions have completed integrated qualification in
+this scope. The loader retains ABI 1 compatibility and reports the selected
+version as `q4_marlin_abi`.
 
 Unsupported configurations retain existing dispatch. Qualified models replace
 GPU projection layouts while host weights stay canonical for model swapping.
@@ -194,10 +194,13 @@ which differs from the residual decode option's FP32 scaling.
 
 The integrated independent HF gate passes 96 comparisons with no greedy-token
 mismatches; all 128 runtime-layout checks and the low-memory/release gates pass.
-Matched normal-server ABBA testing reduces single-request latency 16–32% versus
-the paired residual backend and improves four-request output throughput from
-35.68 to 56.41 tokens/sec. Model switching, cancellation and chat checks pass.
-Actual post-workload allocation rises 114 MiB including workspace and graphs.
+ABI 1 matched normal-server ABBA testing reduces single-request latency 16–32%
+versus the paired residual backend and improves four-request output throughput
+from 35.68 to 56.41 tokens/sec. A separate matched ABI 2 versus ABI 1 run reduces
+single-request latency another 1.7–3.4%, raises four-request throughput from
+56.58 to 57.52 tokens/sec, and lowers actual post-workload allocation by
+105.62 MiB. Model switching, cancellation and chat checks pass for both versions.
+Workspace and captured graphs remain part of GPU memory use.
 These are results for the pinned checkpoint and workloads in
 [the evidence](evidence/gguf/README.md), not broad-model or cross-engine parity.
 
