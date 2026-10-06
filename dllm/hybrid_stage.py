@@ -72,6 +72,22 @@ class HybridLayerStage(HybridExecutor):
             with api.device(device):
                 api.empty_cache()
 
+    def release_partial(self):
+        """Release a failed construction after its caller synchronized devices.
+
+        The builder owns synchronization because an incomplete stage may not
+        have a tensor from which to recover its allocation device yet.
+        """
+        for name in ('w', 'kv', 'conv', 'state'):
+            getattr(self, name, {}).clear()
+        model = getattr(self, 'model', None)
+        if model is not None:
+            model.weights.clear()
+        for name in ('cos', 'sin', 'arange'):
+            if hasattr(self, name):
+                delattr(self, name)
+        self.closed = True
+
     def forward_layers(self, *args, **kwargs):
         if self.closed:
             raise RuntimeError('hybrid stage is closed')

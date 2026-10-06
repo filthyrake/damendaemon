@@ -560,6 +560,24 @@ reducing users. Budgets are supplied inputs, not queried free-memory readings;
 allocator fragmentation, loading peaks and hardware/transport qualification
 remain outside the estimate. Planning is bounded to 16 stages and 256 layers.
 
+The internal `build_cuda_pipeline(model, devices, budgets, max_batch=4)` helper
+in `dllm.hybrid_pipeline_build` turns a loaded CPU model and ordered CUDA
+ordinals/byte budgets into a synchronous coordinator. It requires
+`DLLM_EXPERIMENTAL_HYBRID_PIPELINE=1`, CUDA, unquantized FP16 text, context at
+most 2048 and at most four slots. It rejects offload, legacy layer splitting,
+vision and paged KV. It is not connected to CLI serving or the HTTP scheduler.
+It plans before allocating, bounds the supplied caps by observed free memory,
+then rechecks each device before constructing its stage. Storage fit does not
+establish practical execution speed or numerical qualification on any GPU.
+
+Construction failures raise `PipelineBuildError`. The builder synchronizes all
+devices it touched before releasing completed or partial stages. If cleanup
+also fails, the exception retains ownership: keep it and retry its `close()`
+after recovery; its `closed` flag records completed cleanup. A successfully
+constructed coordinator owns its stages and must likewise be closed. CPU
+fixtures cover arithmetic equivalence, changed headroom, partial allocation,
+interruption and failed-cleanup retry; device transport remains unqualified.
+
 ## Optional API authentication
 
 Set `DLLM_API_KEY` for inference clients and a different `DLLM_ADMIN_API_KEY`
