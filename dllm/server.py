@@ -43,6 +43,12 @@ def handler_for(runtime):
                     {"id": alias, "object": "model", "owned_by": "dllm"}
                     for alias in runtime.model_ids()
                 ]})
+            elif self.path == '/v1/scheduler/status':
+                snapshot = getattr(runtime, 'scheduler_status', None)
+                if snapshot is None:
+                    self.send_json(501, {'error': 'scheduler status is unavailable for this runtime'})
+                else:
+                    self.send_json(200, snapshot())
             elif self.path == '/v1/models/status':
                 try:
                     self.send_json(200, runtime.manage('status'))

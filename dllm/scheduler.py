@@ -85,6 +85,7 @@ class BatchedRuntime:
         self.models = self.runtime.models
         self.batch_size = batch_size
         self.queue_timeout = queue_timeout
+        self.queue_capacity = queue_size
         self.admission = threading.BoundedSemaphore(queue_size)
         self.condition = threading.Condition()
         self.pending = deque()
@@ -95,6 +96,25 @@ class BatchedRuntime:
 
     def model_ids(self):
         return self.runtime.model_ids()
+
+    def scheduler_status(self):
+        """Read queue ownership without GPU access or waiting for the worker."""
+        with self.condition:
+            queued = set(self.pending)
+            live = self.requests - {request for request in self.requests if request.done.is_set()}
+            queued &= live
+            owned = live - queued
+            now = time.perf_counter()
+            return {
+                "closed": self.closed,
+                "queue_capacity": self.queue_capacity,
+                "batch_capacity": self.batch_size,
+                "queued_generation_requests": sum(r.command is None for r in queued),
+                "worker_owned_generation_requests": sum(r.command is None for r in owned),
+                "queued_commands": sum(r.command is not None for r in queued),
+                "worker_owned_commands": sum(r.command is not None for r in owned),
+                "oldest_queued_seconds": max((max(0, now-r.start) for r in queued), default=0),
+            }
 
     def model_manifest(self):
         # Registry-only snapshot; never wait for the GPU worker or admission.

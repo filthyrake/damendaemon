@@ -340,3 +340,24 @@ is removed before execution, and returns its admission capacity. This deadline
 covers only time waiting for worker ownership; an already-owned generation is
 not interrupted when that queue deadline passes. Slow consumers retain the
 separate stream backpressure timeout.
+
+## Queue status during inference
+
+Use `dllm status --server http://127.0.0.1:8088` or
+`GET /v1/scheduler/status` to inspect queue ownership while inference is busy.
+This reads scheduler bookkeeping without entering the inference queue or
+inspecting GPU residency, so it also works when admission capacity is full.
+`dllm models` remains the separate serialized model-residency view.
+
+The response separates `queued_generation_requests` from
+`worker_owned_generation_requests`, and `queued_commands` from
+`worker_owned_commands`. Commands include model management, embeddings,
+reranking and scoring. Worker ownership can include activation, prefill or
+waiting for KV capacity; it is **not** a count of users actively decoding.
+`queue_capacity` bounds all admitted requests, including owned work;
+`batch_capacity` is the configured generation slot limit, not current occupancy.
+`oldest_queued_seconds` is zero with no pending work. `closed` reports scheduler
+shutdown. Counts omit completed/cancelled work and contain no prompt content,
+tokens, model paths or request history. Runtimes without this scheduler return
+HTTP501 instead of invented zero counts. This is operational visibility, not a
+GPU-health check or sustained-user performance qualification.
