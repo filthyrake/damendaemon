@@ -16,29 +16,11 @@ def shard_model(model, start, end):
     if (c.get('model_type') != 'qwen3_5_text' or model.quantization != 'none'
             or model.scales or getattr(model, 'vision_weights', None) is not None):
         raise ValueError('hybrid stage ownership currently requires unquantized text weights')
-    if (type(start) is not int or type(end) is not int
-            or not 0 <= start < end <= c['num_hidden_layers']):
-        raise ValueError('invalid hybrid stage range')
-    selected = {}
-    for name, tensor in model.weights.items():
-        prefix, separator, _ = name.partition('.')
-        if separator and prefix.isascii() and prefix.isdecimal():
-            if start <= int(prefix) < end:
-                selected[name] = tensor
-        elif name == 'embed' and start == 0:
-            selected[name] = tensor
-        elif name in ('norm', 'head') and end == c['num_hidden_layers']:
-            selected[name] = tensor
-        elif name not in ('embed', 'norm', 'head'):
-            raise ValueError(f'unrecognized hybrid stage weight: {name}')
+    from .hybrid_layout import stage_weight_names
+    names = stage_weight_names(model.weights, c['num_hidden_layers'], start, end)
+    selected = {name: model.weights[name] for name in names}
     if any(t.device.type != 'cpu' or not t.is_floating_point() for t in selected.values()):
         raise ValueError('hybrid stages require floating-point CPU source weights')
-    for layer in range(start, end):
-        if not any(name.startswith(f'{layer}.') for name in selected):
-            raise ValueError('missing hybrid stage layer weights')
-    required = ({'embed'} if start == 0 else set()) | ({'norm', 'head'} if end == c['num_hidden_layers'] else set())
-    if not required <= selected.keys():
-        raise ValueError('missing hybrid stage boundary weights')
     shard = copy.copy(model)
     shard.config = dict(c)  # Preserve global dimensions and layer numbering.
     shard.weights = selected

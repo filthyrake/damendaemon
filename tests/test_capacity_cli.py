@@ -99,3 +99,33 @@ class CapacityCliTests(unittest.TestCase):
                 'first': 'model.safetensors', 'second': 'duplicate.safetensors'}}))
             with self.assertRaisesRegex(ValueError, 'duplicate tensor'):
                 plan_local(path, [512], [1], 'float32')
+
+    def test_pipeline_stage_estimates_and_invalid_boundaries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            fixture(path)
+            report = plan_local(path, [512], [1], 'float32', [1])
+            stages = report['pipeline_stages']['contexts']['512']['1']
+            self.assertEqual([(s['layer_start'], s['layer_end']) for s in stages], [(0, 1), (1, 2)])
+            self.assertEqual(stages[0]['state_bytes'], 2*16*16*4 + 64*4*4)
+            self.assertEqual(stages[1]['state_bytes'], 2*512*16*4)
+            self.assertEqual(stages[0]['output_head_workspace_bytes'], 0)
+            self.assertEqual(stages[1]['output_head_workspace_bytes'], 64*32*4)
+            self.assertEqual(stages[0]['activation_workspace_bytes'], 2*512*32*4)
+            # Tied source embedding/head must be allocated on both stages.
+            self.assertEqual(sum(s['weight_bytes'] for s in stages), report['weight_bytes']['none'] + 64*32*2)
+            promoted = plan_local(path, [512], [1], 'float32', [1], 'float32')
+            self.assertEqual(promoted['pipeline_stages']['contexts']['512']['1'][1]['output_head_workspace_bytes'], 0)
+            single = plan_local(path, [512], [1], 'float16', [])
+            self.assertEqual(len(single['pipeline_stages']['contexts']['512']['1']), 1)
+            for splits in ([0], [2], [1, 1], [-1], [True]):
+                with self.subTest(splits=splits), self.assertRaises(ValueError):
+                    plan_local(path, [512], [1], 'float32', splits)
+            with self.assertRaises(ValueError):
+                plan_local(path, [512], [1], 'float32', None, 'float32')
+            output = io.StringIO()
+            with patch('sys.argv', ['dllm', 'plan-hybrid', directory, '--contexts', '512',
+                                    '--batches', '1', '--layer-splits', '1', '--stage-weight-dtype', 'float32']), \
+                    patch('sys.stdout', output):
+                main()
+            self.assertEqual(json.loads(output.getvalue())['pipeline_stages']['weight_dtype'], 'float32')

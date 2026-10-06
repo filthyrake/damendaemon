@@ -167,7 +167,7 @@ class HybridExecutor:
         if self.fused:
             from . import kernels as dense_kernels
             self.dense_fused = dense_kernels
-        from .capacity import hybrid_state_bytes
+        from .hybrid_layout import hybrid_state_bytes
         owned_config = {**c, 'num_hidden_layers': self.layer_end-self.layer_start,
                         'layer_types': c['layer_types'][self.layer_start:self.layer_end]}
         state_bytes = hybrid_state_bytes(owned_config, self.context, max_batch, cache_element_bytes)
@@ -186,12 +186,17 @@ class HybridExecutor:
         # Eager output logits explicitly promote the full output head to FP32.
         # Streaming must budget that temporary in addition to resident weights.
         self.output_head_workspace_bytes = (model.weights['head'].numel()*4
-            if (streaming or _layer_range is not None) and 'head' in model.weights
-            and self.device != 'xpu' and model.weights['head'].dtype != torch.float32 else 0)
-        self.stage_activation_workspace_bytes = (2*max_batch*self.context*c['hidden_size']*4
-                                                 if _layer_range is not None else 0)
+            if streaming and model.weights['head'].dtype != torch.float32 else 0)
+        self.stage_activation_workspace_bytes = 0
         self.required_memory_bytes = (device_weight_bytes + state_bytes + 512*1024**2
                                       + self.output_head_workspace_bytes + self.stage_activation_workspace_bytes)
+        if _layer_range is not None:
+            from .hybrid_layout import stage_budget
+            budget = stage_budget(model.weights, c, self.context, max_batch, cache_element_bytes,
+                                  self.layer_start, self.layer_end, fp32_weights=self.device == 'xpu')
+            self.required_memory_bytes = budget['required_memory_bytes']
+            self.output_head_workspace_bytes = budget['output_head_workspace_bytes']
+            self.stage_activation_workspace_bytes = budget['activation_workspace_bytes']
         if self.required_memory_bytes > free:
             raise MemoryError('insufficient GPU memory for hybrid weights, state, and workspace')
         if streaming:

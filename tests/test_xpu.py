@@ -105,12 +105,14 @@ class XpuTests(unittest.TestCase):
                 Executor(model)
 
     def test_cli_rejects_missing_opt_in_before_download(self):
+        errors = io.StringIO()
         with patch.dict('os.environ', DLLM_EXPERIMENTAL_XPU='0'), \
-                patch('sys.argv', ['dllm', 'run', 'Qwen/not-downloaded', 'hi', '--device', 'xpu']), \
-                patch('sys.stderr', io.StringIO()), patch('dllm.cli.resolve_model') as resolve:
+                patch('sys.argv', ['dllm', 'run', 'Qwen/not-downloaded', '--prompt', 'hi', '--device', 'xpu']), \
+                patch('sys.stderr', errors), patch('dllm.cli.resolve_model') as resolve:
             with self.assertRaises(SystemExit):
                 main()
             resolve.assert_not_called()
+            self.assertIn('DLLM_EXPERIMENTAL_XPU', errors.getvalue())
 
     def test_executor_budgets_fp32_before_any_xpu_transfer(self):
         import torch

@@ -3,26 +3,17 @@ import json
 from pathlib import Path
 
 
-def hybrid_state_bytes(config, context, batch_size, cache_element_bytes):
-    if (type(context) is not int or context <= 0
-            or type(batch_size) is not int or not 1 <= batch_size <= 16
-            or type(cache_element_bytes) is not int or cache_element_bytes not in (2, 4)):
-        raise ValueError('invalid hybrid state geometry')
-    full = config['layer_types'].count('full_attention')
-    linear = config['num_hidden_layers']-full
-    recurrent = config['linear_num_value_heads']*config['linear_key_head_dim']*config['linear_value_head_dim']*4
-    conv_width = (2*config['linear_num_key_heads']*config['linear_key_head_dim']
-                  + config['linear_num_value_heads']*config['linear_value_head_dim'])
-    return batch_size*(full*2*config['num_key_value_heads']*context*config['head_dim']*cache_element_bytes
-                       + linear*(recurrent+conv_width*config['linear_conv_kernel_dim']*cache_element_bytes))
+from .hybrid_layout import hybrid_state_bytes
 
 
-def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536, 131072, 262144), batches=(1, 4)):
+def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536, 131072, 262144), batches=(1, 4), layer_splits=None, stage_weight_dtype='native'):
     import torch
     from .config import decoder_config
     from .hybrid import load_weights
     if cache_dtype not in ('float16', 'float32'):
         raise ValueError('cache dtype must be float16 or float32')
+    if stage_weight_dtype not in ('native', 'float32') or (layer_splits is None and stage_weight_dtype != 'native'):
+        raise ValueError('stage weight dtype requires explicit stage splits and must be native or float32')
     cache_element_bytes = 2 if cache_dtype == 'float16' else 4
     config = decoder_config(inventory['config'])
     if config['model_type'] != 'qwen3_5_text':
@@ -31,6 +22,11 @@ def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536,
             or any(type(c) is not int or not 1 <= c <= config['max_position_embeddings'] for c in contexts)
             or any(type(b) is not int or not 1 <= b <= 16 for b in batches)):
         raise ValueError('contexts must fit model positions; batch sizes must be 1..16')
+    if layer_splits is not None:
+        if (not isinstance(layer_splits, (list, tuple))
+                or any(type(i) is not int or not 0 < i < config['num_hidden_layers'] for i in layer_splits)
+                or list(layer_splits) != sorted(set(layer_splits))):
+            raise ValueError('layer splits must be strictly increasing internal layer boundaries')
     state = {}
     for shard in metadata['files_metadata'].values():
         for name, tensor in shard['tensors'].items():
@@ -96,7 +92,7 @@ def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536,
                 'state_bytes': state_bytes,
                 'weights_plus_state_bytes': {mode: size+state_bytes for mode, size in totals.items()},
             }
-    return dict(repository=inventory['repository'], revision=inventory['resolved_revision'],
+    result = dict(repository=inventory['repository'], revision=inventory['resolved_revision'],
                 kv_and_convolution_dtype=cache_dtype, recurrent_dtype='float32',
                 weight_bytes=totals, estimated_storage_formats=list(totals),
                 layer_streaming=dict(weight_format='none', fixed_weight_bytes=streaming.fixed_bytes,
@@ -108,8 +104,19 @@ def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536,
                 excluded_tensors=len(state),
                 limitation='Shape-only text-loader and packed-storage estimate. Excludes workspace, allocator, graphs, communication, host copies and loading peaks. No weight values, inference, quality or performance validated.')
 
+    if layer_splits is not None:
+        from .hybrid_layout import stage_budget
+        edges = [0, *layer_splits, config['num_hidden_layers']]
+        result['pipeline_stages'] = dict(splits=list(layer_splits), weight_dtype=stage_weight_dtype,
+            weight_format='none', runtime_qualification='not assessed',
+            contexts={str(context): {str(batch): [stage_budget(weights, config, context, batch,
+                cache_element_bytes, start, end, fp32_weights=stage_weight_dtype == 'float32')
+                for start, end in zip(edges, edges[1:])] for batch in batches} for context in contexts},
+            limitation='Per-stage storage and workspace estimates only; excludes allocator fragmentation, loading peaks and network transport. No device fit or throughput qualification.')
+    return result
 
-def plan_local(path, contexts, batches, cache_dtype):
+
+def plan_local(path, contexts, batches, cache_dtype, layer_splits=None, stage_weight_dtype='native'):
     """Inspect local safetensors headers only; never resolve or download a model."""
     from safetensors import safe_open
     from .config import decoder_config
@@ -140,7 +147,7 @@ def plan_local(path, contexts, batches, cache_dtype):
     if indexed is not None and actual != indexed:
         raise ValueError('tensor headers do not match the shard index')
     result = estimate({'config': original, 'repository': None, 'resolved_revision': None},
-                      {'files_metadata': files}, cache_dtype, contexts, batches)
+                      {'files_metadata': files}, cache_dtype, contexts, batches, layer_splits, stage_weight_dtype)
     result.update(local_path=str(path), source='local safetensors headers; contents not hashed',
                   workspace_admission_floor_bytes=512*1024**2)
     # The runtime's floor is admission bookkeeping, not a workspace peak bound.

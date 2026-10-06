@@ -58,6 +58,8 @@ def main():
     capacity.add_argument('--contexts', type=int, nargs='+', default=[32768])
     capacity.add_argument('--batches', type=int, nargs='+', default=[1, 4])
     capacity.add_argument('--cache-dtype', choices=('float16', 'float32'), default='float32')
+    capacity.add_argument('--layer-splits', type=int, nargs='*', help='explicit internal layer boundaries; no values plans a single stage')
+    capacity.add_argument('--stage-weight-dtype', choices=('native', 'float32'), default='native')
     pull = commands.add_parser("pull", help="download a safetensors snapshot or one GGUF file from Hugging Face")
     pull.add_argument("repository")
     pull.add_argument("--revision", default="main")
@@ -114,7 +116,7 @@ def main():
     if args.command == 'plan-hybrid':
         from .capacity import plan_local
         try:
-            result = plan_local(args.path, args.contexts, args.batches, args.cache_dtype)
+            result = plan_local(args.path, args.contexts, args.batches, args.cache_dtype, args.layer_splits, args.stage_weight_dtype)
         except (ValueError, OSError) as error:
             parser.error(str(error))
         print(json.dumps(result, indent=2))

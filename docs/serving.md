@@ -531,3 +531,13 @@ the workspace floor. This scenario estimates unquantized source storage only;
 it does not imply that a requested context, cache dtype, hardware or performance
 level is admitted by the experimental execution policy. Existing fully resident
 estimate fields retain their meaning.
+
+For explicit stage placement, add `--layer-splits 16 32` to `dllm plan-hybrid`.
+The boundaries are global layer indices and must be strictly increasing inside
+the model. Passing `--layer-splits` with no values reports one stage. Optional
+`--stage-weight-dtype float32` estimates promoted FP32 weights; `native` retains
+the text loader's FP16 matrices and FP32 vectors. Each stage row includes only
+its weights and state, two bounded FP32 activation buffers, the final head's
+conversion temporary where needed, and the workspace floor. These budgets use
+the same calculation as `HybridLayerStage` admission. The planner does not
+select devices, check their available memory or qualify the proposed split.
