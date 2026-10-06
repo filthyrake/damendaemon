@@ -1,0 +1,93 @@
+{
+  "repository": "Qwen/Qwen3.8-27B",
+  "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "weight_bytes": {
+    "none": 53793355776,
+    "q8_0": 29772773376,
+    "q4_0": 16961796096
+  },
+  "runtime_supported_quantization": [
+    "none",
+    "q8_0"
+  ],
+  "hypothetical_only_quantization": [
+    "q4_0"
+  ],
+  "contexts": {
+    "32768": {
+      "1": {
+        "state_bytes": 2302410752,
+        "weights_plus_state_bytes": {
+          "none": 56095766528,
+          "q8_0": 32075184128,
+          "q4_0": 19264206848
+        }
+      },
+      "4": {
+        "state_bytes": 9209643008,
+        "weights_plus_state_bytes": {
+          "none": 63002998784,
+          "q8_0": 38982416384,
+          "q4_0": 26171439104
+        }
+      }
+    },
+    "65536": {
+      "1": {
+        "state_bytes": 4449894400,
+        "weights_plus_state_bytes": {
+          "none": 58243250176,
+          "q8_0": 34222667776,
+          "q4_0": 21411690496
+        }
+      },
+      "4": {
+        "state_bytes": 17799577600,
+        "weights_plus_state_bytes": {
+          "none": 71592933376,
+          "q8_0": 47572350976,
+          "q4_0": 34761373696
+        }
+      }
+    },
+    "131072": {
+      "1": {
+        "state_bytes": 8744861696,
+        "weights_plus_state_bytes": {
+          "none": 62538217472,
+          "q8_0": 38517635072,
+          "q4_0": 25706657792
+        }
+      },
+      "4": {
+        "state_bytes": 34979446784,
+        "weights_plus_state_bytes": {
+          "none": 88772802560,
+          "q8_0": 64752220160,
+          "q4_0": 51941242880
+        }
+      }
+    },
+    "262144": {
+      "1": {
+        "state_bytes": 17334796288,
+        "weights_plus_state_bytes": {
+          "none": 71128152064,
+          "q8_0": 47107569664,
+          "q4_0": 34296592384
+        }
+      },
+      "4": {
+        "state_bytes": 69339185152,
+        "weights_plus_state_bytes": {
+          "none": 123132540928,
+          "q8_0": 99111958528,
+          "q4_0": 86300981248
+        }
+      }
+    }
+  },
+  "mapped_tensors": 755,
+  "excluded_tensors": 348,
+  "limitation": "Shape-only text-loader and packed-storage estimate. Excludes workspace, allocator, graphs, communication, host copies and loading peaks. No weight values, inference, quality or performance validated."
+}

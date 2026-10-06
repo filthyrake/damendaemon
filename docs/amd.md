@@ -389,3 +389,32 @@ load recovery and reload, with zero tracked tensor allocation and zero host
 cache after unload/reload/unload. Driver/context memory is not measured by that
 allocator counter. The launcher may show an unset flag while the child server's
 reported resolved setting is `1`.
+
+## Practical Qwen3.8-27B capacity preflight
+
+The pinned [checkpoint inventory](evidence/amd/qwen38-27b-inventory.json) and
+[shape-only capacity calculation](evidence/amd/qwen38-27b-capacity.json) use
+revision `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`. The actual hybrid text
+weight mapper accepts all required tensor shapes, leaving only vision/MTP
+weights outside this text path. This is not weight-value or inference proof.
+
+Packed Q8 text weights require 29,772,773,376 bytes (27.73 GiB), with
+2,302,410,752 bytes (2.14 GiB) of persistent state per 32K slot. Four such slots
+plus weights require about 36.31 GiB before workspace, allocator overhead,
+graphs, host copies and loading peaks. HOMER is the first single-device target;
+these Q8 weights alone exceed the A30's memory.
+
+Q4 storage is calculated only as a hypothetical capacity target: the hybrid
+loader currently rejects Q4. A 15.80 GiB packed-storage estimate does not mean
+Q4 execution or quality is supported. The original checkpoint download is
+55,563,006,776 bytes, including vision/MTP tensors; the download preflight
+retains 64 GiB of free disk without removing existing caches.
+
+Reproduce the shape calculation without model data:
+
+```sh
+python -m scripts.experiments.plan_hybrid_capacity \
+  docs/evidence/amd/qwen38-27b-inventory.json \
+  docs/evidence/amd/qwen38-27b-safetensors-metadata.json.gz \
+  /tmp/qwen38-27b-capacity.json
+```
