@@ -22,8 +22,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model')
     parser.add_argument('--library', required=True)
+    parser.add_argument('--rows', type=int, nargs='+', default=[2, 4, 16, 64, 129, 400])
+    parser.add_argument('--residual-baseline', help='existing native residual library for single-row controls only')
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
+    if any(row < 1 or row > 512 for row in args.rows):
+        parser.error('rows must be between 1 and 512')
+    if args.residual_baseline and 1 not in args.rows:
+        parser.error('--residual-baseline requires a single-row case')
     assert torch.cuda.device_count() == 1, 'select exactly one GPU'
     torch.set_num_threads(4)
     torch.manual_seed(619)
@@ -41,6 +47,9 @@ def main():
             'scripts/experiments/q4_marlin.py', 'scripts/experiments/bench_q4_marlin.py',
             'third_party/marlin/marlin_template.h', 'third_party/marlin/awq_repack.cuh')},
         matrices=[], checks=[], timings=[])
+    report['residual_baseline'] = (dict(path=str(Path(args.residual_baseline).resolve()),
+        sha256=digest(args.residual_baseline), arithmetic='existing two-term residual, FP32 coefficient scaling; row 1 only')
+        if args.residual_baseline else None)
     def terminate(number, frame):
         report['error'] = f'terminated by signal {number}'
         raise SystemExit(128+number)
@@ -52,6 +61,11 @@ def main():
             weight, scales = source.weights[name].cuda(), source.scales[name].cuda()
             n, k = weight.shape[0], weight.shape[1]*2
             oracle = dequantize_q4(weight, scales, torch.float16).float()
+            def control(value, offset):
+                if value.shape[0] == 1 and args.residual_baseline:
+                    from dllm.native_q4_residual import linear as residual_linear
+                    return residual_linear(value, weight, scales, offset, library_path=args.residual_baseline)
+                return linear(value, weight, scales, offset)
             bias = torch.randn(n, dtype=torch.float16, device='cuda')
             prepared = {}
             for biased in (False, True):
@@ -64,7 +78,8 @@ def main():
                     canonical_bytes=weight.numel()*weight.element_size()+scales.numel()*scales.element_size(),
                     additional_prepared_bytes=prepared[biased].bytes,
                     negative_scale_count=int((scales<0).sum().item())))
-            for rows in (2, 4, 16, 64, 129, 400):
+            functions = None
+            for rows in dict.fromkeys(args.rows):
                 x = torch.randn(rows, k, device='cuda', dtype=torch.float16)
                 row_candidate_passed = True
                 timing_scale_control_passed = True
@@ -77,7 +92,7 @@ def main():
                         # retain the same coefficient/final-output rounding.
                         expected = torch.nn.functional.linear(value.float(), oracle,
                             offset.float() if offset is not None else None).half()
-                        baseline = linear(value, weight, scales, offset)
+                        baseline = control(value, offset)
                         actual = library.linear(value, prepared[biased])
                         error = actual.float()-expected.float()
                         rms = (error.square().mean()/expected.float().square().mean().clamp_min(1e-12)).sqrt().item()
@@ -96,7 +111,7 @@ def main():
                     print(name, rows, 'accuracy failure; timing skipped', flush=True)
                     Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
                     continue
-                functions = dict(production=lambda:linear(x, weight, scales, bias),
+                functions = dict(production=lambda:control(x, bias),
                                  marlin=lambda:library.linear(x, prepared[True]))
                 samples = {key:[] for key in functions}
                 for mode in ('production','marlin','marlin','production'):

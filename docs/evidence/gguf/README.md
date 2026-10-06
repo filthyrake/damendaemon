@@ -2333,3 +2333,55 @@ unchanged. The prototype checks free memory before preparation, but normal
 admission accounting does not yet cover this extra residency. The local suite
 passes 447 tests. No normal runtime selection has changed; matched HTTP and
 lifecycle measurement is a separate gate.
+
+### Isolated Q4 Marlin serving and lifecycle comparison
+
+`mistral-q4-marlin-http-a2.json` passes the explicit-server ABBA comparison.
+Both sides use the same qualified paired residual library for single-row
+execution; only the candidate uses Marlin for rows greater than one. Model,
+precision setting, prompt IDs, context/slots, output length and hardware match.
+The candidate backend marker is verified after host restore in each phase.
+All generated texts and lifecycle checks pass.
+
+| Prompt / concurrency | Control / candidate total latency (ms) | Control / candidate output tokens/s | Control / candidate first output (ms) |
+| --- | ---: | ---: | ---: |
+| 16 / 1 | 541.28 / 521.30 | 29.56 / 30.69 | 55.98 / 33.42 |
+| 129 / 1 | 849.39 / 673.21 | 18.84 / 23.77 | 360.65 / 181.01 |
+| 400 / 1 | 1063.49 / 990.28 | 15.04 / 16.16 | 562.69 / 485.22 |
+| 129 / 2 | 1490.59 / 809.59 | 21.47 / 39.53 | 471.94 / 338.36 |
+| 129 / 4 | 1780.49 / 1137.61 | 35.95 / 56.26 | 988.66 / 699.95 |
+
+Medians pool measured rounds from both phases per engine. Single-request total
+latency improves 3.69%/20.74%/6.88%; two/four-request total latency improves
+45.69%/36.11%. The unchanged single-row post-first-output throughput stays
+within 0.9%. This is a same-engine prototype comparison, not upstream parity.
+
+The lifecycle tradeoff is material: median host-restore request time grows
+3.147→12.273 s, switch-back request 3.234→12.316 s, and disk-reload request
+9.594→18.312 s. These include generation; they are not pure loading times.
+Switching to the other, unaffected model is 3.578/3.490 s. Correctness passes,
+but the extra residency and preparation cost make this prototype unsuitable
+for normal promotion without further work on loading and memory accounting.
+
+### Single-row and direct-repacking follow-ups
+
+`mistral-q4-marlin-single-row-a2.json` passes all 30 candidate **and** control
+checks against the independent FP32 accumulation reference, with maximum
+candidate relative RMS 0.00037959. The explicit baseline is the qualified
+ABI-202 residual library (its FP32 coefficient-scaling arithmetic is recorded).
+Marlin reads the same Q4 coefficients/scales but rounds coefficients to FP16.
+Warm one-row matrix ratios are 1.17x QKV, 1.20x output, 1.19x gate-up,
+1.31x down and 1.20x head. This motivates testing all-row Marlin; the prior
+model/HTTP reports still retain residual single-row decode.
+
+`q4_marlin_repack.py` implements the attributed Marlin packing layout directly
+from canonical Q4 bytes. `mistral-q4-marlin-repack-a2.json` proves bitwise equality
+for all five real projections and 256/512/1024-word tiles. The 512-word tile is
+best in this sweep. It reduces warm byte-permutation pipeline time from
+12.827/8.456/114.631/31.632/127.427 ms to
+0.392/0.266/3.100/0.943/3.385 ms for QKV/output/gate-up/down/head (32–38x).
+The largest measured additional allocation falls from 2,424,832,000 to
+65,536,000 bytes. This includes the output buffer; it excludes scales, zeros,
+validation synchronization, model activation and inference. No end-to-end
+loading speedup is claimed from this component result alone. Full-model layout
+replacement and lifecycle validation remain separate work.

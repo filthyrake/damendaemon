@@ -1,0 +1,219 @@
+{
+  "passed": true,
+  "device": "NVIDIA A2",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
+  "library_sha256": "18a80018190a1fd39b8a7a924c8e5c6fc6ff9ebdf527bf886ac98204c5a99897",
+  "sources": {
+    "scripts/experiments/q4_marlin_repack.py": "46da61d05222ef18154198b31e14ee050521dc2ea341701408145aa21ed3ab9e",
+    "scripts/experiments/bench_q4_marlin_repack.py": "1d32afc886f22804d64b0c89981b2a2709c71e11a0a405d6160cc65701808ee3"
+  },
+  "scope": "Bitwise equality with the qualified Marlin repacker. Warm byte-permutation pipeline only: scales, zeros, validation syncs and model activation excluded. No inference speed claim.",
+  "cases": [
+    {
+      "name": "0.qkv.weight",
+      "outputs": 6144,
+      "width": 4096,
+      "checks": {
+        "original_pipeline": true,
+        "direct_256": true,
+        "direct_512": true,
+        "direct_1024": true
+      },
+      "peak_additional_bytes": {
+        "original_pipeline": 465567744,
+        "direct_256": 12582912,
+        "direct_512": 12582912,
+        "direct_1024": 12582912
+      },
+      "samples_ms": {
+        "original_pipeline": [
+          12.826665878295898,
+          12.827290534973145
+        ],
+        "direct_256": [
+          0.40463513135910034,
+          0.40518826246261597
+        ],
+        "direct_512": [
+          0.3925090432167053,
+          0.39228931069374084
+        ],
+        "direct_1024": [
+          0.40881794691085815,
+          0.40863651037216187
+        ]
+      },
+      "median_ms": {
+        "original_pipeline": 12.826978206634521,
+        "direct_256": 0.40491169691085815,
+        "direct_512": 0.3923991769552231,
+        "direct_1024": 0.40872722864151
+      }
+    },
+    {
+      "name": "0.out",
+      "outputs": 4096,
+      "width": 4096,
+      "checks": {
+        "original_pipeline": true,
+        "direct_256": true,
+        "direct_512": true,
+        "direct_1024": true
+      },
+      "peak_additional_bytes": {
+        "original_pipeline": 310378496,
+        "direct_256": 8388608,
+        "direct_512": 8388608,
+        "direct_1024": 8388608
+      },
+      "samples_ms": {
+        "original_pipeline": [
+          8.433709144592285,
+          8.478323936462402
+        ],
+        "direct_256": [
+          0.269714891910553,
+          0.27003735303878784
+        ],
+        "direct_512": [
+          0.2658683657646179,
+          0.2656375765800476
+        ],
+        "direct_1024": [
+          0.27353501319885254,
+          0.27353712916374207
+        ]
+      },
+      "median_ms": {
+        "original_pipeline": 8.456016540527344,
+        "direct_256": 0.2698761224746704,
+        "direct_512": 0.26575297117233276,
+        "direct_1024": 0.2735360711812973
+      }
+    },
+    {
+      "name": "0.gate_up",
+      "outputs": 28672,
+      "width": 4096,
+      "checks": {
+        "original_pipeline": true,
+        "direct_256": true,
+        "direct_512": true,
+        "direct_1024": true
+      },
+      "peak_additional_bytes": {
+        "original_pipeline": 2172649472,
+        "direct_256": 58720256,
+        "direct_512": 58720256,
+        "direct_1024": 58720256
+      },
+      "samples_ms": {
+        "original_pipeline": [
+          115.0274429321289,
+          114.2354736328125
+        ],
+        "direct_256": [
+          3.1300110816955566,
+          3.072430372238159
+        ],
+        "direct_512": [
+          3.0994575023651123,
+          3.1001129150390625
+        ],
+        "direct_1024": [
+          5.018253326416016,
+          5.011116027832031
+        ]
+      },
+      "median_ms": {
+        "original_pipeline": 114.6314582824707,
+        "direct_256": 3.101220726966858,
+        "direct_512": 3.0997852087020874,
+        "direct_1024": 5.014684677124023
+      }
+    },
+    {
+      "name": "0.down",
+      "outputs": 4096,
+      "width": 14336,
+      "checks": {
+        "original_pipeline": true,
+        "direct_256": true,
+        "direct_512": true,
+        "direct_1024": true
+      },
+      "peak_additional_bytes": {
+        "original_pipeline": 1086324736,
+        "direct_256": 29360128,
+        "direct_512": 29360128,
+        "direct_1024": 29360128
+      },
+      "samples_ms": {
+        "original_pipeline": [
+          31.819787979125977,
+          31.444229125976562
+        ],
+        "direct_256": [
+          1.000077486038208,
+          0.9976959228515625
+        ],
+        "direct_512": [
+          0.9430927038192749,
+          0.9419124722480774
+        ],
+        "direct_1024": [
+          1.0272690057754517,
+          1.0267503261566162
+        ]
+      },
+      "median_ms": {
+        "original_pipeline": 31.63200855255127,
+        "direct_256": 0.9988867044448853,
+        "direct_512": 0.9425025880336761,
+        "direct_1024": 1.027009665966034
+      }
+    },
+    {
+      "name": "head",
+      "outputs": 32000,
+      "width": 4096,
+      "checks": {
+        "original_pipeline": true,
+        "direct_256": true,
+        "direct_512": true,
+        "direct_1024": true
+      },
+      "peak_additional_bytes": {
+        "original_pipeline": 2424832000,
+        "direct_256": 65536000,
+        "direct_512": 65536000,
+        "direct_1024": 65536000
+      },
+      "samples_ms": {
+        "original_pipeline": [
+          128.21485900878906,
+          126.63993072509766
+        ],
+        "direct_256": [
+          3.4558582305908203,
+          3.3774094581604004
+        ],
+        "direct_512": [
+          3.3852646350860596,
+          3.3844032287597656
+        ],
+        "direct_1024": [
+          5.8351359367370605,
+          5.77428674697876
+        ]
+      },
+      "median_ms": {
+        "original_pipeline": 127.42739486694336,
+        "direct_256": 3.4166338443756104,
+        "direct_512": 3.3848339319229126,
+        "direct_1024": 5.80471134185791
+      }
+    }
+  ]
+}
