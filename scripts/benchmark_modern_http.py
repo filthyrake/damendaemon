@@ -17,21 +17,22 @@ from tokenizers import Tokenizer
 from dllm.bench import distribution, events, llama_context
 
 
-def request(base, model, tokens, engine, eos_ids, barrier):
-    body = dict(model=model, prompt=tokens, temperature=0, max_tokens=128,
+def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128, timeout=180,
+            first_output_event=None):
+    body = dict(model=model, prompt=tokens, temperature=0, max_tokens=output_tokens,
                 stream=True, stream_options={'include_usage': True},
                 logit_bias={str(token): -100 for token in eos_ids})
     if engine == 'llama.cpp':
         body.update(cache_prompt=False)
     barrier.wait(timeout=30)
     start = time.perf_counter()
-    result = dict(prompt_tokens=len(tokens), passed=False, chunks=[])
+    result = dict(prompt_tokens=len(tokens), passed=False, chunks=[], started_monotonic=start)
     text = []
     try:
         req = Request(base + '/v1/completions', data=json.dumps(body).encode(),
                       headers={'Content-Type': 'application/json'})
         done = False
-        with urlopen(req, timeout=180) as response:
+        with urlopen(req, timeout=timeout) as response:
             if response.headers.get_content_type() != 'text/event-stream':
                 raise ValueError('expected SSE')
             for data in events(response):
@@ -47,23 +48,28 @@ def request(base, model, tokens, engine, eos_ids, barrier):
                     if fragment:
                         text.append(fragment)
                         result['chunks'].append(dict(seconds=elapsed, text=fragment))
+                        if first_output_event is not None:
+                            first_output_event.set()
                 if item.get('usage'):
                     result['usage'] = item['usage']
         if not done or not text:
             raise ValueError('incomplete or empty generation')
         usage = result.get('usage', {})
-        if usage.get('completion_tokens') != 128 or usage.get('prompt_tokens') != len(tokens):
+        if usage.get('completion_tokens') != output_tokens or usage.get('prompt_tokens') != len(tokens):
             raise ValueError('benchmark requires exact input and output token counts')
         result['passed'] = True
     except Exception as error:
         result['error'] = repr(error)
+    finally:
+        if first_output_event is not None:
+            first_output_event.set()
     result['seconds'] = time.perf_counter() - start
     result['text'] = ''.join(text)
     result['first_output_seconds'] = result['chunks'][0]['seconds'] if result['chunks'] else None
     # SSE can coalesce tokens; this is explicitly a client-visible proxy, not
     # the engine's internal decode-only throughput or a competitive pass gate.
     if result['passed'] and result['seconds'] > result['first_output_seconds']:
-        result['post_first_output_tokens_per_second_proxy'] = 127 / (
+        result['post_first_output_tokens_per_second_proxy'] = (output_tokens - 1) / (
             result['seconds'] - result['first_output_seconds'])
     return result
 

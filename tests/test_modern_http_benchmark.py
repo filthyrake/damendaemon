@@ -23,17 +23,19 @@ class Response(io.BytesIO):
 
 
 class BenchmarkIntegrity(unittest.TestCase):
-    def run_response(self, output=128, prompt=2, done=True, empty=False):
+    def run_response(self, output=128, prompt=2, done=True, empty=False, requested=128, first=None):
         chunks = [dict(choices=[dict(text='' if empty else 'hello')]),
                   dict(choices=[], usage=dict(prompt_tokens=prompt, completion_tokens=output))]
         stream = ''.join('data: ' + json.dumps(c) + '\n\n' for c in chunks)
         if done:
             stream += 'data: [DONE]\n\n'
         with patch.object(benchmark, 'urlopen', return_value=Response(stream.encode())) as post:
-            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3], threading.Barrier(1))
+            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3], threading.Barrier(1),
+                                       output_tokens=requested, first_output_event=first)
             body = json.loads(post.call_args.args[0].data)
             self.assertEqual(body['prompt'], [1, 2])
             self.assertEqual(body['logit_bias'], {'3': -100})
+            self.assertEqual(body['max_tokens'], requested)
         return result
 
     def test_complete_usage(self):
@@ -50,6 +52,17 @@ class BenchmarkIntegrity(unittest.TestCase):
 
     def test_empty_output_fails(self):
         self.assertFalse(self.run_response(empty=True)['passed'])
+
+    def test_long_context_output_reservation_is_enforced(self):
+        event = threading.Event()
+        self.assertTrue(self.run_response(output=512, requested=512, first=event)['passed'])
+        self.assertTrue(event.is_set())
+        self.assertFalse(self.run_response(output=128, requested=512)['passed'])
+
+    def test_failed_stream_releases_first_output_waiter(self):
+        event = threading.Event()
+        self.assertFalse(self.run_response(empty=True, first=event)['passed'])
+        self.assertTrue(event.is_set())
 
 
 class SummaryIntegrity(unittest.TestCase):
