@@ -2574,3 +2574,20 @@ report 3,999,596,544 prepared bytes replacing the same canonical byte count:
 zero net projection-layout overhead. They have the same numerical measurements
 as the qualified explicit-zero-point path. Serving and integrated ABI 2
 admission/compatibility checks are still in progress.
+
+
+`mistral-q4-marlin-symmetric-http-a2.json` passes the isolated candidate's full
+ABBA serving/lifecycle comparison against qualified ABI 1 Marlin. All compared
+texts, host/disk restoration, model swaps, cancellation and chat checks pass.
+Warm median total latency (explicit → implicit zero points) is 424.78 → 410.96 ms
+at input 16, 574.04 → 559.66 ms at 129, and 891.22 → 877.87 ms at 400, each output 16.
+At input 129/C2, latency is 791.89 → 777.91 ms and output throughput 40.41 → 41.14 tok/s;
+C4 latency is 1118.87 → 1109.67 ms and throughput 57.20 → 57.67 tok/s. The concurrency
+four gain is under 1%; do not extrapolate the matrix gains to every workload.
+
+Actual post-workload allocation falls 4,676,390,400 → 4,565,634,560 bytes
+(105.62 MiB less). Host activation ranges 2.099–2.193 seconds for control and
+2.025–2.236 for candidate; switch-back 2.163–2.251 versus 2.252–2.390. Disk
+activation is 8.626–8.753 versus 8.681–8.751. These sparse observations show no
+clear loading improvement. This is still the isolated installer; normal ABI 2
+admission and compatibility gates are separate.

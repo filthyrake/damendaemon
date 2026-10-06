@@ -25,14 +25,14 @@ def main():
     parser.add_argument('--rows', type=int, nargs='+', default=[2, 4, 16, 64, 129, 400])
     parser.add_argument('--residual-baseline', help='existing native residual library for single-row controls only')
     parser.add_argument('--symmetric',action='store_true',help='test implicit zero point eight with experimental ABI 2')
-    parser.add_argument('--reference-library',help='ABI 1 library for exact prepared-buffer comparison in symmetric experiment')
+    parser.add_argument('--reference-library',help='ABI 1 library for exact prepared-buffer comparison with symmetric or production ABI 2 adapters')
     parser.add_argument('--production',action='store_true',help='qualify the normal unbiased production adapter and its exact prepared buffers')
     parser.add_argument('--direct-repack', action='store_true', help='also require exact prepared weights/scales/zeros/bias against the original adapter')
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
     if sum((args.production,args.direct_repack,args.symmetric))>1:parser.error('choose only one alternate adapter')
     if args.symmetric and not args.reference_library:parser.error('--symmetric requires --reference-library')
-    if args.reference_library and not args.symmetric:parser.error('--reference-library requires --symmetric')
+    if args.reference_library and not (args.symmetric or args.production):parser.error('--reference-library requires --symmetric or --production')
     if args.symmetric and args.residual_baseline:parser.error('--symmetric uses the explicit-zero Marlin control')
     if any(row < 1 or row > 512 for row in args.rows):
         parser.error('rows must be between 1 and 512')
@@ -63,7 +63,7 @@ def main():
         raise SystemExit(128+number)
     signal.signal(signal.SIGTERM, terminate)
     try:
-        reference_library = Library(args.reference_library if args.symmetric else args.library) if args.direct_repack or args.production or args.symmetric else None
+        reference_library = Library(args.reference_library or args.library) if args.direct_repack or args.production or args.symmetric else None
         biased_cases=(False,) if args.production else (False,True)
         if args.symmetric:
             from scripts.experiments.q4_marlin_symmetric import SymmetricLibrary
@@ -87,6 +87,11 @@ def main():
                 ('scripts/experiments/q4_marlin_direct.py','scripts/experiments/q4_marlin_repack.py')}
         else:
             library = Library(args.library)
+        implicit_zero=args.symmetric or (args.production and library.abi==2)
+        if args.production:
+            report['production_abi']=library.abi
+            report['implicit_zero_point']=8 if implicit_zero else None
+            if args.reference_library:report['reference_library_sha256']=digest(args.reference_library)
         report['workspace_bytes'] = sum(t.numel()*t.element_size() for t in (library.scratch, library.locks))
         for name in ('0.qkv.weight', '0.out', '0.gate_up', '0.down', 'head'):
             weight, scales = source.weights[name].cuda(), source.scales[name].cuda()
@@ -113,7 +118,7 @@ def main():
                 if reference_library is not None:
                     reference_prepared = reference_library.prepare(weight,scales,bias if biased else None)
                     exact_preparation = all(torch.equal(getattr(prepared[biased],key),getattr(reference_prepared,key))
-                        for key in ('weight','scales',*(() if args.symmetric else ('zeros',)),*(['bias'] if biased else [])))
+                        for key in ('weight','scales',*(() if implicit_zero else ('zeros',)),*(['bias'] if biased else [])))
                     assert exact_preparation, (name,biased,'prepared buffers changed')
                     if args.symmetric:control_prepared[biased]=reference_prepared
                     del reference_prepared
