@@ -63,6 +63,8 @@ class HybridExecutor:
         # Construction has already enforced the Q4 device/precision policy.
         admitted_a30_q4 = (accelerator == 'cuda' and self.model.quantization == 'q4_0'
                            and self.hybrid_precision == 'compensated')
+        if getattr(self, 'offload', None) is not None:
+            return True
         if accelerator == 'xpu' and self.fused is None:
             return True
         return ((accelerator == 'rocm' or admitted_a30_q4) and self.fused is not None
@@ -353,7 +355,8 @@ class HybridExecutor:
             from torch.nn.attention.bias import causal_lower_right
             end = prefix_length + length
             mask = (self.arange[:end][None, :] <= positions[0, :, None]
-                    if selected_accelerator() == 'xpu' else causal_lower_right(length, end))
+                    if selected_accelerator() == 'xpu' or self.offload is not None
+                    else causal_lower_right(length, end))
             out = scaled_attention(q.transpose(1, 2),
                 ck[:, :, :end].index_select(0, slots), cv[:, :, :end].index_select(0, slots),
                 attn_mask=mask, enable_gqa=True)

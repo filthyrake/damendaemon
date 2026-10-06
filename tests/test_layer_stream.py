@@ -134,6 +134,21 @@ class LayerStreamTests(unittest.TestCase):
                     torch.testing.assert_close(streamed.decode(token), resident.decode(token), rtol=0, atol=0)
                 fixture.assert_state(resident, streamed)
                 self.assertLessEqual(store.peak_live_bytes, store.layout.peak_bytes)
+            # CUDA selection still uses the actual eager CPU tensor test: no
+            # CUDA APIs or hardware are substituted for a qualification result.
+            with patch.dict('os.environ', {'DLLM_DEVICE': 'cuda'}):
+                self.assertTrue(streamed.supports_chunked_prefill)
+                self.assertFalse(streamed.requires_full_prefill)
+                prompt = [1, 3, 5, 7, 9, 11]
+                streamed.prefill_chunk(prompt[:2], 0, 0, False)
+                actual = streamed.prefill_chunk(prompt[2:], 0, 2)
+                torch.testing.assert_close(actual, resident.prefill(prompt), rtol=2e-3, atol=2e-3)
+                fixture.assert_state(resident, streamed)
+                untouched = {i: value[0].clone() for i, value in streamed.state.items()}
+                streamed.prefill_chunk([2, 4], 1, 0, False)
+                streamed.prefill_chunk([6], 1, 2)
+                for i, value in untouched.items():
+                    torch.testing.assert_close(streamed.state[i][0], value, rtol=0, atol=0)
             streamed.close()
             self.assertEqual(store.resident_bytes, 0)
         finally:

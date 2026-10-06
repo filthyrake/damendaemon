@@ -515,3 +515,11 @@ Closing the store releases its device and source references after successful
 synchronization. Normal host-cache eviction remains responsible for releasing
 the cached source model. Multimodal, packed quantization, sharding and graph
 execution remain rejected for this preview.
+
+
+The streaming path also participates in `--prefill-chunk-size` scheduling.
+Every chunk preserves recurrent, convolution and KV state; the scheduler can
+process cancellation and rotate admitted prompts between chunks. Layer transfers
+within a chunk remain synchronous. CPU regressions cover the combined streamed
+and chunked path, including an interleaved second slot. This adds scheduling
+behavior, not a hardware latency guarantee.
