@@ -14,6 +14,7 @@ from dllm.qwen2 import ModelWeights
 from dllm.config import decoder_config
 from dllm.runtime import require_gpu, make_executor
 from reference_model import load_reference
+from reference_trace import save_trace
 from dllm.device import selected_device, synchronize, empty_cache, device_name
 
 
@@ -71,6 +72,19 @@ def main():
     cache_lengths = executor.lengths if executor else [0]*4
     checks, template_checks, states, timings = [], [], {}, []
     trace = []
+    reference_targets = 0
+    reference_started = time.perf_counter()
+    trace_metadata = dict(path=args.path, context=args.context,
+        reference_dtype=args.reference_dtype, reference_torch=str(torch.__version__),
+        cpu_threads=args.cpu_threads, packed_cpu_reference=args.packed_cpu_reference,
+        reference_quantization=args.reference_quantization, reference_attention=args.reference_attention)
+
+    def checkpoint():
+        # Publish completed events only. Never add snapshot I/O to GPU timing
+        # runs, and never let an incomplete trace masquerade as the final gate.
+        if args.reference_only:
+            save_trace(args.golden_output, trace_metadata, trace, complete=False)
+
     records = 200
     while True:
         documents = ['Record %d: The parcel is stored in cabinet %d, drawer %d.\n' %
@@ -81,9 +95,13 @@ def main():
         records *= 2
 
     def compare(actual, target, phase, slot):
+        nonlocal reference_targets
         if actual is None:
             if not torch.isfinite(target).all().item():
                 raise ValueError('reference produced non-finite logits')
+            reference_targets += 1
+            print(f'reference target={reference_targets} phase={phase} slot={slot} '
+                  f'elapsed={time.perf_counter()-reference_started:.1f}s', file=sys.stderr, flush=True)
             return
         actual, target = actual.float().to(target.device), target.float()
         error = (actual - target).abs()
@@ -116,6 +134,7 @@ def main():
             if executor is None:
                 cache_lengths[slot] = len(ids)
             states[slot] = (ref.past_key_values, target.argmax().item())
+        checkpoint()
 
     @torch.inference_mode()
     def decode(slots, steps):
@@ -134,6 +153,7 @@ def main():
                 event['targets'].append(target.detach().float().cpu())
                 compare(actual[row] if actual is not None else None, target, f'decode:{cache_lengths[slot]}', slot)
                 states[slot] = (ref.past_key_values, target.argmax().item())
+            checkpoint()
 
     # Real templates, including Unicode, assistant turns, and Qwen3 reasoning controls.
     modes = (None, False, True) if model.config['model_type'] in ('qwen3', 'qwen3_5_text') else (None,)
@@ -156,6 +176,7 @@ def main():
             compare(actual, ref.logits[:, -1], f'template:{mode}', 0)
             trace.append({'kind': 'prefill', 'prompts': [ids], 'slots': [0],
                           'targets': [ref.logits[:, -1].detach().float().cpu()]})
+            checkpoint()
         template_checks.append({'input_kind': 'raw' if tokenizer.chat_template is None else 'chat',
                                 'enable_thinking': mode, 'tokens': len(ids), 'runtime_compared': executor is not None})
     del ref
@@ -201,8 +222,7 @@ def main():
             prefill(lengths,slots)
             decode(list(reversed(slots)),4)
     if args.golden_output:
-        torch.save({'path': args.path, 'context': args.context, 'reference_dtype': args.reference_dtype,
-                    'reference_torch': str(torch.__version__), 'cpu_threads':args.cpu_threads, 'packed_cpu_reference':args.packed_cpu_reference, 'reference_quantization': args.reference_quantization, 'reference_attention': args.reference_attention, 'trace': trace}, args.golden_output)
+        save_trace(args.golden_output, trace_metadata, trace, complete=True)
     print(json.dumps({'model_path': args.path, 'reference_dtype': args.reference_dtype, 'reference_attention': args.reference_attention, 'architecture': model.config['model_type'],
         'device': device_name(), 'torch': str(torch.__version__), 'reference_device': reference_device,
         'weight_dtype': str(executor.w['head'].dtype) if executor else None,

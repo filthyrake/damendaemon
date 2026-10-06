@@ -536,3 +536,12 @@ cache storage. Four 64K slots require 60.32 GiB before workspace, allocator,
 loading peaks, or host copies. These are lower-bound shape estimates, not
 long-context qualification or admission guarantees. The existing FP16 estimate
 is unchanged; the new planner option makes the precision assumption explicit.
+
+Future `verify_stress.py --reference-only --golden-output golden.pt` runs log
+each completed target and atomically save completed events to
+`golden.partial.pt`. A timeout preserves the latest partial snapshot; it does
+not preserve live cache state for resumption. Only successful completion writes
+`golden.pt` with `complete: true`. Normal replay rejects the explicitly incomplete
+snapshot, so preserved diagnostics cannot accidentally count as a complete gate.
+Snapshot I/O is disabled for runs that time a GPU executor. The already-running
+eight-thread reference predates this change and retains its original behavior.
