@@ -60,3 +60,28 @@ host restore, disk reload and repeated full release. Both full unloads return
 live Metal allocation accounting to zero. Reproduce with
 `scripts/verify_metal_quant_service.py` and the matching local CPU trace.
 The regression suite passes 410 tests. No numerical tolerance was relaxed.
+
+## Matched real HTTP measurements
+
+Four fresh server runs in old/new/new/old order, each with one warmup and five
+measured requests per prompt size. Ten measured requests per precision, prompt
+size and mode; each mode uses identical input IDs, checkpoint, precision, M4,
+context 512 and 32 generated tokens. Generated text and usage match exactly
+between modes. These are medians; first text latency and whole-request latency
+are reported separately from throughput. `expanded` is the previous policy;
+`default` is the bounded policy.
+
+| Precision | Prompt tokens | Policy | First text ms | Request ms | Tokens/s |
+|---|---:|---|---:|---:|---:|
+| Q4 | 8 | expanded | 44.03 | 294.26 | 108.73 |
+| Q4 | 8 | default | 20.30 | 274.41 | 116.60 |
+| Q4 | 16 | expanded | 43.16 | 295.28 | 108.36 |
+| Q4 | 16 | default | 34.61 | 286.19 | 111.79 |
+| Q8 | 8 | expanded | 46.15 | 364.30 | 87.83 |
+| Q8 | 8 | default | 19.39 | 350.15 | 91.38 |
+| Q8 | 16 | expanded | 45.23 | 368.04 | 86.94 |
+| Q8 | 16 | default | 34.51 | 361.56 | 88.49 |
+
+Reproduce using `scripts/experiments/bench_metal_prefill_service.py`. Startup and
+activation are excluded by each server's warmup. This is a same-precision
+optimization comparison, not an upstream-engine benchmark.
