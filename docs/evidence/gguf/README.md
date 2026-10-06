@@ -2674,3 +2674,12 @@ passed across eager/graph, fixed/paged and chunked paths. Each four-slot
 executor explicitly recorded the 1024-token aggregate limit; the single-slot
 reference retained 512. Independent model arithmetic remains covered by the
 qualified ABI 2 reference gate above.
+
+The [matched HTTP/lifecycle comparison](mistral-q4-marlin-prefill-budget-http-a2.json)
+passed all text and lifecycle checks but **did not show a serving benefit**.
+Normal/1024-budget pooled medians were 413.35/415.75 ms (16 input tokens),
+561.07/562.81 ms (129), and 872.18/877.58 ms (400). At concurrency two and four,
+output throughput was 41.13/40.94 and 57.80/57.65 tokens/sec respectively.
+The isolated synchronized-prefill gain did not translate to this real request
+schedule. The experimental budget is not promoted; the normal aggregate limit
+remains one configured context. This closes the grouping optimization pass.
