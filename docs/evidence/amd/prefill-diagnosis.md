@@ -82,3 +82,34 @@ distinguishes observed reachability from unknown cause. The remote replay result
 watchdog outcome, cleanup and service health could not be retrieved. No32K run
 followed. Full-model qualification must not be inferred from primitive or CPU
 results. The projection control script was prepared locally but never run.
+
+## Recovery and bounded thermal stops (2026-10-06)
+
+The user confirmed the interrupted host had thermally crashed. The missed
+prerequisite was `/home/damen/fan-inference.sh on`: the curve daemon ramps too
+slowly. Prior-boot journal was unavailable, so this attribution is the user's
+console report. Issue #75 added actual max-fan/RPM and CPU/GPU temperature
+checks, fail-closed owned-child termination and checkpointed telemetry. The
+host recovered on its expected SSID and address; no network changes were made.
+
+Two guarded integrated replays remained incomplete:
+
+- Four CPU threads: stopped after16.75s at CPU85.75C/GPU34C, fans fixed5.
+  [Guard report](q4-grouped-prefill-cooled-4k.guard.json).
+- One CPU thread, engine `7d17219`: stopped after124.76s at GPU80C/CPU78.75C,
+  fans fixed5 at4269/4391/1838RPM. Minimum available host memory was
+  65,252,175,872 bytes. Exit-9, cleanup complete.
+  [Guard report](q4-grouped-prefill-cpu1-4k.guard.json).
+
+Neither run produced a completed numerical result. The second stop fulfilled
+its predeclared stopping condition: no further retry or raised cutoff. These
+are conservative guard stops, not additional thermal crashes or proof that
+80C is the hardware shutdown temperature. Maximum fans alone do not qualify
+sustained operation under this guard. Issue #74 remains open and deferred until
+an evidence-supported operating envelope permits the full-model gate.
+
+After the second stop, `fan-inference.sh off` restored balanced/auto control,
+`strix-fan-daemon.service` was restarted and active, all three inference health
+endpoints (8081/8082/8083) returned OK, and uptime continued through the tests.
+No GPU experiment remains active; production admission stays512. The prepared
+projection experiment was not run.
