@@ -156,6 +156,7 @@ def main():
     report['command'] = command
     process = None
     watchdog = None
+    cuda_guard = None
     def stop_server(signum):
         if process is not None and process.poll() is None:
             try:
@@ -176,16 +177,22 @@ def main():
     signal.signal(signal.SIGTERM, terminate)
     signal.signal(signal.SIGINT, terminate)
     try:
+        if args.experimental_hybrid_q4_context and os.environ.get('DLLM_DEVICE') == 'cuda':
+            from scripts.experiments.cuda_capacity_guard import A30CapacityGuard
+            report['cuda_capacity_guard'] = {}
+            cuda_guard = A30CapacityGuard(report['cuda_capacity_guard'])
+            cuda_guard.read(startup=True)
         report['phase'] = 'starting'
         save_report(args.output, report)
         log_path = args.output.with_suffix('.server.log')
         with log_path.open('w') as log:
             process = subprocess.Popen(command, stdout=log, stderr=log, start_new_session=True)
-            if os.environ.get('DLLM_DEVICE') == 'rocm':
+            if os.environ.get('DLLM_DEVICE') == 'rocm' or cuda_guard is not None:
                 from scripts.experiments.host_memory_watchdog import HostMemoryWatchdog
                 report['host_memory_guard'] = {}
+                guard_options = {'read': cuda_guard.read} if cuda_guard is not None else {}
                 watchdog = HostMemoryWatchdog(lambda: stop_server(signal.SIGKILL),
-                                              report['host_memory_guard']).start()
+                                              report['host_memory_guard'], **guard_options).start()
             deadline = time.monotonic()+180
             base = None
             while time.monotonic() < deadline:

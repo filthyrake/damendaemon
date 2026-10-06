@@ -134,8 +134,10 @@ class Runtime:
                           allocated_bytes=torch.cuda.memory_allocated(i),reserved_bytes=torch.cuda.memory_reserved(i)) for i in range(2)]
         allocated=torch.cuda.memory_allocated() if torch.cuda.is_initialized() else None
         if devices is not None:allocated=sum(d['allocated_bytes'] for d in devices)
+        peak_allocated = torch.cuda.max_memory_allocated() if allocated is not None and devices is None else None
         return {'models': models, 'device': selected_accelerator(), 'context': self.context,
                 'cuda_allocated_bytes': allocated if selected_accelerator()=='cuda' else None,
+                'cuda_peak_allocated_bytes': peak_allocated if selected_accelerator()=='cuda' else None,
                 'hip_allocated_bytes': allocated if selected_accelerator()=='rocm' else None,
                 'rocm_aotriton_experimental': os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL')
                     if selected_accelerator()=='rocm' else None,
