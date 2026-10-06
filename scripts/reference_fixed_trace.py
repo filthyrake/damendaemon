@@ -50,6 +50,7 @@ def main():
               'reference_attention': 'sdpa', 'reference_device': args.device,
               'cpu_threads': args.threads, 'model_load_seconds': load_seconds,
               'packed_cpu_reference': args.device == 'cpu', 'packed_gpu_reference': args.device == 'cuda',
+              'packed_gpu_expansion': 'torch' if args.device == 'cuda' else None,
               'source_trace': str(args.trace), 'source_slot': args.slot,
               'source_last_event': args.last_event, 'trace': [], 'complete': False}
     captured, layer_events = {}, []

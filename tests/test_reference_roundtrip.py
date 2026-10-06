@@ -91,3 +91,34 @@ class ReferenceRoundtripTests(unittest.TestCase):
         from scripts.reference_model import load_reference
         with self.assertRaises(ValueError):
             load_reference('/unused', packed_cpu=True, packed_gpu=True)
+
+    def test_torch_expansion_matches_upstream_packing_and_extreme_codes(self):
+        from gguf.quants import quantize, dequantize
+        from gguf.constants import GGMLQuantizationType
+        from scripts.reference_packed_cpu import expand_packed_torch
+        generator = torch.Generator().manual_seed(915)
+        for kind, size in ((GGMLQuantizationType.Q8_0, 34),
+                           (GGMLQuantizationType.Q4_0, 18)):
+            weight = torch.randn(259, 96, generator=generator)
+            packed = torch.from_numpy(quantize(weight.numpy(), kind))
+            expected = torch.from_numpy(dequantize(packed.numpy(), kind))
+            self.assertTrue(torch.equal(expand_packed_torch(packed, kind), expected))
+            # Raw blocks exercise every signed byte/nibble and finite scale
+            # boundaries, including negative and subnormal FP16 scales.
+            scales = torch.tensor([0, -0., 2**-24, -2**-24, 1, -1, 65504, -65504], dtype=torch.float16)
+            blocks = torch.empty(8, size, dtype=torch.uint8)
+            blocks[:, :2] = scales.view(torch.uint8).reshape(8, 2)
+            blocks[:, 2:] = torch.arange(8 * (size-2)).remainder(256).to(torch.uint8).reshape(8, size-2)
+            expected = torch.from_numpy(dequantize(blocks.numpy(), kind))
+            self.assertTrue(torch.equal(expand_packed_torch(blocks, kind), expected))
+
+    def test_torch_expansion_rejects_malformed_storage(self):
+        from gguf.constants import GGMLQuantizationType as Q
+        from scripts.reference_packed_cpu import expand_packed_torch
+        for packed, kind in ((torch.zeros(1, 34), Q.Q8_0),
+                             (torch.zeros(34, dtype=torch.uint8), Q.Q8_0),
+                             (torch.zeros(1, 33, dtype=torch.uint8), Q.Q8_0),
+                             (torch.zeros(34, 2, dtype=torch.uint8).T, Q.Q8_0),
+                             (torch.zeros(1, 34, dtype=torch.uint8), Q.F32)):
+            with self.assertRaises(ValueError):
+                expand_packed_torch(packed, kind)

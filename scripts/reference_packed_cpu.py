@@ -1,8 +1,8 @@
-"""Validation-only CPU FP32 reference with upstream GGUF-packed Linear storage.
+"""Validation-only FP32 reference with upstream GGUF-packed Linear storage.
 
-Transformers owns model execution. Each Linear expands independently through
-upstream gguf-py for one operation, avoiding full-model FP32 residency. No dllm
-quantizers, kernels or model math are used here.
+Transformers owns model execution. CPU expansion uses upstream gguf-py; GPU
+expansion uses independently checked Torch operations, one matrix at a time.
+Neither path uses dllm quantizers, kernels or model math.
 """
 import torch
 from torch import nn
@@ -35,18 +35,39 @@ class PackedReferenceLinear(nn.Module):
         return torch.nn.functional.linear(inputs, weights, self.bias)
 
 
-class PackedGpuReferenceLinear(PackedReferenceLinear):
-    """Independent GPU arithmetic with upstream CPU GGUF expansion per operation.
+def expand_packed_torch(packed, kind):
+    """Expand GGUF Q8_0/Q4_0 with ordinary Torch operations on the input device.
 
-    model.to(cuda) keeps packed integer storage on the GPU. Copying each packed
-    matrix to the CPU for upstream expansion is deliberately a validation cost;
-    no dllm quantization or inference kernels participate in this reference.
+    Independent validation code: storage comes from upstream gguf-py. Each
+    block has a little-endian FP16 scale followed by 32 signed Q8 values, or
+    16 bytes containing the low-half/high-half Q4 values biased by eight.
+    Tests compare these operations exactly with upstream CPU dequantization.
     """
+    from gguf.constants import GGMLQuantizationType
+    sizes = {GGMLQuantizationType.Q8_0: 34, GGMLQuantizationType.Q4_0: 18}
+    if kind not in sizes:
+        raise ValueError('Torch reference expansion supports only Q8_0/Q4_0')
+    size = sizes[kind]
+    if packed.dtype != torch.uint8 or packed.ndim != 2 or not packed.is_contiguous():
+        raise ValueError('packed reference storage must be a contiguous uint8 matrix')
+    if packed.shape[1] % size:
+        raise ValueError('packed reference rows must contain whole blocks')
+    blocks = packed.reshape(-1, size)
+    scales = blocks[:, :2].contiguous().view(torch.float16).float()
+    payload = blocks[:, 2:]
+    if kind == GGMLQuantizationType.Q8_0:
+        values = payload.view(torch.int8).float()
+    else:
+        values = torch.cat((payload & 15, payload >> 4), dim=1).float() - 8
+    return (values * scales).reshape(packed.shape[0], packed.shape[1] // size * 32)
+
+
+class PackedGpuReferenceLinear(PackedReferenceLinear):
+    """Independent Torch GPU expansion and FP32 linear, one matrix at a time."""
     def forward(self, inputs):
-        from gguf.quants import dequantize
         if inputs.device.type != 'cuda' or inputs.dtype != torch.float32:
             raise ValueError('packed GPU reference requires CUDA/ROCm FP32 inputs')
-        weights = torch.from_numpy(dequantize(self.packed.cpu().numpy(), self.kind)).to(inputs.device)
+        weights = expand_packed_torch(self.packed, self.kind)
         return torch.nn.functional.linear(inputs, weights, self.bias)
 
 

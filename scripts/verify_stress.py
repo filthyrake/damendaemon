@@ -33,7 +33,7 @@ def main():
     parser.add_argument('--reference-attention', choices=('sdpa', 'eager'), default='sdpa')
     packed_options = parser.add_mutually_exclusive_group()
     packed_options.add_argument('--packed-cpu-reference', action='store_true', help='FP32 CPU reference with per-operation upstream GGUF expansion')
-    packed_options.add_argument('--packed-gpu-reference', action='store_true', help='FP32 GPU reference with per-operation upstream CPU GGUF expansion')
+    packed_options.add_argument('--packed-gpu-reference', action='store_true', help='FP32 GPU reference with independent Torch expansion of upstream GGUF-packed weights')
     parser.add_argument('--reference-device', choices=('cpu', 'cuda', 'mps'))
     args = parser.parse_args()
     if args.prefill_chunk_size<0:parser.error('invalid prefill chunk size')
@@ -86,6 +86,7 @@ def main():
         reference_dtype=args.reference_dtype, reference_torch=str(torch.__version__),
         cpu_threads=args.cpu_threads, packed_cpu_reference=args.packed_cpu_reference,
         packed_gpu_reference=args.packed_gpu_reference, reference_device=reference_device,
+        packed_gpu_expansion='torch' if args.packed_gpu_reference else None,
         reference_quantization=args.reference_quantization, reference_attention=args.reference_attention)
 
     def checkpoint():

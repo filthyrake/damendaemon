@@ -1,0 +1,43 @@
+{
+  "left": "../results/qwen38-27b-independent-torch-gpu-fp32-slot1.input.pt",
+  "right": "../results/qwen38-27b-independent-torch-gpu-fp32-slot1.pt",
+  "left_dtype": "float32",
+  "right_dtype": "float32",
+  "checks": [
+    {
+      "event_index": 0,
+      "slot": 1,
+      "tokens": 496,
+      "relative_rms": 6.6820825850300025e-06,
+      "max_absolute": 0.0003070831298828125,
+      "greedy_match": true
+    },
+    {
+      "event_index": 1,
+      "slot": 1,
+      "tokens": 497,
+      "relative_rms": 3.627390105975792e-05,
+      "max_absolute": 0.0011496543884277344,
+      "greedy_match": true
+    },
+    {
+      "event_index": 2,
+      "slot": 1,
+      "tokens": 498,
+      "relative_rms": 1.727323433442507e-05,
+      "max_absolute": 0.0004100799560546875,
+      "greedy_match": true
+    },
+    {
+      "event_index": 3,
+      "slot": 1,
+      "tokens": 499,
+      "relative_rms": 0.00022835122945252806,
+      "max_absolute": 0.008410453796386719,
+      "greedy_match": true
+    }
+  ],
+  "unmatched_contexts": [],
+  "passed": true,
+  "limitation": "Reference-to-reference precision comparison, not runtime correctness or performance."
+}
