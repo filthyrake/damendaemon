@@ -7,7 +7,7 @@ import os
 import threading
 import time
 
-from .device import selected_device, synchronize, empty_cache
+from .device import selected_device, selected_accelerator, synchronize, empty_cache
 from .prompts import decode_output
 
 
@@ -18,6 +18,12 @@ def require_gpu():
         import torch
         if not torch.backends.mps.is_available():
             raise RuntimeError('Apple MPS is not available')
+        return
+    if selected_accelerator() == 'rocm':
+        import torch
+        from .rocm_policy import validate_runtime
+        validate_runtime(torch)
+        torch.cuda.set_device(0)
         return
     visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
     count=2 if split is not None else 1
@@ -105,8 +111,9 @@ class Runtime:
                           allocated_bytes=torch.cuda.memory_allocated(i),reserved_bytes=torch.cuda.memory_reserved(i)) for i in range(2)]
         allocated=torch.cuda.memory_allocated() if torch.cuda.is_initialized() else None
         if devices is not None:allocated=sum(d['allocated_bytes'] for d in devices)
-        return {'models': models, 'device': selected_device(), 'context': self.context,
-                'cuda_allocated_bytes': allocated,
+        return {'models': models, 'device': selected_accelerator(), 'context': self.context,
+                'cuda_allocated_bytes': allocated if selected_accelerator()=='cuda' else None,
+                'hip_allocated_bytes': allocated if selected_accelerator()=='rocm' else None,
                 'cuda_devices':devices,
                 'mps_allocated_bytes': torch.mps.current_allocated_memory() if selected_device()=='mps' else None,
                 'host_cached_bytes': sum(model.bytes for model in self.host.values()),

@@ -1,12 +1,18 @@
-"""Explicit accelerator selection and memory lifecycle for CUDA and Apple MPS."""
+"""Explicit accelerator selection and memory lifecycle for CUDA, experimental ROCm and Apple MPS."""
 import os
 
 
-def selected_device():
+def selected_accelerator():
     device = os.environ.get('DLLM_DEVICE', 'cuda')
-    if device not in ('cuda', 'mps'):
-        raise ValueError('DLLM_DEVICE must be cuda or mps')
+    if device not in ('cuda', 'rocm', 'mps'):
+        raise ValueError('DLLM_DEVICE must be cuda, rocm or mps')
     return device
+
+
+def selected_device():
+    # HIP tensors intentionally use PyTorch's CUDA device namespace.
+    accelerator = selected_accelerator()
+    return 'cuda' if accelerator == 'rocm' else accelerator
 
 
 def synchronize():
@@ -32,6 +38,9 @@ def available_memory():
     import torch
     if selected_device() == 'mps':
         return max(0, torch.mps.recommended_max_memory() - torch.mps.driver_allocated_memory())
+    if selected_accelerator() == 'rocm':
+        from .rocm_policy import available_memory as rocm_available_memory
+        return rocm_available_memory(torch)
     return torch.cuda.mem_get_info()[0]
 
 
