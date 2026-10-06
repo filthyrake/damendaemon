@@ -13,7 +13,10 @@ from dllm.config import decoder_config
 from dllm.hybrid import load_weights
 
 
-def estimate(inventory, metadata):
+def estimate(inventory, metadata, cache_dtype='float16'):
+    if cache_dtype not in ('float16', 'float32'):
+        raise ValueError('cache dtype must be float16 or float32')
+    cache_element_bytes = 2 if cache_dtype == 'float16' else 4
     config = decoder_config(inventory['config'])
     state = {}
     for shard in metadata['files_metadata'].values():
@@ -44,19 +47,20 @@ def estimate(inventory, metadata):
     full = config['layer_types'].count('full_attention')
     linear = config['num_hidden_layers'] - full
     recurrent = linear * (
-        config['linear_num_value_heads'] * config['linear_key_head_dim'] * config['linear_value_head_dim'] * 4
-        + (2 * config['linear_num_key_heads'] * config['linear_key_head_dim']
+        config['linear_num_value_heads'] * config['linear_key_head_dim'] * config['linear_value_head_dim'] * 4)
+    convolution = linear * (2 * config['linear_num_key_heads'] * config['linear_key_head_dim']
            + config['linear_num_value_heads'] * config['linear_value_head_dim'])
-        * config['linear_conv_kernel_dim'] * 2)
+    convolution *= config['linear_conv_kernel_dim'] * cache_element_bytes
     contexts = {}
     for context in (32768, 65536, 131072, 262144):
-        state_bytes = recurrent + full * 2 * config['num_key_value_heads'] * context * config['head_dim'] * 2
+        state_bytes = recurrent + convolution + full * 2 * config['num_key_value_heads'] * context * config['head_dim'] * cache_element_bytes
         contexts[str(context)] = {
             str(users): {'state_bytes': state_bytes * users,
                          'weights_plus_state_bytes': {mode: size + state_bytes * users for mode, size in totals.items()}}
             for users in (1, 4)
         }
     return dict(repository=inventory['repository'], revision=inventory['resolved_revision'],
+                kv_and_convolution_dtype=cache_dtype, recurrent_dtype='float32',
                 weight_bytes=totals, runtime_supported_quantization=['none', 'q8_0'],
                 hypothetical_only_quantization=['q4_0'], contexts=contexts, mapped_tensors=len(weights),
                 excluded_tensors=len(state),
@@ -68,11 +72,13 @@ def main():
     p.add_argument('inventory', type=Path)
     p.add_argument('metadata', type=Path)
     p.add_argument('output', type=Path)
+    p.add_argument('--cache-dtype', choices=('float16', 'float32'), default='float16',
+                   help='KV/convolution storage estimate; FP32 is experimental, not qualified long-context support')
     args = p.parse_args()
     opener = gzip.open if args.metadata.suffix == '.gz' else open
     with opener(args.metadata, 'rt') as f:
         metadata = json.load(f)
-    result = estimate(json.loads(args.inventory.read_text()), metadata)
+    result = estimate(json.loads(args.inventory.read_text()), metadata, args.cache_dtype)
     args.output.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result['weight_bytes'], indent=2))
 

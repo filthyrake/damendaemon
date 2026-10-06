@@ -1,0 +1,95 @@
+{
+  "repository": "Qwen/Qwen3.8-27B",
+  "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "kv_and_convolution_dtype": "float32",
+  "recurrent_dtype": "float32",
+  "weight_bytes": {
+    "none": 53793355776,
+    "q8_0": 29772773376,
+    "q4_0": 16961796096
+  },
+  "runtime_supported_quantization": [
+    "none",
+    "q8_0"
+  ],
+  "hypothetical_only_quantization": [
+    "q4_0"
+  ],
+  "contexts": {
+    "32768": {
+      "1": {
+        "state_bytes": 4453826560,
+        "weights_plus_state_bytes": {
+          "none": 58247182336,
+          "q8_0": 34226599936,
+          "q4_0": 21415622656
+        }
+      },
+      "4": {
+        "state_bytes": 17815306240,
+        "weights_plus_state_bytes": {
+          "none": 71608662016,
+          "q8_0": 47588079616,
+          "q4_0": 34777102336
+        }
+      }
+    },
+    "65536": {
+      "1": {
+        "state_bytes": 8748793856,
+        "weights_plus_state_bytes": {
+          "none": 62542149632,
+          "q8_0": 38521567232,
+          "q4_0": 25710589952
+        }
+      },
+      "4": {
+        "state_bytes": 34995175424,
+        "weights_plus_state_bytes": {
+          "none": 88788531200,
+          "q8_0": 64767948800,
+          "q4_0": 51956971520
+        }
+      }
+    },
+    "131072": {
+      "1": {
+        "state_bytes": 17338728448,
+        "weights_plus_state_bytes": {
+          "none": 71132084224,
+          "q8_0": 47111501824,
+          "q4_0": 34300524544
+        }
+      },
+      "4": {
+        "state_bytes": 69354913792,
+        "weights_plus_state_bytes": {
+          "none": 123148269568,
+          "q8_0": 99127687168,
+          "q4_0": 86316709888
+        }
+      }
+    },
+    "262144": {
+      "1": {
+        "state_bytes": 34518597632,
+        "weights_plus_state_bytes": {
+          "none": 88311953408,
+          "q8_0": 64291371008,
+          "q4_0": 51480393728
+        }
+      },
+      "4": {
+        "state_bytes": 138074390528,
+        "weights_plus_state_bytes": {
+          "none": 191867746304,
+          "q8_0": 167847163904,
+          "q4_0": 155036186624
+        }
+      }
+    }
+  },
+  "mapped_tensors": 755,
+  "excluded_tensors": 348,
+  "limitation": "Shape-only text-loader and packed-storage estimate. Excludes workspace, allocator, graphs, communication, host copies and loading peaks. No weight values, inference, quality or performance validated."
+}

@@ -527,3 +527,12 @@ shapes, but higher time for the tiny 5-by-48 output. These are primitive control
 against FP32 expansion plus linear on the same A30, not model qualification or
 an A30-versus-HOMER speed comparison. The A30 run has exited; the A2 remains
 detached and unused.
+
+FP32 KV and convolution history also change the capacity calculation; the
+recurrent matrices were already FP32. The
+[separate experimental estimate](evidence/amd/qwen38-27b-capacity-fp32-state.json)
+puts Q8 weights plus four 32K slots at 44.32 GiB, versus 36.31 GiB with FP16
+cache storage. Four 64K slots require 60.32 GiB before workspace, allocator,
+loading peaks, or host copies. These are lower-bound shape estimates, not
+long-context qualification or admission guarantees. The existing FP16 estimate
+is unchanged; the new planner option makes the precision assumption explicit.
