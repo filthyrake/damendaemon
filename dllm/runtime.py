@@ -119,6 +119,7 @@ class Runtime:
         self.host = OrderedDict()
         self.gpu = OrderedDict()
         self.failed_builds = []
+        self.failed_executors = []
         self.closing = self.closed = False
         self.lock = threading.Lock()
         self.admission = threading.BoundedSemaphore(queue_size)
@@ -180,6 +181,7 @@ class Runtime:
                     if selected_accelerator()=='rocm' else None,
                 'cuda_devices':devices,
                 'pending_pipeline_cleanup':len(self.failed_builds),
+                'pending_executor_cleanup':len(self.failed_executors),
                 'xpu_allocated_bytes': torch.xpu.memory_allocated() if xpu_initialized else None,
                 'xpu_reserved_bytes': torch.xpu.memory_reserved() if xpu_initialized else None,
                 'xpu_peak_allocated_bytes': torch.xpu.max_memory_allocated() if xpu_initialized else None,
@@ -198,7 +200,7 @@ class Runtime:
             if self.closing and action != 'status':
                 raise BusyError('runtime is closing or closed')
             if action in ('unload', 'remove'):
-                self._cleanup_failed_builds()
+                self._cleanup_failed_owners()
             if action == 'register':
                 import json
                 from pathlib import Path
@@ -262,12 +264,13 @@ class Runtime:
         gc.collect()
         empty_cache()
 
-    def _cleanup_failed_builds(self):
-        # A failed constructor may still own buffers after synchronization failed.
-        # Never let a new load run until that ownership has been cleaned up.
-        while self.failed_builds:
-            self.failed_builds[0].close()
-            self.failed_builds.pop(0)
+    def _cleanup_failed_owners(self):
+        # Failed construction or rebinding may still own device buffers. Never
+        # start another load until each owner has completed retryable cleanup.
+        for owners in (self.failed_builds, self.failed_executors):
+            while owners:
+                owners[0].close()
+                owners.pop(0)
 
     def close(self):
         """Drain ownership under the lifetime lock; failed cleanup is retryable."""
@@ -277,7 +280,7 @@ class Runtime:
         try:
             if self.closed:
                 return
-            self._cleanup_failed_builds()
+            self._cleanup_failed_owners()
             while self.gpu:
                 self._evict(next(iter(self.gpu)))
             self.host.clear()
@@ -292,7 +295,7 @@ class Runtime:
         start = time.perf_counter()
         if self.closing:
             raise BusyError('runtime is closing or closed')
-        self._cleanup_failed_builds()
+        self._cleanup_failed_owners()
         if alias in self.gpu and (getattr(self.gpu[alias],'failed',False)
                                 or getattr(self.gpu[alias],'_activation_failed',False)):
             self._evict(alias)
@@ -335,10 +338,14 @@ class Runtime:
                 del self.gpu[victim]
                 try:
                     resident.rebind(self.host[alias])
-                except BaseException:
-                    resident.close()
-                    gc.collect()
-                    empty_cache()
+                except BaseException as error:
+                    self.failed_executors.append(resident)
+                    try:
+                        self._cleanup_failed_owners()
+                        gc.collect()
+                        empty_cache()
+                    except BaseException as cleanup_error:
+                        error.add_note(f'executor cleanup incomplete; retained for retry: {type(cleanup_error).__name__}: {cleanup_error}')
                     raise
                 self.gpu[alias]=resident
                 return resident,tier,time.perf_counter()-start

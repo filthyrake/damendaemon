@@ -167,6 +167,51 @@ class RuntimeTests(unittest.TestCase):
         with runtime.session('b') as (value,tier,_):
             self.assertIsNot(value,resident);self.assertEqual(tier,'host')
 
+    def test_failed_rebind_cleanup_blocks_new_construction_until_recovered(self):
+        from unittest.mock import Mock
+        runtime = Runtime({'a':'a', 'b':'b'})
+        with runtime.session('a') as (resident, _, __):
+            resident.can_rebind = lambda model: True
+            resident.rebind = Mock(side_effect=RuntimeError('partial copy'))
+            resident.close = Mock(side_effect=RuntimeError('cleanup still busy'))
+        with self.assertRaisesRegex(RuntimeError, 'partial copy') as failure:
+            with runtime.session('b'):
+                pass
+        self.assertFalse(runtime.gpu)
+        self.assertIs(runtime.failed_executors[0], resident)
+        self.assertTrue(any('cleanup still busy' in note for note in failure.exception.__notes__))
+        self.assertEqual(runtime.manage('status')['pending_executor_cleanup'], 1)
+        with patch('dllm.runtime.make_executor') as construct:
+            with self.assertRaisesRegex(RuntimeError, 'cleanup still busy'):
+                with runtime.session('a'):
+                    pass
+            construct.assert_not_called()
+        resident.close.side_effect = None
+        with runtime.session('b') as (replacement, tier, _):
+            self.assertIsNot(replacement, resident)
+            self.assertEqual(tier, 'host')
+        runtime.close()
+
+    def test_shutdown_retains_failed_rebind_owner_until_cleanup_completes(self):
+        from unittest.mock import Mock
+        runtime = Runtime({'a':'a', 'b':'b'})
+        with runtime.session('a') as (resident, _, __):
+            resident.can_rebind = lambda model: True
+            resident.rebind = Mock(side_effect=RuntimeError('partial copy'))
+            resident.close = Mock(side_effect=RuntimeError('cleanup busy'))
+        with self.assertRaises(RuntimeError):
+            with runtime.session('b'):
+                pass
+        with self.assertRaisesRegex(RuntimeError, 'cleanup busy'):
+            runtime.close()
+        self.assertFalse(runtime.closed)
+        self.assertTrue(runtime.host)
+        self.assertIs(runtime.failed_executors[0], resident)
+        resident.close.side_effect = None
+        runtime.close()
+        self.assertTrue(runtime.closed)
+        self.assertFalse(runtime.failed_executors or runtime.host)
+
     def test_non_rebindable_executor_is_released_before_replacement_allocation(self):
         import weakref
         references=[]

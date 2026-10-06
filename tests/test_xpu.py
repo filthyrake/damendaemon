@@ -47,6 +47,7 @@ class XpuTests(unittest.TestCase):
             runtime.registry_lock = threading.RLock()
             runtime.models = runtime.host = runtime.gpu = {}
             runtime.failed_builds = []
+            runtime.failed_executors = []
             runtime.closing = runtime.closed = False
             runtime.context = 512
             runtime.host_bytes = 1024

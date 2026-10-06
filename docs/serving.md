@@ -610,6 +610,11 @@ requests, retries pending build cleanup, closes all resident executors and drops
 host-cache references. If the worker or device cannot finish, shutdown raises an
 error and retains the remaining ownership for a later `close()` retry. It never
 frees a model while its worker is still active. Successful close is idempotent.
+Failed model rebinding also retains its executor outside the serving registry
+until cleanup succeeds. `pending_executor_cleanup` reports these owners; new
+activation, unload and shutdown retry their cleanup before releasing host state
+or loading replacement executors. The original rebind error retains a cleanup
+failure note, and a partially rebound model is never published under an alias.
 
 ## Optional API authentication
 
