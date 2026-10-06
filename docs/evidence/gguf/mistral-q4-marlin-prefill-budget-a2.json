@@ -1,0 +1,537 @@
+{
+  "passed": true,
+  "model": "baselines/mistral-spm-q4-comparator.gguf",
+  "device": "NVIDIA A2",
+  "library_sha256": "0720bf59ff777b691c608ae2ff71c196919eb72a504a0c22fa862c42034e0ccb",
+  "source_sha256": "83813cfb851b5dbd29874a1ddd8115ea9619305e977ea22cc7019ea2b91e3fe5",
+  "context_per_slot": 512,
+  "concurrency": 4,
+  "cases": [
+    {
+      "phase": 0,
+      "budget": 512,
+      "prompt_tokens": 129,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 387
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 129
+        }
+      ],
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "correct": true,
+      "seconds": [
+        0.631651804986177,
+        0.6317199629847892,
+        0.630452495010104,
+        0.6327445010247175,
+        0.632012660993496
+      ],
+      "median_seconds": 0.6317199629847892,
+      "peak_allocated_bytes": 4652824576,
+      "peak_reserved_bytes": 4733272064,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 0,
+      "budget": 512,
+      "prompt_tokens": 400,
+      "observed_forwards": [
+        {
+          "path": "forward_hidden",
+          "rows": 400
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 400
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 400
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 400
+        }
+      ],
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "correct": true,
+      "seconds": [
+        1.86888477098546,
+        1.8709830029984005,
+        1.8727026069827843,
+        1.8732090789999347,
+        1.874946287018247
+      ],
+      "median_seconds": 1.8727026069827843,
+      "peak_allocated_bytes": 4654301184,
+      "peak_reserved_bytes": 4733272064,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 0,
+      "budget": 512,
+      "prompt_tokens": 512,
+      "observed_forwards": [
+        {
+          "path": "forward_hidden",
+          "rows": 512
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 512
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 512
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 512
+        }
+      ],
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "correct": true,
+      "seconds": [
+        2.356063607992837,
+        2.3570547990093473,
+        2.359764824010199,
+        2.363706621021265,
+        2.369435707019875
+      ],
+      "median_seconds": 2.359764824010199,
+      "peak_allocated_bytes": 4675142656,
+      "peak_reserved_bytes": 4777312256,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 1,
+      "budget": 1024,
+      "prompt_tokens": 129,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 516
+        }
+      ],
+      "relative_rms": 0.00020497303921729326,
+      "max_absolute": 0.0078125,
+      "correct": true,
+      "seconds": [
+        0.6179563289915677,
+        0.6181677939894143,
+        0.6180558769847266,
+        0.618427677982254,
+        0.6188430960173719
+      ],
+      "median_seconds": 0.6181677939894143,
+      "peak_allocated_bytes": 4679068672,
+      "peak_reserved_bytes": 4806672384,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 1,
+      "budget": 1024,
+      "prompt_tokens": 400,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 800
+        },
+        {
+          "path": "forward_packed_hidden",
+          "rows": 800
+        }
+      ],
+      "relative_rms": 0.0002893050841521472,
+      "max_absolute": 0.0078125,
+      "correct": true,
+      "seconds": [
+        1.8657696450245567,
+        1.8665800660091918,
+        1.8672131829953287,
+        1.869108982005855,
+        1.8693085310223978
+      ],
+      "median_seconds": 1.8672131829953287,
+      "peak_allocated_bytes": 4738398208,
+      "peak_reserved_bytes": 4871684096,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 1,
+      "budget": 1024,
+      "prompt_tokens": 512,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 1024
+        },
+        {
+          "path": "forward_packed_hidden",
+          "rows": 1024
+        }
+      ],
+      "relative_rms": 0.0002999601711053401,
+      "max_absolute": 0.015625,
+      "correct": true,
+      "seconds": [
+        2.3978133519995026,
+        2.397627830010606,
+        2.3992831960204057,
+        2.400565654010279,
+        2.4017540570057463
+      ],
+      "median_seconds": 2.3992831960204057,
+      "peak_allocated_bytes": 4784146944,
+      "peak_reserved_bytes": 4930404352,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 2,
+      "budget": 2048,
+      "prompt_tokens": 129,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 516
+        }
+      ],
+      "relative_rms": 0.00020497303921729326,
+      "max_absolute": 0.0078125,
+      "correct": true,
+      "seconds": [
+        0.6245304670010228,
+        0.6262635580205824,
+        0.625471301988,
+        0.625429161998909,
+        0.6261154899839312
+      ],
+      "median_seconds": 0.625471301988,
+      "peak_allocated_bytes": 4679068672,
+      "peak_reserved_bytes": 4806672384,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 2,
+      "budget": 2048,
+      "prompt_tokens": 400,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 1600
+        }
+      ],
+      "relative_rms": 0.00029890271252952516,
+      "max_absolute": 0.0078125,
+      "correct": true,
+      "seconds": [
+        1.8778558440099005,
+        1.8789500790007878,
+        1.878824679995887,
+        1.8790594229940325,
+        1.880022603989346
+      ],
+      "median_seconds": 1.8789500790007878,
+      "peak_allocated_bytes": 4913269760,
+      "peak_reserved_bytes": 5129633792,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 2,
+      "budget": 2048,
+      "prompt_tokens": 512,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 2048
+        }
+      ],
+      "relative_rms": 0.0002999601711053401,
+      "max_absolute": 0.015625,
+      "correct": true,
+      "seconds": [
+        2.4059030329808593,
+        2.4086800630029757,
+        2.405574302014429,
+        2.4063801110023633,
+        2.4057032999990042
+      ],
+      "median_seconds": 2.4059030329808593,
+      "peak_allocated_bytes": 5002147328,
+      "peak_reserved_bytes": 5253365760,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 3,
+      "budget": 2048,
+      "prompt_tokens": 129,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 516
+        }
+      ],
+      "relative_rms": 0.00020497303921729326,
+      "max_absolute": 0.0078125,
+      "correct": true,
+      "seconds": [
+        0.6266180950042326,
+        0.6263757790147793,
+        0.627729294996243,
+        0.6262115130084567,
+        0.6271493860112969
+      ],
+      "median_seconds": 0.6266180950042326,
+      "peak_allocated_bytes": 4679068672,
+      "peak_reserved_bytes": 4806672384,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 3,
+      "budget": 2048,
+      "prompt_tokens": 400,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 1600
+        }
+      ],
+      "relative_rms": 0.00029890271252952516,
+      "max_absolute": 0.0078125,
+      "correct": true,
+      "seconds": [
+        1.8813749050023034,
+        1.882124449010007,
+        1.8823226609965786,
+        1.8814909899956547,
+        1.8804968100157566
+      ],
+      "median_seconds": 1.8814909899956547,
+      "peak_allocated_bytes": 4913269760,
+      "peak_reserved_bytes": 5129633792,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 3,
+      "budget": 2048,
+      "prompt_tokens": 512,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 2048
+        }
+      ],
+      "relative_rms": 0.0002999601711053401,
+      "max_absolute": 0.015625,
+      "correct": true,
+      "seconds": [
+        2.404859138012398,
+        2.4049690999963786,
+        2.4038800229900517,
+        2.403717084991513,
+        2.403100744006224
+      ],
+      "median_seconds": 2.4038800229900517,
+      "peak_allocated_bytes": 5002147328,
+      "peak_reserved_bytes": 5253365760,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 4,
+      "budget": 1024,
+      "prompt_tokens": 129,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 516
+        }
+      ],
+      "relative_rms": 0.00020497303921729326,
+      "max_absolute": 0.0078125,
+      "correct": true,
+      "seconds": [
+        0.6264494649949484,
+        0.6261627430212684,
+        0.6258496470109094,
+        0.6257812409894541,
+        0.6262473720125854
+      ],
+      "median_seconds": 0.6261627430212684,
+      "peak_allocated_bytes": 4679068672,
+      "peak_reserved_bytes": 4806672384,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 4,
+      "budget": 1024,
+      "prompt_tokens": 400,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 800
+        },
+        {
+          "path": "forward_packed_hidden",
+          "rows": 800
+        }
+      ],
+      "relative_rms": 0.0002893050841521472,
+      "max_absolute": 0.0078125,
+      "correct": true,
+      "seconds": [
+        1.883692853996763,
+        1.8863558370212559,
+        1.8828372540010605,
+        1.8828886050032452,
+        1.8836093890131451
+      ],
+      "median_seconds": 1.8836093890131451,
+      "peak_allocated_bytes": 4738398208,
+      "peak_reserved_bytes": 4871684096,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 4,
+      "budget": 1024,
+      "prompt_tokens": 512,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 1024
+        },
+        {
+          "path": "forward_packed_hidden",
+          "rows": 1024
+        }
+      ],
+      "relative_rms": 0.0002999601711053401,
+      "max_absolute": 0.015625,
+      "correct": true,
+      "seconds": [
+        2.4021952229959425,
+        2.4021766720106825,
+        2.4030272649833933,
+        2.4016981780005153,
+        2.4012114950164687
+      ],
+      "median_seconds": 2.4021766720106825,
+      "peak_allocated_bytes": 4784146944,
+      "peak_reserved_bytes": 4930404352,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 5,
+      "budget": 512,
+      "prompt_tokens": 129,
+      "observed_forwards": [
+        {
+          "path": "forward_packed_hidden",
+          "rows": 387
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 129
+        }
+      ],
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "correct": true,
+      "seconds": [
+        0.6508485969970934,
+        0.6511783819878474,
+        0.6511718740221113,
+        0.6512447870045435,
+        0.6511360330041498
+      ],
+      "median_seconds": 0.6511718740221113,
+      "peak_allocated_bytes": 4653080576,
+      "peak_reserved_bytes": 4733272064,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 5,
+      "budget": 512,
+      "prompt_tokens": 400,
+      "observed_forwards": [
+        {
+          "path": "forward_hidden",
+          "rows": 400
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 400
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 400
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 400
+        }
+      ],
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "correct": true,
+      "seconds": [
+        1.9174797720042989,
+        1.9168021389923524,
+        1.9173726970038842,
+        1.916434204991674,
+        1.9169919440173544
+      ],
+      "median_seconds": 1.9169919440173544,
+      "peak_allocated_bytes": 4654301184,
+      "peak_reserved_bytes": 4733272064,
+      "allocated_peak_within_admission": true
+    },
+    {
+      "phase": 5,
+      "budget": 512,
+      "prompt_tokens": 512,
+      "observed_forwards": [
+        {
+          "path": "forward_hidden",
+          "rows": 512
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 512
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 512
+        },
+        {
+          "path": "forward_hidden",
+          "rows": 512
+        }
+      ],
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "correct": true,
+      "seconds": [
+        2.4023231549945194,
+        2.399701065995032,
+        2.399703422008315,
+        2.400974628981203,
+        2.40008490299806
+      ],
+      "median_seconds": 2.40008490299806,
+      "peak_allocated_bytes": 4675142656,
+      "peak_reserved_bytes": 4777312256,
+      "allocated_peak_within_admission": true
+    }
+  ],
+  "scope": "synchronized prefill only; explicit aggregate-budget override; unchanged production admission",
+  "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
+  "admitted_required_bytes": 5152121504,
+  "prefill_graphs_enabled": false
+}

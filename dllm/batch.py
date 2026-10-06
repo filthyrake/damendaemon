@@ -121,11 +121,13 @@ class BatchExecutor(Executor):
                 or any(slot < 0 or slot >= self.max_batch for slot in slots)
                 or any(not ids or start+len(ids) > self.context for ids,start in zip(prompts,starts))):
             raise ValueError("invalid prefill batch")
-        if sum(map(len, prompts)) > self.context:
-            # Bound temporary activations by one configured context. Validate
+        token_budget = getattr(self, 'prefill_token_budget', self.context)
+        if sum(map(len, prompts)) > token_budget:
+            # Bound temporary activations by the prefill budget (one context
+            # by default). Validate
             # the entire request set above before writing any group's cache.
             return torch.cat([self.prefill_batch(batch, assigned)
-                              for batch, assigned in groups(prompts, slots, self.context)])
+                              for batch, assigned in groups(prompts, slots, token_budget)])
         if len(prompts) == 1 and starts[0] == 0 and return_logits:
             return self.prefill(prompts[0], slots[0])
         lengths = [len(ids) for ids in prompts]

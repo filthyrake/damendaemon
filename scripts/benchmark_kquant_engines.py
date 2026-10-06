@@ -30,6 +30,7 @@ def main():
     parser.add_argument('model')
     comparison=parser.add_mutually_exclusive_group(required=True)
     comparison.add_argument('--llama-server')
+    comparison.add_argument('--prefill-token-budget',type=int,choices=(1024,2048),help='isolated aggregate Q4 Marlin prefill budget versus normal 512-token grouping')
     comparison.add_argument('--q4-small-tiles',action='store_true',help='compare isolated Q4 prompt tiles at 64/129 rows')
     comparison.add_argument('--expand-tiles',action='store_true',help='compare isolated exact-coefficient expansion tiles')
     comparison.add_argument('--dense-cache',action='store_true',help='compare isolated resident FP16 projection caching')
@@ -73,7 +74,7 @@ def main():
     if args.swap_model and not args.lifecycle:parser.error('--swap-model requires --lifecycle')
     if args.batch_wait_ms is not None and (not math.isfinite(args.batch_wait_ms) or not 0<args.batch_wait_ms<=10):
         parser.error('--batch-wait-ms must be >0 and <=10')
-    if args.native_format=='q4' and not (args.llama_server or args.q4_residual_library or args.q4_marlin_library or args.batch_wait_ms or args.q4_small_tiles):
+    if args.native_format=='q4' and not (args.llama_server or args.q4_residual_library or args.q4_marlin_library or args.batch_wait_ms or args.q4_small_tiles or args.prefill_token_budget):
         parser.error('--native-format q4 requires a Q4 engine, kernel or admission comparison')
     if args.q4_residual_library and args.native_format!='q4':parser.error('Q4 candidate requires --native-format q4')
     if args.q4_small_tiles and args.native_format!='q4':parser.error('Q4 tiles require --native-format q4')
@@ -84,8 +85,10 @@ def main():
         parser.error('--q4-residual-control-library requires --production-q4-residual or --q4-marlin-library')
     if args.q4_marlin_library and (args.native_format!='q4' or not args.q4_residual_control_library):
         parser.error('--q4-marlin-library requires --native-format q4 and --q4-residual-control-library')
-    if args.dllm_q4_marlin_library and (not args.llama_server or args.native_format!='q4'):
-        parser.error('--dllm-q4-marlin-library requires --llama-server and --native-format q4')
+    if args.dllm_q4_marlin_library and (not (args.llama_server or args.prefill_token_budget) or args.native_format!='q4'):
+        parser.error('--dllm-q4-marlin-library requires a llama-server or prefill-budget comparison and --native-format q4')
+    if args.prefill_token_budget and (not args.dllm_q4_marlin_library or args.context!=512 or not args.lifecycle):
+        parser.error('--prefill-token-budget requires a native Marlin library, context 512 and lifecycle checks')
     if args.q4_marlin_symmetric and (not args.q4_marlin_library or not args.q4_marlin_control_library or args.q4_marlin_replace or args.production_q4_marlin):
         parser.error('--q4-marlin-symmetric requires candidate/control libraries and excludes other Marlin modes')
     if args.q4_marlin_control_library and not (args.q4_marlin_symmetric or args.production_q4_marlin):
@@ -195,6 +198,7 @@ def main():
     environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY',None)
     environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_REPLACE',None)
     environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_SYMMETRIC',None)
+    environment.pop('DLLM_EXPERIMENTAL_PREFILL_TOKEN_BUDGET',None)
     environment.pop('DLLM_Q4_RESIDUAL_LIBRARY',None)
     environment.pop('DLLM_EXPERIMENTAL_BATCH_WAIT_MS',None)
     environment.pop('DLLM_Q4_CUDA_LIBRARY',None)
@@ -217,6 +221,11 @@ def main():
     if args.q4_marlin_library:counterpart='q4-marlin-replaced' if args.q4_marlin_replace else 'q4-marlin'
     if args.production_q4_marlin:counterpart='q4-marlin-production'
     if args.q4_marlin_symmetric:counterpart='q4-marlin-symmetric'
+    if args.prefill_token_budget:
+        counterpart='prefill-budget'
+        report['experimental_prefill_token_budget']=args.prefill_token_budget
+        report['experimental_arithmetic']='same Q4 Marlin ABI 2 coefficients; aggregate prefill grouping only; per-slot context remains 512'
+        report['prefill_budget_source_sha256']=digest(Path(__file__).parent/'experiments/q4_marlin_prefill_budget.py')
     if args.q4_small_tiles:
         counterpart='q4-small-tiles'
         report['experimental_arithmetic']='unchanged FP16 coefficients; paired-dot 32-row tiles at 64/129 rows'
@@ -254,8 +263,10 @@ def main():
             base=f'http://127.0.0.1:{port}'
             log_path=output.with_name(output.stem+f'-{phase}-{engine}.log')
             phase_environment=environment.copy()
-            if args.dllm_q4_marlin_library and engine=='dllm':
+            if args.dllm_q4_marlin_library and (engine=='dllm' or args.prefill_token_budget):
                 phase_environment['DLLM_Q4_MARLIN_LIBRARY']=str(dllm_marlin)
+            if args.prefill_token_budget and engine==counterpart:
+                phase_environment['DLLM_EXPERIMENTAL_PREFILL_TOKEN_BUDGET']=str(args.prefill_token_budget)
             if args.q4_marlin_control_library and engine=='dllm':
                 phase_environment['DLLM_Q4_MARLIN_LIBRARY']=str(marlin_control)
             if args.q4_residual_control_library:
@@ -277,7 +288,8 @@ def main():
             if args.production_prefill_f32 and engine==counterpart:
                 phase_environment['DLLM_KQUANT_PREFILL_F32']='1'
             if engine!='llama.cpp':
-                module={'coalesced-prefill':'scripts.experiments.serve_batch_wait',
+                module={'prefill-budget':'scripts.experiments.serve_prefill_budget',
+                        'coalesced-prefill':'scripts.experiments.serve_batch_wait',
                         'q4-small-tiles':'scripts.experiments.serve_q4_small_tiles',
                         'expand-tiles':'scripts.experiments.serve_expand_tiles',
                         'dense-cache':'scripts.experiments.serve_dense_cache',
@@ -359,7 +371,7 @@ def main():
                         case['median_seconds']=statistics.median(r['seconds'] for r in measured)
                         case['median_aggregate_output_tokens_per_second']=statistics.median(
                             r['aggregate_output_tokens_per_second'] for r in measured)
-                    if args.q4_marlin_library or (args.dllm_q4_marlin_library and engine=='dllm'):
+                    if args.q4_marlin_library or (args.dllm_q4_marlin_library and (engine=='dllm' or args.prefill_token_budget)):
                         with urlopen(base+'/v1/models/status',timeout=30) as response:
                             run['memory_after_workloads']=json.load(response)
                     if args.lifecycle and engine!='llama.cpp':
@@ -394,6 +406,10 @@ def main():
                             selected=run['memory_after_workloads']['models'][0]
                             assert selected['q4_marlin_abi'] in (1,2)
                             assert selected['gpu_packed_layout_overhead_bytes']==(111099904 if selected['q4_marlin_abi']==1 else 0)
+                        if args.prefill_token_budget:
+                            assert selected['q4_marlin_abi']==2
+                            marker=f'+experimental-prefill-budget{args.prefill_token_budget}'
+                            assert (marker in run['kernel_backend']) == (engine==counterpart)
                         if args.production_q4_marlin:
                             native_selected=engine==counterpart or bool(args.q4_marlin_control_library)
                             assert ('+cuda-q4-marlin' in run['kernel_backend']) == native_selected

@@ -2642,3 +2642,35 @@ Single-request post-first-output throughput is 37.89/37.55/36.53 →
 9.552–9.909. These two samples per mode show no clear loading-time gain.
 The completed native upgrade retains the same hardware/model/context scope;
 longer contexts and larger aggregate prefill groups remain separate experiments.
+
+## Aggregate Q4 Marlin prefill grouping probe (A2)
+
+[Raw diagnostic](mistral-q4-marlin-prefill-budget-a2.json) uses the qualified
+ABI 2 binary and pinned Mistral Q4 fixture above. Four 129-token prompts
+exceed the normal 512-token aggregate grouping limit by four tokens. An
+explicit 1024-token experimental budget keeps them in one 516-row forward.
+Per-request context and KV capacity remain 512. Production defaults are
+unchanged. This is synchronized prefill only, not HTTP or decode throughput.
+
+Across the forward/reverse 512/1024/2048 budget sequence, pooled medians were:
+
+| Tokens per request | Budget 512 | Budget 1024 | Budget 2048 |
+|---|---:|---:|---:|
+| 129 | 641.80 ms | 622.31 ms | 626.24 ms |
+| 400 | 1895.69 ms | 1876.07 ms | 1880.26 ms |
+| 512 | 2384.57 ms | 2401.45 ms | 2405.27 ms |
+
+All 18 cases kept greedy tokens unchanged; maximum relative RMS was 0.000300.
+Maximum allocated bytes rose from 4,675,142,656 to 4,784,146,944 (1024 budget)
+or 5,002,147,328 (2048), below this executor's admitted 5,152,121,504 bytes.
+This observed margin is not general activation-memory accounting. The larger
+budget has no clear benefit on the longest prompts, so it remains isolated
+pending layout and HTTP qualification. The raw report's script hash predates
+two metadata-only additions (model digest and prefill-graph status); those
+fields were not retrospectively inserted into the measured report.
+
+The subsequent [1024-budget layout gate](mistral-q4-marlin-prefill-budget-layout-a2.json)
+passed across eager/graph, fixed/paged and chunked paths. Each four-slot
+executor explicitly recorded the 1024-token aggregate limit; the single-slot
+reference retained 512. Independent model arithmetic remains covered by the
+qualified ABI 2 reference gate above.

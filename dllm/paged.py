@@ -151,8 +151,9 @@ class PagedExecutor(BatchExecutor):
                  for slot,length,start in zip(slots,lengths,starts)]
         self.pool.resize_many(sizes,replace=True)
         self._sync_pages()
-        if sum(lengths)>self.context:
-            return torch.cat([self.prefill_batch(batch,assigned) for batch,assigned in groups(prompts,slots,self.context)])
+        token_budget = getattr(self, 'prefill_token_budget', self.context)
+        if sum(lengths)>token_budget:
+            return torch.cat([self.prefill_batch(batch,assigned) for batch,assigned in groups(prompts,slots,token_budget)])
         ids = torch.tensor([token for prompt in prompts for token in prompt],device=self.device)
         positions = torch.tensor([i for length,start in zip(lengths,starts) for i in range(start,start+length)],device=self.device)
         slot_ids = torch.tensor([slot for slot,length in zip(slots,lengths) for _ in range(length)],device=self.device)

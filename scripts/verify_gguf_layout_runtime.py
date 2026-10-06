@@ -41,6 +41,7 @@ def main():
     experiments=parser.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-marlin', metavar='LIBRARY')
     experiments.add_argument('--experimental-q4-marlin-context',type=int,choices=(2048,))
+    experiments.add_argument('--experimental-q4-marlin-prefill-budget',type=int,choices=(1024,2048))
     experiments.add_argument('--experimental-awq-decode', action='store_true')
     experiments.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
@@ -59,6 +60,12 @@ def main():
         parser.error('prompt lengths must be positive and leave seven decode positions')
     pool_tokens = paged_capacity(args.context, lengths)
     experiment = None
+    if args.experimental_q4_marlin_prefill_budget:
+        if args.context!=512 or not os.environ.get('DLLM_Q4_MARLIN_LIBRARY'):
+            parser.error('prefill experiment requires context512 and DLLM_Q4_MARLIN_LIBRARY')
+        args.require_q4_marlin=True
+        from experiments.q4_marlin_prefill_budget import install_validation_budget
+        experiment=install_validation_budget(args.experimental_q4_marlin_prefill_budget)
     if args.experimental_q4_marlin_context:
         if not os.environ.get('DLLM_Q4_MARLIN_LIBRARY'):
             parser.error('context experiment requires DLLM_Q4_MARLIN_LIBRARY')
@@ -203,6 +210,8 @@ def main():
                 for graph in (False, True):
                     print(f'Checking paged={paged}, graph={graph}', flush=True)
                     executor = make_executor(source, use_graph=graph, max_batch=4)
+                    if args.experimental_q4_marlin_prefill_budget:
+                        assert executor.prefill_token_budget==args.experimental_q4_marlin_prefill_budget
                     if args.experimental_q4_marlin_context:
                         assert executor.context==args.context
                     if args.require_q4_marlin:
