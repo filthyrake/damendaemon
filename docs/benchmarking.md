@@ -4,6 +4,14 @@
 
 Compare identical revisions, precision, context, output lengths, and hardware. CPU tests establish behavior, not GPU performance.
 
+For a warm result, initialize every execution shape the measured workload can
+reach, not just one request at each concurrency. Arrival timing can make the
+first round process prompts singly and expose a packed shape only during timed
+rounds. Record actual group sizes and warmup cost; report first-use shape latency
+separately. The [Q4 network comparison](evidence/quantization/cuda/q4-arithmetic/README.md#all-reachable-prompt-shapes-warm)
+shows why this distinction matters. Generic `dllm bench` does not do that warmup
+for you.
+
 ## Qualified baseline results
 
 Profiling identified excessive small-kernel launches in the first executor.

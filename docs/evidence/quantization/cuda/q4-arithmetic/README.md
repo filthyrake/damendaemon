@@ -324,3 +324,32 @@ rounds, but must not be interpreted as guaranteeing every packed shape was warm.
 This second peer-only window was removed early: lab 2026-10-06
 05:35:34–05:38:57 UTC, desktop 05:35:35–05:38:58 UTC. Test firewall rules were
 absent afterward; A2/A30/3090 allocations returned to 0/13403/10835 MiB.
+
+### All reachable prompt shapes warm
+
+The corrected ABBA comparison holds adjacent Q4 arithmetic fixed, warms group
+sizes 1/2/3/4 on the GPU owner according to each packing policy, releases those
+slots, then runs the same HTTP measurement. Warmup takes 208/803/227/212 ms in
+launch order and is excluded from the following steady-state results.
+
+| Concurrency | Prompt packing | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Off | 19.32 | 148.50 | 214.85 |
+| 1 | On | 19.11 | 148.78 | 214.60 |
+| 2 | Off | 30.03 | 178.53 | 349.78 |
+| 2 | On | 23.57 | 174.46 | 358.39 |
+| 4 | Off | 50.07 | 231.21 | 548.42 |
+| 4 | On | 46.83 | 211.24 | 599.12 |
+
+The two-request penalty does not reproduce in this corrected run. At four,
+throughput improves 9.2% and request latency 8.6%. At one, the policies execute
+the same path and differ by about 0.1% throughput. At two, six of 20 requests
+actually use pairs; at four, 8/24/8 requests use groups of 1/3/2 respectively.
+Arrival/group composition also varies between runs, so warming alone is not
+claimed as the sole cause of every timing difference. There is no basis here
+for disabling two-prompt packing. First-use shape costs remain a separate
+performance concern; this benchmark-only warmup does not change service startup.
+
+The third firewall window was removed early: lab 2026-10-06
+05:41:29–05:46:04 UTC, desktop 05:41:30–05:46:05 UTC. Final rules and GPU
+allocations again match their pre-test state.
