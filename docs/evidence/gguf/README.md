@@ -2176,3 +2176,45 @@ All generated texts match. Every phase passes host restore, actual model swap,
 disk reload, cancellation recovery, and streamed/concurrent chat checks.
 These are prototype results; cleaned-up production source requires its own
 integrated validation before promotion.
+
+### Production paired residual activation layout
+
+`native/q4_residual.cu` now uses the paired activation layout as ABI 202.
+The loader accepts both ABI 201 and 202, always obtaining quantize/GEMV from
+one library handle. Scratch allocation sizes, packed model weights, floating
+arithmetic, opt-in configuration and the qualified one-row model scope are
+unchanged. Rebuilding the residual library selects the new layout; old library
+files continue to use their existing implementation.
+
+Separate integrated A2 reports qualify the cleaned-up source:
+
+- `q4-paired-production-bytes-a2.json`: all 24 exact activation/scales checks.
+- `q4-paired-production-matrices-a2.json`: all 72 native equality and independent
+  RMS checks. Large qualified shapes improve 5.0–8.4%; the unselected tiny
+  113-output diagnostic remains 20.5% slower.
+- `mistral-q4-paired-production-reference-a2.json`: all 96 independent HF logit
+  checks, zero greedy mismatches, maximum relative RMS 0.004182.
+- `mistral-q4-paired-production-layout-a2.json`: all 128 graph/batch/paging/chunk
+  comparisons, maximum relative RMS 0.002653.
+- `mistral-q4-paired-production-http-a2.json`: normal-server ABBA with explicit
+  existing-residual control, identical model/precision/context/workloads to the
+  prototype comparison, and all lifecycle checks in every phase.
+
+The integrated HTTP medians pool measured rounds from both phases per engine:
+
+| Prompt / concurrency | Existing / new total latency (ms) | Existing / new aggregate output tokens/s | Existing / new first output (ms) |
+| --- | ---: | ---: | ---: |
+| 16 / 1 | 582.41 / 544.83 | 27.47 / 29.37 | 56.18 / 56.58 |
+| 129 / 1 | 892.69 / 854.53 | 17.92 / 18.72 | 361.60 / 361.75 |
+| 400 / 1 | 1106.87 / 1074.49 | 14.46 / 14.89 | 564.66 / 569.76 |
+| 129 / 2 | 1508.33 / 1509.51 | 21.22 / 21.20 | 481.49 / 482.19 |
+| 129 / 4 | 1787.13 / 1796.34 | 35.81 / 35.63 | 993.78 / 996.98 |
+
+Single-request post-first-output throughput is 28.52/28.23/27.68 before and
+30.75/30.48/29.71 tokens/s after. Single-request total latency improves
+6.45%/4.27%/2.93%; concurrency-two/four changes stay within 0.6%, not a gain.
+Every generated text matches. Host restore, actual model swap, disk reload,
+cancellation recovery and streamed/concurrent chat pass. The local suite passes
+447 tests, including ABI compatibility/rejection and per-executor dispatch.
+This qualifies the existing opt-in A2 workload, not broader hardware, models,
+precision equivalence or parity with another inference engine.

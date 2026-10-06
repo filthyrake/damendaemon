@@ -29,13 +29,26 @@ __global__ void quantize(const half* x, int8_t* q1, int8_t* q2, float4* scales, 
         maximum = fmaxf(maximum, __shfl_xor_sync(0xffffffff, maximum, offset));
     const float d2 = dyadic_scale(maximum);
     const int second = d2 == 0.f ? 0 : max(-127, min(127, __float2int_rn(residual / d2)));
-    q1[index] = static_cast<int8_t>(first);q2[index] = static_cast<int8_t>(second);
+    // ABI 202 pairs each low/high nibble dot's four activation bytes. Each
+    // dyadic term still occupies K bytes and retains exactly the same values.
+    unsigned packed_first = (static_cast<unsigned>(first)&255u) << ((lane&3)*8);
+    unsigned packed_second = (static_cast<unsigned>(second)&255u) << ((lane&3)*8);
+    packed_first |= __shfl_xor_sync(0xffffffff, packed_first, 1);
+    packed_first |= __shfl_xor_sync(0xffffffff, packed_first, 2);
+    packed_second |= __shfl_xor_sync(0xffffffff, packed_second, 1);
+    packed_second |= __shfl_xor_sync(0xffffffff, packed_second, 2);
+    const unsigned high_first = __shfl_xor_sync(0xffffffff, packed_first, 16);
+    const unsigned high_second = __shfl_xor_sync(0xffffffff, packed_second, 16);
+    if (lane<16 && (lane&3)==0) {
+        reinterpret_cast<uint2*>(q1)[group*4+lane/4] = make_uint2(packed_first, high_first);
+        reinterpret_cast<uint2*>(q2)[group*4+lane/4] = make_uint2(packed_second, high_second);
+    }
     for (int offset = 16; offset; offset >>= 1)
         sum += __shfl_down_sync(0xffffffff, sum, offset);
     if (lane == 0) scales[group] = make_float4(d1, d2, sum, 0.f);
 }
 
-template<int Rows>
+template<int Rows, bool StreamWeights>
 __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs,
                           const uint8_t* w, const half* ws, const half* bias,
                           half* output, int n, int k) {
@@ -46,7 +59,10 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
     const half* weight_scales = ws + static_cast<size_t>(row)*(k/32);
     float accum[Rows] = {};
     for (int packed_column=lane*4; packed_column<k/2; packed_column+=128) {
-        const uint32_t packed=*reinterpret_cast<const uint32_t*>(weights+packed_column);
+        uint32_t packed;
+        if constexpr (StreamWeights)
+            packed=__ldcg(reinterpret_cast<const uint32_t*>(weights+packed_column));
+        else packed=*reinterpret_cast<const uint32_t*>(weights+packed_column);
 
         uint32_t lo=packed & 0x0f0f0f0fu, hi=(packed>>4) & 0x0f0f0f0fu;
         lo=(lo & 0x07070707u) | ((~lo & 0x08080808u)*31u);
@@ -57,10 +73,12 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
         #pragma unroll
         for (int r=0; r<Rows; ++r) {
             const int index=r*k+column;
-            const int a=__dp4a(static_cast<int>(lo),*reinterpret_cast<const int*>(q1+index),
-                        __dp4a(static_cast<int>(hi),*reinterpret_cast<const int*>(q1+index+16),0));
-            const int b=__dp4a(static_cast<int>(lo),*reinterpret_cast<const int*>(q2+index),
-                        __dp4a(static_cast<int>(hi),*reinterpret_cast<const int*>(q2+index+16),0));
+            const uint2 first_pair=*reinterpret_cast<const uint2*>(q1+r*k+2*packed_column);
+            const uint2 second_pair=*reinterpret_cast<const uint2*>(q2+r*k+2*packed_column);
+            const int a=__dp4a(static_cast<int>(lo),static_cast<int>(first_pair.x),
+                        __dp4a(static_cast<int>(hi),static_cast<int>(first_pair.y),0));
+            const int b=__dp4a(static_cast<int>(lo),static_cast<int>(second_pair.x),
+                        __dp4a(static_cast<int>(hi),static_cast<int>(second_pair.y),0));
             const float4 d=xs[index/32];
             accum[r]+=scale*(static_cast<float>(a)*d.x+static_cast<float>(b)*d.y);
         }
@@ -86,11 +104,20 @@ extern "C" int dllm_q4_residual_gemv(const void* q1,const void* q2,const void* x
     const void* w,const void* ws,const void* bias,void* output,int rows,int n,int k,void* stream) {
     if (!q1 || !q2 || !xs || !w || !ws || !output || rows!=1 || n<=0 || k<=0 || k%256)
         return cudaErrorInvalidValue;
-    q4_residual<1><<<(n+3)/4,128,0,reinterpret_cast<cudaStream_t>(stream)>>>(
-        static_cast<const int8_t*>(q1),static_cast<const int8_t*>(q2),static_cast<const float4*>(xs),
-        static_cast<const uint8_t*>(w),static_cast<const half*>(ws),static_cast<const half*>(bias),
-        static_cast<half*>(output),n,k);
+    // The qualified wide down projection benefits from bypassing L1. Other
+    // measured projections retain ordinary caching; dispatch once per launch.
+    if (n==4096 && k==14336) {
+        q4_residual<1,true><<<(n+3)/4,128,0,reinterpret_cast<cudaStream_t>(stream)>>>(
+            static_cast<const int8_t*>(q1),static_cast<const int8_t*>(q2),static_cast<const float4*>(xs),
+            static_cast<const uint8_t*>(w),static_cast<const half*>(ws),static_cast<const half*>(bias),
+            static_cast<half*>(output),n,k);
+    } else {
+        q4_residual<1,false><<<(n+3)/4,128,0,reinterpret_cast<cudaStream_t>(stream)>>>(
+            static_cast<const int8_t*>(q1),static_cast<const int8_t*>(q2),static_cast<const float4*>(xs),
+            static_cast<const uint8_t*>(w),static_cast<const half*>(ws),static_cast<const half*>(bias),
+            static_cast<half*>(output),n,k);
+    }
     return cudaGetLastError();
 }
 
-extern "C" int dllm_q4_residual_abi_version() { return 201; }
+extern "C" int dllm_q4_residual_abi_version() { return 202; }

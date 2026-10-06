@@ -149,10 +149,21 @@ context at most 512. Build `dllm-q4-residual` and set
 `DLLM_Q4_RESIDUAL_LIBRARY` to that library before starting dllm. Its per-model
 selector only changes one-row decode; other shapes and models fall back.
 It preserves packed weights but applies scaling in FP32 instead of rounding
-each coefficient to FP16. The isolated candidate reduced single-request HTTP
-latency 11–18%; final normal-path serving confirmation is tracked in
-[the GGUF evidence](evidence/gguf/README.md). This is an explicit opt-in,
-not a new default or a broader precision-parity claim.
+each coefficient to FP16. The original residual implementation reduced
+single-request HTTP latency 11–18% against ordinary native Q4. Follow-up paired
+activation loads improve another 3–6.5% against that residual implementation
+on the matched A2 workloads; this does not establish a concurrency gain or
+cross-engine parity. See [the GGUF evidence](evidence/gguf/README.md) for the
+separate model, runtime-layout and serving gates. This remains an explicit
+opt-in with the same model scope.
+
+New builds use residual ABI 202, which pairs activation bytes for vector loads
+without changing their values or increasing scratch size. The loader also
+accepts existing ABI 201 libraries. Quantizer and matrix functions must come
+from the same library: their private activation layouts are not interchangeable.
+Model files and packed weight layouts are unchanged. Keep the ordinary Q4
+library configured for fallback, and rebuild the residual library to use the
+new layout.
 
 GGUF Q4_K/Q5_K/Q6_K have a separate CUDA C++ decode library. It reads the
 original packed bytes, including mixed-format fused projections, and preserves

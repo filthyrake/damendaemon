@@ -11,7 +11,10 @@ def library(path):
     # Keep loaded handles alive for closures and captured CUDA graphs.
     handle=ctypes.CDLL(path)
     abi=handle.dllm_q4_residual_abi_version;abi.argtypes=[];abi.restype=ctypes.c_int
-    if abi()!=201:raise RuntimeError('unsupported Q4 residual CUDA ABI')
+    # Both layouts have identical allocation sizes and entrypoint signatures.
+    # Always obtain quantize and GEMV from this same handle: their private
+    # activation buffers cannot be exchanged between ABI 201 and 202.
+    if abi() not in (201,202):raise RuntimeError('unsupported Q4 residual CUDA ABI')
     quantize=handle.dllm_q4_residual_quantize
     quantize.argtypes=[ctypes.c_void_p]*4+[ctypes.c_int]*2+[ctypes.c_void_p]
     quantize.restype=ctypes.c_int

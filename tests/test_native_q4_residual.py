@@ -1,6 +1,6 @@
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock,patch
 
 import torch
 from dllm.native_q4_residual import library,linear,qualified_scope,select
@@ -40,13 +40,25 @@ class NativeQ4ResidualTests(unittest.TestCase):
             self.assertEqual(multiply.call_args.kwargs['library_path'],'first')
 
     def test_abi_and_cpu_buffers_fail_before_launch(self):
-        handle=type('Library',(),{})();handle.dllm_q4_residual_abi_version=lambda:1
-        with patch('ctypes.CDLL',return_value=handle),self.assertRaisesRegex(RuntimeError,'ABI'):
-            library('/old-experiment')
+        for version in (1,200,203):
+            handle=type('Library',(),{})();handle.dllm_q4_residual_abi_version=lambda:version
+            with self.subTest(version=version),patch('ctypes.CDLL',return_value=handle),self.assertRaisesRegex(RuntimeError,'ABI'):
+                library(f'/unsupported-{version}')
         with patch('ctypes.CDLL') as load,self.assertRaisesRegex(ValueError,'buffers'):
             linear(torch.zeros(1,256,dtype=torch.float16),torch.zeros(2,128,dtype=torch.uint8),
                    torch.ones(2,8,dtype=torch.float16),library_path='/not-loaded')
         load.assert_not_called()
+
+    def test_supported_abis_bind_both_functions_to_the_same_library(self):
+        for version in (201,202):
+            with self.subTest(version=version):
+                handle=Mock()
+                handle.dllm_q4_residual_abi_version.return_value=version
+                with patch('ctypes.CDLL',return_value=handle):
+                    loaded,quantize,multiply=library(f'/abi-{version}')
+                self.assertIs(loaded,handle)
+                self.assertIs(quantize,handle.dllm_q4_residual_quantize)
+                self.assertIs(multiply,handle.dllm_q4_residual_gemv)
 
     def test_per_model_q4_dispatch_leaves_dense_weights_on_fallback(self):
         quant=torch.zeros(2,16,dtype=torch.uint8);dense=torch.ones(2,32);scales=torch.ones(2,1,dtype=torch.float16)
