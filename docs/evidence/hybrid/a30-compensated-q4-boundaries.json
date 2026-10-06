@@ -1,0 +1,324 @@
+{
+  "passed": true,
+  "device": "NVIDIA A30",
+  "torch": "2.6.0+cu124",
+  "quantization": "q4_0",
+  "cases": [
+    {
+      "shape": [
+        1,
+        1,
+        32
+      ],
+      "kind": "normal",
+      "relative_rms": 4.8165857151616365e-06,
+      "max_absolute": 1.2479722499847412e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        1,
+        1,
+        32
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        1,
+        1,
+        32
+      ],
+      "kind": "strided",
+      "relative_rms": 1.7921358448802494e-05,
+      "max_absolute": 2.468004822731018e-08,
+      "passed": true
+    },
+    {
+      "shape": [
+        4,
+        63,
+        64
+      ],
+      "kind": "normal",
+      "relative_rms": 3.3957805953832576e-06,
+      "max_absolute": 2.2817403078079224e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        4,
+        63,
+        64
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        4,
+        63,
+        64
+      ],
+      "kind": "strided",
+      "relative_rms": 4.07552215619944e-06,
+      "max_absolute": 3.7532299757003784e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        5,
+        65,
+        96
+      ],
+      "kind": "normal",
+      "relative_rms": 3.539145609465777e-06,
+      "max_absolute": 3.0547380447387695e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        5,
+        65,
+        96
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        5,
+        65,
+        96
+      ],
+      "kind": "strided",
+      "relative_rms": 4.2158239921263885e-06,
+      "max_absolute": 4.800967872142792e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        31,
+        64,
+        32
+      ],
+      "kind": "normal",
+      "relative_rms": 3.738149416676606e-06,
+      "max_absolute": 2.905726432800293e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        31,
+        64,
+        32
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        31,
+        64,
+        32
+      ],
+      "kind": "strided",
+      "relative_rms": 3.390170149941696e-06,
+      "max_absolute": 3.762543201446533e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        32,
+        65,
+        64
+      ],
+      "kind": "normal",
+      "relative_rms": 3.6153435303276638e-06,
+      "max_absolute": 3.650784492492676e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        32,
+        65,
+        64
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        32,
+        65,
+        64
+      ],
+      "kind": "strided",
+      "relative_rms": 3.6036574329045834e-06,
+      "max_absolute": 4.284083843231201e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        33,
+        63,
+        96
+      ],
+      "kind": "normal",
+      "relative_rms": 3.8142532048368594e-06,
+      "max_absolute": 4.023313522338867e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        33,
+        63,
+        96
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        33,
+        63,
+        96
+      ],
+      "kind": "strided",
+      "relative_rms": 3.5575919810071355e-06,
+      "max_absolute": 4.023313522338867e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        127,
+        65,
+        5120
+      ],
+      "kind": "normal",
+      "relative_rms": 6.703849976474885e-06,
+      "max_absolute": 6.67572021484375e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        127,
+        65,
+        5120
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        127,
+        65,
+        5120
+      ],
+      "kind": "strided",
+      "relative_rms": 6.735511306033004e-06,
+      "max_absolute": 6.079673767089844e-06,
+      "passed": true
+    },
+    {
+      "shape": [
+        128,
+        64,
+        96
+      ],
+      "kind": "normal",
+      "relative_rms": 3.5036757708439836e-06,
+      "max_absolute": 5.112960934638977e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        128,
+        64,
+        96
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        128,
+        64,
+        96
+      ],
+      "kind": "strided",
+      "relative_rms": 3.792529469137662e-06,
+      "max_absolute": 8.195638656616211e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        129,
+        63,
+        64
+      ],
+      "kind": "normal",
+      "relative_rms": 3.6901888051943388e-06,
+      "max_absolute": 4.805624485015869e-07,
+      "passed": true
+    },
+    {
+      "shape": [
+        129,
+        63,
+        64
+      ],
+      "kind": "zero",
+      "relative_rms": 0.0,
+      "max_absolute": 0.0,
+      "passed": true
+    },
+    {
+      "shape": [
+        129,
+        63,
+        64
+      ],
+      "kind": "strided",
+      "relative_rms": 3.6959486351406667e-06,
+      "max_absolute": 5.21540641784668e-07,
+      "passed": true
+    }
+  ],
+  "rejected": [
+    "input dtype",
+    "weight dtype",
+    "scale dtype",
+    "input rank",
+    "weight rank",
+    "scale rank",
+    "width mismatch",
+    "scale shape",
+    "weight stride",
+    "scale stride",
+    "device mismatch",
+    "empty width"
+  ],
+  "shape_checks": [
+    "empty batch",
+    "vector",
+    "rank-three batch"
+  ]
+}

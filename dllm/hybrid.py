@@ -55,7 +55,11 @@ class HybridExecutor:
     @property
     def supports_chunked_prefill(self):
         from .device import selected_accelerator
-        return (selected_accelerator() == 'rocm' and self.fused is not None
+        accelerator = selected_accelerator()
+        # Construction has already enforced the Q4 device/precision policy.
+        admitted_a30_q4 = (accelerator == 'cuda' and self.model.quantization == 'q4_0'
+                           and self.hybrid_precision == 'compensated')
+        return ((accelerator == 'rocm' or admitted_a30_q4) and self.fused is not None
                 and self.chunk_scan is None)
 
     @property
@@ -366,7 +370,7 @@ class HybridExecutor:
     @torch.inference_mode()
     def prefill_chunk(self, tokens, slot, start, final=True):
         if not self.supports_chunked_prefill or self.requires_full_prefill:
-            raise ValueError('hybrid chunked prefill currently requires the ROCm Triton scan text path')
+            raise ValueError('hybrid chunked prefill requires an admitted Triton scan text path')
         if (type(slot) is not int or not 0 <= slot < self.max_batch
                 or type(start) is not int or start < 0 or type(final) is not bool
                 or not tokens or start + len(tokens) > self.context

@@ -61,6 +61,25 @@ class HybridQ4Tests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate({'model_type': 'qwen3'}, 512)
 
+    def test_chunked_prefill_stays_within_admitted_q4_cuda_path(self):
+        from dllm.hybrid import HybridExecutor
+        executor = HybridExecutor.__new__(HybridExecutor)
+        executor.model = SimpleNamespace(quantization='q4_0')
+        executor.hybrid_precision = 'compensated'
+        executor.fused = object()
+        executor.chunk_scan = None
+        with patch.dict('os.environ', {'DLLM_DEVICE': 'cuda'}):
+            self.assertTrue(executor.supports_chunked_prefill)
+            self.assertFalse(executor.requires_full_prefill)
+            for target, name, value in ((executor.model, 'quantization', 'q8_0'),
+                                        (executor, 'hybrid_precision', 'float16'),
+                                        (executor, 'fused', None),
+                                        (executor, 'chunk_scan', object())):
+                with patch.object(target, name, value):
+                    self.assertFalse(executor.supports_chunked_prefill)
+        with patch.dict('os.environ', {'DLLM_DEVICE': 'mps'}):
+            self.assertFalse(executor.supports_chunked_prefill)
+
     def test_packed_header_budget_keeps_embedding_and_norm_precision(self):
         from dllm.qwen2 import weight_bytes
         config = self.config | {'tie_word_embeddings': True}
