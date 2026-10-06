@@ -2286,3 +2286,33 @@ matrix path is 0.004171. The candidate remains under 0.001. Earlier completed
 rows are retained, but this aborted report is not full matrix qualification.
 A complete sweep must distinguish candidate and control failures without
 raising either threshold or silently skipping the subnormal cases.
+
+`mistral-q4-marlin-matrices-complete-a2.json` completes all 180 cases without
+relaxing either candidate or control thresholds. The candidate passes every
+case (maximum relative RMS 0.00037691). Two baseline cases fail: output and
+down projections, 129 rows, exponent -14, no bias, with relative RMS 0.004171
+and 0.001523. Consequently the combined report deliberately remains
+`passed: false`, with `candidate_passed: true` and `control_passed: false`.
+The process exits nonzero after preserving the full report. This does not
+hide an overall failure behind the candidate result.
+
+Both implementations pass the normal-scale cases used for warm timings.
+Across five projections, baseline/candidate time ratios are:
+
+| Rows | Matrix speed ratio range |
+| --- | ---: |
+| 2 | 1.77–2.13x |
+| 4 | 1.79–2.13x |
+| 16 | 1.82–2.11x |
+| 64 | 1.79–1.90x |
+| 129 | 2.02–2.10x |
+| 400 | 1.17–1.19x |
+
+Each ratio uses ABBA CUDA graph timing at ordinary activation scale, including
+output allocation but excluding one-time repacking. The experiment retains
+canonical Q4 matrices and adds prepared matrices of 14,548,992 / 9,699,328 /
+67,895,296 / 33,947,648 / 75,776,000 bytes for QKV/output/gate-up/down/head,
+plus one shared 2,621,600-byte workspace. Prepared scales include many negative
+values; the real-source cases exercise them without requantization. These are
+matrix results with a residency tradeoff, not a full-model or HTTP speed claim.
+The baseline subnormal discrepancy remains an explicit follow-up under #23.

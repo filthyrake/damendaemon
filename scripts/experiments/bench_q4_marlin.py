@@ -66,6 +66,8 @@ def main():
                     negative_scale_count=int((scales<0).sum().item())))
             for rows in (2, 4, 16, 64, 129, 400):
                 x = torch.randn(rows, k, device='cuda', dtype=torch.float16)
+                row_candidate_passed = True
+                timing_scale_control_passed = True
                 for exponent in (-14, 0, 10):
                     value = (x.float()*2.**exponent).half()
                     for biased in (False, True):
@@ -80,11 +82,20 @@ def main():
                         error = actual.float()-expected.float()
                         rms = (error.square().mean()/expected.float().square().mean().clamp_min(1e-12)).sqrt().item()
                         control_rms = ((baseline.float()-expected.float()).square().mean()/expected.float().square().mean().clamp_min(1e-12)).sqrt().item()
-                        passed = bool(torch.isfinite(actual).all()) and rms<.001 and control_rms<.001
+                        candidate_passed = bool(torch.isfinite(actual).all()) and rms<.001
+                        control_passed = bool(torch.isfinite(baseline).all()) and control_rms<.001
+                        row_candidate_passed &= candidate_passed
+                        if exponent == 0:
+                            timing_scale_control_passed &= control_passed
                         report['checks'].append(dict(name=name, rows=rows, exponent=exponent, bias=biased,
                             relative_rms=rms, control_relative_rms=control_rms,
-                            exact_production=bool(torch.equal(actual, baseline)), passed=passed))
-                        assert passed, report['checks'][-1]
+                            exact_production=bool(torch.equal(actual, baseline)),
+                            candidate_passed=candidate_passed, control_passed=control_passed,
+                            passed=candidate_passed and control_passed))
+                if not row_candidate_passed or not timing_scale_control_passed:
+                    print(name, rows, 'accuracy failure; timing skipped', flush=True)
+                    Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
+                    continue
                 functions = dict(production=lambda:linear(x, weight, scales, bias),
                                  marlin=lambda:library.linear(x, prepared[True]))
                 samples = {key:[] for key in functions}
@@ -93,10 +104,14 @@ def main():
                 report['timings'].append(dict(name=name, rows=rows, samples_ms=samples,
                     production_ms=statistics.median(samples['production']),
                     marlin_ms=statistics.median(samples['marlin'])))
-                print(name, rows, 'passed', flush=True)
+                print(name, rows, 'candidate passed; all control failures retained', flush=True)
                 Path(args.output).write_text(json.dumps(report, indent=2)+'\n')
             del weight, scales, oracle, bias, prepared, x, value, expected, actual, baseline, functions
-        report['passed'] = True
+        report['candidate_passed'] = all(c['candidate_passed'] for c in report['checks'])
+        report['control_passed'] = all(c['control_passed'] for c in report['checks'])
+        report['passed'] = report['candidate_passed'] and report['control_passed']
+        if not report['passed']:
+            raise AssertionError('complete matrix sweep has accuracy failures; inspect candidate/control fields')
     except Exception as error:
         report['error'] = repr(error)
         raise
