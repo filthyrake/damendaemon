@@ -511,3 +511,13 @@ adapter subsequently passes the expanded A2/A30 model trace: 282 independent
 checks and 22 packed stage calls, with integrated selective Q4 row bounds held
 on. `qwen2-rope-runtime-tokens-replay.json` records this gate. Production rotary
 dispatch remains unchanged pending first-use and whole-model measurements.
+
+The rotary-only whole-model ABBA comparison holds integrated row bounds,
+adjacent layout and packing fixed. All outputs match. With batches 1/2/4,
+static→runtime-stride aggregate output rates are 231.03→233.23,
+470.27→473.64 and 903.17→909.44 tokens/s. First-token medians are
+21.29→21.33, 22.75→23.09 and 26.21→26.64 ms; total-request medians are
+138.51→137.20, 136.09→135.13 and 141.72→140.75 ms. These small mixed latency
+differences and sub-1% throughput differences do not establish a warm-speed
+gain. This remains model execution without HTTP/network. Raw data is in
+`qwen2-rope-runtime-tokens-benchmark.json`.

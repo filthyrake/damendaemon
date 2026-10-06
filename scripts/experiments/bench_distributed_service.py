@@ -62,6 +62,7 @@ def worker(args):
         finally:
             Path(args.output).write_text(json.dumps(report,indent=2)+'\n');runtime.close()
     def measured(runtime,*positional,**keywords):
+        report['runtime_row_bounds']=bool(getattr(runtime.pair.stage.q4_linear,'runtime_rows',False))
         # Arrival timing can make a client's first "warmup" use one slot even
         # when later measured requests form a new packed shape. Warm every
         # possible group on the GPU owner before timing the HTTP rounds.
@@ -90,7 +91,8 @@ def worker(args):
 
 
 def summarize(trials,compare='capacity'):
-    key='batch_size' if compare=='capacity' else 'q4_stage_adjacent' if compare=='q4-policy' else 'packed_prefill'
+    key={'capacity':'batch_size','q4-policy':'q4_stage_adjacent',
+         'prefill':'packed_prefill','runtime-rows':'runtime_row_bounds'}[compare]
     modes=(1,4) if compare=='capacity' else (False,True)
     summary=[]
     for concurrency in (1,2,4):
@@ -110,22 +112,25 @@ def main():
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
     p.add_argument('--output',required=True);p.add_argument('--worker',action='store_true')
     p.add_argument('--batch-size',type=int,choices=(1,4),default=1)
-    p.add_argument('--compare',choices=('capacity','prefill','q4-policy'),default='capacity')
+    p.add_argument('--compare',choices=('capacity','prefill','q4-policy','runtime-rows'),default='capacity')
     args=p.parse_args()
-    if args.compare=='q4-policy' and args.quantization!='q4_0':raise ValueError('Q4 policy comparison requires Q4 weights')
+    if args.compare in ('q4-policy','runtime-rows') and args.quantization!='q4_0':raise ValueError('Q4 policy comparison requires Q4 weights')
     if args.worker:return worker(args)
     from scripts.distributed_job import run_job
     report=dict(passed=False,compare=args.compare,scope='Same model, precision, GPU pair and HTTP workload; '+
                 ('batch capacity' if args.compare=='capacity' else 'both Q4 body layout and stage prefill packing'
-                 if args.compare=='q4-policy' else 'stage prefill packing')+' changes.',trials=[])
+                 if args.compare=='q4-policy' else 'Q4 runtime row bounds' if args.compare=='runtime-rows'
+                 else 'stage prefill packing')+' changes.',trials=[])
     output=Path(args.output)
-    previous={key:os.environ.get(key) for key in ('DLLM_PARTITION_PACKED_PREFILL','DLLM_Q4_STAGE_ADJACENT')}
+    previous={key:os.environ.get(key) for key in ('DLLM_PARTITION_PACKED_PREFILL','DLLM_Q4_STAGE_ADJACENT','DLLM_Q4_STAGE_RUNTIME_ROWS')}
     try:
         reference=None
         modes=(1,4,4,1) if args.compare=='capacity' else (0,1,1,0)
         for index,mode in enumerate(modes):
             batch=mode if args.compare=='capacity' else 4
-            if args.compare!='capacity':os.environ['DLLM_PARTITION_PACKED_PREFILL']=str(mode)
+            if args.compare=='runtime-rows':
+                os.environ.update(DLLM_PARTITION_PACKED_PREFILL='1',DLLM_Q4_STAGE_ADJACENT='1',DLLM_Q4_STAGE_RUNTIME_ROWS=str(mode))
+            elif args.compare!='capacity':os.environ['DLLM_PARTITION_PACKED_PREFILL']=str(mode)
             if args.compare=='q4-policy':os.environ['DLLM_Q4_STAGE_ADJACENT']=str(mode)
             trial=output.with_name(output.stem+f'-{index}.json')
             command=[sys.executable,'-m','torch.distributed.run','--standalone','--nproc-per-node','2',
