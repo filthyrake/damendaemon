@@ -2115,3 +2115,15 @@ Streaming weights improves that wide projection by 3.7% but slows the other
 large shapes by 1.5–2.1%. No broad cache policy is promoted. Four-warp calibration
 remains within 0.2% of the production control. The separate builds preserve the
 same precision and compiler options as the launch experiment.
+
+`q4-residual-paired-activations-a2.json` tests an isolated paired activation
+layout (`DLLM_Q4_PAIRED_ACTIVATIONS=1`). Each dyadic term keeps K bytes and the
+same values, arranged so one vector load supplies the low/high nibble dots.
+All 144 native-output and independent RMS checks pass exactly. The four large
+4096-wide projections improve 6.7–8.4% with ordinary weight caching. The
+14336-wide down projection regresses 3.2% in that configuration, but improves
+5.1% when paired activation loads are combined with streaming weight loads.
+The tiny 113-output case regresses 19.7–31.3% and remains outside the normal
+model selector. Four-warp calibration stays within 0.3%. These results motivate
+a combined candidate; they do not yet establish model correctness or serving
+speedup. Production native code remains unchanged at this experiment stage.

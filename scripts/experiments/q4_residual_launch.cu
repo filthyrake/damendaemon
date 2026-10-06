@@ -12,6 +12,9 @@
 #ifndef DLLM_Q4_STREAM_WEIGHTS
 #define DLLM_Q4_STREAM_WEIGHTS 0
 #endif
+#ifndef DLLM_Q4_PAIRED_ACTIVATIONS
+#define DLLM_Q4_PAIRED_ACTIVATIONS 0
+#endif
 static_assert(DLLM_Q4_LAUNCH_WARPS == 2 || DLLM_Q4_LAUNCH_WARPS == 4 ||
               DLLM_Q4_LAUNCH_WARPS == 8 || DLLM_Q4_LAUNCH_WARPS == 16);
 static_assert(DLLM_Q4_SHARED_INPUTS >= 0 && DLLM_Q4_SHARED_INPUTS <= 2);
@@ -46,7 +49,24 @@ __global__ void quantize(const half* x, int8_t* q1, int8_t* q2, float4* scales, 
         maximum = fmaxf(maximum, __shfl_xor_sync(0xffffffff, maximum, offset));
     const float d2 = dyadic_scale(maximum);
     const int second = d2 == 0.f ? 0 : max(-127, min(127, __float2int_rn(residual / d2)));
+#if DLLM_Q4_PAIRED_ACTIVATIONS
+    // Keep both dyadic terms exact, but put each low/high nibble dot's four
+    // activation bytes together. Each term retains its original K-byte size.
+    unsigned packed_first = (static_cast<unsigned>(first)&255u) << ((lane&3)*8);
+    unsigned packed_second = (static_cast<unsigned>(second)&255u) << ((lane&3)*8);
+    packed_first |= __shfl_xor_sync(0xffffffff, packed_first, 1);
+    packed_first |= __shfl_xor_sync(0xffffffff, packed_first, 2);
+    packed_second |= __shfl_xor_sync(0xffffffff, packed_second, 1);
+    packed_second |= __shfl_xor_sync(0xffffffff, packed_second, 2);
+    const unsigned high_first = __shfl_xor_sync(0xffffffff, packed_first, 16);
+    const unsigned high_second = __shfl_xor_sync(0xffffffff, packed_second, 16);
+    if (lane<16 && (lane&3)==0) {
+        reinterpret_cast<uint2*>(q1)[group*4+lane/4] = make_uint2(packed_first, high_first);
+        reinterpret_cast<uint2*>(q2)[group*4+lane/4] = make_uint2(packed_second, high_second);
+    }
+#else
     q1[index] = static_cast<int8_t>(first);q2[index] = static_cast<int8_t>(second);
+#endif
 #if DLLM_Q4_SKIP_SUM
     // The Q4 GEMV consumes only x/y scales. Keep ABI storage, zero unused z.
     sum = 0.f;
@@ -103,10 +123,19 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
         #pragma unroll
         for (int r=0; r<Rows; ++r) {
             const int index=r*k+column;
+#if DLLM_Q4_PAIRED_ACTIVATIONS
+            const uint2 first_pair=*reinterpret_cast<const uint2*>(q1+r*k+2*packed_column);
+            const uint2 second_pair=*reinterpret_cast<const uint2*>(q2+r*k+2*packed_column);
+            const int a=__dp4a(static_cast<int>(lo),static_cast<int>(first_pair.x),
+                        __dp4a(static_cast<int>(hi),static_cast<int>(first_pair.y),0));
+            const int b=__dp4a(static_cast<int>(lo),static_cast<int>(second_pair.x),
+                        __dp4a(static_cast<int>(hi),static_cast<int>(second_pair.y),0));
+#else
             const int a=__dp4a(static_cast<int>(lo),*reinterpret_cast<const int*>(q1+index),
                         __dp4a(static_cast<int>(hi),*reinterpret_cast<const int*>(q1+index+16),0));
             const int b=__dp4a(static_cast<int>(lo),*reinterpret_cast<const int*>(q2+index),
                         __dp4a(static_cast<int>(hi),*reinterpret_cast<const int*>(q2+index+16),0));
+#endif
             const float4 d=xs[index/32];
             accum[r]+=scale*(static_cast<float>(a)*d.x+static_cast<float>(b)*d.y);
         }
