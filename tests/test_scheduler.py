@@ -410,6 +410,31 @@ class ChunkedSchedulerTests(unittest.TestCase):
         self.assertEqual(a[-1]['usage']['prompt_tokens'],2)
         self.assertEqual([e['token'] for e in b if 'token' in e],list(range(1,9)))
 
+    def test_short_prompt_advances_before_long_prefill_finishes(self):
+        # Hold the first chunk until the short request is queued. Both paths
+        # must share prompt work once the second slot is admitted.
+        with ThreadPoolExecutor(2) as pool:
+            long = pool.submit(self.generate, 'abcdefghijklmnop', 2)
+            self.assertTrue(self.executor.entered.wait(2))
+            short = pool.submit(self.generate, 'wxyz', 2)
+            self.wait_pending(1)
+            self.executor.release.set()
+            long_result, short_result = long.result(3), short.result(3)
+        chunks = [event for event in self.executor.chunk_events if event[0] == 'prefill']
+        short_final = next(i for i, event in enumerate(chunks)
+                           if event[1:3] == (1, 2))
+        long_final = next(i for i, event in enumerate(chunks)
+                          if event[1:3] == (0, 14))
+        self.assertLess(short_final, long_final)
+        # Once both prompts are admitted, neither consumes consecutive turns
+        # while the other is waiting. The first chunk precedes admission.
+        self.assertEqual([event[1] for event in chunks[1:5]], [0, 1, 0, 1])
+        self.assertEqual([event[2] for event in chunks if event[1] == 0], list(range(0, 16, 2)))
+        self.assertEqual([event[2] for event in chunks if event[1] == 1], [0, 2])
+        for result, prompt_tokens in ((long_result, 16), (short_result, 4)):
+            self.assertEqual(result[-1]['usage']['prompt_tokens'], prompt_tokens)
+            self.assertEqual(result[-1]['usage']['completion_tokens'], 2)
+
     def test_partial_group_preserves_management_barrier(self):
         with ThreadPoolExecutor(3) as pool:
             first=pool.submit(self.generate,'abcdef',2)

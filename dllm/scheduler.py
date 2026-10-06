@@ -441,6 +441,9 @@ class BatchedRuntime:
                                 active[slot]=(request,len(tokens))
                             del partial[slot]
                         else:
+                            # Rotate unfinished prompts so each admitted slot
+                            # gets a turn before this prompt's next chunk.
+                            del partial[slot]
                             partial[slot]=(request,tokens,end)
                     except Exception as error:
                         self._finish(request,error)
@@ -574,6 +577,9 @@ class BatchedRuntime:
                                 active[slot]=(request,len(tokens))
                             del partial[slot]
                         else:
+                            # Rotate unfinished prompts so each admitted slot
+                            # gets a turn before this prompt's next chunk.
+                            del partial[slot]
                             partial[slot]=(request,tokens,end)
                     except Exception as error:
                         self._finish(request,error)
