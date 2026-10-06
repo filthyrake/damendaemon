@@ -2127,3 +2127,20 @@ The tiny 113-output case regresses 19.7–31.3% and remains outside the normal
 model selector. Four-warp calibration stays within 0.3%. These results motivate
 a combined candidate; they do not yet establish model correctness or serving
 speedup. Production native code remains unchanged at this experiment stage.
+
+The combined candidate (`DLLM_Q4_PAIRED_ACTIVATIONS=1`,
+`DLLM_Q4_STREAM_WEIGHTS=2`) uses streaming loads only for the measured
+4096-output/14336-input down projection; separate compiled kernels avoid a
+per-iteration policy branch. Direct quantizer inspection passes 24 cases across
+widths 256/4096/14336, including zero, FP16 subnormals, maximum values, mixed
+exponents and random ranges. After undoing the byte permutation, both int8
+terms and all four scale fields exactly match the existing implementation.
+
+`q4-paired-combined-matrices-a2.json` passes all 108 matrix/range/bias checks.
+Warm baseline/candidate times in microseconds are 118.35/109.53 (6144/4096),
+81.44/75.96 (4096/4096), 534.48/490.67 (28672/4096), 282.51/267.32
+(4096/14336), and 596.42/546.95 (32000/4096): 5.4–8.3% lower kernel time.
+The 113-output diagnostic remains slower and outside normal model selection.
+The paired layout is private to the candidate's matched quantize/GEMV functions;
+do not mix activation buffers across library implementations. Model and normal
+HTTP qualification remain separate gates.

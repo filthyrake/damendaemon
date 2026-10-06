@@ -77,7 +77,7 @@ __global__ void quantize(const half* x, int8_t* q1, int8_t* q2, float4* scales, 
     if (lane == 0) scales[group] = make_float4(d1, d2, sum, 0.f);
 }
 
-template<int Rows>
+template<int Rows, bool StreamWeights>
 __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs,
                           const uint8_t* w, const half* ws, const half* bias,
                           half* output, int n, int k) {
@@ -108,11 +108,10 @@ __global__ void q4_residual(const int8_t* q1, const int8_t* q2, const float4* xs
     const half* weight_scales = ws + static_cast<size_t>(row)*(k/32);
     float accum[Rows] = {};
     for (int packed_column=lane*4; packed_column<k/2; packed_column+=128) {
-#if DLLM_Q4_STREAM_WEIGHTS
-        const uint32_t packed=__ldcg(reinterpret_cast<const uint32_t*>(weights+packed_column));
-#else
-        const uint32_t packed=*reinterpret_cast<const uint32_t*>(weights+packed_column);
-#endif
+        uint32_t packed;
+        if constexpr (StreamWeights)
+            packed=__ldcg(reinterpret_cast<const uint32_t*>(weights+packed_column));
+        else packed=*reinterpret_cast<const uint32_t*>(weights+packed_column);
 
         uint32_t lo=packed & 0x0f0f0f0fu, hi=(packed>>4) & 0x0f0f0f0fu;
         lo=(lo & 0x07070707u) | ((~lo & 0x08080808u)*31u);
@@ -161,13 +160,19 @@ extern "C" int dllm_q4_residual_gemv(const void* q1,const void* q2,const void* x
     const void* w,const void* ws,const void* bias,void* output,int rows,int n,int k,void* stream) {
     if (!q1 || !q2 || !xs || !w || !ws || !output || rows!=1 || n<=0 || k<=0 || k%256)
         return cudaErrorInvalidValue;
-    q4_residual<1><<<(n+DLLM_Q4_LAUNCH_WARPS-1)/DLLM_Q4_LAUNCH_WARPS,
-                       32*DLLM_Q4_LAUNCH_WARPS,
-                       DLLM_Q4_SHARED_INPUTS ? 2*k+(DLLM_Q4_SHARED_INPUTS==2 ? (k/32)*sizeof(float4) : 0) : 0,
-                       reinterpret_cast<cudaStream_t>(stream)>>>(
-        static_cast<const int8_t*>(q1),static_cast<const int8_t*>(q2),static_cast<const float4*>(xs),
-        static_cast<const uint8_t*>(w),static_cast<const half*>(ws),static_cast<const half*>(bias),
-        static_cast<half*>(output),n,k);
+    const int blocks=(n+DLLM_Q4_LAUNCH_WARPS-1)/DLLM_Q4_LAUNCH_WARPS;
+    const int shared=DLLM_Q4_SHARED_INPUTS ? 2*k+(DLLM_Q4_SHARED_INPUTS==2 ? (k/32)*sizeof(float4) : 0) : 0;
+    #define LAUNCH_STREAM(S) q4_residual<1,S><<<blocks,32*DLLM_Q4_LAUNCH_WARPS,shared,reinterpret_cast<cudaStream_t>(stream)>>>( \
+        static_cast<const int8_t*>(q1),static_cast<const int8_t*>(q2),static_cast<const float4*>(xs), \
+        static_cast<const uint8_t*>(w),static_cast<const half*>(ws),static_cast<const half*>(bias), \
+        static_cast<half*>(output),n,k)
+    #if DLLM_Q4_STREAM_WEIGHTS == 2
+    if (n==4096 && k==14336) { LAUNCH_STREAM(true); }
+    else { LAUNCH_STREAM(false); }
+    #else
+    LAUNCH_STREAM(DLLM_Q4_STREAM_WEIGHTS == 1);
+    #endif
+    #undef LAUNCH_STREAM
     return cudaGetLastError();
 }
 

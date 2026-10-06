@@ -38,6 +38,7 @@ def main():
     comparison.add_argument('--residual-library',help='compare production with the isolated residual-int8 candidate')
     comparison.add_argument('--residual-f32-library',help='compare ordinary packed FP32 with the isolated FP32 candidate')
     parser.add_argument('--production-q4-residual',action='store_true',help='exercise normal per-model Q4 integer-dot selection')
+    parser.add_argument('--q4-residual-control-library',help='use this existing native residual library in control phases, instead of ordinary native Q4')
     parser.add_argument('--production-q4-small-tiles',action='store_true',help='compare the previous Q4 prompt policy with normal A2 selection')
     parser.add_argument('--production-batch-wait',action='store_true',help='exercise normal CLI idle admission configuration')
     parser.add_argument('--production-residual',action='store_true',help='exercise normal per-model FP16 K-quant residual selection')
@@ -73,6 +74,8 @@ def main():
     if args.production_q4_small_tiles and not args.q4_small_tiles:
         parser.error('--production-q4-small-tiles requires --q4-small-tiles')
     if args.production_q4_residual and not args.q4_residual_library:parser.error('--production-q4-residual requires --q4-residual-library')
+    if args.q4_residual_control_library and not args.production_q4_residual:
+        parser.error('--q4-residual-control-library requires --production-q4-residual')
     if args.production_batch_wait and not args.batch_wait_ms:parser.error('--production-batch-wait requires --batch-wait-ms')
     if args.production_residual and not args.residual_library:parser.error('--production-residual requires --residual-library')
     if args.production_dense_cache and (not args.dense_cache or args.dense_cache_mib <= 0):
@@ -121,6 +124,10 @@ def main():
     workloads.extend((n,1) for n in dict.fromkeys(args.extra_prompt_tokens) if (n,1) not in workloads)
     report['workloads']=workloads
     report['production_q4_residual']=args.production_q4_residual
+    if args.q4_residual_control_library:
+        control=Path(args.q4_residual_control_library).resolve()
+        report['q4_residual_control_library']=dict(path=str(control),sha256=digest(control))
+        report['experimental_arithmetic']='normal Q4 residual dispatch in both phases; explicit control and candidate libraries'
     report['production_residual_f32']=args.production_residual_f32
     report['experimental_prefill_f32']=args.prefill_f32 and not args.production_prefill_f32
     report['production_prefill_f32']=args.production_prefill_f32
@@ -189,6 +196,8 @@ def main():
             base=f'http://127.0.0.1:{port}'
             log_path=output.with_name(output.stem+f'-{phase}-{engine}.log')
             phase_environment=environment.copy()
+            if args.q4_residual_control_library:
+                phase_environment['DLLM_Q4_RESIDUAL_LIBRARY']=str(control)
             if args.production_dense_cache and engine==counterpart:
                 phase_environment['DLLM_KQUANT_DENSE_CACHE_MIB']=str(args.dense_cache_mib)
             if args.batch_wait_ms and engine==counterpart and not args.production_batch_wait:
@@ -307,7 +316,7 @@ def main():
                             assert (0 < cache_bytes <= args.dense_cache_mib*1024**2) if engine==counterpart else cache_bytes==0
                             run['resident_projection_cache_bytes']=cache_bytes
                         if args.production_q4_residual:
-                            assert ('+cuda-q4-residual' in run['kernel_backend']) == (engine==counterpart)
+                            assert ('+cuda-q4-residual' in run['kernel_backend']) == (engine==counterpart or bool(args.q4_residual_control_library))
                         if args.production_residual:
                             assert ('+cuda-kquant-residual' in run['kernel_backend']) == (engine==counterpart)
                         if args.production_prefill_f32:
