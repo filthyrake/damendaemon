@@ -2520,3 +2520,23 @@ engines. dllm's independent HF accuracy and internal lifecycle gates pass, but
 this timing comparison does not establish exact output parity, broad model
 support, or superiority on other workloads. No assertion or threshold was
 relaxed to relabel this cross-engine comparison as a pass.
+
+
+### Documented CMake build and production matrix gate
+
+The documented `DLLM_BUILD_Q4_MARLIN=ON` CMake target builds successfully for
+SM86. `mistral-q4-marlin-production-matrices-a2.json` tests that binary through
+the production adapter: all five real projection shapes have bitwise-identical
+prepared weights/scales/zero points to the independently checked original
+adapter. All 105 candidate arithmetic cases pass (rows 1/2/4/16/64/129/400,
+three activation scales, unbiased production scope), maximum relative RMS
+0.000154 against FP32 accumulation over FP16-rounded coefficients, TF32 off.
+
+The full report remains **`passed:false`, `candidate_passed:true`,
+`control_passed:false`**, retaining the established ordinary FP16 control
+failures at 129 rows and exponent −14: output projection RMS 0.004157 and down
+projection 0.001519. The qualification threshold remains 0.001. These are the
+same control-side stress cases documented in the prototype sweep, not new
+Marlin failures. Single-row controls use the qualified residual library.
+CMake-built library SHA:
+`07cff6ea3e8475a2be11ac5dc676071ec262f397a7e8833b52232c5030e9283e`.
