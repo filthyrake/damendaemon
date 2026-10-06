@@ -22,8 +22,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model')
     parser.add_argument('--output', required=True)
-    parser.add_argument('--tiles', action='store_true',
+    experiment = parser.add_mutually_exclusive_group()
+    experiment.add_argument('--tiles', action='store_true',
                         help='Compare smaller fused tiles instead of dense expansion')
+    experiment.add_argument('--launch-tuning', action='store_true',
+                        help='Compare pipeline depth and output tiles with unchanged paired-dot arithmetic')
     parser.add_argument('--rows', type=int, nargs='+', default=[16, 32, 64, 128, 129, 256],
                         help='Matrix row counts for boundary and intermediate-shape sweeps')
     args = parser.parse_args()
@@ -41,7 +44,8 @@ def main():
                   triton=triton.__version__,
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   kernel_sha256=hashlib.sha256((Path(__file__).resolve().parents[1]/'dllm/quantized_kernels_q4.py').read_bytes()).hexdigest(),
-                  scope=('real Q4 projections; smaller fused tiles' if args.tiles else
+                  scope=('real Q4 projections; pipeline/output-tile experiment; no production changes' if args.launch_tuning else
+                         'real Q4 projections; smaller fused tiles' if args.tiles else
                          'real Q4 projections; expansion included; no persistent dense cache'),
                   cases=[], passed=False)
     try:
@@ -71,12 +75,33 @@ def main():
                                     bm, 64, 128, True, num_warps=4, num_stages=3)
                                 return result
                             functions[f'tile_{bm}'] = tiled
+                    if args.launch_tuning:
+                        functions = dict(production=functions['production'])
+                        # Keep the K reduction order; vary resource use and
+                        # pipelining. Large prompts still compare against the
+                        # normal expansion-plus-matmul path, including its cost.
+                        bm = 16 if rows <= 16 else 32 if rows <= 64 else 64
+                        case['launches'] = {}
+                        for bn, warps, stages in ((64, 4, 1), (64, 4, 2), (64, 4, 3),
+                                                  (128, 4, 2), (128, 8, 2)):
+                            label = f'm{bm}_n{bn}_w{warps}_s{stages}'
+                            def tuned(bn=bn, warps=warps, stages=stages, label=label):
+                                result = torch.empty_like(expected)
+                                compiled = _gemm[(triton.cdiv(rows, bm), triton.cdiv(outputs, bn))](
+                                    x, weight, scales, bias, result, rows, outputs, width,
+                                    bm, bn, 128, True, num_warps=warps, num_stages=stages)
+                                case['launches'][label] = dict(registers=compiled.n_regs,
+                                                              spills=compiled.n_spills)
+                                return result
+                            functions[label] = tuned
                     report['cases'].append(case)
+                    baseline = functions['production']()
                     for label, function in functions.items():
                         actual = function()
                         error = actual.float()-expected.float()
                         rms = (error.square().mean()/expected.float().square().mean().clamp_min(1e-12)).sqrt().item()
                         case['checks'][label] = dict(relative_rms=rms, max_absolute=error.abs().max().item(),
+                                                     exact_production=bool(torch.equal(actual, baseline)),
                                                      passed=bool(torch.isfinite(actual).all()) and rms < .001)
                     if not all(c['passed'] for c in case['checks'].values()):
                         raise AssertionError('projection accuracy gate failed')
