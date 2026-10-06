@@ -571,12 +571,28 @@ passes 84/84 targets, with worst RMS 0.0007886. `float16` remains the default;
 ROCm Q8 hybrid text, at most four slots, context <=512, Triton scan, and
 `--no-graph`. Vision, FLA and larger contexts are explicitly rejected.
 The backend name and replay report expose the selected mode. Memory admission
-uses the actual cache element size before allocating state. Ordinary HTTP and
-model-lifecycle verification is the next gate; the short-context numerical pass
-does not establish those behaviors or practical 32K support.
+uses the actual cache element size before allocating state. The short-context
+numerical pass does not by itself establish HTTP behavior or practical 32K support.
 The [existing 4K small-model GPU regression](evidence/amd/qwen35-q8-precision-default-regression4096.json)
 also passes all 84 targets with the unchanged `float16` default. That fixture
 checks regression only; it does not replace the practical 27B target.
+
+The [normal-CLI HTTP lifecycle proof](evidence/amd/qwen38-27b-compensated-service512.json)
+subsequently passes with the 27B model and the cached 0.8B switching control,
+at both one- and two-resident-model capacities. It covers deterministic swaps,
+streaming parity, four concurrent requests with an observed batch of four,
+cancellation, request rejection, missing-model recovery and unload/reload.
+After unloading both models, host cached bytes are zero and HIP live allocation
+returns to the same 32 MiB library baseline before and after reloading. The
+[capacity-one log](evidence/amd/qwen38-27b-compensated-service512.capacity1.log.gz)
+and [capacity-two log](evidence/amd/qwen38-27b-compensated-service512.capacity2.log.gz)
+retain the intentionally injected missing-model errors.
+
+This proof uses context 512, chunk 127, two swap cycles, a 40 GiB host-cache
+budget, no graphs, and a 300-second request timeout to accommodate cold loading.
+That timeout is a test bound, not an acceptable interactive-latency target.
+The small model is a lifecycle control. This does not establish 32K quality,
+long-context concurrency or the intended tokens-per-second service budgets.
 
 The same experimental projection also passes a bounded A30 portability check
 using PyTorch 2.6.0/CUDA 12.4. All
