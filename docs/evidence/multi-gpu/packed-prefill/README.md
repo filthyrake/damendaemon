@@ -65,6 +65,23 @@ is treated as variability, not a packing speedup. Existing services remain on
 the shared GPUs. These results do not compare different engines, precisions,
 placements or the distributed service.
 
+The same counterbalanced measurement was also run separately for FP16 and Q4,
+changing only the packing flag within each precision. At concurrency four:
+
+| Precision | Prefill | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---|---|---:|---:|---:|
+| FP16 | Sequential | 86.40 | 279.27 | 451.81 |
+| FP16 | Packed | 54.66 | 239.41 | 525.53 |
+| Q4 | Sequential | 97.44 | 267.85 | 470.40 |
+| Q4 | Packed | 60.57 | 233.09 | 544.14 |
+
+These are 16.3% and 15.7% throughput improvements respectively. Gains are not
+uniform: FP16 concurrency two improves first text from 43.31 to 33.27 ms but
+throughput falls from 292.55 to 280.87 tokens/s (4.0%). The raw `*-none.json`
+and `*-q4_0.json` benchmark reports retain every concurrency and trial. Q4's
+matching HTTP text does not resolve its expanded numerical gate failures;
+packing remains experimental and disabled by default for that precision.
+
 Reproduce with `scripts/verify_partition_packed.py` and independent traces from
 `verify_stress.py --reference-only --tiny-prefixes`. The replay helper persists
 failed checks too and offers `--sequential` for the exact-trace control.
