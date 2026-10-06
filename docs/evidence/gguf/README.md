@@ -2085,3 +2085,23 @@ candidate uses ordinary dllm. Unlike the earlier experimental run, 129-token
 prompts retain their old dispatch and show no material improvement. These
 results qualify the bounded A2 launch policy, not general hardware or
 cross-engine performance parity.
+
+### Native Q4 residual launch experiment
+
+`q4-residual-launch-a2.json` compares fresh builds of the existing single-row
+two-term Q4 kernel with isolated 2/4/8/16-warp variants and a four-warp variant
+that removes the unused activation-sum reduction. All use `nvcc -O3
+-std=c++17 -arch=sm_86 -shared -Xcompiler -fPIC`; candidate macros are
+`DLLM_Q4_LAUNCH_WARPS` and `DLLM_Q4_SKIP_SUM` in
+`scripts/experiments/q4_residual_launch.cu`. Production native code is unchanged.
+
+All 216 matrix/range/bias checks pass, including exact agreement with the
+production native output and the independent FP16-coefficient RMS gate. Warm
+CUDA graph ABBA timing includes both activation quantization and multiplication.
+The four-warp experimental control matches the fresh production build within
+0.5%. On the large measured shapes, two warps is 7.5–12.9% slower and sixteen
+warps 9.8–18.5% slower. Eight warps is mostly 1.6–2.0% slower, except the
+4096-by-14336 projection, which is effectively tied. Removing the unused sum
+saves at most 0.1% on the large matrices (1.5% on the tiny 113-output tail case).
+No production launch or arithmetic changes follow from these results. These
+are synthetic kernel measurements, not model or serving performance claims.
