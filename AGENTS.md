@@ -12,6 +12,11 @@ Use the repository's GitHub Issues for bugs, tasks, and follow-up work. Inspect
 existing issues before creating new ones. Markdown documentation is supporting
 evidence, not an issue tracker. Do not install or use an alternative tracker.
 
+For this project, commit and push completed, verified work to its existing
+GitHub branch. The user explicitly requires that work exist on the remote;
+local-only commits are not delivery. This project instruction overrides any
+general preference to keep commits local. Do not wait for another push request.
+
 Keep issue #3 as the current status and ordered roadmap. Before implementation
 or a GPU experiment, identify a focused issue with its current state, acceptance
 gate, hardware, hypothesis and stopping condition. Use `status:active` for the
