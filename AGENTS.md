@@ -3,6 +3,10 @@
 Performance is a product requirement. Never claim GPU performance from mocked
 tests or CPU-only runs. Compare identical model revisions, precision, context,
 output lengths, and hardware; report latency and throughput separately.
+Prioritize working capability coverage at vaguely reasonable speed before peak
+performance tuning. Bound validation work to what unblocks the next capability
+gate; do not let speculative kernel tuning displace context, quantization,
+multimodal, multi-GPU/hybrid or available-hardware support.
 
 Use the repository's GitHub Issues for bugs, tasks, and follow-up work. Inspect
 existing issues before creating new ones. Markdown documentation is supporting
@@ -20,7 +24,8 @@ tasks without closing broader, unqualified parent goals.
 Keep the linked private GitHub project (filthyrake project 3) populated with
 repository issues and its Status field aligned with issue workflow labels.
 Add new issues to the project; use Done for closed issues and Epic for umbrella
-contracts. The project is a view of GitHub Issues, not a separate task tracker.
+contracts unless an explicit workflow label marks their current execution order.
+The project is a view of GitHub Issues, not a separate task tracker.
 
 Keep upstream reference repositories unchanged unless explicitly requested.
 Preserve licenses and attribution when incorporating upstream code.
