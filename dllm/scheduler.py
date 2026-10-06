@@ -805,3 +805,7 @@ class BatchedRuntime:
                 self._finish(request, BusyError("runtime closed"))
             self.condition.notify_all()
         self.worker.join(timeout=30)
+        if self.worker.is_alive():
+            raise BusyError('scheduler shutdown is waiting for its active worker')
+        if hasattr(self.runtime, 'close'):
+            self.runtime.close()

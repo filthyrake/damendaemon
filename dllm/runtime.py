@@ -119,6 +119,7 @@ class Runtime:
         self.host = OrderedDict()
         self.gpu = OrderedDict()
         self.failed_builds = []
+        self.closing = self.closed = False
         self.lock = threading.Lock()
         self.admission = threading.BoundedSemaphore(queue_size)
 
@@ -153,7 +154,8 @@ class Runtime:
                             if getattr(self.gpu.get(alias), 'offload', None) is not None else None),
                        'pipeline': (self.gpu[alias].status()
                             if hasattr(self.gpu.get(alias), 'placement') else None),
-                       'executor_failed': getattr(self.gpu.get(alias),'failed',False)}
+                       'executor_failed': (getattr(self.gpu.get(alias),'failed',False)
+                            or getattr(self.gpu.get(alias),'_activation_failed',False))}
                       for alias in self.models]
         from .partition_policy import selected_split
         from .hybrid_pipeline_policy import budgets
@@ -170,6 +172,7 @@ class Runtime:
         if devices is not None:allocated=sum(d['allocated_bytes'] for d in devices)
         peak_allocated = torch.cuda.max_memory_allocated() if allocated is not None and devices is None else None
         return {'models': models, 'device': selected_accelerator(), 'context': self.context,
+                'closing':self.closing, 'closed':self.closed,
                 'cuda_allocated_bytes': allocated if selected_accelerator()=='cuda' else None,
                 'cuda_peak_allocated_bytes': peak_allocated if selected_accelerator()=='cuda' else None,
                 'hip_allocated_bytes': allocated if selected_accelerator()=='rocm' else None,
@@ -192,6 +195,8 @@ class Runtime:
         if not self.lock.acquire(timeout=self.queue_timeout):
             raise BusyError('model management timeout')
         try:
+            if self.closing and action != 'status':
+                raise BusyError('runtime is closing or closed')
             if action in ('unload', 'remove'):
                 self._cleanup_failed_builds()
             if action == 'register':
@@ -264,12 +269,32 @@ class Runtime:
             self.failed_builds[0].close()
             self.failed_builds.pop(0)
 
+    def close(self):
+        """Drain ownership under the lifetime lock; failed cleanup is retryable."""
+        self.closing = True
+        if not self.lock.acquire(timeout=self.queue_timeout):
+            raise BusyError('runtime shutdown is waiting for active requests')
+        try:
+            if self.closed:
+                return
+            self._cleanup_failed_builds()
+            while self.gpu:
+                self._evict(next(iter(self.gpu)))
+            self.host.clear()
+            gc.collect()
+            self.closed = True
+        finally:
+            self.lock.release()
+
     def _activate(self, alias):
         import torch
         from .models import load, weight_bytes
         start = time.perf_counter()
+        if self.closing:
+            raise BusyError('runtime is closing or closed')
         self._cleanup_failed_builds()
-        if alias in self.gpu and getattr(self.gpu[alias],'failed',False):
+        if alias in self.gpu and (getattr(self.gpu[alias],'failed',False)
+                                or getattr(self.gpu[alias],'_activation_failed',False)):
             self._evict(alias)
         if alias in self.gpu:
             self.gpu.move_to_end(alias)
@@ -335,11 +360,19 @@ class Runtime:
             empty_cache()
             raise
         self.gpu[alias] = executor
-        synchronize()
+        try:
+            synchronize()
+        except BaseException:
+            # Retain ownership for retryable eviction, but never reuse an
+            # executor whose final activation completion failed.
+            executor._activation_failed = True
+            raise
         return executor, tier, time.perf_counter() - start
 
     @contextmanager
     def session(self, alias):
+        if self.closing:
+            raise BusyError('runtime is closing or closed')
         if alias not in self.models:
             raise ValueError("unknown model")
         if not self.admission.acquire(blocking=False):

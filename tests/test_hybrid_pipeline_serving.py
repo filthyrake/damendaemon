@@ -74,7 +74,7 @@ class PipelineServingTests(unittest.TestCase):
                     self.assertFalse(runtime.runtime.gpu['a'].failed)
                 finally:
                     runtime.close()
-                    runtime.runtime.manage('unload', 'a', release_host=True)
+                    self.assertFalse(runtime.runtime.gpu or runtime.runtime.host)
 
     def test_failed_build_is_retained_until_retry_cleanup_succeeds(self):
         runtime = Runtime({'a':'a'}, context=32, use_graph=False, batch_size=2)
@@ -142,4 +142,4 @@ class PipelineServingTests(unittest.TestCase):
             server.server_close()
             thread.join()
             runtime.close()
-            runtime.runtime.manage('unload', 'a', release_host=True)
+            self.assertFalse(runtime.runtime.gpu or runtime.runtime.host)

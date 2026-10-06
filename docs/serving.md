@@ -595,6 +595,13 @@ complete that cleanup before loading another executor; unload also retries it.
 CPU/loopback regressions exercise the actual stage arithmetic through the HTTP
 handler and scheduler, including concurrent requests and host-cache restoration.
 
+Scheduler shutdown cancels queued work, waits for the worker to exit, then closes
+the runtime under its request-lifetime lock. Runtime close rejects new loads and
+requests, retries pending build cleanup, closes all resident executors and drops
+host-cache references. If the worker or device cannot finish, shutdown raises an
+error and retains the remaining ownership for a later `close()` retry. It never
+frees a model while its worker is still active. Successful close is idempotent.
+
 ## Optional API authentication
 
 Set `DLLM_API_KEY` for inference clients and a different `DLLM_ADMIN_API_KEY`

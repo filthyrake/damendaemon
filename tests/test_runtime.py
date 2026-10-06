@@ -33,6 +33,71 @@ class RuntimeTests(unittest.TestCase):
         self.addCleanup(self.modules.stop)
         self.addCleanup(self.gpu.stop)
 
+    def test_close_releases_all_resident_and_host_models_and_is_idempotent(self):
+        from unittest.mock import Mock
+        runtime = Runtime({'a':'a', 'b':'b'}, gpu_models=2)
+        owners = []
+        for alias in ('a', 'b'):
+            with runtime.session(alias) as (executor, _, __):
+                executor.close = Mock()
+                owners.append(executor)
+        runtime.close()
+        runtime.close()
+        self.assertTrue(runtime.closed)
+        self.assertFalse(runtime.gpu or runtime.host)
+        for executor in owners:
+            executor.close.assert_called_once_with()
+        with self.assertRaises(BusyError):
+            with runtime.session('a'):
+                pass
+        with self.assertRaises(BusyError):
+            runtime.manage('load', 'a')
+        self.assertTrue(runtime.manage('status')['closed'])
+
+    def test_failed_close_retains_owned_weights_and_allows_retry(self):
+        from unittest.mock import Mock
+        runtime = Runtime({'a':'a'})
+        with runtime.session('a') as (executor, _, __):
+            executor.close = Mock(side_effect=RuntimeError('device busy'))
+        with self.assertRaisesRegex(RuntimeError, 'device busy'):
+            runtime.close()
+        self.assertTrue(runtime.closing)
+        self.assertFalse(runtime.closed)
+        self.assertIs(runtime.gpu['a'], executor)
+        self.assertTrue(runtime.host)
+        executor.close.side_effect = None
+        runtime.close()
+        self.assertTrue(runtime.closed)
+        self.assertFalse(runtime.gpu or runtime.host)
+
+    def test_shutdown_waits_for_lifetime_lock_and_blocks_new_admission(self):
+        runtime = Runtime({'a':'a'}, queue_timeout=.001)
+        with runtime.session('a'):
+            with self.assertRaisesRegex(BusyError, 'active requests'):
+                runtime.close()
+            self.assertTrue(runtime.gpu)
+            with self.assertRaises(BusyError):
+                with runtime.session('a'):
+                    pass
+        runtime.close()
+        self.assertTrue(runtime.closed)
+
+    def test_shutdown_retries_pending_build_cleanup_before_host_release(self):
+        from unittest.mock import Mock
+        runtime = Runtime({'a':'a'})
+        with runtime.session('a'):
+            pass
+        failure = Mock()
+        failure.close.side_effect = RuntimeError('pending build')
+        runtime.failed_builds.append(failure)
+        with self.assertRaisesRegex(RuntimeError, 'pending build'):
+            runtime.close()
+        self.assertTrue(runtime.gpu and runtime.host)
+        self.assertEqual(runtime.failed_builds, [failure])
+        failure.close.side_effect = None
+        runtime.close()
+        self.assertFalse(runtime.failed_builds or runtime.gpu or runtime.host)
+
     def test_a_b_a_host_restoration(self):
         runtime = Runtime({"a": "a", "b": "b"}, gpu_models=1)
         tiers = []
@@ -63,6 +128,22 @@ class RuntimeTests(unittest.TestCase):
             self.assertIs(replacement.model,first.model)
             self.assertEqual(tier,'host')
         first.close.assert_called_once_with()
+
+    def test_activation_completion_failure_is_owned_but_never_reused(self):
+        from unittest.mock import Mock
+        runtime = Runtime({'a':'a'})
+        with patch('dllm.runtime.synchronize', side_effect=RuntimeError('completion failure')), \
+                self.assertRaisesRegex(RuntimeError, 'completion failure'):
+            with runtime.session('a'):
+                pass
+        failed = runtime.gpu['a']
+        failed.close = Mock()
+        self.assertTrue(runtime.manage('status')['models'][0]['executor_failed'])
+        with runtime.session('a') as (replacement, tier, _):
+            self.assertIsNot(replacement, failed)
+            self.assertEqual(tier, 'host')
+        failed.close.assert_called_once_with()
+        runtime.close()
 
     def test_rebind_moves_residency_only_after_success_and_drops_partial_failure(self):
         from unittest.mock import Mock

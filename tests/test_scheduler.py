@@ -74,6 +74,18 @@ class SchedulerTests(unittest.TestCase):
     def generate(self, alias='a', prompt='ok', count=5):
         return self.runtime.generate(alias, [{'content': prompt}], count)
 
+    def test_shutdown_never_releases_runtime_while_worker_is_alive(self):
+        from unittest.mock import Mock
+        self.runtime.runtime.close = Mock()
+        with patch.object(self.runtime.worker, 'join'), \
+                patch.object(self.runtime.worker, 'is_alive', return_value=True), \
+                self.assertRaisesRegex(BusyError, 'active worker'):
+            self.runtime.close()
+        self.runtime.runtime.close.assert_not_called()
+        self.executor.release.set()
+        self.runtime.close()
+        self.runtime.runtime.close.assert_called_once_with()
+
     def test_batch_wait_configuration_is_bounded_before_loading_models(self):
         for value in (-1,11,float('nan'),float('inf'),None,True,'1'):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError,'batch wait'):
