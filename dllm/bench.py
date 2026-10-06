@@ -160,6 +160,51 @@ def summarize(results, elapsed):
     }
 
 
+def evaluate_profile(result, profile):
+    """Judge measured client behavior; never infer tokens from SSE events."""
+    if result.error is not None:
+        return {"status": "error", "reasons": [result.error]}
+    missing = []
+    if result.first_output_seconds is None:
+        missing.append("first output unavailable")
+    if not result.output_event_gaps_seconds:
+        missing.append("output event gaps unavailable")
+    if result.output_tokens is None or result.seconds <= 0:
+        missing.append("request-average token rate unavailable")
+    if missing:
+        return {"status": "unmeasurable", "reasons": missing}
+    rate = result.output_tokens/result.seconds
+    maximum_gap = max(result.output_event_gaps_seconds)
+    reasons = []
+    if result.first_output_seconds > profile['max_first_output_seconds']:
+        reasons.append('first output budget exceeded')
+    if maximum_gap > profile['max_output_event_gap_seconds']:
+        reasons.append('output event gap budget exceeded')
+    if rate < profile['min_request_output_tokens_per_second']:
+        reasons.append('request-average token rate below budget')
+    return {"status": "failed" if reasons else "passed", "reasons": reasons,
+            "request_output_tokens_per_second": rate,
+            "maximum_output_event_gap_seconds": maximum_gap}
+
+
+def profile_summary(results, elapsed, profile):
+    evaluations = [(result, evaluate_profile(result, profile)) for result in results]
+    passed = [result for result, evaluation in evaluations if evaluation['status'] == 'passed']
+    tokens = sum(result.output_tokens for result in passed)
+    return {
+        "measurement_scope": "client SSE gaps and whole-request average token rate; not GPU per-token SLO",
+        "budgets": profile,
+        "all_requests_passed": bool(results) and len(passed) == len(results),
+        "counts": {state: sum(evaluation['status'] == state for _, evaluation in evaluations)
+                   for state in ('passed', 'failed', 'unmeasurable', 'error')},
+        "qualifying_requests_per_second": len(passed)/elapsed if elapsed > 0 else None,
+        "qualifying_output_tokens": tokens,
+        "qualifying_output_tokens_per_second": tokens/elapsed if elapsed > 0 else None,
+        "results": [{"index": result.index, **evaluation} for result, evaluation in
+                    sorted(evaluations, key=lambda pair: pair[0].index)],
+    }
+
+
 def fixed_arrivals(send, models, requests, concurrency, rate):
     """Offer each scheduled arrival once; never queue behind busy client slots."""
     started = time.perf_counter()
@@ -220,9 +265,22 @@ def main():
     bench.add_argument("--max-tokens", type=positive_int, default=128)
     bench.add_argument("--timeout", type=positive_float, default=120,
                        help="socket inactivity timeout in seconds, not a total request deadline")
+    bench.add_argument("--slo-first-output", type=positive_float,
+                       help="maximum client first-output seconds; requires both other --slo options")
+    bench.add_argument("--slo-output-gap", type=positive_float,
+                       help="maximum client SSE output-event gap seconds, not per-token latency")
+    bench.add_argument("--slo-request-rate", type=positive_float,
+                       help="minimum reported output tokens / whole request seconds, including prefill")
     bench.add_argument("--prompt-file", type=Path)
     bench.add_argument("--label", default="unlabeled")
     args = parser.parse_args()
+    budgets = (args.slo_first_output, args.slo_output_gap, args.slo_request_rate)
+    if any(value is not None for value in budgets) and not all(value is not None for value in budgets):
+        parser.error('a client profile requires all three --slo options')
+    profile = (dict(max_first_output_seconds=args.slo_first_output,
+                    max_output_event_gap_seconds=args.slo_output_gap,
+                    min_request_output_tokens_per_second=args.slo_request_rate)
+               if all(value is not None for value in budgets) else None)
     parsed = urlsplit(args.base_url)
     if (parsed.scheme not in ("http", "https") or not parsed.hostname
             or parsed.username or parsed.password or parsed.query or parsed.fragment):
@@ -275,6 +333,9 @@ def main():
         "summary": summarize(results, elapsed),
         "results": [asdict(r) for r in sorted(results, key=lambda r: r.index)],
     }
+    if profile is not None:
+        report['client_profile'] = profile_summary(results, elapsed, profile)
     print(json.dumps(report, indent=2))
-    if any(r.error is not None for r in results):
+    if (any(r.error is not None for r in results)
+            or (profile is not None and not report['client_profile']['all_requests_passed'])):
         raise SystemExit(1)

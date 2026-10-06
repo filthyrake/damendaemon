@@ -174,3 +174,22 @@ and failed partial streams. Requests with fewer than two output events have no
 gap measurement, not an invented zero. Gap collection fails the request after
 100,000 output events to bound additional sample memory. These measurements do
 not automatically certify a sustained-user SLO or calculate SLO goodput.
+
+To evaluate a declared client-observed profile, supply all three options before
+running: `--slo-first-output SECONDS`, `--slo-output-gap SECONDS`, and
+`--slo-request-rate TOKENS_PER_SECOND`. They bound first visible output, the
+largest SSE output-event gap, and the minimum **whole-request average** output
+token rate (usage tokens divided by total duration, including prefill).
+They do not implement the separate post-prefill per-user speed target in #59.
+
+The report retains ordinary throughput and adds `client_profile`: per-request
+pass/fail/unmeasurable/error reasons, counts, and qualifying requests/tokens per
+wall second. Every scheduled request remains in the outcome counts; client
+capacity drops and server failures never qualify. Missing usage, missing first
+output, or fewer than two output events makes the request unmeasurable. A
+single coalesced output event therefore cannot falsely pass a stall budget.
+Exact threshold equality passes. An explicitly requested profile exits nonzero
+unless every request passes, including when HTTP succeeded but measurements
+were incomplete. Fix the profile before comparing engines; no automatic budget
+relaxation occurs. SSE transport behavior still prevents claiming per-token GPU
+latency or sustainable-user qualification from this report alone.

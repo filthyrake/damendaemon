@@ -8,7 +8,7 @@ import time
 from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 
-from dllm.bench import Result, events, request_one, summarize, llama_context, fixed_arrivals, distribution
+from dllm.bench import Result, events, request_one, summarize, llama_context, fixed_arrivals, distribution, evaluate_profile, profile_summary
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -183,6 +183,47 @@ class BenchTests(unittest.TestCase):
             process = subprocess.run([sys.executable, '-S', '-m', 'dllm', 'bench',
                 '--models', 'a', '--arrival-rate', invalid], capture_output=True, timeout=5)
             self.assertEqual(process.returncode, 2)
+
+    def test_goodput_excludes_latency_tails_missing_measurements_and_errors(self):
+        profile = dict(max_first_output_seconds=.2, max_output_event_gap_seconds=.1,
+                       min_request_output_tokens_per_second=10)
+        rows = [
+            Result(0, 'a', 2, .2, 20, output_event_gaps_seconds=[.1]),
+            Result(1, 'a', 2, .3, 20, output_event_gaps_seconds=[.1]),
+            Result(2, 'a', 2, .1, 20, output_event_gaps_seconds=[.2]),
+            Result(3, 'a', 2, .1, 10, output_event_gaps_seconds=[.1]),
+            Result(4, 'a', 2, .1, None, output_event_gaps_seconds=[.1]),
+            Result(5, 'a', 2, .1, 20),
+            Result(6, 'a', 0, error='client capacity'),
+            Result(7, 'a', 1, error='HTTP 503'),
+        ]
+        report = profile_summary(rows, 4, profile)
+        self.assertEqual(report['counts'], {'passed': 1, 'failed': 3, 'unmeasurable': 2, 'error': 2})
+        self.assertFalse(report['all_requests_passed'])
+        self.assertEqual(report['qualifying_requests_per_second'], .25)
+        self.assertEqual(report['qualifying_output_tokens_per_second'], 5)
+        self.assertEqual(report['qualifying_output_tokens'], 20)
+        self.assertEqual(evaluate_profile(rows[0], profile)['status'], 'passed')
+        self.assertFalse(profile_summary([], 0, profile)['all_requests_passed'])
+        self.assertIsNone(profile_summary(rows, 0, profile)['qualifying_requests_per_second'])
+
+    def test_cli_profile_validation_and_failure_reporting(self):
+        base = [sys.executable, '-S', '-m', 'dllm', 'bench', '--base-url', self.url,
+                '--models', 'normal', '--requests', '1']
+        for options in (['--slo-first-output', '1'], ['--slo-output-gap', 'nan'],
+                        ['--slo-request-rate', '0']):
+            result = subprocess.run(base+options, capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 2)
+        options = ['--slo-first-output', '5', '--slo-output-gap', '5', '--slo-request-rate', '.001']
+        result = subprocess.run(base+options, capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(json.loads(result.stdout)['client_profile']['all_requests_passed'])
+        result = subprocess.run(base+options+['--models', 'no-usage'], capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 1)
+        report = json.loads(result.stdout)
+        self.assertEqual(report['summary']['succeeded'], 1)
+        self.assertEqual(report['client_profile']['counts']['unmeasurable'], 1)
+        self.assertEqual(report['client_profile']['qualifying_output_tokens'], 0)
 
     def test_cli_failure_exit_and_report(self):
         process = subprocess.run([
