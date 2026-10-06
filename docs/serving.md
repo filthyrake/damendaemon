@@ -7,8 +7,8 @@ Use one server for registered model aliases, streaming requests, and explicit re
 ## Serve and switch models
 
 ```sh
-dllm serve --model small=Qwen/Qwen2.5-0.5B-Instruct \
-  --model medium=Qwen/Qwen2.5-1.5B-Instruct --gpu-models 2 --context 1024
+dllm serve --model small=Qwen/Qwen3.5-0.8B \
+  --model medium=Qwen/Qwen3.5-2B --gpu-models 2 --context 1024
 ```
 
 Local snapshot paths also work in `--model`. Repository names are resolved and
@@ -18,7 +18,7 @@ Use `/v1/models` and `/v1/chat/completions`:
 ```sh
 curl http://127.0.0.1:8088/v1/chat/completions \
   -H 'Content-Type: application/json' \
-  -d '{"model":"small","messages":[{"role":"user","content":"What is 2+2?"}],"temperature":0,"max_tokens":32,"stream":true}'
+  -d '{"model":"small","messages":[{"role":"user","content":"What is 2+2?"}],"temperature":0,"chat_template_kwargs":{"enable_thinking":false},"max_tokens":32,"stream":true}'
 ```
 
 For raw text or code generation, `/v1/completions` accepts `prompt` as a string
@@ -142,7 +142,7 @@ You can start `dllm serve` with no models and manage its registry without a
 restart. Run these commands on the server's host:
 
 ```sh
-dllm add small Qwen/Qwen2.5-0.5B-Instruct --revision 7ae557604adf67be50417f59c2c2f167def9a775
+dllm add small Qwen/Qwen3.5-0.8B --revision 7ae557604adf67be50417f59c2c2f167def9a775
 dllm load small
 dllm models
 dllm unload small                 # retain the RAM copy

@@ -19,7 +19,7 @@ python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/
 python -m pip install -e '.[runtime]'
 
 export CUDA_VISIBLE_DEVICES=GPU-your-device-uuid
-dllm run Qwen/Qwen2.5-0.5B-Instruct --prompt 'Explain CUDA graphs in one paragraph.'
+dllm run Qwen/Qwen3.5-0.8B --thinking off --prompt 'Explain CUDA graphs in one paragraph.'
 ```
 
 `run` downloads the model if needed. `dllm pull OWNER/REPOSITORY` downloads
@@ -50,9 +50,9 @@ can be substantial; warm measurements exclude it.
 Install `.[runtime]` in a native arm64 Python environment on macOS and select MPS:
 
 ```sh
-dllm run Qwen/Qwen2.5-0.5B-Instruct --device mps --prompt 'What is 2 + 2?'
-dllm serve --device mps --model small=Qwen/Qwen2.5-0.5B-Instruct \
-  --model other=HuggingFaceTB/SmolLM2-360M-Instruct
+dllm run Qwen/Qwen3.5-0.8B --device mps --thinking off --prompt 'What is 2 + 2?'
+dllm serve --device mps --model small=Qwen/Qwen3.5-0.8B \
+  --model other=Qwen/Qwen3.5-2B
 ```
 
 The dense MPS path uses FP32 weights, activations, and KV. On PyTorch 2.13,

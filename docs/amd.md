@@ -122,3 +122,14 @@ unchanged. Live allocation is stable after warmup. Explicit unload releases
 host caches and model residency; 96 MiB of device allocation remains, identical
 after a subsequent disk reload and second unload. This is stable retention,
 not a claim of zero device allocations or a matched latency benchmark.
+
+## Qwen3.5 Q8 text
+
+Qwen3.5-0.8B also passes all [84 Q8 graph comparisons](evidence/amd/qwen35-q8-hip-triton-graph-replay512.json)
+at context 512: maximum relative RMS 0.002812, maximum absolute logit error
+0.030422, zero greedy mismatches. The [CPU FP32 reference](evidence/amd/qwen35-q8-cpu-fp32-golden512.json)
+uses independent `gguf==0.19.0` quantization/dequantization of projection
+weights. This validates packed execution against quantized coefficients; it
+does not measure quality loss against original weights or competitive speed.
+The reference-only dependency lives in the isolated task directory on HOMER.
+Q8 lifecycle, 4K context and larger-model quantization remain separate gates.

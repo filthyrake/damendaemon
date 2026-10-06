@@ -24,8 +24,8 @@ python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/
 python -m pip install -e '.[runtime]'
 export CUDA_VISIBLE_DEVICES=GPU-your-device-uuid
 
-dllm run Qwen/Qwen2.5-0.5B-Instruct --prompt 'Explain CUDA graphs in one paragraph.'
-dllm serve --model small=Qwen/Qwen2.5-0.5B-Instruct
+dllm run Qwen/Qwen3.5-0.8B --thinking off --prompt 'Explain CUDA graphs in one paragraph.'
+dllm serve --model small=Qwen/Qwen3.5-0.8B
 ```
 
 The fast CUDA path also needs a C compiler and matching Python development
@@ -52,6 +52,6 @@ extrapolating a result to another model or device.
 
 The [parity milestones and acceptance gates](https://github.com/filthyrake/dllm/issues/3)
 define the ordered work; [GitHub Issues](https://github.com/filthyrake/dllm/issues)
-are the bug and task tracker. [AMD/ROCm bring-up](docs/amd.md) is planned and
-not yet qualified. See [project license](LICENSE.md) and the separately retained
+are the bug and task tracker. [AMD/ROCm bring-up](docs/amd.md) has experimental Qwen3.5 text correctness
+and lifecycle proof; quantization and competitive performance remain unqualified. See [project license](LICENSE.md) and the separately retained
 [Marlin license](third_party/marlin/LICENSE).
