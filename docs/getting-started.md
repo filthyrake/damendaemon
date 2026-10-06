@@ -112,5 +112,30 @@ For the independently checked Q4 variant on HOMER, replace `DLLM_QUANTIZATION=q8
 with `DLLM_QUANTIZATION=q4_0 DLLM_EXPERIMENTAL_HYBRID_Q4=1`, retaining the
 other bounds above. Packed weights use 15.80 GiB. The numerical and HTTP gates
 pass, but this is not original-weight quality or a faster-than-Q8 claim.
-32K context, practical multimodal support and other-device qualification remain
+32K context and practical multimodal support remain
 in [the current roadmap](https://github.com/filthyrake/dllm/issues/3).
+
+## A30 practical-model preview
+
+The same pinned Qwen3.8-27B snapshot also passes the experimental Q4 text
+numerical and HTTP lifecycle gates on NVIDIA A30. Select your A30's UUID from
+`nvidia-smi -L` so another installed GPU is not selected accidentally:
+
+```sh
+CUDA_VISIBLE_DEVICES=YOUR_A30_UUID \
+DLLM_KERNELS=triton DLLM_QUANTIZATION=q4_0 \
+DLLM_HYBRID_PRECISION=compensated DLLM_EXPERIMENTAL_HYBRID_Q4=1 \
+dllm serve --device cuda --model chat=/path/printed/by/pull \
+  --context 512 --batch-size 4 --prefill-chunk-size 127 \
+  --no-graph --host-gib 40
+```
+
+Use the short HTTP request above. This preview requires an A30 with enough free
+memory for the 15.80 GiB packed weights plus state and workspace; other NVIDIA
+devices are not admitted to this experimental hybrid Q4 path. The tested
+environment uses Torch 2.6.0+cu124 and Triton 3.2.0. Cold activation took about
+three minutes, while restoring from host memory took about five seconds in the
+retained trial. Warm single-request decode was about 1.75 tokens/sec: this is a
+working capability preview with substantial speed work remaining. See the
+[raw service results](evidence/hybrid/a30-qwen38-27b-q4-service512.json) and
+[context qualification issue](https://github.com/filthyrake/dllm/issues/70).
