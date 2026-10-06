@@ -1,4 +1,4 @@
-"""The A30 context experiment must not admit other devices or weight formats."""
+"""The A30/HOMER context experiment retains device and weight-format bounds."""
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -47,3 +47,18 @@ class Q4ContextProbeTests(unittest.TestCase):
                 raise RuntimeError('stopped probe')
         self.assertIs(hybrid_precision.select, precision)
         self.assertIs(hybrid_q4_policy.validate, q4)
+
+    def test_homer_requires_exact_device_and_preserves_production_context(self):
+        model = SimpleNamespace(config={'model_type': 'qwen3_5_text'},
+                                quantization='q4_0', max_context=4096)
+        with patch.dict('os.environ', self.env | {'DLLM_DEVICE': 'rocm'}, clear=True), \
+                patch('dllm.hybrid_q4_policy.device_name', return_value='Radeon 8060S Graphics'):
+            with self.assertRaises(ValueError):
+                hybrid_precision.select(model, False, 4, 'triton')
+            with context_probe():
+                self.assertEqual(hybrid_precision.select(model, False, 4, 'triton'), 'compensated')
+                self.assertEqual(model.max_context, 4096)
+                with patch('dllm.hybrid_q4_policy.device_name', return_value='AMD Instinct MI300X'), self.assertRaises(ValueError):
+                    hybrid_precision.select(model, False, 4, 'triton')
+            with self.assertRaises(ValueError):
+                hybrid_precision.select(model, False, 4, 'triton')

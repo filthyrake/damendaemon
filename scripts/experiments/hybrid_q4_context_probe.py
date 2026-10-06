@@ -1,4 +1,4 @@
-"""Isolated A30 Q4 context experiment for issue #70; production stays at 512."""
+"""Isolated A30/HOMER Q4 context experiment (#68/#70); production stays at 512."""
 from contextlib import contextmanager
 from copy import copy
 import runpy
@@ -14,8 +14,11 @@ def context_probe():
     original_q4 = hybrid_q4_policy.validate
 
     def validate(config, max_context=None):
-        if selected_accelerator() != 'cuda':
-            raise ValueError('Q4 context probe requires the admitted A30 CUDA path')
+        accelerator = selected_accelerator()
+        if accelerator not in ('cuda', 'rocm'):
+            raise ValueError('Q4 context probe requires A30 or HOMER')
+        if accelerator == 'rocm' and hybrid_q4_policy.device_name() != 'Radeon 8060S Graphics':
+            raise ValueError('Q4 ROCm context probe is limited to HOMER Radeon 8060S')
         if max_context is not None and not 512 <= max_context <= 32768:
             raise ValueError('Q4 context probe is bounded to 512..32768 tokens')
         # The original policy retains A30 identity, explicit opt-in, precision,
@@ -43,7 +46,7 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] not in ('replay', 'serve'):
         raise SystemExit('choose replay TRACE --no-graph or serve [server options]')
     action = sys.argv.pop(1)
-    print('UNQUALIFIED A30 Q4 context probe: production admission is unchanged; issue #70.', file=sys.stderr)
+    print('UNQUALIFIED A30/HOMER Q4 context probe: production admission is unchanged; issues #68/#70.', file=sys.stderr)
     with context_probe():
         if action == 'replay':
             runpy.run_path('scripts/replay_reference.py', run_name='__main__')

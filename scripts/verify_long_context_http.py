@@ -96,7 +96,7 @@ def main():
     parser.add_argument('--no-graph', action='store_true')
     probes = parser.add_mutually_exclusive_group()
     probes.add_argument('--experimental-hybrid-context', action='store_true', help='use the isolated issue-68 Q8 context probe')
-    probes.add_argument('--experimental-hybrid-q4-context', action='store_true', help='use the isolated issue-70 A30 Q4 context probe')
+    probes.add_argument('--experimental-hybrid-q4-context', action='store_true', help='use the isolated issue-68/70 A30/HOMER Q4 context probe')
     parser.add_argument('--request-timeout', type=float, default=600)
     parser.add_argument('--first-output-budget', type=float, default=600)
     parser.add_argument('--host-gib', type=float, help='explicit host-weight residency budget for practical checkpoints')
