@@ -146,3 +146,8 @@ and total time. First-use prompt-shape work can still occur on later requests.
 These sessions are sequential file-driven jobs, not concurrent serving or
 interactive chat. A failed job exits nonzero; previously emitted results do
 not imply later requests succeeded. Retain the outer job deadline.
+
+On the measured A2/A30 Q8 three-request workload, reusing the pair reduced
+complete job time from 46.17 to 15.82 seconds, including startup and shutdown.
+This saves repeated activation work; it is not a decode-speed improvement.
+See the [matched job measurements](evidence/multi-gpu/README.md#complete-repeated-request-job-cost).

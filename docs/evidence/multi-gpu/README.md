@@ -386,6 +386,27 @@ alone. It opened 2026-10-06 at 00:51:45/49 UTC and was removed early at
 00:53:03/06 UTC. Original firewall rules and GPU memory baselines were verified
 unchanged. No existing GPU service was restarted.
 
+### Complete repeated-request job cost
+
+`scripts/bench_distributed_session.py` compares three sequential requests using
+fresh A2/A30 workers for every request versus one resident pair for the whole
+job. The pinned Qwen2.5-0.5B Q8 model, context 512, prompt lengths 31/255/31 and
+eight output tokens per request are identical. Every result matches independent
+reference tokens and usage; prepared-weight hashes agree throughout.
+
+Fresh/resident/resident/fresh ordering includes one excluded warmup job and two
+measured jobs per phase, giving four measured jobs per mode. Median complete-job
+time falls from **46.17 to 15.82 seconds** (65.7% less elapsed time). Each measured
+interval includes Python imports, worker launch, model activation, generation,
+request release where applicable, and clean worker shutdown. OS file/compiler
+caches are warm; GPU workers are fresh at each job boundary.
+
+This quantifies amortized startup cost, not faster decode kernels, concurrent
+throughput, HTTP performance or cross-host performance. Existing A30 services
+remained running; no remote preparation or compilation job ran alongside the
+measurements. GPU allocations returned to baseline after completion. Raw
+per-request timings and all phases are in `qwen2-distributed-session-q8-abba.json`.
+
 | Median network metric | Separate completion collective | Token reply completion |
 | --- | ---: | ---: |
 | First token | 20.88 ms | 20.76 ms |
