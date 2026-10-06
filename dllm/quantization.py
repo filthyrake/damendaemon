@@ -77,7 +77,10 @@ def prepare(weights, quantization=None):
         raise ValueError('unsupported weight quantization')
     if quantization in ('q8_0','q4_0'):
         pack=quantize if quantization=='q8_0' else quantize_q4
-        for name, weight in list(weights.items()):
+        # Replace values without snapshotting all tensors: a list of items
+        # would keep every original FP16 matrix alive until conversion ends.
+        for name in weights:
+            weight = weights[name]
             if weight.ndim == 2 and name != 'embed':
                 weights[name], scales[name] = pack(weight)
     return scales

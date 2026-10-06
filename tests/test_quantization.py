@@ -1,5 +1,6 @@
 import os
 import unittest
+import weakref
 from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -8,6 +9,21 @@ from dllm.quantization import quantize, dequantize, prepare, mode
 
 
 class QuantizationTests(unittest.TestCase):
+    def test_conversion_releases_previous_matrix_before_packing_next(self):
+        weights = {'first': torch.randn(2, 32).half(), 'second': torch.randn(2, 32).half()}
+        first = weakref.ref(weights['first'])
+        calls = 0
+        def pack(weight):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                self.assertIsNone(first(), 'converted source matrix stayed alive during later packing')
+            return quantize(weight)
+        with patch('dllm.quantization.quantize', new=pack):
+            scales = prepare(weights, 'q8_0')
+        self.assertEqual(calls, 2)
+        self.assertEqual(set(scales), set(weights))
+
     def test_metal_quantization_rejects_unqualified_formats_and_architectures(self):
         from dllm.qwen2 import ModelWeights
         with TemporaryDirectory() as directory:
