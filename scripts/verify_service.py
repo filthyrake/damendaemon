@@ -22,11 +22,14 @@ def main():
     parser.add_argument('--swap-cycles',type=int,default=2)
     parser.add_argument('--disable-thinking',action='store_true')
     parser.add_argument('--output',help='persist report and per-capacity server logs')
+    parser.add_argument('--candidate-q8-small-batch', action='store_true',
+                        help='start each server with the isolated HOMER Q8 experiment')
     args = parser.parse_args()
     if not 128 <= args.context <= 4096 or not 1 <= args.swap_cycles <= 20:
         parser.error('context must be 128..4096 and swap cycles 1..20')
     report=dict(passed=False,model_a=args.model_a,model_b=args.model_b,context=args.context,
-                swap_cycles=args.swap_cycles,reports=[])
+                swap_cycles=args.swap_cycles,reports=[],
+                variant='hip-q8-small-batch' if args.candidate_q8_small_batch else 'ordinary')
     prompt = "Explain how matrix multiplication works in detail, with a worked example."
     reports = report["reports"]
     for slots in (1, 2):
@@ -34,8 +37,10 @@ def main():
             log_path = (Path(args.output).with_suffix(f'.capacity{slots}.log')
                         if args.output else Path(directory) / "server.log")
             with log_path.open("w") as log:
+                entry = ([sys.executable, 'scripts/experiments/hip_q8_small_batch.py', '--module', 'dllm']
+                         if args.candidate_q8_small_batch else [sys.executable, '-m', 'dllm'])
                 process = subprocess.Popen([
-                    sys.executable, "-m", "dllm", "serve", "--port", "0", "--context", str(args.context),
+                    *entry, "serve", "--port", "0", "--context", str(args.context),
                     "--gpu-models", str(slots), "--model", "a=" + args.model_a,
                     "--model", "b=" + args.model_b, "--model", "broken=/missing-dllm-model",
                 ], stdout=log, stderr=log)
