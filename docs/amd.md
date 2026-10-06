@@ -452,3 +452,12 @@ expands it for individual CPU FP32 operations. Transformers retains all model
 execution; no dllm model math or quantization kernels enter this reference.
 Vision/MTP remain outside the text packing path. This validation-only mode
 rejects non-CPU or non-FP32 use and is not a hybrid-serving implementation.
+
+The full packed-storage CPU FP32 control hit its 1,800-second bound without a
+completed trace; [timeout evidence](evidence/amd/qwen38-27b-fp32-reference512-timeout.json)
+and the [log](evidence/amd/qwen38-27b-fp32-reference512-timeout.log.gz) are
+retained. The last sampled scope peak was 62,822,502,400 bytes. This is neither
+a numerical pass nor a model failure. Follow-up diagnostics use
+`reference_fixed_trace.py` to preserve the original token sequence for one
+failing slot and a declared final source event. Partial progress is retained
+separately, and the replay tool rejects traces explicitly marked incomplete.

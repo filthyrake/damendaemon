@@ -28,6 +28,8 @@ def main():
     require_gpu()
     torch.set_num_threads(4)
     trace = torch.load(args.trace, map_location='cpu', weights_only=True)
+    if not trace.get('complete', True):
+        raise ValueError('incomplete reference trace; use the completed output')
     events = trace['trace']
     if args.slot is not None:
         selected = []

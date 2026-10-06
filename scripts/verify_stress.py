@@ -21,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('path')
     parser.add_argument('--context', type=int, default=2048)
+    parser.add_argument('--cpu-threads', type=int, default=4)
     parser.add_argument("--reference-dtype", choices=("float16", "bfloat16", "float32"), default="float16")
     parser.add_argument('--reference-quantization', choices=('none', 'q8_0','q4_0'), default='none')
     parser.add_argument('--prefill-chunk-size',type=int,default=0)
@@ -33,7 +34,8 @@ def main():
     parser.add_argument('--reference-device', choices=('cpu', 'cuda', 'mps'))
     args = parser.parse_args()
     if args.prefill_chunk_size<0:parser.error('invalid prefill chunk size')
-    torch.set_num_threads(4)
+    if args.cpu_threads < 1:parser.error('--cpu-threads must be positive')
+    torch.set_num_threads(args.cpu_threads)
     reference_device = args.reference_device or selected_device()
     if args.packed_cpu_reference and (not args.reference_only or reference_device != 'cpu' or args.reference_dtype != 'float32'):
         parser.error('--packed-cpu-reference requires --reference-only --reference-device cpu --reference-dtype float32')
@@ -200,11 +202,11 @@ def main():
             decode(list(reversed(slots)),4)
     if args.golden_output:
         torch.save({'path': args.path, 'context': args.context, 'reference_dtype': args.reference_dtype,
-                    'reference_torch': str(torch.__version__), 'packed_cpu_reference':args.packed_cpu_reference, 'reference_quantization': args.reference_quantization, 'reference_attention': args.reference_attention, 'trace': trace}, args.golden_output)
+                    'reference_torch': str(torch.__version__), 'cpu_threads':args.cpu_threads, 'packed_cpu_reference':args.packed_cpu_reference, 'reference_quantization': args.reference_quantization, 'reference_attention': args.reference_attention, 'trace': trace}, args.golden_output)
     print(json.dumps({'model_path': args.path, 'reference_dtype': args.reference_dtype, 'reference_attention': args.reference_attention, 'architecture': model.config['model_type'],
         'device': device_name(), 'torch': str(torch.__version__), 'reference_device': reference_device,
         'weight_dtype': str(executor.w['head'].dtype) if executor else None,
-        'reference_only': args.reference_only, 'packed_cpu_reference':args.packed_cpu_reference, 'reference_quantization': args.reference_quantization,
+        'reference_only': args.reference_only, 'cpu_threads':args.cpu_threads, 'packed_cpu_reference':args.packed_cpu_reference, 'reference_quantization': args.reference_quantization,
         'weight_quantization': model.quantization if executor else None,
         'prefill_chunk_size':args.prefill_chunk_size, 'tiny_prefixes':args.tiny_prefixes,
         'context': args.context, 'backend': executor.kernel_backend if executor else None, 'checks': checks,
