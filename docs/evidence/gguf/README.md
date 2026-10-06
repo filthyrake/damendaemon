@@ -2144,3 +2144,35 @@ The 113-output diagnostic remains slower and outside normal model selection.
 The paired layout is private to the candidate's matched quantize/GEMV functions;
 do not mix activation buffers across library implementations. Model and normal
 HTTP qualification remain separate gates.
+
+The combined prototype then passes 96 independent HF logit comparisons with
+zero greedy-token mismatches (`mistral-q4-paired-reference-a2.json`, maximum
+relative RMS 0.004182), plus all 128 graph/batch/paging/chunking checks
+(`mistral-q4-paired-layout-a2.json`, maximum relative RMS 0.002653). Existing
+accuracy limits are unchanged.
+
+`mistral-q4-paired-http-a2.json` compares the existing residual kernel with the
+combined paired prototype through ordinary dllm HTTP servers, ABBA, on the A2.
+Both phases use the same Mistral-weight/Llama-metadata Q4_0 fixture, mixed
+precision, context 512 per slot, four slots and 16 output tokens. Each phase
+has three warmup and six measured rounds per workload. The explicit control
+library avoids counting the previously qualified residual-arithmetic gain again.
+Medians below pool measured rounds from each engine's two phases:
+
+| Prompt / concurrency | Existing / paired total latency (ms) | Existing / paired aggregate output tokens/s |
+| --- | ---: | ---: |
+| 16 / 1 | 583.08 / 545.43 | 27.44 / 29.33 |
+| 129 / 1 | 890.36 / 853.67 | 17.97 / 18.74 |
+| 400 / 1 | 1105.76 / 1073.06 | 14.47 / 14.91 |
+| 129 / 2 | 1504.46 / 1509.52 | 21.27 / 21.20 |
+| 129 / 4 | 1788.27 / 1794.46 | 35.79 / 35.67 |
+
+Single-request post-first-output throughput rises from 28.47/28.33/27.71 to
+30.72/30.51/29.76 tokens/s across those prompt lengths. First-output latency
+is effectively unchanged (56.30/56.53, 360.65/361.64, 564.01/568.33 ms).
+Concurrency-two first-output timing varies substantially (474.53/561.50 ms)
+while aggregate throughput stays within 0.4%; this is not a concurrency gain.
+All generated texts match. Every phase passes host restore, actual model swap,
+disk reload, cancellation recovery, and streamed/concurrent chat checks.
+These are prototype results; cleaned-up production source requires its own
+integrated validation before promotion.
