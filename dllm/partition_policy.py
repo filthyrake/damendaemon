@@ -15,7 +15,7 @@ def q4_stage_adjacent_enabled(quantization):
 
 
 def q4_stage_runtime_rope_enabled(quantization):
-    value=os.environ.get('DLLM_Q4_STAGE_RUNTIME_ROPE','0')
+    value=os.environ.get('DLLM_Q4_STAGE_RUNTIME_ROPE','1')
     if value not in ('0','1'):raise ValueError('DLLM_Q4_STAGE_RUNTIME_ROPE must be 0 or 1')
     return quantization=='q4_0' and value=='1'
 

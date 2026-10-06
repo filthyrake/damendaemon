@@ -190,6 +190,10 @@ down-projection tile families where GPU measurements found regressions.
 compilation behavior, not the wire protocol or stored coefficients. Same-host
 stage status exposes `runtime_row_bounds`; measured first-use savings and warm
 A2/A30 and A2/3090 comparisons are in the Q4 evidence above.
+The same stages reuse rotary query-output strides across prompt lengths by
+default; `DLLM_Q4_STAGE_RUNTIME_ROPE=0` restores static stride selection.
+Same-host stage status reports `runtime_rope_tokens`. This has separately
+qualified first-use savings and small mixed warm network timing differences.
 
 ## Resident distributed HTTP service
 

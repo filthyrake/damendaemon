@@ -62,9 +62,11 @@ class Q4StageTests(unittest.TestCase):
         with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROWS':'1'}):self.assertTrue(runtime_rows_enabled())
         with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROWS':'invalid'}),self.assertRaises(ValueError):runtime_rows_enabled()
 
-    def test_runtime_rotary_is_explicit_and_q4_only(self):
+    def test_runtime_rotary_defaults_to_q4_and_allows_static_control(self):
         from dllm.partition_policy import q4_stage_runtime_rope_enabled
         with patch.dict('os.environ',{},clear=True):
+            self.assertTrue(q4_stage_runtime_rope_enabled('q4_0'))
+        with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROPE':'0'}):
             self.assertFalse(q4_stage_runtime_rope_enabled('q4_0'))
         with patch.dict('os.environ',{'DLLM_Q4_STAGE_RUNTIME_ROPE':'1'}):
             self.assertTrue(q4_stage_runtime_rope_enabled('q4_0'))

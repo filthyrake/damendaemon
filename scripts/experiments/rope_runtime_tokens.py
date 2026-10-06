@@ -52,5 +52,8 @@ def rope_store_runtime_tokens(X, COS, SIN, POS, Q, K, V, QW, KW,
 
 
 def install_validation_dispatch():
+    import os
+    # Keep this historical candidate independent of the integrated stage policy.
+    os.environ['DLLM_Q4_STAGE_RUNTIME_ROPE']='0'
     from dllm import kernels
     kernels._rope_store=rope_store_runtime_tokens

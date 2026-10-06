@@ -1,0 +1,1475 @@
+{
+  "passed": true,
+  "batch_size": 4,
+  "quantization": "q4_0",
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "context": 512,
+  "output_tokens": 32,
+  "results": [
+    {
+      "engine": "dllm",
+      "concurrency": 1,
+      "thinking": "auto",
+      "raw": true,
+      "prompt_token_ids": [
+        840,
+        20772,
+        1246,
+        18495,
+        3553,
+        323,
+        17179,
+        1995,
+        13,
+        13655,
+        279,
+        16148,
+        2797,
+        323,
+        63594,
+        13
+      ],
+      "top_logprobs": null,
+      "max_tokens": 32,
+      "trials": [
+        {
+          "warmup": true,
+          "total_seconds": 0.1676399050047621,
+          "first_output_seconds": 0.03496507499949075,
+          "post_first_output_tokens_per_second": 233.6539643485379,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.15011847601272166,
+          "first_output_seconds": 0.020391711994307116,
+          "post_first_output_tokens_per_second": 238.9637962109314,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.1463492120092269,
+          "first_output_seconds": 0.018301572010386735,
+          "post_first_output_tokens_per_second": 242.09739437822356,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.1481244210153818,
+          "first_output_seconds": 0.0184825980104506,
+          "post_first_output_tokens_per_second": 239.12036472073405,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.15784448399790563,
+          "first_output_seconds": 0.024193581979488954,
+          "post_first_output_tokens_per_second": 231.9475553986781,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.1477274709905032,
+          "first_output_seconds": 0.017722624994348735,
+          "post_first_output_tokens_per_second": 238.45264968751223,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        }
+      ],
+      "rounds": [
+        {
+          "warmup": true,
+          "seconds": 0.16853154200362042,
+          "aggregate_output_tokens_per_second": 189.87543589503602
+        },
+        {
+          "warmup": false,
+          "seconds": 0.15045637599541806,
+          "aggregate_output_tokens_per_second": 212.68623405481011
+        },
+        {
+          "warmup": false,
+          "seconds": 0.1466720449971035,
+          "aggregate_output_tokens_per_second": 218.1738176530636
+        },
+        {
+          "warmup": false,
+          "seconds": 0.1484352970146574,
+          "aggregate_output_tokens_per_second": 215.58214685850714
+        },
+        {
+          "warmup": false,
+          "seconds": 0.15811774801113643,
+          "aggregate_output_tokens_per_second": 202.3808231682265
+        },
+        {
+          "warmup": false,
+          "seconds": 0.1479348499851767,
+          "aggregate_output_tokens_per_second": 216.31143711712588
+        }
+      ],
+      "server_timings": [
+        {
+          "warmup": true,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00020714002312161028,
+          "first_token_seconds": 0.02411610502167605,
+          "generation_first_token_seconds": 0.02390896499855444,
+          "generation_seconds": 0.1564299409801606,
+          "release_seconds": 0.0011008620203938335,
+          "total_seconds": 0.15774186002090573,
+          "decode_tokens_per_second": 233.92523161241115,
+          "max_batch_size": 1,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00022788197384215891,
+          "first_token_seconds": 0.01695634998031892,
+          "generation_first_token_seconds": 0.01672846800647676,
+          "generation_seconds": 0.14596265001455322,
+          "release_seconds": 0.0009946030040737242,
+          "total_seconds": 0.14718875399557874,
+          "decode_tokens_per_second": 239.87461767709925,
+          "max_batch_size": 1,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00019583298126235604,
+          "first_token_seconds": 0.014784973987843841,
+          "generation_first_token_seconds": 0.014589141006581485,
+          "generation_seconds": 0.14224917799583636,
+          "release_seconds": 0.0009968520025722682,
+          "total_seconds": 0.14344537499709986,
+          "decode_tokens_per_second": 242.83245353132136,
+          "max_batch_size": 1,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.0001339979935437441,
+          "first_token_seconds": 0.014480373007245362,
+          "generation_first_token_seconds": 0.014346375013701618,
+          "generation_seconds": 0.14439382799901068,
+          "release_seconds": 0.0010067879920825362,
+          "total_seconds": 0.1455387579917442,
+          "decode_tokens_per_second": 238.3745262854317,
+          "max_batch_size": 1,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00015064000035636127,
+          "first_token_seconds": 0.020818028977373615,
+          "generation_first_token_seconds": 0.020667388977017254,
+          "generation_seconds": 0.15379618600127287,
+          "release_seconds": 0.0009726920106913894,
+          "total_seconds": 0.15492373699089512,
+          "decode_tokens_per_second": 232.85720815423505,
+          "max_batch_size": 1,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00020724500063806772,
+          "first_token_seconds": 0.014454085001489148,
+          "generation_first_token_seconds": 0.01424684000085108,
+          "generation_seconds": 0.14378089699312113,
+          "release_seconds": 0.0009476809937041253,
+          "total_seconds": 0.14493954298086464,
+          "decode_tokens_per_second": 239.31930119234917,
+          "max_batch_size": 1,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        }
+      ]
+    },
+    {
+      "engine": "dllm",
+      "concurrency": 2,
+      "thinking": "auto",
+      "raw": true,
+      "prompt_token_ids": [
+        840,
+        20772,
+        1246,
+        18495,
+        3553,
+        323,
+        17179,
+        1995,
+        13,
+        13655,
+        279,
+        16148,
+        2797,
+        323,
+        63594,
+        13
+      ],
+      "top_logprobs": null,
+      "max_tokens": 32,
+      "trials": [
+        {
+          "warmup": true,
+          "total_seconds": 0.19819252999150194,
+          "first_output_seconds": 0.055367356981150806,
+          "post_first_output_tokens_per_second": 217.0485730673913,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": true,
+          "total_seconds": 0.18960856497869827,
+          "first_output_seconds": 0.033418963983422145,
+          "post_first_output_tokens_per_second": 198.47672189736613,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.17352579600992613,
+          "first_output_seconds": 0.019548617012333125,
+          "post_first_output_tokens_per_second": 201.3285358376685,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.1790813030092977,
+          "first_output_seconds": 0.03747169199050404,
+          "post_first_output_tokens_per_second": 218.91169516655086,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.17142328200861812,
+          "first_output_seconds": 0.01901293999981135,
+          "post_first_output_tokens_per_second": 203.3982706909005,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.17629022398614325,
+          "first_output_seconds": 0.037380494992248714,
+          "post_first_output_tokens_per_second": 223.16651414216304,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.19572165902354755,
+          "first_output_seconds": 0.06012875502347015,
+          "post_first_output_tokens_per_second": 228.6255333832389,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.19025616999715567,
+          "first_output_seconds": 0.03150006299256347,
+          "post_first_output_tokens_per_second": 195.2680787209231,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.17125919699901715,
+          "first_output_seconds": 0.019117395975627005,
+          "post_first_output_tokens_per_second": 203.75728295233003,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.17633239898714237,
+          "first_output_seconds": 0.03746126499027014,
+          "post_first_output_tokens_per_second": 223.2285364696324,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.1791756960155908,
+          "first_output_seconds": 0.03922946201055311,
+          "post_first_output_tokens_per_second": 221.513642152629,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.17378381500020623,
+          "first_output_seconds": 0.02016916000866331,
+          "post_first_output_tokens_per_second": 201.80366255880125,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        }
+      ],
+      "rounds": [
+        {
+          "warmup": true,
+          "seconds": 0.19885960101964884,
+          "aggregate_output_tokens_per_second": 321.8351021114455
+        },
+        {
+          "warmup": false,
+          "seconds": 0.17964447900885716,
+          "aggregate_output_tokens_per_second": 356.2592090394526
+        },
+        {
+          "warmup": false,
+          "seconds": 0.17682014100137167,
+          "aggregate_output_tokens_per_second": 361.9497170263173
+        },
+        {
+          "warmup": false,
+          "seconds": 0.19614733397611417,
+          "aggregate_output_tokens_per_second": 326.2853422611066
+        },
+        {
+          "warmup": false,
+          "seconds": 0.17694398999447003,
+          "aggregate_output_tokens_per_second": 361.69637636180903
+        },
+        {
+          "warmup": false,
+          "seconds": 0.17938483599573374,
+          "aggregate_output_tokens_per_second": 356.77486140200887
+        }
+      ],
+      "server_timings": [
+        {
+          "warmup": true,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00025651601026766,
+          "first_token_seconds": 0.0242944460187573,
+          "generation_first_token_seconds": 0.02403793000848964,
+          "generation_seconds": 0.17937516499659978,
+          "release_seconds": 0.001256788003956899,
+          "total_seconds": 0.18092251199414022,
+          "decode_tokens_per_second": 199.56580276694643,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": true,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.027232531021581963,
+          "first_token_seconds": 0.041217175021301955,
+          "generation_first_token_seconds": 0.013984643999719992,
+          "generation_seconds": 0.1564404599776026,
+          "release_seconds": 0.0010701559949666262,
+          "total_seconds": 0.18475616900832392,
+          "decode_tokens_per_second": 217.6113329399833,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.0005304579972289503,
+          "first_token_seconds": 0.015674666996346787,
+          "generation_first_token_seconds": 0.015144208999117836,
+          "generation_seconds": 0.16812956699868664,
+          "release_seconds": 0.0013436479785013944,
+          "total_seconds": 0.17003758798819035,
+          "decode_tokens_per_second": 202.6337710049832,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.018916411005193368,
+          "first_token_seconds": 0.03252256600535475,
+          "generation_first_token_seconds": 0.01360615500016138,
+          "generation_seconds": 0.1543776270118542,
+          "release_seconds": 0.0011789610143750906,
+          "total_seconds": 0.17448640702059492,
+          "decode_tokens_per_second": 220.21507310391033,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00014892101171426475,
+          "first_token_seconds": 0.015308875008486211,
+          "generation_first_token_seconds": 0.015159953996771947,
+          "generation_seconds": 0.16681150600197725,
+          "release_seconds": 0.0010891059937421232,
+          "total_seconds": 0.16808259801473469,
+          "decode_tokens_per_second": 204.4159759007013,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.01871577199199237,
+          "first_token_seconds": 0.03258014397579245,
+          "generation_first_token_seconds": 0.013864371983800083,
+          "generation_seconds": 0.15242787098395638,
+          "release_seconds": 0.001007076003588736,
+          "total_seconds": 0.1721642519987654,
+          "decode_tokens_per_second": 223.7241425316853,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00039368501165881753,
+          "first_token_seconds": 0.02845758301555179,
+          "generation_first_token_seconds": 0.028063898003892973,
+          "generation_seconds": 0.18590364197734743,
+          "release_seconds": 0.0010933069861494005,
+          "total_seconds": 0.18743953999364749,
+          "decode_tokens_per_second": 196.40173773478492,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.03128398201079108,
+          "first_token_seconds": 0.05453936802223325,
+          "generation_first_token_seconds": 0.02325538601144217,
+          "generation_seconds": 0.1582535429915879,
+          "release_seconds": 0.0009673329768702388,
+          "total_seconds": 0.19051692599896342,
+          "decode_tokens_per_second": 229.63276457588375,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.0004317319835536182,
+          "first_token_seconds": 0.015640503988834098,
+          "generation_first_token_seconds": 0.01520877200528048,
+          "generation_seconds": 0.16612886200891808,
+          "release_seconds": 0.0012722669926006347,
+          "total_seconds": 0.16788128099869937,
+          "decode_tokens_per_second": 205.40671556220786,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.01880965899908915,
+          "first_token_seconds": 0.03274317199247889,
+          "generation_first_token_seconds": 0.01393351299338974,
+          "generation_seconds": 0.15233336700475775,
+          "release_seconds": 0.0009120199829339981,
+          "total_seconds": 0.17206784198060632,
+          "decode_tokens_per_second": 223.988675576592,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.0002941899874713272,
+          "first_token_seconds": 0.017498430010164157,
+          "generation_first_token_seconds": 0.01720424002269283,
+          "generation_seconds": 0.1698485400120262,
+          "release_seconds": 0.0011995579989161342,
+          "total_seconds": 0.17137272699619643,
+          "decode_tokens_per_second": 203.086522078887,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.020219003985403106,
+          "first_token_seconds": 0.034266326983924955,
+          "generation_first_token_seconds": 0.01404732299852185,
+          "generation_seconds": 0.15381859499029815,
+          "release_seconds": 0.0009078529838006943,
+          "total_seconds": 0.17495673598023131,
+          "decode_tokens_per_second": 221.79092712144697,
+          "max_batch_size": 2,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        }
+      ]
+    },
+    {
+      "engine": "dllm",
+      "concurrency": 4,
+      "thinking": "auto",
+      "raw": true,
+      "prompt_token_ids": [
+        840,
+        20772,
+        1246,
+        18495,
+        3553,
+        323,
+        17179,
+        1995,
+        13,
+        13655,
+        279,
+        16148,
+        2797,
+        323,
+        63594,
+        13
+      ],
+      "top_logprobs": null,
+      "max_tokens": 32,
+      "trials": [
+        {
+          "warmup": true,
+          "total_seconds": 0.22169772099005058,
+          "first_output_seconds": 0.06505221797851846,
+          "post_first_output_tokens_per_second": 197.8990740494976,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": true,
+          "total_seconds": 0.21831550900242291,
+          "first_output_seconds": 0.0614724799816031,
+          "post_first_output_tokens_per_second": 197.64984260719018,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": true,
+          "total_seconds": 0.21054794199881144,
+          "first_output_seconds": 0.03697534301318228,
+          "post_first_output_tokens_per_second": 178.5996187253417,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": true,
+          "total_seconds": 0.21680647300672717,
+          "first_output_seconds": 0.060520225000800565,
+          "post_first_output_tokens_per_second": 198.35398440702494,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.19931096502114087,
+          "first_output_seconds": 0.02255477401195094,
+          "post_first_output_tokens_per_second": 175.38282434694602,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.2054584910220001,
+          "first_output_seconds": 0.046148085995810106,
+          "post_first_output_tokens_per_second": 194.58867105951884,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.20518758101388812,
+          "first_output_seconds": 0.04594331601401791,
+          "post_first_output_tokens_per_second": 194.66949092342676,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.2043513850076124,
+          "first_output_seconds": 0.044920186017407104,
+          "post_first_output_tokens_per_second": 194.44123983477346,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.34165352099807933,
+          "first_output_seconds": 0.026828599016880617,
+          "post_first_output_tokens_per_second": 98.46742692705666,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.35734971301280893,
+          "first_output_seconds": 0.04941858001984656,
+          "post_first_output_tokens_per_second": 100.67186029127004,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.34052428998984396,
+          "first_output_seconds": 0.025402506988029927,
+          "post_first_output_tokens_per_second": 98.37466551724081,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.35672861500643194,
+          "first_output_seconds": 0.04766315099550411,
+          "post_first_output_tokens_per_second": 100.3023747710094,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.43941297798301093,
+          "first_output_seconds": 0.06639545998768881,
+          "post_first_output_tokens_per_second": 83.10601648576933,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.4372076950094197,
+          "first_output_seconds": 0.06543720900663175,
+          "post_first_output_tokens_per_second": 83.38477950013366,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.4295238289923873,
+          "first_output_seconds": 0.03973399300593883,
+          "post_first_output_tokens_per_second": 79.53003679931192,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.43576936700264923,
+          "first_output_seconds": 0.0629333250108175,
+          "post_first_output_tokens_per_second": 83.14646790687463,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.20433962301467545,
+          "first_output_seconds": 0.046787643019342795,
+          "post_first_output_tokens_per_second": 196.76045963318487,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.20399159999215044,
+          "first_output_seconds": 0.04664958600187674,
+          "post_first_output_tokens_per_second": 197.02302782215756,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.19715202201041393,
+          "first_output_seconds": 0.022988808021182194,
+          "post_first_output_tokens_per_second": 177.99395917163474,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.20287475400255062,
+          "first_output_seconds": 0.04549638100434095,
+          "post_first_output_tokens_per_second": 196.97750973923624,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.2005307570216246,
+          "first_output_seconds": 0.04445792702608742,
+          "post_first_output_tokens_per_second": 198.6252187577199,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.19354298600228503,
+          "first_output_seconds": 0.021208074991591275,
+          "post_first_output_tokens_per_second": 179.88229905475382,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.19949554800405167,
+          "first_output_seconds": 0.04334348801057786,
+          "post_first_output_tokens_per_second": 198.52443830261097,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        },
+        {
+          "warmup": false,
+          "total_seconds": 0.19909827099763788,
+          "first_output_seconds": 0.043564363004406914,
+          "post_first_output_tokens_per_second": 199.31345132374068,
+          "usage": {
+            "prompt_tokens": 16,
+            "completion_tokens": 32,
+            "total_tokens": 48
+          },
+          "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+          "scored_tokens": 0
+        }
+      ],
+      "rounds": [
+        {
+          "warmup": true,
+          "seconds": 0.22251428401796147,
+          "aggregate_output_tokens_per_second": 575.2439694598113
+        },
+        {
+          "warmup": false,
+          "seconds": 0.20660692499950528,
+          "aggregate_output_tokens_per_second": 619.5339289828088
+        },
+        {
+          "warmup": false,
+          "seconds": 0.3585753100051079,
+          "aggregate_output_tokens_per_second": 356.9682474740847
+        },
+        {
+          "warmup": false,
+          "seconds": 0.44009361701318994,
+          "aggregate_output_tokens_per_second": 290.8472085296428
+        },
+        {
+          "warmup": false,
+          "seconds": 0.2047247219888959,
+          "aggregate_output_tokens_per_second": 625.2298147311325
+        },
+        {
+          "warmup": false,
+          "seconds": 0.20097980901482515,
+          "aggregate_output_tokens_per_second": 636.8798966793632
+        }
+      ],
+      "server_timings": [
+        {
+          "warmup": true,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00043271901085972786,
+          "first_token_seconds": 0.028512912016594782,
+          "generation_first_token_seconds": 0.028080193005735055,
+          "generation_seconds": 0.2003227869863622,
+          "release_seconds": 0.0016868179955054075,
+          "total_seconds": 0.20258429500972852,
+          "decode_tokens_per_second": 179.9787107449549,
+          "max_batch_size": 4,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": true,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.0312183259811718,
+          "first_token_seconds": 0.05011108599137515,
+          "generation_first_token_seconds": 0.018892760010203347,
+          "generation_seconds": 0.17426526499912143,
+          "release_seconds": 0.0015324760170187801,
+          "total_seconds": 0.2071282760007307,
+          "decode_tokens_per_second": 199.52050076177295,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": true,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.02866575599182397,
+          "first_token_seconds": 0.04762199998367578,
+          "generation_first_token_seconds": 0.018956243991851807,
+          "generation_seconds": 0.1743000239948742,
+          "release_seconds": 0.0015324760170187801,
+          "total_seconds": 0.20456788199953735,
+          "decode_tokens_per_second": 199.55739456962394,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": true,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.02738529199268669,
+          "first_token_seconds": 0.046354457997949794,
+          "generation_first_token_seconds": 0.018969166005263105,
+          "generation_seconds": 0.17435158998705447,
+          "release_seconds": 0.0015324760170187801,
+          "total_seconds": 0.20328324599540792,
+          "decode_tokens_per_second": 199.50776417050082,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00015879899729043245,
+          "first_token_seconds": 0.018125569011317566,
+          "generation_first_token_seconds": 0.017966770014027134,
+          "generation_seconds": 0.1933307140134275,
+          "release_seconds": 0.0014627500204369426,
+          "total_seconds": 0.19503291801083833,
+          "decode_tokens_per_second": 176.7752212513309,
+          "max_batch_size": 4,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.021630956995068118,
+          "first_token_seconds": 0.040586846007499844,
+          "generation_first_token_seconds": 0.018955889012431726,
+          "generation_seconds": 0.1768004040059168,
+          "release_seconds": 0.0015161960036493838,
+          "total_seconds": 0.20001768399379216,
+          "decode_tokens_per_second": 196.39580128127673,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.020140823995461687,
+          "first_token_seconds": 0.03916871198453009,
+          "generation_first_token_seconds": 0.019027887989068404,
+          "generation_seconds": 0.17682567599695176,
+          "release_seconds": 0.0015161960036493838,
+          "total_seconds": 0.19852065399754792,
+          "decode_tokens_per_second": 196.45395788723783,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.018863286008127034,
+          "first_token_seconds": 0.03790445099002682,
+          "generation_first_token_seconds": 0.019041164981899783,
+          "generation_seconds": 0.17684820797876455,
+          "release_seconds": 0.0015161960036493838,
+          "total_seconds": 0.1972389669972472,
+          "decode_tokens_per_second": 196.44243635321075,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.002056678000371903,
+          "first_token_seconds": 0.023015901999315247,
+          "generation_first_token_seconds": 0.020959223998943344,
+          "generation_seconds": 0.32592703800764866,
+          "release_seconds": 0.00818176698521711,
+          "total_seconds": 0.33628410499659367,
+          "decode_tokens_per_second": 101.65007117477356,
+          "max_batch_size": 4,
+          "prefill_batch_size": 2,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.0008321159984916449,
+          "first_token_seconds": 0.02185887101222761,
+          "generation_first_token_seconds": 0.021026755013735965,
+          "generation_seconds": 0.32597824302501976,
+          "release_seconds": 0.00818176698521711,
+          "total_seconds": 0.33505010401131585,
+          "decode_tokens_per_second": 101.65551315117025,
+          "max_batch_size": 4,
+          "prefill_batch_size": 2,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.02556191000621766,
+          "first_token_seconds": 0.04295184600050561,
+          "generation_first_token_seconds": 0.017389935994287953,
+          "generation_seconds": 0.3192229960113764,
+          "release_seconds": 0.006272243976127356,
+          "total_seconds": 0.351201448997017,
+          "decode_tokens_per_second": 102.70578046766951,
+          "max_batch_size": 4,
+          "prefill_batch_size": 2,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.024852745002135634,
+          "first_token_seconds": 0.04232878898619674,
+          "generation_first_token_seconds": 0.017476043984061107,
+          "generation_seconds": 0.3193216929794289,
+          "release_seconds": 0.006272243976127356,
+          "total_seconds": 0.35048519098199904,
+          "decode_tokens_per_second": 102.70149695109812,
+          "max_batch_size": 4,
+          "prefill_batch_size": 2,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.0010428220266476274,
+          "first_token_seconds": 0.02585088601335883,
+          "generation_first_token_seconds": 0.024808063986711204,
+          "generation_seconds": 0.4130642809905112,
+          "release_seconds": 0.0019671139889396727,
+          "total_seconds": 0.4161660980025772,
+          "decode_tokens_per_second": 79.84418186327869,
+          "max_batch_size": 4,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.027760919008869678,
+          "first_token_seconds": 0.04600124902208336,
+          "generation_first_token_seconds": 0.01824033001321368,
+          "generation_seconds": 0.38982639799360186,
+          "release_seconds": 0.0013915390009060502,
+          "total_seconds": 0.4190572180086747,
+          "decode_tokens_per_second": 83.42616333407888,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.026751147990580648,
+          "first_token_seconds": 0.04505273699760437,
+          "generation_first_token_seconds": 0.018301589007023722,
+          "generation_seconds": 0.3898462440120056,
+          "release_seconds": 0.0013915390009060502,
+          "total_seconds": 0.4180403059872333,
+          "decode_tokens_per_second": 83.43546215079942,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.02565932399011217,
+          "first_token_seconds": 0.04397263200371526,
+          "generation_first_token_seconds": 0.01831330801360309,
+          "generation_seconds": 0.3898641699925065,
+          "release_seconds": 0.0013915390009060502,
+          "total_seconds": 0.4169429749890696,
+          "decode_tokens_per_second": 83.43406831272584,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00030793697806075215,
+          "first_token_seconds": 0.019850855984259397,
+          "generation_first_token_seconds": 0.019542919006198645,
+          "generation_seconds": 0.19253801100421697,
+          "release_seconds": 0.001397545012878254,
+          "total_seconds": 0.1943166840064805,
+          "decode_tokens_per_second": 179.19583522262647,
+          "max_batch_size": 4,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.022962527989875525,
+          "first_token_seconds": 0.040485325996996835,
+          "generation_first_token_seconds": 0.01752279800712131,
+          "generation_seconds": 0.17424869700334966,
+          "release_seconds": 0.001235297997482121,
+          "total_seconds": 0.19851062700035982,
+          "decode_tokens_per_second": 197.79755738230617,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.021450372005347162,
+          "first_token_seconds": 0.03903097900911234,
+          "generation_first_token_seconds": 0.01758060700376518,
+          "generation_seconds": 0.17426958499709144,
+          "release_seconds": 0.001235297997482121,
+          "total_seconds": 0.19699145000777207,
+          "decode_tokens_per_second": 197.8441648992079,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.02034683700185269,
+          "first_token_seconds": 0.037932519015157595,
+          "generation_first_token_seconds": 0.017585682013304904,
+          "generation_seconds": 0.17428232400561683,
+          "release_seconds": 0.001235297997482121,
+          "total_seconds": 0.19587600001250394,
+          "decode_tokens_per_second": 197.83448838374576,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.00013222201960161328,
+          "first_token_seconds": 0.017731911997543648,
+          "generation_first_token_seconds": 0.017599689977942035,
+          "generation_seconds": 0.18848431800142862,
+          "release_seconds": 0.0017319860053248703,
+          "total_seconds": 0.1904307670192793,
+          "decode_tokens_per_second": 181.4089444940555,
+          "max_batch_size": 4,
+          "prefill_batch_size": 1,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.02026887401007116,
+          "first_token_seconds": 0.03847095201490447,
+          "generation_first_token_seconds": 0.01820207800483331,
+          "generation_seconds": 0.17273392298375256,
+          "release_seconds": 0.0013942429795861244,
+          "total_seconds": 0.1944842959928792,
+          "decode_tokens_per_second": 200.60590103113648,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.018897433998063207,
+          "first_token_seconds": 0.037157343002036214,
+          "generation_first_token_seconds": 0.018259909003973007,
+          "generation_seconds": 0.17276733100879937,
+          "release_seconds": 0.0013942429795861244,
+          "total_seconds": 0.19310594198759645,
+          "decode_tokens_per_second": 200.63761078760118,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        },
+        {
+          "warmup": false,
+          "source_tier": "gpu",
+          "activation_seconds": 0,
+          "queue_seconds": 0.017868472001282498,
+          "first_token_seconds": 0.036139719013590366,
+          "generation_first_token_seconds": 0.018271247012307867,
+          "generation_seconds": 0.17278885599807836,
+          "release_seconds": 0.0013942429795861244,
+          "total_seconds": 0.19207253999775276,
+          "decode_tokens_per_second": 200.62438322388735,
+          "max_batch_size": 4,
+          "prefill_batch_size": 3,
+          "kernel_backend": "distributed-stage-graphs",
+          "weight_quantization": "q4_0"
+        }
+      ]
+    }
+  ],
+  "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "sources": {
+    "dllm/distributed.py": "09de1b900a0e746a1808bd36382965d0702d347329317f09eff1130f043617a9",
+    "dllm/distributed_serving.py": "ee191d68cc203c5941a849bab373fa609d6e1c9f5ce181454f26eae635695e2b",
+    "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+    "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+    "dllm/layer_stage.py": "7d0b9e7546f06f04567b31b71f5bdda9bbfd62e1b0d9a765e96e7141ed5a84e8",
+    "dllm/partition_policy.py": "17071f6b905b571e2e338a7f0fb7d7a3d8800612520971a4fda072dff4f089e5",
+    "dllm/q4_stage.py": "7a89bbb0ebe5030fa89a0f70a88c53fd00c4dcaa2b9576620314dcc61039a478",
+    "dllm/q4_stage_kernels.py": "bc2915edc914d87ba70d2f7d18fca86234065a39931f9624052e535306b7b8fe",
+    "dllm/kernels.py": "0ad15926656c78e65dbc2d18c840d33ca04a1e87b21fb9f8d52e8f5ad3055212",
+    "dllm/qwen2.py": "c983c4f01d8f1f2724b2ab0f6cedfb78cd43309a55c160a6852a0e5114f6b98f",
+    "scripts/experiments/bench_distributed_service.py": "c9a1dd6522bd48172387d695c4eb28656b80158ff3f5e0f61fe1df0b19d4eace"
+  },
+  "runtime_row_bounds": true,
+  "runtime_rope_tokens": false,
+  "shape_warmup": {
+    "group_sizes": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "prompt_tokens": 16,
+    "seconds": 0.18028751999372616,
+    "scope": "Policy-reachable prefill shapes warmed on the GPU owner before HTTP measurement"
+  },
+  "status": {
+    "device": "distributed-cuda",
+    "context": 512,
+    "models": [
+      {
+        "id": "a",
+        "residency": "gpu",
+        "quantization": "q4_0",
+        "model_sha256": "5344521d357deea794ab9fd3d06a6cdae292c3c0588d933899dc3e6139ff5ffe"
+      }
+    ],
+    "weight_layout": "q4-adjacent-body",
+    "distributed": true,
+    "stage_layers": [
+      [
+        0,
+        12
+      ],
+      [
+        12,
+        24
+      ]
+    ],
+    "max_batch_size": 4,
+    "packed_prefill": true,
+    "active": false,
+    "queued": 0,
+    "completed": 0,
+    "heartbeats": 0,
+    "failed": false,
+    "closed": false
+  },
+  "packed_prefill": true,
+  "q4_stage_adjacent": true
+}

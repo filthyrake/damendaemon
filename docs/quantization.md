@@ -81,11 +81,15 @@ A2/A30. Warm model and A2/3090 HTTP comparisons show no observed throughput
 regression; small gains are not a general warm-speed claim. The evidence page
 above separates these measurements and records numerical and recovery gates.
 
-`DLLM_Q4_STAGE_RUNTIME_ROPE=1` is a separate, default-off experiment for those
-adjacent Q4 stages. It reuses the rotary/cache kernel across prompt lengths by
-passing its query-output stride at runtime. Stage status reports
-`runtime_rope_tokens`. Prototype numerical and first-use results are recorded
-in the same evidence page; integrated GPU qualification is still in progress.
+Those adjacent Q4 stages also reuse the rotary/cache kernel across prompt
+lengths by passing its query-output stride at runtime. Set
+`DLLM_Q4_STAGE_RUNTIME_ROPE=0` for static stride selection. Stage status reports
+`runtime_rope_tokens`. With runtime row bounds already enabled, integrated
+A2/A30 private-cache trials reduce the first-use sweep from 18.49 to 14.97
+seconds, while activation/compilation rises slightly from 14.89 to 15.09 seconds.
+Independent, HTTP, rebind and A2/3090 network gates pass. Warm network throughput
+differences are small and mixed; this is a first-use improvement, not a general
+warm-speed claim. Ordinary single-GPU executors retain static rotary dispatch.
 
 ## Native AWQ checkpoints
 

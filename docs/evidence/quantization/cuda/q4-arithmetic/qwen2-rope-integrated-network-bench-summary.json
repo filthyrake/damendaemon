@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "compare": "runtime-rope",
+  "scope": "A2/3090 NCCL sockets, Q4 adjacent, runtime rows and packed prefill fixed, input16 output32 context512 capacity4; all reachable group shapes warmed; ABBA rotary stride only.",
+  "summary": [
+    {
+      "runtime_rope_tokens": false,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 18.533124501118436,
+      "request_ms": 149.04019449022599,
+      "aggregate_tokens_per_second": 214.04545094242172
+    },
+    {
+      "runtime_rope_tokens": true,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 17.95607050007675,
+      "request_ms": 146.46661648293957,
+      "aggregate_tokens_per_second": 217.88030239229175
+    },
+    {
+      "runtime_rope_tokens": false,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 33.758933990611695,
+      "request_ms": 174.11948250082787,
+      "aggregate_tokens_per_second": 361.8230466940631
+    },
+    {
+      "runtime_rope_tokens": true,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 31.743913001264445,
+      "request_ms": 175.6306650058832,
+      "aggregate_tokens_per_second": 358.63548618079693
+    },
+    {
+      "runtime_rope_tokens": false,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 44.49458501767367,
+      "request_ms": 203.0614980030805,
+      "aggregate_tokens_per_second": 624.2385222371249
+    },
+    {
+      "runtime_rope_tokens": true,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 45.49262049840763,
+      "request_ms": 203.37870001094416,
+      "aggregate_tokens_per_second": 620.5083814629708
+    }
+  ],
+  "text_usage_identical": true
+}

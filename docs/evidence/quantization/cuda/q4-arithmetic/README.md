@@ -602,3 +602,37 @@ their initialization paths differ. These integrated measurements supersede the
 prototype estimate for deployment decisions. Hardware, source hashes and raw
 observations are in `qwen2-rope-integrated-first-shapes-*`. Host/driver caches and
 excluded startup costs follow the same scope described above.
+
+### Qualified rotary default
+
+The integrated A2/3090 numerical trace passes all 282 independent output-stage
+checks and 11 packed calls on each rank. Both reports confirm runtime row bounds
+and runtime rotary stride active. The real distributed HTTP gate passes 29
+checks. The warmed HTTP ABBA comparison varies only rotary stride:
+
+| Concurrency | Rotary stride | First text, ms | Request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Static | 18.53 | 149.04 | 214.05 |
+| 1 | Runtime | 17.96 | 146.47 | 217.88 |
+| 2 | Static | 33.76 | 174.12 | 361.82 |
+| 2 | Runtime | 31.74 | 175.63 | 358.64 |
+| 4 | Static | 44.49 | 203.06 | 624.24 |
+| 4 | Runtime | 45.49 | 203.38 | 620.51 |
+
+All generated text and usage match. Throughput differences are small and mixed
+(+1.8%, -0.9%, -0.6%); this does not demonstrate a warm-speed gain. The reason
+to enable this path is the separately measured first-use improvement. Reports
+use the `qwen2-rope-integrated-network-*` prefix. NCCL uses sockets; RDMA remains
+unverified. Peer-only firewall rules had 600-second expiry and were removed
+early: lab 2026-10-06 06:51:06–06:54:50 UTC, desktop 06:51:09–06:54:53 UTC.
+The existing desktop rule and 10,835 MiB baseline GPU allocation were preserved.
+
+Runtime rotary stride becomes the default only for the qualified adjacent Q4
+layer stages. `DLLM_Q4_STAGE_RUNTIME_ROPE=0` preserves the static control.
+Ordinary executors keep static dispatch. Earlier opt-in sections describe the
+qualification sequence, not the current default. The historical global-dispatch
+experiment explicitly disables the integrated stage policy when installed.
+The combined default path passes all 19 same-host HTTP checks with every Q4
+stage override unset, including active-policy assertions. The full local suite
+passes 446 tests. `qwen2-rope-integrated-default-http.json` records that final
+normal-path gate.
