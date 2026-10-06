@@ -85,6 +85,8 @@ def worker(args):
             assert call('/health')['status']=='ok'
             assert [m['id'] for m in call('/v1/models')['data']]==['a']
             initial=status('initial');assert initial['distributed'] and initial['models'][0]['quantization']==args.quantization
+            expected_layout='q4-adjacent-body' if runtime.pair.q4_stage_adjacent else 'canonical'
+            assert initial['weight_layout']==expected_layout
             counts=(2,8,4,6)
             with ThreadPoolExecutor(4) as pool:
                 initial_results=list(pool.map(lambda count:request(0,count),counts))

@@ -43,6 +43,7 @@ class PartitionExecutor:
                     self.stages.append(stage)
                     scales=stage.quant_linear.scales.values() if stage.quant_linear else ()
                     self.residency.append(dict(device_index=device,layers=[start,end],
+                        weight_layout='q4-adjacent-body' if stage.q4_linear is not None else 'canonical',
                         weight_bytes=tensor_bytes(stage.w.values()),scale_bytes=tensor_bytes(scales),kv_bytes=tensor_bytes(stage.kv)))
         except BaseException:
             self.failed=True

@@ -36,6 +36,7 @@ class StagePair:
         self.state = None
         self.channel = None
         self.stage = None
+        self.q4_stage_adjacent = False
         self.model = None
         self.failure_tokens = None
         self.rank = int(os.environ.get('RANK', '-1'))
@@ -66,6 +67,7 @@ class StagePair:
             self.stage = LayerStage(self.model, 0 if self.rank == 0 else 12,
                                    12 if self.rank == 0 else 24, max_batch=max_batch,
                                    stage_graphs=True, kernels='triton')
+            self.q4_stage_adjacent = self.stage.q4_linear is not None
             if self.rank == 1:
                 self.failure_tokens = torch.full((max_batch,), FAILED_TOKEN, dtype=torch.int64, device='cuda')
             setup.ready(); setup.wait_ready(); ready = True
@@ -73,7 +75,7 @@ class StagePair:
             dist.init_process_group('nccl', timeout=timedelta(seconds=30),
                                     device_id=torch.device('cuda', local_rank))
             agreement = self.identity + struct.pack('<qqqqq', VERSION, context, max_batch, int(self.packed_prefill),
-                                                     int(self.stage.q4_linear is not None))
+                                                     int(self.q4_stage_adjacent))
             identity = torch.tensor(list(hashlib.sha256(agreement).digest()), dtype=torch.uint8, device='cuda')
             peers = [torch.empty_like(identity) for _ in range(2)]
             dist.all_gather(peers, identity)

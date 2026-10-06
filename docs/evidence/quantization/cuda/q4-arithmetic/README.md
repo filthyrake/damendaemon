@@ -230,3 +230,25 @@ all four body projection shapes at 1, 2, 4, 16, 17, 32, 64, 128, 129, 256 and
 is 0.000419 (limit 0.001). Every large-prefill fallback at 129/256/512 rows is
 bit-exact with the dense FP16 control. QKV cases include bias. These synthetic
 checks exercise layout and dispatch boundaries; they are not throughput claims.
+
+The integrated two-rank A2/A30 HTTP service passes 29 checks, including packed
+admission, independent output references, cancellation and a 35-second idle
+heartbeat interval. Both ranks reject all four deliberately mismatched startup
+policies: capacity, context, prompt packing and Q4 device layout (eight checks).
+
+The integrated same-host policy also passes the matched ABBA HTTP measurement,
+using the same workload and controls as the existing-buffer prototype above.
+
+| Concurrency | Policy | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Existing | 29.70 | 168.52 | 189.39 |
+| 1 | Integrated adjacent + packed | 27.43 | 162.44 | 196.48 |
+| 2 | Existing | 55.00 | 204.92 | 307.80 |
+| 2 | Integrated adjacent + packed | 53.29 | 196.04 | 321.41 |
+| 4 | Existing | 107.93 | 290.38 | 435.35 |
+| 4 | Integrated adjacent + packed | 62.87 | 236.95 | 531.14 |
+
+Four-request throughput improves 22.0%, first text 41.7% and request latency
+18.4% in this run. The smaller one/two-request differences change direction
+between runs, so they do not establish a repeatable low-concurrency speedup.
+Both body arithmetic and prompt admission change; all text and usage match.

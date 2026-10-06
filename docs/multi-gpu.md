@@ -179,6 +179,14 @@ The resident distributed server also packs admitted FP16/Q8 prompts when
 multiple slots are configured. Set the packing flag identically on both workers;
 startup rejects mismatched policies. Q4 keeps the same sequential default.
 
+The adjacent Q4 stage layout is available with `DLLM_Q4_STAGE_ADJACENT=1` on
+both workers (or the same-host process). It repacks existing device body weights
+without changing the checkpoint format or output head, and passes the expanded
+A2/A30 numerical gate, HTTP and changed-weight recovery checks. Enable prompt
+packing separately with `DLLM_PARTITION_PACKED_PREFILL=1` during qualification.
+Model status reports `weight_layout`; startup rejects mixed layouts. See the
+[Q4 layout qualification](evidence/quantization/cuda/q4-arithmetic/README.md).
+
 ## Resident distributed HTTP service
 
 `distributed-serve` keeps the qualified two-rank pair resident behind the

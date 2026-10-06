@@ -64,6 +64,7 @@ class DistributedRuntime:
         return dict(device='distributed-cuda',context=self.pair.model.max_context,
             models=[dict(id=self.alias,residency='gpu',quantization=self.pair.model.quantization,
                          model_sha256=self.pair.identity.hex())],
+            weight_layout='q4-adjacent-body' if getattr(self.pair,'q4_stage_adjacent',False) else 'canonical',
             distributed=True,stage_layers=[[0,12],[12,24]],max_batch_size=self.max_batch,packed_prefill=self.packed_prefill,
             active=self.active,queued=self.requests.qsize(),completed=self.completed,
             heartbeats=self.heartbeats,failed=self.failure is not None,closed=self.closed.is_set())
