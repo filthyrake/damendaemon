@@ -301,7 +301,14 @@ class HybridExecutor:
         ck, cv = self.kv[i].unbind(0)
         ck[slots[:, None], :, positions, :] = k
         cv[slots[:, None], :, positions, :] = v
-        if prefill and prefix_length:
+        from .grouped_attention import use_grouped_prefill
+        from .device import selected_accelerator
+        end = prefix_length + length
+        if use_grouped_prefill(selected_accelerator(), self.hybrid_precision, prefill, length, end):
+            from .grouped_attention import attention as grouped_attention
+            out = grouped_attention(q.transpose(1, 2),
+                ck[:, :, :end].index_select(0, slots), cv[:, :, :end].index_select(0, slots))
+        elif prefill and prefix_length:
             from torch.nn.attention.bias import causal_lower_right
             end = prefix_length + length
             out = scaled_attention(q.transpose(1, 2),

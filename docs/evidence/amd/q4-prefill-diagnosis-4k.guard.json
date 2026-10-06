@@ -1,0 +1,26 @@
+{
+  "command": [
+    "/home/damen/strixenv/bin/python",
+    "-m",
+    "scripts.experiments.hybrid_prefill_trace",
+    "--trace",
+    "../results/q4-prefill-diagnosis-4k.jsonl",
+    "replay",
+    "../results/qwen38-27b-q4-independent-gpu-fp32-golden4096.pt",
+    "--no-graph",
+    "--prefill-chunk-size",
+    "127"
+  ],
+  "host_available_before": 121246593024,
+  "watchdog": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 63573532672,
+    "last_available_bytes": 100392439808,
+    "triggered": false,
+    "error": null
+  },
+  "exit_code": 0,
+  "seconds": 209.94192999508232,
+  "host_available_after": 104388997120,
+  "cleanup_complete": true
+}
