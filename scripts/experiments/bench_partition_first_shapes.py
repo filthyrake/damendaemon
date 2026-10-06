@@ -1,0 +1,58 @@
+"""Fresh-process/private-Triton-cache first-shape latency; host files may be cached."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import signal
+import tempfile
+import time
+
+
+def main():
+    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('prompt');p.add_argument('--dynamic',action='store_true')
+    p.add_argument('--output',required=True);args=p.parse_args()
+    def terminate(number,frame):raise SystemExit(128+number)
+    signal.signal(signal.SIGTERM,terminate)
+    report=dict(passed=False,dynamic=args.dynamic,model=args.model,quantization='q4_0',context=512,capacity=4,first=[],repeat=[],
+        scope='Fresh process and private Triton compiler cache for each trial; host checkpoint/filesystem/driver caches are not reset. Same-host first-token computation, including compilation and GPU completion, without HTTP/queue/network. No steady-state throughput claim.',
+        sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
+                 ('dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/partition.py','scripts/experiments/q4_dynamic_rows.py',__file__)})
+    executor=None
+    try:
+        with tempfile.TemporaryDirectory(prefix='dllm-q4-first-shapes-') as cache:
+            os.environ.update(TRITON_CACHE_DIR=cache,DLLM_Q4_STAGE_ADJACENT='1',DLLM_PARTITION_PACKED_PREFILL='1')
+            started=time.perf_counter()
+            import torch
+            from dllm.qwen2 import ModelWeights
+            from dllm.partition import PartitionExecutor
+            from scripts.experiments.q4_dynamic_rows import install_validation_dispatch
+            report['import_seconds']=time.perf_counter()-started
+            assert torch.cuda.device_count()==2,'select exactly two GPUs'
+            torch.set_num_threads(4)
+            if args.dynamic:install_validation_dispatch()
+            def sync():
+                for device in range(2):torch.cuda.synchronize(device)
+            prompt=json.loads(Path(args.prompt).read_text());assert len(prompt)==16
+            with torch.inference_mode():
+                started=time.perf_counter();model=ModelWeights(args.model,512,quantization='q4_0')
+                report['host_weights_seconds']=time.perf_counter()-started
+                sync();started=time.perf_counter();executor=PartitionExecutor(model,12,use_graph=True,max_batch=4);sync()
+                report['activation_seconds']=time.perf_counter()-started
+                for field in ('first','repeat'):
+                    for length in (3,5,7,11,13,17,19,23,31,33,47,63,65,95,127):
+                        tokens=(prompt*((length+15)//16))[:length]
+                        sync();started=time.perf_counter();logits=executor.prefill_batch([tokens],[0])
+                        token=int(logits.argmax(-1).item());sync();elapsed=time.perf_counter()-started
+                        report[field].append(dict(prompt_tokens=length,seconds=elapsed,token=token))
+                    print(field,'complete',flush=True)
+                assert [r['token'] for r in report['first']]==[r['token'] for r in report['repeat']]
+                del logits
+                executor.close();executor=None
+            report['passed']=True
+    finally:
+        if executor is not None:executor.close()
+        Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
+
+
+if __name__=='__main__':main()

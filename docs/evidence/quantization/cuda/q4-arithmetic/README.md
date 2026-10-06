@@ -395,3 +395,26 @@ That candidate passes all 282 independent expanded A2/A30 graph checks with
 checks. The latter includes partial canonical upload and partial in-place
 repacking failures. Whole-model performance qualification is separate; passing
 these gates alone does not establish a throughput improvement.
+
+The matched A2/A30 whole-model execution benchmark holds adjacent storage,
+packed prefill, context 512, capacity four, 16 input IDs and 32 output tokens
+fixed. It uses static/selective/selective/static launches, explicitly warms all
+prompt-group shapes, and measures 12 samples per mode/batch size. Every generated
+token matches. This bypasses HTTP/queueing and is not serving throughput.
+
+| Batch size | Row bounds | Median first token, ms | Median total, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Static | 22.14 | 140.68 | 227.48 |
+| 1 | Selective runtime | 23.01 | 139.80 | 228.90 |
+| 2 | Static | 23.64 | 136.44 | 469.07 |
+| 2 | Selective runtime | 24.53 | 137.89 | 464.14 |
+| 4 | Static | 27.55 | 142.77 | 896.53 |
+| 4 | Selective runtime | 27.50 | 143.48 | 892.10 |
+
+Warm throughput differences are small and mixed (+0.6%, -1.1%, -0.5%). The
+candidate's potential benefit is avoiding specializations, not a demonstrated
+warm-throughput improvement. First-shape observations from this shared process
+are retained, but later trials reuse compilation/module state from earlier
+trials. They cannot establish a fair cold-start advantage. The next harness
+uses a fresh process and private Triton cache per trial; host/driver caches are
+explicitly not reset.
