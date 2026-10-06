@@ -106,3 +106,9 @@ fresh pair; distributed model switching, HTTP scheduling, sampling controls,
 stream reconnection and automatic worker restart are not implemented by this
 command. The same-host HTTP server retains its separate residency/swap support.
 Use an outer job deadline for crashes or blocked setup that cannot report status.
+
+Choose a single GPU when it fits and measured latency is better. For the
+qualified small Q8 workload, the 3090 alone measured 742 decode tokens/s,
+versus 290 for the A2/3090 network split and 243 for the A2 alone. The split
+does not automatically improve performance; see the
+[placement controls and measurement limits](evidence/multi-gpu/README.md#single-gpu-placement-controls).

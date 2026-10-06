@@ -129,13 +129,7 @@ the request format. Probabilities are **not calibrated confidence**. This is
 single-token choice scoring, not multi-token answer scoring or Jev model support.
 [Real A2/M4 correctness and latency evidence](evidence/scoring/README.md).
 
-For repeated short Qwen2/Qwen3 prompts on NVIDIA, opt-in
-`DLLM_PREFILL_GRAPHS=4` caches up to four prompt-length/slot CUDA graphs per
-resident executor. `DLLM_PREFILL_GRAPH_MAX_TOKENS` defaults to128. First captures
-are expensive; dynamic workloads may not amortize them. Quantization, paged KV,
-and packed/chunked prefill retain their existing paths. Direct token scoring
-uses separate graph keys for each ordered candidate set, sharing the same cache budget.
-[Correctness, memory release and matched HTTP performance](evidence/prefill-graphs/README.md).
+
 
 ## Trained document reranking
 
@@ -200,9 +194,3 @@ projections. These repair the tested routing-sensitive output mismatch; 4K HTTP
 and tool lifecycles pass, but long-context internal-state numerical qualification
 remains open in [issue #41](https://github.com/filthyrake/dllm/issues/41).
 See [fused-prefill evidence and scope](evidence/gpt-oss/fused-prefill/README.md). See [architecture evidence](architecture-parity.md#gpt-oss-20b-packed-raw-execution).
-
-
-Direct CUDA generation (`dllm run` and `Runtime.generate`) reuses the native
-one-request decode graph. A2 measurements show 2.5–3.0× faster Qwen3-0.6B FP32
-decode and about 2% faster GPT-OSS decode versus the previous scalar dispatch;
-HTTP batching already used these graphs. [Scope and evidence](evidence/scalar-decode/README.md).

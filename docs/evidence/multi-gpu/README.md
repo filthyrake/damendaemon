@@ -409,3 +409,31 @@ costs and are correctness evidence, not warm performance comparisons.
 The CLI test window automatically expired after ten minutes if left alone; it
 was opened on 2026-10-06 at 00:19:50/54 UTC and removed early at 00:26:01/06 UTC.
 Original firewall rules and GPU memory baselines were again verified unchanged.
+
+## Single-GPU placement controls
+
+The same pinned Qwen2.5-0.5B Q8 prepared weights, 512-token context, 255-token
+prompt and 32-token greedy continuation were measured with one active GPU.
+Each single-GPU path first passed all 82 independent reference checks. All
+warmup and measured continuations then matched the distributed run exactly;
+prepared-weight SHA256 identities also match. Each placement has 12 measured
+requests after warmup, using native decode graphs.
+
+| Active placement | Median first token | Median complete request | Median decode rate |
+|---|---:|---:|---:|
+| A2 alone | 29.39 ms | 157.04 ms | 243.13 tokens/s |
+| 3090 alone | 7.69 ms | 49.51 ms | 741.77 tokens/s |
+| A2/3090 network split, token completion | 20.76 ms | 127.73 ms | 290.07 tokens/s |
+
+For this model and workload, the 3090 alone is the faster placement. The split
+is a capacity option, not a general latency improvement. This comparison
+deliberately changes active hardware, so it is not a same-hardware runtime
+optimization claim. Single-GPU controls were run after the network experiment,
+not interleaved with it. Existing GPU services remained running. These are
+single-request warm measurements, not concurrent HTTP throughput, upstream
+runtime comparisons or qualification of models requiring combined capacity.
+
+Reproduce with `scripts/bench_single_stage_control.py`, supplying the pinned
+local model, independent Q8 trace and the distributed benchmark report.
+Raw reports: `qwen2-single-{a2,3090}-q8-{reference,placement}.json` and
+`qwen2-network-token-ack-q8-abba.json`.

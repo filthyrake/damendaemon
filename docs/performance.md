@@ -122,3 +122,21 @@ single-request first-output differences are about 1 ms for TinyLlama and
 1–7 ms for Mistral; coalescing can also delay the earliest concurrent request's
 first output while bringing later requests forward. See
 [the measured tradeoffs](evidence/gguf/README.md).
+
+
+## Prompt graph cache
+
+For repeated short Qwen2/Qwen3 prompts on NVIDIA, opt-in
+`DLLM_PREFILL_GRAPHS=4` caches up to four prompt-length/slot CUDA graphs per
+resident executor. `DLLM_PREFILL_GRAPH_MAX_TOKENS` defaults to128. First captures
+are expensive; dynamic workloads may not amortize them. Quantization, paged KV,
+and packed/chunked prefill retain their existing paths. Direct token scoring
+uses separate graph keys for each ordered candidate set, sharing the same cache budget.
+[Correctness, memory release and matched HTTP performance](evidence/prefill-graphs/README.md).
+
+## Direct generation graphs
+
+Direct CUDA generation (`dllm run` and `Runtime.generate`) reuses the native
+one-request decode graph. A2 measurements show 2.5–3.0× faster Qwen3-0.6B FP32
+decode and about 2% faster GPT-OSS decode versus the previous scalar dispatch;
+HTTP batching already used these graphs. [Scope and evidence](evidence/scalar-decode/README.md).
