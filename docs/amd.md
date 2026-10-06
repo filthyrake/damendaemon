@@ -262,4 +262,21 @@ replays pass all 84 checks on both
 [2B](evidence/amd/qwen35-2b-q8-hip-small-batch-replay4096.json).
 This is a measured serving improvement at the diagnostic 4K tier. It does not
 establish 32K support, a maximum-user SLO result or cross-engine parity.
-Promotion still requires the candidate lifecycle and resource-release gate.
+The [candidate lifecycle gate](evidence/amd/qwen35-q8-hip-small-batch-service4096.json)
+passes 20 alternating swap cycles per one/two-resident-model configuration,
+streaming, concurrent requests, cancellation, load-failure recovery and disk
+reload. Host cache reaches zero; device allocation remains 32 MiB across
+unload/reload/unload in both configurations. Ordinary-entry-point integration
+validation is tracked separately from this isolated experiment.
+
+
+The runtime now selects the measured matvec policy only for FP16 Q8 projections
+with two through four rows on `gfx1151`. Other architectures and row counts
+retain their dispatch. The ordinary entry point passes independent 84-check
+replays on [0.8B](evidence/amd/qwen35-q8-hip-default-small-batch-replay4096.json)
+and [2B](evidence/amd/qwen35-2b-q8-hip-default-small-batch-replay4096.json), plus
+a [normal CLI lifecycle integration check](evidence/amd/qwen35-q8-hip-default-small-batch-service4096.json)
+with two swap cycles per residency configuration and stable 32 MiB release.
+The longer 20-cycle candidate proof above exercises the same selected kernel.
+Reproduce the original A/B control at its recorded revision; the current
+ordinary policy already includes the improvement.

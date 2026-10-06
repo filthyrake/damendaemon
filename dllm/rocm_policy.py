@@ -55,3 +55,13 @@ def available_memory(torch):
     return max(0, min(free, total,
                       memory_limit() - torch.cuda.memory_allocated(),
                       host_available() - 16 * 1024**3))
+
+
+def prefer_q8_small_batch_matvec(torch, device, rows):
+    """Qualified gfx1151 dispatch; other architectures retain their policy.
+
+    Used while launching/capturing a Q8 projection, not during graph replay.
+    The caller checks FP16 input precision before selecting this policy.
+    """
+    return (2 <= rows <= 4 and bool(torch.version.hip)
+            and torch.cuda.get_device_properties(device).gcnArchName.split(':', 1)[0] == 'gfx1151')

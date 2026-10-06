@@ -2,6 +2,7 @@
 import torch
 import triton as tr
 import triton.language as tl
+from .rocm_policy import prefer_q8_small_batch_matvec
 
 
 @tr.jit
@@ -76,7 +77,8 @@ def _linear(X, W, S, BIAS, Y, K: tl.constexpr, N: tl.constexpr,
 def linear(x, weight, scales, bias=None):
     shape = x.shape[:-1]
     x = x.reshape(-1,x.shape[-1]).contiguous()
-    if x.dtype == torch.float16 and 2 <= x.shape[0] <= 128:
+    if (x.dtype == torch.float16 and 2 <= x.shape[0] <= 128
+            and not prefer_q8_small_batch_matvec(torch, x.device, x.shape[0])):
         result = matmul(x,weight,scales,bias)
     elif x.shape[0] > 4:
         result = torch.nn.functional.linear(x, expand(weight, scales, x.dtype), bias)

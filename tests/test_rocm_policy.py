@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import Mock,patch
 
 from dllm.device import selected_accelerator,selected_device,available_memory
-from dllm.rocm_policy import NVIDIA_LIBRARIES,validate_runtime,memory_limit
+from dllm.rocm_policy import NVIDIA_LIBRARIES,validate_runtime,memory_limit,prefer_q8_small_batch_matvec
 from dllm.runtime import require_gpu
 
 GIB=1024**3
@@ -12,6 +12,23 @@ ENV={'DLLM_DEVICE':'rocm','ROCR_VISIBLE_DEVICES':'0','HIP_VISIBLE_DEVICES':'0'}
 
 
 class RocmPolicyTests(unittest.TestCase):
+    def test_q8_policy_is_limited_to_qualified_architecture_and_rows(self):
+        torch = self.torch()
+        for rows in (1, 2, 3, 4, 5, 128):
+            self.assertEqual(prefer_q8_small_batch_matvec(torch, 0, rows), 2 <= rows <= 4)
+        for architecture in ('gfx1100', 'gfx942', 'gfx11510'):
+            torch.cuda.get_device_properties = lambda device: SimpleNamespace(gcnArchName=architecture)
+            self.assertFalse(prefer_q8_small_batch_matvec(torch, 0, 4))
+        torch.cuda.get_device_properties = lambda device: SimpleNamespace(gcnArchName='gfx1151:xnack-')
+        self.assertTrue(prefer_q8_small_batch_matvec(torch, 0, 4))
+
+    def test_q8_policy_does_not_query_nvidia_architecture(self):
+        torch = self.torch()
+        torch.version.hip = None
+        torch.cuda.get_device_properties = Mock(side_effect=AssertionError('NVIDIA must keep existing dispatch'))
+        self.assertFalse(prefer_q8_small_batch_matvec(torch, 0, 4))
+        torch.cuda.get_device_properties.assert_not_called()
+
     def torch(self):
         return SimpleNamespace(version=SimpleNamespace(hip='7.13'),cuda=SimpleNamespace(
             is_available=lambda:True,device_count=lambda:1,set_device=Mock(),
