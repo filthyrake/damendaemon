@@ -164,3 +164,10 @@ For the numerically checked Q8 configuration, set `DLLM_QUANTIZATION=q8_0`.
 This on-load format is separate from GGUF import. Retain explicit context and
 device selection; neither gfx1151 qualification nor these memory limits imply
 support for other AMD devices, ROCm versions or multiple GPUs.
+
+Qwen3.5-2B now passes all [84 Q8 graph checks at 4K](evidence/amd/qwen35-2b-q8-hip-triton-graph-replay4096.json)
+against its [CPU FP32 quantized reference](evidence/amd/qwen35-2b-q8-cpu-fp32-golden4096.json).
+Maximum relative RMS is 0.004964, maximum absolute error 0.049711, and all
+greedy tokens match. The quantized HTTP lifecycle gate is being checked with
+4096 context capacity; its short chat prompts do not replace the long-prompt
+reference proof.
