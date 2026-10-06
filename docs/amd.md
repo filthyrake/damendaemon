@@ -113,4 +113,12 @@ The pinned Qwen3.5-2B revision
 against its [CPU FP32 reference](evidence/amd/qwen35-2b-cpu-fp32-golden512.json),
 with zero greedy mismatches, maximum relative RMS 0.005288 and maximum
 absolute error 0.066978. Scope remains context 512 and unquantized text.
-The ordinary HTTP switching/release gate is being qualified separately.
+The [ordinary HTTP lifecycle gate](evidence/amd/qwen35-hip-service512.json)
+also passes for both sizes at GPU residency capacities one and two. Each
+capacity runs 20 alternating cycles (41 requests including the final return),
+then streaming, cancellation recovery, failed-load recovery, mixed concurrent
+requests and a four-request same-model batch. Deterministic outputs remain
+unchanged. Live allocation is stable after warmup. Explicit unload releases
+host caches and model residency; 96 MiB of device allocation remains, identical
+after a subsequent disk reload and second unload. This is stable retention,
+not a claim of zero device allocations or a matched latency benchmark.
