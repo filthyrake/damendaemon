@@ -598,6 +598,8 @@ class BatchedRuntime:
                 executor.release_request(slot)
 
     def _group(self, first, executor, tier, activation):
+        if self.prefix_cache_tokens and not getattr(executor, 'supports_prefix_cache', True):
+            raise ValueError('this architecture does not yet support prefix snapshots')
         if getattr(executor,'requires_full_prefill',False) and (self.prefill_chunk_size or self.prefix_cache_tokens):
             raise ValueError('this architecture does not yet support prompt chunking or prefix snapshots')
         if hasattr(executor,'reserve_request'):

@@ -280,3 +280,30 @@ with two swap cycles per residency configuration and stable 32 MiB release.
 The longer 20-cycle candidate proof above exercises the same selected kernel.
 Reproduce the original A/B control at its recorded revision; the current
 ordinary policy already includes the improvement.
+
+## Bounded hybrid prompt chunks
+
+The ROCm Triton scan text path supports opt-in `--prefill-chunk-size` through
+the existing scheduler. It retains convolution/recurrent state across chunks,
+writes full-attention KV at the correct offsets and uses lower-right causal
+attention for continuation chunks. Partial chunks do not produce output logits;
+a new prompt at offset zero resets recurrent history. Prefix snapshots remain
+explicitly unsupported for hybrid models because KV-only snapshots omit state.
+Vision, FLA, other vendors and fallback paths are not qualified by this change.
+
+Independent 4K CPU-reference replays pass all 84 checks for both
+[0.8B with 127-token chunks](evidence/amd/qwen35-q8-hip-chunk127-replay4096.json)
+and [2B with 257-token chunks](evidence/amd/qwen35-2b-q8-hip-chunk257-replay4096.json).
+The [ordinary full-prompt regression](evidence/amd/qwen35-q8-hip-chunk-change-full-replay4096.json)
+also passes all 84 checks. A separate real-device
+[boundary/isolation control](evidence/amd/qwen35-q8-hip-chunk-boundaries512.json)
+passes 52 comparisons, including 1/2/3-token chunks, active decode between
+chunks and reuse after abandoning a partial prefix. That control compares
+against dllm full-prompt execution; it complements the independent replays.
+Invalid continuation offsets are rejected without changing caches or lengths.
+
+The [real CLI lifecycle check with 31-token chunks](evidence/amd/qwen35-q8-hip-chunk31-service4096.json)
+passes both residency capacities, switching, streaming, concurrency, cancellation,
+load recovery and reload, with host cache zero and stable 32 MiB device release.
+These remain small-model development gates. They do not establish 32K context,
+long-prompt interference latency or maximum sustainable concurrency.

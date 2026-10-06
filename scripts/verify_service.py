@@ -21,14 +21,18 @@ def main():
     parser.add_argument('--context',type=int,default=256)
     parser.add_argument('--swap-cycles',type=int,default=2)
     parser.add_argument('--disable-thinking',action='store_true')
+    parser.add_argument('--prefill-chunk-size', type=int, default=0)
     parser.add_argument('--output',help='persist report and per-capacity server logs')
     parser.add_argument('--candidate-q8-small-batch', action='store_true',
                         help='start each server with the isolated HOMER Q8 experiment')
     args = parser.parse_args()
     if not 128 <= args.context <= 4096 or not 1 <= args.swap_cycles <= 20:
         parser.error('context must be 128..4096 and swap cycles 1..20')
+    if args.prefill_chunk_size < 0:
+        parser.error('prefill chunk size must be nonnegative')
     report=dict(passed=False,model_a=args.model_a,model_b=args.model_b,context=args.context,
                 swap_cycles=args.swap_cycles,reports=[],
+                prefill_chunk_size=args.prefill_chunk_size,
                 variant='hip-q8-small-batch' if args.candidate_q8_small_batch else 'ordinary')
     prompt = "Explain how matrix multiplication works in detail, with a worked example."
     reports = report["reports"]
@@ -41,6 +45,7 @@ def main():
                          if args.candidate_q8_small_batch else [sys.executable, '-m', 'dllm'])
                 process = subprocess.Popen([
                     *entry, "serve", "--port", "0", "--context", str(args.context),
+                    '--prefill-chunk-size', str(args.prefill_chunk_size),
                     "--gpu-models", str(slots), "--model", "a=" + args.model_a,
                     "--model", "b=" + args.model_b, "--model", "broken=/missing-dllm-model",
                 ], stdout=log, stderr=log)

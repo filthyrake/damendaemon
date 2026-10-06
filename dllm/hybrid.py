@@ -50,6 +50,17 @@ def load_weights(state, config):
 class HybridExecutor:
     # Reuse the proven metadata staging and admission checks, with independent state.
     decode_batch = BatchExecutor.decode_batch
+    supports_prefix_cache = False
+
+    @property
+    def supports_chunked_prefill(self):
+        from .device import selected_accelerator
+        return (selected_accelerator() == 'rocm' and self.fused is not None
+                and self.chunk_scan is None)
+
+    @property
+    def requires_full_prefill(self):
+        return not self.supports_chunked_prefill
 
     def __init__(self, model, use_graph=True, max_batch=4, kernels=None):
         if not 1 <= max_batch <= 16:
@@ -197,7 +208,7 @@ class HybridExecutor:
         rotated = rotated*cos + torch.cat((-right, left), -1)*sin
         return torch.cat((rotated, rest), -1).half()
 
-    def linear_attention(self, x, i, slots, prefill):
+    def linear_attention(self, x, i, slots, prefill, prefix_length=0):
         w = self.w
         n, length, _ = x.shape
         qkv = self.linear(x, w[f'{i}.qkv'])
@@ -207,9 +218,11 @@ class HybridExecutor:
         if prefill:
             history = qkv.transpose(1, 2).contiguous()
             width = self.c['linear_conv_kernel_dim']
+            if prefix_length and width > 1:
+                history = torch.cat((self.conv[i].index_select(0, slots)[..., -(width-1):], history), -1)
             self.conv[i][slots] = F.pad(history, (max(0, width-length), 0))[..., -width:]
             convolved = F.conv1d(history.float(), w[f'{i}.conv'].float(),
-                padding=width-1, groups=self.conv_width)[..., :length]
+                padding=0 if prefix_length else width-1, groups=self.conv_width)[..., :length]
             qkv = F.silu(convolved).transpose(1, 2)
         elif self.fused:
             qkv = self.fused.conv_step(qkv[:, 0].contiguous(), w[f'{i}.conv'], self.conv[i], slots).unsqueeze(1)
@@ -228,7 +241,8 @@ class HybridExecutor:
                 use_qk_l2norm_in_kernel=True)
             self.state[i][slots] = last_state
         elif self.fused:
-            out = self.fused.scan(q, k, v, decay, beta, self.state[i], slots, reset=prefill)
+            out = self.fused.scan(q, k, v, decay, beta, self.state[i], slots,
+                                  reset=prefill and not prefix_length)
         else:
             q, k = [a.float()*torch.rsqrt(a.float().square().sum(-1, keepdim=True)+1.e-6) for a in (q, k)]
             q, k = [a.repeat_interleave(self.lv//self.lk, dim=2) for a in (q, k)]
@@ -251,7 +265,7 @@ class HybridExecutor:
             out = self.norm(out, w[f'{i}.gated_norm'], torch.float32) * F.silu(z.float())
         return self.linear(out.reshape(n, length, -1).half(), w[f'{i}.out'])
 
-    def attention(self, x, i, positions, slots, prefill):
+    def attention(self, x, i, positions, slots, prefill, prefix_length=0):
         n, length, _ = x.shape
         w = self.w
         q, k, v = self.linear(x, w[f'{i}.qkv']).split((2*self.heads*self.dim, self.kh*self.dim, self.kh*self.dim), -1)
@@ -262,7 +276,13 @@ class HybridExecutor:
         ck, cv = self.kv[i].unbind(0)
         ck[slots[:, None], :, positions, :] = k
         cv[slots[:, None], :, positions, :] = v
-        if prefill:
+        if prefill and prefix_length:
+            from torch.nn.attention.bias import causal_lower_right
+            end = prefix_length + length
+            out = scaled_attention(q.transpose(1, 2),
+                ck[:, :, :end].index_select(0, slots), cv[:, :, :end].index_select(0, slots),
+                attn_mask=causal_lower_right(length, end), enable_gqa=True)
+        elif prefill:
             out = scaled_attention(q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2),
                                                  is_causal=True, enable_gqa=True)
         elif self.fused:
@@ -275,15 +295,16 @@ class HybridExecutor:
         return self.linear(out.reshape(n, length, -1).half(), w[f'{i}.o'])
 
     @torch.inference_mode()
-    def forward(self, ids, positions, slots, prefill):
-        return self.forward_embeddings(F.embedding(ids, self.w['embed']).float(),positions,slots,prefill)
+    def forward(self, ids, positions, slots, prefill, prefix_length=0, return_logits=True):
+        return self.forward_embeddings(F.embedding(ids, self.w['embed']).float(),positions,slots,prefill,
+                                       prefix_length, return_logits)
 
-    def forward_embeddings(self, x, positions, slots, prefill):
+    def forward_embeddings(self, x, positions, slots, prefill, prefix_length=0, return_logits=True):
         """Shared text backbone after token or image/text embedding assembly."""
         for i, kind in enumerate(self.c['layer_types']):
             h = self.norm(x, self.w[f'{i}.norm1'])
-            x = x + (self.linear_attention(h, i, slots, prefill) if kind == 'linear_attention'
-                     else self.attention(h, i, positions, slots, prefill))
+            x = x + (self.linear_attention(h, i, slots, prefill, prefix_length) if kind == 'linear_attention'
+                     else self.attention(h, i, positions, slots, prefill, prefix_length))
             gate_up = self.linear(self.norm(x, self.w[f'{i}.norm2']), self.w[f'{i}.gate_up'])
             if self.fused:
                 activated = self.dense_fused.swiglu(gate_up.reshape(-1, gate_up.shape[-1]), True)
@@ -292,6 +313,8 @@ class HybridExecutor:
                 gate, up = gate_up.chunk(2, -1)
                 activated = (F.silu(gate.float())*up.float()).half()
             x = x + self.linear(activated, self.w[f'{i}.down'])
+        if not return_logits:
+            return None
         normalized = self.norm(x[:, -1], self.w['norm'])
         if self.w['head'].dtype == torch.int8:
             return self.linear(normalized.float(), self.w['head'])
@@ -322,6 +345,30 @@ class HybridExecutor:
             raise ValueError('invalid prefill batch')
         # Different lengths are independently prefetched. Decode remains continuously batched.
         return torch.cat([self.prefill(p, s) for p, s in zip(prompts, slots)])
+
+    @torch.inference_mode()
+    def prefill_chunk(self, tokens, slot, start, final=True):
+        if not self.supports_chunked_prefill or self.requires_full_prefill:
+            raise ValueError('hybrid chunked prefill currently requires the ROCm Triton scan text path')
+        if (type(slot) is not int or not 0 <= slot < self.max_batch
+                or type(start) is not int or start < 0 or type(final) is not bool
+                or not tokens or start + len(tokens) > self.context
+                or (start and self.lengths[slot] != start)
+                or set(tokens) & set(self.c.get('multimodal_token_ids', []))):
+            raise ValueError('invalid partial hybrid prompt or cache state')
+        try:
+            logits = self.forward(torch.tensor([tokens], device=self.device),
+                torch.arange(start, start + len(tokens), device=self.device)[None],
+                torch.tensor([slot], device=self.device), True, start, final)
+        except Exception:
+            # A failed layer may already have changed recurrent state. Only a
+            # new prompt at offset zero can safely reuse this slot afterwards.
+            self.lengths[slot] = 0
+            self.length = self.lengths[0]
+            raise
+        self.lengths[slot] = start + len(tokens)
+        self.length = self.lengths[0]
+        return logits
 
     def decode(self, token):
         result = self.decode_batch([token], [0])

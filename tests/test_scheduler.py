@@ -364,6 +364,16 @@ class ChunkedSchedulerTests(unittest.TestCase):
         self.assertEqual(result[-1]['usage']['completion_tokens'],2)
         self.assertFalse(any(e[0]=='prefill' for e in self.executor.chunk_events))
 
+    def test_chunk_support_does_not_imply_prefix_snapshot_support(self):
+        self.executor.supports_prefix_cache = False
+        self.runtime.prefix_cache_tokens = 32
+        self.executor.release.set()
+        with self.assertRaisesRegex(ValueError, 'prefix snapshots'):
+            self.generate('ab', 2)
+        self.assertFalse(self.executor.chunk_events)
+        self.runtime.prefix_cache_tokens = 0
+        self.assertEqual(self.generate('ab', 2)[-1]['usage']['completion_tokens'], 2)
+
     def test_invalid_chunk_budget_is_rejected(self):
         for value in (-1,True,1.5):
             with self.subTest(value=value),self.assertRaises(ValueError):
