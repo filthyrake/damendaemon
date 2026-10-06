@@ -41,10 +41,10 @@ One explicitly approved [protected 32K retry](evidence/amd/qwen38-27b-q4-http-ca
 used a 28-GiB allocator cap and 64-GiB/no-swap process scope, with unchanged
 Q4 arithmetic, chunk 127 and first-output/total deadlines. It stopped after
 600.69 seconds without any output chunks, failing the first-output gate.
-Host availability stayed at or above 59.33 GiB; the memory watchdog did not
+Host availability stayed at or above 59.3 GiB; the memory watchdog did not
 trigger, cleanup completed, and D-Bus plus the existing inference health
-endpoints remained healthy. No kernel OOM entries appeared in the checked
-15-minute post-run window. This is evidence that the protections held for this
+endpoints remained healthy. No kernel OOM entries appeared in the 15-minute
+kernel-log window checked after the run. This is evidence that the protections held for this
 attempt, not a universal driver-allocation guarantee. The memory failure was
 avoided, but practical 32K latency remains unqualified under issue #68.
 
