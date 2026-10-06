@@ -67,11 +67,20 @@ context requirement or establish large-model multi-user readiness.
 
 First-class vendor targets are NVIDIA, AMD, Intel and Apple Silicon, spanning
 consumer and datacenter systems. Existing development hardware is A2, A30,
-RTX 3090, HOMER's Radeon 8060S/gfx1151 and Apple M4. Additional explicit targets:
+RTX 3090, Intel Arc B580, HOMER's Radeon 8060S/gfx1151 and Apple M4. Additional explicit targets:
 
 - [GB200 and DGX Spark #61](https://github.com/filthyrake/dllm/issues/61).
 - [AMD MI300 family #62](https://github.com/filthyrake/dllm/issues/62), separate from HOMER qualification.
 - [Intel Arc B580 #63](https://github.com/filthyrake/dllm/issues/63).
+
+**Hardware priority:** qualify the available HOMER, A30, RTX 3090, A2, M4 and B580
+first. DGX Spark, GB200 and MI300 follow satisfactory relevant workflows and
+performance gates on that tier. The B580 shares the accessible RTX 3090 desktop
+and drives the user’s display. Inventory its current free memory before testing;
+reserve desktop headroom and use conservative admission limits. Access is
+confirmed by the user; Intel runtime support remains unqualified.
+Do not block available-machine progress on inaccessible hardware or start new
+hardware provisioning merely because its issue exists.
 
 Exact device, CPU architecture, memory topology, compiler/runtime and transport
 capabilities need separate real-hardware qualification. Access to new systems

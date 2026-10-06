@@ -41,6 +41,10 @@ if __name__ == '__main__':
     activate()
     if len(sys.argv) < 2:
         raise SystemExit('supply the trusted local validation script to execute')
-    script = sys.argv.pop(1)
-    sys.argv[0] = script
-    runpy.run_path(script, run_name='__main__')
+    if sys.argv[1:3] == ['--module', 'dllm']:
+        del sys.argv[1:3]
+        runpy.run_module('dllm', run_name='__main__')
+    else:
+        script = sys.argv.pop(1)
+        sys.argv[0] = script
+        runpy.run_path(script, run_name='__main__')

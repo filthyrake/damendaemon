@@ -82,6 +82,34 @@ class SummaryIntegrity(unittest.TestCase):
         self.assertIsNone(result['competitive_pass'])
         self.assertEqual(len(result['rows']), 6)
 
+    def candidate_reports(self):
+        for phase in ('A1', 'B1', 'B2', 'A2'):
+            def convert(report):
+                report['engine'] = 'dllm'
+                report['manifest'].update(engine_revision='same-revision',
+                    precision={'projections': 'Q8_0'}, candidate_source_sha256='same-source',
+                    variant='ordinary' if phase.startswith('A') else 'hip-q8-small-batch')
+            self.mutate(phase, convert)
+
+    def test_candidate_comparison(self):
+        self.candidate_reports()
+        result = summary.summarize(self.directory)
+        self.assertEqual(result['comparator'], 'dllm-candidate')
+        self.assertTrue(all(row['exact_cross_engine_text'] for row in result['rows']))
+
+    def test_candidate_changed_precision_rejected(self):
+        self.candidate_reports()
+        for phase in ('B1', 'B2'):
+            self.mutate(phase, lambda r: r['manifest'].update(precision={'projections': 'FP16'}))
+        with self.assertRaises(ValueError):
+            summary.summarize(self.directory)
+
+    def test_candidate_wrong_variant_rejected(self):
+        self.candidate_reports()
+        self.mutate('A2', lambda r: r['manifest'].update(variant='hip-q8-small-batch'))
+        with self.assertRaises(ValueError):
+            summary.summarize(self.directory)
+
     def test_missing_round_rejected(self):
         self.mutate('B2', lambda r: r['rounds'].pop())
         with self.assertRaises(ValueError):

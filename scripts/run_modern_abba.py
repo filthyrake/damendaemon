@@ -35,6 +35,8 @@ def main():
     p.add_argument('--dllm-revision', required=True)
     p.add_argument('--hardware', required=True)
     p.add_argument('--output-dir', required=True)
+    p.add_argument('--candidate-q8-small-batch', action='store_true',
+                   help='compare ordinary dllm with the isolated HIP Q8 policy instead of llama.cpp')
     args = p.parse_args()
     directory = Path(args.output_dir)
     directory.mkdir(parents=True, exist_ok=False)
@@ -54,13 +56,17 @@ def main():
     if not eos:
         raise ValueError('missing EOS IDs')
     report = dict(passed=False, competitive_pass=None, phases=[],
-                  limitations=['FP16 dllm versus FP32 llama.cpp convolution history and differing intermediate arithmetic',
+                  limitations=[('within-dllm isolated Q8 launch policy; identical arithmetic/storage policy' if args.candidate_q8_small_batch else
+                                'FP16 dllm versus FP32 llama.cpp convolution history and differing intermediate arithmetic'),
                                'client-visible decode proxy; internal decode and peak memory telemetry outstanding'],
                   gguf_sha256=digest(args.gguf), llama_binary_sha256=digest(args.llama_server))
     lock = (directory.parent/'modern-gpu-benchmark.lock').open('w')
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     try:
         for phase, engine in (('A1', 'dllm'), ('B1', 'llama.cpp'), ('B2', 'llama.cpp'), ('A2', 'dllm')):
+            candidate = args.candidate_q8_small_batch and phase.startswith('B')
+            if candidate:
+                engine = 'dllm'
             with socket.socket() as reserved:
                 reserved.bind(('127.0.0.1', 0))
                 port = reserved.getsockname()[1]
@@ -71,6 +77,9 @@ def main():
                     attention_kv='FP16', recurrent_state='FP32',
                     convolution_history='FP16' if engine == 'dllm' else 'FP32'),
                 graph_policy='normal enabled', prompt_cache=False)
+            if args.candidate_q8_small_batch:
+                manifest['variant'] = 'hip-q8-small-batch' if candidate else 'ordinary'
+                manifest['candidate_source_sha256'] = digest('scripts/experiments/hip_q8_small_batch.py')
             manifest_path = directory/f'{phase}.manifest.json'
             manifest_path.write_text(json.dumps(manifest, indent=2)+'\n')
             env = dict(os.environ)
@@ -81,6 +90,8 @@ def main():
                            DLLM_ROCM_MEMORY_GIB='8', DLLM_WEIGHT_CACHE='')
                 command = [sys.executable, '-m', 'dllm', 'serve', '--port', str(port),
                            '--context', '4096', '--batch-size', '4', '--gpu-models', '1', '--model', 'a='+str(model)]
+                if candidate:
+                    command = [sys.executable, 'scripts/experiments/hip_q8_small_batch.py', '--module', 'dllm', *command[3:]]
                 readiness = base+'/v1/models/status'
             else:
                 command = [args.llama_server, '--model', args.gguf, '--alias', 'a', '--host', '127.0.0.1',

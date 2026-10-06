@@ -13,6 +13,8 @@ def summarize(directory):
     if not all(r['passed'] for r in reports.values()):
         raise ValueError('cannot summarize incomplete or failed workload phases')
     first = reports['A1']
+    candidate = reports['B1']['manifest'].get('variant') == 'hip-q8-small-batch'
+    comparator = 'dllm-candidate' if candidate else 'llama.cpp'
     for phase, report in reports.items():
         for key in ('prompts', 'context', 'output_tokens', 'tokenizer_sha256', 'eos_policy'):
             if report[key] != first[key]:
@@ -20,9 +22,15 @@ def summarize(directory):
         for key in ('model_revision', 'hardware', 'eos_ids'):
             if report['manifest'][key] != first['manifest'][key]:
                 raise ValueError(f'{phase}: mismatched {key}')
-        expected = 'dllm' if phase.startswith('A') else 'llama.cpp'
+        expected = 'dllm' if candidate or phase.startswith('A') else 'llama.cpp'
         if report['engine'] != expected or report['phase'] != phase:
             raise ValueError('incorrect ABBA engine order')
+        if candidate and report['manifest'].get('variant') != ('ordinary' if phase.startswith('A') else 'hip-q8-small-batch'):
+            raise ValueError('incorrect ABBA variant order')
+        if candidate:
+            for key in ('engine_revision', 'precision', 'candidate_source_sha256'):
+                if not report['manifest'].get(key) or report['manifest'][key] != first['manifest'].get(key):
+                    raise ValueError(f'{phase}: mismatched candidate control {key}')
     for left, right in (('A1', 'A2'), ('B1', 'B2')):
         if reports[left]['manifest'] != reports[right]['manifest']:
             raise ValueError('engine manifest changed between paired phases')
@@ -31,7 +39,7 @@ def summarize(directory):
         for concurrency in (1, 4):
             cell = dict(prompt_tokens=length, concurrency=concurrency, engines={})
             text_sets = {}
-            for engine, phases in (('dllm', ('A1', 'A2')), ('llama.cpp', ('B1', 'B2'))):
+            for engine, phases in (('dllm', ('A1', 'A2')), (comparator, ('B1', 'B2'))):
                 rounds = []
                 for phase in phases:
                     selected = [r for r in reports[phase]['rounds'] if not r['warmup'] and
@@ -49,17 +57,18 @@ def summarize(directory):
                     request_seconds=distribution([q['seconds'] for q in requests]),
                     aggregate_output_tokens_per_second=distribution([128*concurrency/r['seconds'] for r in rounds]),
                     stable_text_per_prompt=all(len(values) == 1 for values in text_sets[engine]))
-            a, b = (cell['engines'][name] for name in ('dllm', 'llama.cpp'))
-            cell['dllm_over_llama_throughput_p50'] = a['aggregate_output_tokens_per_second']['p50']/b['aggregate_output_tokens_per_second']['p50']
-            cell['dllm_over_llama_first_output_p95'] = a['first_output_seconds']['p95']/b['first_output_seconds']['p95']
+            a, b = (cell['engines'][name] for name in ('dllm', comparator))
+            cell['dllm_over_comparator_throughput_p50'] = a['aggregate_output_tokens_per_second']['p50']/b['aggregate_output_tokens_per_second']['p50']
+            cell['dllm_over_comparator_first_output_p95'] = a['first_output_seconds']['p95']/b['first_output_seconds']['p95']
             cell['exact_cross_engine_text'] = all(len(a_text | b_text) == 1
-                for a_text, b_text in zip(text_sets['dllm'], text_sets['llama.cpp']))
+                for a_text, b_text in zip(text_sets['dllm'], text_sets[comparator]))
             rows.append(cell)
     return dict(workload_passed=True, competitive_pass=None, model_revision=first['manifest']['model_revision'],
-                hardware=first['manifest']['hardware'], rows=rows,
+                hardware=first['manifest']['hardware'], comparator=comparator, rows=rows,
                 precision_policies={name: reports[phase]['manifest']['precision']
-                                    for name, phase in (('dllm', 'A1'), ('llama.cpp', 'B1'))},
-                limitation='Engineering comparison only; differing intermediate arithmetic, client-visible timings, no complete internal decode/memory gate.')
+                                    for name, phase in (('dllm', 'A1'), (comparator, 'B1'))},
+                limitation=('Within-dllm policy experiment; numerical/lifecycle gates are separate, no cross-engine verdict.' if candidate else
+                            'Engineering comparison only; differing intermediate arithmetic, client-visible timings, no complete internal decode/memory gate.'))
 
 
 def main():
