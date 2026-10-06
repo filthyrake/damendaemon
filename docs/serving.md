@@ -61,6 +61,13 @@ The budget excludes transient loading buffers and library overhead. GPU capacity
 is checked conservatively; allocation failures return an error without publishing
 a partially loaded executor. There is no automatic GPU-budget tuning yet.
 
+While generation owns the worker, status waits at most one second (or a shorter
+configured queue timeout) before returning HTTP 503. Other queued management
+commands use the configured queue timeout; expired queued commands are removed
+and will not execute later. A command already executing waits for its actual
+result. Model changes remain ordered behind active generation; status is not a
+live progress snapshot. `/health` remains available independently.
+
 Implemented: dense unquantized Qwen2, Qwen3, Llama, Phi-3, and the
 dense Qwen3.5 text backbone; text chat templates, greedy or sampled decoding, and optional
 streaming usage. CUDA uses FP16 weights/KV. Qwen3 uses FP32 residuals and fused

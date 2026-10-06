@@ -132,7 +132,20 @@ class BatchedRuntime:
                 self.requests.add(request)
                 self.pending.append(request)
                 self.condition.notify_all()
-            request.done.wait()
+            # A busy GPU worker cannot expire its own queue until the current
+            # group yields. Bound the caller's wait, removing only work that
+            # the worker has not taken ownership of. In-flight mutations must
+            # still report their actual outcome instead of executing after a
+            # caller has been told they were cancelled.
+            timeout = min(self.queue_timeout, 1.0) if options['action'] == 'status' else self.queue_timeout
+            if not request.done.wait(timeout):
+                with self.condition:
+                    if request in self.pending:
+                        self.pending.remove(request)
+                        request.cancelled.set()
+                        self._finish(request, BusyError('model management queue timeout'))
+                        self.condition.notify_all()
+                request.done.wait()
             if request.error:
                 raise request.error
             return request.final

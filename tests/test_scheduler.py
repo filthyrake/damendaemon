@@ -136,6 +136,84 @@ class SchedulerTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.runtime.manage('register','a')
         self.assertEqual(self.runtime.manage('status'),{'done':'status'})
 
+    def test_queued_mutation_expires_before_worker_releases_and_never_executes(self):
+        self.runtime.queue_timeout = .05
+        with ThreadPoolExecutor(2) as pool:
+            active = pool.submit(lambda: list(self.generate(count=2)))
+            self.assertTrue(self.executor.entered.wait(2))
+            queued = pool.submit(self.runtime.manage, 'unload', 'a')
+            with self.assertRaisesRegex(BusyError, 'management queue timeout'):
+                queued.result(1)
+            self.assertFalse(self.executor.release.is_set())
+            self.wait_pending(0)
+            self.executor.release.set()
+            active.result(3)
+        self.assertNotIn('control:unload', self.runtime.runtime.groups)
+        self.assertEqual(self.runtime.manage('status'), {'done': 'status'})
+
+    def test_status_has_short_wait_even_when_generation_queue_timeout_is_long(self):
+        self.runtime.queue_timeout = 120
+        with ThreadPoolExecutor(2) as pool:
+            active = pool.submit(lambda: list(self.generate(count=2)))
+            self.assertTrue(self.executor.entered.wait(2))
+            queued = pool.submit(self.runtime.manage, 'status')
+            with self.assertRaises(BusyError):
+                queued.result(2)
+            self.assertFalse(self.executor.release.is_set())
+            self.executor.release.set()
+            active.result(3)
+
+    def test_owned_mutation_waits_for_real_outcome_past_queue_deadline(self):
+        self.runtime.queue_timeout = .03
+        entered, release = threading.Event(), threading.Event()
+        def manage(**options):
+            entered.set()
+            if not release.wait(3):
+                raise TimeoutError('test did not release management')
+            return {'done': options['action']}
+        with patch.object(self.runtime.runtime, 'manage', side_effect=manage):
+            with ThreadPoolExecutor(1) as pool:
+                future = pool.submit(self.runtime.manage, 'unload', 'a')
+                try:
+                    self.assertTrue(entered.wait(1))
+                    time.sleep(.06)
+                    self.assertFalse(future.done())
+                finally:
+                    release.set()
+                self.assertEqual(future.result(1), {'done': 'unload'})
+
+    def test_http_status_returns_busy_during_prefill_then_recovers(self):
+        from http.server import ThreadingHTTPServer
+        import json
+        from urllib.error import HTTPError
+        from urllib.request import urlopen
+        from dllm.server import handler_for
+        self.runtime.queue_timeout = .05
+        server = ThreadingHTTPServer(('127.0.0.1', 0), handler_for(self.runtime))
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        url = f'http://127.0.0.1:{server.server_port}/v1/models/status'
+        try:
+            with ThreadPoolExecutor(1) as pool:
+                active = pool.submit(lambda: list(self.generate(count=2)))
+                try:
+                    self.assertTrue(self.executor.entered.wait(2))
+                    with self.assertRaises(HTTPError) as error:
+                        urlopen(url, timeout=2)
+                    self.assertEqual(error.exception.code, 503)
+                    self.assertEqual(json.load(error.exception), {'error': 'model management is busy'})
+                    error.exception.close()
+                finally:
+                    self.executor.release.set()
+                active.result(3)
+            with urlopen(url, timeout=2) as response:
+                self.assertEqual(json.load(response), {'done': 'status'})
+            self.assertEqual(self.runtime.runtime.groups, ['a', 'control:status'])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(3)
+
     def test_joining_requests_batch_and_report_individual_usage(self):
         with ThreadPoolExecutor(2) as pool:
             first = pool.submit(lambda: list(self.generate(count=6)))
