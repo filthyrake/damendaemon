@@ -53,7 +53,7 @@ def worker(args):
         coordinator_devices=os.environ.get('CUDA_VISIBLE_DEVICES'),idle_seconds=args.idle_seconds,
         scope='Real two-rank greedy HTTP qualification; not a performance comparison',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-            ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py','dllm/stage_protocol.py')})
+            ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py','dllm/stage_protocol.py','dllm/layer_stage.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py')})
     base=None
     original_init=BoundedHTTPServer.__init__
     original_run=DistributedRuntime.run

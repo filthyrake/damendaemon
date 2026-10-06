@@ -14,7 +14,7 @@ import sys
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--output',required=True)
-    p.add_argument('--worker',choices=('capacity','context','prefill_policy'))
+    p.add_argument('--worker',choices=('capacity','context','prefill_policy','q4_layout'))
     args=p.parse_args();output=Path(args.output)
     if args.worker:
         from dllm.distributed import StagePair
@@ -22,8 +22,10 @@ def main():
         capacity=1 if args.worker=='capacity' and rank==1 else 4
         context=256 if args.worker=='context' and rank==1 else 512
         if args.worker=='prefill_policy':os.environ['DLLM_PARTITION_PACKED_PREFILL']=str(1-rank)
+        if args.worker=='q4_layout':os.environ['DLLM_Q4_STAGE_ADJACENT']=str(1-rank)
+        quantization='q4_0' if args.worker=='q4_layout' else 'q8_0'
         try:
-            pair=StagePair(args.model,context,'q8_0',lambda model:[],
+            pair=StagePair(args.model,context,quantization,lambda model:[],
                            session='bounds-'+args.worker,max_batch=capacity)
         except ValueError as error:
             if str(error)!='distributed model or session bounds mismatch':raise
@@ -37,7 +39,7 @@ def main():
     report=dict(passed=False,scope='Real GPU startup rejection and cleanup, not performance evidence',
                 source_sha256=hashlib.sha256(Path('dllm/distributed.py').read_bytes()).hexdigest(),checks=[])
     try:
-        for mismatch in ('capacity','context','prefill_policy'):
+        for mismatch in ('capacity','context','prefill_policy','q4_layout'):
             command=[sys.executable,'-m','torch.distributed.run','--standalone','--nproc-per-node','2',
                 '--run-path',str(Path(__file__).resolve()),args.model,'--output',str(output),'--worker',mismatch]
             try:result=run_job(command,timeout=180)

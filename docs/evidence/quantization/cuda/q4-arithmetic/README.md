@@ -204,3 +204,29 @@ latency 15.2%. Single-request throughput is roughly unchanged (-0.8%); at two
 requests it regresses 4.6% and request latency increases 5.5%. This is a combined
 arithmetic/admission policy comparison, not a kernel-only speedup. The runtime
 integration must independently pass correctness, lifecycle and serving gates.
+
+## Integrated stage implementation
+
+`DLLM_Q4_STAGE_ADJACENT=1` selects the runtime implementation in
+`dllm/q4_stage.py` and `dllm/q4_stage_kernels.py`. It is restricted to the qualified
+Qwen2.5-0.5B stage geometry, split 12/12, context at most 512 and up to four
+slots. Canonical host/checkpoint data stays unchanged; only device body weights
+are repacked. The head retains its current path. Rebind refresh now occurs
+inside the existing failure boundary before successful metadata publication.
+Distributed startup includes the actual layout in its worker-agreement digest.
+
+The integrated implementation independently passes 282 expanded CUDA graph
+checks with 22 packed stage calls, 19 real HTTP checks, and 492 changed-weight
+and failure-recovery checks on A2/A30. All 96 body allocations and captured graph
+storage remain stable across successful rebinds. Failed partial uploads and
+partial repacks are unpublished; fresh recovery matches independent references.
+These lifecycle times include activation/cache work and are not a matched
+hot-swap speed comparison. The layout flag and Q4 prompt packing still default
+off while the remaining production-path qualification runs.
+
+The integrated matrix dispatch also passes 88 real GPU cases across A2 and A30:
+all four body projection shapes at 1, 2, 4, 16, 17, 32, 64, 128, 129, 256 and
+512 rows. Worst relative RMS versus independently restored FP16 coefficients
+is 0.000419 (limit 0.001). Every large-prefill fallback at 129/256/512 rows is
+bit-exact with the dense FP16 control. QKV cases include bias. These synthetic
+checks exercise layout and dispatch boundaries; they are not throughput claims.

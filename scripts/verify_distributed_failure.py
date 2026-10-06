@@ -23,7 +23,7 @@ class InjectedStageFailure(RuntimeError):pass
 
 def worker(args):
     from dllm.distributed_server_cli import main as serve
-    options=[args.model,'--quantization','q8_0','--batch-size','4','--alias','a','--port','0']
+    options=[args.model,'--quantization',args.quantization,'--batch-size','4','--alias','a','--port','0']
     output=Path(args.output)
     if os.environ['RANK']=='1':
         from dllm.layer_stage import LayerStage
@@ -48,7 +48,7 @@ def worker(args):
     from dllm.server import BoundedHTTPServer
     original_init=BoundedHTTPServer.__init__;original_run=DistributedRuntime.run
     base=None
-    report=dict(passed=False,streaming=args.stream,scope='Real output-stage execution failure; no recovery/performance claim',
+    report=dict(passed=False,quantization=args.quantization,streaming=args.stream,scope='Real output-stage execution failure; no recovery/performance claim',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                  ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py')})
     def capture(server,*positional,**keywords):
@@ -123,13 +123,14 @@ def worker(args):
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--output',required=True)
     p.add_argument('--worker',action='store_true')
+    p.add_argument('--quantization',choices=('none','q8_0','q4_0'),default='q8_0')
     p.add_argument('--stream',action='store_true')
     p.add_argument('--operation',choices=('prefill','decode'),default='decode');args=p.parse_args()
     if args.worker:return worker(args)
     from distributed_job import run_job
     output=Path(args.output)
     command=[sys.executable,'-m','torch.distributed.run','--standalone','--nproc-per-node','2',
-        '--run-path',str(Path(__file__).resolve()),args.model,'--output',str(output),'--operation',args.operation,'--worker']
+        '--run-path',str(Path(__file__).resolve()),args.model,'--output',str(output),'--operation',args.operation,'--quantization',args.quantization,'--worker']
     if args.stream:command.append('--stream')
     try:result=run_job(command,timeout=180)
     except subprocess.CalledProcessError as error:
