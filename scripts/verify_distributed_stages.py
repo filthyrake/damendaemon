@@ -42,6 +42,7 @@ def main():
         reference_torch=trace['reference_torch'],reference_dtype=trace['reference_dtype'],quantization=model.quantization,stage_graphs=args.stage_graphs,packed_prefill=args.packed_prefill,packed_stage_calls=0,
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                  ('dllm/layer_stage.py','dllm/q4_stage.py','dllm/q4_stage_kernels.py',__file__)},
+        runtime_row_bounds=bool(getattr(stage.q4_linear,'runtime_rows',False)),
         checks=[],scope='fixed-trace distributed layer experiment; not a serving protocol')
     output=Path(args.output.format(rank=rank))
     report['final_report']=False

@@ -471,6 +471,15 @@ in `qwen2-q4-runtime-rows-benchmark.json`; this is model execution, not HTTP or
 network throughput. The independent-cache first-use results above are still
 prototype measurements and must not be relabeled as integrated-path evidence.
 
+The integrated row policy also passes 29 actual distributed HTTP checks on
+A2/desktop 3090 and the expanded 282-check independent numerical trace. Both
+workers report `runtime_row_bounds: true` and each executes 11 packed stage
+calls. This uses NCCL socket transport, not RDMA. Peer-only firewall rules had
+600-second automatic expiry and were removed early: lab 2026-10-06
+06:24:45–06:26:55 UTC, desktop 06:24:49–06:26:58 UTC. The unrelated desktop
+firewall rule remained and its GPU allocation returned to 10,835 MiB. Reports
+are the `qwen2-q4-runtime-rows-network-*` JSON files in this directory.
+
 ### Rotary token-stride experiment
 
 The existing rotary/cache kernel specializes its token count even though that
