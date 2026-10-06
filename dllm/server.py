@@ -48,6 +48,11 @@ def handler_for(runtime):
                     self.send_json(200, runtime.manage('status'))
                 except BusyError:
                     self.send_json(503, {'error': 'model management is busy'})
+            elif self.path == '/v1/models/config':
+                try:
+                    self.send_json(200, runtime.model_manifest())
+                except (ValueError, OSError):
+                    self.send_json(400, {'error': 'model registry cannot be exported'})
             else:
                 self.send_json(404, {"error": "not found"})
 

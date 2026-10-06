@@ -2,8 +2,52 @@
 import json
 from pathlib import Path
 import re
+import os
+import tempfile
 
 from .management import command, quantization_mode
+
+
+def encode(data):
+    content = (json.dumps(data, indent=2)+'\n').encode('utf-8')
+    if len(content) > 1024 * 1024:
+        raise ValueError('model manifest exceeds 1 MiB')
+    return content
+
+
+def snapshot(models, policies, templates):
+    if not models:
+        raise ValueError('no registered models to export')
+    entries = {}
+    for alias, path in models.items():
+        path = str(Path(path).expanduser().resolve())
+        command('register', alias, path, quantization=policies[alias],
+                chat_template=templates[alias])
+        entry = dict(path=path, quantization=policies[alias])
+        if templates[alias] is not None:
+            entry['chat_template'] = templates[alias]
+        entries[alias] = entry
+    result = dict(version=1, models=entries)
+    encode(result)
+    return result
+
+
+def save(path, data):
+    """Publish a complete export atomically; failed writes preserve old content."""
+    content = encode(data)
+    path = Path(path).expanduser()
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name+'.',
+                                         suffix='.tmp', delete=False) as output:
+            temporary = Path(output.name)
+            output.write(content)
+            output.flush()
+            os.fsync(output.fileno())
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def unique_object(pairs):

@@ -2,13 +2,83 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import threading
 import unittest
 from unittest.mock import Mock, patch
+from http.server import ThreadingHTTPServer
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 
-from dllm.model_manifest import load
+from dllm.model_manifest import load, save
 
 
 class ManifestTests(unittest.TestCase):
+    def test_http_registration_export_cli_save_and_reload(self):
+        from dllm.cli import main
+        from dllm.runtime import Runtime
+        from dllm.server import handler_for
+        with tempfile.TemporaryDirectory() as directory, patch('dllm.runtime.require_gpu'):
+            path = Path(directory)
+            (path/'tokenizer_config.json').write_text('{}')
+            runtime = Runtime({})
+            server = ThreadingHTTPServer(('127.0.0.1', 0), handler_for(runtime))
+            thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': .01})
+            thread.start()
+            base = f'http://127.0.0.1:{server.server_port}'
+            try:
+                with patch('dllm.models.config', return_value={'max_position_embeddings': 4096}), \
+                        patch('dllm.models.weight_bytes', return_value=100), \
+                        patch('tokenizers.Tokenizer.from_file'), patch.object(runtime, '_status', return_value={}):
+                    for alias, policy, template in (('chat', 'q4_0', '{{ messages }}'), ('plain', 'q8_0', None)):
+                        body = dict(model=alias, path=directory, quantization=policy)
+                        if template is not None:
+                            body['chat_template'] = template
+                        req = Request(base+'/v1/models/register', data=json.dumps(body).encode(),
+                                      headers={'Content-Type': 'application/json'})
+                        with urlopen(req) as response:
+                            self.assertEqual(response.status, 200)
+                output = path/'saved.json'
+                with patch('sys.argv', ['dllm', 'models', '--server', base, '--save-config', str(output)]), patch('sys.stdout'):
+                    main()
+                resolve = Mock()
+                models, policies, templates = load(output, resolve)
+                resolve.assert_not_called()
+                self.assertEqual(models, dict.fromkeys(('chat', 'plain'), path.resolve()))
+                self.assertEqual(policies, {'chat': 'q4_0', 'plain': 'q8_0'})
+                self.assertEqual(templates, {'chat': '{{ messages }}'})
+                self.assertEqual(runtime.host, {})
+                self.assertEqual(runtime.gpu, {})
+                old = output.read_bytes()
+                with runtime.registry_lock:
+                    runtime.models.clear()
+                with patch('sys.argv', ['dllm', 'models', '--server', base, '--save-config', str(output)]), self.assertRaises(HTTPError):
+                    main()
+                self.assertEqual(output.read_bytes(), old)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join()
+
+    def test_failed_atomic_save_preserves_existing_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'models.json'
+            path.write_text('previous content')
+            with patch('dllm.model_manifest.os.fsync', side_effect=OSError('disk failure')), self.assertRaises(OSError):
+                save(path, {'version': 1, 'models': {}})
+            self.assertEqual(path.read_text(), 'previous content')
+            self.assertEqual(list(path.parent.iterdir()), [path])
+            with self.assertRaises(ValueError):
+                save(path, {'oversized': 'a'*(1024*1024)})
+            self.assertEqual(path.read_text(), 'previous content')
+
+    def test_batched_manifest_export_does_not_use_gpu_queue(self):
+        from dllm.scheduler import BatchedRuntime
+        runtime = BatchedRuntime.__new__(BatchedRuntime)
+        runtime.runtime = Mock()
+        runtime._submit = Mock(side_effect=AssertionError('must not queue'))
+        self.assertIs(runtime.model_manifest(), runtime.runtime.model_manifest.return_value)
+        runtime._submit.assert_not_called()
+
     def test_restart_keeps_relative_paths_policies_and_template_text(self):
         from dllm.cli import main
         with tempfile.TemporaryDirectory() as directory:

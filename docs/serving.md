@@ -57,8 +57,25 @@ identity without depending on another editable template file. Omit it to use
 the pinned checkpoint's template. Unknown/duplicate fields, ambiguous sources
 and conflicting `--model` or `--chat-template` options are rejected. Downloads
 use the existing cache. Resource limits and environment settings remain explicit
-CLI/service settings. HTTP `add` registrations are still temporary; edit this
-file to include them on the next restart. The server never rewrites the file.
+CLI/service settings. The server never rewrites the file automatically.
+
+After adding models to a running server, save its current registry explicitly:
+
+```sh
+dllm models --save-config models.json
+# After stopping the server, reuse the saved models with the same device/budgets:
+dllm serve --model-config models.json --device cuda --context 512 --host-gib 40
+```
+
+Keep any required experimental opt-ins and other options from your original
+command. Export captures resolved local paths, precision and template text;
+it does not load or unload models, wait for inference, or save GPU/environment
+settings. Paths belong to the server's filesystem, so the file is intended for
+restarting on that host. `--server URL` selects an existing server. The read-only
+API is `GET /v1/models/config`. The CLI replaces the destination atomically;
+failed requests or writes preserve its previous content. An empty registry or
+export larger than the manifest's 1-MiB limit is rejected. Registrations added
+after saving require another explicit export to survive restart.
 
 For raw text or code generation, `/v1/completions` accepts `prompt` as a string
 or a nonempty array of token IDs. It shares sampling, stop sequences, streaming,

@@ -89,6 +89,8 @@ def main():
     for name in ('models', 'add', 'load', 'unload'):
         management = commands.add_parser(name, help='manage models on a running dllm server')
         management.add_argument('--server', default='http://127.0.0.1:8088')
+        if name == 'models':
+            management.add_argument('--save-config', metavar='FILE', help='save registered models as a restart manifest')
         if name != 'models':
             management.add_argument('model')
         if name == 'add':
@@ -112,7 +114,9 @@ def main():
     if args.command in ('models', 'add', 'load', 'unload'):
         from urllib.request import Request, urlopen
         action = {'models':'status', 'add':'register'}.get(args.command, args.command)
-        body = None if action == 'status' else {'model': args.model}
+        if args.command == 'models' and args.save_config:
+            action = 'config'
+        body = None if action in ('status', 'config') else {'model': args.model}
         if action == 'register':
             body['path'] = str(resolve_model(args.path, args.revision, args.filename))
             if args.chat_template is not None:
@@ -126,7 +130,13 @@ def main():
                           data=None if body is None else json.dumps(body).encode(),
                           headers={'Content-Type':'application/json'})
         with urlopen(request, timeout=300) as response:
-            print(json.dumps(json.load(response), indent=2))
+            result = json.load(response)
+        if action == 'config':
+            from .model_manifest import save
+            save(args.save_config, result)
+            print(json.dumps({'saved': str(Path(args.save_config).expanduser()), 'models': list(result['models'])}))
+        else:
+            print(json.dumps(result, indent=2))
         return
     if args.command == 'run' and args.raw and args.thinking != 'auto':
         parser.error('--raw cannot use chat thinking controls')

@@ -96,6 +96,10 @@ class BatchedRuntime:
     def model_ids(self):
         return self.runtime.model_ids()
 
+    def model_manifest(self):
+        # Registry-only snapshot; never wait for the GPU worker or admission.
+        return self.runtime.model_manifest()
+
     def manage(self, action, model=None, path=None, release_host=False, quantization=None, chat_template=None):
         from .management import command
         return self._submit(command(action, model, path, release_host, quantization, chat_template))

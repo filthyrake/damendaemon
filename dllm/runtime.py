@@ -99,6 +99,14 @@ class Runtime:
         with self.registry_lock:
             return list(self.models)
 
+    def model_manifest(self):
+        from .model_manifest import snapshot
+        with self.registry_lock:
+            models = dict(self.models)
+            policies = dict(self.quantizations)
+            templates = dict(self.chat_templates)
+        return snapshot(models, policies, templates)
+
     def _status(self):
         import torch
         from .chat_template import override_metadata
