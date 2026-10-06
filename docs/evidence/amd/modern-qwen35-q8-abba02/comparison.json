@@ -1,0 +1,261 @@
+{
+  "workload_passed": true,
+  "competitive_pass": null,
+  "model_revision": "2fc06364715b967f1860aea9cf38778875588b17",
+  "hardware": "HOMER-Radeon8060S-gfx1151",
+  "rows": [
+    {
+      "prompt_tokens": 128,
+      "concurrency": 1,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.026183124631643295,
+            "p95": 0.02692987583577633
+          },
+          "request_seconds": {
+            "p50": 0.9249117854051292,
+            "p95": 0.9299176428467035
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 138.36797593559209,
+            "p95": 139.13599929028763
+          },
+          "stable_text_per_prompt": true
+        },
+        "llama.cpp": {
+          "first_output_seconds": {
+            "p50": 0.06102579506114125,
+            "p95": 0.06146209966391325
+          },
+          "request_seconds": {
+            "p50": 0.835723718162626,
+            "p95": 0.8362960135564208
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 153.1445409546444,
+            "p95": 153.22490673904068
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_llama_throughput_p50": 0.9035122967691771,
+      "dllm_over_llama_first_output_p95": 0.4381541792915332,
+      "exact_cross_engine_text": true
+    },
+    {
+      "prompt_tokens": 128,
+      "concurrency": 4,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.10744664072990417,
+            "p95": 0.11973832547664642
+          },
+          "request_seconds": {
+            "p50": 2.6345324576832354,
+            "p95": 2.650161157362163
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 193.67162780736828,
+            "p95": 194.44383183120144
+          },
+          "stable_text_per_prompt": true
+        },
+        "llama.cpp": {
+          "first_output_seconds": {
+            "p50": 0.13354620756581426,
+            "p95": 0.21491606906056404
+          },
+          "request_seconds": {
+            "p50": 1.1738611478358507,
+            "p95": 1.2494404837489128
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 435.8015287510313,
+            "p95": 437.61030151536374
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_llama_throughput_p50": 0.44440327770858,
+      "dllm_over_llama_first_output_p95": 0.5571399383956896,
+      "exact_cross_engine_text": true
+    },
+    {
+      "prompt_tokens": 512,
+      "concurrency": 1,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.07439307635650039,
+            "p95": 0.07689889054745436
+          },
+          "request_seconds": {
+            "p50": 0.9737093076109886,
+            "p95": 0.9788301922380924
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 131.40862035498395,
+            "p95": 132.16962669037454
+          },
+          "stable_text_per_prompt": true
+        },
+        "llama.cpp": {
+          "first_output_seconds": {
+            "p50": 0.12654864275828004,
+            "p95": 0.12722554802894592
+          },
+          "request_seconds": {
+            "p50": 0.9051952268928289,
+            "p95": 0.9065493838861585
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 141.39010159059376,
+            "p95": 141.55190909884092
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_llama_throughput_p50": 0.9294046674885914,
+      "dllm_over_llama_first_output_p95": 0.6044296270585416,
+      "exact_cross_engine_text": true
+    },
+    {
+      "prompt_tokens": 512,
+      "concurrency": 4,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.29209906328469515,
+            "p95": 0.32019669376313686
+          },
+          "request_seconds": {
+            "p50": 2.8318855157122016,
+            "p95": 2.858474299311638
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 180.42678980404662,
+            "p95": 181.20602165049854
+          },
+          "stable_text_per_prompt": true
+        },
+        "llama.cpp": {
+          "first_output_seconds": {
+            "p50": 0.4913152940571308,
+            "p95": 0.5137875284999609
+          },
+          "request_seconds": {
+            "p50": 1.560889019165188,
+            "p95": 1.5760190337896347
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 327.77314304424715,
+            "p95": 331.00567041367646
+          },
+          "stable_text_per_prompt": false
+        }
+      },
+      "dllm_over_llama_throughput_p50": 0.550462396425476,
+      "dllm_over_llama_first_output_p95": 0.6232083809001239,
+      "exact_cross_engine_text": false
+    },
+    {
+      "prompt_tokens": 2048,
+      "concurrency": 1,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 0.5530555103905499,
+            "p95": 0.5865535940974951
+          },
+          "request_seconds": {
+            "p50": 1.4619721472263336,
+            "p95": 1.4999595023691654
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 87.58588438106722,
+            "p95": 89.74282932242419
+          },
+          "stable_text_per_prompt": true
+        },
+        "llama.cpp": {
+          "first_output_seconds": {
+            "p50": 0.4895317363552749,
+            "p95": 0.49118999391794205
+          },
+          "request_seconds": {
+            "p50": 1.2813254296779633,
+            "p95": 1.2837871946394444
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 99.88811415270933,
+            "p95": 100.03490110060154
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_llama_throughput_p50": 0.8768399035661598,
+      "dllm_over_llama_first_output_p95": 1.1941480921036116,
+      "exact_cross_engine_text": true
+    },
+    {
+      "prompt_tokens": 2048,
+      "concurrency": 4,
+      "engines": {
+        "dllm": {
+          "first_output_seconds": {
+            "p50": 2.074725610204041,
+            "p95": 2.3336340272799134
+          },
+          "request_seconds": {
+            "p50": 4.778471909463406,
+            "p95": 4.932064104825258
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 106.97975919544251,
+            "p95": 110.11809346033438
+          },
+          "stable_text_per_prompt": true
+        },
+        "llama.cpp": {
+          "first_output_seconds": {
+            "p50": 1.954586642794311,
+            "p95": 2.056205906905234
+          },
+          "request_seconds": {
+            "p50": 3.1884651738218963,
+            "p95": 3.2302254596725106
+          },
+          "aggregate_output_tokens_per_second": {
+            "p50": 159.73209797478825,
+            "p95": 161.6770890168313
+          },
+          "stable_text_per_prompt": true
+        }
+      },
+      "dllm_over_llama_throughput_p50": 0.6697449075784878,
+      "dllm_over_llama_first_output_p95": 1.1349223438387221,
+      "exact_cross_engine_text": true
+    }
+  ],
+  "precision_policies": {
+    "dllm": {
+      "projections": "Q8_0",
+      "input_embedding": "FP16",
+      "output_head": "Q8_0",
+      "attention_kv": "FP16",
+      "recurrent_state": "FP32",
+      "convolution_history": "FP16"
+    },
+    "llama.cpp": {
+      "projections": "Q8_0",
+      "input_embedding": "FP16",
+      "output_head": "Q8_0",
+      "attention_kv": "FP16",
+      "recurrent_state": "FP32",
+      "convolution_history": "FP32"
+    }
+  },
+  "limitation": "Engineering comparison only; differing intermediate arithmetic, client-visible timings, no complete internal decode/memory gate."
+}

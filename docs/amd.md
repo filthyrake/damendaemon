@@ -201,3 +201,36 @@ One remaining precision distinction is convolution history: dllm retains FP16
 history while upstream llama.cpp's hybrid recurrent allocation uses FP32. Do
 not call those complete arithmetic policies identical merely because their
 projection coefficients and KV settings match.
+
+## First Qwen3.5 Q8 engineering comparison
+
+The [complete ABBA summary](evidence/amd/modern-qwen35-q8-abba02/comparison.json)
+uses the pinned 0.8B checkpoint and comparator above, context capacity 4096,
+128 generated tokens, three group warmups and ten measured rounds per phase.
+Raw per-request results, manifests and logs are retained as compressed files in
+the same directory. Engine order is dllm, llama.cpp, llama.cpp, dllm.
+
+| Input tokens | Users | dllm aggregate tokens/s | llama.cpp aggregate tokens/s | dllm p95 first output (s) | llama.cpp p95 first output (s) | Exact text across engines |
+| --- | --- | --- | --- | --- | --- | --- |
+| 128 | 1 | 138.37 | 153.14 | 0.027 | 0.061 | yes |
+| 128 | 4 | 193.67 | 435.80 | 0.120 | 0.215 | yes |
+| 512 | 1 | 131.41 | 141.39 | 0.077 | 0.127 | yes |
+| 512 | 4 | 180.43 | 327.77 | 0.320 | 0.514 | no |
+| 2048 | 1 | 87.59 | 99.89 | 0.587 | 0.491 | yes |
+| 2048 | 4 | 106.98 | 159.73 | 2.334 | 2.056 | yes |
+
+Throughput is the median complete-round output rate, including prompt work.
+Within dllm, text stays stable across all measured rounds. llama.cpp varies in
+the 512-input/four-user cell; that failure is retained, not relabeled exact
+parity. These are engineering comparisons with the arithmetic distinctions
+above, not a competitive pass. Existing host services were preserved; the host
+was not exclusively reserved. Internal decode/peak memory gates remain open.
+
+The clear actionable gap is concurrent decoding: four-user scaling falls well
+behind the comparator, while single-user throughput is closer. The next bounded
+hypothesis under #54/#59 is the AMD small-batch Q8 projection policy, currently
+using tiles selected from A2 measurements. No optimization is promoted from this
+diagnosis alone.
+
+The [product context minimum is 32K](direction.md). This 4K experiment is a
+development baseline and does not qualify long-context multi-user service.

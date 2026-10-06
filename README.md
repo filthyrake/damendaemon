@@ -12,6 +12,11 @@ weights, image input and same-host two-GPU serving have qualified configurations
 Support and performance vary by checkpoint, precision and hardware. Cross-host
 execution has experimental correctness evidence; RDMA remains unqualified.
 
+Our [long-term targets](docs/direction.md) are Qwen3.8+, GLM-5.3/Flash and
+DeepSeek V4 Flash, with 32K minimum context, useful multi-user concurrency,
+and local/network GPU sharding across major vendors. These are goals, not
+claims of current support.
+
 ## Quick start
 
 Linux, Python 3.11+, an NVIDIA CUDA GPU and a compatible driver:

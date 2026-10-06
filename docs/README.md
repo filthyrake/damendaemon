@@ -19,6 +19,7 @@ Model acceptance does not imply qualification at every context or precision.
 
 ## Understand the implementation
 
+- [Product direction: modern models, long context and concurrent users](direction.md)
 - [Architecture and residency design](architecture.md)
 - [Current support boundaries](support.md)
 - [AMD/ROCm target and current qualification status](amd.md)

@@ -4,7 +4,9 @@ This page describes implemented behavior. [GitHub Issues](https://github.com/fil
 track remaining work; numerical and performance reports are linked below.
 Configuration acceptance alone is not checkpoint qualification.
 
-Active development targets **Qwen3 and newer, prioritizing Qwen3.5**. Older
+The [product direction](direction.md) targets **Qwen3.8+, GLM-5.3/Flash and
+DeepSeek V4 Flash**, with 32K minimum context and useful concurrency. Current
+Qwen3.5 small-model work is development qualification. Older
 entries below preserve existing qualification evidence; additional older-model
 tuning and qualification are deferred. The current acceptance gates live in
 [the parity milestones](https://github.com/filthyrake/dllm/issues/3).
