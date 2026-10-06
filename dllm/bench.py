@@ -12,7 +12,8 @@ import statistics
 import time
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import Request
+from .http_auth import authenticated_urlopen as urlopen
 
 
 MAX_OUTPUT_EVENTS = 100_000

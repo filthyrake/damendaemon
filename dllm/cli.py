@@ -125,6 +125,11 @@ def main():
         print(json.dumps(result, indent=2))
         return
     if args.command == 'serve':
+        from .http_auth import AuthPolicy
+        try:
+            AuthPolicy.from_env()
+        except ValueError as error:
+            parser.error(str(error))
         from .admission import validate_queue_limits
         try:
             validate_queue_limits(args.queue_size, args.queue_timeout)
@@ -142,7 +147,9 @@ def main():
         except (ValueError, OSError) as error:
             parser.error(str(error))
     if args.command in ('status', 'drain', 'models', 'add', 'load', 'unload', 'remove'):
-        from urllib.request import Request, urlopen
+        from urllib.request import Request
+        from .http_auth import management_headers, authenticated_urlopen as urlopen
+        headers = {'Content-Type': 'application/json', **management_headers()}
         action = {'status':'scheduler', 'models':'status', 'add':'register'}.get(args.command, args.command)
         if args.command == 'models' and args.save_config:
             action = 'config'
@@ -160,7 +167,7 @@ def main():
                     '/v1/scheduler/drain' if action == 'drain' else '/v1/models/'+action)
         request = Request(args.server.rstrip('/')+endpoint,
                           data=None if body is None else json.dumps(body).encode(),
-                          headers={'Content-Type':'application/json'})
+                          headers=headers)
         with urlopen(request, timeout=10 if action in ('scheduler', 'drain') else 300) as response:
             result = json.load(response)
         if action == 'config':

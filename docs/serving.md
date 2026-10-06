@@ -551,3 +551,31 @@ reports `storage_plan_found: false`, without silently shortening context or
 reducing users. Budgets are supplied inputs, not queried free-memory readings;
 allocator fragmentation, loading peaks and hardware/transport qualification
 remain outside the estimate. Planning is bounded to 16 stages and 256 layers.
+
+## Optional API authentication
+
+Set `DLLM_API_KEY` for inference clients and a different `DLLM_ADMIN_API_KEY`
+for administration before starting the server. Each configured key must contain
+16–512 printable ASCII characters without spaces; use independently generated
+random values. Keys are read at startup and never included in status, manifests
+or error responses. Restart to change them. If neither variable is present,
+the existing anonymous loopback behavior remains. An explicitly empty or invalid
+key is an error, not a request to disable authentication.
+
+Clients send `Authorization: Bearer <key>`. The inference key permits model
+listing, chat/completions, embeddings, reranking and token scoring. The admin key
+also permits registry/residency operations, configuration export, scheduler
+status and drain. Configuring only an inference key leaves administration
+inaccessible through that key; an admin-only configuration allows the admin key
+to perform both roles. `/health` stays credential-free. Invalid credentials get
+401, and inference credentials used for administration get 403. Authentication
+precedes body reads and runtime admission, and duplicate authorization headers
+are rejected.
+
+Management CLI commands read the admin key, falling back to the inference key
+when only that one is configured (administrative requests then receive 403).
+`dllm bench` continues to use `DLLM_API_KEY`. Authenticated CLI and benchmark
+requests refuse redirects; use the endpoint's final URL explicitly. Anonymous
+client behavior is unchanged. This adds shared credentials and two roles, not
+individual tenant identity, quotas or TLS. The server still binds only to
+`127.0.0.1`; no public listener or deployment is enabled.

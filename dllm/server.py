@@ -14,7 +14,9 @@ from .stopping import stop_sequences
 from .prompts import validate_raw
 
 
-def handler_for(runtime):
+def handler_for(runtime, auth=None):
+    from .http_auth import AuthPolicy
+    auth = AuthPolicy.from_env() if auth is None else auth
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
@@ -29,13 +31,24 @@ def handler_for(runtime):
             body = json.dumps(payload).encode()
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
+            if status == 401:
+                self.send_header("WWW-Authenticate", 'Bearer realm="dllm"')
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Connection", "close")
             self.end_headers()
             self.wfile.write(body)
             self.close_connection = True
 
+        def authorize(self):
+            status = auth.authorize(self.command, self.path, self.headers.get_all('Authorization', []))
+            if status is None:
+                return True
+            self.send_json(status, {'error': 'unauthorized' if status == 401 else 'forbidden'})
+            return False
+
         def do_GET(self):
+            if not self.authorize():
+                return
             if self.path == "/health":
                 self.send_json(200, {"status": "ok"})
             elif self.path == "/v1/models":
@@ -63,6 +76,8 @@ def handler_for(runtime):
                 self.send_json(404, {"error": "not found"})
 
         def do_POST(self):
+            if not self.authorize():
+                return
             management = {'/v1/models/register': 'register', '/v1/models/load': 'load', '/v1/models/unload': 'unload', '/v1/models/remove': 'remove'}
             if self.path not in ("/v1/scheduler/drain", "/v1/chat/completions", "/v1/completions", "/v1/embeddings", "/v1/token-scores", "/v1/rerank") and self.path not in management:
                 self.send_json(404, {"error": "not found"})
