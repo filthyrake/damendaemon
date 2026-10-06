@@ -3,12 +3,12 @@ import argparse
 import json
 import os
 from pathlib import Path
-import subprocess
 import sys
 import tempfile
 import torch
 from tokenizers import Tokenizer
 from scripts.verify_partition_service import cases_from_trace
+from scripts.distributed_job import run_job
 
 
 def main():
@@ -25,15 +25,15 @@ def main():
                   scope='actual same-host distributed CLI; correctness/lifecycle, not a performance benchmark')
     output = Path(args.output); output.write_text(json.dumps(report, indent=2)+'\n')
     launcher = [sys.executable, '-m', 'torch.distributed.run', '--standalone', '--nproc-per-node=2',
-                '--module', 'dllm', 'distributed-run', trace['path'], '--context', '512',
+                '--run-path', str(Path(__file__).with_name('distributed_entry.py').resolve()),
+                'distributed-run', trace['path'], '--context', '512',
                 '--quantization', report['quantization'], '--max-tokens', '8', '--json']
     try:
         with tempfile.TemporaryDirectory(prefix='dllm-distributed-cli-') as directory:
             tokens_file = Path(directory)/'tokens.json'
             for case in selected:
                 tokens_file.write_text(json.dumps(case['prompt']))
-                result = subprocess.run(launcher + ['--prompt-tokens-file', str(tokens_file), '--ignore-eos'],
-                                        capture_output=True, text=True, timeout=180, check=True)
+                result = run_job(launcher + ['--prompt-tokens-file', str(tokens_file), '--ignore-eos'])
                 actual = json.loads(result.stdout)
                 expected = case['tokens']
                 assert actual['tokens'] == expected
@@ -42,15 +42,13 @@ def main():
                                                total_tokens=len(case['prompt'])+8)
                 assert actual['finish_reason'] == 'length'
                 report['checks'].append(dict(prompt_tokens=len(case['prompt']), passed=True, result=actual))
-            result = subprocess.run(launcher + ['--prompt', 'What is 2 + 2? Answer with just the number.'],
-                                    capture_output=True, text=True, timeout=180, check=True)
+            result = run_job(launcher + ['--prompt', 'What is 2 + 2? Answer with just the number.'])
             actual = json.loads(result.stdout)
             assert actual['text'].strip() == '4' and actual['finish_reason'] == 'stop'
             report['checks'].append(dict(kind='chat-eos', passed=True, result=actual))
             # Invalid token IDs must fail at input preparation, not reach GPU execution.
             tokens_file.write_text('[151936]')
-            result = subprocess.run(launcher + ['--prompt-tokens-file', str(tokens_file)],
-                                    capture_output=True, text=True, timeout=180)
+            result = run_job(launcher + ['--prompt-tokens-file', str(tokens_file)], check=False)
             assert result.returncode != 0 and not result.stdout.strip()
             assert 'raw prompt must contain valid vocabulary token IDs' in result.stderr
             report['checks'].append(dict(kind='invalid-token', passed=True, exit_code=result.returncode))
@@ -61,8 +59,7 @@ def main():
             requests.append(dict(tokens=selected[0]['prompt'], max_tokens=8, ignore_eos=True))
             session_file = Path(directory)/'requests.json'
             session_file.write_text(json.dumps(requests))
-            result = subprocess.run(launcher + ['--requests-file', str(session_file)],
-                                    capture_output=True, text=True, timeout=180, check=True)
+            result = run_job(launcher + ['--requests-file', str(session_file)])
             results = [json.loads(line) for line in result.stdout.splitlines()]
             assert len(results) == 7
             for index, actual in enumerate(results):
@@ -81,8 +78,7 @@ def main():
             report['checks'].append(dict(kind='resident-session-slot-reuse', passed=True, results=results))
             requests.append(dict(tokens=[151936]))
             session_file.write_text(json.dumps(requests))
-            result = subprocess.run(launcher + ['--requests-file', str(session_file)],
-                                    capture_output=True, text=True, timeout=180)
+            result = run_job(launcher + ['--requests-file', str(session_file)], check=False)
             assert result.returncode != 0 and not result.stdout.strip()
             assert 'raw prompt must contain valid vocabulary token IDs' in result.stderr
             report['checks'].append(dict(kind='invalid-late-request-before-execution', passed=True,

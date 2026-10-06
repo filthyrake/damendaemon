@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "final_report": true,
+  "torch": "2.6.0+cu124",
+  "scope": "real CPU torchrun workers ignore TERM/INT; owned-group timeout cleanup; no GPU performance proof",
+  "stdout": "worker 1 ready\nworker 0 ready\n",
+  "cleanup_notes": [],
+  "signals": [
+    {
+      "process_group": 3344826,
+      "signal": 15
+    },
+    {
+      "process_group": 3344826,
+      "signal": 9
+    }
+  ],
+  "elapsed_seconds": 21.05609478999395,
+  "workers": [
+    {
+      "rank": 0,
+      "pid": 3344874,
+      "process_group": 3344826,
+      "lock_released": true
+    },
+    {
+      "rank": 1,
+      "pid": 3344875,
+      "process_group": 3344826,
+      "lock_released": true
+    }
+  ]
+}

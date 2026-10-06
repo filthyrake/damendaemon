@@ -9,12 +9,12 @@ import os
 from pathlib import Path
 import socket
 import statistics
-import subprocess
 import sys
 import tempfile
 import time
 import torch
 from scripts.verify_partition_service import cases_from_trace
+from scripts.distributed_job import run_job
 
 
 def main():
@@ -40,7 +40,8 @@ def main():
     output = Path(args.output)
     output.write_text(json.dumps(report, indent=2)+'\n')
     launcher = [sys.executable, '-m', 'torch.distributed.run', '--standalone', '--nproc-per-node=2',
-                '--module', 'dllm', 'distributed-run', trace['path'], '--context', '512',
+                '--run-path', str(Path(__file__).with_name('distributed_entry.py').resolve()),
+                'distributed-run', trace['path'], '--context', '512',
                 '--quantization', precision, '--max-tokens', '8', '--ignore-eos', '--json']
     identities = set()
     try:
@@ -58,8 +59,7 @@ def main():
                     commands = ([launcher + ['--prompt-tokens-file', str(path)] for path in paths]
                                 if mode == 'fresh-workers' else [launcher + ['--requests-file', str(session)]])
                     started = time.perf_counter()
-                    completed = [subprocess.run(command, capture_output=True, text=True,
-                                                check=True, timeout=180) for command in commands]
+                    completed = [run_job(command) for command in commands]
                     elapsed = time.perf_counter()-started
                     results = [json.loads(line) for process in completed for line in process.stdout.splitlines()]
                     if len(results) != len(selected):raise AssertionError('missing request result')

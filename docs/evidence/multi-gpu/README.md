@@ -407,6 +407,33 @@ remained running; no remote preparation or compilation job ran alongside the
 measurements. GPU allocations returned to baseline after completion. Raw
 per-request timings and all phases are in `qwen2-distributed-session-q8-abba.json`.
 
+## Owned verification-job cleanup
+
+Ordinary torchrun module workers create separate process groups. Killing only
+the launcher can therefore leave workers behind. The same-host CLI verifier
+and session benchmark now launch the actual CLI through torchrun `--run-path`,
+whose multiprocessing workers retain the harness-owned group. Job deadlines
+send TERM to that exact group, allow bounded graceful cleanup, then send KILL
+and bound the final wait. External TERM of the harness also performs cleanup;
+the caller's previous signal handler is restored afterward. No process-name
+search or termination of other GPU services is used.
+
+`scripts/verify_distributed_job.py` proves this with two real Torch 2.6 workers
+that deliberately ignore TERM and INT. The 20-second deadline plus one-second
+grace finishes in 21.06 seconds. Both workers' exclusive file locks are released,
+and recorded worker/group identities match the signaled owned group. This is
+CPU process-lifecycle evidence, not GPU performance proof. A separate real
+seven-request A2/A30 Q8 session through the new launcher matches all previously
+qualified tokens, text, usage and finish reasons and exits normally. Reports:
+`distributed-job-deadline-final.json` and `qwen2-owned-session-smoke.json`.
+The local suite passes 404 tests, including external harness termination.
+
+The job-cost table above was measured using the direct-module benchmark harness
+at commit `afa442e`. Its measurements are not refreshed timings for the later
+run-path harness. Public distributed CLI commands still use ordinary torchrun;
+this cleanup work is specific to owned local verification jobs and does not
+add cross-host worker supervision or automatic service recovery.
+
 | Median network metric | Separate completion collective | Token reply completion |
 | --- | ---: | ---: |
 | First token | 20.88 ms | 20.76 ms |
