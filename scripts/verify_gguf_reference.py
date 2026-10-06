@@ -96,6 +96,7 @@ def main():
     p.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     p.add_argument('--require-q4-small-tiles', action='store_true', help='fail unless normal A2 prompt tile selection is active for this model')
     experiments=p.add_mutually_exclusive_group()
+    experiments.add_argument('--experimental-q4-marlin', metavar='LIBRARY')
     experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
     experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
@@ -109,6 +110,9 @@ def main():
     if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
         p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
+    if args.experimental_q4_marlin:
+        from experiments.q4_marlin_dispatch import install_validation_dispatch
+        experiment = install_validation_dispatch(args.experimental_q4_marlin)
     if args.experimental_q4_small_tiles:
         from experiments.q4_small_tiles import install_validation_dispatch
         experiment = install_validation_dispatch()
@@ -226,6 +230,10 @@ def main():
                 experiment['resident_cache_bytes'] = executor.quant_linear.experimental_dense_cache_bytes
                 if not experiment['resident_cache_bytes']:
                     raise ValueError('dense-cache experiment selected no projections')
+            if args.experimental_q4_marlin:
+                experiment['additional_prepared_bytes'] = executor.quant_linear.experimental_q4_marlin_bytes
+                if not experiment['additional_prepared_bytes']:
+                    raise ValueError('Q4 Marlin experiment selected no projections')
             if (args.experimental_residual_f32 or args.experimental_prefill_f32) and executor.compute_dtype!=torch.float32:
                 raise ValueError('FP32 experiment requires an FP32 executor policy')
             precision = dict(matrix_dtype=str(executor.compute_dtype), residual_dtype=str(executor.residual_dtype),
@@ -259,6 +267,11 @@ def main():
                 cases.append(dict(graph=graph, case=index, prompt_tokens=len(ids), errors=errors,
                                   greedy_mismatches=mismatches, reference_tokens=output, actual_tokens=actual_tokens, reference_top_two_margins=margins, teacher_tokens=forced, eos_step=eos_step))
                 del expected, actual, target, error
+            if args.experimental_q4_marlin:
+                calls = executor.quant_linear.experimental_q4_marlin_calls
+                if not calls:
+                    raise ValueError('Q4 Marlin experiment executed no projections')
+                experiment.setdefault('executions', []).append(dict(graph=graph, dispatch_calls=calls))
             del executor
             gc.collect(); empty_cache()
     with Path(args.gguf).open('rb') as file: sha = hashlib.file_digest(file, 'sha256').hexdigest()

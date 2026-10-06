@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     parser.add_argument('--require-q4-small-tiles', action='store_true', help='require the normal A2 Q4 prompt policy')
     experiments=parser.add_mutually_exclusive_group()
+    experiments.add_argument('--experimental-q4-marlin', metavar='LIBRARY')
     experiments.add_argument('--experimental-awq-decode', action='store_true')
     experiments.add_argument('--experimental-awq-marlin', metavar='LIBRARY')
     experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
@@ -54,6 +55,9 @@ def main():
         parser.error('prompt lengths must be positive and leave seven decode positions')
     pool_tokens = paged_capacity(args.context, lengths)
     experiment = None
+    if args.experimental_q4_marlin:
+        from experiments.q4_marlin_dispatch import install_validation_dispatch
+        experiment = install_validation_dispatch(args.experimental_q4_marlin)
     if args.experimental_awq_marlin:
         if not args.awq_qualification:
             parser.error('Marlin experiment requires --awq-qualification')
@@ -139,6 +143,10 @@ def main():
                 experiment['resident_cache_bytes'] = executor.quant_linear.experimental_dense_cache_bytes
                 if not experiment['resident_cache_bytes']:
                     raise ValueError('dense-cache experiment selected no projections')
+            if args.experimental_q4_marlin:
+                experiment['additional_prepared_bytes'] = executor.quant_linear.experimental_q4_marlin_bytes
+                if not experiment['additional_prepared_bytes']:
+                    raise ValueError('Q4 Marlin experiment selected no projections')
             report['backend'] = executor.kernel_backend
             report['resident_projection_cache_bytes'] = getattr(executor, 'packed_cache_bytes', 0)
             report['precision'] = dict(matrix=str(executor.compute_dtype), residual=str(executor.residual_dtype))
@@ -148,6 +156,11 @@ def main():
                     trace.append(actual.cpu())
                     if step < 7:actual, _ = executor.decode(actual.argmax(-1).item())
                 traces.append(trace)
+            if args.experimental_q4_marlin:
+                calls = executor.quant_linear.experimental_q4_marlin_calls
+                if not calls:
+                    raise ValueError('Q4 Marlin experiment executed no reference projections')
+                experiment.setdefault('executions', []).append(dict(kind='eager_trace', dispatch_calls=calls))
             del actual, executor
             gc.collect(); empty_cache()
             for paged in (False, True):
@@ -172,6 +185,12 @@ def main():
                         compare(actual, traces[3][step], paged=paged, graph=graph, kind='chunked', step=step)
                         if step < 7:actual, _ = executor.decode_batch(traces[3][step].argmax(-1).tolist(), [0])
                     if paged:executor.release_request(0)
+                    if args.experimental_q4_marlin:
+                        calls = executor.quant_linear.experimental_q4_marlin_calls
+                        if not calls or not executor.quant_linear.experimental_q4_marlin_bytes:
+                            raise ValueError('Q4 Marlin experiment executed no layout projections')
+                        experiment.setdefault('executions', []).append(dict(
+                            paged=paged, graph=graph, dispatch_calls=calls))
                     del actual, executor
                     gc.collect(); empty_cache()
         report['passed'] = all(c['max_absolute'] < .5 and c['relative_rms'] < .01 and c['greedy_equal'] for c in checks)

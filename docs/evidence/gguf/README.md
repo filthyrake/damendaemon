@@ -2316,3 +2316,20 @@ plus one shared 2,621,600-byte workspace. Prepared scales include many negative
 values; the real-source cases exercise them without requantization. These are
 matrix results with a residency tradeoff, not a full-model or HTTP speed claim.
 The baseline subnormal discrepancy remains an explicit follow-up under #23.
+
+The explicit `q4_marlin_dispatch.py` model hook passes independent validation
+in `mistral-q4-marlin-reference-a2.json`: 96 logit comparisons, zero greedy-token
+mismatches, maximum absolute error 0.104737 and relative RMS 0.004358. It uses
+the same pinned Q4 fixture, mixed precision, context 512 and teacher tokens as
+the native residual comparison. The one-row residual kernel remains enabled;
+Marlin handles rows greater than one. Both eager/graph executors record 768
+actual Python dispatch calls into the candidate.
+
+`mistral-q4-marlin-layout-a2.json` then passes all 128 graph/batch/paging/chunk
+checks, maximum relative RMS 0.001449, with positive candidate-dispatch counts
+in every executor. Each executor owns 4,110,696,448 additional prepared-weight
+bytes (about 3.83 GiB) plus its workspace. Canonical host/GPU weights remain
+unchanged. The prototype checks free memory before preparation, but normal
+admission accounting does not yet cover this extra residency. The local suite
+passes 447 tests. No normal runtime selection has changed; matched HTTP and
+lifecycle measurement is a separate gate.
