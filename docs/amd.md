@@ -2,9 +2,26 @@
 
 [Documentation](README.md) · [AMD work and acceptance gates](https://github.com/filthyrake/dllm/issues/52)
 
-AMD is a planned execution target, **not a qualified dllm backend yet**. A ROCm
-installation or successful GPU discovery does not establish model correctness,
-packed-kernel support, memory safety or competitive inference performance.
+AMD has bounded experimental configurations on HOMER (`gfx1151`), not general
+vendor-wide qualification. The opt-in Qwen3.8-27B Q8 text path passes independent
+numerical and HTTP lifecycle gates at **512 context**, with FP32 state,
+compensated projections, at most four slots and no graphs. Practical 32K and
+competitive concurrency remain open. See the [current roadmap](https://github.com/filthyrake/dllm/issues/3)
+and [context task](https://github.com/filthyrake/dllm/issues/68).
+
+The sections below preserve historical experiments, including failures that
+were superseded by later results. They are evidence, not the live work queue.
+
+## Independent reference for practical models
+
+The validation-only `--packed-gpu-reference --reference-device cuda
+--reference-dtype float32 --reference-quantization q8_0` path uses upstream
+GGUF packing, ordinary Torch GPU expansion one matrix at a time, and
+Transformers execution. It does not use dllm model or projection kernels.
+On HOMER, all [84 targets agree with the CPU FP32 reference](evidence/amd/qwen38-27b-independent-torch-gpu-cpu-full512-comparison.json)
+for the pinned 27B model at 512 context. Reference execution took about 555
+seconds plus loading. This is validation turnaround, not serving performance;
+Q4 model execution and longer contexts are not qualified by this result.
 
 ## First target: HOMER
 
