@@ -144,3 +144,31 @@ class CapacityCliTests(unittest.TestCase):
             self.assertFalse(no_fit['pipeline_placement']['contexts']['512']['1']['storage_plan_found'])
             with self.assertRaises(ValueError):
                 plan_local(directory, [512], [1], 'float32', layer_splits=[1], device_budgets=[2**30]*2)
+
+    def test_indexed_nested_shards_and_corrupt_header_cli(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            _, tensors = fixture(path)
+            (path/'weights').mkdir()
+            (path/'model.safetensors').rename(path/'weights'/'part.safetensors')
+            (path/'model.safetensors.index.json').write_text(json.dumps({'weight_map': {
+                name: 'weights/part.safetensors' for name in tensors}}))
+            report = plan_local(path, [512], [1], 'float32')
+            self.assertGreater(report['weight_bytes']['none'], 0)
+            (path/'weights'/'part.safetensors').write_bytes(b'bad header')
+            errors = io.StringIO()
+            with patch('sys.argv', ['dllm', 'plan-hybrid', directory]), patch('sys.stderr', errors):
+                with self.assertRaises(SystemExit) as error:
+                    main()
+            self.assertEqual(error.exception.code, 2)
+            self.assertIn('safetensors', errors.getvalue())
+            self.assertNotIn('Traceback', errors.getvalue())
+
+            (path/'weights'/'part.safetensors').unlink()
+            with self.assertRaisesRegex(ValueError, 'missing'):
+                plan_local(path, [512], [1], 'float32')
+            (path/'model.safetensors.index.json').write_text(json.dumps({'weight_map': {
+                'tensor': '../outside.safetensors'}}))
+            with patch('safetensors.safe_open') as reader, self.assertRaisesRegex(ValueError, 'shard path'):
+                plan_local(path, [512], [1], 'float32')
+            reader.assert_not_called()
