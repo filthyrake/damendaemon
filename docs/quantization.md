@@ -165,7 +165,7 @@ Model files and packed weight layouts are unchanged. Keep the ordinary Q4
 library configured for fallback, and rebuild the residual library to use the
 new layout.
 
-An opt-in Q4_0 Marlin layout replacement is undergoing integrated qualification
+An opt-in Q4_0 Marlin layout replacement is qualified
 on the **A2 only**, with the same 32-layer Llama-metadata geometry above, mixed
 precision, fused projections, context 1–512 and batch sizes 1–4. It handles
 all projection rows, including single-token decode. Build and select it with:
@@ -186,9 +186,13 @@ and does not depend on the vLLM runtime. Scaled coefficients round to FP16,
 which differs from the residual decode option's FP32 scaling.
 
 The integrated independent HF gate passes 96 comparisons with no greedy-token
-mismatches. Lifecycle, layout and normal-server integration gates are still in
-progress; prototype serving gains in [the evidence](evidence/gguf/README.md)
-must not be treated as completed integrated qualification or cross-engine parity.
+mismatches; all 128 runtime-layout checks and the low-memory/release gates pass.
+Matched normal-server ABBA testing reduces single-request latency 16–32% versus
+the paired residual backend and improves four-request output throughput from
+35.68 to 56.41 tokens/sec. Model switching, cancellation and chat checks pass.
+Actual post-workload allocation rises 114 MiB including workspace and graphs.
+These are results for the pinned checkpoint and workloads in
+[the evidence](evidence/gguf/README.md), not broad-model or cross-engine parity.
 
 GGUF Q4_K/Q5_K/Q6_K have a separate CUDA C++ decode library. It reads the
 original packed bytes, including mixed-format fused projections, and preserves

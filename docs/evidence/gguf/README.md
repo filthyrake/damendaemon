@@ -2460,4 +2460,33 @@ The normal `DLLM_Q4_MARLIN_LIBRARY` backend has separate evidence:
 The production library SHA is recorded in the layout and admission reports.
 The first integrated HF report predates the additional library-hash report field;
 its backend assertions and the separately built library used by that run are
-unchanged. Normal CLI HTTP performance/lifecycle qualification is in progress.
+unchanged. Normal CLI HTTP performance/lifecycle qualification follows below.
+
+
+`mistral-q4-marlin-production-http-a2.json` passes the normal CLI ABBA gate,
+including exact compared text, real model switching, host restore, disk reload,
+cancellation recovery, and streaming/concurrent chat. The candidate must report
+`cuda-q4-marlin`, no residual backend, and 111,099,904 bytes of layout overhead.
+The control must report residual dispatch and zero Marlin layout overhead.
+
+| Input / concurrency | Control total ms | Marlin total ms | Control output tok/s | Marlin output tok/s |
+| --- | ---: | ---: | ---: | ---: |
+| 16 / 1 | 544.59 | 430.40 | 29.38 | 37.17 |
+| 129 / 1 | 853.99 | 580.72 | 18.74 | 27.55 |
+| 400 / 1 | 1067.94 | 897.03 | 14.98 | 17.84 |
+| 129 / 2 | 1495.75 | 800.85 | 21.39 | 39.96 |
+| 129 / 4 | 1793.59 | 1134.47 | 35.68 | 56.41 |
+
+These are pooled medians over two phases per engine, six measured rounds per
+case after three warmups, 16 output tokens, the same model hash/A2/context512
+per slot/FP16 KV/mixed residual policy. Single-request post-first-output
+throughput is 30.78/30.45/29.74 → 37.96/37.50/36.57 tokens/sec. Arithmetic
+rounding differs as documented above; the independent HF gate remains the
+accuracy proof. This comparison establishes no llama.cpp or vLLM parity.
+
+Both candidate phases allocate 4,676,390,400 bytes after workloads versus
+4,556,852,224 in both controls. Host-restored activation is 2.436/2.325 seconds
+in control and 2.350/2.291 in Marlin; switch-back 2.443/2.522 → 2.287/2.430.
+Disk activation varies 9.506/9.666 → 8.465/9.549 seconds. Report full request
+timing separately from activation; these sparse lifecycle samples qualify
+functionality and the absence of the earlier large repacking regression.
