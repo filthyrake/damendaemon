@@ -296,3 +296,31 @@ checks with both policy variables unset, and its status confirms adjacent body
 storage. Explicit legacy/sequential controls remain available. The full local
 suite passes 444 tests. The network low-concurrency cost remains an optimization
 issue; this promotion does not claim performance parity across workloads.
+
+## Isolating the low-concurrency cost
+
+A second network ABBA comparison holds adjacent Q4 arithmetic fixed and changes
+only prompt packing. The harness captures the runtime's existing final timing
+records, including actual group sizes, without changing production serving.
+All text and usage match. Packing-off/on throughput is 215.85/215.75 tokens/s
+at concurrency one, 361.05/352.02 at two, and 555.62/596.87 at four. First text
+is 18.89/18.66 ms, 31.73/37.53 ms, and 50.94/47.73 ms respectively.
+
+However, **18 of 20 measured requests at concurrency two used single-prompt
+prefill even when packing was enabled**. The one packed pair took about 61 ms
+from admission to its first token. This exposes a weakness in the original
+warmup procedure: one HTTP warmup round per concurrency does not guarantee that
+all possible prompt-group shapes execute before the timed rounds. Queue arrival
+order may first expose a new shape during measurement. This is not evidence
+that every two-prompt packed operation costs 61 ms, nor a clean basis for a new
+scheduler heuristic. The raw results remain preserved as observed behavior.
+
+The follow-up benchmark explicitly warms each reachable group size on the GPU
+owner before HTTP timing, releases all warmup slots, and records that startup
+cost separately. That distinguishes warm steady-state comparisons from possible
+first-use shape costs. Earlier reports exclude server startup and HTTP warmup
+rounds, but must not be interpreted as guaranteeing every packed shape was warm.
+
+This second peer-only window was removed early: lab 2026-10-06
+05:35:34–05:38:57 UTC, desktop 05:35:35–05:38:58 UTC. Test firewall rules were
+absent afterward; A2/A30/3090 allocations returned to 0/13403/10835 MiB.

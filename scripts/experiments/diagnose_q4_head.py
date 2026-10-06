@@ -27,7 +27,7 @@ def main():
     body.add_argument('--single-dot-body',action='store_true',help='diagnostic control: contiguous K-order packed products')
     p.add_argument('--torch-norm',action='store_true',help='diagnostic control: unfused FP16 RMS normalization')
     p.add_argument('--packed',action='store_true');args=p.parse_args()
-    os.environ.update(DLLM_DEVICE='cuda',DLLM_QUANTIZATION='q4_0',
+    os.environ.update(DLLM_DEVICE='cuda',DLLM_QUANTIZATION='q4_0',DLLM_Q4_STAGE_ADJACENT='0',
                       DLLM_PARTITION_PACKED_PREFILL=str(int(args.packed)))
     import torch
     from dllm.qwen2 import ModelWeights

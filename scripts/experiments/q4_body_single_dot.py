@@ -16,6 +16,8 @@ def linear(x,weight,scales,bias=None,kernel=single_dot):
 
 
 def install_validation_dispatch(kind='single-dot'):
+    import os
+    os.environ['DLLM_Q4_STAGE_ADJACENT']='0'  # Experiments own their representation.
     if kind in ('adjacent-gate','adjacent-all','adjacent-inplace'):
         from scripts.experiments.q4_adjacent_body import install_validation_dispatch as install_adjacent
         return install_adjacent(kind=='adjacent-gate',kind=='adjacent-inplace')
