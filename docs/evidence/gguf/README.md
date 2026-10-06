@@ -2261,3 +2261,28 @@ error and the candidate matches its output bitwise. This needs a higher-
 precision reference diagnosis; it is neither a passing candidate nor evidence
 that Marlin alone introduced the discrepancy. No speed result follows from the
 aborted gate.
+
+`q4-marlin-underflow-diagnostic-a2.json` and
+`scripts/experiments/diagnose_q4_marlin_reference.py` diagnose that same pinned
+QKV case with FP16, FP32 and FP64 accumulation, all over the same FP16-rounded
+coefficients and final FP16 output. At exponent -14, 12,219 of 12,288 reference
+outputs are subnormal. The candidate matches the existing kernel exactly.
+Its relative RMS against both FP32 and FP64 references is 0.00006718, with
+four differing output values and maximum absolute difference one FP16 subnormal
+quantum (5.96e-8). The FP16 matrix-library reference instead differs in 5,531
+values, with relative RMS 0.002622 and maximum absolute difference 1.19e-7.
+
+The follow-up matrix harness therefore uses FP32 accumulation, TF32 disabled,
+over the unchanged FP16 coefficients, followed by FP16 output rounding. The
+0.001 RMS limit is unchanged. The initial failed report is retained; it is not
+relabelled as a pass. This reference correction does not alter inference code
+or assert full-model correctness.
+
+The first FP32-reference rerun is retained as
+`mistral-q4-marlin-matrices-f32-reference-initial-a2.json`. It also fails the
+combined gate, now on the **control**: output projection, 129 rows, exponent -14,
+no bias. Candidate relative RMS is 0.00009750; the existing expansion-plus-FP16
+matrix path is 0.004171. The candidate remains under 0.001. Earlier completed
+rows are retained, but this aborted report is not full matrix qualification.
+A complete sweep must distinguish candidate and control failures without
+raising either threshold or silently skipping the subnormal cases.

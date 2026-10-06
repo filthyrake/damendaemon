@@ -36,7 +36,7 @@ def main():
         gpu_uuid=os.environ.get('CUDA_VISIBLE_DEVICES'), torch=str(torch.__version__),
         model=str(Path(args.model).resolve()), model_sha256=digest(args.model),
         library=str(Path(args.library).resolve()), library_sha256=digest(args.library),
-        scope='Real Q4_0 projections; preserved integer coefficients/signed FP16 scales; independent FP16 dequantized oracle. Warm CUDA graph ABBA excludes one-time repacking. Prepared weights are additional resident storage. No full-model or serving claim.',
+        scope='Real Q4_0 projections; preserved integer coefficients/signed FP16 scales; independent FP32 accumulation over FP16-rounded coefficients, final FP16 output, TF32 disabled. Warm CUDA graph ABBA excludes one-time repacking. Prepared weights are additional resident storage. No full-model or serving claim.',
         sources={path:digest(path) for path in ('scripts/experiments/q4_marlin.cu',
             'scripts/experiments/q4_marlin.py', 'scripts/experiments/bench_q4_marlin.py',
             'third_party/marlin/marlin_template.h', 'third_party/marlin/awq_repack.cuh')},
@@ -51,7 +51,7 @@ def main():
         for name in ('0.qkv.weight', '0.out', '0.gate_up', '0.down', 'head'):
             weight, scales = source.weights[name].cuda(), source.scales[name].cuda()
             n, k = weight.shape[0], weight.shape[1]*2
-            oracle = dequantize_q4(weight, scales, torch.float16)
+            oracle = dequantize_q4(weight, scales, torch.float16).float()
             bias = torch.randn(n, dtype=torch.float16, device='cuda')
             prepared = {}
             for biased in (False, True):
@@ -70,7 +70,11 @@ def main():
                     value = (x.float()*2.**exponent).half()
                     for biased in (False, True):
                         offset = bias if biased else None
-                        expected = torch.nn.functional.linear(value, oracle, offset)
+                        # FP16 GEMM itself deviates in the subnormal stress
+                        # case. FP32 accumulation was checked against FP64;
+                        # retain the same coefficient/final-output rounding.
+                        expected = torch.nn.functional.linear(value.float(), oracle,
+                            offset.float() if offset is not None else None).half()
                         baseline = linear(value, weight, scales, offset)
                         actual = library.linear(value, prepared[biased])
                         error = actual.float()-expected.float()
