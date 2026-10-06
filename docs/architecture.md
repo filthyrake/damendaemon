@@ -1,61 +1,65 @@
 # Execution and model residency
 
-## Implemented prototype boundary
+## Current execution architecture
 
-The shared decoder implements dense Qwen2, Qwen3, and standard-RoPE Llama
-variants with FP16 weights and KV, greedy sampling, slot-isolated static KV allocation, and a CUDA graph per decode
-batch size. Qwen3 has explicit head dimensions, bias-free projections, and fused Q/K
-normalization. Its residuals and elementwise intermediates remain FP32; the
-linear layers still use FP16 tensor operations.
-The forward pass and fused Triton kernels are dllm code; PyTorch
-supplies cuBLAS, prefill attention, tensor storage, and graph capture.
-Transformers is used only as an independent validation reference. It does not
-perform dllm inference. This lets us prove numerical behavior and measure GPU
-execution before committing a larger native scheduler implementation.
+dllm owns its forward passes, model lifecycle, scheduling and serving API.
+The runtime does not wrap vLLM, llama.cpp or Ollama. Python currently implements
+control and scheduling; GPU work runs through Triton, native CUDA/C++ or Metal
+kernels and PyTorch GPU operations. PyTorch provides tensor storage, CUDA graph
+capture and library operations. Independent reference harnesses use Transformers
+to qualify outputs. Language choice alone does not establish performance; the
+[benchmarking guide](benchmarking.md) defines the measurement boundary.
 
-The service has one GPU worker with bounded admission and continuous decode
-batching. Completed/cancelled requests free slots between steps; slow streams
-stop entering decode batches until they drain or time out. Different-length
-prompts share packed linear layers, with causal attention isolated per sequence.
-A different model at the FIFO queue head prevents further admission to the
-current model group, which drains before the worker switches. One or more GPU
-executors plus a bounded host weight cache are retained. Graphs remain alive for
-GPU-resident models; restoring an evicted executor currently recaptures its
-graphs. Pinned decode metadata buffers are reused only after DMA completion.
-Host backing is pageable to avoid pinning multi-GB models. The host budget
-limits retained weights, not transient loader tensors or the full process RSS.
-GPU admission uses a weight/KV estimate plus a 512 MiB workspace reserve; this is
-not an exact predictor of all library allocations, so allocation can still fail.
+`runtime.py` owns host/GPU residency and selects an executor from validated model
+configuration. `scheduler.py` owns bounded admission and continuous batching.
+Completed or cancelled requests release slots; slow streams are subject to
+backpressure. A model change at the FIFO queue head drains the current group
+before activation. GPU-resident executors retain captured graphs. Host-cached
+restoration normally constructs an executor again; compatible same-host layer
+partitions can instead rebind existing weight buffers and retain graph addresses.
+Failed rebinds are unpublished and closed before subsequent requests proceed.
 
-A separate dense Qwen3.5 text executor owns convolution and FP32 recurrent state
-per slot, alongside KV for its gated full-attention layers. Prefill overwrites
-all state for a reused slot; decode graphs index the requested slots dynamically.
-Capturing graphs mutates recurrent buffers, so construction clears all caches
-after capture. FP32 vocabulary accumulation avoids losing close-token ordering.
-Hybrid prompts currently prefill independently; decode is continuously batched.
+Host cache limits account for retained model weights, not all transient loader
+memory or process RSS. GPU admission includes path-specific weight, KV and
+workspace estimates; estimates cannot guarantee every library allocation will
+succeed. Fixed KV slots remain the default. Qualified CUDA dense decoders also
+have an opt-in shared page pool. Prefix reuse copies bounded snapshots into
+request-owned state; it does not share writable pages between requests.
+See [performance tuning](performance.md) for paged KV, chunked prefill, prefix
+reuse, prompt graphs and speculative decoding, including their individual
+architecture and precision restrictions.
 
-Configuration validation rejects unsupported rotary scaling, sliding attention,
-MoE, and hybrid variants outside this explicit Qwen3.5 implementation. Vision
-weights are excluded from text loading and multimodal input tokens are rejected.
+Dense rotary decoders share execution machinery where their semantics allow it.
+Other families use dedicated executors for recurrent state, encoder-decoder
+attention, mixture-of-experts routing, embeddings and reranking. Qwen3.5 owns
+convolution/recurrent state alongside full-attention KV; its bounded still-image
+path adds a vision encoder and image positions. These are checkpoint-qualified
+paths, not arbitrary architecture acceptance. The [support matrix](support.md)
+and [vision qualification](vision-qualification.md) specify current coverage.
 
-The experimental MPS dense executor uses FP32 compute and KV to meet the
-independent CPU FP32 gate. Native Metal kernels implement RMSNorm, SwiGLU,
-small-batch matrix-vector multiplication, rotary/cache writes, and live-prefix
-decode attention. PyTorch supplies prefill matrix operations and attention.
-The Metal attention kernel handles allocated contexts through 4096 tokens;
-larger allocations use MPS tensor attention. It has no CUDA graphs or Triton kernels. Explicit
-`--device mps` selects Apple GPU execution with the same request scheduler and
-host/device residency lifecycle. MPS memory admission uses the driver allocation
-and recommended working-set limit. There is no automatic CPU execution fallback.
-Hybrid MPS has not been qualified.
-Model tests use the independent reference precision recorded in each result.
-Qwen3-0.6B remains provisional under the expanded numerical gate.
+Quantized execution dispatches by the actual format, device and qualified
+geometry. Native Q4/Q8 conversion, selected GGUF layouts, AWQ and MXFP4 have
+separate loaders and kernels. Host checkpoint representation need not match a
+device-specific packed representation. For example, qualified Q4 layer stages
+repack body weights in place for adjacent-nibble Tensor Core products while
+retaining canonical host weights and output-head arithmetic. See
+[quantization](quantization.md) for defaults, opt-in paths and numerical limits.
 
-There is no paged KV allocator, chunked prefill, prefix cache, quantization,
-speculative decoding, arbitrary architecture support, or automatic capacity
-tuning yet. The API is a strict text-chat subset. Requests using unsupported
-parameters fail explicitly. The remaining sections describe the target design,
-not additional implemented capabilities.
+Apple execution combines MPS tensor operations with native Metal kernels.
+Precision and available features depend on the model; CUDA graph/Triton paths
+are not used on Apple. Dense, recurrent and bounded Qwen3.5 image paths have
+separate M4 evidence. There is no automatic CPU inference fallback.
+
+Multi-GPU execution currently uses a deliberately bounded Qwen2.5-0.5B layer
+split. Same-host partitions share the normal residency manager and support
+compatible swaps. The separate distributed service owns two persistent ranks,
+typed tensor commands, bounded queues, heartbeats and failure shutdown. It does
+not support model swaps inside a session. A2/3090 network proof uses NCCL sockets;
+RDMA remains unverified. This is not general tensor/pipeline parallelism. See
+[multi-GPU execution](multi-gpu.md) for exact limits and lifecycle evidence.
+
+The following sections retain design requirements and direction. They do not
+expand the implemented scope in the linked support matrix.
 
 ## Product contract
 
@@ -67,8 +71,10 @@ model is evicted; a deadline or explicit cancellation may terminate them.
 GPU execution must be measured on the target hardware. The selected direction
 is NVIDIA first and an independent runtime: no vLLM runtime dependency. Reuse
 mature kernel libraries where licensing permits instead of rebuilding every
-matrix multiplication. The initial test device is the A2 on the user's lab VM;
-the A30 is serving other work and must not be used for dllm tests.
+matrix multiplication. The primary test device is the A2 on the lab VM. The A30 and desktop 3090
+are also authorized for bounded tests that preserve their existing services;
+the M4 laptop supplies Apple evidence. GPU experiments run sequentially so
+measurements do not contend with other dllm validation jobs.
 
 ## Split responsibilities
 
@@ -81,11 +87,11 @@ the A30 is serving other work and must not be used for dllm tests.
   revision, precision/quantization, parallelism, kernel version, and shape
   buckets. Separate compilation artifacts from live captured GPU graphs.
 
-Language choice follows a profiling-backed prototype. A Python benchmark does
-not imply a Python token scheduler. The intended native scheduler/worker boundary
-is C++ with CUDA initially; Metal and ROCm require their
-own optimized paths. A lowest-common-denominator GPU interface must not constrain
-the fast path. First architecture/model coverage should be deliberately narrow.
+A native scheduler/worker boundary remains a direction to evaluate against
+measured host overhead; the current scheduler is Python. CUDA and Metal already
+have dedicated kernel paths. ROCm remains future work. Shared abstractions must
+not force a slower GPU path, and additional architecture acceptance requires
+independent numerical and serving qualification.
 
 ## Residency and switching
 
