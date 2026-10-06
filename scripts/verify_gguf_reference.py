@@ -100,6 +100,7 @@ def main():
     p.add_argument('--experimental-q4-marlin-replace', action='store_true')
     experiments=p.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-marlin', metavar='LIBRARY')
+    experiments.add_argument('--experimental-q4-marlin-context',type=int,choices=(2048,))
     experiments.add_argument('--experimental-q4-small-tiles', action='store_true')
     experiments.add_argument('--experimental-q4-residual', action='store_true')
     experiments.add_argument('--experimental-residual', action='store_true')
@@ -113,6 +114,14 @@ def main():
     if args.weight_rounding=='kquant-float32' and args.reference_dtype!='float32':
         p.error('kquant-float32 weights require --reference-dtype float32')
     experiment = None
+    if args.experimental_q4_marlin_context:
+        if not os.environ.get('DLLM_Q4_MARLIN_LIBRARY'):
+            p.error('context experiment requires DLLM_Q4_MARLIN_LIBRARY')
+        args.require_q4_marlin=True
+        if args.context!=args.experimental_q4_marlin_context:
+            p.error('context override must equal the actual requested context')
+        from experiments.q4_marlin_context import install_validation_context
+        experiment=install_validation_context(args.experimental_q4_marlin_context)
     if (args.experimental_q4_marlin_replace or args.experimental_q4_marlin_symmetric) and not args.experimental_q4_marlin:
         p.error('--experimental-q4-marlin-replace requires --experimental-q4-marlin')
     if args.experimental_q4_marlin_replace and args.experimental_q4_marlin_symmetric:
@@ -235,6 +244,8 @@ def main():
                     raise ValueError('normal Q4 prompt tile policy was not selected')
                 q4_prompt_policy = dict(selected=True, source_sha256=hashlib.sha256(
                     Path(q4_prefill_policy.__file__).read_bytes()).hexdigest())
+            if args.experimental_q4_marlin_context:
+                assert executor.context==args.context
             if args.require_q4_marlin:
                 assert '+cuda-q4-marlin' in executor.kernel_backend,executor.kernel_backend
                 assert len(executor.quant_linear.q4_marlin)==129

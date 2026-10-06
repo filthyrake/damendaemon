@@ -2591,3 +2591,23 @@ Actual post-workload allocation falls 4,676,390,400 → 4,565,634,560 bytes
 activation is 8.626–8.753 versus 8.681–8.751. These sparse observations show no
 clear loading improvement. This is still the isolated installer; normal ABI 2
 admission and compatibility gates are separate.
+
+
+### Integrated ABI 2 correctness and admission
+
+`mistral-q4-marlin-v2-reference-a2.json` passes 96 independent HF comparisons,
+with zero greedy-token mismatches and maximum relative RMS 0.005255.
+`mistral-q4-marlin-v2-layout-a2.json` passes all 128 runtime-layout checks,
+maximum relative RMS 0.001449. Both require normal Marlin selection and record
+ABI 2. The documented CMake build's library SHA is
+`0720bf59ff777b691c608ae2ff71c196919eb72a504a0c22fa862c42034e0ccb`.
+
+`mistral-q4-marlin-v2-admission-a2.json` and
+`mistral-q4-marlin-v1-compatibility-a2.json` separately pass exact pre-transfer
+low-memory rejection and two complete graph-enabled load/use/release cycles
+under the updated loader. Required bytes are 5,152,121,504 for ABI 2 and
+5,263,221,408 for ABI 1. Projection overhead is respectively zero and
+111,099,904 bytes; each retains 84,542,112 bytes for repack peak plus workspace.
+All tracked GPU objects release and Torch allocation returns to its initial
+value after every cycle. Existing ABI 1 libraries retain their original layout
+and budget. Integrated ABI 2 packing and normal-server comparisons are pending.
