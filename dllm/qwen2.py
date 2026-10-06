@@ -121,6 +121,12 @@ class ModelWeights:
             raise ValueError('GPT-2/GPT-NeoX/BLOOM quantization is not implemented')
         if not 1 <= max_context <= c["max_position_embeddings"]:
             raise ValueError("context exceeds model position limit")
+        from .layer_stream import enabled as offload_enabled, validate as validate_offload
+        offload = offload_enabled()
+        if offload:
+            validate_offload(c, self.quantization, max_context)
+            from .host_memory import admit_checkpoint, require_headroom
+            admit_checkpoint(weight_files(self.path))
         self.max_context = max_context
         self.tokenizer = Tokenizer.from_file(str(self.path / "tokenizer.json"))
         tokenizer_config = json.loads((self.path / "tokenizer_config.json").read_text())
@@ -148,6 +154,11 @@ class ModelWeights:
             with safe_open(str(candidate), framework="pt", device="cpu") as reader:
                 for key in reader.keys():
                     if not key.startswith(('model.visual.', 'mtp.')):
+                        if offload:
+                            # Recheck before faulting in each source tensor.
+                            header = reader.get_slice(key)
+                            require_headroom(math.prod(header.get_shape()) *
+                                             (4 if header.get_dtype() == 'F32' else 2))
                         state[key] = reader.get_tensor(key)
         if c["model_type"] in ("qwen3_5_text", "gemma3_text", "starcoder2", "olmoe", "gpt2", "gpt_neox", "bloom", "gpt_oss"):
             if c['model_type'] == 'gpt_oss':

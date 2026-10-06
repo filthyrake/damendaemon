@@ -21,23 +21,35 @@ def load_weights(state, config):
     # Multimodal checkpoints wrap the text backbone in language_model.
     prefix = 'model.language_model.' if 'model.language_model.embed_tokens.weight' in state else 'model.'
     w = {}
+    from .layer_stream import enabled as offload_enabled
+    from .host_memory import require_headroom
+    guarded = offload_enabled() and any(t.device.type == 'cpu' for t in state.values())
+    def convert(tensor, dtype):
+        if guarded:
+            # Two copies also cover a following norm offset allocation.
+            require_headroom(tensor.numel() * 2 * dtype.itemsize)
+        return tensor.to(dtype)
+    def concatenate(tensors):
+        if guarded:
+            require_headroom(sum(t.numel() * t.element_size() for t in tensors))
+        return torch.cat(tensors)
     def take(name, dtype=torch.float16):
         from .device import selected_accelerator
         if state[prefix + name].device.type != 'meta' and selected_accelerator() == 'rocm':
             from .rocm_policy import require_host_headroom
             require_host_headroom()
-        return state.pop(prefix + name).to(dtype)
+        return convert(state.pop(prefix + name), dtype)
     w['embed'] = take('embed_tokens.weight')
     w['norm'] = take('norm.weight', torch.float32) + 1
-    w['head'] = w['embed'] if config['tie_word_embeddings'] else state.pop('lm_head.weight').half()
+    w['head'] = w['embed'] if config['tie_word_embeddings'] else convert(state.pop('lm_head.weight'), torch.float16)
     for i, kind in enumerate(config['layer_types']):
         layer = f'layers.{i}.'
         w[f'{i}.norm1'] = take(layer+'input_layernorm.weight', torch.float32) + 1
         w[f'{i}.norm2'] = take(layer+'post_attention_layernorm.weight', torch.float32) + 1
-        w[f'{i}.gate_up'] = torch.cat([take(layer+f'mlp.{name}_proj.weight') for name in ('gate', 'up')])
+        w[f'{i}.gate_up'] = concatenate([take(layer+f'mlp.{name}_proj.weight') for name in ('gate', 'up')])
         w[f'{i}.down'] = take(layer+'mlp.down_proj.weight')
         if kind == 'full_attention':
-            w[f'{i}.qkv'] = torch.cat([take(layer+f'self_attn.{name}_proj.weight') for name in ('q', 'k', 'v')])
+            w[f'{i}.qkv'] = concatenate([take(layer+f'self_attn.{name}_proj.weight') for name in ('q', 'k', 'v')])
             w[f'{i}.o'] = take(layer+'self_attn.o_proj.weight')
             for name in ('q', 'k'):
                 w[f'{i}.{name}_norm'] = take(layer+f'self_attn.{name}_norm.weight', torch.float32) + 1

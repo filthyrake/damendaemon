@@ -498,6 +498,14 @@ issue #64, verified with CPU tensor and ownership tests only. No GPU execution,
 transfer speed, practical-model quality or useful throughput is qualified.
 
 The existing host cache retains the full source model within `--host-gib`.
+Offload loading additionally requires Linux `MemAvailable` accounting and leaves
+a 16 GiB host reserve. Before tensor loading, headers budget source storage plus
+two FP32-sized copies per source element for conversion and concatenation. This
+is deliberately conservative, including for tied weights. Source reads and CPU
+conversion allocations recheck headroom. Missing or malformed accounting fails
+closed; offline planning never queries it. These checks are observations, not
+memory reservations: concurrent processes, allocator overhead and memory-control
+group limits still require independent operational limits and monitoring.
 Embedding, output head and final norm stay on the device; one layer at a time
 is copied synchronously. Before replacing that layer, the store synchronizes
 its device work, drops the old references and releases unused allocator cache.
