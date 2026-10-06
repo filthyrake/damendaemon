@@ -4,6 +4,7 @@ This is an engineering fixture, not model quality, maximum-user qualification,
 internal token latency, or a competitive benchmark. Preserve raw SSE timings.
 """
 import argparse
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 from importlib.metadata import version
@@ -19,8 +20,37 @@ import threading
 import time
 from urllib.request import Request, urlopen
 from tokenizers import Tokenizer
-from benchmark_modern_http import request
+if __package__:
+    from .benchmark_modern_http import request
+else:
+    from benchmark_modern_http import request
 from dllm.bench import distribution
+
+
+@contextmanager
+def request_deadlines(first_output, first_seconds, total_seconds, expire):
+    """Wall-clock bounds also apply when SSE keeps the socket from timing out."""
+    def first_expired():
+        if not first_output.is_set():
+            expire('first output')
+    timers = [threading.Timer(first_seconds, first_expired),
+              threading.Timer(total_seconds, lambda: expire('total request'))]
+    for timer in timers:
+        timer.daemon = True
+        timer.start()
+    try:
+        yield
+    finally:
+        for timer in timers:
+            timer.cancel()
+        for timer in timers:
+            timer.join()
+
+
+def save_report(path, report):
+    temporary = path.with_suffix('.tmp')
+    temporary.write_text(json.dumps(report, indent=2)+'\n')
+    temporary.replace(path)
 
 
 def main():
@@ -36,7 +66,9 @@ def main():
     parser.add_argument('--capacity-only', action='store_true', help='one near-limit request and unload, without an interference/SLO claim')
     parser.add_argument('--batch-size', type=int, choices=(1, 4), default=4)
     parser.add_argument('--no-graph', action='store_true')
-    parser.add_argument('--experimental-hybrid-context', action='store_true', help='use the isolated issue-68 context probe, leaving production admission unchanged')
+    probes = parser.add_mutually_exclusive_group()
+    probes.add_argument('--experimental-hybrid-context', action='store_true', help='use the isolated issue-68 Q8 context probe')
+    probes.add_argument('--experimental-hybrid-q4-context', action='store_true', help='use the isolated issue-70 A30 Q4 context probe')
     parser.add_argument('--request-timeout', type=float, default=600)
     parser.add_argument('--first-output-budget', type=float, default=600)
     parser.add_argument('--host-gib', type=float, help='explicit host-weight residency budget for practical checkpoints')
@@ -51,7 +83,7 @@ def main():
         parser.error('host weight budget must be positive and finite')
     if args.batch_size == 1 and not args.capacity_only:
         parser.error('single-slot admission is only valid for --capacity-only')
-    if args.experimental_hybrid_context and (not args.no_graph or args.context > 32768):
+    if (args.experimental_hybrid_context or args.experimental_hybrid_q4_context) and (not args.no_graph or args.context > 32768):
         parser.error('experimental hybrid context requires --no-graph and context <=32768')
     if args.output.exists():
         parser.error('use a new output path')
@@ -71,6 +103,7 @@ def main():
     short, long = ids[:128], ids[:args.context-512]
     report = dict(passed=False, qualification='context capacity only' if args.capacity_only else 'context/interference engineering fixture only',
         experimental_hybrid_context=args.experimental_hybrid_context, batch_capacity=args.batch_size,
+        experimental_hybrid_q4_context=args.experimental_hybrid_q4_context,
         request_timeout=args.request_timeout, first_output_budget=args.first_output_budget,
         host_gib=args.host_gib,
         model_revision=args.model_revision, engine_revision=args.engine_revision,
@@ -79,10 +112,13 @@ def main():
         host=socket.gethostname(), torch=version('torch'),
         environment={key: os.environ.get(key) for key in ('DLLM_DEVICE', 'DLLM_KERNELS',
             'DLLM_QUANTIZATION', 'DLLM_ROCM_MEMORY_GIB', 'ROCR_VISIBLE_DEVICES', 'HIP_VISIBLE_DEVICES',
-            'TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL', 'DLLM_HYBRID_PRECISION')},
+            'TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL', 'DLLM_HYBRID_PRECISION',
+            'DLLM_EXPERIMENTAL_HYBRID_Q4', 'CUDA_VISIBLE_DEVICES')},
         prompts=dict(short=short, long=long), rounds=[],
         limitation='Client visible SSE chunk gaps are not internal per-token latency. Independent numerical and task quality gates are separate.')
     module = 'scripts.experiments.hybrid_context_probe' if args.experimental_hybrid_context else 'dllm'
+    if args.experimental_hybrid_q4_context:
+        module = 'scripts.experiments.hybrid_q4_context_probe'
     command = [sys.executable, '-m', module, 'serve', '--port', '0', '--context', str(args.context),
         '--prefill-chunk-size', str(args.chunk_size), '--batch-size', str(args.batch_size), '--gpu-models', '1', '--model', 'a='+str(model)]
     if args.no_graph:
@@ -91,15 +127,26 @@ def main():
         command.extend(('--host-gib', str(args.host_gib)))
     report['command'] = command
     process = None
+    def stop_server(signum):
+        if process is not None and process.poll() is None:
+            try:
+                os.killpg(process.pid, signum)
+            except ProcessLookupError:
+                pass
     def terminate(signum, frame):
         # Stop the owned server before unwinding ThreadPoolExecutor, whose
         # active HTTP readers would otherwise delay cleanup until timeout.
-        if process is not None and process.poll() is None:
-            os.killpg(process.pid, signal.SIGTERM)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        report.update(passed=False, interrupted_signal=signum, phase='interrupted')
+        save_report(args.output, report)
+        stop_server(signal.SIGTERM)
         raise SystemExit(128+signum)
     signal.signal(signal.SIGTERM, terminate)
     signal.signal(signal.SIGINT, terminate)
     try:
+        report['phase'] = 'starting'
+        save_report(args.output, report)
         log_path = args.output.with_suffix('.server.log')
         with log_path.open('w') as log:
             process = subprocess.Popen(command, stdout=log, stderr=log, start_new_session=True)
@@ -117,8 +164,15 @@ def main():
             if base is None:
                 raise TimeoutError('server readiness timeout')
             def run(tokens, first=None):
-                return request(base, 'a', tokens, 'dllm', eos, threading.Barrier(1),
-                               output_tokens=512, timeout=args.request_timeout, first_output_event=first)
+                visible = first if first is not None else threading.Event()
+                def expire(phase):
+                    report.setdefault('deadline_exceeded', phase)
+                    stop_server(signal.SIGTERM)
+                with request_deadlines(visible, args.first_output_budget, args.request_timeout, expire):
+                    return request(base, 'a', tokens, 'dllm', eos, threading.Barrier(1),
+                                   output_tokens=512, timeout=args.request_timeout, first_output_event=visible)
+            report['phase'] = 'long_request'
+            save_report(args.output, report)
             report['warmup_long'] = run(long)
             assert report['warmup_long']['passed'], 'long warmup failed'
             if args.capacity_only:
@@ -170,21 +224,26 @@ def main():
                     and row['gap_budget_passed'])
                 with urlopen(base+'/v1/models/status', timeout=30) as response:
                     row['status_after'] = json.load(response)
-                args.output.write_text(json.dumps(report, indent=2)+'\n')
+                save_report(args.output, report)
                 print(f'round {index+1}: passed={row["passed"]} progress_chunks={row["short_visible_chunks_during_long_prefill"]}', flush=True)
             report['passed'] = all(row['passed'] for row in report['rounds'])
     except Exception as error:
         report['error'] = repr(error)
+        report['phase'] = 'failed'
         raise
     finally:
+        report['phase'] = 'completed' if report['passed'] else report.get('phase', 'failed')
+        # Keep a report even if the outer scope kills us during child cleanup.
+        save_report(args.output, report)
         if process is not None and process.poll() is None:
-            os.killpg(process.pid, signal.SIGINT)
+            stop_server(signal.SIGINT)
             try:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                os.killpg(process.pid, signal.SIGKILL)
+                stop_server(signal.SIGKILL)
                 process.wait()
-        args.output.write_text(json.dumps(report, indent=2)+'\n')
+        report['cleanup_complete'] = process is None or process.poll() is not None
+        save_report(args.output, report)
     if not report['passed']:
         raise SystemExit('long-context/interference gate failed; retained report')
 
