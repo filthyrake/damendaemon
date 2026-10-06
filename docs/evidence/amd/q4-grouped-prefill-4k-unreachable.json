@@ -1,0 +1,31 @@
+{
+  "observed_at_utc": "2026-10-06T21:11:08Z",
+  "issue": 74,
+  "parent_issue": 68,
+  "engine_revision": "d75100b",
+  "hardware": "HOMER Radeon 8060S gfx1151",
+  "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "experiment": "Independent Q4 4K reference replay, chunk127, no graphs, at most four slots",
+  "scope": "dllm-grouped-prefill-4k.scope",
+  "declared_allocator_gib": 28,
+  "declared_scope_memory_gib": 64,
+  "declared_scope_swap_gib": 0,
+  "declared_host_reserve_gib": 20,
+  "declared_child_timeout_seconds": 900,
+  "declared_outer_timeout_seconds": 930,
+  "last_confirmed_action": "Scope started from isolated qualification-d75100b snapshot",
+  "checks": {
+    "mac_ssh": "Repeated connection timeout",
+    "mac_ping": "2 packets sent, zero received",
+    "labnode3_ssh": "Connected successfully",
+    "labnode3_ping_homer": "Destination Host Unreachable",
+    "labnode3_homer_8082_health": "No route to host",
+    "labnode3_neighbor_state": "10.30.100.216 dev enp6s18 FAILED",
+    "dns": "homer and homer.lab.knightspeed.com still resolve to 10.30.100.216"
+  },
+  "qualification_result": "unknown; remote replay and guard reports could not be retrieved",
+  "cleanup_complete": null,
+  "post_run_service_health": "unknown",
+  "host_failure_cause": "unknown; temporal overlap does not establish allocator OOM, GPU hang, power loss or causation",
+  "action": "Stopped additional GPU work; requested local console/power check. No reboot, service mutation, new GPU run or 32K retry."
+}

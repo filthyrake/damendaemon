@@ -53,3 +53,32 @@ replays the retained comparison shapes and order; earlier runs selected their
 comparison in the source before the CLI selector was added. The streaming
 candidate uses three BF16 products with FP32 softmax/state and therefore changes
 arithmetic; the SDPA candidates retain FP32. No numerical threshold was relaxed.
+
+## Accepted primitive, integrated qualification interrupted
+
+The grouped **FP32 matrix** control (distinct from grouped SDPA views) reuses a
+KV matrix across flattened query-head rows. At16K, paired medians were67.43ms
+native versus46.64ms grouped; the32K grouped cell completed at105.67ms and681MiB
+peak. Maximum selected-row relative RMS was2.67e-6. See
+[raw control](q4-grouped-matmul-diagnosis.guard.stdout).
+
+Commit `d75100b` integrates this calculation with a256MiB score/probability
+scratch bound, splitting query rows while preserving the complete causal prefix.
+Dispatch is restricted to ROCm compensated hybrid prefill, more than one query,
+and at least1024 cached tokens. Other devices, precision modes, short context
+and decode retain their paths. All550 local tests pass. This is still pending
+full-model GPU qualification under issue74.
+
+The existing-kernel chunk512 control passed84/84 independent4K targets
+(max RMS0.003656, max absolute0.085692), but its116.65s total replay did not
+establish an improvement over the retained114.35s chunk127 result. These are
+single replay runs, not a competitive benchmark or paired full-model speed claim.
+See [chunk512 result](q4-prefill-chunk512-4k.guard.stdout).
+
+During the integrated `d75100b` chunk127 replay, HOMER became unreachable by SSH
+and ping from the Mac and by ping/HTTP from labnode3; neighbor discovery failed
+and DNS still pointed at the same address. The [incident record](q4-grouped-prefill-4k-unreachable.json)
+distinguishes observed reachability from unknown cause. The remote replay result,
+watchdog outcome, cleanup and service health could not be retrieved. No32K run
+followed. Full-model qualification must not be inferred from primitive or CPU
+results. The projection control script was prepared locally but never run.
