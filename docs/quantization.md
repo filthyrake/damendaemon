@@ -81,6 +81,12 @@ A2/A30. Warm model and A2/3090 HTTP comparisons show no observed throughput
 regression; small gains are not a general warm-speed claim. The evidence page
 above separates these measurements and records numerical and recovery gates.
 
+`DLLM_Q4_STAGE_RUNTIME_ROPE=1` is a separate, default-off experiment for those
+adjacent Q4 stages. It reuses the rotary/cache kernel across prompt lengths by
+passing its query-output stride at runtime. Stage status reports
+`runtime_rope_tokens`. Prototype numerical and first-use results are recorded
+in the same evidence page; integrated GPU qualification is still in progress.
+
 ## Native AWQ checkpoints
 
 CUDA can load dense Qwen2 and Qwen3 checkpoints using AWQ GEMM four-bit packing, group size 128,

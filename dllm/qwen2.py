@@ -469,6 +469,7 @@ class Executor:
         self.token = torch.zeros(1, dtype=torch.long, device=self.device)
         self.position = torch.zeros(1, dtype=torch.long, device=self.device)
         self.graph = None
+        self.rotary_store = self.kernels.rope_store if self.kernels else None
         if self.device == "cuda" and (use_graph or self.kernels):
             from .cuda_warmup import warmup_stream
             with warmup_stream(), torch.inference_mode():
@@ -674,7 +675,7 @@ class Executor:
                 q, k, v = [self.linear(hidden, weight, part_bias) for weight, part_bias in zip(
                     w[f"{i}.qkv.weight"].split(sizes), biases)]
             if self.kernels and self.fuse_projections:
-                q = self.kernels.rope_store(qkv, self.cos, self.sin, positions, cache_k, cache_v, self.heads,
+                q = self.rotary_store(qkv, self.cos, self.sin, positions, cache_k, cache_v, self.heads,
                     w.get(f"{i}.q_norm"), w.get(f"{i}.k_norm"), self.eps, self.rotary_precise)
                 k, v = cache_k[:, :, :count], cache_v[:, :, :count]
             else:

@@ -24,7 +24,9 @@ def sync():
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('prompt');p.add_argument('--output',required=True);p.add_argument('--integrated',action='store_true')
     p.add_argument('--compare-rope',action='store_true',help='hold integrated row bounds on and vary only the experimental rotary stride')
+    p.add_argument('--integrated-rope',action='store_true',help='use the integrated stage rotary policy in the rotary comparison')
     args=p.parse_args()
+    if args.integrated_rope and not args.compare_rope:p.error('--integrated-rope requires --compare-rope')
     def terminate(number,frame):raise SystemExit(128+number)
     signal.signal(signal.SIGTERM,terminate)
     assert torch.cuda.device_count()==2,'select exactly two GPUs'
@@ -34,11 +36,11 @@ def main():
     model=ModelWeights(args.model,512,quantization='q4_0')
     original=q4_stage_kernels.single_dot_adjacent
     original_rope=kernels._rope_store
-    report=dict(passed=False,integrated=args.integrated,comparison='rotary-stride' if args.compare_rope else 'row-bounds',model=args.model,quantization='q4_0',context=512,capacity=4,prompt_tokens=16,output_tokens=32,
+    report=dict(passed=False,integrated=args.integrated,integrated_rope=args.integrated_rope,comparison='rotary-stride' if args.compare_rope else 'row-bounds',model=args.model,quantization='q4_0',context=512,capacity=4,prompt_tokens=16,output_tokens=32,
         devices=os.environ['CUDA_VISIBLE_DEVICES'],trials=[],
         scope='Same-host model execution ABBA. Static versus selective runtime row bounds only; adjacent weights and packed prefill fixed. Host weights loaded once; all group shapes warmed before steady-state timing. First-shape calls are observed per process/order, not an isolated cold-start comparison. No HTTP or network throughput claim.',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
-                 ('dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/partition.py',
+                 ('dllm/q4_stage.py','dllm/q4_stage_kernels.py','dllm/kernels.py','dllm/partition.py','dllm/layer_stage.py','dllm/qwen2.py','dllm/partition_policy.py',
                   'scripts/experiments/q4_dynamic_rows.py','scripts/experiments/rope_runtime_tokens.py',__file__)})
     if args.compare_rope:
         report['scope']='Same-host model execution ABBA. Static versus runtime rotary token stride only; integrated selective row bounds, adjacent weights and packed prefill fixed. All group shapes warmed. First-shape observations share process/cache state and are not isolated cold-start evidence. No HTTP or network throughput claim.'
@@ -49,7 +51,8 @@ def main():
             q4_stage_kernels.single_dot_adjacent=original
             kernels._rope_store=original_rope
             os.environ['DLLM_Q4_STAGE_RUNTIME_ROWS']=str(int(args.compare_rope or (dynamic and args.integrated)))
-            if args.compare_rope and dynamic:
+            os.environ['DLLM_Q4_STAGE_RUNTIME_ROPE']=str(int(args.compare_rope and args.integrated_rope and dynamic))
+            if args.compare_rope and dynamic and not args.integrated_rope:
                 from scripts.experiments.rope_runtime_tokens import install_validation_dispatch as install_rope
                 install_rope()
             elif dynamic and not args.integrated and not args.compare_rope:install_validation_dispatch()

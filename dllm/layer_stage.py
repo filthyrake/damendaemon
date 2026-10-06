@@ -33,8 +33,10 @@ def shard_model(model,start,end):
 
 class LayerStage(BatchExecutor):
     def __init__(self,model,start,end,max_batch=4,stage_graphs=False,kernels=None):
-        from .partition_policy import q4_stage_adjacent_enabled,validate
+        from .partition_policy import q4_stage_adjacent_enabled,q4_stage_runtime_rope_enabled,validate
         adjacent=q4_stage_adjacent_enabled(model.quantization)
+        runtime_rope=q4_stage_runtime_rope_enabled(model.quantization)
+        self.runtime_rope_tokens=adjacent and runtime_rope
         if adjacent:
             validate(model,12,max_batch)
             if (start,end) not in ((0,12),(12,24)):raise ValueError('Q4 layout requires qualified stage ranges')
@@ -49,6 +51,9 @@ class LayerStage(BatchExecutor):
             from .q4_stage import StageQ4Linear
             self.q4_linear=StageQ4Linear(self.quant_linear,self.w)
             self.linear=self.q4_linear
+            if self.runtime_rope_tokens:
+                from functools import partial
+                self.rotary_store=partial(self.kernels.rope_store,runtime_tokens=True)
         self.stage_graphs={}
         if stage_graphs:
             self.capture_stage_graphs()

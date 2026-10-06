@@ -555,3 +555,22 @@ static→runtime-stride aggregate output rates are 231.03→233.23,
 differences and sub-1% throughput differences do not establish a warm-speed
 gain. This remains model execution without HTTP/network. Raw data is in
 `qwen2-rope-runtime-tokens-benchmark.json`.
+
+Four fresh-process/private-cache rotary-only trials, with integrated Q4 row
+bounds fixed on, give median activation/compilation 15.08→14.91 seconds,
+first-use sweep 18.73→14.19 seconds (24.2% lower), and repeated sweep
+0.347→0.335 seconds. Every first/repeated output token matches across trials.
+The same 15 prompt lengths and cache exclusions apply. These prototype reports
+are `qwen2-rope-first-shapes-*`; they are not integrated rotary results.
+
+The separate `DLLM_Q4_STAGE_RUNTIME_ROPE=1` integration is default-off while
+qualified. Only adjacent Q4 layer stages opt into the runtime token stride;
+ordinary executors keep static stride selection. Both entry points share the
+rotary arithmetic body. Each stage owns its selected rotary callable, without
+mutating a global dispatch function. Same-host stage status includes
+`runtime_rope_tokens`. The local suite passes 446 tests; integrated GPU gates
+remain required before this control can become a default.
+The integrated static/runtime entry points pass all 68 A2 query/KV equivalence
+cases; the median dynamic/static warm-kernel ratio is 0.995 and the largest
+individual slowdown is 1.44%. `qwen2-rope-integrated-matrices.json` records the
+shared-body integration gate. Full-model and lifecycle checks are separate.

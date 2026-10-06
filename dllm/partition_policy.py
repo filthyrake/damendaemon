@@ -14,6 +14,12 @@ def q4_stage_adjacent_enabled(quantization):
     return quantization=='q4_0' and value=='1'
 
 
+def q4_stage_runtime_rope_enabled(quantization):
+    value=os.environ.get('DLLM_Q4_STAGE_RUNTIME_ROPE','0')
+    if value not in ('0','1'):raise ValueError('DLLM_Q4_STAGE_RUNTIME_ROPE must be 0 or 1')
+    return quantization=='q4_0' and value=='1'
+
+
 def packed_prefill_enabled(quantization):
     value=os.environ.get('DLLM_PARTITION_PACKED_PREFILL')
     if value is None:return quantization in ('none','q8_0') or q4_stage_adjacent_enabled(quantization)

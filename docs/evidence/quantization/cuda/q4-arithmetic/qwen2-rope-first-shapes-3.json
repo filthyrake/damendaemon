@@ -1,0 +1,177 @@
+{
+  "passed": true,
+  "integrated": true,
+  "dynamic": true,
+  "experimental_rope_runtime_tokens": false,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "quantization": "q4_0",
+  "context": 512,
+  "capacity": 4,
+  "first": [
+    {
+      "prompt_tokens": 3,
+      "seconds": 0.3378884739940986,
+      "token": 279
+    },
+    {
+      "prompt_tokens": 5,
+      "seconds": 0.3134172400168609,
+      "token": 323
+    },
+    {
+      "prompt_tokens": 7,
+      "seconds": 0.29882347700186074,
+      "token": 821
+    },
+    {
+      "prompt_tokens": 11,
+      "seconds": 0.30443319701589644,
+      "token": 16148
+    },
+    {
+      "prompt_tokens": 13,
+      "seconds": 0.3059762509947177,
+      "token": 323
+    },
+    {
+      "prompt_tokens": 17,
+      "seconds": 3.180611977004446,
+      "token": 20772
+    },
+    {
+      "prompt_tokens": 19,
+      "seconds": 1.2073222109756898,
+      "token": 18495
+    },
+    {
+      "prompt_tokens": 23,
+      "seconds": 1.2029997580102645,
+      "token": 1995
+    },
+    {
+      "prompt_tokens": 31,
+      "seconds": 1.187035308976192,
+      "token": 13
+    },
+    {
+      "prompt_tokens": 33,
+      "seconds": 3.7512858959962614,
+      "token": 20772
+    },
+    {
+      "prompt_tokens": 47,
+      "seconds": 0.31073665898293257,
+      "token": 13
+    },
+    {
+      "prompt_tokens": 63,
+      "seconds": 0.2948062839859631,
+      "token": 13
+    },
+    {
+      "prompt_tokens": 65,
+      "seconds": 3.534058465011185,
+      "token": 20772
+    },
+    {
+      "prompt_tokens": 95,
+      "seconds": 1.406669243995566,
+      "token": 13
+    },
+    {
+      "prompt_tokens": 127,
+      "seconds": 1.2854460249945987,
+      "token": 13
+    }
+  ],
+  "repeat": [
+    {
+      "prompt_tokens": 3,
+      "seconds": 0.022330011008307338,
+      "token": 279
+    },
+    {
+      "prompt_tokens": 5,
+      "seconds": 0.02128449600422755,
+      "token": 323
+    },
+    {
+      "prompt_tokens": 7,
+      "seconds": 0.021809266007039696,
+      "token": 821
+    },
+    {
+      "prompt_tokens": 11,
+      "seconds": 0.02482538198819384,
+      "token": 16148
+    },
+    {
+      "prompt_tokens": 13,
+      "seconds": 0.022888925013830885,
+      "token": 323
+    },
+    {
+      "prompt_tokens": 17,
+      "seconds": 0.02158126499853097,
+      "token": 20772
+    },
+    {
+      "prompt_tokens": 19,
+      "seconds": 0.021827178017701954,
+      "token": 18495
+    },
+    {
+      "prompt_tokens": 23,
+      "seconds": 0.022156018996611238,
+      "token": 1995
+    },
+    {
+      "prompt_tokens": 31,
+      "seconds": 0.021773259999463335,
+      "token": 13
+    },
+    {
+      "prompt_tokens": 33,
+      "seconds": 0.02170196099905297,
+      "token": 20772
+    },
+    {
+      "prompt_tokens": 47,
+      "seconds": 0.024555386014981195,
+      "token": 13
+    },
+    {
+      "prompt_tokens": 63,
+      "seconds": 0.02464398799929768,
+      "token": 13
+    },
+    {
+      "prompt_tokens": 65,
+      "seconds": 0.023047443974064663,
+      "token": 20772
+    },
+    {
+      "prompt_tokens": 95,
+      "seconds": 0.02603296600864269,
+      "token": 13
+    },
+    {
+      "prompt_tokens": 127,
+      "seconds": 0.02506224301760085,
+      "token": 13
+    }
+  ],
+  "scope": "Fresh process and private Triton compiler cache for each trial; host checkpoint/filesystem/driver caches are not reset. Same-host first-token computation, including compilation and GPU completion, without HTTP/queue/network. No steady-state throughput claim.",
+  "sources": {
+    "dllm/q4_stage.py": "7a89bbb0ebe5030fa89a0f70a88c53fd00c4dcaa2b9576620314dcc61039a478",
+    "dllm/q4_stage_kernels.py": "bc2915edc914d87ba70d2f7d18fca86234065a39931f9624052e535306b7b8fe",
+    "dllm/kernels.py": "e955962c77124ecf9c275d16bbfddb9530d50fab67deeebb28da8dbab252f419",
+    "dllm/partition.py": "322cec863655c64c734582f5538a4e46988fa4a2791bb9fa4bc1dc306358add1",
+    "scripts/experiments/q4_dynamic_rows.py": "06874c4fe9176f7b96af38b2433fd0356e15421fb5ecdc5be8cca0dc86fbe541",
+    "scripts/experiments/rope_runtime_tokens.py": "0e0e3a4a03dadfcaa5318054c39e90cd2bb9b257f63f252df8373c7d8178ce66",
+    "/home/damen/dllm-dev/scripts/experiments/bench_partition_first_shapes.py": "b05ce46af59de1b6f8c51c920b631ad19ca3d872a360fb90917eee19437cadbb"
+  },
+  "import_seconds": 2.101396673009731,
+  "host_weights_seconds": 4.781806613027584,
+  "activation_seconds": 15.046482332021696
+}
