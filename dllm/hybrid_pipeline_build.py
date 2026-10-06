@@ -86,8 +86,11 @@ def build_cuda_pipeline(model, devices, budgets, max_batch=4):
                 touched.append(device)
                 stage.__init__(model, budget['layer_start'], budget['layer_end'], max_batch)
         pipeline = HybridPipeline(stages)
+        pipeline.model = model
         pipeline.placement = placement
         pipeline.devices = tuple(devices)
+        for stage in stages:
+            stage.synchronize()
         return pipeline
     except BaseException as error:
         # Do not retain the original traceback's temporary allocation references.

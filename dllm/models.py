@@ -42,6 +42,10 @@ def config(path):
 def validate_device_model(path, quantization, context=None):
     from .device import selected_device
     from .layer_stream import enabled as offload_enabled, validate as validate_offload
+    from .hybrid_pipeline_policy import budgets, validate as validate_pipeline
+    if budgets() is not None:
+        from .quantization import mode
+        validate_pipeline(config(path), mode(quantization), 1 if context is None else context)
     if offload_enabled():
         from .quantization import mode
         validate_offload(config(path), mode(quantization), 1 if context is None else context)

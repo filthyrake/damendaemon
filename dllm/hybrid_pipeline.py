@@ -13,6 +13,12 @@ class PipelineCancelled(RuntimeError):
 
 
 class HybridPipeline:
+    supports_chunked_prefill = True
+    supports_prefix_cache = False
+    requires_full_prefill = False
+    kernel_backend = 'torch-hybrid-pipeline'
+    residual_dtype = torch.float32
+
     def __init__(self, stages):
         self.stages = tuple(stages)
         if not self.stages:
@@ -34,6 +40,7 @@ class HybridPipeline:
         for stage in self.stages:
             stage._pipeline_owner = self.owner
         self.context, self.max_batch = first.context, first.max_batch
+        self.compute_dtype = first.compute_dtype
         self.lengths = [0]*self.max_batch
         self.failed = self.closed = False
         self.lock = threading.RLock()
@@ -101,6 +108,28 @@ class HybridPipeline:
 
     def prefill(self, tokens, slot=0, cancelled=None):
         return self.prefill_chunk(tokens, slot, cancelled=cancelled)
+
+    def prefill_batch(self, prompts, slots):
+        with self.lock:
+            self._ready()
+            if (not isinstance(prompts, (list, tuple)) or not prompts
+                    or not isinstance(slots, (list, tuple)) or len(prompts) != len(slots)
+                    or len(slots) > self.max_batch
+                    or any(type(s) is not int or not 0 <= s < self.max_batch for s in slots)
+                    or len(set(slots)) != len(slots)):
+                raise ValueError('invalid pipeline prompt batch or slots')
+            for prompt in prompts:
+                self._tokens(prompt)
+                if len(prompt) > self.context:
+                    raise ValueError('pipeline prompt exceeds context')
+            try:
+                return torch.cat([self.prefill(prompt, slot) for prompt, slot in zip(prompts, slots)])
+            except BaseException:
+                self.failed = True
+                raise
+
+    def decode(self, token):
+        return self.decode_batch([token], [0])
 
     def decode_batch(self, tokens, slots, cancelled=None):
         with self.lock:

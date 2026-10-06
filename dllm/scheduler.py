@@ -75,6 +75,9 @@ class BatchedRuntime:
         self.prefix_cache_tokens=prefix_cache_tokens
         self.prefill_chunk_size=prefill_chunk_size
         from .partition_policy import selected_split
+        from .hybrid_pipeline_policy import budgets
+        if budgets() is not None and prefix_cache_tokens:
+            raise ValueError('hybrid pipeline does not support prefix snapshots')
         if selected_split() is not None and (prefill_chunk_size or prefix_cache_tokens):
             raise ValueError('layer partition does not yet support chunked prefill or prefix snapshots')
         self.runtime = Runtime(models, batch_size=batch_size, queue_size=queue_size, queue_timeout=queue_timeout, **kwargs)

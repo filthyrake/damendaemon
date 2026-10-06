@@ -18,6 +18,12 @@ def selected_device():
 def synchronize():
     import torch
     from .partition_policy import selected_split
+    from .hybrid_pipeline_policy import budgets
+    limits = budgets()
+    if limits is not None:
+        for device in range(len(limits)):
+            torch.cuda.synchronize(device)
+        return
     if selected_split() is not None:
         for device in range(2):torch.cuda.synchronize(device)
         return
@@ -27,6 +33,13 @@ def synchronize():
 def empty_cache():
     import torch
     from .partition_policy import selected_split
+    from .hybrid_pipeline_policy import budgets
+    limits = budgets()
+    if limits is not None:
+        for device in range(len(limits)):
+            with torch.cuda.device(device):
+                torch.cuda.empty_cache()
+        return
     if selected_split() is not None:
         for device in range(2):
             with torch.cuda.device(device):torch.cuda.empty_cache()

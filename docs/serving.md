@@ -560,12 +560,12 @@ reducing users. Budgets are supplied inputs, not queried free-memory readings;
 allocator fragmentation, loading peaks and hardware/transport qualification
 remain outside the estimate. Planning is bounded to 16 stages and 256 layers.
 
-The internal `build_cuda_pipeline(model, devices, budgets, max_batch=4)` helper
+The `build_cuda_pipeline(model, devices, budgets, max_batch=4)` helper
 in `dllm.hybrid_pipeline_build` turns a loaded CPU model and ordered CUDA
 ordinals/byte budgets into a synchronous coordinator. It requires
 `DLLM_EXPERIMENTAL_HYBRID_PIPELINE=1`, CUDA, unquantized FP16 text, context at
 most 2048 and at most four slots. It rejects offload, legacy layer splitting,
-vision and paged KV. It is not connected to CLI serving or the HTTP scheduler.
+vision and paged KV.
 It plans before allocating, bounds the supplied caps by observed free memory,
 then rechecks each device before constructing its stage. Storage fit does not
 establish practical execution speed or numerical qualification on any GPU.
@@ -577,6 +577,23 @@ after recovery; its `closed` flag records completed cleanup. A successfully
 constructed coordinator owns its stages and must likewise be closed. CPU
 fixtures cover arithmetic equivalence, changed headroom, partial allocation,
 interruption and failed-cleanup retry; device transport remains unqualified.
+
+For experimental serving, set `DLLM_HYBRID_PIPELINE_BUDGETS_MIB` to comma-separated
+positive integer limits, one per visible GPU in `CUDA_VISIBLE_DEVICES` order,
+alongside the pipeline opt-in. For example, `22000,14000` specifies caps of
+22000 and 14000 MiB; the UUID selection must expose exactly two distinct GPUs.
+Use `--device cuda --no-graph`, unquantized hybrid text and the bounded context
+and batch limits above. The ordinary runtime then selects the pipeline for
+chat/completions and streaming; `--prefill-chunk-size` remains available. Prefix
+snapshots are rejected. Each stage executes eagerly and transfers hidden states
+synchronously; no overlap, transport speed or GPU serving qualification is claimed.
+
+Status reports each resident pipeline's stage storage and total CUDA allocations
+across its visible devices. Model unload/swap closes all stages. If build cleanup
+fails, `pending_pipeline_cleanup` remains nonzero and subsequent activation must
+complete that cleanup before loading another executor; unload also retries it.
+CPU/loopback regressions exercise the actual stage arithmetic through the HTTP
+handler and scheduler, including concurrent requests and host-cache restoration.
 
 ## Optional API authentication
 

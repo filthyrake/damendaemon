@@ -14,6 +14,10 @@ from .prompts import decode_output
 def require_gpu():
     from .partition_policy import selected_split
     split=selected_split()
+    from .hybrid_pipeline_policy import budgets, validate_environment
+    pipeline_budgets = budgets()
+    if pipeline_budgets is not None:
+        validate_environment()
     if selected_device() == 'xpu':
         import torch
         from .xpu_policy import validate_runtime
@@ -34,7 +38,7 @@ def require_gpu():
         configure_allocator(torch)
         return
     visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
-    count=2 if split is not None else 1
+    count=len(pipeline_budgets) if pipeline_budgets is not None else 2 if split is not None else 1
     devices=visible.split(',')
     if len(devices)!=count or len(set(devices))!=count or any(not value.startswith('GPU-') for value in devices):
         raise ValueError(f"set CUDA_VISIBLE_DEVICES to exactly {count} distinct GPU UUIDs")
@@ -90,6 +94,16 @@ class Runtime:
             if policy is None:
                 raise ValueError('per-model quantization must be explicit')
             quantization_mode(policy)
+        from .hybrid_pipeline_policy import budgets, validate as validate_pipeline, validate_environment
+        if budgets() is not None:
+            validate_environment(use_graph)
+            if (type(context) is not int or not 1 <= context <= 2048
+                    or (batch_size is not None and (type(batch_size) is not int or not 1 <= batch_size <= 4))):
+                raise ValueError('pipeline serving requires context <=2048 and batch 1..4')
+            for alias, path in models.items():
+                from .models import config
+                validate_pipeline(config(path), policies.get(alias, quantization_mode()), context,
+                                  1 if batch_size is None else batch_size, use_graph)
         require_gpu()
         self.default_quantization = quantization_mode()
         self.models = dict(models)
@@ -104,6 +118,7 @@ class Runtime:
         self.queue_timeout = queue_timeout
         self.host = OrderedDict()
         self.gpu = OrderedDict()
+        self.failed_builds = []
         self.lock = threading.Lock()
         self.admission = threading.BoundedSemaphore(queue_size)
 
@@ -136,14 +151,19 @@ class Runtime:
                        'output_head_workspace_bytes': getattr(self.gpu.get(alias), 'output_head_workspace_bytes', 0),
                        'weight_streaming': (self.gpu[alias].offload.status()
                             if getattr(self.gpu.get(alias), 'offload', None) is not None else None),
+                       'pipeline': (self.gpu[alias].status()
+                            if hasattr(self.gpu.get(alias), 'placement') else None),
                        'executor_failed': getattr(self.gpu.get(alias),'failed',False)}
                       for alias in self.models]
         from .partition_policy import selected_split
+        from .hybrid_pipeline_policy import budgets
+        pipeline_budgets = budgets()
         devices=None
-        if selected_split() is not None and torch.cuda.is_initialized():
+        if (selected_split() is not None or pipeline_budgets is not None) and torch.cuda.is_initialized():
             visible=os.environ['CUDA_VISIBLE_DEVICES'].split(',')
             devices=[dict(index=i,uuid=visible[i],name=torch.cuda.get_device_name(i),
-                          allocated_bytes=torch.cuda.memory_allocated(i),reserved_bytes=torch.cuda.memory_reserved(i)) for i in range(2)]
+                          allocated_bytes=torch.cuda.memory_allocated(i),reserved_bytes=torch.cuda.memory_reserved(i))
+                     for i in range(len(pipeline_budgets) if pipeline_budgets is not None else 2)]
         cuda_initialized = selected_device() == 'cuda' and torch.cuda.is_initialized()
         allocated=torch.cuda.memory_allocated() if cuda_initialized else None
         xpu_initialized = selected_device() == 'xpu' and torch.xpu.is_initialized()
@@ -156,6 +176,7 @@ class Runtime:
                 'rocm_aotriton_experimental': os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL')
                     if selected_accelerator()=='rocm' else None,
                 'cuda_devices':devices,
+                'pending_pipeline_cleanup':len(self.failed_builds),
                 'xpu_allocated_bytes': torch.xpu.memory_allocated() if xpu_initialized else None,
                 'xpu_reserved_bytes': torch.xpu.memory_reserved() if xpu_initialized else None,
                 'xpu_peak_allocated_bytes': torch.xpu.max_memory_allocated() if xpu_initialized else None,
@@ -171,6 +192,8 @@ class Runtime:
         if not self.lock.acquire(timeout=self.queue_timeout):
             raise BusyError('model management timeout')
         try:
+            if action in ('unload', 'remove'):
+                self._cleanup_failed_builds()
             if action == 'register':
                 import json
                 from pathlib import Path
@@ -187,6 +210,8 @@ class Runtime:
                         return self._status()
                 try:
                     config = read_config(candidate)
+                    from .hybrid_pipeline_policy import validate as validate_pipeline
+                    validate_pipeline(config, policy, self.context, self.batch_size or 1, self.use_graph)
                     if chat_template is not None:
                         from .chat_template import validate_override
                         validate_override(chat_template, config)
@@ -232,10 +257,18 @@ class Runtime:
         gc.collect()
         empty_cache()
 
+    def _cleanup_failed_builds(self):
+        # A failed constructor may still own buffers after synchronization failed.
+        # Never let a new load run until that ownership has been cleaned up.
+        while self.failed_builds:
+            self.failed_builds[0].close()
+            self.failed_builds.pop(0)
+
     def _activate(self, alias):
         import torch
         from .models import load, weight_bytes
         start = time.perf_counter()
+        self._cleanup_failed_builds()
         if alias in self.gpu and getattr(self.gpu[alias],'failed',False):
             self._evict(alias)
         if alias in self.gpu:
@@ -292,7 +325,12 @@ class Runtime:
         # Failure never publishes a partially initialized executor as ready.
         try:
             executor = make_executor(self.host[alias], self.use_graph, self.batch_size)
-        except Exception:
+        except Exception as error:
+            from .hybrid_pipeline_policy import budgets
+            if budgets() is not None:
+                from .hybrid_pipeline_build import PipelineBuildError
+                if isinstance(error, PipelineBuildError) and not error.closed:
+                    self.failed_builds.append(error)
             gc.collect()
             empty_cache()
             raise
@@ -483,6 +521,15 @@ class Runtime:
 def make_executor(model, use_graph=True, max_batch=None, **kwargs):
     """Choose an execution path from the validated architecture, not the model name."""
     from .partition_policy import selected_split
+    from .hybrid_pipeline_policy import budgets, validate as validate_pipeline
+    limits = budgets()
+    if limits is not None:
+        validate_pipeline(model.config, model.quantization, model.max_context,
+                          max_batch or 1, use_graph)
+        if kwargs:
+            raise ValueError('pipeline serving does not accept executor overrides')
+        from .hybrid_pipeline_build import build_cuda_pipeline
+        return build_cuda_pipeline(model, list(range(len(limits))), limits, max_batch or 1)
     split=selected_split()
     if split is not None:
         if kwargs:raise ValueError('layer partition does not accept executor overrides')
