@@ -34,7 +34,7 @@ def cases_from_trace(trace):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('trace');parser.add_argument('--output',required=True)
     parser.add_argument('--inject-stage-failure',action='store_true')
-    parser.add_argument('--experimental-q4-body',action='store_true')
+    parser.add_argument('--experimental-q4-body',nargs='?',const='single-dot',choices=('single-dot','paired-load'))
     parser.add_argument('--allocation-diagnostics',action='store_true');args=parser.parse_args()
     if args.inject_stage_failure and args.allocation_diagnostics:parser.error('choose one diagnostic mode')
     if args.experimental_q4_body and (args.inject_stage_failure or args.allocation_diagnostics):
@@ -59,7 +59,7 @@ def main():
         with logpath.open('w') as log:
             command=([sys.executable,__file__,'--failure-server'] if args.inject_stage_failure else
                      [sys.executable,__file__,'--diagnostic-server'] if args.allocation_diagnostics else
-                     [sys.executable,'-m','scripts.experiments.run_q4_body'] if args.experimental_q4_body else
+                     [sys.executable,'-m','scripts.experiments.run_q4_body','--body-kernel',args.experimental_q4_body] if args.experimental_q4_body else
                      [sys.executable,'-m','dllm'])
             process=subprocess.Popen([*command,'serve','--port','0','--context','512','--layer-split','12',
                 '--batch-size','4','--batch-wait-ms','10','--gpu-models','1','--host-models','2','--host-gib','8',

@@ -76,3 +76,27 @@ The first candidate's large throughput regression is unacceptable despite its
 passing correctness gates. It remains an explicit experiment; production Q4
 dispatch and conservative prompt-packing default are unchanged. Reproduce with
 `bench_partition_prefill_service.py --compare q4-body --quantization q4_0`.
+
+## Packed-load revision
+
+`single_dot_paired_load` loads each packed byte once and each block scale once,
+then reconstructs contiguous K-order values for the dot product. It passes all
+282 graph-backed model checks and all 20 synthetic body-matrix checks. The
+synthetic checks require exact FP16 output equality with the first contiguous
+candidate and retain the independent dense RMS gate.
+
+Warm CUDA-graph profiling on the A2 exposes the remaining cost. For one row:
+
+| Projection (outputs × inputs) | Current paired, µs | First contiguous, µs | Packed-load revision, µs |
+|---|---:|---:|---:|
+| QKV (1152 × 896) | 8.88 | 79.92 | 19.39 |
+| Attention output (896 × 896) | 8.78 | 79.71 | 19.34 |
+| Gate/up (9728 × 896) | 59.33 | 629.02 | 145.78 |
+| Down (896 × 4864) | 44.81 | 460.32 | 103.18 |
+
+The revision is substantially faster than the first candidate but still
+2.2–2.5 times slower than current body kernels on these small-row cases.
+Compiler metadata reports 211 registers versus 128 for current kernels, with
+zero spills in both. A launch/tile sweep is needed before considering another
+serving comparison. These synthetic matrix measurements are not model
+throughput claims. `benchmark_q4_kernels.py --body-candidates` reproduces them.
