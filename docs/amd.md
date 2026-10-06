@@ -9,6 +9,34 @@ compensated projections, at most four slots and no graphs. Practical 32K and
 competitive concurrency remain open. See the [current roadmap](https://github.com/filthyrake/dllm/issues/3)
 and [context task](https://github.com/filthyrake/dllm/issues/68).
 
+## Shared-memory limits and the 32K failure
+
+The Q4 path passes [84 independent numerical checks at 4K](evidence/amd/qwen38-27b-q4-native-replay4096.json).
+The subsequent 32K C1 test encountered a **global host OOM**, despite an 88-GiB
+systemd scope and a 48-GiB admission setting. The kernel killed the dllm server
+and user D-Bus service. D-Bus was restored; the existing chat, embedding and
+reranking health endpoints returned OK. Retained [kernel evidence](evidence/amd/qwen38-27b-q4-http-capacity32768-c1.kernel-oom.txt)
+distinguishes global OOM from a contained cgroup failure. The
+[interrupted report](evidence/amd/qwen38-27b-q4-http-capacity32768-c1-interrupted.json)
+does not establish output counts, first-token latency or peak memory. Large
+retries are gated by [memory containment work](https://github.com/filthyrake/dllm/issues/73).
+
+`DLLM_ROCM_MEMORY_GIB` now caps the PyTorch caching allocator as well as admission.
+An existing stricter allocator cap is preserved. Hybrid loading/execution checks
+live host headroom against a 16-GiB reserve; the context experiment also has an
+independent 20-GiB host watchdog that stops only its owned server. A
+[small live allocator proof](evidence/amd/rocm-memory-cap-small.json) rejected an
+oversized 256-MiB allocation, recovered, and released all tensor memory, with
+22 MiB peak reserved. A separate [watchdog check](evidence/amd/host-memory-watchdog-trigger.json)
+used an intentionally elevated reserve threshold to stop a harmless child using
+real host accounting; it induced no memory pressure.
+
+These checks do not prove containment of every driver/library allocation or
+qualify another large run. PyTorch documents the scope of its
+[allocator fraction](https://docs.pytorch.org/docs/main/generated/torch.cuda.memory.set_per_process_memory_fraction.html)
+and [HIP memory management](https://docs.pytorch.org/docs/stable/notes/hip.html).
+The allocation source of the failed large run still needs bounded diagnosis.
+
 The sections below preserve historical experiments, including failures that
 were superseded by later results. They are evidence, not the live work queue.
 

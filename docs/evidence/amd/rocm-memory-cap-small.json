@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "device": "Radeon 8060S Graphics",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "budget_bytes": 268435456,
+  "allocator_fraction": 0.0040661207318743965,
+  "oversized_rejected": true,
+  "rejection": "CUDA out of memory. Tried to allocate 256.00 MiB. GPU 0 has a total capacity of 61.48 GiB of which 110.93 GiB is free. 256.00 MiB allowed; Of the allocated memory 8.00 MiB is allocated by PyTorch, and 12.00 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
+  "recovered": true,
+  "initial_allocated_bytes": 0,
+  "released_allocated_bytes": 0,
+  "peak_reserved_bytes": 23068672,
+  "host_available_before": 121112363008,
+  "host_available_after": 120883716096,
+  "limitation": "Caching-allocator containment only. Does not bound driver/library allocations or qualify large workloads."
+}
