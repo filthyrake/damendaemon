@@ -59,7 +59,8 @@ def main():
         gap_budget_seconds=args.gap_budget_seconds, tokenizer_sha256=hashlib.sha256(tokenizer_path.read_bytes()).hexdigest(),
         host=socket.gethostname(), torch=version('torch'),
         environment={key: os.environ.get(key) for key in ('DLLM_DEVICE', 'DLLM_KERNELS',
-            'DLLM_QUANTIZATION', 'DLLM_ROCM_MEMORY_GIB', 'ROCR_VISIBLE_DEVICES', 'HIP_VISIBLE_DEVICES')},
+            'DLLM_QUANTIZATION', 'DLLM_ROCM_MEMORY_GIB', 'ROCR_VISIBLE_DEVICES', 'HIP_VISIBLE_DEVICES',
+            'TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL')},
         prompts=dict(short=short, long=long), rounds=[],
         limitation='Client visible SSE chunk gaps are not internal per-token latency. Independent numerical and task quality gates are separate.')
     command = [sys.executable, '-m', 'dllm', 'serve', '--port', '0', '--context', str(args.context),

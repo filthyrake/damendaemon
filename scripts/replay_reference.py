@@ -5,6 +5,7 @@ locally generated traces are accepted; torch.load uses weights_only=True.
 """
 import argparse
 import json
+import os
 import time
 import torch
 from dllm.qwen2 import ModelWeights
@@ -84,6 +85,7 @@ def main():
     print(json.dumps({'passed': passed, 'model_path': trace['path'], 'context': trace['context'],
         'local_model_path': str(model.path), 'source_slot': args.slot, 'scalar':args.scalar,
         'prefill_chunk_size':args.prefill_chunk_size, 'device': device_name(), 'accelerator':selected_accelerator(), 'torch': str(torch.__version__), 'reference_dtype': trace['reference_dtype'],
+        'rocm_aotriton_experimental':os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL'),
         'reference_torch': trace['reference_torch'], 'reference_quantization': trace.get('reference_quantization','none'),
         'weight_cache_status':model.weight_cache_status, 'weight_quantization': model.quantization, 'host_weight_bytes': model.bytes, 'reference_attention': trace.get('reference_attention', 'sdpa'), 'graph_requested': not args.no_graph,
         'kernel_backend': executor.kernel_backend,

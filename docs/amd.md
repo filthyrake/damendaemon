@@ -343,3 +343,25 @@ first output remains 35.92/38.26/38.19 seconds. This mitigates the coarse stall
 gate without meeting the tighter responsiveness target. No chunk-size default
 has been changed. Investigate measured attention dispatch/cost before another
 chunk-size sweep.
+
+## Isolated attention backend investigation
+
+The [forced-backend probe](evidence/amd/qwen35-hip-sdpa-backends.json) uses actual
+0.8B attention geometry, identical synthetic FP16 inputs, CPU FP32 math
+references, profiler operator names and five ABBA timing cycles. The process
+explicitly enables `TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1`; no host-wide
+setting or runtime default is changed. PyTorch's
+[upstream platform test gate](https://github.com/pytorch/pytorch/blob/main/torch/testing/_internal/common_cuda.py)
+identifies gfx1151 under this experimental flag; local proof is still required.
+
+All eight numerical comparisons pass (relative RMS <0.001, max absolute <0.01).
+At 512 query tokens over 32K KV, observed math versus Flash SDPA takes
+223.24 versus 31.55 ms, with 1,937,773,056 versus 2,115,072 additional peak bytes.
+At 256 queries over 32K, the times are 113.49 versus 13.38 ms. These are
+attention-operation results, not whole-model serving speed. They also expose
+why a fixed 512 MiB prefill workspace allowance does not cover the math path
+at every long-context shape; #60 retains full workspace admission as a gate.
+
+The [complete 0.8B near-32K model replay with this flag](evidence/amd/qwen35-q8-hip-flash-chunk256-replay32768.json)
+passes all 84 independent checks (worst relative RMS 0.002367). Serving,
+lifecycle and wider geometry remain separate gates.

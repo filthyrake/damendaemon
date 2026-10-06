@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import argparse
 import json
+import os
 from pathlib import Path
 import signal
 import subprocess
@@ -33,6 +34,7 @@ def main():
     report=dict(passed=False,model_a=args.model_a,model_b=args.model_b,context=args.context,
                 swap_cycles=args.swap_cycles,reports=[],
                 prefill_chunk_size=args.prefill_chunk_size,
+                rocm_aotriton_experimental=os.environ.get('TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL'),
                 variant='hip-q8-small-batch' if args.candidate_q8_small_batch else 'ordinary')
     prompt = "Explain how matrix multiplication works in detail, with a worked example."
     reports = report["reports"]

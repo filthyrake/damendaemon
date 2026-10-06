@@ -1,0 +1,221 @@
+{
+  "passed": true,
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen3.5-0.8B/snapshots/2fc06364715b967f1860aea9cf38778875588b17",
+  "geometry": {
+    "heads": 8,
+    "kv_heads": 2,
+    "head_dim": 256
+  },
+  "device": "Radeon 8060S Graphics",
+  "torch": "2.11.0+rocm7.13.0a20260425",
+  "hip": "7.13.26162",
+  "experimental_flag": "1",
+  "cases": [
+    {
+      "query_tokens": 512,
+      "cache_tokens": 512,
+      "backends": {
+        "math": {
+          "passed": true,
+          "relative_rms": 0.00019949115812778473,
+          "max_absolute": 0.00096893310546875,
+          "selected_operators": [
+            "aten::_scaled_dot_product_attention_math",
+            "aten::scaled_dot_product_attention"
+          ],
+          "additional_peak_bytes": 72356352,
+          "timing_ms": [
+            1.4021520614624023,
+            1.327827548980713,
+            1.3386961936950683,
+            1.3424731254577638,
+            1.3258416175842285,
+            1.367373275756836,
+            1.364644432067871,
+            1.309006118774414,
+            1.3189828872680665,
+            1.3412331581115722
+          ],
+          "median_ms": 1.3399646759033201
+        },
+        "flash": {
+          "passed": true,
+          "relative_rms": 0.0002433898189337924,
+          "max_absolute": 0.00096893310546875,
+          "selected_operators": [
+            "aten::_scaled_dot_product_flash_attention",
+            "aten::scaled_dot_product_attention"
+          ],
+          "additional_peak_bytes": 2115072,
+          "timing_ms": [
+            0.2728174924850464,
+            0.2669517040252686,
+            0.2724772930145264,
+            0.2687973976135254,
+            0.2789259910583496,
+            0.2669645071029663,
+            0.2726793050765991,
+            0.26922039985656737,
+            0.2711782932281494,
+            0.2689474105834961
+          ],
+          "median_ms": 0.2701993465423584
+        }
+      }
+    },
+    {
+      "query_tokens": 512,
+      "cache_tokens": 32768,
+      "backends": {
+        "math": {
+          "passed": true,
+          "relative_rms": 0.0002079120313283056,
+          "max_absolute": 1.527741551399231e-05,
+          "selected_operators": [
+            "aten::_scaled_dot_product_attention_math",
+            "aten::scaled_dot_product_attention"
+          ],
+          "additional_peak_bytes": 1937773056,
+          "timing_ms": [
+            181.362744140625,
+            182.83182373046876,
+            182.47032470703124,
+            201.22552490234375,
+            242.2506591796875,
+            233.806005859375,
+            228.5663330078125,
+            230.4773681640625,
+            239.809375,
+            217.9122314453125
+          ],
+          "median_ms": 223.2392822265625
+        },
+        "flash": {
+          "passed": true,
+          "relative_rms": 0.00030844661523588,
+          "max_absolute": 2.2120773792266846e-05,
+          "selected_operators": [
+            "aten::_scaled_dot_product_flash_attention"
+          ],
+          "additional_peak_bytes": 2115072,
+          "timing_ms": [
+            30.969573974609375,
+            30.935882568359375,
+            31.03284912109375,
+            30.9733154296875,
+            31.83419189453125,
+            31.69459228515625,
+            31.797610473632812,
+            31.475579833984376,
+            31.771270751953125,
+            31.620391845703125
+          ],
+          "median_ms": 31.54798583984375
+        }
+      }
+    },
+    {
+      "query_tokens": 256,
+      "cache_tokens": 32768,
+      "backends": {
+        "math": {
+          "passed": true,
+          "relative_rms": 0.00020773573487531394,
+          "max_absolute": 1.5247613191604614e-05,
+          "selected_operators": [
+            "aten::_scaled_dot_product_attention_math",
+            "aten::scaled_dot_product_attention"
+          ],
+          "additional_peak_bytes": 1304431104,
+          "timing_ms": [
+            113.723779296875,
+            112.3989013671875,
+            115.9708984375,
+            109.16270751953125,
+            112.08941650390625,
+            115.2587890625,
+            117.74578857421875,
+            106.32696533203125,
+            114.2740478515625,
+            113.253857421875
+          ],
+          "median_ms": 113.48881835937499
+        },
+        "flash": {
+          "passed": true,
+          "relative_rms": 0.0003082851180806756,
+          "max_absolute": 2.1420419216156006e-05,
+          "selected_operators": [
+            "aten::_scaled_dot_product_flash_attention"
+          ],
+          "additional_peak_bytes": 1058304,
+          "timing_ms": [
+            13.547560119628907,
+            13.214886474609376,
+            13.235842895507812,
+            13.144920349121094,
+            13.52356414794922,
+            13.621748352050782,
+            13.257289123535156,
+            13.23180694580078,
+            13.636308288574218,
+            13.51051025390625
+          ],
+          "median_ms": 13.383899688720703
+        }
+      }
+    },
+    {
+      "query_tokens": 16,
+      "cache_tokens": 32768,
+      "backends": {
+        "math": {
+          "passed": true,
+          "relative_rms": 0.000207130127819255,
+          "max_absolute": 1.4182180166244507e-05,
+          "selected_operators": [
+            "aten::_scaled_dot_product_attention_math",
+            "aten::scaled_dot_product_attention"
+          ],
+          "additional_peak_bytes": 958136320,
+          "timing_ms": [
+            15.072474670410156,
+            14.727922058105468,
+            14.790501403808594,
+            14.818562316894532,
+            14.772175598144532,
+            14.74866943359375,
+            14.73792724609375,
+            14.801606750488281,
+            14.751226806640625,
+            14.773164367675781
+          ],
+          "median_ms": 14.772669982910156
+        },
+        "flash": {
+          "passed": true,
+          "relative_rms": 0.00030630131368525326,
+          "max_absolute": 1.903250813484192e-05,
+          "selected_operators": [
+            "aten::_scaled_dot_product_flash_attention"
+          ],
+          "additional_peak_bytes": 67584,
+          "timing_ms": [
+            7.420085144042969,
+            7.386798095703125,
+            7.3556365966796875,
+            7.385791778564453,
+            7.354776000976562,
+            7.354457855224609,
+            7.347507476806641,
+            7.288074493408203,
+            7.231586456298828,
+            7.319654083251953
+          ],
+          "median_ms": 7.354616928100586
+        }
+      }
+    }
+  ],
+  "limitation": "Synthetic attention only; model numerical, serving and lifecycle gates are separate."
+}
