@@ -4,15 +4,17 @@ from unittest.mock import patch
 
 import torch
 
-from dllm.expert_selection import select_experts
+from dllm.expert_selection import select_experts, select_token_experts, validate_token_expert_table
 
 
 def oracle(row, top_k, scoring, normalize, groups, keep, bias, scale):
     if scoring == 'softmax':
         raw = [math.exp(value-max(row)) for value in row]
         probabilities = [value/sum(raw) for value in raw]
-    else:
+    elif scoring == 'sigmoid':
         probabilities = [1/(1+math.exp(-value)) if value >= 0 else math.exp(value)/(1+math.exp(value)) for value in row]
+    else:
+        probabilities = [math.sqrt(max(value, 0)+math.log1p(math.exp(-abs(value)))) for value in row]
     scores = [value+(bias[i] if bias is not None else 0) for i, value in enumerate(probabilities)]
     width = len(row)//groups
     ranks = []
@@ -34,7 +36,7 @@ class ExpertSelectionTests(unittest.TestCase):
         rows = [[-.2, 1.4, -1.1, .8, -.6, 2.1, -3., .4],
                 [1.7, -.5, .3, 2.4, -1.9, .6, 1.1, -.1]]
         bias = [3., -2., -.8, .4, -1.5, -3., .7, .2]
-        for scoring in ('softmax', 'sigmoid'):
+        for scoring in ('softmax', 'sigmoid', 'sqrtsoftplus'):
             for correction in (None, bias):
                 for normalize in (False, True):
                     for groups, keep, k in ((2, 1, 3), (4, 2, 3), (4, 4, 6)):
@@ -98,3 +100,52 @@ class ExpertSelectionTests(unittest.TestCase):
             weights, ids = select_experts(logits, 3, scoring='sigmoid', renormalize=True,
                                          group_count=4, groups_to_keep=2, correction_bias=bias)
         self.assertEqual(weights.shape, ids.shape)
+
+    def test_sqrtsoftplus_pinned_route_dimensions_and_extremes(self):
+        # DeepSeek V4 Flash config revision 60d8d70770c6776ff598c94bb586a859a38244f1:
+        # 256 routed experts, top-6, sqrtsoftplus and route scale 1.5.
+        logits = torch.randn(2, 256, generator=torch.Generator().manual_seed(41))
+        bias = torch.linspace(-.5, .5, 256)
+        weights, ids = select_experts(logits, 6, scoring='sqrtsoftplus', correction_bias=bias,
+                                     renormalize=True, scale=1.5)
+        for row in range(2):
+            expected, selected = oracle(logits[row].tolist(), 6, 'sqrtsoftplus', True,
+                                         1, 1, bias.tolist(), 1.5)
+            self.assertEqual(ids[row].tolist(), selected)
+            torch.testing.assert_close(weights[row], torch.tensor(expected), rtol=1e-6, atol=1e-7)
+        extreme = torch.tensor([[-1000., -100., 0., 1000.]])
+        values, _ = select_experts(extreme, 4, scoring='sqrtsoftplus', renormalize=True, scale=1.5)
+        self.assertTrue(torch.isfinite(values).all())
+        torch.testing.assert_close(values.sum(-1), torch.tensor([1.5]))
+
+    def test_token_table_routes_preserve_order_and_use_unbiased_scores(self):
+        table = torch.tensor([[6, 1, 5], [0, 3, 2], [7, 5, 1]], dtype=torch.int32)
+        validate_token_expert_table(table, 3, 8, 3)
+        logits = torch.tensor([[.1, .2, .3, .4, .5, .6, .7, .8],
+                               [-.1, -.2, -.3, -.4, -.5, -.6, -.7, -.8]])
+        token_ids = torch.tensor([2, 0])
+        weights, ids = select_token_experts(logits, token_ids, table, scale=1.5)
+        self.assertEqual(ids.tolist(), [[7, 5, 1], [6, 1, 5]])
+        expected = []
+        for row, selected in zip(logits.tolist(), ids.tolist()):
+            scores = [math.sqrt(max(row[i], 0)+math.log1p(math.exp(-abs(row[i])))) for i in selected]
+            expected.append([1.5*score/sum(scores) for score in scores])
+        torch.testing.assert_close(weights, torch.tensor(expected), rtol=1e-6, atol=1e-7)
+        with patch.object(torch.Tensor, 'cpu', side_effect=AssertionError('host copy')), \
+                patch.object(torch.Tensor, 'item', side_effect=AssertionError('host scalar')), \
+                patch.object(torch.Tensor, 'tolist', side_effect=AssertionError('host routes')):
+            reordered = select_token_experts(logits[[1, 0]], token_ids[[1, 0]], table, scale=1.5)
+        torch.testing.assert_close(reordered[0], weights[[1, 0]])
+        torch.testing.assert_close(reordered[1], ids[[1, 0]])
+
+    def test_table_validation_and_conflicting_route_policies(self):
+        for table in (torch.tensor([[0, 0]]), torch.tensor([[-1, 1]]),
+                      torch.tensor([[0, 4]]), torch.zeros(1, 2), torch.zeros(2, 2, dtype=torch.int64)):
+            with self.subTest(table=table), self.assertRaises(ValueError):
+                validate_token_expert_table(table, 1, 4, 2)
+        logits = torch.ones(1, 4)
+        selected = torch.tensor([[0, 2]])
+        for kwargs in ({'correction_bias':torch.zeros(4)}, {'group_count':2},
+                       {'selected_experts':torch.zeros(1, 2)}, {'selected_experts':torch.zeros(2, 2, dtype=torch.int64)}):
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                select_experts(logits, 2, **{'selected_experts':selected, **kwargs})

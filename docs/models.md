@@ -162,13 +162,14 @@ partitioning halves the work. Original document indices and usage are preserved;
 ## Shared MoE routing foundations
 
 The shared `dllm.expert_selection.select_experts` primitive also provides
-grouped softmax/sigmoid routing foundations for future modern MoE integration.
+grouped softmax/sigmoid and square-root-softplus routing foundations for future
+modern MoE integration.
 It ranks contiguous groups by maximum score, or by the sum of the two highest
 scores when a correction bias is supplied. Correction bias changes selection
 only; mixture weights come from the original scores, optionally normalized and
 scaled. Grouped/biased ties prefer lower group/expert IDs. Decisions remain
 device tensors; the existing OLMoE path reuses its unchanged plain softmax/top-k
-ordering. Finite inputs representable in FP32 are required; sigmoid underflow
+ordering. Finite inputs representable in FP32 are required; non-softmax underflow
 to all-zero selected scores retains zero weights rather than producing NaNs.
 
 Independent CPU scalar-oracle tests cover routing semantics, reordered rows,
@@ -178,6 +179,18 @@ Reference semantics were checked against the read-only vLLM checkout at
 `84bcbc62644356270aaaa5e2d0237d03adc9bb3a`, file
 `vllm/model_executor/layers/fused_moe/router/grouped_topk_router.py`
 (Apache-2.0); dllm does not import that runtime.
+
+The pinned [DeepSeek V4 Flash configuration](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/raw/60d8d70770c6776ff598c94bb586a859a38244f1/config.json)
+uses square-root-softplus scores, 256 routed experts, top-6, scale 1.5 and three
+initial token-ID-routed layers. Its [official gate reference](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/blob/60d8d70770c6776ff598c94bb586a859a38244f1/inference/model.py)
+(MIT) selects those layers' IDs from a token-to-expert table while retaining
+weights from unbiased scores. `validate_token_expert_table` checks the checkpoint
+table on CPU before device placement; `select_token_experts` then uses device
+indexing without host routing decisions and preserves the table's column order.
+The caller must validate vocabulary bounds before execution. These are isolated
+routing components; compression, hyper-connections, FP4 experts, FP8 scales,
+shared-expert execution and full-model serving are still separate work. Defensive
+zero-underflow handling is not a claim of equivalence to the reference's NaN cell.
 
 ## GPT-OSS (CUDA)
 
