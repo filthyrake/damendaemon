@@ -1,0 +1,33 @@
+{
+  "passed": false,
+  "raw_report": "qwen38-27b-q4-http-capacity32768-c1-protected.json.gz",
+  "engine_revision": "3655c77",
+  "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "context": 32768,
+  "prompt_tokens": 32256,
+  "requested_output_tokens": 512,
+  "observed_output_chunks": 0,
+  "reported_usage": null,
+  "seconds": 600.685569550842,
+  "first_output_seconds": null,
+  "deadline_exceeded": "first output",
+  "cleanup_complete": true,
+  "host_memory_guard": {
+    "reserve_bytes": 21474836480,
+    "minimum_available_bytes": 63700189184,
+    "last_available_bytes": 102297468928,
+    "triggered": false,
+    "error": null
+  },
+  "declared_allocator_gib": 28,
+  "declared_scope_memory_gib": 64,
+  "declared_scope_swap_gib": 0,
+  "post_run_health": {
+    "dbus": "active",
+    "inference_8081": "ok",
+    "inference_8082": "ok",
+    "inference_8083": "ok"
+  },
+  "kernel_oom_entries_in_postrun_15minute_window": [],
+  "limitation": "One explicitly approved protected retry. No first output or completed token count. No competitive, semantic quality, or 32K support claim. Scope MemoryPeak was unavailable after exit."
+}

@@ -37,6 +37,17 @@ qualify another large run. PyTorch documents the scope of its
 and [HIP memory management](https://docs.pytorch.org/docs/stable/notes/hip.html).
 The allocation source of the failed large run still needs bounded diagnosis.
 
+One explicitly approved [protected 32K retry](evidence/amd/qwen38-27b-q4-http-capacity32768-c1-protected.summary.json)
+used a 28-GiB allocator cap and 64-GiB/no-swap process scope, with unchanged
+Q4 arithmetic, chunk 127 and first-output/total deadlines. It stopped after
+600.69 seconds without any output chunks, failing the first-output gate.
+Host availability stayed at or above 59.33 GiB; the memory watchdog did not
+trigger, cleanup completed, and D-Bus plus the existing inference health
+endpoints remained healthy. No kernel OOM entries appeared in the checked
+15-minute post-run window. This is evidence that the protections held for this
+attempt, not a universal driver-allocation guarantee. The memory failure was
+avoided, but practical 32K latency remains unqualified under issue #68.
+
 The sections below preserve historical experiments, including failures that
 were superseded by later results. They are evidence, not the live work queue.
 
