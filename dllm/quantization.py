@@ -130,6 +130,9 @@ class Linear:
             from .kquant_kernels import linear
             return linear(x, weight, self.formats[id(weight)], bias)
         if weight.dtype == torch.uint8:
+            if x.device.type == 'mps':
+                from .quantized_metal_q4 import linear
+                return linear(x, weight, self.scales[id(weight)], bias)
             if self.q4_decode is not None:
                 output = self.q4_decode(x, weight, self.scales[id(weight)], bias)
                 if output is not None:return output

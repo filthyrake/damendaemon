@@ -37,7 +37,7 @@ this is qualified numerical approximation, not bitwise FP32 equivalence.
 
 ## Experimental packed four-bit weights
 
-`dllm add compact /path/to/snapshot --quantization q4_0` enables native CUDA
+`dllm add compact /path/to/snapshot --quantization q4_0` enables native
 Q4_0 projection weights with FP16 block scales. Input embeddings and norms keep
 their existing precision. `DLLM_QUANTIZATION=q4_0` sets the startup default;
 per-model policies can mix Q4, Q8 and unquantized models in the same server.
@@ -48,7 +48,9 @@ allows dense Qwen2/Qwen3/Llama/Phi-3/Mistral only; acceptance alone is not a
 checkpoint qualification. Four-bit quantization is lossy: on our small authored
 171-token Qwen2 corpus, next-token agreement with the original weights was
 74.3% for Q4 versus 95.3% for Q8. This is not a broad quality evaluation.
-Q4 remains opt-in and CUDA-only. This is on-load conversion from safetensors;
+Q4 remains opt-in. Metal supports Qwen2.5-0.5B geometry with standard RoPE,
+context through 2048 and one to four request slots; other Q4 configurations
+remain CUDA-only. See [Metal Q4 qualification](evidence/quantization/metal/q4/README.md). This is on-load conversion from safetensors;
 Standalone Qwen GGUF import is available below. GPTQ import remains unsupported.
 
 ## Native AWQ checkpoints

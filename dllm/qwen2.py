@@ -98,10 +98,14 @@ class ModelWeights:
         if c['model_type']=='gpt_oss' and self.quantization!='none':
             raise ValueError('GPT-OSS uses checkpoint-native MXFP4; conversion is unsupported')
         if self.quantization != 'none' and selected_device() != 'cuda':
-            from .hybrid_metal import eligible as hybrid_eligible
-            supported=c['model_type'] in ('qwen2','qwen3','llama') or hybrid_eligible(c,max_context)
-            if self.quantization!='q8_0' or not supported:
-                raise ValueError('Metal decoder quantization supports Q8 dense Qwen2/Qwen3/Llama and qualified Qwen3.5-0.8B only')
+            if self.quantization == 'q4_0':
+                from .metal_q4_policy import validate as validate_metal_q4
+                validate_metal_q4(c, max_context)
+            else:
+                from .hybrid_metal import eligible as hybrid_eligible
+                supported=c['model_type'] in ('qwen2','qwen3','llama') or hybrid_eligible(c,max_context)
+                if self.quantization!='q8_0' or not supported:
+                    raise ValueError('Metal decoder quantization supports Q8 dense Qwen2/Qwen3/Llama and qualified Qwen3.5-0.8B only')
         if self.quantization=='q4_0' and c['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
             raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
         if c['model_type'] in ('gpt2','gpt_neox','bloom') and self.quantization!='none':
@@ -268,6 +272,9 @@ class ModelWeights:
 class Executor:
     def __init__(self, model, use_graph=True, fuse_projections=True, kernels=None, max_batch=1):
         self.device = selected_device()
+        if self.device == 'mps' and model.quantization == 'q4_0':
+            from .metal_q4_policy import validate as validate_metal_q4
+            validate_metal_q4(model.config, model.max_context, max_batch)
         use_graph = use_graph and self.device == "cuda"
         self.model = model
         self.c = model.config
