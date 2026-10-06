@@ -31,6 +31,10 @@ class PackedStageTests(unittest.TestCase):
         with patch.dict('os.environ',{},clear=True):
             self.assertTrue(packed_prefill_enabled('none'))
             self.assertTrue(packed_prefill_enabled('q8_0'))
+            self.assertTrue(packed_prefill_enabled('q4_0'))
+        with patch.dict('os.environ',{'DLLM_Q4_STAGE_ADJACENT':'0'},clear=True):
             self.assertFalse(packed_prefill_enabled('q4_0'))
+        with patch.dict('os.environ',{'DLLM_Q4_STAGE_ADJACENT':'0','DLLM_PARTITION_PACKED_PREFILL':'1'},clear=True):
+            self.assertTrue(packed_prefill_enabled('q4_0'))
         with patch.dict('os.environ',{'DLLM_PARTITION_PACKED_PREFILL':'1'}):
             self.assertTrue(packed_prefill_enabled('q4_0'))

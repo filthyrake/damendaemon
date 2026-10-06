@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "rank": 0,
+  "device": "NVIDIA A2",
+  "layers": [
+    0,
+    12
+  ],
+  "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+  "context": 512,
+  "torch": "2.6.0+cu124",
+  "reference_torch": "2.13.0+cu130",
+  "reference_dtype": "float16",
+  "quantization": "q4_0",
+  "stage_graphs": true,
+  "packed_prefill": true,
+  "packed_stage_calls": 11,
+  "sources": {
+    "dllm/layer_stage.py": "c78e66da7e60f49628fff00da69ab5166b10cf7654c1616264e8b77a41e4043b",
+    "dllm/q4_stage.py": "085db7baadf8cb2212b342b1ef030094deaa273034e5ee5d1ca4d463789a7aae",
+    "dllm/q4_stage_kernels.py": "b0d7f66b1fe4bad9e21ffc17b72b1f44c56a8e68ea56eb1103e0a1ec239355c9",
+    "scripts/verify_distributed_stages.py": "8cd6a46eec817125ddbda810edf3f1dca9d2fafc2c2351b5e843e4332d5f4c1d"
+  },
+  "checks": [],
+  "scope": "fixed-trace distributed layer experiment; not a serving protocol",
+  "final_report": true,
+  "failure_injection_rank": null,
+  "nccl": [
+    2,
+    21,
+    5
+  ],
+  "requested_transport": "Socket",
+  "gpudirect_rdma": "unverified"
+}

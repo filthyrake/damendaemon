@@ -166,26 +166,22 @@ A2/3090 protocol checks and an actual seven-request network session; see the
 
 ## Packed prompt processing
 
-The same-host layer-partition server packs FP16/Q8 prompts by default: linear
-layers share work across prompt rows while attention and KV remain isolated.
-Each temporary group stays within the configured context budget. Set
-`DLLM_PARTITION_PACKED_PREFILL=0` for the sequential control. Q4 remains
-sequential by default because expanded short-prefix checks expose three
-pre-existing greedy-token mismatches in both modes; `1` permits explicit
-packing experiments. The original Q4 gates remain valid, but the expanded gate
-is not claimed as passed. See the [numerical and HTTP evidence](evidence/multi-gpu/packed-prefill/README.md).
+The same-host layer-partition server packs FP16/Q8/Q4 prompts by default:
+linear layers share work across prompt rows while attention and KV remain
+isolated. Each temporary group stays within the configured context budget.
+Set `DLLM_PARTITION_PACKED_PREFILL=0` for sequential prompt processing.
+The resident distributed server uses the same policy when multiple slots are
+configured. Set policy overrides identically on both workers; startup rejects
+mismatches.
 
-The resident distributed server also packs admitted FP16/Q8 prompts when
-multiple slots are configured. Set the packing flag identically on both workers;
-startup rejects mismatched policies. Q4 keeps the same sequential default.
-
-The adjacent Q4 stage layout is available with `DLLM_Q4_STAGE_ADJACENT=1` on
-both workers (or the same-host process). It repacks existing device body weights
-without changing the checkpoint format or output head, and passes the expanded
-A2/A30 numerical gate, HTTP and changed-weight recovery checks. Enable prompt
-packing separately with `DLLM_PARTITION_PACKED_PREFILL=1` during qualification.
-Model status reports `weight_layout`; startup rejects mixed layouts. See the
-[Q4 layout qualification](evidence/quantization/cuda/q4-arithmetic/README.md).
+The qualified Q4 stages use adjacent-nibble body storage by default. Existing
+device buffers are repacked without changing Q4 coefficients, checkpoint bytes,
+or the output head. A2/A30 and A2/3090 pass the expanded numerical trace and real
+HTTP checks; same-host rebinds preserve graph storage and fail closed on partial
+uploads or repacking. `DLLM_Q4_STAGE_ADJACENT=0` restores legacy arithmetic and
+its sequential-prefill default (the explicit prompt-packing flag still overrides
+that default). Model status reports `weight_layout`. See the
+[Q4 layout qualification and performance tradeoffs](evidence/quantization/cuda/q4-arithmetic/README.md).
 
 ## Resident distributed HTTP service
 

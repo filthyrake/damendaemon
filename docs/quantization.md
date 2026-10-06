@@ -55,17 +55,20 @@ context through 2048 and one to four request slots; other Q4 configurations
 remain CUDA-only. See [Metal Q4 qualification](evidence/quantization/metal/q4/README.md). This is on-load conversion from safetensors;
 Standalone Qwen GGUF import is available below. GPTQ import remains unsupported.
 
-The expanded short-prefix Qwen2.5-0.5B CUDA layer-partition gate currently has
-three greedy-token mismatches in both sequential and packed-prefill modes,
-despite passing its RMS/maximum-error bounds. Layer-partition Q4 prompt packing
-stays disabled by default. The first passing arithmetic variant has an
-unacceptable serving slowdown; newer packed-layout candidates remain experimental.
-An opt-in runtime implementation is now available for this stage geometry via
-`DLLM_Q4_STAGE_ADJACENT=1`. It repacks existing device body buffers, leaves the
-output head and host checkpoint format unchanged, and refreshes the representation
-after weight rebinds. Both distributed workers must agree on the layout. The
-flag defaults off while the integrated path is qualified. See
-[the numerical investigation and performance evidence](evidence/quantization/cuda/q4-arithmetic/README.md).
+For the qualified Qwen2.5-0.5B CUDA layer partition (split 12/12, context <=512,
+batch <=4), adjacent-nibble body storage and packed prompt processing are now
+the defaults. This resolves the three greedy-token mismatches in the expanded
+282-check stage trace without changing Q4 coefficients, reference targets or
+numerical tolerances. The integrated implementation passes A2/A30 and A2/3090
+numerical/HTTP checks, plus changed-weight graph and partial-repack recovery.
+It repacks existing device buffers; host checkpoints and the output head retain
+their original format/path. This does not change ordinary single-GPU Q4 dispatch.
+
+Set `DLLM_Q4_STAGE_ADJACENT=0` for the legacy stage arithmetic and its conservative
+sequential-prefill default. `DLLM_PARTITION_PACKED_PREFILL=0` independently disables
+prompt packing. Both distributed workers must agree on both policies; model
+status reports the active layout. See
+[the numerical investigation and measured tradeoffs](evidence/quantization/cuda/q4-arithmetic/README.md).
 
 ## Native AWQ checkpoints
 

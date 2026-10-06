@@ -1,5 +1,9 @@
 # Resident distributed packed prefill
 
+Historical qualification below predates the [adjacent Q4 stage implementation](../../../quantization/cuda/q4-arithmetic/README.md).
+That implementation subsequently passes the expanded Q4 gate and enables Q4
+packing by default for the qualified stage configuration.
+
 Issue #51 tracks this work. The distributed service reuses the independently
 qualified layer-stage packed math, retaining one owner thread for GPU/NCCL work.
 FP16/Q8 enable packing at capacity greater than one. Q4 remains sequential by

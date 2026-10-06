@@ -1,0 +1,3181 @@
+{
+  "passed": true,
+  "compare": "q4-policy",
+  "scope": "Same pinned model/Q4 coefficients, A2/3090 network pair, context 512, capacity four, 16 input IDs, 32 outputs. ABBA. Both body layout and prefill policy change. NCCL Socket; no RDMA claim.",
+  "trials": [
+    {
+      "passed": true,
+      "batch_size": 4,
+      "quantization": "q4_0",
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "context": 512,
+      "output_tokens": 32,
+      "results": [
+        {
+          "engine": "dllm",
+          "concurrency": 1,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.7702686150150839,
+              "first_output_seconds": 0.641980306012556,
+              "post_first_output_tokens_per_second": 241.64321940972138,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.14201319799758494,
+              "first_output_seconds": 0.018087511998601258,
+              "post_first_output_tokens_per_second": 250.14991646085568,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.14813576100277714,
+              "first_output_seconds": 0.020722384011605754,
+              "post_first_output_tokens_per_second": 243.30255371967752,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1457579400157556,
+              "first_output_seconds": 0.01944486200227402,
+              "post_first_output_tokens_per_second": 245.42193482682234,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.14227454297360964,
+              "first_output_seconds": 0.018263967998791486,
+              "post_first_output_tokens_per_second": 249.9786813043559,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.14357208801084198,
+              "first_output_seconds": 0.018826687010005116,
+              "post_first_output_tokens_per_second": 248.5061553474988,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.7711648739932571,
+              "aggregate_output_tokens_per_second": 41.49566594533428
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14244506901013665,
+              "aggregate_output_tokens_per_second": 224.64800096185022
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14858715099398978,
+              "aggregate_output_tokens_per_second": 215.3618249352824
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14617940899915993,
+              "aggregate_output_tokens_per_second": 218.9090804176387
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1428233630140312,
+              "aggregate_output_tokens_per_second": 224.05297932143125
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14404726499924436,
+              "aggregate_output_tokens_per_second": 222.14930634169184
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 2,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.18375714498688467,
+              "first_output_seconds": 0.05192919698311016,
+              "post_first_output_tokens_per_second": 235.15499155848505,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.17996369500178844,
+              "first_output_seconds": 0.03417656497913413,
+              "post_first_output_tokens_per_second": 212.63879736971853,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.16650022301473655,
+              "first_output_seconds": 0.021526663011172786,
+              "post_first_output_tokens_per_second": 213.83209461944614,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1709001089911908,
+              "first_output_seconds": 0.038798649999080226,
+              "post_first_output_tokens_per_second": 234.66811219587967,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.16816770599689335,
+              "first_output_seconds": 0.02067620199522935,
+              "post_first_output_tokens_per_second": 210.18159798309642,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17250049399444833,
+              "first_output_seconds": 0.03785605399752967,
+              "post_first_output_tokens_per_second": 230.23602014839554,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17056057500303723,
+              "first_output_seconds": 0.0341274089878425,
+              "post_first_output_tokens_per_second": 227.21747875107943,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17027613101527095,
+              "first_output_seconds": 0.019292998011223972,
+              "post_first_output_tokens_per_second": 205.32094799734398,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17282130499370396,
+              "first_output_seconds": 0.021523237985093147,
+              "post_first_output_tokens_per_second": 204.89356283868253,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1778872830036562,
+              "first_output_seconds": 0.042109369998797774,
+              "post_first_output_tokens_per_second": 228.31401156453742,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17243854000116698,
+              "first_output_seconds": 0.032576669997069985,
+              "post_first_output_tokens_per_second": 221.64725810610076,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17242939901188947,
+              "first_output_seconds": 0.018384746013907716,
+              "post_first_output_tokens_per_second": 201.2403507469107,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.18479240700253285,
+              "aggregate_output_tokens_per_second": 346.33457639373023
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1720797549933195,
+              "aggregate_output_tokens_per_second": 371.92056673072676
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1736120700079482,
+              "aggregate_output_tokens_per_second": 368.6379639219208
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17129876199760474,
+              "aggregate_output_tokens_per_second": 373.6162436532665
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17846747700241394,
+              "aggregate_output_tokens_per_second": 358.60875648023165
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17305459702038206,
+              "aggregate_output_tokens_per_second": 369.82548341355067
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 4,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.24222352402284741,
+              "first_output_seconds": 0.07166394800879061,
+              "post_first_output_tokens_per_second": 181.75467320254776,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.2322474480024539,
+              "first_output_seconds": 0.0361798919911962,
+              "post_first_output_tokens_per_second": 158.10876939895175,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.23782353298156522,
+              "first_output_seconds": 0.05285524600185454,
+              "post_first_output_tokens_per_second": 167.59629721499456,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.23565135497483425,
+              "first_output_seconds": 0.07984540998586453,
+              "post_first_output_tokens_per_second": 198.96545027338107,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22639694300596602,
+              "first_output_seconds": 0.07133522801450454,
+              "post_first_output_tokens_per_second": 199.9203994468075,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21884640300413594,
+              "first_output_seconds": 0.023413515009451658,
+              "post_first_output_tokens_per_second": 158.62222739523347,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22583047600346617,
+              "first_output_seconds": 0.05624592400272377,
+              "post_first_output_tokens_per_second": 182.79966915774432,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2246446099888999,
+              "first_output_seconds": 0.041536106989951804,
+              "post_first_output_tokens_per_second": 169.29852787982264,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22845064400462434,
+              "first_output_seconds": 0.024219142011133954,
+              "post_first_output_tokens_per_second": 151.788532608393,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23513610099325888,
+              "first_output_seconds": 0.04374683499918319,
+              "post_first_output_tokens_per_second": 161.9735560350578,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23451207199832425,
+              "first_output_seconds": 0.05804723099572584,
+              "post_first_output_tokens_per_second": 175.6723879038518,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2337181509938091,
+              "first_output_seconds": 0.0721810520044528,
+              "post_first_output_tokens_per_second": 191.90638060203491,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22604936399147846,
+              "first_output_seconds": 0.024541507998947054,
+              "post_first_output_tokens_per_second": 153.84015599445894,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23230199300451204,
+              "first_output_seconds": 0.058478617982473224,
+              "post_first_output_tokens_per_second": 178.3419519732001,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23206309901433997,
+              "first_output_seconds": 0.04299010502290912,
+              "post_first_output_tokens_per_second": 163.95784160166724,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23096910200547427,
+              "first_output_seconds": 0.072527918004198,
+              "post_first_output_tokens_per_second": 195.65620009346995,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22221960901515558,
+              "first_output_seconds": 0.023618025006726384,
+              "post_first_output_tokens_per_second": 156.09140357452674,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22232421598164365,
+              "first_output_seconds": 0.03776974498759955,
+              "post_first_output_tokens_per_second": 167.97208885283752,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22753011601162143,
+              "first_output_seconds": 0.07071298701339401,
+              "post_first_output_tokens_per_second": 197.68248658825024,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22687546597444452,
+              "first_output_seconds": 0.055525452975416556,
+              "post_first_output_tokens_per_second": 180.9162395580084,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23557971199625172,
+              "first_output_seconds": 0.07137457397766411,
+              "post_first_output_tokens_per_second": 188.78824605653253,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.228638825006783,
+              "first_output_seconds": 0.02341802101000212,
+              "post_first_output_tokens_per_second": 151.05681001272302,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23435218600207008,
+              "first_output_seconds": 0.04175928301992826,
+              "post_first_output_tokens_per_second": 160.9612790502175,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23410165798850358,
+              "first_output_seconds": 0.055502906994661316,
+              "post_first_output_tokens_per_second": 173.57344229730262,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.2433146259863861,
+              "aggregate_output_tokens_per_second": 526.0678410970734
+            },
+            {
+              "warmup": false,
+              "seconds": 0.22704046699800529,
+              "aggregate_output_tokens_per_second": 563.7761483336121
+            },
+            {
+              "warmup": false,
+              "seconds": 0.235697062977124,
+              "aggregate_output_tokens_per_second": 543.069983067304
+            },
+            {
+              "warmup": false,
+              "seconds": 0.23303093601134606,
+              "aggregate_output_tokens_per_second": 549.2832934154623
+            },
+            {
+              "warmup": false,
+              "seconds": 0.22846516000572592,
+              "aggregate_output_tokens_per_second": 560.2604790892055
+            },
+            {
+              "warmup": false,
+              "seconds": 0.23580980900442228,
+              "aggregate_output_tokens_per_second": 542.8103289698163
+            }
+          ]
+        }
+      ],
+      "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+      "sources": {
+        "dllm/distributed.py": "09de1b900a0e746a1808bd36382965d0702d347329317f09eff1130f043617a9",
+        "dllm/distributed_serving.py": "ee191d68cc203c5941a849bab373fa609d6e1c9f5ce181454f26eae635695e2b",
+        "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+        "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+        "dllm/layer_stage.py": "c78e66da7e60f49628fff00da69ab5166b10cf7654c1616264e8b77a41e4043b",
+        "dllm/partition_policy.py": "7baea9598766ff46fd35b8adee6ff2c211525a425c0283a95eb5b4e2edb3fe3a",
+        "dllm/q4_stage.py": "085db7baadf8cb2212b342b1ef030094deaa273034e5ee5d1ca4d463789a7aae",
+        "dllm/q4_stage_kernels.py": "b0d7f66b1fe4bad9e21ffc17b72b1f44c56a8e68ea56eb1103e0a1ec239355c9"
+      },
+      "status": {
+        "device": "distributed-cuda",
+        "context": 512,
+        "models": [
+          {
+            "id": "a",
+            "residency": "gpu",
+            "quantization": "q4_0",
+            "model_sha256": "5344521d357deea794ab9fd3d06a6cdae292c3c0588d933899dc3e6139ff5ffe"
+          }
+        ],
+        "weight_layout": "canonical",
+        "distributed": true,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "max_batch_size": 4,
+        "packed_prefill": false,
+        "active": false,
+        "queued": 0,
+        "completed": 0,
+        "heartbeats": 0,
+        "failed": false,
+        "closed": false
+      },
+      "packed_prefill": false,
+      "q4_stage_adjacent": false
+    },
+    {
+      "passed": true,
+      "batch_size": 4,
+      "quantization": "q4_0",
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "context": 512,
+      "output_tokens": 32,
+      "results": [
+        {
+          "engine": "dllm",
+          "concurrency": 1,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.23299623900675215,
+              "first_output_seconds": 0.09720990498317406,
+              "post_first_output_tokens_per_second": 228.29985228570297,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.16885751398513094,
+              "first_output_seconds": 0.03138376699644141,
+              "post_first_output_tokens_per_second": 225.4975999348478,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.15419372500036843,
+              "first_output_seconds": 0.022744148009223863,
+              "post_first_output_tokens_per_second": 235.83187340411445,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1551575750054326,
+              "first_output_seconds": 0.021674649004125968,
+              "post_first_output_tokens_per_second": 232.23944011907972,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.15616764000151306,
+              "first_output_seconds": 0.02142319400445558,
+              "post_first_output_tokens_per_second": 230.06514124283066,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.15258542401716113,
+              "first_output_seconds": 0.020236534997820854,
+              "post_first_output_tokens_per_second": 234.2293934592072,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.23384128301404417,
+              "aggregate_output_tokens_per_second": 136.84495563633274
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1692742029845249,
+              "aggregate_output_tokens_per_second": 189.04239060529176
+            },
+            {
+              "warmup": false,
+              "seconds": 0.15460125400568359,
+              "aggregate_output_tokens_per_second": 206.984090820011
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1556397179956548,
+              "aggregate_output_tokens_per_second": 205.60304536720753
+            },
+            {
+              "warmup": false,
+              "seconds": 0.15670358299394138,
+              "aggregate_output_tokens_per_second": 204.2072005541648
+            },
+            {
+              "warmup": false,
+              "seconds": 0.15311439300421625,
+              "aggregate_output_tokens_per_second": 208.99406889278416
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 2,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.20076028900803067,
+              "first_output_seconds": 0.03756120998878032,
+              "post_first_output_tokens_per_second": 189.95205234181105,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.20349540101597086,
+              "first_output_seconds": 0.05661982001038268,
+              "post_first_output_tokens_per_second": 211.0629948678844,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18061889801174402,
+              "first_output_seconds": 0.02081400400493294,
+              "post_first_output_tokens_per_second": 193.98654961517474,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18589194500236772,
+              "first_output_seconds": 0.040205622994108126,
+              "post_first_output_tokens_per_second": 212.78593331666698,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1784155089990236,
+              "first_output_seconds": 0.020283252000808716,
+              "post_first_output_tokens_per_second": 196.03843383042306,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18334737699478865,
+              "first_output_seconds": 0.039646580000407994,
+              "post_first_output_tokens_per_second": 215.72601299638052,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1762144959939178,
+              "first_output_seconds": 0.019857392006088048,
+              "post_first_output_tokens_per_second": 198.26409679737304,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1811349260096904,
+              "first_output_seconds": 0.03939806201378815,
+              "post_first_output_tokens_per_second": 218.71515374360365,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18045453800004907,
+              "first_output_seconds": 0.020351234008558095,
+              "post_first_output_tokens_per_second": 193.62498603806176,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18555147998267785,
+              "first_output_seconds": 0.04023424198385328,
+              "post_first_output_tokens_per_second": 213.3263777023532,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.19100507799885236,
+              "first_output_seconds": 0.019675110990647227,
+              "post_first_output_tokens_per_second": 180.9374071642434,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1958283199928701,
+              "first_output_seconds": 0.04869606299325824,
+              "post_first_output_tokens_per_second": 210.69479006280574,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.20722104201558977,
+              "aggregate_output_tokens_per_second": 308.848943994718
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18686700600665063,
+              "aggregate_output_tokens_per_second": 342.48956714018436
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18431705399416387,
+              "aggregate_output_tokens_per_second": 347.2277720000151
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18212877999758348,
+              "aggregate_output_tokens_per_second": 351.3997073985186
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18638262900640257,
+              "aggregate_output_tokens_per_second": 343.37963972920187
+            },
+            {
+              "warmup": false,
+              "seconds": 0.19660196898621507,
+              "aggregate_output_tokens_per_second": 325.53081909615776
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 4,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.8401567119872198,
+              "first_output_seconds": 0.04068988197832368,
+              "post_first_output_tokens_per_second": 38.77584264459733,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.8442080240056384,
+              "first_output_seconds": 0.6804449770133942,
+              "post_first_output_tokens_per_second": 189.2978945455757,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.8429404420021456,
+              "first_output_seconds": 0.6801893989904784,
+              "post_first_output_tokens_per_second": 190.47496978423473,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.8409869289898779,
+              "first_output_seconds": 0.6775137929944322,
+              "post_first_output_tokens_per_second": 189.63360439151074,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.7384503050125204,
+              "first_output_seconds": 0.572761793009704,
+              "post_first_output_tokens_per_second": 187.09806506967152,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.7312516089878045,
+              "first_output_seconds": 0.5469301590055693,
+              "post_first_output_tokens_per_second": 168.1844408395646,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.737063806009246,
+              "first_output_seconds": 0.572089875000529,
+              "post_first_output_tokens_per_second": 187.90847626927186,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.7303367480053566,
+              "first_output_seconds": 0.5451195299974643,
+              "post_first_output_tokens_per_second": 167.37104861751592,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21025836901389994,
+              "first_output_seconds": 0.022963605995755643,
+              "post_first_output_tokens_per_second": 165.51450505317575,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21656524599529803,
+              "first_output_seconds": 0.04801960499025881,
+              "post_first_output_tokens_per_second": 183.92644161632845,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21558525200816803,
+              "first_output_seconds": 0.04765944700920954,
+              "post_first_output_tokens_per_second": 184.60533805505514,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2148492849955801,
+              "first_output_seconds": 0.04654038100852631,
+              "post_first_output_tokens_per_second": 184.18514567942586,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21295224098139443,
+              "first_output_seconds": 0.023545298987301067,
+              "post_first_output_tokens_per_second": 163.66876352909352,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2190274229797069,
+              "first_output_seconds": 0.04807924298802391,
+              "post_first_output_tokens_per_second": 181.34150361535418,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.219362342992099,
+              "first_output_seconds": 0.04793932699249126,
+              "post_first_output_tokens_per_second": 180.83919372921858,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2188697539968416,
+              "first_output_seconds": 0.04655160100082867,
+              "post_first_output_tokens_per_second": 179.89979268590042,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22238863300299272,
+              "first_output_seconds": 0.027092942997114733,
+              "post_first_output_tokens_per_second": 158.73366175703603,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22223138000117615,
+              "first_output_seconds": 0.02668185898801312,
+              "post_first_output_tokens_per_second": 158.5276191901963,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22756815599859692,
+              "first_output_seconds": 0.050757830002112314,
+              "post_first_output_tokens_per_second": 175.3291264256611,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2267874569806736,
+              "first_output_seconds": 0.04907787498086691,
+              "post_first_output_tokens_per_second": 174.44191613727233,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21125666701118462,
+              "first_output_seconds": 0.022073583997553214,
+              "post_first_output_tokens_per_second": 163.86243159895182,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21812908397987485,
+              "first_output_seconds": 0.04685152298770845,
+              "post_first_output_tokens_per_second": 180.99276881586272,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2173440360056702,
+              "first_output_seconds": 0.045839205995434895,
+              "post_first_output_tokens_per_second": 180.752926889289,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21760948898736387,
+              "first_output_seconds": 0.04664959397632629,
+              "post_first_output_tokens_per_second": 181.32907719672244,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.84819032298401,
+              "aggregate_output_tokens_per_second": 150.909526472413
+            },
+            {
+              "warmup": false,
+              "seconds": 0.7389999279985204,
+              "aggregate_output_tokens_per_second": 173.2070534115888
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2175926069903653,
+              "aggregate_output_tokens_per_second": 588.2552802249741
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2207234799861908,
+              "aggregate_output_tokens_per_second": 579.9111177841529
+            },
+            {
+              "warmup": false,
+              "seconds": 0.22954985898104496,
+              "aggregate_output_tokens_per_second": 557.6130630974144
+            },
+            {
+              "warmup": false,
+              "seconds": 0.21912145797978155,
+              "aggregate_output_tokens_per_second": 584.1509142012492
+            }
+          ]
+        }
+      ],
+      "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+      "sources": {
+        "dllm/distributed.py": "09de1b900a0e746a1808bd36382965d0702d347329317f09eff1130f043617a9",
+        "dllm/distributed_serving.py": "ee191d68cc203c5941a849bab373fa609d6e1c9f5ce181454f26eae635695e2b",
+        "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+        "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+        "dllm/layer_stage.py": "c78e66da7e60f49628fff00da69ab5166b10cf7654c1616264e8b77a41e4043b",
+        "dllm/partition_policy.py": "7baea9598766ff46fd35b8adee6ff2c211525a425c0283a95eb5b4e2edb3fe3a",
+        "dllm/q4_stage.py": "085db7baadf8cb2212b342b1ef030094deaa273034e5ee5d1ca4d463789a7aae",
+        "dllm/q4_stage_kernels.py": "b0d7f66b1fe4bad9e21ffc17b72b1f44c56a8e68ea56eb1103e0a1ec239355c9"
+      },
+      "status": {
+        "device": "distributed-cuda",
+        "context": 512,
+        "models": [
+          {
+            "id": "a",
+            "residency": "gpu",
+            "quantization": "q4_0",
+            "model_sha256": "5344521d357deea794ab9fd3d06a6cdae292c3c0588d933899dc3e6139ff5ffe"
+          }
+        ],
+        "weight_layout": "q4-adjacent-body",
+        "distributed": true,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "max_batch_size": 4,
+        "packed_prefill": true,
+        "active": false,
+        "queued": 0,
+        "completed": 0,
+        "heartbeats": 0,
+        "failed": false,
+        "closed": false
+      },
+      "packed_prefill": true,
+      "q4_stage_adjacent": true
+    },
+    {
+      "passed": true,
+      "batch_size": 4,
+      "quantization": "q4_0",
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "context": 512,
+      "output_tokens": 32,
+      "results": [
+        {
+          "engine": "dllm",
+          "concurrency": 1,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.21943155201734044,
+              "first_output_seconds": 0.08994350701686926,
+              "post_first_output_tokens_per_second": 239.40434037665176,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.145360435009934,
+              "first_output_seconds": 0.018800702004227787,
+              "post_first_output_tokens_per_second": 244.94362672685392,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1465836259885691,
+              "first_output_seconds": 0.019491210987325758,
+              "post_first_output_tokens_per_second": 243.91699535882393,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.150038570020115,
+              "first_output_seconds": 0.02176227100426331,
+              "post_first_output_tokens_per_second": 241.66584347876443,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.14722870898549445,
+              "first_output_seconds": 0.018682802998228,
+              "post_first_output_tokens_per_second": 241.15898333682296,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.14100383999175392,
+              "first_output_seconds": 0.01890213499427773,
+              "post_first_output_tokens_per_second": 253.8867086306515,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.22022525101783685,
+              "aggregate_output_tokens_per_second": 145.30577148670477
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14583802298875526,
+              "aggregate_output_tokens_per_second": 219.42151535109153
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14695811498677358,
+              "aggregate_output_tokens_per_second": 217.74911853544148
+            },
+            {
+              "warmup": false,
+              "seconds": 0.15051688501262106,
+              "aggregate_output_tokens_per_second": 212.60073245149044
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14767559501342475,
+              "aggregate_output_tokens_per_second": 216.69118717341868
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14144819500506856,
+              "aggregate_output_tokens_per_second": 226.23123609921876
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 2,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.2006445720035117,
+              "first_output_seconds": 0.057352920004632324,
+              "post_first_output_tokens_per_second": 216.34198201750397,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.1914903810247779,
+              "first_output_seconds": 0.03447095901356079,
+              "post_first_output_tokens_per_second": 197.427806082393,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17785399800050072,
+              "first_output_seconds": 0.020854658010648564,
+              "post_first_output_tokens_per_second": 197.45305936957266,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18242918699979782,
+              "first_output_seconds": 0.03941650700289756,
+              "post_first_output_tokens_per_second": 216.7639960363788,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17628233798313886,
+              "first_output_seconds": 0.03957945198635571,
+              "post_first_output_tokens_per_second": 226.76917004319486,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17044113500742242,
+              "first_output_seconds": 0.02000198300811462,
+              "post_first_output_tokens_per_second": 206.06337903408706,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17353080899920315,
+              "first_output_seconds": 0.020827778993407264,
+              "post_first_output_tokens_per_second": 203.00841442912684,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17814757299493067,
+              "first_output_seconds": 0.03873311498318799,
+              "post_first_output_tokens_per_second": 222.35857343711737,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2093572489975486,
+              "first_output_seconds": 0.07043305100523867,
+              "post_first_output_tokens_per_second": 223.1432712803279,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2086741139937658,
+              "first_output_seconds": 0.07051497799693607,
+              "post_first_output_tokens_per_second": 224.37893648025812,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2576303130190354,
+              "first_output_seconds": 0.022926858015125617,
+              "post_first_output_tokens_per_second": 132.08156650051697,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.27230215599411167,
+              "first_output_seconds": 0.044975129974773154,
+              "post_first_output_tokens_per_second": 136.36741984810402,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.20190539400209673,
+              "aggregate_output_tokens_per_second": 316.98013971501615
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1835585130029358,
+              "aggregate_output_tokens_per_second": 348.6626632183297
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17677830200409517,
+              "aggregate_output_tokens_per_second": 362.0353814605449
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17919080797582865,
+              "aggregate_output_tokens_per_second": 357.16117764608254
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2097710170201026,
+              "aggregate_output_tokens_per_second": 305.094578408164
+            },
+            {
+              "warmup": false,
+              "seconds": 0.27386002699495293,
+              "aggregate_output_tokens_per_second": 233.6960260402643
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 4,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.2611451120174024,
+              "first_output_seconds": 0.099618044012459,
+              "post_first_output_tokens_per_second": 191.91829817062776,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.2570439929841086,
+              "first_output_seconds": 0.09628526898450218,
+              "post_first_output_tokens_per_second": 192.83556891180532,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.2555936169810593,
+              "first_output_seconds": 0.09501829798682593,
+              "post_first_output_tokens_per_second": 193.05582074610905,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.24723841800005175,
+              "first_output_seconds": 0.04255408298922703,
+              "post_first_output_tokens_per_second": 151.45272352356895,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2056582749937661,
+              "first_output_seconds": 0.026430444995639846,
+              "post_first_output_tokens_per_second": 172.9642098569407,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21130046001053415,
+              "first_output_seconds": 0.05096896301256493,
+              "post_first_output_tokens_per_second": 193.3494078234213,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2109217940014787,
+              "first_output_seconds": 0.049538819992449135,
+              "post_first_output_tokens_per_second": 192.08965623762464,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21045397999114357,
+              "first_output_seconds": 0.049863227002788335,
+              "post_first_output_tokens_per_second": 193.0372666117823,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20752472899039276,
+              "first_output_seconds": 0.024166893999790773,
+              "post_first_output_tokens_per_second": 169.06831388791707,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2142305120069068,
+              "first_output_seconds": 0.049153261992614716,
+              "post_first_output_tokens_per_second": 187.7908675926942,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21399758398183621,
+              "first_output_seconds": 0.048383365996414796,
+              "post_first_output_tokens_per_second": 187.18199667331007,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21320458897389472,
+              "first_output_seconds": 0.04679435599246062,
+              "post_first_output_tokens_per_second": 186.28662098837745,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20555949202389456,
+              "first_output_seconds": 0.026346963015384972,
+              "post_first_output_tokens_per_second": 172.97897737120834,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21235530797275715,
+              "first_output_seconds": 0.0505186409864109,
+              "post_first_output_tokens_per_second": 191.55115201807382,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2121779840090312,
+              "first_output_seconds": 0.05018573399866,
+              "post_first_output_tokens_per_second": 191.36717959047604,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21207764602149837,
+              "first_output_seconds": 0.04913642501924187,
+              "post_first_output_tokens_per_second": 190.25265558535796,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20812506097718142,
+              "first_output_seconds": 0.02607453998643905,
+              "post_first_output_tokens_per_second": 170.28240200189492,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21396986400941387,
+              "first_output_seconds": 0.05072956901858561,
+              "post_first_output_tokens_per_second": 189.90409201197383,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.213905804004753,
+              "first_output_seconds": 0.049712243024259806,
+              "post_first_output_tokens_per_second": 188.80155722844037,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21328828000696376,
+              "first_output_seconds": 0.050184343999717385,
+              "post_first_output_tokens_per_second": 190.06285659852338,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2021135530085303,
+              "first_output_seconds": 0.026097221008967608,
+              "post_first_output_tokens_per_second": 176.12002049944445,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20822288197814487,
+              "first_output_seconds": 0.05023404798703268,
+              "post_first_output_tokens_per_second": 196.2163984433478,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20713983199675567,
+              "first_output_seconds": 0.04864339000778273,
+              "post_first_output_tokens_per_second": 195.58798677737357,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20676966599421576,
+              "first_output_seconds": 0.04859121798654087,
+              "post_first_output_tokens_per_second": 195.98118701035597,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.26213057900895365,
+              "aggregate_output_tokens_per_second": 488.3062498237868
+            },
+            {
+              "warmup": false,
+              "seconds": 0.21293302398407832,
+              "aggregate_output_tokens_per_second": 601.1279866554235
+            },
+            {
+              "warmup": false,
+              "seconds": 0.21556220299680717,
+              "aggregate_output_tokens_per_second": 593.7961211219199
+            },
+            {
+              "warmup": false,
+              "seconds": 0.21357378698303364,
+              "aggregate_output_tokens_per_second": 599.3244855004999
+            },
+            {
+              "warmup": false,
+              "seconds": 0.21503657000721432,
+              "aggregate_output_tokens_per_second": 595.2475897272063
+            },
+            {
+              "warmup": false,
+              "seconds": 0.20903299399651587,
+              "aggregate_output_tokens_per_second": 612.3435231575619
+            }
+          ]
+        }
+      ],
+      "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+      "sources": {
+        "dllm/distributed.py": "09de1b900a0e746a1808bd36382965d0702d347329317f09eff1130f043617a9",
+        "dllm/distributed_serving.py": "ee191d68cc203c5941a849bab373fa609d6e1c9f5ce181454f26eae635695e2b",
+        "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+        "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+        "dllm/layer_stage.py": "c78e66da7e60f49628fff00da69ab5166b10cf7654c1616264e8b77a41e4043b",
+        "dllm/partition_policy.py": "7baea9598766ff46fd35b8adee6ff2c211525a425c0283a95eb5b4e2edb3fe3a",
+        "dllm/q4_stage.py": "085db7baadf8cb2212b342b1ef030094deaa273034e5ee5d1ca4d463789a7aae",
+        "dllm/q4_stage_kernels.py": "b0d7f66b1fe4bad9e21ffc17b72b1f44c56a8e68ea56eb1103e0a1ec239355c9"
+      },
+      "status": {
+        "device": "distributed-cuda",
+        "context": 512,
+        "models": [
+          {
+            "id": "a",
+            "residency": "gpu",
+            "quantization": "q4_0",
+            "model_sha256": "5344521d357deea794ab9fd3d06a6cdae292c3c0588d933899dc3e6139ff5ffe"
+          }
+        ],
+        "weight_layout": "q4-adjacent-body",
+        "distributed": true,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "max_batch_size": 4,
+        "packed_prefill": true,
+        "active": false,
+        "queued": 0,
+        "completed": 0,
+        "heartbeats": 0,
+        "failed": false,
+        "closed": false
+      },
+      "packed_prefill": true,
+      "q4_stage_adjacent": true
+    },
+    {
+      "passed": true,
+      "batch_size": 4,
+      "quantization": "q4_0",
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "context": 512,
+      "output_tokens": 32,
+      "results": [
+        {
+          "engine": "dllm",
+          "concurrency": 1,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.22676502401009202,
+              "first_output_seconds": 0.09646274699480273,
+              "post_first_output_tokens_per_second": 237.90835210318352,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.14699970700894482,
+              "first_output_seconds": 0.020278053008951247,
+              "post_first_output_tokens_per_second": 244.6306453670623,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.14799327598302625,
+              "first_output_seconds": 0.020226116990670562,
+              "post_first_output_tokens_per_second": 242.62885896879595,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.15222261098097079,
+              "first_output_seconds": 0.022059610986616462,
+              "post_first_output_tokens_per_second": 238.1629188121401,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1454432029859163,
+              "first_output_seconds": 0.018699010979617015,
+              "post_first_output_tokens_per_second": 244.58714446228257,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1465913160063792,
+              "first_output_seconds": 0.019016923004528508,
+              "post_first_output_tokens_per_second": 242.99547323380398,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.22783098701620474,
+              "aggregate_output_tokens_per_second": 140.45499437582635
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14756086299894378,
+              "aggregate_output_tokens_per_second": 216.85966962817946
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14848499398794957,
+              "aggregate_output_tokens_per_second": 215.50999289932955
+            },
+            {
+              "warmup": false,
+              "seconds": 0.15273007500218228,
+              "aggregate_output_tokens_per_second": 209.51996520359705
+            },
+            {
+              "warmup": false,
+              "seconds": 0.14593220397364348,
+              "aggregate_output_tokens_per_second": 219.27990620753906
+            },
+            {
+              "warmup": false,
+              "seconds": 0.147038433002308,
+              "aggregate_output_tokens_per_second": 217.63017563916577
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 2,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.19322080101119354,
+              "first_output_seconds": 0.03720892599085346,
+              "post_first_output_tokens_per_second": 198.70282307650214,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.19507549301488325,
+              "first_output_seconds": 0.05510926901479252,
+              "post_first_output_tokens_per_second": 221.48200554427976,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1754046650021337,
+              "first_output_seconds": 0.03903349000029266,
+              "post_first_output_tokens_per_second": 227.32076628056842,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.16970847500488162,
+              "first_output_seconds": 0.020195109013002366,
+              "post_first_output_tokens_per_second": 207.3393224367897,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17735983699094504,
+              "first_output_seconds": 0.03777487299521454,
+              "post_first_output_tokens_per_second": 222.08695773957572,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17153834798955359,
+              "first_output_seconds": 0.0187317929812707,
+              "post_first_output_tokens_per_second": 202.87087813948585,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17130672198254615,
+              "first_output_seconds": 0.019684917002450675,
+              "post_first_output_tokens_per_second": 204.45608073370187,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17618648600182496,
+              "first_output_seconds": 0.03789007500745356,
+              "post_first_output_tokens_per_second": 224.15621473547628,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17065678699873388,
+              "first_output_seconds": 0.02076519900583662,
+              "post_first_output_tokens_per_second": 206.81614235395892,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17509296900243498,
+              "first_output_seconds": 0.03954896499635652,
+              "post_first_output_tokens_per_second": 228.7080142520344,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.16909814698738046,
+              "first_output_seconds": 0.02014895499451086,
+              "post_first_output_tokens_per_second": 208.12466039751334,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17340090099605732,
+              "first_output_seconds": 0.038620854989858344,
+              "post_first_output_tokens_per_second": 230.0043731887004,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.19929879100527614,
+              "aggregate_output_tokens_per_second": 321.12588178372687
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1758019940170925,
+              "aggregate_output_tokens_per_second": 364.04592768030574
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1779589059879072,
+              "aggregate_output_tokens_per_second": 359.63358869125085
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1772723009926267,
+              "aggregate_output_tokens_per_second": 361.0265091705554
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17608501799986698,
+              "aggregate_output_tokens_per_second": 363.4607914231996
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17425810598069802,
+              "aggregate_output_tokens_per_second": 367.2712935780965
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 4,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.23372446198482066,
+              "first_output_seconds": 0.039109401986934245,
+              "post_first_output_tokens_per_second": 159.28880324234245,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.23830792898661457,
+              "first_output_seconds": 0.08578786900034174,
+              "post_first_output_tokens_per_second": 203.25195258112325,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.23757437299354933,
+              "first_output_seconds": 0.06965085898991674,
+              "post_first_output_tokens_per_second": 184.60785664197925,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.235319631989114,
+              "first_output_seconds": 0.05347086599795148,
+              "post_first_output_tokens_per_second": 170.47132451537527,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23261208899202757,
+              "first_output_seconds": 0.043123721989104524,
+              "post_first_output_tokens_per_second": 163.59843345698258,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2256044810055755,
+              "first_output_seconds": 0.023821353999665007,
+              "post_first_output_tokens_per_second": 153.63028841897156,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2315039309905842,
+              "first_output_seconds": 0.05619285799912177,
+              "post_first_output_tokens_per_second": 176.82853382290168,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23106945998733863,
+              "first_output_seconds": 0.07069681899156421,
+              "post_first_output_tokens_per_second": 193.29980355450283,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2395056770183146,
+              "first_output_seconds": 0.0680979440221563,
+              "post_first_output_tokens_per_second": 180.85531765766245,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23872087500058115,
+              "first_output_seconds": 0.08192512500681914,
+              "post_first_output_tokens_per_second": 197.70944047420488,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23187440299079753,
+              "first_output_seconds": 0.03216853699996136,
+              "post_first_output_tokens_per_second": 155.22828959577225,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23742366998340003,
+              "first_output_seconds": 0.05238347998238169,
+              "post_first_output_tokens_per_second": 167.531172551376,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2341256249928847,
+              "first_output_seconds": 0.03872201600461267,
+              "post_first_output_tokens_per_second": 158.64599513031817,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24087883098400198,
+              "first_output_seconds": 0.05848430999321863,
+              "post_first_output_tokens_per_second": 169.96124571947243,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23294027699739672,
+              "first_output_seconds": 0.022279229015111923,
+              "post_first_output_tokens_per_second": 147.1558235227563,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2398885229777079,
+              "first_output_seconds": 0.07351746398489922,
+              "post_first_output_tokens_per_second": 186.33048432624307,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23977093197754584,
+              "first_output_seconds": 0.08099750897963531,
+              "post_first_output_tokens_per_second": 195.24678258280017,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23182873000041582,
+              "first_output_seconds": 0.028699210000922903,
+              "post_first_output_tokens_per_second": 152.6119886468367,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23858240401023068,
+              "first_output_seconds": 0.0642714700079523,
+              "post_first_output_tokens_per_second": 177.84311797442842,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23735627200221643,
+              "first_output_seconds": 0.04767086199717596,
+              "post_first_output_tokens_per_second": 163.4284893032956,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23562135000247508,
+              "first_output_seconds": 0.026228383998386562,
+              "post_first_output_tokens_per_second": 148.04699790820436,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24152455100556836,
+              "first_output_seconds": 0.06198260700330138,
+              "post_first_output_tokens_per_second": 172.6616037955375,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24131506300182082,
+              "first_output_seconds": 0.04728392299148254,
+              "post_first_output_tokens_per_second": 159.76816916268322,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24080554099055007,
+              "first_output_seconds": 0.07551687798695639,
+              "post_first_output_tokens_per_second": 187.55067308715542,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. The hardware components include the CPU, memory, and storage devices such as hard drive and SSD",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.24118514900328591,
+              "aggregate_output_tokens_per_second": 530.7126103284913
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2335759940033313,
+              "aggregate_output_tokens_per_second": 548.0015210731564
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2399131190031767,
+              "aggregate_output_tokens_per_second": 533.5264721322103
+            },
+            {
+              "warmup": false,
+              "seconds": 0.24198490599519573,
+              "aggregate_output_tokens_per_second": 528.9586119993007
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2402878199936822,
+              "aggregate_output_tokens_per_second": 532.694499468868
+            },
+            {
+              "warmup": false,
+              "seconds": 0.24270039799739607,
+              "aggregate_output_tokens_per_second": 527.39921753805
+            }
+          ]
+        }
+      ],
+      "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+      "sources": {
+        "dllm/distributed.py": "09de1b900a0e746a1808bd36382965d0702d347329317f09eff1130f043617a9",
+        "dllm/distributed_serving.py": "ee191d68cc203c5941a849bab373fa609d6e1c9f5ce181454f26eae635695e2b",
+        "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+        "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+        "dllm/layer_stage.py": "c78e66da7e60f49628fff00da69ab5166b10cf7654c1616264e8b77a41e4043b",
+        "dllm/partition_policy.py": "7baea9598766ff46fd35b8adee6ff2c211525a425c0283a95eb5b4e2edb3fe3a",
+        "dllm/q4_stage.py": "085db7baadf8cb2212b342b1ef030094deaa273034e5ee5d1ca4d463789a7aae",
+        "dllm/q4_stage_kernels.py": "b0d7f66b1fe4bad9e21ffc17b72b1f44c56a8e68ea56eb1103e0a1ec239355c9"
+      },
+      "status": {
+        "device": "distributed-cuda",
+        "context": 512,
+        "models": [
+          {
+            "id": "a",
+            "residency": "gpu",
+            "quantization": "q4_0",
+            "model_sha256": "5344521d357deea794ab9fd3d06a6cdae292c3c0588d933899dc3e6139ff5ffe"
+          }
+        ],
+        "weight_layout": "canonical",
+        "distributed": true,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "max_batch_size": 4,
+        "packed_prefill": false,
+        "active": false,
+        "queued": 0,
+        "completed": 0,
+        "heartbeats": 0,
+        "failed": false,
+        "closed": false
+      },
+      "packed_prefill": false,
+      "q4_stage_adjacent": false
+    }
+  ],
+  "summary": [
+    {
+      "q4_stage_adjacent": false,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 19.230892503401265,
+      "request_ms": 146.1746280110674,
+      "aggregate_tokens_per_second": 218.26962802840222
+    },
+    {
+      "q4_stage_adjacent": true,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 20.829864501138218,
+      "request_ms": 151.31199701863807,
+      "aggregate_tokens_per_second": 210.79740067213731
+    },
+    {
+      "q4_stage_adjacent": false,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 27.051666504121386,
+      "request_ms": 171.98387350072153,
+      "aggregate_tokens_per_second": 365.6586106292011
+    },
+    {
+      "q4_stage_adjacent": true,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 39.06558849848807,
+      "request_ms": 181.7820565047441,
+      "aggregate_tokens_per_second": 345.30370586460845
+    },
+    {
+      "q4_stage_adjacent": false,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 53.9431934885215,
+      "request_ms": 232.77618299471214,
+      "aggregate_tokens_per_second": 542.9401560185602
+    },
+    {
+      "q4_stage_adjacent": true,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 48.23130449221935,
+      "request_ms": 213.93783400708344,
+      "aggregate_tokens_per_second": 591.025700673447
+    }
+  ]
+}

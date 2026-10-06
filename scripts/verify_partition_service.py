@@ -105,6 +105,10 @@ def main():
                 loaded=status('loaded');assert len(loaded['cuda_devices'])==2
                 assert [s['layers'] for s in loaded['models'][0]['partition']]==[[0,12],[12,24]]
                 assert all(s['kv_bytes']==12582912 for s in loaded['models'][0]['partition'])
+                if not args.experimental_q4_body:
+                    from dllm.partition_policy import q4_stage_adjacent_enabled
+                    layout='q4-adjacent-body' if q4_stage_adjacent_enabled(report['quantization']) else 'canonical'
+                    assert all(s['weight_layout']==layout for s in loaded['models'][0]['partition'])
                 counts=(2,8,4,6)
                 with ThreadPoolExecutor(4) as pool:
                     responses=list(pool.map(lambda pair:request(pair[0],count=pair[1]),enumerate(counts)))

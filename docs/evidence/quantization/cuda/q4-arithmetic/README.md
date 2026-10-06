@@ -1,9 +1,12 @@
 # Q4 arithmetic isolation
 
-Tracked in issue #23. The expanded CUDA FP16 Qwen2.5-0.5B trace has three greedy
-failures in both sequential and packed layer-partition execution, despite RMS
-and maximum errors staying within the unchanged numerical limits. These
-experiments investigate that gap; they do not mark it resolved or change serving.
+Tracked in issue #23. The legacy CUDA Q4 body arithmetic produces three greedy
+failures in both sequential and packed layer-partition execution, despite passing
+RMS/maximum-error limits. The investigation below preserves failed experiments
+and their measurements. The integrated adjacent-nibble stage implementation
+subsequently passes the expanded gate on A2/A30 and A2/3090, including graphs
+and packed prompts. It is now the default for the qualified Qwen2.5-0.5B stage
+configuration; ordinary single-GPU Q4 dispatch remains unchanged.
 
 The pinned model revision is `7ae557604adf67be50417f59c2c2f167def9a775`, with
 Q4_0 coefficients, context 512, four slots and A2/A30 stages split 12/12.
@@ -221,8 +224,8 @@ and failure-recovery checks on A2/A30. All 96 body allocations and captured grap
 storage remain stable across successful rebinds. Failed partial uploads and
 partial repacks are unpublished; fresh recovery matches independent references.
 These lifecycle times include activation/cache work and are not a matched
-hot-swap speed comparison. The layout flag and Q4 prompt packing still default
-off while the remaining production-path qualification runs.
+hot-swap speed comparison. At this qualification checkpoint the layout and Q4
+prompt-packing defaults were still off; promotion follows the network gates below.
 
 The integrated matrix dispatch also passes 88 real GPU cases across A2 and A30:
 all four body projection shapes at 1, 2, 4, 16, 17, 32, 64, 128, 129, 256 and
@@ -252,3 +255,44 @@ Four-request throughput improves 22.0%, first text 41.7% and request latency
 18.4% in this run. The smaller one/two-request differences change direction
 between runs, so they do not establish a repeatable low-concurrency speedup.
 Both body arithmetic and prompt admission change; all text and usage match.
+
+On the actual A2/desktop RTX 3090 network pair, the integrated layout passes
+all 282 expanded independent numerical checks with CUDA graphs and 11 packed
+stage calls on each worker. The fixed-trace tensor-transfer harness validates
+numerics separately from the resident service, which also passes all 29 HTTP
+checks, including packing, streamed usage, cancellation and idle heartbeats.
+A deliberately failing Q4 output worker during a four-prompt/64-row packed
+prefill fails all four clients and leaves health/new requests returning 503.
+There is no successful completion/usage marker for the failed requests.
+These network runs use NCCL Socket transport; they are not RDMA qualification.
+
+The matched network ABBA comparison fixes the A2/3090 pair, context 512,
+capacity four, 16 input IDs and 32 output tokens. Both body layout and prompt
+packing change; all generated text and usage match.
+
+| Concurrency | Policy | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Legacy | 19.23 | 146.17 | 218.27 |
+| 1 | Adjacent + packed | 20.83 | 151.31 | 210.80 |
+| 2 | Legacy | 27.05 | 171.98 | 365.66 |
+| 2 | Adjacent + packed | 39.07 | 181.78 | 345.30 |
+| 4 | Legacy | 53.94 | 232.78 | 542.94 |
+| 4 | Adjacent + packed | 48.23 | 213.94 | 591.03 |
+
+At four requests throughput improves 8.9%, first text 10.6% and request latency
+8.1%. At two, throughput regresses 5.6%, first text increases 44.4% and request
+latency increases 5.7%; single-request throughput is 3.4% lower. These costs
+are retained rather than summarized as a universal win. An isolated comparison
+holding adjacent arithmetic constant is needed to attribute the two-request cost.
+
+The peer-only firewall rules had enforced ten-minute expiry and were removed
+early: lab window 2026-10-06 05:25:11–05:31:59 UTC, desktop
+05:25:12–05:32:00 UTC. Final listings contain no test rules; the desktop's
+pre-existing 10.42.0.0/16 rule remains. Existing services were not restarted.
+
+After these gates, adjacent stage storage and Q4 prompt packing become defaults
+within the qualified geometry. The normal same-host HTTP path passes all 19
+checks with both policy variables unset, and its status confirms adjacent body
+storage. Explicit legacy/sequential controls remain available. The full local
+suite passes 444 tests. The network low-concurrency cost remains an optimization
+issue; this promotion does not claim performance parity across workloads.

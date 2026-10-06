@@ -1,5 +1,9 @@
 # Packed prefill across same-host GPU stages
 
+Historical qualification below predates the [adjacent Q4 stage implementation](../../quantization/cuda/q4-arithmetic/README.md).
+That implementation subsequently passes the expanded Q4 gate and enables Q4
+packing by default for the qualified stage configuration.
+
 Tracked in GitHub issue #51; the expanded CUDA Q4 numerical gap also belongs to
 #23. The layer-partition executor now shares the existing packed-prefill math
 with the single-device batch executor. It combines prompt rows for linear

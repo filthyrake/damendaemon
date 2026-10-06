@@ -39,12 +39,14 @@ class Q4StageTests(unittest.TestCase):
         self.assertEqual(linear(x,head,bias),'head')
         linear.base.assert_called_once_with(x,head,bias)
 
-    def test_policy_is_explicit_and_precision_scoped(self):
+    def test_policy_defaults_to_qualified_q4_and_allows_legacy_control(self):
         with patch.dict('os.environ',{},clear=True):
-            self.assertFalse(q4_stage_adjacent_enabled('q4_0'))
+            self.assertTrue(q4_stage_adjacent_enabled('q4_0'))
         with patch.dict('os.environ',{'DLLM_Q4_STAGE_ADJACENT':'1'}):
             self.assertTrue(q4_stage_adjacent_enabled('q4_0'))
             self.assertFalse(q4_stage_adjacent_enabled('q8_0'))
+        with patch.dict('os.environ',{'DLLM_Q4_STAGE_ADJACENT':'0'}):
+            self.assertFalse(q4_stage_adjacent_enabled('q4_0'))
         for value in ('true','','2'):
             with patch.dict('os.environ',{'DLLM_Q4_STAGE_ADJACENT':value}),self.assertRaises(ValueError):
                 q4_stage_adjacent_enabled('q4_0')

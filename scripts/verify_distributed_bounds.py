@@ -22,7 +22,9 @@ def main():
         capacity=1 if args.worker=='capacity' and rank==1 else 4
         context=256 if args.worker=='context' and rank==1 else 512
         if args.worker=='prefill_policy':os.environ['DLLM_PARTITION_PACKED_PREFILL']=str(1-rank)
-        if args.worker=='q4_layout':os.environ['DLLM_Q4_STAGE_ADJACENT']=str(1-rank)
+        if args.worker=='q4_layout':
+            os.environ['DLLM_Q4_STAGE_ADJACENT']=str(1-rank)
+            os.environ['DLLM_PARTITION_PACKED_PREFILL']='0'  # Isolate layout disagreement.
         quantization='q4_0' if args.worker=='q4_layout' else 'q8_0'
         try:
             pair=StagePair(args.model,context,quantization,lambda model:[],
