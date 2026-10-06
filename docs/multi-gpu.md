@@ -41,7 +41,7 @@ Matched A2/A30 Q8 tests reduced median HTTP host restoration from 1.512 s to 0.2
 
 ## Network and recovery boundaries
 
-A2/desktop 3090 workers pass FP16 and Q8 independent checks using bounded
+A2/desktop 3090 workers pass FP16, Q8 and Q4 independent checks using bounded
 commands over NCCL sockets. The second worker does not read the reference trace;
 sequence and slot-generation checks reject stale commands before activation
 transfer. A matched Q8 network experiment measures 290 decode tokens/s with
@@ -60,7 +60,7 @@ No available test host exposes RDMA, so RDMA and GPUDirect RDMA remain unqualifi
 `distributed-run` is an experimental single-request, greedy command launched
 under torchrun. Prepare the same qualified Qwen2.5-0.5B-Instruct snapshot on both
 workers with `dllm pull`; paths may differ, but prepared weight identities,
-precision and context must agree. The command supports FP16 (`none`) and Q8,
+precision and context must agree. The command supports FP16 (`none`), Q8 and Q4,
 context up to 512, and a 12/12 layer split.
 
 For two GPUs on one host:
