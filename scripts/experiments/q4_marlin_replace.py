@@ -13,10 +13,15 @@ from dllm.qwen2 import Executor
 from .q4_marlin_direct import DirectLibrary
 
 
-def install_validation_dispatch(path):
+def install_validation_dispatch(path, implicit_zero=False):
     path = str(Path(path).resolve())
     if torch.cuda.get_device_name() != 'NVIDIA A2':
         raise ValueError('Q4 Marlin replacement experiment requires the A2')
+    if implicit_zero:
+        from .q4_marlin_symmetric import SymmetricLibrary
+        library_type=SymmetricLibrary
+    else:
+        library_type=DirectLibrary
     original = quantization.Linear
     original_executor_init = Executor.__init__
 
@@ -39,11 +44,12 @@ def install_validation_dispatch(path):
                     or len({id(self.scales[key]) for key in identities})!=len(names)):
                 raise ValueError('Q4 Marlin replacement requires independent projection/scale buffers')
             overhead = sum((weights[name].shape[1]*2//32)*(weights[name].shape[0]//8)*4 for name in names)
+            if implicit_zero:overhead=0
             temporary = max(weights[name].numel()+2*self.scales[id(weights[name])].numel()*2 for name in names)
             free, _ = torch.cuda.mem_get_info()
             if free < overhead+temporary+512*1024**2:
                 raise MemoryError('insufficient memory for experimental Q4 Marlin layout replacement')
-            library = DirectLibrary(path)
+            library = library_type(path)
             self.experimental_q4_marlin_library = library
             self.q4_decode = None
             for name in names:
@@ -76,12 +82,13 @@ def install_validation_dispatch(path):
         original_executor_init(self,*args,**kwargs)
         if getattr(getattr(self,'quant_linear',None),'experimental_q4_marlin_replaced_bytes',0):
             self.q4_decode = None
-            self.kernel_backend = self.kernel_backend.replace('+cuda-q4-residual','')+'+experimental-q4-marlin-replaced'
+            self.kernel_backend = self.kernel_backend.replace('+cuda-q4-residual','')+('+experimental-q4-marlin-symmetric' if implicit_zero else '+experimental-q4-marlin-replaced')
     quantization.Linear = ReplacedQ4Linear
     Executor.__init__ = initialize
-    return dict(kind='experimental all-row Q4_0 Marlin layout replacement',abi=1,
+    return dict(kind='experimental all-row Q4_0 Marlin layout replacement',abi=2 if implicit_zero else 1, implicit_zero_point=8 if implicit_zero else None,
                 library_sha256=hashlib.sha256(Path(path).read_bytes()).hexdigest(),
                 sources={name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                         for name in ('q4_marlin_replace.py','q4_marlin_direct.py','q4_marlin_repack.py','q4_marlin.py')},
+                         for name in ('q4_marlin_replace.py','q4_marlin_direct.py','q4_marlin_repack.py','q4_marlin.py',
+                                      * (('q4_marlin_symmetric.py','q4_marlin_symmetric.cu') if implicit_zero else ()))},
                 replaces_canonical_gpu_weights=True,host_weights_unchanged=True,
                 production_admission_accounts_for_extra_weights=False)

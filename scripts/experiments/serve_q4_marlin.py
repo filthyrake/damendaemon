@@ -5,9 +5,12 @@ if __name__ == '__main__':
     replacement = os.environ.get('DLLM_EXPERIMENTAL_Q4_MARLIN_REPLACE','0')
     if replacement not in ('0','1'):
         raise ValueError('DLLM_EXPERIMENTAL_Q4_MARLIN_REPLACE must be 0 or 1')
-    if replacement == '1':
+    symmetric = os.environ.get('DLLM_EXPERIMENTAL_Q4_MARLIN_SYMMETRIC','0')
+    if symmetric not in ('0','1'):
+        raise ValueError('DLLM_EXPERIMENTAL_Q4_MARLIN_SYMMETRIC must be 0 or 1')
+    if replacement == '1' or symmetric == '1':
         from scripts.experiments.q4_marlin_replace import install_validation_dispatch
-        install_validation_dispatch(os.environ['DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY'])
+        install_validation_dispatch(os.environ['DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY'],implicit_zero=symmetric=='1')
     else:
         from scripts.experiments.q4_marlin_dispatch import install_validation_dispatch
         install_validation_dispatch(os.environ['DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY'])

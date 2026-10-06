@@ -42,6 +42,8 @@ def main():
     parser.add_argument('--q4-residual-control-library',help='use this existing native residual library in control phases, instead of ordinary native Q4')
     parser.add_argument('--dllm-q4-marlin-library',help='use normal Q4 Marlin for dllm in a matched llama.cpp comparison')
     parser.add_argument('--production-q4-marlin',action='store_true',help='use normal admission-accounted Q4 Marlin layout replacement')
+    parser.add_argument('--q4-marlin-symmetric',action='store_true',help='isolated implicit-zero-point replacement versus qualified Marlin')
+    parser.add_argument('--q4-marlin-control-library',help='qualified ABI 1 Marlin control; requires --q4-marlin-symmetric')
     parser.add_argument('--q4-marlin-replace',action='store_true',help='use the isolated all-row Marlin GPU layout replacement')
     parser.add_argument('--production-q4-small-tiles',action='store_true',help='compare the previous Q4 prompt policy with normal A2 selection')
     parser.add_argument('--production-batch-wait',action='store_true',help='exercise normal CLI idle admission configuration')
@@ -84,6 +86,10 @@ def main():
         parser.error('--q4-marlin-library requires --native-format q4 and --q4-residual-control-library')
     if args.dllm_q4_marlin_library and (not args.llama_server or args.native_format!='q4'):
         parser.error('--dllm-q4-marlin-library requires --llama-server and --native-format q4')
+    if args.q4_marlin_symmetric and (not args.q4_marlin_library or not args.q4_marlin_control_library or args.q4_marlin_replace or args.production_q4_marlin):
+        parser.error('--q4-marlin-symmetric requires candidate/control libraries and excludes other Marlin modes')
+    if args.q4_marlin_control_library and not args.q4_marlin_symmetric:
+        parser.error('--q4-marlin-control-library requires --q4-marlin-symmetric')
     if args.production_q4_marlin and (not args.q4_marlin_library or args.q4_marlin_replace):
         parser.error('--production-q4-marlin requires --q4-marlin-library and excludes --q4-marlin-replace')
     if args.q4_marlin_replace and not args.q4_marlin_library:
@@ -147,11 +153,18 @@ def main():
         report['production_admission_accounts_for_extra_weights']=False
         report['q4_marlin_dispatch_sha256']=digest(Path(__file__).parent/'experiments/q4_marlin_dispatch.py')
         report['q4_marlin_adapter_sha256']=digest(Path(__file__).parent/'experiments/q4_marlin.py')
-        report['q4_marlin_replaces_gpu_layout']=args.q4_marlin_replace
+        report['q4_marlin_replaces_gpu_layout']=args.q4_marlin_replace or args.q4_marlin_symmetric
         if args.q4_marlin_replace:
             report['experimental_arithmetic']='all-row Marlin over the same Q4 coefficients/scales, rounded FP16 coefficients; control uses qualified residual single-row FP32 coefficient scaling'
             report['q4_marlin_replacement_sources']={name:digest(Path(__file__).parent/'experiments'/name)
                 for name in ('q4_marlin_replace.py','q4_marlin_direct.py','q4_marlin_repack.py')}
+    if args.q4_marlin_symmetric:
+        marlin_control=Path(args.q4_marlin_control_library).resolve()
+        report['q4_marlin_control_library']=dict(path=str(marlin_control),sha256=digest(marlin_control))
+        report['experimental_arithmetic']='implicit zero point eight versus qualified explicit-zero-point Marlin; same FP16 coefficients and scales'
+        report['implicit_zero_point']=8
+        report['symmetric_sources']={name:digest(Path(__file__).parent/'experiments'/name) for name in
+            ('q4_marlin_symmetric.py','q4_marlin_symmetric.cu','q4_marlin_replace.py','q4_marlin_direct.py','q4_marlin_repack.py')}
     if args.dllm_q4_marlin_library:
         dllm_marlin=Path(args.dllm_q4_marlin_library).resolve()
         report['dllm_q4_marlin_library']=dict(path=str(dllm_marlin),sha256=digest(dllm_marlin))
@@ -178,6 +191,7 @@ def main():
     environment.pop('DLLM_Q4_MARLIN_LIBRARY',None)
     environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY',None)
     environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_REPLACE',None)
+    environment.pop('DLLM_EXPERIMENTAL_Q4_MARLIN_SYMMETRIC',None)
     environment.pop('DLLM_Q4_RESIDUAL_LIBRARY',None)
     environment.pop('DLLM_EXPERIMENTAL_BATCH_WAIT_MS',None)
     environment.pop('DLLM_Q4_CUDA_LIBRARY',None)
@@ -199,6 +213,7 @@ def main():
     if args.q4_residual_library:counterpart='q4-residual-int8'
     if args.q4_marlin_library:counterpart='q4-marlin-replaced' if args.q4_marlin_replace else 'q4-marlin'
     if args.production_q4_marlin:counterpart='q4-marlin-production'
+    if args.q4_marlin_symmetric:counterpart='q4-marlin-symmetric'
     if args.q4_small_tiles:
         counterpart='q4-small-tiles'
         report['experimental_arithmetic']='unchanged FP16 coefficients; paired-dot 32-row tiles at 64/129 rows'
@@ -238,11 +253,14 @@ def main():
             phase_environment=environment.copy()
             if args.dllm_q4_marlin_library and engine=='dllm':
                 phase_environment['DLLM_Q4_MARLIN_LIBRARY']=str(dllm_marlin)
+            if args.q4_marlin_symmetric and engine=='dllm':
+                phase_environment['DLLM_Q4_MARLIN_LIBRARY']=str(marlin_control)
             if args.q4_residual_control_library:
                 phase_environment['DLLM_Q4_RESIDUAL_LIBRARY']=str(control)
             if args.q4_marlin_library and engine==counterpart:
                 phase_environment['DLLM_Q4_MARLIN_LIBRARY' if args.production_q4_marlin else 'DLLM_EXPERIMENTAL_Q4_MARLIN_LIBRARY']=str(marlin)
                 if args.q4_marlin_replace:phase_environment['DLLM_EXPERIMENTAL_Q4_MARLIN_REPLACE']='1'
+                if args.q4_marlin_symmetric:phase_environment['DLLM_EXPERIMENTAL_Q4_MARLIN_SYMMETRIC']='1'
             if args.production_dense_cache and engine==counterpart:
                 phase_environment['DLLM_KQUANT_DENSE_CACHE_MIB']=str(args.dense_cache_mib)
             if args.batch_wait_ms and engine==counterpart and not args.production_batch_wait:
@@ -263,6 +281,7 @@ def main():
                         'q4-residual-int8':'scripts.experiments.serve_q4_residual',
                         'q4-marlin':'scripts.experiments.serve_q4_marlin',
                         'q4-marlin-replaced':'scripts.experiments.serve_q4_marlin',
+                        'q4-marlin-symmetric':'scripts.experiments.serve_q4_marlin',
                         'compensated-prefill-fp32':'scripts.experiments.serve_prefill_f32',
                         'residual-int8-v2':'scripts.experiments.serve_residual',
                         'residual-int8-fp32':'scripts.experiments.serve_residual_f32'}.get(engine,
@@ -375,7 +394,11 @@ def main():
                             assert ('+cuda-q4-residual' in run['kernel_backend']) == (engine!=counterpart)
                             overhead=run['memory_after_workloads']['models'][0]['gpu_packed_layout_overhead_bytes']
                             assert overhead == (111099904 if engine==counterpart else 0),overhead
-                        if args.q4_marlin_library and not args.production_q4_marlin:
+                        if args.q4_marlin_symmetric:
+                            assert '+cuda-q4-residual' not in run['kernel_backend']
+                            assert ('+cuda-q4-marlin' in run['kernel_backend']) == (engine=='dllm')
+                            assert ('+experimental-q4-marlin-symmetric' in run['kernel_backend']) == (engine==counterpart)
+                        if args.q4_marlin_library and not (args.production_q4_marlin or args.q4_marlin_symmetric):
                             assert ('+cuda-q4-residual' in run['kernel_backend']) == (not args.q4_marlin_replace or engine!=counterpart)
                             assert ('+experimental-q4-marlin' in run['kernel_backend']) == (engine==counterpart)
                             assert ('+experimental-q4-marlin-replaced' in run['kernel_backend']) == (args.q4_marlin_replace and engine==counterpart)

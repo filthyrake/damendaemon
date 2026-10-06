@@ -137,9 +137,10 @@ export DLLM_Q4_CUDA_LIBRARY="$PWD/build/libdllm-q4.so"
 
 Set the library path before starting the server. The runtime checks its ABI
 and uses it only for qualified FP16 single-row shapes; other shapes retain the
-Triton path. CUDA graph capture uses the caller's current stream. The measured
+Triton path. CUDA graph capture uses the caller's current stream. For this
+GEMV-only option, the measured
 Mistral Q4 result is 22.53 tokens/s versus 20.06 with the paired Tensor Core
-path alone, still below the matched llama.cpp result of 34.20. There is no
+path alone, below the matched llama.cpp result of 34.20. There is no
 runtime compilation requirement when this option is unset.
 
 An additional experimental integer-dot path is available for the qualified

@@ -42,7 +42,11 @@ geometry. Native Q4/Q8 conversion, selected GGUF layouts, AWQ and MXFP4 have
 separate loaders and kernels. Host checkpoint representation need not match a
 device-specific packed representation. For example, qualified Q4 layer stages
 repack body weights in place for adjacent-nibble Tensor Core products while
-retaining canonical host weights and output-head arithmetic. See
+retaining canonical host weights and output-head arithmetic. The opt-in A2
+Q4 Marlin path replaces all qualified projections, including the output head,
+and retains canonical host weights. Its executor owns the prepared layout and
+shared workspace; admission includes layout overhead and temporary repacking
+storage before GPU transfer. See
 [quantization](quantization.md) for defaults, opt-in paths and numerical limits.
 
 Apple execution combines MPS tensor operations with native Metal kernels.

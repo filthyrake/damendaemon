@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--require-q4-marlin',action='store_true',help='require normal Q4 Marlin layout replacement')
     parser.add_argument('--require-resident-cache', action='store_true', help='fail unless normal resident cache selection is active')
     parser.add_argument('--require-q4-small-tiles', action='store_true', help='require the normal A2 Q4 prompt policy')
+    parser.add_argument('--experimental-q4-marlin-symmetric',action='store_true')
     parser.add_argument('--experimental-q4-marlin-replace', action='store_true')
     experiments=parser.add_mutually_exclusive_group()
     experiments.add_argument('--experimental-q4-marlin', metavar='LIBRARY')
@@ -57,14 +58,17 @@ def main():
         parser.error('prompt lengths must be positive and leave seven decode positions')
     pool_tokens = paged_capacity(args.context, lengths)
     experiment = None
-    if args.experimental_q4_marlin_replace and not args.experimental_q4_marlin:
+    if (args.experimental_q4_marlin_replace or args.experimental_q4_marlin_symmetric) and not args.experimental_q4_marlin:
         parser.error('--experimental-q4-marlin-replace requires --experimental-q4-marlin')
+    if args.experimental_q4_marlin_replace and args.experimental_q4_marlin_symmetric:
+        parser.error('choose only one Marlin replacement variant')
     if args.experimental_q4_marlin:
-        if args.experimental_q4_marlin_replace:
+        if args.experimental_q4_marlin_replace or args.experimental_q4_marlin_symmetric:
             from experiments.q4_marlin_replace import install_validation_dispatch
         else:
             from experiments.q4_marlin_dispatch import install_validation_dispatch
-        experiment = install_validation_dispatch(args.experimental_q4_marlin)
+        experiment = (install_validation_dispatch(args.experimental_q4_marlin,implicit_zero=True)
+                      if args.experimental_q4_marlin_symmetric else install_validation_dispatch(args.experimental_q4_marlin))
     if args.experimental_awq_marlin:
         if not args.awq_qualification:
             parser.error('Marlin experiment requires --awq-qualification')
@@ -159,10 +163,10 @@ def main():
                     raise ValueError('dense-cache experiment selected no projections')
             if args.experimental_q4_marlin:
                 experiment['additional_prepared_bytes'] = executor.quant_linear.experimental_q4_marlin_bytes
-                if args.experimental_q4_marlin_replace:
+                if args.experimental_q4_marlin_replace or args.experimental_q4_marlin_symmetric:
                     experiment['prepared_weight_bytes'] = executor.quant_linear.experimental_q4_marlin_total_bytes
                     experiment['replaced_canonical_bytes'] = executor.quant_linear.experimental_q4_marlin_replaced_bytes
-                if not experiment['additional_prepared_bytes']:
+                if not experiment.get('prepared_weight_bytes',experiment['additional_prepared_bytes']):
                     raise ValueError('Q4 Marlin experiment selected no projections')
             report['backend'] = executor.kernel_backend
             report['resident_projection_cache_bytes'] = getattr(executor, 'packed_cache_bytes', 0)
@@ -208,7 +212,7 @@ def main():
                     if paged:executor.release_request(0)
                     if args.experimental_q4_marlin:
                         calls = executor.quant_linear.experimental_q4_marlin_calls
-                        if not calls or not executor.quant_linear.experimental_q4_marlin_bytes:
+                        if not calls or not executor.quant_linear.experimental_q4_marlin:
                             raise ValueError('Q4 Marlin experiment executed no layout projections')
                         experiment.setdefault('executions', []).append(dict(
                             paged=paged, graph=graph, dispatch_calls=calls))

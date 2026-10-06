@@ -780,7 +780,7 @@ retains unrounded FP32 K-quant projection coefficients while embeddings and
 unquantized vectors preserve the loader's FP16 storage values. A tied packed
 embedding/head therefore needs separate reference tensors under this policy.
 The flag requires an FP32 HF reference and rejects uncovered legacy Q4_0/Q8_0
-combinations. The prior `float16` reference policy remains the default; no
+combinations. The prior `float 16` reference policy remains the default; no
 historical failed result or threshold is changed. Unit tests cover tied storage,
 independent coefficients, vectors and rejected format combinations.
 
@@ -2540,3 +2540,27 @@ same control-side stress cases documented in the prototype sweep, not new
 Marlin failures. Single-row controls use the qualified residual library.
 CMake-built library SHA:
 `07cff6ea3e8475a2be11ac5dc676071ec262f397a7e8833b52232c5030e9283e`.
+
+
+### Implicit Q4 zero-point experiment
+
+`mistral-q4-marlin-symmetric-matrices-a2.json` compares an isolated ABI 2
+`kU4B8` instantiation with the qualified ABI 1 explicit-zero-point Marlin kernel.
+It retains the same source coefficients, signed FP16 scales, repacking and
+launch shapes; the constant integer zero point eight is part of the device
+kernel type instead of a resident tensor. Normal Q4 Marlin dispatch rejects
+ABI 2 until separate integration qualification is complete.
+
+All 210 candidate **and control** arithmetic checks pass at rows
+1/2/4/16/64/129/400, activation exponents −14/0/10, with and without bias.
+Every candidate output is bitwise equal to its qualified Marlin control.
+All ten prepared weight/scale/bias comparisons are exact; zero-point tensors
+are intentionally absent in the candidate. Maximum relative RMS against the
+independent FP32-accumulation oracle is 0.000365.
+
+Warm CUDA-graph ABBA speedups across the five projection shapes are 1.032–1.042x
+at one row, 1.032–1.035x at two, 1.031–1.034x at four, 1.026–1.041x at 16,
+1.006–1.011x at 64, 1.014–1.017x at 129, and 1.011–1.015x at 400. These are component
+timings, not full-model serving gains. Omitting the constant tensors would
+remove 111,099,904 bytes from this model's prepared projections. Independent
+model, layout and serving/lifecycle gates remain required before promotion.
