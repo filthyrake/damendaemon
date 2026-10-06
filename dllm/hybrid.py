@@ -333,7 +333,7 @@ class HybridExecutor:
         if not return_logits:
             return None
         normalized = self.norm(x[:, -1], self.w['norm'])
-        if self.w['head'].dtype == torch.int8:
+        if self.w['head'].dtype in (torch.int8, torch.uint8):
             return self.linear(normalized.float(), self.w['head'])
         if self.fused:
             return self.fused.output_head(normalized, self.w['head'])

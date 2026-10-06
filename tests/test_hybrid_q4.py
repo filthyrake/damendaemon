@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import torch
 from safetensors.torch import save_file
@@ -88,3 +88,18 @@ class HybridQ4Tests(unittest.TestCase):
         with patch.dict('os.environ', self.env, clear=True), context_probe():
             with self.assertRaises(ValueError):
                 hybrid_precision.select(model, False, 4, 'triton')
+
+    def test_packed_output_head_uses_quantized_dispatch(self):
+        from dllm.hybrid import HybridExecutor
+        for dtype in (torch.int8, torch.uint8):
+            executor = HybridExecutor.__new__(HybridExecutor)
+            executor.c = {'layer_types': []}
+            executor.w = {'head': torch.zeros((8, 16), dtype=dtype), 'norm': torch.ones(32)}
+            executor.norm = Mock(side_effect=lambda value, weight: value)
+            executor.linear = Mock(return_value=torch.ones(1, 8))
+            executor.fused = SimpleNamespace(output_head=Mock(side_effect=AssertionError('packed head entered dense kernel')))
+            actual = executor.forward_embeddings(torch.ones(1, 1, 32), None, None, True)
+            self.assertEqual(actual.shape, (1, 8))
+            self.assertIs(executor.linear.call_args.args[1], executor.w['head'])
+            self.assertEqual(executor.linear.call_args.args[0].dtype, torch.float32)
+            executor.fused.output_head.assert_not_called()
