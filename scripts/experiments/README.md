@@ -118,3 +118,28 @@ server disables only the new tile selector; its candidate is the ordinary
 `dllm` entrypoint. This differs from the earlier 64/129-row experimental
 override. The normal-path reference/layout verifiers accept
 `--require-q4-small-tiles` to reject a run that silently used a fallback.
+
+## Hybrid prefill progress diagnosis (#68)
+
+`python -m scripts.experiments.hybrid_prefill_trace --trace NEW.jsonl serve ...`
+wraps the existing Q4 context probe. `replay TRACE --no-graph` is also supported.
+Pass the same model, precision, context, chunk size, memory guards and no-graph
+options as the separately bounded experiment; this wrapper does not provide
+process deadlines or authorize a large retry. It retains the probe's device,
+precision and context admission checks. Use one inference worker, one GPU job,
+and an independent process timeout/watchdog. Normal entrypoints never import it.
+
+The exclusive-create JSONL file records each prefill chunk's prefix and length,
+layer attention spans, named weight projections, and SDPA shapes. Begin events
+are flushed before synchronization/execution; matching end events contain
+synchronized elapsed seconds and allocator allocated/reserved bytes. An error
+records its phase and exception type. An unmatched begin at termination means
+unfinished or unobserved completion, not proof of a particular kernel hang.
+Nested span times are inclusive: do not sum parents and children. Process-lifetime
+allocator peaks are not incremental per-operation peaks, and do not include all
+driver or library memory. Token IDs, prompt text and tensor contents are not saved.
+
+Synchronization and trace writes perturb execution; these are diagnostic times,
+not normal HTTP latency or throughput measurements. No attention dispatch,
+arithmetic, production context guard or numerical tolerance changes. Local tests
+verify instrumentation behavior only; live GPU attribution remains unqualified.
