@@ -18,6 +18,8 @@ def context_probe():
     original = hybrid_precision.select
 
     def select(model, use_graph, max_batch, kernels):
+        if model.quantization != 'q8_0':
+            raise ValueError('context probe is scoped to Q8; Q4 needs its own context gate')
         if not 512 <= model.max_context <= 32768:
             raise ValueError('context probe is bounded to 512..32768 tokens')
         admission = copy(model)

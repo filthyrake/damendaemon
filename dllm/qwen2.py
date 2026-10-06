@@ -43,7 +43,10 @@ def weight_bytes(path,quantization=None):
     config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
     from .vision_policy import enabled as vision_enabled,eligible as vision_eligible
     include_vision=vision_eligible(config) and vision_enabled()
-    if quantization=='q4_0' and config['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
+    if quantization == 'q4_0' and config['model_type'] == 'qwen3_5_text':
+        from .hybrid_q4_policy import validate
+        validate(config)
+    elif quantization=='q4_0' and config['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
         raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
     if config['model_type'] in ('gpt2','gpt_neox','bloom') and quantized:
         raise ValueError('GPT-2/GPT-NeoX/BLOOM quantization is not implemented')
@@ -106,7 +109,10 @@ class ModelWeights:
                 supported=c['model_type'] in ('qwen2','qwen3','llama') or hybrid_eligible(c,max_context)
                 if self.quantization!='q8_0' or not supported:
                     raise ValueError('Metal decoder quantization supports Q8 dense Qwen2/Qwen3/Llama and qualified Qwen3.5-0.8B only')
-        if self.quantization=='q4_0' and c['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
+        if self.quantization == 'q4_0' and c['model_type'] == 'qwen3_5_text':
+            from .hybrid_q4_policy import validate
+            validate(c, max_context)
+        elif self.quantization=='q4_0' and c['model_type'] not in ('qwen2','qwen3','llama','phi3','mistral'):
             raise ValueError('Q4_0 is currently supported only for dense rotary decoders')
         if c['model_type'] in ('gpt2','gpt_neox','bloom') and self.quantization!='none':
             raise ValueError('GPT-2/GPT-NeoX/BLOOM quantization is not implemented')

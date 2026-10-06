@@ -17,6 +17,9 @@ or a GPU experiment, identify a focused issue with its current state, acceptance
 gate, hardware, hypothesis and stopping condition. Use `status:active` for the
 one current implementation task, `status:next` for the next bounded task, and
 queued/deferred labels for the backlog; umbrella issues use `type:epic`.
+Use `status:validating` for a bounded GPU qualification while independent local
+implementation advances. Keep at most one GPU experiment running; do not stage
+new code on that host or disturb its measurements while the run is active.
 After a result or change in direction, update the issue body and roadmap with
 commit/evidence links and remaining gaps. Comments preserve history but must
 not be the only place current status is recorded. Close completed bounded

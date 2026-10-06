@@ -106,7 +106,7 @@ class HybridExecutor:
                 raise ValueError('experimental hybrid precision requires Triton kernels')
             self.kernel_backend += '+' + self.hybrid_precision
         if model.scales:
-            self.kernel_backend += '+q8_0'
+            self.kernel_backend += '+' + model.quantization
         self.metal_scan = None
         metal_scan = os.environ.get('DLLM_HYBRID_METAL_SCAN','auto')
         if metal_scan not in ('auto','0','1'):
@@ -122,7 +122,7 @@ class HybridExecutor:
             self.metal_scan=scan
             self.kernel_backend+='+metal-scan'
         if model.scales and self.fused is None and self.metal_scan is None:
-            raise ValueError('hybrid Q8_0 requires native CUDA or qualified Apple Metal kernels')
+            raise ValueError('hybrid packed weights require native GPU or qualified Apple Metal kernels')
         self.chunk_scan = None
         prefill_backend = os.environ.get('DLLM_HYBRID_PREFILL', 'scan')
         if prefill_backend not in ('scan', 'fla'):
@@ -153,10 +153,11 @@ class HybridExecutor:
         self.linear = F.linear
         if model.scales:
             from .quantization import Linear
-            projection = None
+            projection = projection_q4 = None
             if self.hybrid_precision == 'compensated':
-                from .compensated_q8 import projection
-            self.linear = Linear(self.w, model.scales, self.device, F.linear, q8_projection=projection)
+                from .compensated_q8 import projection, projection_q4
+            self.linear = Linear(self.w, model.scales, self.device, F.linear,
+                                 q8_projection=projection, q4_projection=projection_q4)
         self.kv, self.conv, self.state = {}, {}, {}
         for i, kind in enumerate(c['layer_types']):
             if kind == 'full_attention':

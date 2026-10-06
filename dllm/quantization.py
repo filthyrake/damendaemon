@@ -87,7 +87,7 @@ def prepare(weights, quantization=None):
 
 
 class Linear:
-    def __init__(self, weights, host_scales, device, fallback, packed_formats=None, packed_decode=None, packed_prefill=None, q4_decode=None, packed_cache=None, awq_matrices=None, native_awq=None, native_q4_marlin=None, q4_marlin_plan=None, q8_projection=None):
+    def __init__(self, weights, host_scales, device, fallback, packed_formats=None, packed_decode=None, packed_prefill=None, q4_decode=None, packed_cache=None, awq_matrices=None, native_awq=None, native_q4_marlin=None, q4_marlin_plan=None, q8_projection=None, q4_projection=None):
         copies = {key: value.to(device) for key, value in {id(t):t for t in host_scales.values()}.items()}
         self.scales = {id(weights[name]): copies[id(value)] for name, value in host_scales.items()}
         self.awq = {}
@@ -117,6 +117,7 @@ class Linear:
         self.q4_decode = q4_decode
         self.packed_cache = packed_cache or {}
         self.q8_projection = q8_projection
+        self.q4_projection = q4_projection
 
     def __call__(self, x, weight, bias=None):
         if self.q4_marlin and id(weight) in self.q4_marlin:
@@ -148,6 +149,10 @@ class Linear:
             from .kquant_kernels import linear
             return linear(x, weight, self.formats[id(weight)], bias)
         if weight.dtype == torch.uint8:
+            if self.q4_projection is not None:
+                output = self.q4_projection(x, weight, self.scales[id(weight)], bias)
+                if output is not None:
+                    return output
             if x.device.type == 'mps':
                 from .quantized_metal_q4 import linear
                 return linear(x, weight, self.scales[id(weight)], bias)
