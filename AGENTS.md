@@ -17,6 +17,10 @@ After a result or change in direction, update the issue body and roadmap with
 commit/evidence links and remaining gaps. Comments preserve history but must
 not be the only place current status is recorded. Close completed bounded
 tasks without closing broader, unqualified parent goals.
+Keep the linked private GitHub project (filthyrake project 3) populated with
+repository issues and its Status field aligned with issue workflow labels.
+Add new issues to the project; use Done for closed issues and Epic for umbrella
+contracts. The project is a view of GitHub Issues, not a separate task tracker.
 
 Keep upstream reference repositories unchanged unless explicitly requested.
 Preserve licenses and attribution when incorporating upstream code.

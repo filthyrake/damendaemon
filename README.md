@@ -2,7 +2,8 @@
 
 Damen's independent GPU inference runtime: fast generation and quick model switching.
 
-**Follow development:** [current status and ordered next steps](https://github.com/filthyrake/dllm/issues/3),
+**Follow development:** [project board](https://github.com/users/filthyrake/projects/3),
+[current status and ordered next steps](https://github.com/filthyrake/dllm/issues/3),
 [active work](https://github.com/filthyrake/dllm/issues?q=is%3Aopen%20label%3Astatus%3Aactive),
 and [next tasks](https://github.com/filthyrake/dllm/issues?q=is%3Aopen%20label%3Astatus%3Anext).
 Issue bodies carry the current status; comments and linked reports preserve the evidence.
