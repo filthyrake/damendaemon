@@ -511,9 +511,27 @@ passes all four fixed-token FP32 targets: worst RMS 0.0005784, max absolute
 0.017102, all greedy choices matching. It retains FP32 activations and state,
 uses compensated projections for prefill, and ordinary FP32 Q8 matvec for decode.
 Its first diagnostic prefill takes 11.76 seconds; a matched serving benchmark
-and complete numerical/lifecycle gates are still required. The full independent
-84-target control is being regenerated with eight low-priority CPU threads and
-a 2,700-second bound, retaining the 88 GiB/no-swap memory limits.
+and complete numerical/lifecycle gates are still required. The
+[full independent FP32 reference](evidence/amd/qwen38-27b-q8-cpu-fp32-packed-t8-golden512.json)
+subsequently completed with eight low-priority CPU threads within its
+2,700-second bound and 88 GiB/no-swap memory limit.
+[Trace validation](evidence/amd/qwen38-27b-fp32-reference512-t8-validation.json)
+confirms all 29 events and 84 finite targets.
+
+The [complete candidate replay](evidence/amd/qwen38-27b-q8-hip-bf16x3-full-replay.json)
+passes **84/84** targets at context 512 with chunk size 127, including templates,
+reordered batches and replaced slots. Worst relative RMS is 0.0008586, maximum
+absolute error 0.024941, and all greedy choices match. The numerical thresholds
+remain unchanged. This is the experimental precision path, not a production
+default, ordinary-service lifecycle proof or 32K quality qualification.
+
+Its diagnostic timings expose a concurrency problem: steady four-slot decode
+takes about 1.81 seconds per step, two-slot decode about 1.04 seconds, and
+single-slot decode about 0.147 seconds. First encounters include compilation
+and must be excluded from any performance conclusion. The existing FP32 Q8
+matvec handles those small batches; the next control extends compensated
+projections to two or more rows using `DLLM_EXPERIMENT_BF16X3_MIN_ROWS=2`.
+That candidate must independently pass the same full trace before consideration.
 
 The same experimental projection also passes a bounded A30 portability check
 using PyTorch 2.6.0/CUDA 12.4. All
@@ -544,4 +562,4 @@ not preserve live cache state for resumption. Only successful completion writes
 `golden.pt` with `complete: true`. Normal replay rejects the explicitly incomplete
 snapshot, so preserved diagnostics cannot accidentally count as a complete gate.
 Snapshot I/O is disabled for runs that time a GPU executor. The already-running
-eight-thread reference predates this change and retains its original behavior.
+eight-thread reference predates this change and used its original behavior.
