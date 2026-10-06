@@ -82,10 +82,10 @@ confirmed by the user; Intel runtime support remains unqualified.
 Do not block available-machine progress on inaccessible hardware or start new
 hardware provisioning merely because its issue exists.
 
-Temporary availability (2026-10-06): the A2 is detached from VM 109 for the
-user’s testing. Leave it detached until the user restores availability. Use the
-A30 for NVIDIA work, checking live workload and memory headroom first; HOMER
-remains available for AMD work.
+Hardware availability (2026-10-06): the A2 is restored to VM 109 alongside
+its A30 after a clean shutdown/start. Guest NVIDIA tooling confirms both GPUs
+(A30 24,576 MiB; A2 15,356 MiB), idle at verification. Check current workload and
+memory headroom before each run; HOMER remains available for AMD work.
 
 Exact device, CPU architecture, memory topology, compiler/runtime and transport
 capabilities need separate real-hardware qualification. Access to new systems
