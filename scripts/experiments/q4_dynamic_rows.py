@@ -28,3 +28,23 @@ def single_dot_dynamic_rows(X,W,S,BIAS,Y,M,N:tl.constexpr,K:tl.constexpr,
     if BIASED:accum+=tl.load(BIAS+outputs,outputs<N,other=0)[None,:].to(tl.float32)
     tl.store(Y+rows[:,None]*N+outputs[None,:],accum,(rows[:,None]<M)&(outputs[None,:]<N))
 
+
+
+def dynamic_rows_enabled(rows,width):
+    # The down projection loses warm speed with partially filled 32/128-row
+    # tiles. Keep those tile families specialized, based on the A2 sweep.
+    return 1<=rows<=128 and (width==896 or (width==4864 and (rows<=16 or 32<rows<=64)))
+
+
+def install_validation_dispatch():
+    import os
+    from dllm import q4_stage_kernels
+    os.environ['DLLM_Q4_STAGE_ADJACENT']='1'
+    original=q4_stage_kernels.single_dot_adjacent
+    class Dispatch:
+        def __getitem__(self,grid):
+            def launch(*args,**kwargs):
+                kernel=single_dot_dynamic_rows if dynamic_rows_enabled(args[5],args[7]) else original
+                return kernel[grid](*args,**kwargs)
+            return launch
+    q4_stage_kernels.single_dot_adjacent=Dispatch()

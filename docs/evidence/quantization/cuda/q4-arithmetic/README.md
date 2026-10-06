@@ -376,3 +376,22 @@ regresses from about 53.9 µs to 66.7 µs (about 24%). Both variants report 168
 registers and zero spills there. A blanket replacement is therefore rejected;
 larger-row profiling and a narrower dispatch policy are required before model
 qualification. No production default has changed for this experiment.
+
+The larger-row sweep adds 36 exact-output cases at rows
+32/33/47/63/64/65/95/127/128. The three 896-wide projections retain similar warm
+speed throughout. The down projection also retains similar speed at 33–64 rows,
+but dynamic bounds regress at 65 rows (157.89→182.35 µs) and 95 rows
+(177.25→183.29 µs). These additional negative results are retained.
+
+The explicit `stage-dynamic` candidate therefore uses runtime row bounds for
+all qualified 896-wide body projections, and for down projections only at
+1–16 and 33–64 rows. The down projection's 32-row and 128-row tile families
+keep the static kernel. Larger dense fallbacks and the output head are unchanged.
+This policy follows tile-family measurements rather than selecting individual
+benchmark rows. It remains experimental.
+
+That candidate passes all 282 independent expanded A2/A30 graph checks with
+22 packed stage calls, 19 actual HTTP checks and 492 changed-weight/recovery
+checks. The latter includes partial canonical upload and partial in-place
+repacking failures. Whole-model performance qualification is separate; passing
+these gates alone does not establish a throughput improvement.
