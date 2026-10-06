@@ -397,3 +397,15 @@ be called warm: lazy prompt-shape compilation can occur after model loading and
 graph capture. The command reports `generation_first_token_seconds` for that
 interval, while `first_token_seconds` includes activation. Repeated controlled
 warm workloads remain necessary for performance comparisons.
+
+The documented CLI invocation also passes on separate A2/3090 hosts: Q8 and FP16
+normal chat both produce `4` and stop on EOS; a coordinator-only 255-token raw
+prompt produces exactly the eight independent Q8 reference tokens, matching
+text and usage. Both workers exit successfully in each run. The desktop command
+receives neither a prompt argument nor a reference trace. Results and check
+summary are `qwen2-network-cli-*.json`. These one-shot timings include first-use
+costs and are correctness evidence, not warm performance comparisons.
+
+The CLI test window automatically expired after ten minutes if left alone; it
+was opened on 2026-10-06 at 00:19:50/54 UTC and removed early at 00:26:01/06 UTC.
+Original firewall rules and GPU memory baselines were again verified unchanged.

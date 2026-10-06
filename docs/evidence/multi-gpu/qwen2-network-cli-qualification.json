@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "scope": "actual A2/3090 distributed CLI correctness and lifecycle; not benchmark data",
+  "checks": [
+    {
+      "kind": "chat-q8-eos",
+      "passed": true,
+      "worker_exit_codes": [
+        0,
+        0
+      ]
+    },
+    {
+      "kind": "chat-fp16-eos",
+      "passed": true,
+      "worker_exit_codes": [
+        0,
+        0
+      ]
+    },
+    {
+      "kind": "independent-q8-reference",
+      "passed": true,
+      "prompt_tokens": 255,
+      "output_tokens": 8,
+      "worker_exit_codes": [
+        0,
+        0
+      ]
+    }
+  ],
+  "worker_prompt_input": false,
+  "worker_reference_trace": false
+}

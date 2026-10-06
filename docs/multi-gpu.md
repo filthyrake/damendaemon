@@ -98,8 +98,8 @@ text; `--prompt-tokens-file FILE` reads a coordinator-local JSON token list.
 `--ignore-eos` is available for fixed-length validation. The output worker
 selects greedy tokens locally; full vocabulary logits do not cross the network.
 
-Timing separates activation from generation, but generation can still include
-first-use prompt-kernel compilation. `first_token_seconds` includes activation;
+Timing starts after Python imports and separates activation from generation.
+Generation can still include first-use kernel compilation or transport setup. `first_token_seconds` includes activation;
 `generation_first_token_seconds` starts after activation and is not necessarily
 a warm measurement. Model files must already be local. Each command creates a
 fresh pair; distributed model switching, HTTP scheduling, sampling controls,
