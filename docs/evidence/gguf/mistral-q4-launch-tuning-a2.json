@@ -1,0 +1,4693 @@
+{
+  "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
+  "device": "NVIDIA A2",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "torch": "2.6.0+cu124",
+  "triton": "3.2.0",
+  "source_sha256": "afa4ad55f5d13a1fd825fd9d7f28b0ae43c0324b979fd41456f900b358cbc6cc",
+  "kernel_sha256": "8823b2a64db0fab5192f8cf7e5b856b10b43e8646b067bf008f09b6b58e3733d",
+  "scope": "real Q4 projections; pipeline/output-tile experiment; no production changes",
+  "cases": [
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 2,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 2.1502801246242598e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 2.1502801246242598e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 2.1502801246242598e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 2.1502801246242598e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 2.1502801246242598e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 2.1502801246242598e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.1650039255619049
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.18331646919250488
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.1756836473941803
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.16577333211898804
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.22460222244262695
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.2008303850889206
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.20069155097007751
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.22438225150108337
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.16669818758964539
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.177164226770401
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.1834886521100998
+        },
+        {
+          "kind": "production",
+          "ms": 0.16633963584899902
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 4,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 9.464502568334865e-07,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 9.464502568334865e-07,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 9.464502568334865e-07,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 9.464502568334865e-07,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 9.464502568334865e-07,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 9.464502568334865e-07,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.1692243367433548
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.1855233609676361
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.1788637936115265
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.16986548900604248
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.22477486729621887
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.19963864982128143
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.199691504240036
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.22478275001049042
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.170353963971138
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.17924347519874573
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.1861909031867981
+        },
+        {
+          "kind": "production",
+          "ms": 0.17054826021194458
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 16,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 4.953691131959204e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 4.953691131959204e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 4.953691131959204e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 4.953691131959204e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 4.953691131959204e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 4.953691131959204e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.1776101440191269
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.1973673552274704
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.18875040113925934
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.17900769412517548
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.23010548949241638
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.19975057244300842
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.1995750367641449
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.23013734817504883
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.17951619625091553
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.18903018534183502
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.1978139877319336
+        },
+        {
+          "kind": "production",
+          "ms": 0.17931735515594482
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 32,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 6.801090876251692e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 6.801090876251692e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 6.801090876251692e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 6.801090876251692e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 6.801090876251692e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 6.801090876251692e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.24920770525932312
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.2502981424331665
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.24746063351631165
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.24985691905021667
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.2580314874649048
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.3441031277179718
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.3439738154411316
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.2583245635032654
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.2507689893245697
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.24812562763690948
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.2514740824699402
+        },
+        {
+          "kind": "production",
+          "ms": 0.25042906403541565
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 64,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 5.4131619435793255e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 5.4131619435793255e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 5.4131619435793255e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 5.4131619435793255e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 5.4131619435793255e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 5.4131619435793255e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.4623001515865326
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.4587489664554596
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.4451162815093994
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.4635148048400879
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.4560980200767517
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.6707742810249329
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.6711395382881165
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.45612725615501404
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.4640749990940094
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.4456251561641693
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.4597596526145935
+        },
+        {
+          "kind": "production",
+          "ms": 0.4635232090950012
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 128,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 4.532625553110847e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 4.532625553110847e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 4.532625553110847e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 4.532625553110847e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 4.532625553110847e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 4.532625553110847e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.6940645575523376
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 0.7268675565719604
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 0.933676540851593
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 1.2090084552764893
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 1.2632379531860352
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 0.9987713098526001
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 0.998450756072998
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 1.2632417678833008
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 1.2088592052459717
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 0.9334412813186646
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 0.727575421333313
+        },
+        {
+          "kind": "production",
+          "ms": 0.6946836709976196
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 129,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 0.00011084967263741419,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 0.00011084967263741419,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 0.00011084967263741419,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 0.00011084967263741419,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 0.00011084967263741419,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.243553638458252
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 0.9602416157722473
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 1.194545030593872
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 1.5392898321151733
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 1.7493860721588135
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 1.3763659000396729
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 1.3764092922210693
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 1.7493364810943604
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 1.5395082235336304
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 1.194716215133667
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 0.9616093635559082
+        },
+        {
+          "kind": "production",
+          "ms": 1.2468534708023071
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.qkv.weight",
+      "width": 4096,
+      "outputs": 6144,
+      "rows": 400,
+      "expanded_bytes": 50331648,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 4.490706487558782e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 4.490706487558782e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 4.490706487558782e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 4.490706487558782e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 4.490706487558782e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.898767113685608
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 2.569380521774292
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 3.1586530208587646
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 3.9477272033691406
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 4.1631975173950195
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 3.2529807090759277
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 3.2527427673339844
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 4.163198471069336
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 3.9532806873321533
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 3.1596977710723877
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 2.578449010848999
+        },
+        {
+          "kind": "production",
+          "ms": 1.9020322561264038
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 2,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 2.6576210530038225e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 2.6576210530038225e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 2.6576210530038225e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 2.6576210530038225e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 2.6576210530038225e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 2.6576210530038225e-06,
+          "max_absolute": 0.000244140625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.12156887352466583
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.12912844121456146
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.12630657851696014
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.12205438315868378
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.1602749526500702
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.15319299697875977
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.1531805843114853
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.16036152839660645
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.12251554429531097
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.12630024552345276
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.1291303038597107
+        },
+        {
+          "kind": "production",
+          "ms": 0.12230368703603745
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 4,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 1.4167569588607876e-06,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 1.4167569588607876e-06,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 1.4167569588607876e-06,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 1.4167569588607876e-06,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 1.4167569588607876e-06,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 1.4167569588607876e-06,
+          "max_absolute": 0.0001220703125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.1226937398314476
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.13061116635799408
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.12744000554084778
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.12342740595340729
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.16035020351409912
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.15245774388313293
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.15248313546180725
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.160374253988266
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.12357214838266373
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.12763957679271698
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.13083027303218842
+        },
+        {
+          "kind": "production",
+          "ms": 0.12398789823055267
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 16,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 4.384407020552317e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 4.384407020552317e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 4.384407020552317e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 4.384407020552317e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 4.384407020552317e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 4.384407020552317e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.12919867038726807
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.13823339343070984
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.13385093212127686
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.12989690899848938
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.163747638463974
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.1520855724811554
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.15217994153499603
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.1638987809419632
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.13096477091312408
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.1344262957572937
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.13906675577163696
+        },
+        {
+          "kind": "production",
+          "ms": 0.13060548901557922
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 32,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 5.332565251592314e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 5.332565251592314e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 5.332565251592314e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 5.332565251592314e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 5.332565251592314e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 5.332565251592314e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.1834704428911209
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.17706647515296936
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.18596363067626953
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.1839415729045868
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.1903681457042694
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.2709592580795288
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.2709866166114807
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.19061237573623657
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.18432867527008057
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.18593057990074158
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.17713603377342224
+        },
+        {
+          "kind": "production",
+          "ms": 0.18407607078552246
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 64,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 3.443047262408072e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 3.443047262408072e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 3.443047262408072e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 3.443047262408072e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 3.443047262408072e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 3.443047262408072e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.3225992023944855
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.3195509910583496
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.32849422097206116
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.32371169328689575
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.3356686234474182
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.4680246412754059
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.4680914282798767
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.3356481194496155
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.32426515221595764
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.32951951026916504
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.3202124238014221
+        },
+        {
+          "kind": "production",
+          "ms": 0.32429882884025574
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 128,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 4.218181857140735e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 4.218181857140735e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 4.218181857140735e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 4.218181857140735e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 4.218181857140735e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 4.218181857140735e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.5219123959541321
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 0.5050649046897888
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 0.6507432460784912
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 0.7877029180526733
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 0.8815436363220215
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 0.6981337070465088
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 0.6980907917022705
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 0.8815056681632996
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 0.7876354455947876
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 0.6519702076911926
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 0.5066894292831421
+        },
+        {
+          "kind": "production",
+          "ms": 0.5244534611701965
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 129,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 8.54289683047682e-05,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 8.54289683047682e-05,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 8.54289683047682e-05,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 8.54289683047682e-05,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 8.54289683047682e-05,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.8745372891426086
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 0.667123556137085
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 0.8106109499931335
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 1.0368289947509766
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 1.1666622161865234
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 0.9206210970878601
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 0.9206449389457703
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 1.166429877281189
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 1.0365915298461914
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 0.8105761408805847
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 0.6700881719589233
+        },
+        {
+          "kind": "production",
+          "ms": 0.8784152865409851
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.out",
+      "width": 4096,
+      "outputs": 4096,
+      "rows": 400,
+      "expanded_bytes": 33554432,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 4.228827492624987e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 4.228827492624987e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 4.228827492624987e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 4.228827492624987e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 4.228827492624987e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.303248405456543
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 1.7470428943634033
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 2.1356043815612793
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 2.6922097206115723
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 2.811408758163452
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 2.2024269104003906
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 2.2027688026428223
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 2.811267614364624
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 2.7008566856384277
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 2.1382088661193848
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 1.7522103786468506
+        },
+        {
+          "kind": "production",
+          "ms": 1.3067282438278198
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 2,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 4.765000539919129e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 4.765000539919129e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 4.765000539919129e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 4.765000539919129e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 4.765000539919129e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 4.765000539919129e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.7668644785881042
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.8212993741035461
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.7900623679161072
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.7670361995697021
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.944021999835968
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.8900359272956848
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.8893704414367676
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.9455315470695496
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.768911600112915
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.791255533695221
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.8202136158943176
+        },
+        {
+          "kind": "production",
+          "ms": 0.7668846845626831
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 4,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 8.489339052175637e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 8.489339052175637e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 8.489339052175637e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 8.489339052175637e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 8.489339052175637e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 8.489339052175637e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.7728905081748962
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.8295167088508606
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.7961856722831726
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.7718676924705505
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.9500679969787598
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.8903319239616394
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.8892558813095093
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.9513845443725586
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.7747973203659058
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.7969155311584473
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.8317956924438477
+        },
+        {
+          "kind": "production",
+          "ms": 0.7736414074897766
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 16,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 4.5484011934604496e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 4.5484011934604496e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 4.5484011934604496e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 4.5484011934604496e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 4.5484011934604496e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 4.5484011934604496e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.8127679824829102
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.8852380514144897
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.8404882550239563
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.8124817609786987
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.9829052090644836
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.8985645174980164
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.8978499174118042
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.9850719571113586
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.8158067464828491
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.8409298062324524
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.8865243196487427
+        },
+        {
+          "kind": "production",
+          "ms": 0.8120967745780945
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 32,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 4.767337941302685e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 4.767337941302685e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 4.767337941302685e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 4.767337941302685e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 4.767337941302685e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 4.767337941302685e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.1605148315429688
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 1.1380764245986938
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 1.0967814922332764
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 1.1600326299667358
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 1.132979393005371
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 1.5666080713272095
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 1.566454291343689
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 1.1362377405166626
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 1.1625322103500366
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 1.0980327129364014
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 1.1381458044052124
+        },
+        {
+          "kind": "production",
+          "ms": 1.1600911617279053
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 64,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 0.00010791305248858407,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 0.00010791305248858407,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 0.00010791305248858407,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 0.00010791305248858407,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 0.00010791305248858407,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 0.00010791305248858407,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.1710774898529053
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 2.093143939971924
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 2.0426955223083496
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 2.175644636154175
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 2.0902180671691895
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 3.0356271266937256
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 3.0334081649780273
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 2.0923383235931396
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 2.178997755050659
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 2.042043924331665
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 2.0916976928710938
+        },
+        {
+          "kind": "production",
+          "ms": 2.174973964691162
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 128,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 4.824292318517109e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 4.824292318517109e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 4.824292318517109e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 4.824292318517109e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 4.824292318517109e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 4.824292318517109e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 3.2082858085632324
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 3.376490831375122
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 4.260860443115234
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 5.443094730377197
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 5.698638916015625
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 4.498126983642578
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 4.498523712158203
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 5.698221206665039
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 5.443315029144287
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 4.2600555419921875
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 3.3791778087615967
+        },
+        {
+          "kind": "production",
+          "ms": 3.206007480621338
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 129,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 0.0001074626125046052,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 0.0001074626125046052,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 0.0001074626125046052,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 0.0001074626125046052,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 0.0001074626125046052,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 5.814741134643555
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 4.45731782913208
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 5.46373987197876
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 7.114241600036621
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 7.907591819763184
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 6.148807048797607
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 6.14986515045166
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 7.90770959854126
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 7.113595485687256
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 5.464199066162109
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 4.467838764190674
+        },
+        {
+          "kind": "production",
+          "ms": 5.818819999694824
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.gate_up",
+      "width": 4096,
+      "outputs": 28672,
+      "rows": 400,
+      "expanded_bytes": 234881024,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 4.940116468787892e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 4.940116468787892e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 4.940116468787892e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 4.940116468787892e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 4.940116468787892e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 9.05510425567627
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 12.765746116638184
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 15.602210998535156
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 18.652135848999023
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 19.222414016723633
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 14.983688354492188
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 14.987116813659668
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 19.223098754882812
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 18.653377532958984
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 15.59156322479248
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 12.800610542297363
+        },
+        {
+          "kind": "production",
+          "ms": 9.024688720703125
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 2,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 5.206507012189832e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 5.206507012189832e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 5.206507012189832e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 5.206507012189832e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 5.206507012189832e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 5.206507012189832e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.4359188675880432
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.4609854221343994
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.45265379548072815
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.43642234802246094
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.5718542337417603
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.5330654978752136
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.5329275727272034
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.5718873143196106
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.4374585747718811
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.4540202021598816
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.4618285596370697
+        },
+        {
+          "kind": "production",
+          "ms": 0.4370669722557068
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 4,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 8.320639608427882e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 8.320639608427882e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 8.320639608427882e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 8.320639608427882e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 8.320639608427882e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 8.320639608427882e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.4376400113105774
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.4645882248878479
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.4556351602077484
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.43903636932373047
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.5726553201675415
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.5301746726036072
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.5302819609642029
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.5723451972007751
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.4400431513786316
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.4569924771785736
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.46711117029190063
+        },
+        {
+          "kind": "production",
+          "ms": 0.43939095735549927
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 16,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 5.579327535087941e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 5.579327535087941e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 5.579327535087941e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 5.579327535087941e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 5.579327535087941e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 5.579327535087941e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.4578982889652252
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.4914379119873047
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.4757399559020996
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.45771533250808716
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.581391453742981
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.5298086404800415
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.5296717286109924
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 0.582790732383728
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.4602341055870056
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.47815918922424316
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.49306783080101013
+        },
+        {
+          "kind": "production",
+          "ms": 0.4592461585998535
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 32,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 9.015209798235446e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 9.015209798235446e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 9.015209798235446e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 9.015209798235446e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 9.015209798235446e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 9.015209798235446e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.6379762887954712
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.6264270544052124
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.6361123919487
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.6400859355926514
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.670850396156311
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.9466739892959595
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 0.9466701745986938
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 0.6722573041915894
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 0.6409044861793518
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 0.6371985673904419
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 0.6298047304153442
+        },
+        {
+          "kind": "production",
+          "ms": 0.6397402286529541
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 64,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 7.824577551218681e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 7.824577551218681e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 7.824577551218681e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 7.824577551218681e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 7.824577551218681e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 7.824577551218681e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.1244697570800781
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 1.152052640914917
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 1.1063182353973389
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 1.1271209716796875
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 1.182496190071106
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 1.652762770652771
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 1.6527544260025024
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 1.182564616203308
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 1.1299762725830078
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 1.1065526008605957
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 1.1540039777755737
+        },
+        {
+          "kind": "production",
+          "ms": 1.129576325416565
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 128,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 6.0956640481890645e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 6.0956640481890645e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 6.0956640481890645e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 6.0956640481890645e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 6.0956640481890645e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 6.0956640481890645e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.6706962585449219
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 1.800326943397522
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 2.2504897117614746
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 2.8107571601867676
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 3.1343204975128174
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 2.4748740196228027
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 2.4749321937561035
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 3.133993625640869
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 2.8084850311279297
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 2.2516422271728516
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 1.8014662265777588
+        },
+        {
+          "kind": "production",
+          "ms": 1.6762759685516357
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 129,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 0.0002072587376460433,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 0.0002072587376460433,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 0.0002072587376460433,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 0.0002072587376460433,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 0.0002072587376460433,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.7598602771759033
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 2.505784511566162
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 3.053687572479248
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 3.68776273727417
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 4.083467483520508
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 3.2290687561035156
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 3.2296535968780518
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 4.082579135894775
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 3.6889281272888184
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 3.0563666820526123
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 2.5053887367248535
+        },
+        {
+          "kind": "production",
+          "ms": 2.7589151859283447
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "0.down",
+      "width": 14336,
+      "outputs": 4096,
+      "rows": 400,
+      "expanded_bytes": 117440512,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 7.387998266494833e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 7.387998266494833e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 7.387998266494833e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 7.387998266494833e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 7.387998266494833e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 4.403103828430176
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 6.763754367828369
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 7.917868614196777
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 9.321619987487793
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 9.858359336853027
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 8.038183212280273
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 8.040945053100586
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 9.858973503112793
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 9.3196382522583
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 7.922513008117676
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 6.781497001647949
+        },
+        {
+          "kind": "production",
+          "ms": 4.395479679107666
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 2,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 4.418846401677001e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 4.418846401677001e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 4.418846401677001e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 4.418846401677001e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 4.418846401677001e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 4.418846401677001e-06,
+          "max_absolute": 0.00048828125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.8391180038452148
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.8924275636672974
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.8643509745597839
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.8380277752876282
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 1.0205047130584717
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.9598614573478699
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.9594319462776184
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 1.0217489004135132
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.841223418712616
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.8650044202804565
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.8939273953437805
+        },
+        {
+          "kind": "production",
+          "ms": 0.8397170305252075
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 4,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 5.738454092352185e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 5.738454092352185e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 5.738454092352185e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 5.738454092352185e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 5.738454092352185e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 5.738454092352185e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.8461394309997559
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.9022789001464844
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.8714420199394226
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.8459970355033875
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 1.0253362655639648
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.9610514640808105
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.9608022570610046
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 1.0268659591674805
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.8480255007743835
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.8722135424613953
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.906112015247345
+        },
+        {
+          "kind": "production",
+          "ms": 0.8465056419372559
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 16,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 4.353443728177808e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s1": {
+          "relative_rms": 4.353443728177808e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s2": {
+          "relative_rms": 4.353443728177808e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n64_w4_s3": {
+          "relative_rms": 4.353443728177808e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w4_s2": {
+          "relative_rms": 4.353443728177808e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m16_n128_w8_s2": {
+          "relative_rms": 4.353443728177808e-06,
+          "max_absolute": 0.0009765625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 0.8918191194534302
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.9648979306221008
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.9218956232070923
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.8895864486694336
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 1.0616750717163086
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.970660388469696
+        },
+        {
+          "kind": "m16_n128_w8_s2",
+          "ms": 0.9703733325004578
+        },
+        {
+          "kind": "m16_n128_w4_s2",
+          "ms": 1.062359094619751
+        },
+        {
+          "kind": "m16_n64_w4_s3",
+          "ms": 0.8918730616569519
+        },
+        {
+          "kind": "m16_n64_w4_s2",
+          "ms": 0.9210052490234375
+        },
+        {
+          "kind": "m16_n64_w4_s1",
+          "ms": 0.9655157923698425
+        },
+        {
+          "kind": "production",
+          "ms": 0.8897020220756531
+        }
+      ],
+      "launches": {
+        "m16_n64_w4_s1": {
+          "registers": 70,
+          "spills": 0
+        },
+        "m16_n64_w4_s2": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m16_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m16_n128_w4_s2": {
+          "registers": 147,
+          "spills": 0
+        },
+        "m16_n128_w8_s2": {
+          "registers": 128,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 32,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 5.7711572480911855e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 5.7711572480911855e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 5.7711572480911855e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 5.7711572480911855e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 5.7711572480911855e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 5.7711572480911855e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 1.2737663984298706
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 1.2494752407073975
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 1.2025213241577148
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 1.2718312740325928
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 1.222315788269043
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 1.7116830348968506
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 1.711358666419983
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 1.2264059782028198
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 1.274465799331665
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 1.2035045623779297
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 1.2490711212158203
+        },
+        {
+          "kind": "production",
+          "ms": 1.2733471393585205
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 64,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 0.00012170088302809745,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s1": {
+          "relative_rms": 0.00012170088302809745,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s2": {
+          "relative_rms": 0.00012170088302809745,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n64_w4_s3": {
+          "relative_rms": 0.00012170088302809745,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w4_s2": {
+          "relative_rms": 0.00012170088302809745,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        },
+        "m32_n128_w8_s2": {
+          "relative_rms": 0.00012170088302809745,
+          "max_absolute": 0.00390625,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 2.385875701904297
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 2.2942123413085938
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 2.2438387870788574
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 2.3914201259613037
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 2.298314094543457
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 3.394205093383789
+        },
+        {
+          "kind": "m32_n128_w8_s2",
+          "ms": 3.3920493125915527
+        },
+        {
+          "kind": "m32_n128_w4_s2",
+          "ms": 2.2987513542175293
+        },
+        {
+          "kind": "m32_n64_w4_s3",
+          "ms": 2.3964202404022217
+        },
+        {
+          "kind": "m32_n64_w4_s2",
+          "ms": 2.2511208057403564
+        },
+        {
+          "kind": "m32_n64_w4_s1",
+          "ms": 2.3010659217834473
+        },
+        {
+          "kind": "production",
+          "ms": 2.3968448638916016
+        }
+      ],
+      "launches": {
+        "m32_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m32_n64_w4_s2": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n64_w4_s3": {
+          "registers": 168,
+          "spills": 0
+        },
+        "m32_n128_w4_s2": {
+          "registers": 254,
+          "spills": 0
+        },
+        "m32_n128_w8_s2": {
+          "registers": 180,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 128,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 5.389431407820666e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 5.389431407820666e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 5.389431407820666e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 5.389431407820666e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 5.389431407820666e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 5.389431407820666e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": true,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 3.5168850421905518
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 3.7208735942840576
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 4.693838596343994
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 6.053956031799316
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 6.334167957305908
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 4.998652458190918
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 4.996598720550537
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 6.333535671234131
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 6.05281925201416
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 4.706042289733887
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 3.7253355979919434
+        },
+        {
+          "kind": "production",
+          "ms": 3.5223987102508545
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 129,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 0.00012136482837377116,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 0.00012136482837377116,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 0.00012136482837377116,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 0.00012136482837377116,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 0.00012136482837377116,
+          "max_absolute": 0.00390625,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 6.42074728012085
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 4.911567687988281
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 6.086338996887207
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 7.939524173736572
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 8.740677833557129
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 6.83224630355835
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 6.8329291343688965
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 8.74133014678955
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 7.94024658203125
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 6.088072299957275
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 4.928757667541504
+        },
+        {
+          "kind": "production",
+          "ms": 6.42377233505249
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    },
+    {
+      "name": "head",
+      "width": 4096,
+      "outputs": 32000,
+      "rows": 400,
+      "expanded_bytes": 262144000,
+      "checks": {
+        "production": {
+          "relative_rms": 0.0,
+          "max_absolute": 0.0,
+          "exact_production": true,
+          "passed": true
+        },
+        "m64_n64_w4_s1": {
+          "relative_rms": 5.2545428843586706e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s2": {
+          "relative_rms": 5.2545428843586706e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n64_w4_s3": {
+          "relative_rms": 5.2545428843586706e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w4_s2": {
+          "relative_rms": 5.2545428843586706e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        },
+        "m64_n128_w8_s2": {
+          "relative_rms": 5.2545428843586706e-06,
+          "max_absolute": 0.001953125,
+          "exact_production": false,
+          "passed": true
+        }
+      },
+      "rounds": [
+        {
+          "kind": "production",
+          "ms": 9.996805191040039
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 14.26319694519043
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 17.068981170654297
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 20.466144561767578
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 21.410917282104492
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 16.67605209350586
+        },
+        {
+          "kind": "m64_n128_w8_s2",
+          "ms": 16.675085067749023
+        },
+        {
+          "kind": "m64_n128_w4_s2",
+          "ms": 21.411163330078125
+        },
+        {
+          "kind": "m64_n64_w4_s3",
+          "ms": 20.468669891357422
+        },
+        {
+          "kind": "m64_n64_w4_s2",
+          "ms": 17.09090232849121
+        },
+        {
+          "kind": "m64_n64_w4_s1",
+          "ms": 14.299715042114258
+        },
+        {
+          "kind": "production",
+          "ms": 9.98938274383545
+        }
+      ],
+      "launches": {
+        "m64_n64_w4_s1": {
+          "registers": 96,
+          "spills": 0
+        },
+        "m64_n64_w4_s2": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n64_w4_s3": {
+          "registers": 128,
+          "spills": 0
+        },
+        "m64_n128_w4_s2": {
+          "registers": 255,
+          "spills": 20
+        },
+        "m64_n128_w8_s2": {
+          "registers": 254,
+          "spills": 0
+        }
+      }
+    }
+  ],
+  "passed": true
+}

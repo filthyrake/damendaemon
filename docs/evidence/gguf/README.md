@@ -2218,3 +2218,21 @@ cancellation recovery and streamed/concurrent chat pass. The local suite passes
 447 tests, including ABI compatibility/rejection and per-executor dispatch.
 This qualifies the existing opt-in A2 workload, not broader hardware, models,
 precision equivalence or parity with another inference engine.
+
+### Prefill pipeline/output-tile sweep
+
+`mistral-q4-launch-tuning-a2.json` runs
+`scripts/profile_q4_dispatch.py --launch-tuning --rows 2 4 16 32 64 128 129 400`
+on five real projections. All 240 independent FP16-coefficient RMS checks pass.
+Warm forward/reverse CUDA graph timings include each projection call, while
+one-time loading and compilation are excluded. There is no resident dense cache.
+
+The current launch remains best for 2/4/16 rows. Two-stage, 64-output tiles are
+3.0–6.5% slower there. At 32/64 rows they improve some projections by up to 6%,
+but regress the output projection by 1.2–1.7%. A 64-row, 64-output, one-stage
+tile is mixed at 128 rows, improves all five 129-row cases by 9.2–23.7%, and
+regresses every 400-row case by 34–54%. The 129/400-row comparison replaces
+normal expansion-plus-dense multiplication; outputs pass the RMS gate but are
+not bitwise identical to that control's reduction order. No broad launch
+policy or model/serving speedup is established. Intermediate boundaries and
+full-model validation would be necessary for any narrow follow-up selection.
