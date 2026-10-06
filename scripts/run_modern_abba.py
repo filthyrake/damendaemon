@@ -42,10 +42,15 @@ def main():
     config = json.loads((model/'config.json').read_text())
     if config['model_type'] != 'qwen3_5':
         raise ValueError('this first comparison targets Qwen3.5')
+    try:
+        generation = json.loads((model/'generation_config.json').read_text())
+    except FileNotFoundError:
+        generation = {}
     eos = set()
-    for c in (config.get('text_config', config), json.loads((model/'generation_config.json').read_text())):
-        value = c.get('eos_token_id', [])
-        eos.update([value] if isinstance(value, int) else value)
+    for c in (config.get('text_config', config), generation):
+        value = c.get('eos_token_id')
+        if value is not None:
+            eos.update([value] if isinstance(value, int) else value)
     if not eos:
         raise ValueError('missing EOS IDs')
     report = dict(passed=False, competitive_pass=None, phases=[],
