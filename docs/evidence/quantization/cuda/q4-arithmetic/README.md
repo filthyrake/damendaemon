@@ -470,3 +470,20 @@ these results do not establish a general warm-speed gain. Raw measurements are
 in `qwen2-q4-runtime-rows-benchmark.json`; this is model execution, not HTTP or
 network throughput. The independent-cache first-use results above are still
 prototype measurements and must not be relabeled as integrated-path evidence.
+
+### Rotary token-stride experiment
+
+The existing rotary/cache kernel specializes its token count even though that
+value is only a query-output address stride. The isolated experimental kernel
+uses a runtime stride with unchanged floating-point operations. Production
+`dllm/kernels.py` is unchanged.
+
+On A2, 68 cases cover 17 lengths from 1 through 255, with normalization and
+precise arithmetic each on/off, head geometry 14/2/64 and context 512. Queries
+and entire K/V buffers, including untouched cache regions, are bit-exact.
+Within each arithmetic mode, generated assembly variants fall from 17 to one.
+ABBA warm-kernel timing gives median dynamic/static ratios 1.000, 0.993, 0.997
+and 0.998; the largest individual slowdown is 1.7%. This establishes kernel
+equivalence and warm timing only, not whole-model or first-use latency gains.
+The raw report is `qwen2-rope-runtime-tokens-matrices.json`; model qualification
+is separate before considering any runtime integration.
