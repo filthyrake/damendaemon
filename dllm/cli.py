@@ -90,7 +90,7 @@ def main():
         command.add_argument("--host-gib", type=float, default=8)
         command.add_argument("--no-graph", action="store_true")
         command.add_argument('--layer-split',type=int,help='experimental two-GPU layer split; qualified value: 12 (context <=512)')
-    for name in ('status', 'drain', 'models', 'add', 'load', 'unload'):
+    for name in ('status', 'drain', 'models', 'add', 'load', 'unload', 'remove'):
         management = commands.add_parser(name, help={'status': 'show scheduler queue status', 'drain': 'stop admission and finish queued work'}.get(name, 'manage models on a running dllm server'))
         management.add_argument('--server', default='http://127.0.0.1:8088')
         if name == 'models':
@@ -123,7 +123,7 @@ def main():
             manifest = load(args.model_config, resolve_model)
         except (ValueError, OSError) as error:
             parser.error(str(error))
-    if args.command in ('status', 'drain', 'models', 'add', 'load', 'unload'):
+    if args.command in ('status', 'drain', 'models', 'add', 'load', 'unload', 'remove'):
         from urllib.request import Request, urlopen
         action = {'status':'scheduler', 'models':'status', 'add':'register'}.get(args.command, args.command)
         if args.command == 'models' and args.save_config:

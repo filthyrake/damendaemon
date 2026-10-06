@@ -11,7 +11,7 @@ def quantization_mode(value=None):
 
 
 def command(action, model=None, path=None, release_host=False, quantization=None, chat_template=None):
-    if action not in ('status', 'register', 'load', 'unload'):
+    if action not in ('status', 'register', 'load', 'unload', 'remove'):
         raise ValueError('unknown model management action')
     if type(release_host) is not bool:
         raise ValueError('release_host must be boolean')

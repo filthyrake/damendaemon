@@ -400,3 +400,19 @@ existing internal management waits; model-status commands retain their shorter
 one-second queue bound. These options do not increase KV capacity or change the
 HTTP connection cap. `dllm status` reports `queue_timeout_seconds` alongside
 capacity. Invalid settings fail before downloads or GPU initialization.
+
+## Remove a registered alias
+
+Use `dllm remove ALIAS --server http://127.0.0.1:8088`, or
+`POST /v1/models/remove` with `{"model":"ALIAS"}`, to release an alias's GPU and
+host residency and remove its snapshot, precision and template registration.
+The existing management barrier lets the current inference group finish before
+removal; a management timeout prevents still-queued removal from executing later.
+Requests behind the removal fail if they refer to the now-unknown alias.
+
+Checkpoint files are never deleted, and other aliases remain registered even
+when they use the same path. Missing aliases return an error. You can add the
+name again with a corrected snapshot or precision. This differs from `unload`,
+which preserves the registration. Save the live registry again with
+`dllm models --save-config FILE` to persist the change; an old manifest still
+contains the old alias. Exporting an entirely empty registry remains unsupported.

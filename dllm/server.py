@@ -63,7 +63,7 @@ def handler_for(runtime):
                 self.send_json(404, {"error": "not found"})
 
         def do_POST(self):
-            management = {'/v1/models/register': 'register', '/v1/models/load': 'load', '/v1/models/unload': 'unload'}
+            management = {'/v1/models/register': 'register', '/v1/models/load': 'load', '/v1/models/unload': 'unload', '/v1/models/remove': 'remove'}
             if self.path not in ("/v1/scheduler/drain", "/v1/chat/completions", "/v1/completions", "/v1/embeddings", "/v1/token-scores", "/v1/rerank") and self.path not in management:
                 self.send_json(404, {"error": "not found"})
                 return

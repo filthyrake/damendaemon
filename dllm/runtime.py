@@ -192,10 +192,15 @@ class Runtime:
                     return {**self._status(), 'source_tier': tier, 'activation_seconds': seconds}
                 if model in self.gpu:
                     self._evict(model)
-                if release_host:
+                if release_host or action == 'remove':
                     self.host.pop(model, None)
                     gc.collect()
                     empty_cache()
+                if action == 'remove':
+                    with self.registry_lock:
+                        del self.models[model]
+                        del self.quantizations[model]
+                        del self.chat_templates[model]
             return self._status()
         finally:
             self.lock.release()
