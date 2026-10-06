@@ -618,3 +618,12 @@ Reproduce with `scripts/bench_single_stage_control.py`, supplying the pinned
 local model, independent Q8 trace and the distributed benchmark report.
 Raw reports: `qwen2-single-{a2,3090}-q8-{reference,placement}.json` and
 `qwen2-network-token-ack-q8-abba.json`.
+
+
+## Resident distributed HTTP
+
+The experimental resident service passes FP16/Q8/Q4 A2/A30 HTTP qualification,
+including queued concurrency, cancellation, acknowledged release and an idle
+interval longer than the collective timeout. See the
+[scope, reproduction and raw reports](http/README.md). This is a separate
+greedy sequential queue; it does not add distributed model swapping or batching.

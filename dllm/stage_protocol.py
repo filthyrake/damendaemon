@@ -8,10 +8,10 @@ execution or transport failure poisons the epoch and requires fresh workers.
 from dataclasses import dataclass
 
 MAGIC = 0x444C4C4D
-VERSION = 1
+VERSION = 2
 MAX_SLOTS = 4
 HEADER_WORDS = 7 + 3 * MAX_SLOTS
-PREFILL, DECODE, RELEASE, STOP = range(1, 5)
+PREFILL, DECODE, RELEASE, STOP, PING = range(1, 6)
 MAX_INTEGER = (1 << 63) - 1
 
 
@@ -46,7 +46,7 @@ def decode(words):
     magic, version, epoch, sequence, operation, rows, count = words[:7]
     if magic != MAGIC or version != VERSION:
         raise ValueError('unsupported stage control protocol')
-    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP):
+    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP, PING):
         raise ValueError('invalid stage epoch, sequence or operation')
     if not 0 <= count <= MAX_SLOTS or rows < 0:
         raise ValueError('invalid stage shape')
@@ -97,7 +97,7 @@ class StageState:
                         (command.operation == DECODE and position >= self.context)):
                     raise ValueError('stale or exhausted stage slot')
         elif command.rows != 0 or command.entries:
-            raise ValueError('invalid stage stop record')
+            raise ValueError('invalid stage stop or heartbeat record')
         self.pending = command
         return command
 

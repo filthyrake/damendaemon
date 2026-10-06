@@ -265,3 +265,8 @@ Required/named tools use the optional structured-output dependencies. Set
 to force one function. These modes constrain arguments to the supported bounded
 JSON-schema subset and accept `strict:true`; explicit thinking is incompatible.
 Automatic strict tool selection and multiple forced calls are not supported.
+
+
+For the bounded two-rank network path, see
+[resident distributed HTTP](multi-gpu.md#resident-distributed-http). Its greedy
+sequential queue and single-model scope are narrower than this server.

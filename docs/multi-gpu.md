@@ -48,7 +48,8 @@ transfer. A matched Q8 network experiment measures 290 decode tokens/s with
 token-return completion on its narrow 255-prompt/32-output workload.
 See [network qualification and measurements](evidence/multi-gpu/README.md#command-driven-a23090-network-qualification).
 
-Cross-host execution remains experimental and is not connected to the HTTP scheduler.
+Cross-host execution remains experimental. The resident HTTP service below uses
+a separate greedy sequential queue, rather than the ordinary continuous-batching scheduler.
 Failed requests are not resumed. Reported preparation failures now propagate
 through the CPU rendezvous store before NCCL starts; unreported crashes and
 blocked preparation still need an outer process deadline. General worker
@@ -162,3 +163,53 @@ FP16, Q8 and Q4 are accepted by `--quantization` for individual requests and
 sessions. Set the same precision on both workers. Q4 passes independent
 A2/3090 protocol checks and an actual seven-request network session; see the
 [distributed Q4 proof](evidence/multi-gpu/README.md#native-q4-distributed-cli).
+
+## Resident distributed HTTP service
+
+`distributed-serve` keeps the qualified two-rank pair resident behind the
+existing chat/completion API. Start it under torchrun on both workers, using
+matching model snapshots, precision and dllm versions:
+
+```bash
+# Coordinator; select its GPU UUID and network interface as above.
+torchrun --nnodes=2 --nproc-per-node=1 --node-rank=0 \
+  --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-serve \
+  /local/model/snapshot --quantization q8_0 --alias a --port 8000
+
+# Output worker; it exposes no HTTP listener.
+torchrun --nnodes=2 --nproc-per-node=1 --node-rank=1 \
+  --master-addr=10.0.0.10 --master-port=29571 --module dllm distributed-serve \
+  /other/local/model/snapshot --quantization q8_0
+```
+
+The coordinator listens on `127.0.0.1` only. Use its existing trusted local
+access path or an SSH tunnel. It accepts `/v1/chat/completions` and
+`/v1/completions`, including streaming and usage. `/v1/models/status` reports
+resident precision, prepared model identity, queued/active work, completion
+count and idle heartbeats. Model activation occurs before the listener opens.
+
+Execution is greedy and sequential: concurrent HTTP requests queue, with one
+request using the distributed slot at a time. `--queue-size` bounds waiting
+requests (default 8, maximum 64); `--queue-timeout` bounds their wait for
+admission (default 120 seconds, maximum 300). Full/expired queues return 503.
+Client disconnects cancel generation after the current transport operation;
+both ranks acknowledge slot release before reuse. Successful final responses
+are likewise withheld until release is acknowledged.
+
+Idle heartbeats run every five seconds so the worker does not hit its
+30-second collective timeout while waiting for a request. `--idle-timeout`
+optionally shuts down an unused coordinator; zero, the default, keeps it
+resident. A transport/execution failure poisons the pair and fails queued work;
+start fresh workers to recover. Retain a process-owner deadline during tests.
+There is no automatic worker restart or request replay.
+
+The service retains the current Qwen2.5-0.5B geometry, 12/12 split, context
+through 512 and FP16/Q8/Q4 support. Sampling changes, custom text stops,
+logprobs, structured/tool output, embeddings, reranking, distributed model
+registration/unload and hot swapping are rejected explicitly. The ordinary
+same-host server continues to provide its separate broader feature set.
+This service is not continuous batched or tensor-parallel execution.
+
+The control protocol is now version 2, adding acknowledged idle heartbeats.
+Both workers must use the same dllm revision. See the
+[HTTP qualification evidence](evidence/multi-gpu/README.md#resident-distributed-http).

@@ -16,13 +16,13 @@ from .layer_stage import LayerStage
 from .partition_policy import validate
 from .qwen2 import ModelWeights
 from .stage_identity import fingerprint
-from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP
+from .stage_protocol import Command, StageState, PREFILL, DECODE, RELEASE, STOP, PING
 from .stage_setup import StageSetup
 from .stage_transport import StageChannel
 
 
 class StagePair:
-    def __init__(self, path, context, quantization, prepare_requests):
+    def __init__(self, path, context, quantization, prepare_requests, session='distributed-run'):
         self.owns_group = False
         if dist.is_initialized():raise ValueError('distributed-run requires ownership of its process group')
         if quantization not in ('none','q8_0','q4_0'):
@@ -45,7 +45,7 @@ class StagePair:
         setup = None
         ready = False
         try:
-            setup = StageSetup.from_torchrun(self.rank, session='distributed-run')
+            setup = StageSetup.from_torchrun(self.rank, session=session)
             setup.check_peer()
             path = Path(path).expanduser().resolve()
             if not path.is_dir():raise ValueError('distributed-run requires a local safetensors snapshot; use dllm pull first')
@@ -89,7 +89,7 @@ class StagePair:
             request = Command(self.state.epoch, self.state.sequence, PREFILL if prefill else DECODE,
                               len(tokens), ((0, self.state.generations[0] + int(prefill), self.state.lengths[0]),))
         command = self.channel.begin(request)
-        if command.operation in (RELEASE, STOP):
+        if command.operation in (RELEASE, STOP, PING):
             self.channel.finish(command)
             return None
         try:
@@ -130,6 +130,12 @@ class StagePair:
         if not self.state.lengths[0]:return
         command = Command(self.state.epoch, self.state.sequence, RELEASE, 0,
                           ((0, self.state.generations[0], self.state.lengths[0]),))
+        self.channel.finish(self.channel.begin(command))
+
+    def heartbeat(self):
+        """Keep an idle resident peer inside the bounded collective deadline."""
+        if self.rank != 0:raise ValueError('only coordinator sends heartbeats')
+        command = Command(self.state.epoch, self.state.sequence, PING, 0, ())
         self.channel.finish(self.channel.begin(command))
 
     def stop(self):
