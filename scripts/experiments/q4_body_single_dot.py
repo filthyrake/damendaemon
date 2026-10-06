@@ -16,9 +16,9 @@ def linear(x,weight,scales,bias=None,kernel=single_dot):
 
 
 def install_validation_dispatch(kind='single-dot'):
-    if kind in ('adjacent-gate','adjacent-all'):
+    if kind in ('adjacent-gate','adjacent-all','adjacent-inplace'):
         from scripts.experiments.q4_adjacent_body import install_validation_dispatch as install_adjacent
-        return install_adjacent(kind=='adjacent-gate')
+        return install_adjacent(kind=='adjacent-gate',kind=='adjacent-inplace')
     kernel={'single-dot':single_dot,'paired-load':single_dot_paired_load}[kind]
     from dllm.quantization import Linear
     original_init,original_call=Linear.__init__,Linear.__call__

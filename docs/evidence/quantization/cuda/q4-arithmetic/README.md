@@ -149,3 +149,37 @@ remain stable across successful rebinds. Host residency releases completely.
 The additional packed cache is **178,913,280 bytes across both stages**. That
 extra allocation is specific to this experiment and must not be omitted from
 any memory claim. Performance qualification remains separate.
+
+The cached prototype's matched HTTP run uses the same Q4 weights, A2/A30 pair,
+context 512, four slots, 16 input IDs and 32 outputs, with prompt packing disabled
+in both modes. Paired/adjacent/adjacent/paired launches provide ten measured
+rounds per mode/concurrency. Generated text and usage match.
+
+| Concurrency | Body kernel | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | Current paired | 28.63 | 165.80 | 192.53 |
+| 1 | Adjacent cache | 27.12 | 164.18 | 194.39 |
+| 2 | Current paired | 47.66 | 203.05 | 310.38 |
+| 2 | Adjacent cache | 52.45 | 206.64 | 303.42 |
+| 4 | Current paired | 107.72 | 289.13 | 437.49 |
+| 4 | Adjacent cache | 105.17 | 278.98 | 453.68 |
+
+The original large slowdown is gone. These small, mixed differences are treated
+cautiously: throughput is about 1.0% higher at concurrency one, 2.2% lower at
+two, and 3.7% higher at four. This is not evidence of a universal speedup, and
+the extra 171 MiB packed cache remains an important cost of this prototype.
+
+## Existing-buffer prototype
+
+The explicit `adjacent-inplace` variant repacks the 96 existing body-weight
+buffers once during activation and again after canonical weight uploads. It
+retains zero additional packed-cache bytes. Large prefills expand the adjacent
+representation temporarily for the existing dense fallback. Host checkpoint
+bytes and their cache format remain canonical Q4_0; device pointers remain
+stable for captured graphs. Repacking still needs temporary workspace.
+
+This variant passes 282 graph/packed-prefill checks, 19 live HTTP checks and
+492 lifecycle checks, including both partial canonical upload and partial
+in-place repacking failures. Failed executors are unpublished, and fresh
+recovery matches independent reference outputs. The prototype remains separate
+from production dispatch while its complete policy is measured.

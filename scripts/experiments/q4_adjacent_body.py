@@ -1,14 +1,15 @@
-"""Experimental extra packed cache; never installed by production dispatch.
+"""Experimental adjacent-byte body storage; no production dispatch installs it.
 
-Canonical Q4_0 weights remain resident for fallback and rebind. This prototype
-therefore uses extra memory. Cached graph pointers survive explicit refresh.
+Cached mode keeps canonical weights plus extra packed buffers. In-place mode
+reuses existing buffers and expands adjacent data for large prefills. Both
+refresh captured weight storage after canonical rebind or close on failure.
 """
 import torch
 import triton as tr
-from scripts.experiments.q4_prefill import repack_adjacent,single_dot_adjacent
+from scripts.experiments.q4_prefill import repack_adjacent,single_dot_adjacent,expand_adjacent
 
 
-def install_validation_dispatch(gate_only=False):
+def install_validation_dispatch(gate_only=False,in_place=False):
     from dllm.quantization import Linear
     from dllm.partition import PartitionExecutor
     original_init,original_call=Linear.__init__,Linear.__call__
@@ -16,13 +17,23 @@ def install_validation_dispatch(gate_only=False):
     shapes={(9728,896)} if gate_only else {(1152,896),(896,896),(9728,896),(896,4864)}
     def initialize(self,weights,*args,**kwargs):
         original_init(self,weights,*args,**kwargs)
-        self.experimental_adjacent={id(weight):repack_adjacent(weight) for name,weight in weights.items()
+        selected={id(weight):weight for name,weight in weights.items()
             if name!='head' and weight.is_cuda and weight.dtype==torch.uint8
             and (weight.shape[0],weight.shape[1]*2) in shapes}
+        self.experimental_adjacent={}
+        self.experimental_adjacent_inplace_ids=set(selected) if in_place else set()
+        for key,weight in selected.items():
+            packed=repack_adjacent(weight)
+            if in_place:weight.copy_(packed)
+            else:self.experimental_adjacent[key]=packed
     def call(self,x,weight,bias=None):
-        cache=self.experimental_adjacent.get(id(weight))
+        stored_in_place=id(weight) in self.experimental_adjacent_inplace_ids
+        cache=weight if stored_in_place else self.experimental_adjacent.get(id(weight))
         rows=x.numel()//x.shape[-1]
         if cache is None or not x.is_cuda or x.dtype!=torch.float16 or not 1<=rows<=128:
+            if stored_in_place:
+                return torch.nn.functional.linear(x,expand_adjacent(weight,self.scales[id(weight)],x.dtype),
+                    None if bias is None else bias.to(x.dtype))
             return original_call(self,x,weight,bias)
         shape=x.shape[:-1];k=x.shape[-1];n=weight.shape[0];x=x.reshape(rows,k).contiguous()
         bm=max(16,tr.next_power_of_2(rows))
@@ -38,8 +49,9 @@ def install_validation_dispatch(gate_only=False):
             for device,stage in enumerate(executor.stages):
                 with torch.cuda.device(device):
                     cached=getattr(stage.quant_linear,'experimental_adjacent',{})
-                    for weight in stage.w.values():
-                        target=cached.get(id(weight))
+                    inplace_ids=getattr(stage.quant_linear,'experimental_adjacent_inplace_ids',set())
+                    for weight in {id(value):value for value in stage.w.values()}.values():
+                        target=weight if id(weight) in inplace_ids else cached.get(id(weight))
                         if target is not None:target.copy_(repack_adjacent(weight))
                     torch.cuda.synchronize()
         except BaseException:

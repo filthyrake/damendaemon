@@ -1,4 +1,4 @@
-"""Counterbalanced sequential/packed stage prefill through real HTTP.
+"""Counterbalanced stage prefill or Q4 body comparisons through real HTTP.
 
 Select exactly two GPU UUIDs and run GPU jobs sequentially. The idle coalescing
 window is identical in both modes (zero by default). Startup/capture is excluded.
@@ -21,19 +21,23 @@ def main():
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),required=True)
     p.add_argument('--batch-wait-ms',type=float,default=0)
     p.add_argument('--compare',choices=('prefill','q4-body'),default='prefill')
-    p.add_argument('--body-kernel',choices=('single-dot','paired-load','adjacent-gate','adjacent-all'),default='single-dot')
+    p.add_argument('--body-kernel',choices=('single-dot','paired-load','adjacent-gate','adjacent-all','adjacent-inplace'),default='single-dot')
+    p.add_argument('--candidate-packed',action='store_true')
     p.add_argument('--output',required=True);args=p.parse_args()
     if not 0<=args.batch_wait_ms<=10:raise ValueError('invalid coalescing delay')
     if args.compare=='q4-body' and args.quantization!='q4_0':raise ValueError('Q4 body comparison requires Q4 weights')
+    if args.candidate_packed and args.compare!='q4-body':raise ValueError('candidate packing requires the body comparison')
     modes=('sequential','packed') if args.compare=='prefill' else ('paired','contiguous')
     report=dict(passed=False,model=args.model,quantization=args.quantization,context=512,batch_size=4,
-        batch_wait_ms=args.batch_wait_ms,compare=args.compare,output_tokens=32,trials=[],
+        batch_wait_ms=args.batch_wait_ms,compare=args.compare,candidate_packed=args.candidate_packed,output_tokens=32,trials=[],
         devices=os.environ.get('CUDA_VISIBLE_DEVICES'),
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                  ('dllm/batch.py','dllm/layer_stage.py','dllm/partition.py','dllm/partition_policy.py')},
         scope='Same model, precision, GPU pair and HTTP workload; '+
               ('sequential versus packed stage prefill only.' if args.compare=='prefill' else
                'paired versus contiguous packed Q4 body arithmetic; prompt packing disabled in both.'))
+    if args.candidate_packed:
+        report['scope']='Same model, precision, GPU pair and HTTP workload; candidate changes both Q4 body arithmetic and prompt packing.'
     if args.compare=='q4-body':
         report['body_kernel']=args.body_kernel
         for name in ('dllm/quantized_kernels_q4.py','scripts/experiments/q4_prefill.py',
@@ -52,7 +56,7 @@ def main():
                     process=subprocess.Popen([sys.executable,'-m',module,*extra,'serve','--port','0','--context','512',
                         '--layer-split','12','--batch-size','4','--batch-wait-ms',str(args.batch_wait_ms),
                         '--model','a='+args.model],
-                        env={**env,'DLLM_PARTITION_PACKED_PREFILL':str(int(mode=='packed'))},
+                        env={**env,'DLLM_PARTITION_PACKED_PREFILL':str(int(mode=='packed' or (mode=='contiguous' and args.candidate_packed)))},
                         stdout=log,stderr=log,start_new_session=True)
                     try:
                         deadline=time.monotonic()+120

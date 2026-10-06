@@ -11,6 +11,7 @@ from dllm.runtime import Runtime
 def storage(executor):
     return [dict(weights={k:v.data_ptr() for k,v in stage.w.items()},kv=[v.data_ptr() for v in stage.kv],
         experimental_adjacent={str(k):v.data_ptr() for k,v in getattr(stage.quant_linear,'experimental_adjacent',{}).items()},
+        experimental_adjacent_inplace_ids=sorted(getattr(stage.quant_linear,'experimental_adjacent_inplace_ids',set())),
         scales={k:v.data_ptr() for k,v in stage.quant_linear.scales.items()} if stage.quant_linear else {},
         graphs={str(k):[v[0].data_ptr(),v[1].data_ptr(),v[2].data_ptr(),id(v[3]),v[4].data_ptr()] for k,v in stage.stage_graphs.items()})
         for stage in executor.stages]
@@ -55,8 +56,10 @@ def main():
                     report['experimental_adjacent_bytes']=sum(value.numel()*value.element_size()
                         for stage in executor.stages
                         for value in getattr(stage.quant_linear,'experimental_adjacent',{}).values())
-                    if args.inject_packed_refresh_failure and not report['experimental_adjacent_bytes']:
-                        raise ValueError('packed refresh injection requires the explicit adjacent-cache experiment')
+                    report['experimental_inplace_weight_count']=sum(len(getattr(stage.quant_linear,
+                        'experimental_adjacent_inplace_ids',set())) for stage in executor.stages)
+                    if args.inject_packed_refresh_failure and not (report['experimental_adjacent_bytes'] or report['experimental_inplace_weight_count']):
+                        raise ValueError('packed refresh injection requires the explicit adjacent-layout experiment')
                 else:
                     assert id(executor)==identity and storage(executor)==pointers,'rebind replaced graph storage'
                     assert executor.lengths==[0]*4,'old request state retained'
@@ -92,7 +95,7 @@ def main():
                 try:runtime.manage('load','b')
                 except RuntimeError as error:assert str(error)=='injected packed refresh failure'
                 else:raise AssertionError('partial packed refresh unexpectedly succeeded')
-            assert not runtime.gpu and refresh_calls==2,'partially refreshed packed cache remained published'
+            assert not runtime.gpu and refresh_calls==2,'partially refreshed packed storage remained published'
             report['packed_refresh_failure_unpublished']=True
             with runtime.session('b') as (replacement,tier,seconds):
                 assert replacement.rebind_count==0

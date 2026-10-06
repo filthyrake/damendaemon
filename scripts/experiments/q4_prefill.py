@@ -60,3 +60,21 @@ def repack_adjacent(weight):
     blocks=weight.reshape(weight.shape[0],-1,16)
     values=torch.cat((blocks&15,blocks>>4),dim=-1)
     return (values[...,::2]|(values[...,1::2]<<4)).reshape(weight.shape).contiguous()
+
+
+@tr.jit
+def _expand_adjacent(W,S,Y,N:tl.constexpr,K:tl.constexpr,BLOCK:tl.constexpr):
+    offsets=tl.program_id(0)*BLOCK+tl.arange(0,BLOCK)
+    row,col=offsets//K,offsets%K
+    packed=tl.load(W+row*(K//2)+col//2,offsets<N*K,other=0).to(tl.int32)
+    value=((packed>>((col%2)*4))&15)-8
+    scale=tl.load(S+row*(K//32)+col//32,offsets<N*K,other=0).to(tl.float32)
+    tl.store(Y+offsets,value.to(tl.float32)*scale,offsets<N*K)
+
+
+def expand_adjacent(weight,scales,dtype):
+    import torch
+    n,k=weight.shape[0],weight.shape[1]*2
+    output=torch.empty((n,k),device=weight.device,dtype=dtype)
+    _expand_adjacent[(tr.cdiv(n*k,1024),)](weight,scales,output,n,k,1024)
+    return output
