@@ -45,3 +45,26 @@ Reproduce healthy checks with `scripts/verify_distributed_service.py` and
 checks. All own bounded jobs. Run GPU jobs sequentially. The separate timing
 harness supports `scripts/experiments/bench_distributed_service.py --compare
 prefill`, fixing capacity four while alternating packing off/on/on/off.
+
+## Matched A2/A30 HTTP measurement
+
+Q8, context 512, capacity four, the same 16 raw prompt IDs and 32 output tokens;
+sequential/packed/packed/sequential launches. Ten measured rounds per mode and
+concurrency, with startup/capture and warmups excluded. Text and usage match.
+
+| Concurrency | Packed | Median first text, ms | Median request, ms | Aggregate output tokens/s |
+|---:|---|---:|---:|---:|
+| 1 | No | 17.62 | 120.84 | 263.85 |
+| 1 | Yes | 17.35 | 119.01 | 267.83 |
+| 2 | No | 30.14 | 180.76 | 350.23 |
+| 2 | Yes | 26.97 | 176.17 | 357.69 |
+| 4 | No | 47.32 | 228.83 | 554.16 |
+| 4 | Yes | 49.61 | 211.97 | 593.44 |
+
+At concurrency four, throughput rises 7.1% and request latency falls 7.4%, but
+first text is 2.29 ms slower. Packing is not a universal latency improvement.
+Single-request execution uses the same underlying path in both modes; its small
+difference is variability. Existing services remain on the shared GPUs. This
+compares packing policies within one precision and placement, not engines,
+hardware, RDMA, or single-process versus distributed serving. Final allocations
+return to A2 0 MiB and the existing A30 service at 13,403 MiB.

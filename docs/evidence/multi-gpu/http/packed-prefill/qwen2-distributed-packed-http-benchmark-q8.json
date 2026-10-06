@@ -1,0 +1,3165 @@
+{
+  "passed": true,
+  "compare": "prefill",
+  "scope": "Same model, precision, GPU pair and HTTP workload; stage prefill packing only changes.",
+  "trials": [
+    {
+      "passed": true,
+      "batch_size": 4,
+      "quantization": "q8_0",
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "context": 512,
+      "output_tokens": 32,
+      "results": [
+        {
+          "engine": "dllm",
+          "concurrency": 1,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.23027265397831798,
+              "first_output_seconds": 0.11935333698056638,
+              "post_first_output_tokens_per_second": 279.482427759886,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12164364298223518,
+              "first_output_seconds": 0.017573330987943336,
+              "post_first_output_tokens_per_second": 297.8755363172191,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12911713699577376,
+              "first_output_seconds": 0.021759552997536957,
+              "post_first_output_tokens_per_second": 288.75463516866336,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12359952597762458,
+              "first_output_seconds": 0.021513188985409215,
+              "post_first_output_tokens_per_second": 303.6645344848049,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12024974499945529,
+              "first_output_seconds": 0.017129156010923907,
+              "post_first_output_tokens_per_second": 300.6189191127262,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12295264200656675,
+              "first_output_seconds": 0.01733249399694614,
+              "post_first_output_tokens_per_second": 293.5046066890221,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.2310688309953548,
+              "aggregate_output_tokens_per_second": 138.48687363915084
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12207457300974056,
+              "aggregate_output_tokens_per_second": 262.1348509443212
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12956303200917318,
+              "aggregate_output_tokens_per_second": 246.9840316621671
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12406010800623335,
+              "aggregate_output_tokens_per_second": 257.93948203230786
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12070299798506312,
+              "aggregate_output_tokens_per_second": 265.1135475852884
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1234107720083557,
+              "aggregate_output_tokens_per_second": 259.2966519797266
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 2,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.20669519799412228,
+              "first_output_seconds": 0.05550613100058399,
+              "post_first_output_tokens_per_second": 205.04128120140405,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.19915354601107538,
+              "first_output_seconds": 0.034576032019685954,
+              "post_first_output_tokens_per_second": 188.36109045626912,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17915469798026606,
+              "first_output_seconds": 0.020168141985777766,
+              "post_first_output_tokens_per_second": 194.9850401254978,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1827397429733537,
+              "first_output_seconds": 0.03749113599769771,
+              "post_first_output_tokens_per_second": 213.42717596731012,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17743418499594554,
+              "first_output_seconds": 0.01967610200517811,
+              "post_first_output_tokens_per_second": 196.50340199566338,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18104219797533005,
+              "first_output_seconds": 0.03616642198176123,
+              "post_first_output_tokens_per_second": 213.97642074666865,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1821757970028557,
+              "first_output_seconds": 0.021044384979177266,
+              "post_first_output_tokens_per_second": 192.38955093029608,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18113526600063778,
+              "first_output_seconds": 0.03435512099531479,
+              "post_first_output_tokens_per_second": 211.20022738004369,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17711028101621196,
+              "first_output_seconds": 0.018485217995475978,
+              "post_first_output_tokens_per_second": 195.42939438232142,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1809825410018675,
+              "first_output_seconds": 0.034254312980920076,
+              "post_first_output_tokens_per_second": 211.274956551471,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18043278699042276,
+              "first_output_seconds": 0.019566898001357913,
+              "post_first_output_tokens_per_second": 192.70710648984934,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17982148099690676,
+              "first_output_seconds": 0.03294209099840373,
+              "post_first_output_tokens_per_second": 211.05752141478766,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.20766592700965703,
+              "aggregate_output_tokens_per_second": 308.1872935131233
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18384293699637055,
+              "aggregate_output_tokens_per_second": 348.12324610144526
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18205490399850532,
+              "aggregate_output_tokens_per_second": 351.54230176917093
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18276159398374148,
+              "aggregate_output_tokens_per_second": 350.18298212967795
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18193918699398637,
+              "aggregate_output_tokens_per_second": 351.76588978665376
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18088340197573416,
+              "aggregate_output_tokens_per_second": 353.8190862232109
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 4,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.2435260080092121,
+              "first_output_seconds": 0.06854921800550073,
+              "post_first_output_tokens_per_second": 177.16635445959702,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.23436541599221528,
+              "first_output_seconds": 0.03686515201115981,
+              "post_first_output_tokens_per_second": 156.96181551926213,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.23974941999767907,
+              "first_output_seconds": 0.052019844006281346,
+              "post_first_output_tokens_per_second": 165.1311458851881,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.23862470299354754,
+              "first_output_seconds": 0.07578046500566415,
+              "post_first_output_tokens_per_second": 190.3659618727596,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22329292001086287,
+              "first_output_seconds": 0.02127706800820306,
+              "post_first_output_tokens_per_second": 153.45330424659863,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2291610579995904,
+              "first_output_seconds": 0.062115804001223296,
+              "post_first_output_tokens_per_second": 185.57845408947102,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22891072399215773,
+              "first_output_seconds": 0.0488480259955395,
+              "post_first_output_tokens_per_second": 172.1622542864609,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22824820599635132,
+              "first_output_seconds": 0.03538707600091584,
+              "post_first_output_tokens_per_second": 160.73741764726614,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.230891988001531,
+              "first_output_seconds": 0.0667898390092887,
+              "post_first_output_tokens_per_second": 188.90672785440174,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23026699500042014,
+              "first_output_seconds": 0.05316653000772931,
+              "post_first_output_tokens_per_second": 175.04188936646446,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22358294398873113,
+              "first_output_seconds": 0.035145481990184635,
+              "post_first_output_tokens_per_second": 164.51081261240464,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22277458300231956,
+              "first_output_seconds": 0.021669626992661506,
+              "post_first_output_tokens_per_second": 154.14836419302978,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2276113609841559,
+              "first_output_seconds": 0.049998042988590896,
+              "post_first_output_tokens_per_second": 174.53646128481236,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22069015901070088,
+              "first_output_seconds": 0.0199609590054024,
+              "post_first_output_tokens_per_second": 154.43692297474269,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22685875798924826,
+              "first_output_seconds": 0.06202575398492627,
+              "post_first_output_tokens_per_second": 188.06913207252575,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22651447501266375,
+              "first_output_seconds": 0.035562970995670184,
+              "post_first_output_tokens_per_second": 162.34488520834682,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2211916160013061,
+              "first_output_seconds": 0.02171701201586984,
+              "post_first_output_tokens_per_second": 155.40825438742732,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2271041060157586,
+              "first_output_seconds": 0.049785844021243975,
+              "post_first_output_tokens_per_second": 174.82688839437753,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.227142673014896,
+              "first_output_seconds": 0.062043334008194506,
+              "post_first_output_tokens_per_second": 187.7657426523173,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22681728799943812,
+              "first_output_seconds": 0.03624942697933875,
+              "post_first_output_tokens_per_second": 162.67171092784844,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22500981701887213,
+              "first_output_seconds": 0.023398154007736593,
+              "post_first_output_tokens_per_second": 153.7609458550411,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23084209198714234,
+              "first_output_seconds": 0.05143269500695169,
+              "post_first_output_tokens_per_second": 172.78916557209564,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23069797499920242,
+              "first_output_seconds": 0.038099217985291034,
+              "post_first_output_tokens_per_second": 160.9563866383669,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23002190099214204,
+              "first_output_seconds": 0.06636617300682701,
+              "post_first_output_tokens_per_second": 189.42202867950738,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.24530092600616626,
+              "aggregate_output_tokens_per_second": 521.8080587139015
+            },
+            {
+              "warmup": false,
+              "seconds": 0.23069029999896884,
+              "aggregate_output_tokens_per_second": 554.8564460689164
+            },
+            {
+              "warmup": false,
+              "seconds": 0.23126749700168148,
+              "aggregate_output_tokens_per_second": 553.4716363496136
+            },
+            {
+              "warmup": false,
+              "seconds": 0.22824864299036562,
+              "aggregate_output_tokens_per_second": 560.7919430452118
+            },
+            {
+              "warmup": false,
+              "seconds": 0.22860188302001916,
+              "aggregate_output_tokens_per_second": 559.9253965409846
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2321455689962022,
+              "aggregate_output_tokens_per_second": 551.3781742786313
+            }
+          ]
+        }
+      ],
+      "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+      "sources": {
+        "dllm/distributed.py": "328eba3373919768e9dab8100983264f6e78a0cea659b2eb750b783cafd6b055",
+        "dllm/distributed_serving.py": "7ccd0f8217d55bf9a7c54c67e70fbba10ed4a15f242763c4b0bdcf0ae323b115",
+        "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+        "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+        "dllm/layer_stage.py": "77498f98e70328858ef4a69c5d38d0637ea7275407825fa3377e2c5f99fd91cf",
+        "dllm/partition_policy.py": "6cc155e04d6f9d0a362b6944a78030816a56598d8c8c84f430144cfa40b5fbcd"
+      },
+      "status": {
+        "device": "distributed-cuda",
+        "context": 512,
+        "models": [
+          {
+            "id": "a",
+            "residency": "gpu",
+            "quantization": "q8_0",
+            "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046"
+          }
+        ],
+        "distributed": true,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "max_batch_size": 4,
+        "packed_prefill": false,
+        "active": false,
+        "queued": 0,
+        "completed": 0,
+        "heartbeats": 0,
+        "failed": false,
+        "closed": false
+      },
+      "packed_prefill": false
+    },
+    {
+      "passed": true,
+      "batch_size": 4,
+      "quantization": "q8_0",
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "context": 512,
+      "output_tokens": 32,
+      "results": [
+        {
+          "engine": "dllm",
+          "concurrency": 1,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.22599628899479285,
+              "first_output_seconds": 0.12050547997932881,
+              "post_first_output_tokens_per_second": 293.8644635425601,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.11854796297848225,
+              "first_output_seconds": 0.016195182979572564,
+              "post_first_output_tokens_per_second": 302.8740401611977,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.11789180600317195,
+              "first_output_seconds": 0.017333872005110607,
+              "post_first_output_tokens_per_second": 308.2800010648354,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1170354800124187,
+              "first_output_seconds": 0.017041234008502215,
+              "post_first_output_tokens_per_second": 310.01783841428056,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.11947368099936284,
+              "first_output_seconds": 0.017078101984225214,
+              "post_first_output_tokens_per_second": 302.7474457214322,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.11823655798798427,
+              "first_output_seconds": 0.01809641599538736,
+              "post_first_output_tokens_per_second": 309.5661678040335,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.22696240298682824,
+              "aggregate_output_tokens_per_second": 140.99251496670627
+            },
+            {
+              "warmup": false,
+              "seconds": 0.119032849004725,
+              "aggregate_output_tokens_per_second": 268.8333537133919
+            },
+            {
+              "warmup": false,
+              "seconds": 0.11833222900168039,
+              "aggregate_output_tokens_per_second": 270.4250589207238
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1174899430188816,
+              "aggregate_output_tokens_per_second": 272.3637375060888
+            },
+            {
+              "warmup": false,
+              "seconds": 0.11993182697915472,
+              "aggregate_output_tokens_per_second": 266.8182483834079
+            },
+            {
+              "warmup": false,
+              "seconds": 0.11866306699812412,
+              "aggregate_output_tokens_per_second": 269.6711016284946
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 2,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.1914813210023567,
+              "first_output_seconds": 0.051723556010983884,
+              "post_first_output_tokens_per_second": 221.81236228207868,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.18440064598689787,
+              "first_output_seconds": 0.03265942900907248,
+              "post_first_output_tokens_per_second": 204.29518503552114,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1762322970025707,
+              "first_output_seconds": 0.034631612012162805,
+              "post_first_output_tokens_per_second": 218.9254946196055,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17137419601203874,
+              "first_output_seconds": 0.017986515013035387,
+              "post_first_output_tokens_per_second": 202.10227964918138,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1779305440140888,
+              "first_output_seconds": 0.03556575099355541,
+              "post_first_output_tokens_per_second": 217.75046584395935,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17341500500333495,
+              "first_output_seconds": 0.018248931010020897,
+              "post_first_output_tokens_per_second": 199.78594032955786,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17202707898104563,
+              "first_output_seconds": 0.01893094298429787,
+              "post_first_output_tokens_per_second": 202.48714834095185,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1754380000056699,
+              "first_output_seconds": 0.03494745198986493,
+              "post_first_output_tokens_per_second": 220.655413747212,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17447530300705694,
+              "first_output_seconds": 0.03413568000542,
+              "post_first_output_tokens_per_second": 220.89271252808206,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.16971810400718823,
+              "first_output_seconds": 0.017945555999176577,
+              "post_first_output_tokens_per_second": 204.253011541742,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17234832802205347,
+              "first_output_seconds": 0.018212229013442993,
+              "post_first_output_tokens_per_second": 201.12095868125127,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17614205600693822,
+              "first_output_seconds": 0.03436162299476564,
+              "post_first_output_tokens_per_second": 218.6479427477732,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.192372024001088,
+              "aggregate_output_tokens_per_second": 332.688707374821
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1766968859883491,
+              "aggregate_output_tokens_per_second": 362.2021952566837
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17840810801135376,
+              "aggregate_output_tokens_per_second": 358.72809096729554
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17653107599471696,
+              "aggregate_output_tokens_per_second": 362.54240019426
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17487238498870283,
+              "aggregate_output_tokens_per_second": 365.98116966343514
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17691635200753808,
+              "aggregate_output_tokens_per_second": 361.7528808036528
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 4,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.3140911359805614,
+              "first_output_seconds": 0.04093169799307361,
+              "post_first_output_tokens_per_second": 113.48683475260326,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.3173274250002578,
+              "first_output_seconds": 0.15603555898997,
+              "post_first_output_tokens_per_second": 192.19816080510043,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.31570131101761945,
+              "first_output_seconds": 0.15426197001943365,
+              "post_first_output_tokens_per_second": 192.02258760674925,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.3146007350005675,
+              "first_output_seconds": 0.1536523739923723,
+              "post_first_output_tokens_per_second": 192.60836087931045,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20922861600411125,
+              "first_output_seconds": 0.0511890210036654,
+              "post_first_output_tokens_per_second": 196.15337536085528,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20245086401700974,
+              "first_output_seconds": 0.02098888502223417,
+              "post_first_output_tokens_per_second": 170.83468488400268,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.207691801013425,
+              "first_output_seconds": 0.04904532400541939,
+              "post_first_output_tokens_per_second": 195.4030154633417,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2070745320233982,
+              "first_output_seconds": 0.0487985780055169,
+              "post_first_output_tokens_per_second": 195.86045266546148,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20795039099175483,
+              "first_output_seconds": 0.049581861996557564,
+              "post_first_output_tokens_per_second": 195.74596162941006,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20106351998401806,
+              "first_output_seconds": 0.01954224897781387,
+              "post_first_output_tokens_per_second": 170.7788835333819,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20684355800040066,
+              "first_output_seconds": 0.04809944500448182,
+              "post_first_output_tokens_per_second": 195.28283232019433,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20658469598856755,
+              "first_output_seconds": 0.048734559008153155,
+              "post_first_output_tokens_per_second": 196.38880645283442,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24276502299471758,
+              "first_output_seconds": 0.08539917500456795,
+              "post_first_output_tokens_per_second": 196.99318750495632,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24268402901361696,
+              "first_output_seconds": 0.08531651701196097,
+              "post_first_output_tokens_per_second": 196.99110448968517,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.235893971985206,
+              "first_output_seconds": 0.056134942977223545,
+              "post_first_output_tokens_per_second": 172.45308995646278,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23594016302376986,
+              "first_output_seconds": 0.05509237400838174,
+              "post_first_output_tokens_per_second": 171.41486865157222,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20486365800024942,
+              "first_output_seconds": 0.020750807016156614,
+              "post_first_output_tokens_per_second": 168.3749930235906,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21094779498525895,
+              "first_output_seconds": 0.04873148299520835,
+              "post_first_output_tokens_per_second": 191.10285284935685,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2106172060011886,
+              "first_output_seconds": 0.048704151005949825,
+              "post_first_output_tokens_per_second": 191.46078122552618,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20986649798578583,
+              "first_output_seconds": 0.048725108994403854,
+              "post_first_output_tokens_per_second": 192.3776392523085,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20310637398506515,
+              "first_output_seconds": 0.02107996999984607,
+              "post_first_output_tokens_per_second": 170.3049630234813,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20893717202125117,
+              "first_output_seconds": 0.05205998200108297,
+              "post_first_output_tokens_per_second": 197.6068031051208,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20819221099372953,
+              "first_output_seconds": 0.050995502999285236,
+              "post_first_output_tokens_per_second": 197.2051475855055,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20801171401399188,
+              "first_output_seconds": 0.05003608000697568,
+              "post_first_output_tokens_per_second": 196.2327937143977,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.32183353797881864,
+              "aggregate_output_tokens_per_second": 397.72113498135263
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2098413819912821,
+              "aggregate_output_tokens_per_second": 609.9845453997143
+            },
+            {
+              "warmup": false,
+              "seconds": 0.20867270199232735,
+              "aggregate_output_tokens_per_second": 613.4007887850439
+            },
+            {
+              "warmup": false,
+              "seconds": 0.24360794300446287,
+              "aggregate_output_tokens_per_second": 525.4344272249573
+            },
+            {
+              "warmup": false,
+              "seconds": 0.21201946699875407,
+              "aggregate_output_tokens_per_second": 603.7181482054767
+            },
+            {
+              "warmup": false,
+              "seconds": 0.21010018099332228,
+              "aggregate_output_tokens_per_second": 609.2331734072532
+            }
+          ]
+        }
+      ],
+      "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+      "sources": {
+        "dllm/distributed.py": "328eba3373919768e9dab8100983264f6e78a0cea659b2eb750b783cafd6b055",
+        "dllm/distributed_serving.py": "7ccd0f8217d55bf9a7c54c67e70fbba10ed4a15f242763c4b0bdcf0ae323b115",
+        "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+        "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+        "dllm/layer_stage.py": "77498f98e70328858ef4a69c5d38d0637ea7275407825fa3377e2c5f99fd91cf",
+        "dllm/partition_policy.py": "6cc155e04d6f9d0a362b6944a78030816a56598d8c8c84f430144cfa40b5fbcd"
+      },
+      "status": {
+        "device": "distributed-cuda",
+        "context": 512,
+        "models": [
+          {
+            "id": "a",
+            "residency": "gpu",
+            "quantization": "q8_0",
+            "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046"
+          }
+        ],
+        "distributed": true,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "max_batch_size": 4,
+        "packed_prefill": true,
+        "active": false,
+        "queued": 0,
+        "completed": 0,
+        "heartbeats": 0,
+        "failed": false,
+        "closed": false
+      },
+      "packed_prefill": true
+    },
+    {
+      "passed": true,
+      "batch_size": 4,
+      "quantization": "q8_0",
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "context": 512,
+      "output_tokens": 32,
+      "results": [
+        {
+          "engine": "dllm",
+          "concurrency": 1,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.23241919701104052,
+              "first_output_seconds": 0.12071955599822104,
+              "post_first_output_tokens_per_second": 277.5299877323886,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12598764800350182,
+              "first_output_seconds": 0.017787613003747538,
+              "post_first_output_tokens_per_second": 286.5063768239114,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1250501899921801,
+              "first_output_seconds": 0.019367944012628868,
+              "post_first_output_tokens_per_second": 293.3321459310988,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12101004002033733,
+              "first_output_seconds": 0.017361060017719865,
+              "post_first_output_tokens_per_second": 299.08639717648117,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.11825782901723869,
+              "first_output_seconds": 0.016564849007409066,
+              "post_first_output_tokens_per_second": 304.83913439259567,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12063110098824836,
+              "first_output_seconds": 0.017848586983745918,
+              "post_first_output_tokens_per_second": 301.6077228724142,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.233257935004076,
+              "aggregate_output_tokens_per_second": 137.18718722019392
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12645117999636568,
+              "aggregate_output_tokens_per_second": 253.06209084739035
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1254996579955332,
+              "aggregate_output_tokens_per_second": 254.9807745383573
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12149025598773733,
+              "aggregate_output_tokens_per_second": 263.395609300798
+            },
+            {
+              "warmup": false,
+              "seconds": 0.11871542301378213,
+              "aggregate_output_tokens_per_second": 269.55217096168707
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12111930298851803,
+              "aggregate_output_tokens_per_second": 264.20231301226664
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 2,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.19862124498467892,
+              "first_output_seconds": 0.03710905398475006,
+              "post_first_output_tokens_per_second": 191.93597590421922,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.19931788099347614,
+              "first_output_seconds": 0.053378009994048625,
+              "post_first_output_tokens_per_second": 212.41624915593906,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17828906999784522,
+              "first_output_seconds": 0.019351860013557598,
+              "post_first_output_tokens_per_second": 195.04557808120975,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1818269560171757,
+              "first_output_seconds": 0.03639790500164963,
+              "post_first_output_tokens_per_second": 213.1623618769982,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1761883219878655,
+              "first_output_seconds": 0.018560088996309787,
+              "post_first_output_tokens_per_second": 196.6652763382858,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.179577392002102,
+              "first_output_seconds": 0.034753797022858635,
+              "post_first_output_tokens_per_second": 214.05351803649836,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.180947043991182,
+              "first_output_seconds": 0.019044352986384183,
+              "post_first_output_tokens_per_second": 191.47303733871445,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18437867701868527,
+              "first_output_seconds": 0.03832992899697274,
+              "post_first_output_tokens_per_second": 212.25789621552485,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17565022301278077,
+              "first_output_seconds": 0.020236443990143016,
+              "post_first_output_tokens_per_second": 199.4675130799342,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1797743210045155,
+              "first_output_seconds": 0.03634138699271716,
+              "post_first_output_tokens_per_second": 216.12888430107716,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17475477198604494,
+              "first_output_seconds": 0.018018475006101653,
+              "post_first_output_tokens_per_second": 197.78443536896182,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17859731600037776,
+              "first_output_seconds": 0.03371162401163019,
+              "post_first_output_tokens_per_second": 213.96177617323033,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.2038557259947993,
+              "aggregate_output_tokens_per_second": 313.94752189414953
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18285778001882136,
+              "aggregate_output_tokens_per_second": 349.9987804369743
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1805503130017314,
+              "aggregate_output_tokens_per_second": 354.47183079314993
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18547342001693323,
+              "aggregate_output_tokens_per_second": 345.06292057458677
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1806935689819511,
+              "aggregate_output_tokens_per_second": 354.1908013693213
+            },
+            {
+              "warmup": false,
+              "seconds": 0.17944434698438272,
+              "aggregate_output_tokens_per_second": 356.65654045691394
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 4,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.333469146018615,
+              "first_output_seconds": 0.04606453899759799,
+              "post_first_output_tokens_per_second": 107.86187570658207,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.3369504840229638,
+              "first_output_seconds": 0.16775807802332565,
+              "post_first_output_tokens_per_second": 183.22335341732952,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.33573633700143546,
+              "first_output_seconds": 0.16552710998803377,
+              "post_first_output_tokens_per_second": 182.12878669356255,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.3347093870106619,
+              "first_output_seconds": 0.16441593001945876,
+              "post_first_output_tokens_per_second": 182.03870276473023,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24630216200603172,
+              "first_output_seconds": 0.07091732299886644,
+              "post_first_output_tokens_per_second": 176.75416059613627,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23811620901688002,
+              "first_output_seconds": 0.03130582801532,
+              "post_first_output_tokens_per_second": 149.89576369363277,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24499644699972123,
+              "first_output_seconds": 0.0691154939995613,
+              "post_first_output_tokens_per_second": 176.2555835137635,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24464064798667096,
+              "first_output_seconds": 0.06922351199318655,
+              "post_first_output_tokens_per_second": 176.72161744307263,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22770821800804697,
+              "first_output_seconds": 0.061036443017655984,
+              "post_first_output_tokens_per_second": 185.99429928545024,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22015848301816732,
+              "first_output_seconds": 0.026991650025593117,
+              "post_first_output_tokens_per_second": 160.4830369672816,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22627544999704696,
+              "first_output_seconds": 0.059862322988919914,
+              "post_first_output_tokens_per_second": 186.28338134939358,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22634156999993138,
+              "first_output_seconds": 0.05996867598150857,
+              "post_first_output_tokens_per_second": 186.32842917649378,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22090859498712234,
+              "first_output_seconds": 0.058353339991299435,
+              "post_first_output_tokens_per_second": 190.70438541526443,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.220044987014262,
+              "first_output_seconds": 0.05684157399809919,
+              "post_first_output_tokens_per_second": 189.94700801342876,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2130849399836734,
+              "first_output_seconds": 0.02758988700225018,
+              "post_first_output_tokens_per_second": 167.12035982493052,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21928112499881536,
+              "first_output_seconds": 0.0563436159864068,
+              "post_first_output_tokens_per_second": 190.25698986007689,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21222216699970886,
+              "first_output_seconds": 0.050724539993098006,
+              "post_first_output_tokens_per_second": 191.95328485372124,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21141320100286976,
+              "first_output_seconds": 0.049630520021310076,
+              "post_first_output_tokens_per_second": 191.61507160048512,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.20481444097822532,
+              "first_output_seconds": 0.020377851993544027,
+              "post_first_output_tokens_per_second": 168.07944763375968,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2101142480096314,
+              "first_output_seconds": 0.04939875999116339,
+              "post_first_output_tokens_per_second": 192.88744589717297,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2117167660035193,
+              "first_output_seconds": 0.020342051022453234,
+              "post_first_output_tokens_per_second": 161.98587155605708,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2178478309942875,
+              "first_output_seconds": 0.049419866991229355,
+              "post_first_output_tokens_per_second": 184.0549470718362,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21702857298078015,
+              "first_output_seconds": 0.049956993985688314,
+              "post_first_output_tokens_per_second": 185.54921301671965,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.21716061999904923,
+              "first_output_seconds": 0.049072071007685736,
+              "post_first_output_tokens_per_second": 184.42660244269703,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.3415718970063608,
+              "aggregate_output_tokens_per_second": 374.73808917487247
+            },
+            {
+              "warmup": false,
+              "seconds": 0.24694063799688593,
+              "aggregate_output_tokens_per_second": 518.3431979373689
+            },
+            {
+              "warmup": false,
+              "seconds": 0.22829116400680505,
+              "aggregate_output_tokens_per_second": 560.6874911557439
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2213010220148135,
+              "aggregate_output_tokens_per_second": 578.3976903253158
+            },
+            {
+              "warmup": false,
+              "seconds": 0.21264357899781317,
+              "aggregate_output_tokens_per_second": 601.9462266543038
+            },
+            {
+              "warmup": false,
+              "seconds": 0.21882539000944234,
+              "aggregate_output_tokens_per_second": 584.9412629607414
+            }
+          ]
+        }
+      ],
+      "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+      "sources": {
+        "dllm/distributed.py": "328eba3373919768e9dab8100983264f6e78a0cea659b2eb750b783cafd6b055",
+        "dllm/distributed_serving.py": "7ccd0f8217d55bf9a7c54c67e70fbba10ed4a15f242763c4b0bdcf0ae323b115",
+        "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+        "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+        "dllm/layer_stage.py": "77498f98e70328858ef4a69c5d38d0637ea7275407825fa3377e2c5f99fd91cf",
+        "dllm/partition_policy.py": "6cc155e04d6f9d0a362b6944a78030816a56598d8c8c84f430144cfa40b5fbcd"
+      },
+      "status": {
+        "device": "distributed-cuda",
+        "context": 512,
+        "models": [
+          {
+            "id": "a",
+            "residency": "gpu",
+            "quantization": "q8_0",
+            "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046"
+          }
+        ],
+        "distributed": true,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "max_batch_size": 4,
+        "packed_prefill": true,
+        "active": false,
+        "queued": 0,
+        "completed": 0,
+        "heartbeats": 0,
+        "failed": false,
+        "closed": false
+      },
+      "packed_prefill": true
+    },
+    {
+      "passed": true,
+      "batch_size": 4,
+      "quantization": "q8_0",
+      "model": "/home/damen/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775",
+      "context": 512,
+      "output_tokens": 32,
+      "results": [
+        {
+          "engine": "dllm",
+          "concurrency": 1,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.22740110801532865,
+              "first_output_seconds": 0.11856898001860827,
+              "post_first_output_tokens_per_second": 284.8423583239517,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12084913600119762,
+              "first_output_seconds": 0.01783581799827516,
+              "post_first_output_tokens_per_second": 300.93196298288865,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1179280290089082,
+              "first_output_seconds": 0.017665491992374882,
+              "post_first_output_tokens_per_second": 309.1882663500535,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.12058950198115781,
+              "first_output_seconds": 0.0181998559855856,
+              "post_first_output_tokens_per_second": 302.764988574534,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1208407049998641,
+              "first_output_seconds": 0.017158272996312007,
+              "post_first_output_tokens_per_second": 298.9899002266648,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.11829606301034801,
+              "first_output_seconds": 0.01707242600969039,
+              "post_first_output_tokens_per_second": 306.25258011425336,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.22823156500817277,
+              "aggregate_output_tokens_per_second": 140.20847641672225
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12135183499776758,
+              "aggregate_output_tokens_per_second": 263.6960537151225
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1183073699939996,
+              "aggregate_output_tokens_per_second": 270.4818812354885
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12092937601846643,
+              "aggregate_output_tokens_per_second": 264.61725887937655
+            },
+            {
+              "warmup": false,
+              "seconds": 0.12120739600504749,
+              "aggregate_output_tokens_per_second": 264.0102919022154
+            },
+            {
+              "warmup": false,
+              "seconds": 0.11868373499601148,
+              "aggregate_output_tokens_per_second": 269.6241401660927
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 2,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.19285695801954716,
+              "first_output_seconds": 0.03367799101397395,
+              "post_first_output_tokens_per_second": 194.74934775091623,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.19555700101773255,
+              "first_output_seconds": 0.0482641690177843,
+              "post_first_output_tokens_per_second": 210.46509581682082,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.19156224399921484,
+              "first_output_seconds": 0.02734455099562183,
+              "post_first_output_tokens_per_second": 188.77381257159504,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.19485022698063403,
+              "first_output_seconds": 0.05140480899717659,
+              "post_first_output_tokens_per_second": 216.1100747294348,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17860403598751873,
+              "first_output_seconds": 0.025891197990858927,
+              "post_first_output_tokens_per_second": 202.99537620195392,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18236397599685006,
+              "first_output_seconds": 0.041481991996988654,
+              "post_first_output_tokens_per_second": 220.04232989812593,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.17697409400716424,
+              "first_output_seconds": 0.01866042602341622,
+              "post_first_output_tokens_per_second": 195.8137941897876,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18054072599625215,
+              "first_output_seconds": 0.033754209987819195,
+              "post_first_output_tokens_per_second": 211.1910606163514,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18230409600073472,
+              "first_output_seconds": 0.03797988701262511,
+              "post_first_output_tokens_per_second": 214.79417914255805,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1775344130001031,
+              "first_output_seconds": 0.01950215600663796,
+              "post_first_output_tokens_per_second": 196.16248346868764,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.1792205230158288,
+              "first_output_seconds": 0.0205365160072688,
+              "post_first_output_tokens_per_second": 195.35680113199905,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.18307084997650236,
+              "first_output_seconds": 0.038477228983538225,
+              "post_first_output_tokens_per_second": 214.39396694760447,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.1981024120177608,
+              "aggregate_output_tokens_per_second": 323.0652234272751
+            },
+            {
+              "warmup": false,
+              "seconds": 0.19588158000260592,
+              "aggregate_output_tokens_per_second": 326.7280159734702
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18333616797463037,
+              "aggregate_output_tokens_per_second": 349.08551164250457
+            },
+            {
+              "warmup": false,
+              "seconds": 0.1816748059936799,
+              "aggregate_output_tokens_per_second": 352.2777946559438
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18271616598940454,
+              "aggregate_output_tokens_per_second": 350.2700467330913
+            },
+            {
+              "warmup": false,
+              "seconds": 0.18392106200917624,
+              "aggregate_output_tokens_per_second": 347.9753721561639
+            }
+          ]
+        },
+        {
+          "engine": "dllm",
+          "concurrency": 4,
+          "thinking": "auto",
+          "raw": true,
+          "prompt_token_ids": [
+            840,
+            20772,
+            1246,
+            18495,
+            3553,
+            323,
+            17179,
+            1995,
+            13,
+            13655,
+            279,
+            16148,
+            2797,
+            323,
+            63594,
+            13
+          ],
+          "top_logprobs": null,
+          "max_tokens": 32,
+          "trials": [
+            {
+              "warmup": true,
+              "total_seconds": 0.25699563999660313,
+              "first_output_seconds": 0.0911262920126319,
+              "post_first_output_tokens_per_second": 186.8940848733286,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.24737889299285598,
+              "first_output_seconds": 0.04519030000665225,
+              "post_first_output_tokens_per_second": 153.32220053638375,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.25326456199400127,
+              "first_output_seconds": 0.06117243200424127,
+              "post_first_output_tokens_per_second": 161.38089572775596,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": true,
+              "total_seconds": 0.2514321290072985,
+              "first_output_seconds": 0.07210988600854762,
+              "post_first_output_tokens_per_second": 172.87314435508114,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23271106299944222,
+              "first_output_seconds": 0.04251912797917612,
+              "post_first_output_tokens_per_second": 162.9932415204502,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23774142898037098,
+              "first_output_seconds": 0.0599212079832796,
+              "post_first_output_tokens_per_second": 174.33337910713243,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2310269420268014,
+              "first_output_seconds": 0.027400710008805618,
+              "post_first_output_tokens_per_second": 152.23971731333873,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2370667140057776,
+              "first_output_seconds": 0.07263730498380028,
+              "post_first_output_tokens_per_second": 188.53075118610076,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23551943400525488,
+              "first_output_seconds": 0.030579112994018942,
+              "post_first_output_tokens_per_second": 151.26354758808253,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2427588170103263,
+              "first_output_seconds": 0.04674039300880395,
+              "post_first_output_tokens_per_second": 158.14839935535468,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2421284040028695,
+              "first_output_seconds": 0.07340309798019007,
+              "post_first_output_tokens_per_second": 183.73058986085402,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.24134070001309738,
+              "first_output_seconds": 0.06044941800064407,
+              "post_first_output_tokens_per_second": 171.37365413699612,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22131127200555056,
+              "first_output_seconds": 0.022460395994130522,
+              "post_first_output_tokens_per_second": 155.89571754373193,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22686944901943207,
+              "first_output_seconds": 0.03831824500230141,
+              "post_first_output_tokens_per_second": 164.41157276929147,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22668356899521314,
+              "first_output_seconds": 0.051394966983934864,
+              "post_first_output_tokens_per_second": 176.85120221339562,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22589595901081339,
+              "first_output_seconds": 0.0634132609993685,
+              "post_first_output_tokens_per_second": 190.78954485243983,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22906354098813608,
+              "first_output_seconds": 0.03935870301211253,
+              "post_first_output_tokens_per_second": 163.41175233452947,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22875617901445366,
+              "first_output_seconds": 0.06593425601022318,
+              "post_first_output_tokens_per_second": 190.39205180738807,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22193297400372103,
+              "first_output_seconds": 0.022354515007464215,
+              "post_first_output_tokens_per_second": 155.32738430744882,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.22754781099501997,
+              "first_output_seconds": 0.05165983099141158,
+              "post_first_output_tokens_per_second": 176.24854182397243,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2319448199996259,
+              "first_output_seconds": 0.03593390999594703,
+              "post_first_output_tokens_per_second": 158.15446190938133,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.2313149299880024,
+              "first_output_seconds": 0.022656440996797755,
+              "post_first_output_tokens_per_second": 148.56812272472033,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23149352401378565,
+              "first_output_seconds": 0.047896528005367145,
+              "post_first_output_tokens_per_second": 168.84807853053627,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            },
+            {
+              "warmup": false,
+              "total_seconds": 0.23557219302165322,
+              "first_output_seconds": 0.0675245129968971,
+              "post_first_output_tokens_per_second": 184.47145474089973,
+              "usage": {
+                "prompt_tokens": 16,
+                "completion_tokens": 32,
+                "total_tokens": 48
+              },
+              "text": " Computers store and retrieve information using a combination of hardware and software components. Here's a step-by-step explanation of how they do this:\n\n1. Hardware components:",
+              "scored_tokens": 0
+            }
+          ],
+          "rounds": [
+            {
+              "warmup": true,
+              "seconds": 0.258450613997411,
+              "aggregate_output_tokens_per_second": 495.259028486124
+            },
+            {
+              "warmup": false,
+              "seconds": 0.23893305897945538,
+              "aggregate_output_tokens_per_second": 535.7149008459564
+            },
+            {
+              "warmup": false,
+              "seconds": 0.24357641700771637,
+              "aggregate_output_tokens_per_second": 525.5024339895148
+            },
+            {
+              "warmup": false,
+              "seconds": 0.22807506198296323,
+              "aggregate_output_tokens_per_second": 561.2187447725493
+            },
+            {
+              "warmup": false,
+              "seconds": 0.22957951697753742,
+              "aggregate_output_tokens_per_second": 557.5410284207707
+            },
+            {
+              "warmup": false,
+              "seconds": 0.2375024489883799,
+              "aggregate_output_tokens_per_second": 538.9418111063881
+            }
+          ]
+        }
+      ],
+      "devices": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283,GPU-70f6a991-a4d7-9984-c2a1-6c474445d53a",
+      "sources": {
+        "dllm/distributed.py": "328eba3373919768e9dab8100983264f6e78a0cea659b2eb750b783cafd6b055",
+        "dllm/distributed_serving.py": "7ccd0f8217d55bf9a7c54c67e70fbba10ed4a15f242763c4b0bdcf0ae323b115",
+        "dllm/distributed_server_cli.py": "3cac504f1eba74dee84200b779f977dd1e134da722e9ca68ba42b3a891350f65",
+        "dllm/batch.py": "b074a0bc205c4a958efb71b5b0e433897d80b0d2b881e5edfea6a49865d42d42",
+        "dllm/layer_stage.py": "77498f98e70328858ef4a69c5d38d0637ea7275407825fa3377e2c5f99fd91cf",
+        "dllm/partition_policy.py": "6cc155e04d6f9d0a362b6944a78030816a56598d8c8c84f430144cfa40b5fbcd"
+      },
+      "status": {
+        "device": "distributed-cuda",
+        "context": 512,
+        "models": [
+          {
+            "id": "a",
+            "residency": "gpu",
+            "quantization": "q8_0",
+            "model_sha256": "130f2c0e86933c57790f0efbe9d1e5249c0c3df768a83d4081bedf32a3e9b046"
+          }
+        ],
+        "distributed": true,
+        "stage_layers": [
+          [
+            0,
+            12
+          ],
+          [
+            12,
+            24
+          ]
+        ],
+        "max_batch_size": 4,
+        "packed_prefill": false,
+        "active": false,
+        "queued": 0,
+        "completed": 0,
+        "heartbeats": 0,
+        "failed": false,
+        "closed": false
+      },
+      "packed_prefill": false
+    }
+  ],
+  "summary": [
+    {
+      "packed_prefill": false,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 17.61941149015911,
+      "request_ms": 120.84492050053086,
+      "aggregate_tokens_per_second": 263.85317280866894
+    },
+    {
+      "packed_prefill": true,
+      "concurrency": 1,
+      "samples": 10,
+      "first_text_ms": 17.347466011415236,
+      "request_ms": 119.01082198892254,
+      "aggregate_tokens_per_second": 267.82580104839985
+    },
+    {
+      "packed_prefill": false,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 30.14332099701278,
+      "request_ms": 180.76163349905983,
+      "aggregate_tokens_per_second": 350.22651443138466
+    },
+    {
+      "packed_prefill": true,
+      "concurrency": 2,
+      "samples": 20,
+      "first_text_ms": 26.974034000886604,
+      "request_ms": 176.16518899740186,
+      "aggregate_tokens_per_second": 357.69231571210474
+    },
+    {
+      "packed_prefill": false,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 47.31846050708555,
+      "request_ms": 228.8334515033057,
+      "aggregate_tokens_per_second": 554.164041209265
+    },
+    {
+      "packed_prefill": true,
+      "concurrency": 4,
+      "samples": 40,
+      "first_text_ms": 49.60619100893382,
+      "request_ms": 211.96946650161408,
+      "aggregate_tokens_per_second": 593.4437448075225
+    }
+  ]
+}
