@@ -100,3 +100,9 @@ Compiler metadata reports 211 registers versus 128 for current kernels, with
 zero spills in both. A launch/tile sweep is needed before considering another
 serving comparison. These synthetic matrix measurements are not model
 throughput claims. `benchmark_q4_kernels.py --body-candidates` reproduces them.
+
+The bounded tile/launch sweep (`--tune-body`) keeps K tiles at 128 and checks
+exact contiguous-output equality for every configuration. On the two expensive
+one-row projections, its best results are gate/up 131.32 µs versus current
+59.27 µs, and down 83.19 µs versus 45.13 µs. Reducing registers or changing
+occupancy alone does not remove the regression. No tested setting is promoted.

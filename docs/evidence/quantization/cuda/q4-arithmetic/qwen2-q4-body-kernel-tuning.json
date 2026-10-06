@@ -1,0 +1,480 @@
+{
+  "device": "NVIDIA A2",
+  "torch": "2.6.0+cu124",
+  "tuning": true,
+  "checks": [
+    {
+      "outputs": 9728,
+      "width": 896,
+      "rows": 1,
+      "kernels": {
+        "paired": {
+          "relative_rms": 3.382252180017531e-05,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.05909784883260727,
+            0.05944579094648361
+          ],
+          "median_ms": 0.05927181988954544
+        },
+        "contiguous": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 127,
+          "spills": 0,
+          "round_ms": [
+            0.629205584526062,
+            0.6289464235305786
+          ],
+          "median_ms": 0.6290760040283203
+        },
+        "paired-load": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 211,
+          "spills": 0,
+          "round_ms": [
+            0.14576582610607147,
+            0.14573678374290466
+          ],
+          "median_ms": 0.14575130492448807
+        },
+        "load-n16-w4-s2": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 118,
+          "spills": 0,
+          "round_ms": [
+            0.19740496575832367,
+            0.1973869800567627
+          ],
+          "median_ms": 0.19739597290754318
+        },
+        "load-n32-w4-s1": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.13540467619895935,
+            0.1354149430990219
+          ],
+          "median_ms": 0.13540980964899063
+        },
+        "load-n32-w4-s2": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 150,
+          "spills": 0,
+          "round_ms": [
+            0.15674351155757904,
+            0.15673962235450745
+          ],
+          "median_ms": 0.15674156695604324
+        },
+        "load-n32-w4-s3": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 164,
+          "spills": 0,
+          "round_ms": [
+            0.15076598525047302,
+            0.15076395869255066
+          ],
+          "median_ms": 0.15076497197151184
+        },
+        "load-n64-w4-s1": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 162,
+          "spills": 0,
+          "round_ms": [
+            0.13131418824195862,
+            0.13132597506046295
+          ],
+          "median_ms": 0.13132008165121078
+        },
+        "load-n64-w8-s1": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.15746736526489258,
+            0.15741245448589325
+          ],
+          "median_ms": 0.1574399098753929
+        },
+        "load-n64-w8-s2": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 142,
+          "spills": 0,
+          "round_ms": [
+            0.23333939909934998,
+            0.2333032190799713
+          ],
+          "median_ms": 0.23332130908966064
+        },
+        "load-n64-w8-s3": {
+          "relative_rms": 3.1385759939439595e-05,
+          "registers": 141,
+          "spills": 0,
+          "round_ms": [
+            0.20257823169231415,
+            0.2025640457868576
+          ],
+          "median_ms": 0.20257113873958588
+        }
+      },
+      "paired_load_matches_contiguous": true
+    },
+    {
+      "outputs": 9728,
+      "width": 896,
+      "rows": 4,
+      "kernels": {
+        "paired": {
+          "relative_rms": 5.727168172597885e-06,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.060171324759721756,
+            0.06055110692977905
+          ],
+          "median_ms": 0.060361215844750404
+        },
+        "contiguous": {
+          "relative_rms": 0.0,
+          "registers": 127,
+          "spills": 0,
+          "round_ms": [
+            0.6291815042495728,
+            0.6294793486595154
+          ],
+          "median_ms": 0.6293304264545441
+        },
+        "paired-load": {
+          "relative_rms": 0.0,
+          "registers": 211,
+          "spills": 0,
+          "round_ms": [
+            0.14608970284461975,
+            0.14615364372730255
+          ],
+          "median_ms": 0.14612167328596115
+        },
+        "load-n16-w4-s2": {
+          "relative_rms": 0.0,
+          "registers": 122,
+          "spills": 0,
+          "round_ms": [
+            0.19775709509849548,
+            0.19784918427467346
+          ],
+          "median_ms": 0.19780313968658447
+        },
+        "load-n32-w4-s1": {
+          "relative_rms": 0.0,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.13572128117084503,
+            0.13580869138240814
+          ],
+          "median_ms": 0.1357649862766266
+        },
+        "load-n32-w4-s2": {
+          "relative_rms": 0.0,
+          "registers": 150,
+          "spills": 0,
+          "round_ms": [
+            0.15689395368099213,
+            0.1569909304380417
+          ],
+          "median_ms": 0.1569424420595169
+        },
+        "load-n32-w4-s3": {
+          "relative_rms": 0.0,
+          "registers": 164,
+          "spills": 0,
+          "round_ms": [
+            0.15073946118354797,
+            0.1508094072341919
+          ],
+          "median_ms": 0.15077443420886993
+        },
+        "load-n64-w4-s1": {
+          "relative_rms": 0.0,
+          "registers": 162,
+          "spills": 0,
+          "round_ms": [
+            0.13136117160320282,
+            0.13136710226535797
+          ],
+          "median_ms": 0.1313641369342804
+        },
+        "load-n64-w8-s1": {
+          "relative_rms": 0.0,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.15768170356750488,
+            0.15765181183815002
+          ],
+          "median_ms": 0.15766675770282745
+        },
+        "load-n64-w8-s2": {
+          "relative_rms": 0.0,
+          "registers": 142,
+          "spills": 0,
+          "round_ms": [
+            0.23353871703147888,
+            0.23354169726371765
+          ],
+          "median_ms": 0.23354020714759827
+        },
+        "load-n64-w8-s3": {
+          "relative_rms": 0.0,
+          "registers": 141,
+          "spills": 0,
+          "round_ms": [
+            0.2026764154434204,
+            0.2027122676372528
+          ],
+          "median_ms": 0.2026943415403366
+        }
+      },
+      "paired_load_matches_contiguous": true
+    },
+    {
+      "outputs": 896,
+      "width": 4864,
+      "rows": 1,
+      "kernels": {
+        "paired": {
+          "relative_rms": 7.449791155522689e-05,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.045143745839595795,
+            0.04511968418955803
+          ],
+          "median_ms": 0.04513171501457691
+        },
+        "contiguous": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 127,
+          "spills": 0,
+          "round_ms": [
+            0.46134939789772034,
+            0.4615645408630371
+          ],
+          "median_ms": 0.4614569693803787
+        },
+        "paired-load": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 211,
+          "spills": 0,
+          "round_ms": [
+            0.10326932370662689,
+            0.10332983732223511
+          ],
+          "median_ms": 0.103299580514431
+        },
+        "load-n16-w4-s2": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 122,
+          "spills": 0,
+          "round_ms": [
+            0.1115211471915245,
+            0.1115575060248375
+          ],
+          "median_ms": 0.111539326608181
+        },
+        "load-n32-w4-s1": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.08320046961307526,
+            0.08323154598474503
+          ],
+          "median_ms": 0.08321600779891014
+        },
+        "load-n32-w4-s2": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 150,
+          "spills": 0,
+          "round_ms": [
+            0.08802513778209686,
+            0.08807876706123352
+          ],
+          "median_ms": 0.08805195242166519
+        },
+        "load-n32-w4-s3": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 164,
+          "spills": 0,
+          "round_ms": [
+            0.08312956243753433,
+            0.08324827998876572
+          ],
+          "median_ms": 0.08318892121315002
+        },
+        "load-n64-w4-s1": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 162,
+          "spills": 0,
+          "round_ms": [
+            0.10382620245218277,
+            0.10385396331548691
+          ],
+          "median_ms": 0.10384008288383484
+        },
+        "load-n64-w8-s1": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.11345907300710678,
+            0.1135273352265358
+          ],
+          "median_ms": 0.11349320411682129
+        },
+        "load-n64-w8-s2": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 142,
+          "spills": 0,
+          "round_ms": [
+            0.15253546833992004,
+            0.15260647237300873
+          ],
+          "median_ms": 0.15257097035646439
+        },
+        "load-n64-w8-s3": {
+          "relative_rms": 7.473200093954802e-05,
+          "registers": 141,
+          "spills": 0,
+          "round_ms": [
+            0.12829697132110596,
+            0.12832626700401306
+          ],
+          "median_ms": 0.1283116191625595
+        }
+      },
+      "paired_load_matches_contiguous": true
+    },
+    {
+      "outputs": 896,
+      "width": 4864,
+      "rows": 4,
+      "kernels": {
+        "paired": {
+          "relative_rms": 0.0002563808811828494,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.045355115085840225,
+            0.04528217017650604
+          ],
+          "median_ms": 0.045318642631173134
+        },
+        "contiguous": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 127,
+          "spills": 0,
+          "round_ms": [
+            0.46148762106895447,
+            0.4615250527858734
+          ],
+          "median_ms": 0.46150633692741394
+        },
+        "paired-load": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 211,
+          "spills": 0,
+          "round_ms": [
+            0.10338950157165527,
+            0.10342054069042206
+          ],
+          "median_ms": 0.10340502113103867
+        },
+        "load-n16-w4-s2": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 122,
+          "spills": 0,
+          "round_ms": [
+            0.11187125742435455,
+            0.1118529886007309
+          ],
+          "median_ms": 0.11186212301254272
+        },
+        "load-n32-w4-s1": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.08345040678977966,
+            0.08342592418193817
+          ],
+          "median_ms": 0.08343816548585892
+        },
+        "load-n32-w4-s2": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 150,
+          "spills": 0,
+          "round_ms": [
+            0.08816773444414139,
+            0.08814074099063873
+          ],
+          "median_ms": 0.08815423771739006
+        },
+        "load-n32-w4-s3": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 164,
+          "spills": 0,
+          "round_ms": [
+            0.08325856178998947,
+            0.083177350461483
+          ],
+          "median_ms": 0.08321795612573624
+        },
+        "load-n64-w4-s1": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 162,
+          "spills": 0,
+          "round_ms": [
+            0.10377867519855499,
+            0.10374687612056732
+          ],
+          "median_ms": 0.10376277565956116
+        },
+        "load-n64-w8-s1": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 128,
+          "spills": 0,
+          "round_ms": [
+            0.1137547641992569,
+            0.11376049369573593
+          ],
+          "median_ms": 0.11375762894749641
+        },
+        "load-n64-w8-s2": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 142,
+          "spills": 0,
+          "round_ms": [
+            0.1526688039302826,
+            0.15269681811332703
+          ],
+          "median_ms": 0.1526828110218048
+        },
+        "load-n64-w8-s3": {
+          "relative_rms": 0.0002561860892456025,
+          "registers": 141,
+          "spills": 0,
+          "round_ms": [
+            0.12834736704826355,
+            0.1283438801765442
+          ],
+          "median_ms": 0.12834562361240387
+        }
+      },
+      "paired_load_matches_contiguous": true
+    }
+  ],
+  "scope": "Synthetic real-GPU Qwen2.5-0.5B body matrix profiling; not whole-model performance"
+}
