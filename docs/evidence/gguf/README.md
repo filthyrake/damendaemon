@@ -2236,3 +2236,28 @@ normal expansion-plus-dense multiplication; outputs pass the RMS gate but are
 not bitwise identical to that control's reduction order. No broad launch
 policy or model/serving speedup is established. Intermediate boundaries and
 full-model validation would be necessary for any narrow follow-up selection.
+
+### Isolated Q4_0 Marlin experiment
+
+`scripts/experiments/q4_marlin.cu` uses the already attributed Marlin headers
+with 32-value scale groups and a constant integer zero point of eight. Its
+separate symbols/ABI cannot be loaded as the production AWQ library. The Python
+adapter checks integer coefficients and scale permutations without requantizing.
+Canonical Q4 buffers remain present, so the prepared Marlin layout is additional
+resident storage; the harness records those bytes and one-time preparation time.
+No normal runtime dispatch uses this experiment.
+
+Build separately with `nvcc -O3 -std=c++17 -arch=sm_86
+--expt-relaxed-constexpr -shared -Xcompiler -fPIC -Ithird_party/marlin
+scripts/experiments/q4_marlin.cu -o PATH.so`, then run
+`scripts/experiments/bench_q4_marlin.py MODEL --library PATH.so --output REPORT`.
+The pinned Marlin license and provenance remain in `third_party/marlin`.
+
+The initial A2 report, `mistral-q4-marlin-matrices-underflow-initial-a2.json`,
+**fails** its first accuracy gate: two QKV rows with activation exponent -14
+have relative RMS 0.002622 against the FP16 matrix-library reference, above the
+unchanged 0.001 limit. The existing production kernel has exactly the same
+error and the candidate matches its output bitwise. This needs a higher-
+precision reference diagnosis; it is neither a passing candidate nor evidence
+that Marlin alone introduced the discrepancy. No speed result follows from the
+aborted gate.

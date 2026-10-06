@@ -1,0 +1,55 @@
+{
+  "passed": false,
+  "device": "NVIDIA A2",
+  "gpu_uuid": "GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283",
+  "torch": "2.6.0+cu124",
+  "model": "/home/damen/dllm-dev/baselines/mistral-spm-q4-comparator.gguf",
+  "model_sha256": "cbea665de7de1050c1741ae205422a47bd62815c84c655fba55962fdc805ed66",
+  "library": "/home/damen/dllm-dev/results/libdllm-q4-marlin-experiment.so",
+  "library_sha256": "18a80018190a1fd39b8a7a924c8e5c6fc6ff9ebdf527bf886ac98204c5a99897",
+  "scope": "Real Q4_0 projections; preserved integer coefficients/signed FP16 scales; independent FP16 dequantized oracle. Warm CUDA graph ABBA excludes one-time repacking. Prepared weights are additional resident storage. No full-model or serving claim.",
+  "sources": {
+    "scripts/experiments/q4_marlin.cu": "97084e400eeabe932bcd8ad53534f82e5bbfac5a1d626c30157994f59f28eb16",
+    "scripts/experiments/q4_marlin.py": "a23a5dbeea698b9b6dde50b1a2e47e117f73f56ab67c8a7b88f387499697ab7a",
+    "scripts/experiments/bench_q4_marlin.py": "72135a9343fe0a5fbe8f665baac2bf4c864a93389865736249caf678728f9291",
+    "third_party/marlin/marlin_template.h": "972ffd66fdfb6781dad13daea1167981821a78b86a93d865baa2b3c3ed11cd19",
+    "third_party/marlin/awq_repack.cuh": "973f494161eb47436ca3cc6c48ac37bcbbc6fa7ac3f8d8fa6ca9a7d8165df5f4"
+  },
+  "matrices": [
+    {
+      "name": "0.qkv.weight",
+      "outputs": 6144,
+      "width": 4096,
+      "bias": false,
+      "repack_seconds": 0.058677897992311046,
+      "canonical_bytes": 14155776,
+      "additional_prepared_bytes": 14548992,
+      "negative_scale_count": 393103
+    },
+    {
+      "name": "0.qkv.weight",
+      "outputs": 6144,
+      "width": 4096,
+      "bias": true,
+      "repack_seconds": 0.020982922986149788,
+      "canonical_bytes": 14155776,
+      "additional_prepared_bytes": 14561280,
+      "negative_scale_count": 393103
+    }
+  ],
+  "checks": [
+    {
+      "name": "0.qkv.weight",
+      "rows": 2,
+      "exponent": -14,
+      "bias": false,
+      "relative_rms": 0.0026221685111522675,
+      "control_relative_rms": 0.0026221685111522675,
+      "exact_production": true,
+      "passed": false
+    }
+  ],
+  "timings": [],
+  "workspace_bytes": 2621600,
+  "error": "AssertionError({'name': '0.qkv.weight', 'rows': 2, 'exponent': -14, 'bias': False, 'relative_rms': 0.0026221685111522675, 'control_relative_rms': 0.0026221685111522675, 'exact_production': True, 'passed': False})"
+}
