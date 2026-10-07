@@ -68,7 +68,10 @@ class HostDistributedRuntime(DistributedRuntime):
 
     def __init__(self,pair,alias='model',queue_size=8,queue_timeout=120,*,client_decode_turns=False,interleaved_prefill=False):
         if not isinstance(pair,HostServingPair):raise ValueError('CPU host runtime requires its explicit pair adapter')
-        super().__init__(pair,alias,queue_size,queue_timeout,client_decode_turns=client_decode_turns,interleaved_prefill=interleaved_prefill)
+        with pair.worker.lock:
+            if not pair.worker.ready or pair.worker.closed or pair.worker.failed:
+                raise ValueError('CPU host runtime requires a ready peer session')
+            super().__init__(pair,alias,queue_size,queue_timeout,client_decode_turns=client_decode_turns,interleaved_prefill=interleaved_prefill)
 
     def model_manifest(self):raise ValueError('CPU host sessions cannot be exported as GPU model manifests')
 
@@ -91,13 +94,10 @@ class HostDistributedRuntime(DistributedRuntime):
         if type(max_tokens) is not int or not 1<=max_tokens<=4096:raise ValueError('CPU host output limit must be 1..4096')
         yield from super().generate(alias,messages,max_tokens,**options)
 
-    def run(self,*args,**kwargs):
-        try:return super().run(*args,**kwargs)
-        except BaseException as primary:
-            # A failed epoch is never returned to an owner for request reuse.
-            try:self.pair.close()
-            except BaseException:primary.add_note('CPU host cleanup failed; retain pair and retry close')
-            raise
+    def _execution_failed(self,primary):
+        # A failed epoch is never returned to an owner for request reuse.
+        try:self.pair.close()
+        except BaseException:primary.add_note('CPU host cleanup failed; retain pair and retry close')
 
     def close(self):
         super().close()

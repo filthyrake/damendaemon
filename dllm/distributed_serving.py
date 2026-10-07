@@ -18,6 +18,7 @@ from .distributed_admission import DistributedAdmission
 from .client_decode_turns import ClientDecodeTurns
 
 STREAM_BUFFER_EVENTS=8
+_pair_claim_lock=threading.Lock()
 
 
 @dataclass
@@ -75,6 +76,14 @@ class DistributedRuntime:
         self.heartbeats=0
         self.client_decode_turns=client_decode_turns;self.decode_turns=ClientDecodeTurns()
         self.interleaved_prefill=interleaved_prefill;self.prefill_turn=0
+        self.execution_lock=threading.Lock();self.owner=object()
+        with _pair_claim_lock:
+            state=getattr(pair,'state',None)
+            if (getattr(pair,'_serving_owner',None) is not None or state is None
+                    or getattr(state,'failed',False) or getattr(state,'closed',False)
+                    or getattr(state,'pending',None) is not None or any(state.lengths)):
+                raise ValueError('distributed serving requires an unclaimed ready empty pair')
+            pair._serving_owner=self.owner
 
     def model_ids(self):return [self.alias]
 
@@ -191,6 +200,19 @@ class DistributedRuntime:
     def run(self, idle_timeout=0, heartbeat_interval=5):
         if not 0 < heartbeat_interval <= 10 or not 0 <= idle_timeout <= 86400:
             raise ValueError('invalid distributed serving time bounds')
+        if not self.execution_lock.acquire(blocking=False):raise BusyError('distributed execution already has an owner')
+        try:
+            if self.closed.is_set():raise BusyError('distributed runtime is closed')
+            try:return self._run_owned(idle_timeout,heartbeat_interval)
+            except BaseException as primary:
+                self._execution_failed(primary)
+                raise
+        finally:self.execution_lock.release()
+
+    def _execution_failed(self,primary):
+        """Backend-specific teardown, only after actual owned execution fails."""
+
+    def _run_owned(self,idle_timeout,heartbeat_interval):
         last_request=last_control=time.monotonic()
         active=[]
         try:
@@ -266,6 +288,9 @@ class DistributedRuntime:
             self.closed.set()
             try:
                 if active and not self.pair.state.failed:self._release(active)
+            except BaseException as cleanup:
+                if self.failure is None:self.failure=cleanup;raise
+                self.failure.add_note('distributed slot release failed; retain pair for backend cleanup')
             finally:
                 self.active=False
                 self.decode_turns.reset();self.prefill_turn=0

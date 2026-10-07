@@ -207,3 +207,16 @@ class HostServingTests(unittest.TestCase):
         self.assertTrue(all(r['usage']['completion_tokens']==1 for r in results))
         self.assertTrue(self.runtime.manage('status')['client_admission_turns'])
         self.assertFalse(self.runtime.requests.fair.recent);self.assertFalse(any(self.pair.state.lengths));self.assertFalse(self.errors)
+
+    def test_duplicate_runtime_and_loop_or_bad_run_args_do_not_close_healthy_peer(self):
+        with self.assertRaisesRegex(ValueError,'unclaimed'):HostDistributedRuntime(self.pair)
+        with self.assertRaises(ValueError):self.runtime.run(heartbeat_interval=0)
+        self.assertTrue(self.workers[0].ready);self.assertFalse(self.workers[0].closed)
+        self.assertFalse(self.runtime.closed.is_set())
+        self.start();deadline=time.monotonic()+2
+        while not self.runtime.execution_lock.locked() and time.monotonic()<deadline:time.sleep(.002)
+        self.assertTrue(self.runtime.execution_lock.locked())
+        with self.assertRaisesRegex(BusyError,'already has an owner'):self.runtime.run()
+        result=list(self.runtime.generate('model',None,3,raw_prompt=[1,2]))
+        self.assertEqual(result[-1]['usage']['completion_tokens'],3)
+        self.assertTrue(self.workers[0].ready);self.assertFalse(self.errors)

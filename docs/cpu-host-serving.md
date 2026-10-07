@@ -110,3 +110,17 @@ long-context qualification or weighted prefill fairness is implied. Actual CPU
 TLS-peer tests cover unequal and newly arriving prompts, decode interleaving,
 partial cancellation/reuse, failure and output/usage agreement with whole-model
 controls.
+
+A prepared pair transfers to exactly one distributed runtime. Construction rejects
+already-claimed, occupied, pending, failed or closed pairs; invalid constructor
+options leave an otherwise fresh pair unclaimed. A runtime also permits only one
+execution loop. Concurrent loops and attempts to restart a closed runtime fail
+before peer dispatch. Invalid `run` timing options or a rejected duplicate loop
+do not close the active CPU peer session.
+
+Only failures inside an acquired execution lifetime trigger backend teardown.
+If slot release also fails, the original execution error remains primary with a
+cleanup note; retain the owner for backend cleanup. Pair ownership is permanent
+for that lifetime: after shutdown, create a new prepared session rather than
+reusing the same pair under a different runtime. These guards enforce ownership;
+they do not make direct caller submissions to a transferred pair safe.
