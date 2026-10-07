@@ -44,7 +44,8 @@ class ReferenceRuntime:
 
     def cleanup_pending(self):
         runner=self.runner
-        return bool(runner is not None and (runner.failed_cleanups or getattr(runner.model,'failed_cleanups',[])))
+        return bool(runner is not None and (runner.failed_cleanups
+            or getattr(runner.model,'failed_cleanups',[]) or getattr(runner.model,'failed_prefills',[])))
 
     def manage(self,action,**options):
         if action!='status' or options:raise ValueError('CPU reference model management is unsupported')

@@ -52,3 +52,42 @@ not isolated engine performance. The local gate covers scripted native formats,
 real packed GLM arithmetic through HTTP, legacy handler regressions and lifecycle
 failures. Official-weight quality, accelerator execution, practical long context,
 continuous batching and multi-user SLO qualification remain open under #53/#56–#59.
+
+## Explicit local command
+
+Run a prepared local snapshot without registering it as a production GPU model:
+
+```sh
+python -m scripts.serve_cpu_reference glm /path/to/snapshot --alias local-glm --context 4096 --port 8088
+```
+
+Select `glm`, `flash` or `deepseek` explicitly. The command checks the selected
+family, tokenizer/configuration and the existing `DLLM_API_KEY`,
+`DLLM_ADMIN_API_KEY` and `DLLM_CLIENT_KEYS` policy before loading tensor payloads.
+It does not download weights. Authentication is optional under the existing
+loopback policy; `/health` remains public. With a key configured, model listing and
+inference require it. No credentials are printed.
+
+The listener is fixed to `127.0.0.1`; port zero selects an ephemeral port. A JSON
+`http_ready` line provides its URL only after model loading and a successful bind.
+`--connections` caps connection threads (default 16, maximum 64); execution still
+allows only one active request and returns 503 for another.
+
+All families use FP32 CPU arithmetic. `--weight-mib` caps retained model weights,
+`--cache-mib` caps request caches, and `--projection-workspace-mib` caps projection
+scratch. Defaults are 256, 256 and 8 MiB. GLM/Flash additionally accept
+`--workspace-mib` and `--output-mib` (both default 64 MiB); DeepSeek rejects those
+options because its loader has no corresponding independent budgets. Component
+budgets do not constitute a total process-memory cap. Defaults are deliberately
+small reference limits, not recommendations for official model deployment.
+
+SIGINT/SIGTERM stops new admission and requests cooperative cancellation. The
+command joins HTTP request threads, retries owned cache cleanup, then emits
+`stopped`. A CPU kernel cannot be interrupted mid-operation; shutdown can wait for
+it and for an existing socket's 30-second timeout. Failed cleanup exits with an
+error instead of reporting successful shutdown. DeepSeek failed-prefill caches
+are included in the runner's cleanup and the HTTP pending-cleanup status.
+
+Tiny packed local snapshots exercise each family's command through real HTTP/SSE
+and process shutdown. This verifies wiring and lifecycle, not useful official-model
+answers or GPU performance.
