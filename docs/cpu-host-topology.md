@@ -52,3 +52,28 @@ These are prepared-stage APIs: snapshot construction, command bootstrap and HTTP
 integration still need explicit topology adapters. Source identity remains a
 caller assertion unless a separate verified snapshot path supplies it. No GPU,
 real-network, model-quality or performance qualification is implied.
+
+## Snapshot construction
+
+`build_cpu_host_pipeline_worker(path, topology, index, transports, epoch=...)`
+loads only the assigned range with the existing stage-local checkpoint loader.
+Index zero receives transports ordered by remote stage; every other index
+receives its single rank-one transport. Full snapshot headers are validated, but
+unassigned tensor payloads are not loaded. Weight, loader workspace, cache,
+projection workspace and output budgets retain their separate existing bounds.
+The resulting worker still needs explicit handshake and an owner to run it.
+
+Invalid local controls leave transports caller-owned. Once the builder claims
+all fresh links, construction failure attempts every link and partial-stage
+cleanup, even when one close fails. Retain `CpuHostPipelineBuildError` when its
+`closed` flag is false and retry `close()`; no failed worker can be resumed.
+
+With `verify_source=True`, the builder hashes the selected complete snapshot
+under explicit byte/time limits and requires that digest to equal the topology's
+source identity. It pins the resolved snapshot root and checks inventory/file
+stamps after loading and stage construction. This verification reads all selected
+snapshot bytes even though tensor allocation remains stage-local. The returned
+worker reports `model_identity_verified` and `source_model_id`; the default is
+an unverified operator assertion. Verification is a local property of that build,
+not remote attestation or proof against a privileged writer racing the filesystem.
+No network listener, remote deployment or credential issuance is performed.
