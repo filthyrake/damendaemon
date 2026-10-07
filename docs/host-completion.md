@@ -48,3 +48,6 @@ Authenticated local peers match whole CPU pipeline token sequences for floating,
 Q4_0 and Q8_0 checkpoints, including ragged chunks, unequal limits and reuse.
 These tests do not qualify official-model quality, practical long context,
 hardware, network throughput or multi-user SLOs. Parent issue: #51.
+
+Use the [two-process command](cpu-host-command.md) to bootstrap explicit TLS peers
+and stage-local snapshots without writing the orchestration code yourself.
