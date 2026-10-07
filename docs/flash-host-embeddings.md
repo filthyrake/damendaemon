@@ -73,7 +73,7 @@ host epoch usable. Cancellation or parser failure after execution starts
 retires it, and failed cleanup remains retryable. `close()` drops the generator's
 vision reference after host cleanup succeeds; callers still own any borrowed
 vision references. Ordinary native text/tool methods also remain available on
-this explicit owner. Native command and HTTP admission are separate gates.
+this explicit owner. Command and HTTP exposure are described separately below.
 
 ## Standalone command
 
@@ -82,7 +82,7 @@ Use `scripts.run_glm_flash_host_topology` with `--native-chat --flash-images` on
 containing bounded inline PNG/JPEG `image_url` parts, plus optional `--tools`.
 Existing plan, stage index, explicit peer addresses, TLS certificates and source
 identity arguments are unchanged. Image/text policy disagreement fails the
-handshake. Image mode currently rejects raw prompts, batch messages and serve.
+handshake. Image mode rejects raw prompts and batch messages.
 
 Coordinator-only image controls are `--vision-weight-mib` (default 256),
 `--image-workspace-mib` and `--image-output-mib` (default 64 each), and
@@ -96,3 +96,27 @@ peers. Optional snapshot verification checks the already-hashed source again
 after vision and language loading. Ready metadata reports `still_image`;
 completion success is emitted only after every peer acknowledges STOP. No
 provisioning, discovery, remote image fetch or hardware execution is implied.
+
+## HTTP and bounded queues
+
+The explicit `serve` role now accepts `--native-chat --flash-images`. It loads
+coordinator vision before connecting and admits only the exact native image
+runner through `HostFlashImageReferenceRuntime`. Add `--queue-size N` for the
+optional serialized `QueuedHostFlashImageReferenceRuntime`; existing queue
+expiry, client admission turns, bounded output buffers and administrative drain
+apply. `--stop-after-drain` requires that queue. There is no continuous batching.
+
+The existing authenticated chat route accepts bounded inline PNG/JPEG messages,
+optional native tools and supported reasoning options, with JSON or SSE output.
+Text-only runtimes continue rejecting image requests. Model status and timing
+report image modality, stage ranges, source identity, terminal state and whether
+vision shares the verified snapshot. Queued JSON is detached before handoff;
+pixels and vision features are prepared only for the active request. Invalid
+undispatched requests and expired waiters preserve a healthy epoch. Active
+abandonment, remote loss or cancellation retires it and flushes waiters; failed
+cleanup retains ownership. Peer PING preserves backpressured active slots;
+idle shutdown/drain reports success only after acknowledged STOP.
+
+All command/HTTP evidence uses tiny CPU fixtures and local TLS/HTTP. It does
+not qualify remote deployment, trained image understanding, GPU performance,
+practical long context or multi-user SLOs.

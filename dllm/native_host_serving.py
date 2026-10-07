@@ -14,6 +14,7 @@ class NativeHostReferenceRuntime(ReferenceRuntime):
     """
     runner_type=None
     model_type=None
+    supports_images=False
 
     def __init__(self,runner,alias='model'):
         if self.runner_type is None or type(runner) is not self.runner_type:raise ValueError('host HTTP requires an explicit native reference host runner')
@@ -28,7 +29,7 @@ class NativeHostReferenceRuntime(ReferenceRuntime):
                 raise ValueError('host HTTP requires an unclaimed healthy idle native runner')
             self.runner,self.alias=runner,alias
             self.lock=threading.Lock();self.stopping=threading.Event()
-            self.images=False;self.family=self.model_type;self.context=runner.max_context
+            self.images=self.supports_images;self.family=self.model_type;self.context=runner.max_context
             self.active=self.closed=False;self.owner=object()
             self.stage_layers=tuple(worker.topology.ranges)
             self.source_model_id=worker.topology.source_identity.hex()
@@ -47,7 +48,8 @@ class NativeHostReferenceRuntime(ReferenceRuntime):
     def execution_status(self):
         return dict(execution='cpu_host_topology',distributed=True,stage_layers=[list(pair) for pair in self.stage_layers],
                     source_model_id=self.source_model_id,topology_identity=self.topology_identity,
-                    model_identity_verified=self.model_identity_verified,epoch_terminal=self._terminal())
+                    model_identity_verified=self.model_identity_verified,epoch_terminal=self._terminal(),
+                    **(dict(vision_identity_verified=self.model_identity_verified) if self.images else {}))
 
     def cleanup_pending(self):
         runner=self.runner

@@ -77,7 +77,7 @@ def run(args,*,family='qwen'):
     scope=f'{family}_cpu_host_topology_reference' if family!='qwen' else 'cpu_host_topology_reference'
     connections=[];transports=[];listener=worker=runner=vision=None;primary=None
     try:
-        if plan.input_kind=='flash_embeddings' and args.role=='complete':
+        if plan.input_kind=='flash_embeddings' and args.role in ('complete','serve'):
             from scripts.flash_host_images import load_vision
             vision=load_vision(args,plan,verified)
         if args.role=='worker':
@@ -131,7 +131,7 @@ def run(args,*,family='qwen'):
         elif args.role=='serve':
             if family in ('glm','flash','deepseek'):
                 from scripts.glm_host_http import serve
-                serve(worker,text,args,auth,family=family)
+                serve(worker,text,args,auth,family=family,vision=vision)
             else:serve_worker_pair(worker,text,args,auth,pair_type=HostServingTopology)
         elif family in ('glm','flash','deepseek') and args.native_chat:
             if family=='deepseek':

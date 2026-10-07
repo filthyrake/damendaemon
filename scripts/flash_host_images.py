@@ -15,8 +15,8 @@ def validate_options(args,*,family):
     if not enabled:
         if supplied:raise ValueError('image budgets require --flash-images')
         return False
-    if family!='flash' or not args.native_chat or args.role not in ('complete','worker'):
-        raise ValueError('Flash images require explicit native Flash complete/worker mode')
+    if family!='flash' or not args.native_chat or args.role not in ('complete','worker','serve'):
+        raise ValueError('Flash images require explicit native Flash complete/worker/serve mode')
     if args.batch_messages is not None or args.ragged_batch or args.prompt is not None:
         raise ValueError('Flash host images require one inline messages request, not prompt/batch input')
     if args.role=='worker' and supplied:raise ValueError('vision/image budgets belong only to the coordinator')

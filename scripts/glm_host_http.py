@@ -8,21 +8,31 @@ from dllm.server import BoundedHTTPServer
 from scripts.run_cpu_host_reference import emit
 
 
-def serve(worker,text,args,auth,*,family='glm'):
+def serve(worker,text,args,auth,*,family='glm',vision=None):
+    images=getattr(args,'flash_images',False)
+    if images and (family!='flash' or vision is None):raise ValueError('image HTTP requires explicit Flash vision ownership')
+    if not images and vision is not None:raise ValueError('text HTTP does not accept vision ownership')
     if family=='deepseek':
         from dllm.deepseek_host_generation import HostDeepSeekGenerator as Runner
         from dllm.deepseek_host_serving import HostDeepSeekReferenceRuntime as Runtime
         from dllm.queued_deepseek_host_serving import QueuedHostDeepSeekReferenceRuntime as QueuedRuntime
     elif family=='flash':
-        from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
-        from dllm.glm_flash_host_serving import HostFlashReferenceRuntime as Runtime
-        from dllm.queued_glm_flash_host_serving import QueuedHostFlashReferenceRuntime as QueuedRuntime
+        if images:
+            from dllm.glm_flash_host_image_generation import HostFlashImageGenerator as Runner
+            from dllm.glm_flash_host_image_serving import HostFlashImageReferenceRuntime as Runtime,QueuedHostFlashImageReferenceRuntime as QueuedRuntime
+        else:
+            from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
+            from dllm.glm_flash_host_serving import HostFlashReferenceRuntime as Runtime
+            from dllm.queued_glm_flash_host_serving import QueuedHostFlashReferenceRuntime as QueuedRuntime
     elif family=='glm':
         from dllm.glm_host_generation import HostGlmGenerator as Runner
         from dllm.glm_host_serving import HostGlmReferenceRuntime as Runtime
         from dllm.queued_glm_host_serving import QueuedHostGlmReferenceRuntime as QueuedRuntime
     else:raise ValueError('unsupported native host HTTP family')
-    runner=Runner(worker,text,chunk_size=args.prefill_chunk)
+    if images:
+        from scripts.flash_host_images import generation_options
+        runner=Runner(worker,text,vision,chunk_size=args.prefill_chunk,**generation_options(args))
+    else:runner=Runner(worker,text,chunk_size=args.prefill_chunk)
     runtime=(QueuedRuntime(runner,args.alias,queue_size=args.queue_size,queue_timeout=args.queue_timeout)
              if args.queue_size else Runtime(runner,args.alias))
     server=None;previous={};primary=None;stopping=threading.Event()
@@ -34,7 +44,7 @@ def serve(worker,text,args,auth,*,family='glm'):
         if threading.current_thread() is threading.main_thread():
             for sig in (signal.SIGTERM,signal.SIGINT):previous[sig]=signal.signal(sig,interrupt)
         emit(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',model=args.alias,
-            model_type=runtime.family,scope='cpu_reference',native_chat=True,dtype='float32',
+            model_type=runtime.family,scope='cpu_reference',native_chat=True,dtype='float32',modality='still_image' if images else 'text',
             official_model_qualified=False,queue_enabled=bool(args.queue_size),queue_capacity=args.queue_size,**runtime.execution_status()))
         next_ping=time.monotonic()+args.heartbeat_interval
         while not stopping.is_set():

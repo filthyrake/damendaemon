@@ -71,7 +71,7 @@ class FlashImageHostCommandTests(unittest.TestCase):
         for extra in (['--vision-weight-mib','256'],['--messages',str(self.history)]):
             with patch.object(shared.socket,'socket',side_effect=AssertionError('worker bind')),redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):
                 cli.main(self.args('worker',1,extra=extra))
-        with redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):cli.main(self.args('serve'))
+        with redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):cli.main(self.args('serve',extra=['--messages',str(self.history)]))
 
     def test_vision_load_finishes_before_first_connection(self):
         self.snapshot(2);workers=self.workers('fp8_reference');order=[]
