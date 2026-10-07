@@ -438,6 +438,13 @@ fixture). The ordinary text path explicitly rejects tools, internal task roles,
 multimodal content and maximum-effort prompting pending their own integration.
 It remains separate from HTTP admission and real-model qualification.
 
+`dllm.deepseek_output.DeepSeekOutput` incrementally separates ordinary generated
+reasoning and final content. It retains only a possible control-marker suffix,
+handles arbitrary text chunk boundaries, requires EOS for normal completion,
+and reports explicit truncation separately. Malformed controls, trailing data
+and currently unsupported DSML tool output fail and make the parser unusable.
+Previously emitted deltas remain partial output when a later chunk fails.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
