@@ -189,7 +189,7 @@ table on CPU before device placement; `select_token_experts` then uses device
 indexing without host routing decisions and preserves the table's column order.
 The caller must validate vocabulary bounds before execution. These are isolated
 routing components; compression, hyper-connections, FP4 experts, FP8 scales,
-shared-expert execution and full-model serving are still separate work. Defensive
+full-model integration and serving are still separate work. Defensive
 zero-underflow handling is not a claim of equivalence to the reference's NaN cell.
 
 `dllm.expert_ffn.expert_feed_forward` adds a floating shared/routed expert block.
@@ -202,6 +202,21 @@ computes an independent shared-expert contribution. CPU scalar and low-precision
 tests cover this ordering, including a control that distinguishes weighting
 before the cast from weighting after the down projection. This is a reusable
 block, not routed expert placement, packed FP4/FP8 execution or full-model serving.
+
+### DeepSeek V4 residual-stream components
+
+`dllm.hyper_connections` independently implements the pinned MIT reference's
+learned reduction of residual streams, post-layer recombination, and final head
+reduction. Mixing and accumulation use FP32 while residual/output storage retains
+FP16, BF16 or FP32. The mixing matrix is indexed by source and destination; batched
+matrix multiplication avoids a stream-by-stream-by-hidden broadcast temporary.
+Sinkhorn normalization preserves the reference's initial row softmax, epsilon
+placement, initial column normalization and subsequent row/column iterations.
+CPU scalar-oracle tests cover these equations, asymmetric matrix orientation,
+reordered and empty batches, dtype preservation and invalid contracts. Hot-path
+operations do not extract tensor values to the host. Inputs and learned parameters
+must be finite. These primitives do not admit DeepSeek to serving or qualify its
+attention compression, packed weights, long context or GPU behavior.
 
 ## GPT-OSS (CUDA)
 
