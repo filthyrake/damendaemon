@@ -165,3 +165,27 @@ host builder, command or host HTTP adapter; existing Qwen-specific bootstrap and
 HTTP admission reject GLM until those explicit integrations exist. Source bytes
 remain an operator assertion unless separately verified; this is no physical
 network, official-model or performance qualification.
+
+## Snapshot-to-host construction
+
+`build_glm_host_pipeline_worker(path, topology, index, transports, epoch=..., ...)`
+constructs one process's assigned GLM range from a local snapshot. It validates
+controls and atomically claims fresh ordered links using the same claim rule as
+the Qwen builder. Per-process weight, projection, scratch, output and aggregate
+slot-cache allowances apply. Configuration must match the topology exactly.
+
+With `verify_source=True`, the bounded full-snapshot byte fingerprint must match
+`topology.source_identity`, and its file receipt is checked after loading and
+stage construction. Verification reads all selected snapshot bytes, including
+text metadata; tensor decoding/loading still covers only the assigned range.
+Without verification the source identity is an operator assertion. This local
+verification is not remote attestation.
+
+The builder creates no sockets, listeners or handshake threads. A
+`GlmHostPipelineBuildError` owns claimed transports/channels and any stage until
+`close()` succeeds; retry it when cleanup fails. Builder-owned checkpoint weights
+are released after successful stage/cache close, while lightweight configuration
+and range metadata remain available. Prepared caller-owned stage weights keep
+the separate borrowing contract described above. Generated-snapshot tests cover
+verified three-stage TLS execution, identity/configuration/budget mismatch,
+file replacement and partial link cleanup failures.

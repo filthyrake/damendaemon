@@ -24,12 +24,33 @@ class CpuHostPipelineBuildError(RuntimeError):
             try:owner.close()
             except BaseException as error:errors.append(error)
         if self.stage is not None:
-            try:self.stage.release_partial()
+            try:(getattr(self.stage,'release_partial',None) or self.stage.close)()
             except BaseException as error:errors.append(error)
         if errors:
             if len(errors)>1:errors[0].add_note('additional CPU topology cleanup failures; retain build error and retry close')
             raise errors[0]
         self.closed=True
+
+
+def _claim_transports(topology,index,transports,epoch):
+    """Atomically claim validated fresh ordered links for one stage builder."""
+    StageState(epoch,topology.context,topology.slots,context_limit=topology.context_limit)
+    remote=list(range(1,len(topology.ranges))) if index==0 else [index]
+    rank=0 if index==0 else 1
+    if (not isinstance(transports,(list,tuple)) or len(transports)!=len(remote)
+            or len({id(t) for t in transports})!=len(transports)
+            or any(not isinstance(t,HostTensorChannel) or t.rank!=rank
+                   or t.identity!=topology.stage_identity(i) or t.max_frame_bytes!=topology.frame_bytes
+                   for t,i in zip(transports,remote))):
+        raise ValueError('CPU topology build requires matching ordered fresh transports')
+    transports=tuple(transports)
+    with ExitStack() as locks:
+        for transport in sorted(transports,key=id):locks.enter_context(transport.lock)
+        if any(t.ready or t.closed or t.failed or getattr(t,'_cpu_worker_builder_owner',None) is not None for t in transports):
+            raise ValueError('CPU topology build transport is not fresh or already claimed')
+        owner=object()
+        for transport in transports:transport._cpu_worker_builder_owner=owner
+    return transports
 
 
 def build_cpu_host_pipeline_worker(path,topology,index,transports,*,epoch,verify_source=False,
@@ -51,22 +72,8 @@ def build_cpu_host_pipeline_worker(path,topology,index,transports,*,epoch,verify
             or type(identity_timeout) not in (int,float) or not 0<identity_timeout<=3600
             or any(type(v) is not int or not 1<=v<=2**31 for v in (max_weight_bytes,loader_workspace_bytes))):
         raise ValueError('invalid CPU topology build controls')
-    StageState(epoch,topology.context,topology.slots,context_limit=topology.context_limit)
+    transports=_claim_transports(topology,index,transports,epoch)
     remote=list(range(1,len(topology.ranges))) if index==0 else [index]
-    rank=0 if index==0 else 1
-    if (not isinstance(transports,(list,tuple)) or len(transports)!=len(remote)
-            or len({id(t) for t in transports})!=len(transports)
-            or any(not isinstance(t,HostTensorChannel) or t.rank!=rank
-                   or t.identity!=topology.stage_identity(i) or t.max_frame_bytes!=topology.frame_bytes
-                   for t,i in zip(transports,remote))):
-        raise ValueError('CPU topology build requires matching ordered fresh transports')
-    transports=tuple(transports)
-    with ExitStack() as locks:
-        for transport in sorted(transports,key=id):locks.enter_context(transport.lock)
-        if any(t.ready or t.closed or t.failed or getattr(t,'_cpu_worker_builder_owner',None) is not None for t in transports):
-            raise ValueError('CPU topology build transport is not fresh or already claimed')
-        owner=object()
-        for transport in transports:transport._cpu_worker_builder_owner=owner
     channels=[];stage=None;model=None
     try:
         verified=None
