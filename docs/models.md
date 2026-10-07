@@ -192,6 +192,17 @@ routing components; compression, hyper-connections, FP4 experts, FP8 scales,
 shared-expert execution and full-model serving are still separate work. Defensive
 zero-underflow handling is not a claim of equivalence to the reference's NaN cell.
 
+`dllm.expert_ffn.expert_feed_forward` adds a floating shared/routed expert block.
+It accepts already resident, consistently typed FP16/BF16/FP32 projection weights;
+it never promotes entire weight matrices implicitly. Gate/up projections feed
+FP32 SiLU activation math. Optional clamping is upper-only on the gate and
+symmetric on the up projection. Optional FP32 route coefficients are applied
+before casting the activated rows for the down projection. Omitting coefficients
+computes an independent shared-expert contribution. CPU scalar and low-precision
+tests cover this ordering, including a control that distinguishes weighting
+before the cast from weighting after the down projection. This is a reusable
+block, not routed expert placement, packed FP4/FP8 execution or full-model serving.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
