@@ -129,14 +129,17 @@ class HostHybridWorker:
         """Return this chunk's sampled continuation; callers choose when to decode."""
         with self.lock:
             self._ready(True);self._slots([slot]);self._tokens(tokens)
-            state=self.channel.state
-            if (type(start) is not int or start<0 or start+len(tokens)>state.context
-                    or (start==0 and state.lengths[slot])
-                    or (start>0 and start!=state.lengths[slot])):
-                raise ValueError('invalid host hybrid prefill chunk offset/ownership')
-            generation=state.generations[slot]+(start==0)
-            command=self._command(PREFILL_CHUNK,len(tokens),[(slot,generation,start)])
+            command=self._prefill_chunk_command(len(tokens),slot,start)
             return self._execute(command,list(tokens))[0]
+
+    def _prefill_chunk_command(self,rows,slot,start):
+        state=self.channel.state
+        if (type(start) is not int or start<0 or start+rows>state.context
+                or (start==0 and state.lengths[slot])
+                or (start>0 and start!=state.lengths[slot])):
+            raise ValueError('invalid host hybrid prefill chunk offset/ownership')
+        generation=state.generations[slot]+(start==0)
+        return self._command(PREFILL_CHUNK,rows,[(slot,generation,start)])
 
     def decode(self,tokens,slots):
         with self.lock:

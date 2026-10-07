@@ -40,6 +40,7 @@ class NativeHostGenerator:
     """
     text_type=stream_type=policy=model_type=None
     quantization='fp8_reference'
+    input_kind='tokens'
 
     def _snapshot_text(self,text):return snapshot_text(text,self.text_type)
 
@@ -56,6 +57,7 @@ class NativeHostGenerator:
         text=self._snapshot_text(text)
         verified=getattr(worker,'model_identity_verified',False)
         if (not isinstance(worker,HostPipelineCoordinator) or worker.topology.config.get('model_type')!=self.model_type
+                or worker.topology.input_kind!=self.input_kind
                 or worker.topology.quantization!=self.quantization
                 or worker.topology.session_identity!=self.policy(text,verified)
                 or worker.mapped_vocab_size!=text.tokenizer_size or worker.topology.text_config['vocab_size']!=text.vocab_size

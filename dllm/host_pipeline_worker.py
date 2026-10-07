@@ -134,7 +134,30 @@ class HostPipelineCoordinator(_PlannedWorker):
     def __init__(self,stage,topology,channels):self._initialize(stage,topology,0,channels,0)
 
     @torch.inference_mode()
-    def _execute(self,command=None,tokens=None):
+    def prefill_embeddings(self,values,slot=0,start=0):
+        """Consume one owned CPU FP32 [sequence, hidden] prepared Flash chunk.
+
+        This low-level API validates storage and cursors, not image provenance.
+        Token decode and output exclusions remain the topology's existing policy.
+        """
+        with self.lock:
+            self._ready(True);self._slots([slot])
+            if self.topology.input_kind!='flash_embeddings' or not isinstance(self.stage,FlashStageSlots):
+                raise ValueError('prepared embeddings require explicit Flash input mode')
+            stage=self.stage.stage
+            if (not isinstance(values,torch.Tensor) or values.device.type!='cpu' or values.dtype!=torch.float32
+                    or values.ndim!=2 or values.shape[1]!=stage.dim
+                    or not 1<=values.shape[0]<=self.topology.chunk_size
+                    or values.shape[0]*self.width*4>min(self.topology.frame_bytes,stage.max_output_bytes)
+                    or not torch.isfinite(values).all()):
+                raise ValueError('invalid bounded Flash prepared embedding chunk')
+            command=self._prefill_chunk_command(values.shape[0],slot,start)
+            # Detach caller storage before transport admission or cache mutation.
+            hidden=values.detach().clone()[None,:,None,:].expand(1,-1,stage.streams,-1)
+            return self._execute(command,embeddings=hidden)[0]
+
+    @torch.inference_mode()
+    def _execute(self,command=None,tokens=None,*,embeddings=None):
         try:
             # Every participant admits before the first layer mutates local state.
             for channel in self.channels:channel.begin(command)
@@ -145,8 +168,13 @@ class HostPipelineCoordinator(_PlannedWorker):
                 self._commit_stage()
                 if command.operation==STOP:self.closed=True;self.ready=False
                 return None
-            tokens=torch.tensor(tokens,dtype=torch.int64,device='cpu')
-            hidden,_=self._run(command,tokens)
+            if embeddings is None:
+                tokens=torch.tensor(tokens,dtype=torch.int64,device='cpu')
+                hidden,_=self._run(command,tokens)
+            else:
+                slot,_,start=command.entries[0]
+                hidden=self.stage.forward_layers(embeddings,torch.arange(start,start+command.rows)[None],
+                    torch.tensor([slot]),True,start)[0].flatten(1)
             result=None
             for channel in self.channels:
                 if self.topology.routing_tokens:channel.transport.send(self._routing(tokens,command.rows))

@@ -18,6 +18,7 @@ class HostTopology:
     source_identity: bytes
     session_identity: bytes | None
     quantization: str
+    input_kind: str
     context: int
     context_limit: int
     slots: int
@@ -29,7 +30,7 @@ class HostTopology:
     identity: bytes
 
     def __init__(self,config,ranges,source_identity,*,quantization='none',context=512,context_limit=512,
-                 slots=4,chunk_size=128,frame_bytes=MAX_FRAME_BYTES,mapped_vocab_size=None,excluded_ids=(),session_identity=None):
+                 slots=4,chunk_size=128,frame_bytes=MAX_FRAME_BYTES,mapped_vocab_size=None,excluded_ids=(),session_identity=None,input_kind='tokens'):
         if not isinstance(config,dict):raise ValueError('host topology requires prepared CPU configuration')
         try:encoded=json.dumps(config,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
         except (TypeError,ValueError,RecursionError) as error:raise ValueError('invalid topology configuration metadata') from error
@@ -38,6 +39,8 @@ class HostTopology:
         glm=config.get('model_type')=='glm_moe_dsa'
         flash=config.get('model_type')=='glm5_next'
         deepseek=config.get('model_type')=='deepseek_v4'
+        if input_kind not in ('tokens','flash_embeddings') or (input_kind!='tokens' and not flash):
+            raise ValueError('prepared embedding input requires an explicit Flash topology')
         text=config['text_config'] if flash and isinstance(config.get('text_config'),dict) else config
         if glm:
             from .glm_checkpoint import tensor_specs
@@ -92,10 +95,11 @@ class HostTopology:
             source_identity=source_identity.hex(),quantization=quantization,context=context,context_limit=context_limit,
             slots=slots,chunk_size=chunk_size,frame_bytes=frame_bytes,
             mapped_vocab_size=mapped,excluded_ids=sorted(excluded))
+        if input_kind!='tokens':manifest['input_kind']=input_kind
         if deepseek:manifest['routing_tokens']='int64-before-activation-v1'
         if session_identity is not None:manifest['session_identity']=session_identity.hex()
         identity=hashlib.sha256(json.dumps(manifest,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).digest()
-        values=dict(config_json=encoded,ranges=tuple(normalized),source_identity=source_identity,session_identity=session_identity,quantization=quantization,
+        values=dict(config_json=encoded,ranges=tuple(normalized),source_identity=source_identity,session_identity=session_identity,quantization=quantization,input_kind=input_kind,
             context=context,context_limit=context_limit,slots=slots,chunk_size=chunk_size,frame_bytes=frame_bytes,width=width,
             mapped_vocab_size=mapped,excluded_ids=tuple(sorted(excluded)),identity=identity)
         for name,value in values.items():object.__setattr__(self,name,value)
