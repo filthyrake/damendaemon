@@ -300,3 +300,31 @@ allocator telemetry. CPU regression evidence covers composition, reordered
 batches, interleaved slots, cursor commit, cancellation, failure and cleanup.
 This remains an internal unquantized eager building block: no CLI/HTTP distributed
 admission, remote transport, real-device transfer or performance claim is added.
+
+## CPU host-staged transport foundation
+
+`dllm.host_tensor_channel.HostTensorChannel` exchanges contiguous CPU tensors
+through an already-connected stream socket supplied by its owner. It creates no
+listener and is not wired into model workers or public serving admission. Peers
+must agree on a 32-byte model/session identity, protocol version, opposite ranks
+and native byte order before exchanging tensors. Identity agreement is not peer
+authentication or encryption; connection security belongs to the owner.
+
+Frames use fixed binary metadata, per-direction sequence numbers and a negotiated
+cap of at most 64 MiB. The receiver supplies the exact expected shape and dtype;
+metadata mismatch is rejected before payload allocation. FP32, FP16, BF16, int64,
+int32 and uint8 have explicit wire codes; no pickle or Python-object transport is
+used. Each operation has one absolute deadline across all partial sends/reads.
+Protocol, EOF, deadline and I/O failures close the owned socket and poison the
+channel. Concurrent close interrupts blocked operations; short socket polling
+intervals preserve cancellation responsiveness without extending the operation
+deadline. Local invalid send/receive layouts are rejected before any wire write.
+Received tensors own independent CPU payload storage. Senders must keep their
+input tensors unchanged until send returns. A successful frame transfer is not
+an acknowledgement that a remote model stage committed its state.
+
+Loopback regression tests cover byte-exact types, identity mismatch, malformed
+headers before payload reads, truncated payloads, absolute deadlines and close
+cancellation. Remote worker lifecycle, model-state acknowledgement, secure socket
+provisioning, GPU copies, cross-vendor execution, RDMA and throughput remain
+unqualified. No model-serving or hardware-support claim follows from these tests.
