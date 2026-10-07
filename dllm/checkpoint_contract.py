@@ -31,6 +31,9 @@ def audit_snapshot(path,describe,audit_names,audit_headers,*,names_only=False):
         _,inventory=inspect_snapshot(path)
         headers={name:header for shard in inventory.values() for name,header in shard['tensors'].items()}
         report=audit_headers(config,headers)
-    return dict(scope='tensor_names_only' if names_only else 'tensor_header_contract',
+    result=dict(scope='tensor_names_only' if names_only else 'tensor_header_contract',
                 main_tensors=report['main_tensors'],excluded_mtp_count=len(report['excluded_mtp']),
                 mtp_validated=False,weight_values_read=False,model_execution_qualified=False)
+    if 'excluded_vision' in report:
+        result.update(excluded_vision_count=len(report['excluded_vision']),vision_validated=False)
+    return result

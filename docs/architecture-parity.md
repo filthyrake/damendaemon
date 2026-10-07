@@ -1736,3 +1736,26 @@ checks on those exact prompts agree with dllm. The optional residual path lowers
 single-request latency 2.7–8.1% versus original dllm in that separate workload.
 This does not establish general SentencePiece, unused-token or grammar support
 on the positional path, longer-window semantics or performance parity.
+
+### GLM-5.3-Flash text metadata contract
+
+`python -m scripts.audit_glm_flash_checkpoint SNAPSHOT --names-only` audits
+the pinned `zai-org/GLM-5.3-Flash` revision
+`eb9eb208eb0d988989d07a6a12d0fdeb5f52574a`. The official index matches
+74,001 main-text tensor names. Its 1,760 MTP and 347 visual tensors are
+explicitly excluded and remain unvalidated. Omitting `--names-only` checks
+local safetensor headers against the shape/storage contract; neither mode reads
+weight values or qualifies model execution. Only the names-only mode has been
+run against the official snapshot; header tests use synthetic fixtures.
+
+The contract distinguishes floating KDA projections, NoPE sparse attention,
+floating indexer/latent expansion, FP8 E4M3 projections with FP32 block scales,
+and mHC residual parameters. Quantization exclusions and layer schedules must
+agree with that contract. Config/index reads and inventory geometry are bounded.
+
+Shapes were independently transcribed from the pinned config/index and
+[Transformers v5.17.0 glm5_next](https://github.com/huggingface/transformers/blob/v5.17.0/src/transformers/models/glm5_next/modeling_glm5_next.py).
+Source/index fingerprints are recorded in `tests/fixtures/glm53_flash_contract.json`.
+The checkpoint's MIT license is preserved in `docs/licenses/glm53-flash-MIT.txt`.
+Flash text execution, vision, MTP, quality and hardware qualification remain open
+in [#57](https://github.com/filthyrake/dllm/issues/57).
