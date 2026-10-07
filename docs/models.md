@@ -595,3 +595,20 @@ duplicate selections, nonfinite arithmetic and requests exceeding configured
 output/tensor-scratch budgets. Dense full-expanded CPU controls cover projection
 and tiled attention equations. These are stateless primitives; persistent state,
 complete layers/models, packed precision and hardware behavior remain open.
+
+`CachedGlmAttention` composes the FP32 latent/indexer primitives and output
+projection with owned latent, rotary-key and (full-indexer only) index-key
+buffers. Cache capacity is reserved before allocation; `max_cache_bytes` bounds
+retained cache storage. Batches share one explicit logical cursor. Chunk prefill
+and decode publish that cursor only after the output projection succeeds; a
+failure after a cache write poisons the state. Shared-indexer layers require the
+preceding full layer's matching selections. Wrong owners, stale positions and
+capacity overruns are rejected before mutation.
+
+Slot reordering/shrinking/duplication prepares all replacement buffers before
+publishing them. Its budget bounds retained storage, not the temporary overlap
+with old buffers. `close()` releases owned buffers; failed prefill closes its
+partially constructed state. CPU tests compare incremental output to fresh-prefix
+execution and cover full/shared layers, reorder allocation failures, post-write
+failures and cleanup. This remains an FP32 reference attention component, without
+packed weights, complete-model qualification or production serving admission.
