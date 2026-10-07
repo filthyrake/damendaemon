@@ -16,6 +16,7 @@ class HostTopology:
     config_json: bytes
     ranges: tuple
     source_identity: bytes
+    session_identity: bytes | None
     quantization: str
     context: int
     context_limit: int
@@ -28,7 +29,7 @@ class HostTopology:
     identity: bytes
 
     def __init__(self,config,ranges,source_identity,*,quantization='none',context=512,context_limit=512,
-                 slots=4,chunk_size=128,frame_bytes=MAX_FRAME_BYTES,mapped_vocab_size=None,excluded_ids=()):
+                 slots=4,chunk_size=128,frame_bytes=MAX_FRAME_BYTES,mapped_vocab_size=None,excluded_ids=(),session_identity=None):
         if not isinstance(config,dict):raise ValueError('host topology requires prepared CPU configuration')
         try:encoded=json.dumps(config,sort_keys=True,separators=(',',':'),allow_nan=False).encode()
         except (TypeError,ValueError,RecursionError) as error:raise ValueError('invalid topology configuration metadata') from error
@@ -36,6 +37,8 @@ class HostTopology:
         config=json.loads(encoded)
         cpu_hybrid_shapes(config,0,config.get('num_hidden_layers'))
         if not isinstance(source_identity,bytes) or len(source_identity)!=32:raise ValueError('topology needs a 32-byte source/session identity')
+        if session_identity is not None and (not isinstance(session_identity,bytes) or len(session_identity)!=32):
+            raise ValueError('optional topology session identity must contain 32 bytes')
         if quantization not in ('none','q4_0','q8_0'):raise ValueError('unsupported CPU topology quantization')
         if not isinstance(ranges,(list,tuple)) or not 2<=len(ranges)<=8:raise ValueError('host topology needs 2..8 stages')
         end=0;normalized=[]
@@ -56,8 +59,9 @@ class HostTopology:
             source_identity=source_identity.hex(),quantization=quantization,context=context,context_limit=context_limit,
             slots=slots,chunk_size=chunk_size,frame_bytes=frame_bytes,
             mapped_vocab_size=mapped,excluded_ids=sorted(excluded))
+        if session_identity is not None:manifest['session_identity']=session_identity.hex()
         identity=hashlib.sha256(json.dumps(manifest,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).digest()
-        values=dict(config_json=encoded,ranges=tuple(normalized),source_identity=source_identity,quantization=quantization,
+        values=dict(config_json=encoded,ranges=tuple(normalized),source_identity=source_identity,session_identity=session_identity,quantization=quantization,
             context=context,context_limit=context_limit,slots=slots,chunk_size=chunk_size,frame_bytes=frame_bytes,width=config['hidden_size'],
             mapped_vocab_size=mapped,excluded_ids=tuple(sorted(excluded)),identity=identity)
         for name,value in values.items():object.__setattr__(self,name,value)

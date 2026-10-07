@@ -29,6 +29,13 @@ class HostTopologyTests(unittest.TestCase):
         changed=plan.config;changed['layer_types'].clear();self.assertEqual(len(plan.config['layer_types']),4)
         with self.assertRaises(FrozenInstanceError):plan.context=32
 
+    def test_optional_session_policy_is_bound_without_changing_source_identity(self):
+        plain=self.plan();first=self.plan(session_identity=b'a'*32);second=self.plan(session_identity=b'b'*32)
+        self.assertEqual(plain.source_identity,first.source_identity)
+        self.assertEqual(len({plain.identity,first.identity,second.identity}),3)
+        for bad in (b'',b'a'*31,'a'*32,True):
+            with self.assertRaises(ValueError):self.plan(session_identity=bad)
+
     def test_rejects_incomplete_overlapping_or_unbounded_topologies(self):
         for ranges in ([(0,4)],[(0,1),(2,4)],[(0,2),(1,4)],[(0,2),(2,3)],[(1,2),(2,4)],
                        [(0,0),(0,4)],[(False,1),(1,4)],[(0,1)]*9):

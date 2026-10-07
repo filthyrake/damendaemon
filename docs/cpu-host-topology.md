@@ -49,7 +49,8 @@ Actual loopback mutual-TLS tests compare three- and four-stage FP32/Q4/Q8
 execution against independently expanded whole-model logits and cache state,
 and cover cancellation, admission failure and intermediate/final worker loss.
 Stage-local snapshot construction and explicit HTTP integration are described
-below. Multi-process command bootstrap remains a separate integration gate. Source identity remains a
+below. The [explicit multi-process command](cpu-host-topology-command.md) supplies
+local worker/completion/HTTP lifetimes without discovery or provisioning. Source identity remains a
 caller assertion unless a separate verified snapshot path supplies it. No GPU,
 real-network, model-quality or performance qualification is implied.
 

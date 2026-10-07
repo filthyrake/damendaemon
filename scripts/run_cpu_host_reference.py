@@ -19,21 +19,26 @@ from dllm.host_tls import client_context,server_context,certificate_pin
 from scripts.run_cpu_pipeline_reference import _positive
 
 
-def parser_for_command():
+def parser_for_command(*,topology=False):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('role',choices=('worker','complete','serve'))
     parser.add_argument('snapshot')
-    parser.add_argument('--address',required=True,help='literal bind IP for worker, peer IP for complete')
-    parser.add_argument('--port',type=int,required=True,help='explicit port; worker may use 0 for an ephemeral port')
+    parser.add_argument('--address',required=not topology,help='literal bind IP for worker, peer IP for complete')
+    parser.add_argument('--port',type=int,required=not topology,help='explicit port; worker may use 0 for an ephemeral port')
     parser.add_argument('--server-name',help='TLS server certificate hostname; required for complete')
     for name in ('ca','cert','key','peer-cert'):
-        parser.add_argument('--'+name,required=True,help='local TLS file')
+        parser.add_argument('--'+name,required=(name!='peer-cert' or not topology),help='local TLS file')
     parser.add_argument('--chat-template',help='trusted local text template; both peers must supply matching content')
     parser.add_argument('--model-id',required=True,help='64 hex digits identifying the snapshot; operator asserted unless --verify-model-id')
     parser.add_argument('--verify-model-id',action='store_true',help='hash contained local snapshot before connecting and check it stays unchanged through loading')
     parser.add_argument('--identity-max-mib',type=_positive,default=2048)
     parser.add_argument('--identity-timeout',type=float,default=60.)
-    parser.add_argument('--split',type=_positive,required=True,help='first layer owned by output worker')
+    if topology:
+        parser.add_argument('--plan',required=True,help='local JSON object containing ordered layer ranges')
+        parser.add_argument('--index',type=int,default=0,help='global stage index; coordinator is zero')
+        parser.add_argument('--peers',help='coordinator ordered literal-IP/TLS peer JSON file')
+    else:
+        parser.add_argument('--split',type=_positive,required=True,help='first layer owned by output worker')
     parser.add_argument('--epoch',type=_positive,default=1)
     parser.add_argument('--context',type=_positive,default=512)
     parser.add_argument('--context-limit',type=_positive,default=512)
@@ -198,19 +203,20 @@ def run(args):
             else:raise failures[0]
 
 
-def serve_worker_pair(worker,text,args,auth):
+def serve_worker_pair(worker,text,args,auth,*,pair_type=None):
     """Run one HTTP service lifetime with explicit peer and thread ownership."""
     import signal
     import threading
     from dllm.host_serving import HostServingPair,HostDistributedRuntime,handler_for_host
     from dllm.server import BoundedHTTPServer
-    pair=HostServingPair(worker,text,chunk_size=args.prefill_chunk)
+    pair=(HostServingPair if pair_type is None else pair_type)(worker,text,chunk_size=args.prefill_chunk)
     runtime=HostDistributedRuntime(pair,args.alias,args.queue_size,args.queue_timeout,
         client_decode_turns=args.client_decode_turns,interleaved_prefill=args.interleaved_prefill)
     server=thread=None;previous=None;primary=None
     stopping=threading.Event()
     def interrupt(*_):
-        stopping.set();runtime.closed.set();worker.channel.close()
+        stopping.set();runtime.closed.set()
+        for channel in getattr(worker,'channels',(worker.channel,)):channel.close()
     try:
         server=BoundedHTTPServer(('127.0.0.1',args.http_port),handler_for_host(runtime,auth))
         server.daemon_threads=True
@@ -223,7 +229,7 @@ def serve_worker_pair(worker,text,args,auth):
         except KeyboardInterrupt:interrupt()
         except (OSError,RuntimeError,EOFError,ValueError):
             if not stopping.is_set():raise
-        if worker.ready:worker.stop()
+        if worker.ready and not stopping.is_set():worker.stop()
         emit(dict(event='stopped',scope='cpu_host_reference'))
     except BaseException as error:primary=error;raise
     finally:
