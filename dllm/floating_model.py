@@ -123,11 +123,16 @@ class FloatingModel:
         finite(h['head.weight'], 'vocabulary weight')
         return finite(F.linear(normalized[:,0].float(),h['head.weight']), 'vocabulary logits')
 
+    @property
+    def prefill_cleanup_pending(self):
+        return bool(getattr(self,'failed_prefills',[]) or any(getattr(block,'failed_prefills',[]) for block in getattr(self,'blocks',())))
+
     def cleanup_failed_prefills(self):
         with self.build_lock:
             while self.failed_prefills:
                 self.failed_prefills[0].close()
                 self.failed_prefills.pop(0)
+            for block in self.blocks:block.cleanup_failed_prefills()
 
     @torch.no_grad()
     def prefill(self, token_ids, *, max_tokens=None, max_cache_bytes=256*1024*1024, query_chunk=16):

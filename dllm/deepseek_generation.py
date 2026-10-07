@@ -89,7 +89,7 @@ class ReferenceGenerator:
             while self.failed_cleanups:
                 self.failed_cleanups[0].close()
                 self.failed_cleanups.pop(0)
-            if getattr(self.model,'failed_prefills',None):
+            if getattr(self.model,'prefill_cleanup_pending',False) or getattr(self.model,'failed_prefills',None):
                 self.model.cleanup_failed_prefills()
 
     def _release(self,state):

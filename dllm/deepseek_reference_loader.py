@@ -11,6 +11,7 @@ from .deepseek_checkpoint import tensor_specs, audit_headers
 from .deepseek_position import frequencies
 from .floating_block import FloatingBlock
 from .floating_model import FloatingModel
+from .deepseek_layer_stage import DeepSeekLayerStage,validate_range
 from .packed_checkpoint import _payload
 from .packed_moe import PackedMatrix, PackedExpert
 from .prepared_projection import PackedProjection
@@ -50,8 +51,17 @@ def _options(config):
     return result
 
 
-def load_reference_model(path, *, max_weight_bytes=256*1024*1024, dtype=torch.float32,
-                         workspace_bytes=8*1024*1024):
+def load_reference_model(path,*,max_weight_bytes=256*1024**2,dtype=torch.float32,workspace_bytes=8*1024**2):
+    return _load_reference(path,None,None,max_weight_bytes=max_weight_bytes,dtype=dtype,workspace_bytes=workspace_bytes)
+
+
+def load_reference_stage(path,start,end,*,max_weight_bytes=256*1024**2,workspace_bytes=8*1024**2,max_output_bytes=64*1024**2):
+    if start is None or end is None:raise ValueError('DeepSeek stage requires explicit range boundaries')
+    return _load_reference(path,start,end,max_weight_bytes=max_weight_bytes,workspace_bytes=workspace_bytes,max_output_bytes=max_output_bytes)
+
+
+def _load_reference(path,start,end,*,max_weight_bytes=256*1024**2,dtype=torch.float32,
+                    workspace_bytes=8*1024**2,max_output_bytes=64*1024**2):
     """Load main-model parameters into the explicit packed CPU reference stack.
 
     Admit retained raw/converted parameter bytes plus one largest source tensor
@@ -72,6 +82,16 @@ def load_reference_model(path, *, max_weight_bytes=256*1024*1024, dtype=torch.fl
     config=json.loads(config_path.read_text(),object_pairs_hook=_unique_fields)
     specs=tensor_specs(config)
     freqs=_options(config)
+    whole=start is None and end is None
+    if whole:start,end=0,config['num_hidden_layers']
+    if not whole:
+        validate_range(start,end,config['num_hidden_layers'])
+        if type(max_output_bytes) is not int or not 1<=max_output_bytes<=2**31:
+            raise ValueError('invalid DeepSeek stage output budget')
+        prefixes=tuple(f'layers.{layer}.' for layer in range(start,end))
+        boundary={'embed.weight'} if start==0 else set()
+        if end==config['num_hidden_layers']:boundary|={'head.weight','norm.weight','hc_head_fn','hc_head_scale','hc_head_base'}
+        specs={name:spec for name,spec in specs.items() if name in boundary or name.startswith(prefixes)}
     files,index=snapshot_shards(path)
     if len(files) > 256:
         raise ValueError('reference checkpoint exceeds open-shard limit')
@@ -131,7 +151,8 @@ def load_reference_model(path, *, max_weight_bytes=256*1024*1024, dtype=torch.fl
     blocks=[]
     def matrix(name,format):
         return PackedMatrix(tensors[name+'.weight'],tensors[name+'.scale'],format)
-    for layer,ratio in enumerate(config['compress_ratios'][:config['num_hidden_layers']]):
+    for layer in range(start,end):
+        ratio=config['compress_ratios'][layer]
         prefix=f'layers.{layer}.'
         attention={}
         weights={}
@@ -160,7 +181,11 @@ def load_reference_model(path, *, max_weight_bytes=256*1024*1024, dtype=torch.fl
                                     epsilon=config['rms_norm_eps'],connection_epsilon=config['hc_eps'],
                                     iterations=config['hc_sinkhorn_iters'],activation_limit=config['swiglu_limit'],
                                     workspace_bytes=workspace_bytes,packed_experts=experts[:-1],packed_shared=experts[-1]))
-    head={name:tensors[name] for name in ('head.weight','norm.weight','hc_head_fn','hc_head_scale','hc_head_base')}
-    model=FloatingModel(tensors['embed.weight'],blocks,head,epsilon=config['rms_norm_eps'],connection_epsilon=config['hc_eps'])
+    head=({name:tensors[name] for name in ('head.weight','norm.weight','hc_head_fn','hc_head_scale','hc_head_base')}
+          if end==config['num_hidden_layers'] else None)
+    embedding=tensors.get('embed.weight')
+    if whole:model=FloatingModel(embedding,blocks,head,epsilon=config['rms_norm_eps'],connection_epsilon=config['hc_eps'])
+    else:model=DeepSeekLayerStage(blocks,start=start,total=config['num_hidden_layers'],vocab_size=config['vocab_size'],
+        embedding=embedding,head=head,epsilon=config['rms_norm_eps'],connection_epsilon=config['hc_eps'],max_output_bytes=max_output_bytes)
     model.config=dict(config)
     return model

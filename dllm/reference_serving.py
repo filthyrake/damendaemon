@@ -56,6 +56,7 @@ class ReferenceRuntime:
         runner=self.runner
         return bool(runner is not None and (runner.failed_cleanups
             or getattr(runner.model,'failed_cleanups',[]) or getattr(runner.model,'failed_prefills',[])
+            or getattr(runner.model,'prefill_cleanup_pending',False)
             or getattr(runner.model,'cleanup_pending',False)))
 
     def is_healthy(self):

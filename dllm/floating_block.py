@@ -1,5 +1,6 @@
 """Prepared floating DeepSeek transformer blocks, independent of serving admission."""
 from dataclasses import dataclass
+import threading
 
 import torch
 from torch.nn import functional as F
@@ -110,6 +111,21 @@ class FloatingBlock:
         self.dim, self.device, self.dtype = dim, device, dtype
         self.banks, self.shared, self.table = banks, shared, table
         self.packed_experts, self.packed_shared = packed_experts, packed_shared
+        self.failed_prefills=[]
+        self.build_lock=threading.RLock()
+
+    def cleanup_failed_prefills(self):
+        with self.build_lock:
+            while self.failed_prefills:
+                self.failed_prefills[0].close()
+                self.failed_prefills.pop(0)
+
+    def cache_bytes_per_slot(self,capacity):
+        from .floating_attention import cache_bytes_per_slot
+        weights=self.attention_weights
+        return cache_bytes_per_slot(self.window,self.ratio,capacity,weights['kv_norm.weight'].numel(),
+            weights['indexer.compressor.norm.weight'].numel() if self.ratio==4 else None,
+            torch.empty((),dtype=self.dtype).element_size())
 
     def _input(self, hidden, token_ids):
         if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 4 or min(hidden.shape[:2]) < 1
@@ -146,6 +162,7 @@ class FloatingBlock:
 
     @torch.no_grad()
     def prefill(self, hidden, token_ids=None, *, max_tokens=None, max_cache_bytes=256*1024*1024, query_chunk=16):
+        self.cleanup_failed_prefills()
         routes = self._input(hidden,token_ids)
         reduced, post, matrix = self._reduce(hidden,'attn')
         output, attention = attention_prefill(reduced,self.attention_weights,self.frequencies,groups=self.groups,
@@ -154,8 +171,11 @@ class FloatingBlock:
                                               query_chunk=query_chunk)
         try:
             result = self._ffn(restore_streams(output,hidden,post,matrix),routes)
-        except BaseException:
-            attention.close()
+        except BaseException as error:
+            try:attention.close()
+            except BaseException:
+                with self.build_lock:self.failed_prefills.append(attention)
+                error.add_note('failed block prefill cleanup remains owned; retry before another prefill')
             raise
         return result, BlockState(self,attention)
 

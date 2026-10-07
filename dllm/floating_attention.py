@@ -150,6 +150,20 @@ def _grouped_project(grouped, weight, groups, orank):
     return torch.einsum('bsgd,grd->bsgr',grouped,weight.reshape(groups,orank,-1))
 
 
+def cache_bytes_per_slot(window,ratio,capacity,width,index_width,item_bytes):
+    """Storage reservation for an already validated attention geometry."""
+    if type(capacity) is not int or not 1<=capacity<2**31:
+        raise ValueError('invalid attention cache capacity')
+    blocks = capacity//ratio if ratio else 0
+    bytes_per_slot = (window+blocks)*width*item_bytes
+    if ratio:
+        factor = 2 if ratio == 4 else 1
+        bytes_per_slot += 2*factor*ratio*factor*width*4
+    if ratio == 4:
+        bytes_per_slot += blocks*index_width*item_bytes+2*2*ratio*2*index_width*4
+    return bytes_per_slot
+
+
 @torch.no_grad()
 def attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, ratio=0,
                       index_top_k=512, query_chunk=16, epsilon=1e-6, max_tokens=None,
@@ -172,12 +186,7 @@ def attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, r
             or type(max_cache_bytes) is not int or max_cache_bytes < 1):
         raise ValueError('invalid attention cache capacity/budget')
     blocks = capacity//ratio if ratio else 0
-    bytes_per_slot = (window+blocks)*width*hidden.element_size()
-    if ratio:
-        factor = 2 if ratio == 4 else 1
-        bytes_per_slot += 2*factor*ratio*factor*width*4
-    if ratio == 4:
-        bytes_per_slot += blocks*index_width*hidden.element_size()+2*2*ratio*2*index_width*4
+    bytes_per_slot = cache_bytes_per_slot(window,ratio,capacity,width,index_width,hidden.element_size())
     if batch*bytes_per_slot > max_cache_bytes:
         raise ValueError('attention cache reservation exceeds budget')
     rd = inverse_frequencies.numel()*2
