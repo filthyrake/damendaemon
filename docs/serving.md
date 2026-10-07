@@ -680,3 +680,14 @@ limits remain global, so clients can still evict each other's entries; this does
 not reserve per-client capacity or provide process/data isolation, token-rate
 fairness or distributed quotas. Client-only configuration still protects the API;
 `/health` stays public.
+
+Named clients may set `"max_reserved_output_tokens":4096` to cap the sum of
+declared output limits for queued/running generations. The value must be an
+integer from 1 through 2147483647; omission leaves this budget unlimited.
+Both completion routes reserve their `max_tokens` limit (default 128); chat
+also accepts `max_completion_tokens`. Reservations begin after request validation,
+before runtime dispatch, and end when the generation iterator closes, including
+failure or cancellation. Excess commitments return 429 with `Retry-After: 1`.
+This conservative budget is separate from request-count limits and does not
+measure actual token rate, prompt/KV memory, or quotas across server processes.
+Shared/admin credentials and non-generation routes retain their existing policy.

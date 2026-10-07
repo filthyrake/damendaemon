@@ -17,7 +17,7 @@ from .prompts import validate_raw
 def handler_for(runtime, auth=None):
     from .http_auth import AuthPolicy
     auth = AuthPolicy.from_env() if auth is None else auth
-    from .client_admission import ClientAdmission, ClientLimitError
+    from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError
     from .http_auth import INFERENCE_ROUTES
     admission = ClientAdmission(auth)
     from .request_scope import cache_scope
@@ -245,7 +245,8 @@ def handler_for(runtime, auth=None):
                 native_calls=[]
                 token_scores=[]
                 final = None
-                with closing(runtime.generate(alias, messages, max_tokens, **template_options, **sampling)) as generation:
+                with admission.output_lease(self.headers.get_all('Authorization', []), max_tokens), \
+                        closing(runtime.generate(alias, messages, max_tokens, **template_options, **sampling)) as generation:
                     for event in generation:
                         if event.get("tool_call_format")=="harmony":tool_parser=None
                         if stream and not started:
@@ -307,7 +308,9 @@ def handler_for(runtime, auth=None):
             except (BrokenPipeError, ConnectionResetError, TimeoutError):
                 self.close_connection = True
             except Exception as error:
-                if isinstance(error, BusyError):
+                if isinstance(error, ClientOutputLimitError):
+                    status, message = 429, 'client outstanding output token budget exceeded'
+                elif isinstance(error, BusyError):
                     status, message = 503, str(error)
                 elif isinstance(error, (ValueError, KeyError, TypeError)):
                     status, message = 400, "invalid or unsupported request"

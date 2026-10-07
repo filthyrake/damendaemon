@@ -26,6 +26,7 @@ class ClientKey:
     key: str = field(repr=False)
     max_inflight: int
     models: frozenset | None = None
+    max_reserved_output_tokens: int | None = None
 
     def __post_init__(self):
         if not isinstance(self.name, str) or re.fullmatch(r'[A-Za-z0-9_.-]{1,64}', self.name) is None:
@@ -35,6 +36,9 @@ class ClientKey:
             raise ValueError('client key is required')
         if type(self.max_inflight) is not int or not 1 <= self.max_inflight <= 128:
             raise ValueError('client max_inflight must be an integer from 1 to 128')
+        if self.max_reserved_output_tokens is not None and (type(self.max_reserved_output_tokens) is not int
+                or not 1 <= self.max_reserved_output_tokens <= 2**31-1):
+            raise ValueError('client max_reserved_output_tokens must be an integer from 1 to 2147483647')
         if self.models is not None:
             if not isinstance(self.models, frozenset) or len(self.models) > 128:
                 raise ValueError('client models must be a frozenset of at most 128 exact aliases')
@@ -80,7 +84,7 @@ class AuthPolicy:
                 raw = json.loads(text, object_pairs_hook=unique_pairs)
                 if (not isinstance(raw, dict) or not 1 <= len(raw) <= 128
                         or any(not isinstance(value, dict) or not {'key', 'max_inflight'} <= set(value)
-                               or set(value) - {'key', 'max_inflight', 'models'}
+                               or set(value) - {'key', 'max_inflight', 'models', 'max_reserved_output_tokens'}
                                for value in raw.values())):
                     raise ValueError('invalid client configuration')
                 parsed = []
@@ -93,10 +97,13 @@ class AuthPolicy:
                                 or len(set(aliases)) != len(aliases)):
                             raise ValueError('invalid client model aliases')
                         models = frozenset(aliases)
-                    parsed.append(ClientKey(name, value['key'], value['max_inflight'], models))
+                    if 'max_reserved_output_tokens' in value and value['max_reserved_output_tokens'] is None:
+                        raise ValueError('explicit output reservation limit cannot be null')
+                    parsed.append(ClientKey(name, value['key'], value['max_inflight'], models,
+                                            value.get('max_reserved_output_tokens')))
                 clients = tuple(parsed)
             except (ValueError, TypeError):
-                raise ValueError('DLLM_CLIENT_KEYS must map distinct client names to valid key/max_inflight objects with optional model alias lists') from None
+                raise ValueError('DLLM_CLIENT_KEYS requires valid distinct clients with key/max_inflight and optional models/max_reserved_output_tokens') from None
         return cls(os.environ.get('DLLM_API_KEY'), os.environ.get('DLLM_ADMIN_API_KEY'), clients)
 
     def client(self, headers):
