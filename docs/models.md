@@ -418,6 +418,17 @@ shard. The fallback reads metadata only and preserves cross-shard duplicate,
 index and payload-range validation. A complete synthetic DeepSeek snapshot
 passes the header audit; official checkpoint contents remain unqualified.
 
+`dllm.deepseek_reference_loader.load_reference_model` assembles a local validated
+main-model snapshot into that CPU reference stack. It admits all retained raw
+or converted parameter bytes plus one largest source tensor before payload reads;
+header metadata, projection workspace/outputs and KV caches have separate limits.
+It keeps attention/expert matrices packed, converts declared floating parameters,
+and omits MTP. FP32 reference storage is the default; BF16/FP16 are explicit
+choices. Synthetic checkpoint tests exercise actual loaded model prefill/decode,
+exact byte-budget boundaries, configuration rejection, changed-file detection and
+descriptor cleanup. This does not register HTTP support, load a tokenizer/chat
+template, or qualify official model logits, speed, long context or GPU execution.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with

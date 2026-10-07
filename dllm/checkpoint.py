@@ -9,8 +9,11 @@ from .safetensor_header import _unique_fields, read_header
 
 
 
-def inspect_snapshot(path):
+def snapshot_shards(path):
+    """Validate bounded index metadata and shard paths without opening shards."""
     path = Path(path)
+    if (path/INDEX).exists() and (path/INDEX).stat().st_size > 16*1024*1024:
+        raise ValueError('checkpoint index exceeds 16 MiB metadata limit')
     index = (json.loads((path/INDEX).read_text(), object_pairs_hook=_unique_fields)
              if (path/INDEX).exists() else None)
     names = [entry.name for entry in path.iterdir() if entry.is_file()]
@@ -21,8 +24,15 @@ def inspect_snapshot(path):
     files = [name for name in selected if name.endswith('.safetensors')]
     if any(not (path/name).is_file() for name in files):
         raise ValueError('indexed safetensors shard is missing')
+    return [path/name for name in files], index
+
+
+def inspect_snapshot(path):
+    path = Path(path)
+    files, index = snapshot_shards(path)
     actual, metadata = {}, {}
-    for filename in files:
+    for file in files:
+        filename = str(file.relative_to(path))
         tensors = {}
         try:
             with safe_open(str(path/filename), framework='pt', device='cpu') as reader:
@@ -49,4 +59,4 @@ def inspect_snapshot(path):
         metadata[filename] = {'tensors':tensors}
     if index is not None and actual != index['weight_map']:
         raise ValueError('tensor headers do not match the shard index')
-    return [path/name for name in files], metadata
+    return files, metadata

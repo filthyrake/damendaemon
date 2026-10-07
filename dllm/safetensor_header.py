@@ -24,13 +24,15 @@ def file_stamp(reader):
     return state.st_size,state.st_mtime_ns,state.st_ctime_ns
 
 
-def read_header(reader):
+def read_header(reader, *, max_header_bytes=MAX_HEADER_BYTES):
+    if type(max_header_bytes) is not int or not 2 <= max_header_bytes <= MAX_HEADER_BYTES:
+        raise ValueError('invalid remaining checkpoint header budget')
     before=file_stamp(reader)
     prefix=reader.read(8)
     if len(prefix) != 8:
         raise ValueError('truncated packed checkpoint header length')
     length=struct.unpack('<Q',prefix)[0]
-    if not 2 <= length <= MAX_HEADER_BYTES or 8+length > before[0]:
+    if not 2 <= length <= max_header_bytes or 8+length > before[0]:
         raise ValueError('packed checkpoint header exceeds bounds')
     raw=reader.read(length)
     try:
