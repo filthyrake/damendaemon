@@ -31,3 +31,33 @@ budgets, aggregate mixed-cache preflight, corruption outside the selected range,
 invalid boundaries/cursors and partial allocation/cleanup failure are covered.
 This is CPU fixture evidence, not official-model, GPU, practical-context or
 performance qualification.
+
+## Complete local pipelines and native generation
+
+`FlashLayerPipeline` owns 2..8 distinct contiguous prepared ranges covering the
+whole text model. Ranges must agree on configuration, dimensions and residual
+stream count and cannot hide overlapping block objects. It coordinates one cache
+cursor and slot order, admits the sum of fixed linear and capacity-dependent
+sparse caches before allocation, and checks every residual boundary and final
+logit budget before the first stage executes. Row growth is bounded by both the
+aggregate cache allowance and the shared 128-row state limit.
+
+Partial execution or reorder poisons all stage caches. Close attempts every
+stage, retains failed owners, and can be retried. Failed allocation or prefill
+cleanup is retried before another cache is admitted. GLM and Flash share these
+ownership mechanics through `layer_pipeline.CpuLayerPipeline`; each family has
+explicit stage type, cache-size and batch/activation-shape hooks. Neither family
+pipeline inherits the other or masquerades as an ordinary complete model.
+
+`FlashPipelineReferenceGenerator` and `FlashPipelineToolReferenceGenerator`
+provide explicit native single/equal/ragged text and tool generation. They reuse
+the pinned Flash format and existing bounded generation lifecycle; tool calls
+are returned, never executed. Ordinary model and generic HTTP admission remain
+unchanged. Image-input, checkpoint-pipeline construction and command admission
+are separate gates.
+
+Pipeline tests compare real packed chunked/reordered logits and native text/usage
+against independent whole-model CPU controls, exercise aggregate budget and
+retained failure ownership, and test cancellation/abandonment/reuse. Tool tests
+select controlled tokens after real stage execution to verify protocol handling;
+they do not establish trained-model tool quality.
