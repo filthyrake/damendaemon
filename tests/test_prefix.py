@@ -61,6 +61,28 @@ class PrefixTests(unittest.TestCase):
         self.assertFalse(self.cache.entries)
         self.assertEqual(self.cache.tokens,0)
 
+    def test_scopes_isolate_exact_partial_logits_and_global_eviction(self):
+        alice,bob = object(),object()
+        prompt=[1,2,3,4]
+        self.executor.kv[0][:,0].fill_(7)
+        self.cache.remember(prompt,0,torch.tensor([[7.,0.]]),scope=alice)
+        before=self.executor.kv[0][:,1].clone()
+        self.assertEqual(self.cache.restore(prompt,1,scope=bob),(0,None))
+        self.assertEqual(self.cache.restore([1,2,9],1,scope=bob),(0,None))
+        self.assertEqual(self.cache.restore(prompt,1),(0,None))
+        torch.testing.assert_close(self.executor.kv[0][:,1],before)
+        self.assertEqual(self.executor.lengths[1],0)
+        self.executor.kv[0][:,0].fill_(9)
+        self.cache.remember(prompt,0,torch.tensor([[9.,0.]]),scope=bob)
+        self.assertEqual(self.cache.tokens,8)
+        self.assertEqual(self.cache.restore(prompt,1,scope=alice)[1].tolist(),[[7.,0.]])
+        self.assertTrue((self.executor.kv[0][:,1,:,:4,:]==7).all())
+        self.assertEqual(self.cache.restore(prompt,1,scope=bob)[1].tolist(),[[9.,0.]])
+        self.assertEqual(self.cache.restore([1,2,9],1,scope=alice),(2,None))
+        self.cache.remember([8]*6,0,torch.zeros(1,2),scope=alice)
+        self.assertEqual(self.cache.tokens,10)
+        self.assertEqual(self.cache.restore(prompt,1,scope=bob),(0,None))
+
     def test_recurrent_snapshots_only_resume_complete_stored_prefix(self):
         self.executor.prefix_can_rewind=False
         self.remember([1,2,3,4])

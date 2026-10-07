@@ -20,6 +20,9 @@ def handler_for(runtime, auth=None):
     from .client_admission import ClientAdmission, ClientLimitError
     from .http_auth import INFERENCE_ROUTES
     admission = ClientAdmission(auth)
+    from .request_scope import cache_scope
+    shared_scope = object()
+    client_scopes = {client.name: object() for client in auth.clients}
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
@@ -86,11 +89,15 @@ def handler_for(runtime, auth=None):
             if not self.authorize():
                 return
             if self.path in INFERENCE_ROUTES:
+                client = auth.client(self.headers.get_all('Authorization', []))
+                scope_token = cache_scope.set(shared_scope if client is None else client_scopes[client.name])
                 try:
                     with admission.lease(self.headers.get_all('Authorization', [])):
                         self.post_authorized()
                 except ClientLimitError:
                     self.send_json(429, {'error': 'client outstanding inference limit reached'})
+                finally:
+                    cache_scope.reset(scope_token)
             else:
                 self.post_authorized()
 

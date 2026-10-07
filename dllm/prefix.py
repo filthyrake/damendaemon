@@ -16,19 +16,21 @@ class PrefixCache:
         self.tokens=0
 
     @torch.inference_mode()
-    def restore(self,prompt,slot):
+    def restore(self,prompt,slot,*,scope=None):
         best=None
         reused=0
         for key,(cache,logits) in self.entries.items():
+            entry_scope, tokens = key
+            if entry_scope is not scope:continue
             common=0
-            for left,right in zip(key,prompt):
+            for left,right in zip(tokens,prompt):
                 if left!=right:break
                 common+=1
-            exact=common==len(prompt)==len(key) and logits is not None
-            if not getattr(self.executor,'prefix_can_rewind',True) and common!=len(key):
+            exact=common==len(prompt)==len(tokens) and logits is not None
+            if not getattr(self.executor,'prefix_can_rewind',True) and common!=len(tokens):
                 continue
             count=common if exact else min(common,len(prompt)-1)
-            if not getattr(self.executor,'prefix_can_rewind',True) and count!=len(key):continue
+            if not getattr(self.executor,'prefix_can_rewind',True) and count!=len(tokens):continue
             if count>reused:
                 best=(key,cache,logits if exact else None)
                 reused=count
@@ -44,15 +46,15 @@ class PrefixCache:
         return reused,None if logits is None else logits.clone()
 
     @torch.inference_mode()
-    def remember(self,prompt,slot,logits):
+    def remember(self,prompt,slot,logits,*,scope=None):
         if not getattr(self.executor,'prefix_can_rewind',True) and len(prompt)>self.token_budget:
             return
         count=min(len(prompt),self.token_budget)
-        key=tuple(prompt[:count])
-        if not key or key in self.entries:return
+        key=(scope,tuple(prompt[:count]))
+        if not count or key in self.entries:return
         while self.entries and (self.tokens+count>self.token_budget or len(self.entries)>=self.max_entries):
             old,_=self.entries.popitem(last=False)
-            self.tokens-=len(old)
+            self.tokens-=len(old[1])
         if hasattr(self.executor,'prefix_state_bytes'):
             needed=self.executor.prefix_state_bytes(count)
         else:

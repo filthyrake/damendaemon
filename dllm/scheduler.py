@@ -18,6 +18,7 @@ from .sampling import Sampling, Sampler, sample_rows
 from .stopping import stop_sequences, text_delta
 from .prompts import decode_output
 from .admission import wait_for_batch, validate_queue_limits
+from .request_scope import cache_scope
 
 
 @dataclass(eq=False)
@@ -58,6 +59,7 @@ class Pending:
     speculative_cooldown: int = 0
     reasoning_effort: str | None = None
     output_decoder: object | None = None
+    cache_scope: object = field(default_factory=cache_scope.get, repr=False)
 
 
 class BatchedRuntime:
@@ -465,7 +467,7 @@ class BatchedRuntime:
                                 continue
                             tokens=self._prepare(request,executor)
                             request.slot=next(i for i in range(self.batch_size) if i not in active and i not in partial)
-                            reused,logits=cache.restore(tokens,request.slot) if cache is not None else (0,None)
+                            reused,logits=cache.restore(tokens,request.slot,scope=request.cache_scope) if cache is not None else (0,None)
                             request.cached_tokens=reused
                             if logits is not None:
                                 token=request.sampler.select(logits.squeeze(0)).item()
@@ -487,7 +489,7 @@ class BatchedRuntime:
                     try:
                         logits=executor.prefill_chunk(tokens[start:end],slot,start,final=end==len(tokens))
                         if end==len(tokens):
-                            if cache is not None:cache.remember(tokens,slot,logits)
+                            if cache is not None:cache.remember(tokens,slot,logits,scope=request.cache_scope)
                             token=request.sampler.select(logits.squeeze(0)).item()
                             if not self._emit(request,token,executor,len(tokens)):
                                 active[slot]=(request,len(tokens))
@@ -571,7 +573,7 @@ class BatchedRuntime:
                 if chunk_size:
                     for request,tokens in prepared:
                         try:
-                            reused,logits=cache.restore(tokens,request.slot) if cache is not None else (0,None)
+                            reused,logits=cache.restore(tokens,request.slot,scope=request.cache_scope) if cache is not None else (0,None)
                             request.cached_tokens=reused
                             if logits is None:
                                 partial[request.slot]=(request,tokens,reused)
@@ -620,7 +622,7 @@ class BatchedRuntime:
                         logits=executor.prefill_chunk(tokens[start:end],slot,start,final=end==len(tokens))
                         if end==len(tokens):
                             if cache is not None:
-                                cache.remember(tokens,slot,logits)
+                                cache.remember(tokens,slot,logits,scope=request.cache_scope)
                             token=request.sampler.select(logits.squeeze(0)).item()
                             if self._emit(request,token,executor,len(tokens)):
                                 executor.release_request(slot)
