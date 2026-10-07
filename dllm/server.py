@@ -168,7 +168,9 @@ def handler_for(runtime, auth=None):
                 if not isinstance(body, dict) or set(body) - allowed:
                     raise ValueError("unsupported request fields")
                 from .tool_calls import prepare_tools,validate_messages,ToolCallStream,JsonToolCallStream
-                selected_tools,tool_schema=prepare_tools(body.get('tools'),body.get('tool_choice'))
+                native_tools=getattr(runtime,'native_tool_calls',False) is True
+                prepare=runtime.prepare_tools if native_tools else prepare_tools
+                selected_tools,tool_schema=prepare(body.get('tools'),body.get('tool_choice'))
                 sampling = {key: body[key] for key in ("temperature", "top_p", "top_k", "seed", "presence_penalty", "frequency_penalty", "repetition_penalty", "logit_bias") if key in body}
                 Sampling(**sampling)
                 from .logprobs import options as score_options
@@ -242,7 +244,7 @@ def handler_for(runtime, auth=None):
                     self.wfile.flush()
                 text = ""
                 reasoning_text = ""
-                tool_parser=(JsonToolCallStream(tool_schema) if tool_schema is not None
+                tool_parser=(None if native_tools else JsonToolCallStream(tool_schema) if tool_schema is not None
                     else ToolCallStream(selected_tools) if selected_tools else None)
                 native_calls=[]
                 token_scores=[]

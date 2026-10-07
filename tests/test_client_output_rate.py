@@ -124,5 +124,7 @@ class OutputRateTests(unittest.TestCase):
             self.assertEqual(request(100,key=ADMIN)[0],200)
             now[0]=61
             self.assertEqual(request(10)[0],200)
-            self.assertFalse(admission.active);self.assertFalse(admission.reserved_output)
         finally:server.shutdown();server.server_close();thread.join()
+        # Reading the response can precede the handler's outer admission exit.
+        # server_close joins request threads, making this a cleanup assertion.
+        self.assertFalse(admission.active);self.assertFalse(admission.reserved_output)
