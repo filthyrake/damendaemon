@@ -27,7 +27,7 @@ def main(argv=None):
     source.add_argument('--prompt',help='one ordinary user text turn')
     source.add_argument('--messages',help='local JSON file containing ordinary text messages')
     source.add_argument('--batch-messages',help='local JSON list of 1..16 equal-token-length conversations')
-    parser.add_argument('--ragged-batch',action='store_true',help='ordinary batch only: sequential equal-length cohorts')
+    parser.add_argument('--ragged-batch',action='store_true',help='batch only: sequential equal-length cohorts')
     parser.add_argument('--tools',help='local JSON file containing function schemas; calls are returned, never executed')
     parser.add_argument('--thinking',action='store_true')
     parser.add_argument('--keep-history-reasoning',action='store_true')
@@ -39,8 +39,8 @@ def main(argv=None):
     parser.add_argument('--dtype',choices=('float32','bfloat16','float16'),default='float32')
     args=parser.parse_args(argv)
     try:
-        if args.ragged_batch and (not args.batch_messages or args.tools is not None):
-            raise ValueError('ragged batches require ordinary batch messages without tools')
+        if args.ragged_batch and not args.batch_messages:
+            raise ValueError('ragged batches require batch messages')
         from pathlib import Path
         config=json.loads(_read(Path(args.snapshot)/'config.json',1024*1024),object_pairs_hook=_unique_fields)
         if not isinstance(config,dict) or config.get('model_type') != 'deepseek_v4':
@@ -67,7 +67,7 @@ def main(argv=None):
         runner_type=BatchReferenceGenerator if args.batch_messages else ReferenceGenerator
         runner=runner_type(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
         print(json.dumps({'scope':'cpu_reference','official_model_qualified':False,'dtype':args.dtype}),flush=True)
-        if args.batch_messages and args.tools is None:options['ragged']=args.ragged_batch
+        if args.batch_messages:options['ragged']=args.ragged_batch
         primary=None
         try:
             generate=runner.generate_batch if args.batch_messages else runner.generate

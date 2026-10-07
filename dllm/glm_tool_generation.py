@@ -17,12 +17,12 @@ class ToolGenerationMixin:
         try:yield from self._generate_tokens(tokens,max_new_tokens,stream=stream)
         finally:stream.close()
 
-    def generate_batch_tools(self,conversations,tools,*,max_new_tokens=128,reasoning_effort=None,clear_thinking=False):
+    def generate_batch_tools(self,conversations,tools,*,max_new_tokens=128,reasoning_effort=None,clear_thinking=False,ragged=False):
         declarations=_json(_dump(tools));codec=FlashTools(declarations)
         def tokenize(messages,**options):
             return self.text.tool_chat_tokens(messages,declarations,**options)
         prompts,limits=prepare_batch(self.text,conversations,max_new_tokens,self.max_context,tokenize=tokenize,
-                                     reasoning_effort=reasoning_effort,clear_thinking=clear_thinking)
+                                     reasoning_effort=reasoning_effort,clear_thinking=clear_thinking,ragged=ragged)
         streams=[self.stream_type(self.text,codec) for _ in prompts]
         def finalize(row,events,reason):
             return 'tool_calls' if any(event.get('tool_calls') for event in events) else reason

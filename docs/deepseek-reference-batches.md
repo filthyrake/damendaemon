@@ -87,8 +87,16 @@ group has released state. Cancellation closes the current group without starting
 the next; later failures suppress earlier success finals, and failed release
 remains retryable through the existing cleanup owner.
 
-This option currently accepts ordinary text batches only; combining it with tools
-or single-conversation input fails before weight loading. Tiny loaded checkpoints
+The option also supports native tool batches through `--tools`; single-conversation
+input still rejects the flag before weight loading. GLM/Flash Python callers pass
+`ragged=True` to `generate_batch_tools`; DeepSeek uses `generate_batch(..., tools=..., ragged=True)`.
+Each row retains its own parser, call arguments, stop reason and usage. Call IDs
+remain scoped to their conversation row. Calls are returned, never executed;
+earlier streamed content/calls remain provisional until batch success finals.
+All histories and declarations validate before prefill, and parser buffers close
+on abandonment or failure. Pinned prompt/wire grammars are unchanged.
+
+Tiny loaded checkpoints
 for all three families match independent per-row logits and generation/usage,
 including unequal limits and shrinking rows. This adds input coverage, not GPU,
 official-model, throughput or serving-concurrency qualification.
