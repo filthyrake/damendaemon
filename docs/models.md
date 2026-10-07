@@ -386,11 +386,10 @@ GPU routing implementation or a real-checkpoint qualification.
 `FloatingBlock(..., packed_experts=..., packed_shared=...)` explicitly selects
 that packed expert control inside the existing model stack. This mode rejects
 floating expert-bank parameters, non-CPU placement, mismatched expert counts,
-widths, activation limits and scratch allowances. Attention remains floating.
+widths, activation limits and scratch allowances.
 Two-layer model fixtures with both routing modes compare prefill and cached
 decode against independently decoded floating expert controls, exercise slot
-fanout and poison the complete cache after a packed expert failure. Full packed
-attention, checkpoint loading, accelerator execution and serving remain open.
+fanout and poison the complete cache after a packed expert failure.
 
 `dllm.prepared_projection.PackedProjection` also connects packed CPU weight
 storage to attention query/KV/output and indexer projections. Grouped output
@@ -400,8 +399,18 @@ explicit floating parameters. Ordinary, ratio-four and ratio-128 attention,
 cached decode and complete mixed-storage model fixtures match scalar-decoded
 dense projection controls. No dense packed-weight expansion is retained.
 Scratch allowances exclude projection output buffers and backend scratch;
-accelerator activation quantization and accumulation are not emulated. Actual
-checkpoint loading, GPU qualification and serving admission remain open.
+accelerator activation quantization and accumulation are not emulated.
+Whole-model checkpoint loading, GPU qualification and serving admission remain open.
+
+`dllm.packed_checkpoint.read_packed_matrix` reads one packed matrix and its
+E8M0 scales from the same or separate local safetensors shards. It validates
+bounded headers, exact payload coverage, storage/scale geometry and the combined
+raw byte budget before reading either selected payload. Returned tensors own
+their raw byte buffers; descriptors close on success or failure. This avoids
+depending on typed E8M0 support in the installed safetensors reader. Synthetic
+file tests cover both formats, cross-shard reads, malformed/overlapping/truncated
+headers, budget rejection and file changes during reading. This is selected
+tensor loading, not real-checkpoint or whole-model admission qualification.
 
 ## GPT-OSS (CUDA)
 
