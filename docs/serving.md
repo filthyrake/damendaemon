@@ -702,3 +702,19 @@ cannot rewind are skipped when the full prefix exceeds the cap. The cap follows
 the opaque request scope through both scheduler paths. It limits retained token
 counts, not bytes or active-request KV memory, and does not guarantee reserved
 capacity or aggregate quotas across executors/processes.
+
+Named clients may set `"max_requests_per_minute":120` for a rolling 60-second
+inference admission limit. Values are integers from 1 through 60000; omission
+is unlimited and explicit null is invalid. The limit spans all inference routes
+and is checked atomically with the outstanding-request limit before body reads
+or runtime dispatch. Rejected rate/outstanding admissions do not consume quota.
+Accepted attempts do consume quota even if payload validation or model execution
+later fails, or the client disconnects; finishing a request does not refund it.
+Rate rejection returns 429 with a whole-second `Retry-After` rounded up to the
+oldest counted attempt's expiry. Other clients, shared/admin keys and discovery
+or management routes keep their existing policies.
+
+This uses a monotonic rolling window shared by handler threads in one server.
+History is bounded by each configured request cap, pruned on the next attempt,
+and resets on process restart. It is request admission control, not actual token
+rate fairness, a persistent/distributed quota or a per-client capacity reservation.

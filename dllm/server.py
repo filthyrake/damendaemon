@@ -17,7 +17,7 @@ from .prompts import validate_raw
 def handler_for(runtime, auth=None):
     from .http_auth import AuthPolicy
     auth = AuthPolicy.from_env() if auth is None else auth
-    from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError
+    from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError, ClientRateLimitError
     from .http_auth import INFERENCE_ROUTES
     admission = ClientAdmission(auth)
     from .request_scope import CacheScope, cache_scope
@@ -33,14 +33,14 @@ def handler_for(runtime, auth=None):
         def log_message(self, *args):
             pass  # Do not log prompts or response content.
 
-        def send_json(self, status, payload):
+        def send_json(self, status, payload, *, retry_after=1):
             body = json.dumps(payload).encode()
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
             if status == 401:
                 self.send_header("WWW-Authenticate", 'Bearer realm="dllm"')
             if status == 429:
-                self.send_header('Retry-After', '1')
+                self.send_header('Retry-After', str(retry_after))
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Connection", "close")
             self.end_headers()
@@ -94,6 +94,8 @@ def handler_for(runtime, auth=None):
                 try:
                     with admission.lease(self.headers.get_all('Authorization', [])):
                         self.post_authorized()
+                except ClientRateLimitError as error:
+                    self.send_json(429, {'error': 'client inference request rate limit reached'}, retry_after=error.retry_after)
                 except ClientLimitError:
                     self.send_json(429, {'error': 'client outstanding inference limit reached'})
                 finally:
