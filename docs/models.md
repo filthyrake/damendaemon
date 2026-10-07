@@ -218,6 +218,17 @@ operations do not extract tensor values to the host. Inputs and learned paramete
 must be finite. These primitives do not admit DeepSeek to serving or qualify its
 attention compression, packed weights, long context or GPU behavior.
 
+`dllm.packed_tiles.decode_tile` provides CPU diagnostics for raw checkpoint bytes:
+E2M1 expert pairs use row/32-column E8M0 scales; E4M3FN uses 128x128-block E8M0
+scales. Callers specify a nonempty logical row/column range, with a hard limit of
+65,536 decoded elements. Only that tile expands to FP32; inputs can be strided
+raw uint8 views. No full projection conversion is implicit. Tests exhaust every
+E2M1/E4M3FN code and E8M0 scale, including signed zero, NaN, subnormal values and
+FP32 overflow, and cross scale boundaries with unaligned tiles. Format semantics
+follow [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf);
+scale geometry follows the pinned DeepSeek reference above. This does not replace
+packed GPU projections or establish checkpoint numerical qualification.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
