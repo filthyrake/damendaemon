@@ -240,6 +240,17 @@ component preserves query storage dtype but does not reproduce the reference
 accelerator's intermediate probability rounding. Cache compression, selection
 construction, model integration and GPU qualification remain separate gates.
 
+`dllm.cache_indices` builds causal selections for full-prefill storage and
+single-token ring-cache decode. Logical token positions remain distinct from
+physical ring slots. Compressed blocks become visible only when their complete
+input block is available. Prefill query slicing preserves the full sequence's
+compressed-cache offset; plans exceeding 1,048,576 index elements fail before
+allocation. Ring plans support reordered slots with different positions but do
+not support simultaneous multi-token writes that could overwrite earlier query
+context. CPU integration tests compare ring attention against full-prefill
+attention while uninitialized cache entries contain NaNs. The caller still owns
+cache writes, compression and position commit/recovery.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
