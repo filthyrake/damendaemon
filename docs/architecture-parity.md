@@ -1819,3 +1819,12 @@ KV cache is retained. CPU controls cover dense and packed projections, full/chun
 decode, pool-boundary continuation, reorder/shrink/duplicate, release and rollback
 after late failure. Inputs are unpadded at this layer; standalone indexer padding
 support does not imply padded model admission. Official weights are unexecuted.
+
+`glm_flash_ffn` makes Flash's clipped activation policy explicit for both floating
+and packed dense/routed/shared FFNs: cap gate projection above the limit, cap up
+projection on both sides, then apply SiLU and multiply. Ordinary GLM retains its
+unclipped default. Router correction affects expert choice only; normalized
+coefficients multiply after down projection, and the shared expert is added
+without a route coefficient. Independent controls exercise clamp boundaries and
+packed-versus-decoded outputs. Packed expert activation policies must match the
+requested Flash limit. These CPU fixtures do not qualify official model weights.

@@ -14,8 +14,12 @@ class PackedGlmFeedForward(GlmFeedForward):
     the largest expert allowance plus routing/accumulation tensors; resident
     weights, input, final output and allocator/BLAS overhead are excluded.
     """
-    def __init__(self,experts,*,router=None,correction_bias=None,shared=None,top_k=8,route_scale=2.5,
+    def __init__(self,experts,*,router=None,correction_bias=None,shared=None,top_k=8,route_scale=2.5,activation_limit=None,
                  max_output_bytes=64*1024**2,workspace_bytes=64*1024**2):
+        if activation_limit is not None and (type(activation_limit) not in (int,float)
+                or not 0<activation_limit<=torch.finfo(torch.float32).max):
+            raise ValueError('invalid GLM packed FFN activation limit')
+        self.activation_limit=activation_limit
         dense=isinstance(experts,PackedExpert)
         if dense:
             if any(v is not None for v in (router,correction_bias,shared)):
@@ -29,7 +33,7 @@ class PackedGlmFeedForward(GlmFeedForward):
         if any(not isinstance(expert,PackedExpert) for expert in all_experts):
             raise ValueError('GLM packed FFN requires prepared routed/shared experts')
         dim=bank[0].width
-        if any(expert.width!=dim or expert.activation_limit is not None
+        if any(expert.width!=dim or expert.activation_limit!=activation_limit
                or any(matrix.format!='e4m3fn_f32' for matrix in (expert.gate,expert.up,expert.down))
                for expert in all_experts):
             raise ValueError('GLM packed expert geometry, format or activation policy mismatch')

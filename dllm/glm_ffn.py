@@ -19,8 +19,12 @@ def select_glm_experts(logits,bias,top_k,*,scale=2.5):
 
 
 class GlmFeedForward:
-    def __init__(self,weights,*,kind='sparse',top_k=8,route_scale=2.5,
+    def __init__(self,weights,*,kind='sparse',top_k=8,route_scale=2.5,activation_limit=None,
                  max_output_bytes=64*1024**2,workspace_bytes=64*1024**2):
+        if activation_limit is not None and (type(activation_limit) not in (int,float)
+                or not 0<activation_limit<=torch.finfo(torch.float32).max):
+            raise ValueError('invalid GLM FFN activation limit')
+        self.activation_limit=activation_limit
         projections={'gate_proj.weight','up_proj.weight','down_proj.weight'}
         if kind=='dense':names=projections
         elif kind=='sparse':
@@ -68,7 +72,13 @@ class GlmFeedForward:
             matrices=[w[prefix+name] for name in ('gate_proj.weight','up_proj.weight','down_proj.weight')]
             if index is not None:matrices=[matrix[index] for matrix in matrices]
             gate,up,down=matrices
-            return F.linear(F.silu(F.linear(x,gate))*F.linear(x,up),down)
+            gate_value=F.linear(x,gate);up_value=F.linear(x,up)
+            if not torch.isfinite(gate_value).all() or not torch.isfinite(up_value).all():
+                raise ValueError('nonfinite GLM FFN projection')
+            if self.activation_limit is not None:
+                gate_value=gate_value.clamp(max=self.activation_limit)
+                up_value=up_value.clamp(-self.activation_limit,self.activation_limit)
+            return F.linear(F.silu(gate_value)*up_value,down)
         for batch in range(hidden.shape[0]):
             for start in range(0,hidden.shape[1],self.rows):
                 stop=min(start+self.rows,hidden.shape[1]);x=hidden[batch,start:stop]
