@@ -16,6 +16,7 @@ from .stopping import text_delta
 from .request_scope import cache_scope
 from .distributed_admission import DistributedAdmission
 from .client_decode_turns import ClientDecodeTurns
+from .client_prefill_turns import ClientPrefillTurns
 
 STREAM_BUFFER_EVENTS=8
 _pair_claim_lock=threading.Lock()
@@ -54,8 +55,10 @@ class DistributedRuntime:
     source_tier='gpu'
     kernel_backend='distributed-stage-graphs'
 
-    def __init__(self, pair, alias='model', queue_size=8, queue_timeout=120, *, client_decode_turns=False,interleaved_prefill=False):
+    def __init__(self, pair, alias='model', queue_size=8, queue_timeout=120, *, client_decode_turns=False,interleaved_prefill=False,client_prefill_turns=False):
         if type(client_decode_turns) is not bool:raise ValueError('client decode turns must be boolean')
+        if type(client_prefill_turns) is not bool or (client_prefill_turns and not interleaved_prefill):
+            raise ValueError('client prefill turns require explicit interleaved prefill')
         if type(interleaved_prefill) is not bool:raise ValueError('interleaved prefill must be boolean')
         if interleaved_prefill and (not callable(getattr(pair,'prefill_chunk',None))
                 or type(getattr(pair,'chunk_size',None)) is not int or not 1<=pair.chunk_size<=4096):
@@ -78,6 +81,7 @@ class DistributedRuntime:
         self.heartbeats=0
         self.client_decode_turns=client_decode_turns;self.decode_turns=ClientDecodeTurns()
         self.interleaved_prefill=interleaved_prefill;self.prefill_turn=0
+        self.client_prefill_turns=client_prefill_turns;self.prefill_turns=ClientPrefillTurns()
         self.execution_lock=threading.Lock();self.owner=object()
         with _pair_claim_lock:
             state=getattr(pair,'state',None)
@@ -132,7 +136,7 @@ class DistributedRuntime:
             distributed=True,stage_layers=[[0,12],[12,24]],max_batch_size=self.max_batch,packed_prefill=self.packed_prefill,
             active=self.active,queued=self.requests.qsize(),completed=self.completed,
             heartbeats=self.heartbeats,stream_buffer_events=STREAM_BUFFER_EVENTS,client_admission_turns=True,
-            client_decode_turns=self.client_decode_turns,
+            client_decode_turns=self.client_decode_turns,client_prefill_turns=self.client_prefill_turns,
             interleaved_prefill=self.interleaved_prefill,
             failed=self.failure is not None,closed=self.closed.is_set())
 
@@ -225,8 +229,11 @@ class DistributedRuntime:
 
     def _prefill_one_chunk(self,active):
         pending=[item for item in active if not item.output and not item.request.cancelled.is_set()]
-        if not pending or self.closed.is_set():return False
-        item=min(pending,key=lambda item:item.prefill_turn)
+        if not pending or self.closed.is_set():self.prefill_turns.reset();return False
+        if self.client_prefill_turns:
+            item=self.prefill_turns.choose([(item,item.request,min(self.pair.chunk_size,len(item.request.tokens)-item.prefill_offset))
+                for item in pending])[0]
+        else:item=min(pending,key=lambda item:item.prefill_turn)
         start=item.prefill_offset;end=min(len(item.request.tokens),start+self.pair.chunk_size)
         item.acquired=True
         token=self.pair.prefill_chunk(item.request.tokens[start:end],item.slot,start)
@@ -234,6 +241,7 @@ class DistributedRuntime:
         self.prefill_turn+=1;item.prefill_turn=self.prefill_turn
         # Intermediate chunk samples are protocol results, never output tokens.
         if end==len(item.request.tokens):self._advance(item,token,1)
+        if not any(not other.output and not other.request.cancelled.is_set() for other in active):self.prefill_turns.reset()
         return True
 
     def run(self, idle_timeout=0, heartbeat_interval=5, *, stop_after_drain=False):
@@ -306,7 +314,7 @@ class DistributedRuntime:
                        and item.request.events.qsize()<STREAM_BUFFER_EVENTS]
                 if self.client_decode_turns:
                     ready=[item for _,_,item in self.decode_turns.choose([(item.slot,item.request,item) for item in ready])]
-                if not active:self.decode_turns.reset();self.prefill_turn=0
+                if not active:self.decode_turns.reset();self.prefill_turn=0;self.prefill_turns.reset()
                 if ready and not self.closed.is_set():
                     tokens=[item.output[-1] for item in ready]
                     result=([self.pair.step(tokens)] if self.max_batch==1 else
@@ -336,7 +344,7 @@ class DistributedRuntime:
                 self.failure.add_note('distributed slot release failed; retain pair for backend cleanup')
             finally:
                 self.active=False
-                self.decode_turns.reset();self.prefill_turn=0
+                self.decode_turns.reset();self.prefill_turn=0;self.prefill_turns.reset()
                 with self.admission_lock:self.accepted.clear()
 
     def close(self):self._close_admission()

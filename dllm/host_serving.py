@@ -92,12 +92,12 @@ class HostDistributedRuntime(DistributedRuntime):
     source_tier='cpu_reference'
     kernel_backend='cpu-host-reference'
 
-    def __init__(self,pair,alias='model',queue_size=8,queue_timeout=120,*,client_decode_turns=False,interleaved_prefill=False):
+    def __init__(self,pair,alias='model',queue_size=8,queue_timeout=120,*,client_decode_turns=False,interleaved_prefill=False,client_prefill_turns=False):
         if not isinstance(pair,HostServingPair):raise ValueError('CPU host runtime requires its explicit pair adapter')
         with pair.worker.lock:
             if not pair.worker.ready or pair.worker.closed or pair.worker.failed:
                 raise ValueError('CPU host runtime requires a ready peer session')
-            super().__init__(pair,alias,queue_size,queue_timeout,client_decode_turns=client_decode_turns,interleaved_prefill=interleaved_prefill)
+            super().__init__(pair,alias,queue_size,queue_timeout,client_decode_turns=client_decode_turns,interleaved_prefill=interleaved_prefill,client_prefill_turns=client_prefill_turns)
 
     def model_manifest(self):raise ValueError('CPU host sessions cannot be exported as GPU model manifests')
 
@@ -117,7 +117,7 @@ class HostDistributedRuntime(DistributedRuntime):
             max_batch_size=self.max_batch,packed_prefill=False,active=self.active,queued=self.requests.qsize(),
             completed=self.completed,heartbeats=self.heartbeats,
             stream_buffer_events=STREAM_BUFFER_EVENTS,client_admission_turns=True,
-            client_decode_turns=self.client_decode_turns,
+            client_decode_turns=self.client_decode_turns,client_prefill_turns=self.client_prefill_turns,
             interleaved_prefill=self.interleaved_prefill,prefill_chunk_size=self.pair.chunk_size,
             failed=self.failure is not None,closed=self.closed.is_set())
 

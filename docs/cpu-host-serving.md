@@ -193,3 +193,12 @@ certificate/key paths, hostname and exact peer certificate pins. Existing SSL
 contexts are immutable during the session. No credentials are issued, copied,
 rotated in place or deployed automatically, and no reconnect or availability
 promise is made. Without the flag, drain continues to leave the service running.
+
+`--client-prefill-turns` requires `--interleaved-prefill` and enables equal
+aggregate prompt-token turns across pending opaque client lanes, with request
+rotation within each lane and actual short-final-chunk accounting. It is available
+in both CPU host commands, including explicit multi-stage topologies. Existing
+decode weighting is independent. New/returning lanes begin at the current service
+floor; no historical token debt is retained while absent. Status reports the flag.
+This is admitted prompt-token fairness, not equal compute time, slot reservation,
+weighted prefill, cross-process quota accounting or a measured SLO.

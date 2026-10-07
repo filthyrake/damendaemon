@@ -50,6 +50,7 @@ def parser_for_command(*,topology=False):
     parser.add_argument('--queue-size',type=_positive,default=8)
     parser.add_argument('--queue-timeout',type=float,default=120.)
     parser.add_argument('--client-decode-turns',action='store_true',help='serve role: configured ready decode shares per client; default equal')
+    parser.add_argument('--client-prefill-turns',action='store_true',help='serve role: client prompt-token fairness; requires interleaved prefill')
     parser.add_argument('--interleaved-prefill',action='store_true',help='serve role: one prompt chunk before ready decode')
     parser.add_argument('--stop-after-drain',action='store_true',help='serve role: stop peers after administrative drain finishes')
     parser.add_argument('--idle-timeout',type=float,default=0.,help='serve role: stop after idle seconds; 0 disables')
@@ -73,6 +74,8 @@ def prepare(args):
     address=ipaddress.ip_address(args.address)
     if args.stop_after_drain and args.role!='serve':raise ValueError('stop after drain requires the serve role')
     if args.client_decode_turns and args.role!='serve':raise ValueError('client decode turns require the serve role')
+    if args.client_prefill_turns and (args.role!='serve' or not args.interleaved_prefill):
+        raise ValueError('client prefill turns require the serve role with interleaved prefill')
     if args.interleaved_prefill and args.role!='serve':raise ValueError('interleaved prefill requires the serve role')
     if (not 0<args.timeout<=30 or not 1<=args.slots<=4 or not 1<=args.frame_mib<=64
             or not 1<=args.context<=args.context_limit<=2**20
@@ -211,7 +214,7 @@ def serve_worker_pair(worker,text,args,auth,*,pair_type=None):
     from dllm.server import BoundedHTTPServer
     pair=(HostServingPair if pair_type is None else pair_type)(worker,text,chunk_size=args.prefill_chunk)
     runtime=HostDistributedRuntime(pair,args.alias,args.queue_size,args.queue_timeout,
-        client_decode_turns=args.client_decode_turns,interleaved_prefill=args.interleaved_prefill)
+        client_decode_turns=args.client_decode_turns,interleaved_prefill=args.interleaved_prefill,client_prefill_turns=args.client_prefill_turns)
     server=thread=None;previous=None;primary=None
     stopping=threading.Event()
     def interrupt(*_):

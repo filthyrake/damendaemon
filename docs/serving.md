@@ -797,3 +797,25 @@ outside this policy. It does not reserve slots for waiting clients, provide
 weighted quotas, isolate prefill cost, or establish a latency/throughput SLO.
 Local scheduler controls preserve per-request output and release behavior; real
 hardware measurements are still needed to quantify the cost.
+
+### Optional client prompt-token turns
+
+`--client-prefill-turns` requires an explicit positive `--prefill-chunk-size`
+(at most 1,048,576 tokens) and a chunk-capable executor. It chooses the pending
+client with the least prompt-token service, then rotates that client's pending
+requests. A client occupying three prompt slots therefore does not receive three
+times the aggregate token service of a client with one slot. A short final chunk
+is charged for its actual token count. Default per-request rotation is unchanged.
+
+Accounting includes only dispatched prompt chunks, excluding reused prefix tokens.
+New/rejoining clients start at the current service floor; cancelled/completed
+requests and absent lanes lose history. Normalized service counters remain within
+one maximum dispatched chunk across continuously pending lanes, and all state
+clears when prompt work/model ownership ends. Decode still runs between chunks.
+Client decode weights do not affect this separate, equal prefill-token policy.
+
+This applies only to admitted, runnable prompt work. It does not reserve slots
+for queued clients, preempt a running chunk, equalize attention/computation cost,
+provide weighted prefill or coordinate quotas across processes. It establishes
+no wall-clock latency or throughput SLO. Scheduler status reports the boolean
+`client_prefill_turns` setting.

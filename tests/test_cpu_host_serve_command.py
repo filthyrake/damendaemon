@@ -146,15 +146,15 @@ class CpuHostServeCommandTests(unittest.TestCase):
             self.assertEqual(error.exception.code,2)
 
     def test_decode_turn_flag_reaches_actual_peer_http_runtime(self):
-        service,worker,ready,_=self.start_service(extra=['--client-decode-turns','--interleaved-prefill'])
+        service,worker,ready,_=self.start_service(extra=['--client-decode-turns','--interleaved-prefill','--client-prefill-turns'])
         with urlopen(ready['url']+'/v1/models/status',timeout=3) as response:status=json.load(response)
         self.assertTrue(status['client_decode_turns']);self.assertTrue(status['client_admission_turns'])
-        self.assertTrue(status['interleaved_prefill']);self.assertEqual(status['prefill_chunk_size'],1)
+        self.assertTrue(status['interleaved_prefill']);self.assertTrue(status['client_prefill_turns']);self.assertEqual(status['prefill_chunk_size'],1)
         payload=json.dumps(dict(model='model',prompt=[1,2],max_tokens=3)).encode()
         with urlopen(Request(ready['url']+'/v1/completions',payload,{'Content-Type':'application/json'}),timeout=5) as response:result=json.load(response)
         self.assertEqual(result['usage']['completion_tokens'],3)
         _,error=service.communicate(timeout=6);_,peer_error=worker.communicate(timeout=6)
         self.assertEqual(service.returncode,0,error);self.assertEqual(worker.returncode,0,peer_error)
         with patch.object(cli,'connect_peer',side_effect=AssertionError('network')),redirect_stderr(io.StringIO()):
-            for flag in ('--client-decode-turns','--interleaved-prefill'):
+            for flag in ('--client-decode-turns','--interleaved-prefill','--client-prefill-turns'):
                 with self.assertRaises(SystemExit):cli.main(self.fixture.args('complete',1234)+[flag])

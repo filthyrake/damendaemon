@@ -21,6 +21,7 @@ from .admission import wait_for_batch, validate_queue_limits
 from .request_scope import cache_scope
 from .fair_admission import FairAdmission
 from .client_decode_turns import ClientDecodeTurns
+from .client_prefill_turns import ClientPrefillTurns
 from .token_observation import TokenObservation
 
 
@@ -67,8 +68,12 @@ class Pending:
 
 
 class BatchedRuntime:
-    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, prefix_cache_tokens=0, batch_wait_ms=0, client_decode_turns=False, **kwargs):
+    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, prefix_cache_tokens=0, batch_wait_ms=0, client_decode_turns=False, client_prefill_turns=False, **kwargs):
         if type(client_decode_turns) is not bool:raise ValueError("client decode turns must be boolean")
+        if type(client_prefill_turns) is not bool:raise ValueError('client prefill turns must be boolean')
+        if client_prefill_turns and (type(prefill_chunk_size) is not int or not 1<=prefill_chunk_size<=2**20):
+            raise ValueError('client prefill turns require explicit bounded prompt chunks')
+        self.client_prefill_turns=client_prefill_turns;self.prefill_turns=ClientPrefillTurns()
         self.client_decode_turns=client_decode_turns
         self.decode_turns=ClientDecodeTurns()
         validate_queue_limits(queue_size, queue_timeout)
@@ -131,6 +136,7 @@ class BatchedRuntime:
                 "queue_timeout_seconds": self.queue_timeout,
                 "batch_capacity": self.batch_size,
                 "client_decode_turns": self.client_decode_turns,
+                "client_prefill_turns": self.client_prefill_turns,
                 "queued_generation_requests": sum(r.command is None for r in queued),
                 "worker_owned_generation_requests": sum(r.command is None for r in owned),
                 "queued_commands": sum(r.command is not None for r in queued),
@@ -473,6 +479,11 @@ class BatchedRuntime:
             executor.lengths[slot]=start+len(request.output)-previous
         return True
 
+    def _prefill_slot(self,partial,chunk_size):
+        if not self.client_prefill_turns:return next(iter(partial))
+        return self.prefill_turns.choose([(slot,request,min(chunk_size,len(tokens)-start))
+            for slot,(request,tokens,start) in partial.items()])[0]
+
     def _chunked_group(self,first,executor,tier,activation):
         first.tier,first.activation=tier,activation
         active,partial={},{}
@@ -513,9 +524,10 @@ class BatchedRuntime:
                     if request.cancelled.is_set():
                         self._finish(request)
                         del partial[slot]
+                if not partial:self.prefill_turns.reset()
                 # At most one bounded prompt chunk before each decode step.
                 if partial:
-                    slot=next(iter(partial))
+                    slot=self._prefill_slot(partial,chunk_size)
                     request,tokens,start=partial[slot]
                     end=min(start+chunk_size,len(tokens))
                     try:
@@ -534,6 +546,7 @@ class BatchedRuntime:
                     except Exception as error:
                         self._finish(request,error)
                         del partial[slot]
+                if not partial:self.prefill_turns.reset()
                 for slot,(request,_) in list(active.items()):
                     if request.cancelled.is_set():
                         self._finish(request)
@@ -645,9 +658,10 @@ class BatchedRuntime:
                         executor.release_request(slot)
                         owned.remove(slot)
                         del partial[slot]
+                if not partial:self.prefill_turns.reset()
                 # Bound prompt work between decode steps, keeping its reservation.
                 if partial:
-                    slot=next(iter(partial))
+                    slot=self._prefill_slot(partial,chunk_size)
                     request,tokens,start=partial[slot]
                     end=min(start+chunk_size,len(tokens))
                     try:
@@ -672,6 +686,7 @@ class BatchedRuntime:
                         executor.release_request(slot)
                         owned.remove(slot)
                         del partial[slot]
+                if not partial:self.prefill_turns.reset()
                 for slot,(request,_) in list(active.items()):
                     timed_out=request.events.full() and time.monotonic()-request.last_progress>self.queue_timeout
                     if request.cancelled.is_set() or timed_out:
@@ -707,6 +722,8 @@ class BatchedRuntime:
                 executor.release_request(slot)
 
     def _group(self, first, executor, tier, activation):
+        if self.client_prefill_turns and not getattr(executor,'supports_chunked_prefill',False):
+            raise ValueError('client prefill turns require a chunk-capable executor')
         if self.prefix_cache_tokens and not getattr(executor, 'supports_prefix_cache', True):
             raise ValueError('this architecture does not yet support prefix snapshots')
         if getattr(executor,'requires_full_prefill',False) and (self.prefill_chunk_size or self.prefix_cache_tokens):
@@ -818,7 +835,7 @@ class BatchedRuntime:
             try:
                 with self.runtime.session(first.alias) as (executor, tier, activation):
                     wait_for_batch(self,first,self.batch_wait_seconds)
-                    self.decode_turns.reset()
+                    self.decode_turns.reset();self.prefill_turns.reset()
                     self._group(first, executor, tier, activation)
             except Exception as error:
                 if not first.done.is_set():
@@ -827,7 +844,7 @@ class BatchedRuntime:
                 # A worker local otherwise retains the previous model while the
                 # next session tries to evict it and reserve replacement VRAM.
                 executor = None
-                self.decode_turns.reset()
+                self.decode_turns.reset();self.prefill_turns.reset()
                 with self.condition:
                     self.worker_busy = False
                     self.condition.notify_all()

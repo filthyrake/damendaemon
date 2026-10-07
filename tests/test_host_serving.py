@@ -28,7 +28,7 @@ class HostServingTests(unittest.TestCase):
         self.workers=[]
         for transport in self.fixture.transports():
             worker=build_cpu_host_worker(self.fixture.path,0 if transport.rank==0 else 2,2 if transport.rank==0 else 4,
-                transport,epoch=1,max_context=16,max_batch=2,quantization='q4_0',mapped_vocab_size=self.text.vocab_size,
+                transport,epoch=1,max_context=16,max_batch=getattr(self,'batch_size',2),quantization='q4_0',mapped_vocab_size=self.text.vocab_size,
                 excluded_ids=self.text.excluded_ids,**OPTIONS)
             self.workers.append(worker);self.addCleanup(worker.close)
         self.fixture.together([w.handshake for w in self.workers]);self.peer_errors=[]
