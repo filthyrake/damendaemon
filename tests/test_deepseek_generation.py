@@ -146,3 +146,19 @@ class ReferenceGenerationTests(unittest.TestCase):
         model.config={'eos_token_id':list(self.text.eos),'bos_token_id':self.text.tokenizer.token_to_id(BOS),
                       'max_position_embeddings':128}
         ReferenceGenerator(model,self.text,max_context=128)
+
+    def test_tool_token_stream_opt_in_preserves_added_dsml_marker(self):
+        from dllm.deepseek_tools import render_tool_calls
+        self.text.tokenizer.add_special_tokens([AddedToken('｜DSML｜',special=True)])
+        self.text.vocab_size=self.text.tokenizer.get_vocab_size()
+        calls=[{'type':'function','function':{'name':'f','arguments':'{"x": "🙂"}'}}]
+        completion='Checking.\n\n'+render_tool_calls(calls)+EOS
+        tokens=self.text.tokenizer.encode(completion,add_special_tokens=False).ids
+        stream=TokenStream(self.text,allow_tool_calls=True)
+        events=[]
+        for token in tokens:events.extend(stream.feed(token))
+        self.assertEqual(''.join(event.get('content','') for event in events),'Checking.')
+        self.assertEqual(stream.finish(),[{'tool_calls':calls}])
+        stream=TokenStream(self.text)
+        with self.assertRaises(ValueError):
+            for token in tokens:stream.feed(token)

@@ -50,3 +50,47 @@ class DeepSeekOutputTests(unittest.TestCase):
         for value in (None,b'bytes',1):
             parser=DeepSeekOutput()
             with self.assertRaises(ValueError):parser.feed(value)
+
+    def test_tool_calls_are_atomic_across_every_chunk_boundary(self):
+        from dllm.deepseek_tools import render_tool_calls
+        calls=[{'type':'function','function':{'name':'weather','arguments':'{"city": "Montréal"}'}}]
+        block=render_tool_calls(calls)
+        for thinking,prefix in ((False,'Look up weather.'),(True,'Plan.</think>Look up weather.')):
+            text=prefix+'\n\n'+block+EOS
+            expected={'content':'Look up weather.','reasoning_content':'Plan.' if thinking else '', 'tool_calls':calls}
+            self.assertEqual(parse_completion(text,enable_thinking=thinking,allow_tool_calls=True),expected)
+            for chunks in [[text[:split],text[split:]] for split in range(len(text)+1)]+[list(text)]:
+                parser=DeepSeekOutput(enable_thinking=thinking,allow_tool_calls=True)
+                actual={'content':'','reasoning_content':'','tool_calls':[]}
+                for chunk in chunks:
+                    for event in parser.feed(chunk):
+                        self.assertNotIn('tool_calls',event)
+                        for key,value in event.items():actual[key]+=value
+                for event in parser.finish():
+                    for key,value in event.items():actual[key]+=value
+                self.assertEqual(actual,expected)
+                self.assertTrue(parser.tool_buffer.closed)
+
+    def test_tool_mode_rejects_partial_malformed_and_reasoning_calls(self):
+        from dllm.deepseek_tools import render_tool_calls
+        block=render_tool_calls([{'type':'function','function':{'name':'f','arguments':'{}'}}])
+        for text in ('\n\n'+block,'\n\n'+block+EOS+'trailing','\n\n'+block+EOS+EOS,
+                     '\n\n'+block.replace('invoke name="f"','invoke bad="f"')+EOS):
+            parser=DeepSeekOutput(allow_tool_calls=True)
+            parser.feed(text)
+            with self.assertRaises(ValueError):parser.finish(truncated=True)
+            self.assertTrue(parser.failed)
+            with self.assertRaises(RuntimeError):parser.feed('later')
+        with self.assertRaises(ValueError):parse_completion('\n\n'+block+EOS)
+        with self.assertRaises(ValueError):parse_completion('\n\n'+block+EOS,enable_thinking=True,allow_tool_calls=True)
+        parser=DeepSeekOutput(allow_tool_calls=True)
+        parser.feed('\n\n'+block)
+        with self.assertRaises(ValueError):parser.feed('x'*(1024*1024))
+        self.assertTrue(parser.tool_buffer.closed)
+
+    def test_truncated_tool_opener_is_not_emitted_as_text(self):
+        from dllm.deepseek_output import TOOL_START
+        for size in range(3,len(TOOL_START)):
+            with self.assertRaises(ValueError):
+                parse_completion(TOOL_START[:size],allow_tool_calls=True,truncated=True)
+        self.assertEqual(parse_completion('answer\n',allow_tool_calls=True,truncated=True)['content'],'answer\n')

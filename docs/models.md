@@ -517,3 +517,12 @@ truncated blocks and trailing text fail closed. IDs are application metadata and
 are not encoded in this wire format. This codec does not execute tools, validate
 argument schemas, add schemas to prompts, or enable tools in the CPU reference
 CLI/HTTP server. Those integration and model qualification gates remain open.
+
+`DeepSeekOutput` and `TokenStream` accept explicit `allow_tool_calls=True` for
+structured completion decoding. Ordinary content/reasoning remains incremental;
+only the DSML block is buffered within the 1 MiB completion limit. Complete calls
+are emitted atomically by `finish()` after block and EOS validation. Partial tool
+openers/blocks fail even for length-truncated completions. The pinned tokenizer's
+added DSML marker is admitted only in this opt-in mode. Default text decoding
+still rejects tool output. This decoder option does not enable tool prompting or
+automatic tool execution in the reference runner or HTTP API.

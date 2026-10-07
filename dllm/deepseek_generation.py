@@ -26,13 +26,14 @@ BYTE_VALUES=_byte_alphabet()
 
 class TokenStream:
     """Incremental ByteLevel decoding with explicit control-token handling."""
-    def __init__(self,text,*,enable_thinking=False):
+    def __init__(self,text,*,enable_thinking=False,allow_tool_calls=False):
         if not isinstance(text,DeepSeekText) or not isinstance(text.tokenizer.decoder,decoders.ByteLevel):
             raise ValueError('V4 generation requires a prepared ByteLevel tokenizer')
         self.text=text
         self.added=text.tokenizer.get_added_tokens_decoder()
         self.utf8=codecs.getincrementaldecoder('utf-8')(errors='replace')
-        self.parser=DeepSeekOutput(enable_thinking=enable_thinking)
+        self.parser=DeepSeekOutput(enable_thinking=enable_thinking,allow_tool_calls=allow_tool_calls)
+        self.allow_tool_calls=allow_tool_calls
         self.failed=False
 
     def feed(self,token):
@@ -42,7 +43,7 @@ class TokenStream:
                 raise ValueError('invalid generated V4 token ID')
             if token in self.added:
                 value=self.added[token].content
-                if value not in (BOS,EOS,USER,ASSISTANT,THINK,END_THINK):
+                if value not in (BOS,EOS,USER,ASSISTANT,THINK,END_THINK) and not (self.allow_tool_calls and value == '｜DSML｜'):
                     raise ValueError('unsupported generated V4 added/control token')
                 decoded=self.utf8.decode(b'',final=True)+value
                 self.utf8.reset()
