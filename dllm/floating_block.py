@@ -9,6 +9,7 @@ from .floating_attention import _check, _norm, attention_prefill, attention_deco
 from .floating_moe import floating_moe, validate_moe_inputs
 from .hyper_connections import reduce_streams, restore_streams
 from .packed_moe import PackedExpert, packed_moe
+from .prepared_projection import PackedProjection, is_projection
 
 
 @dataclass
@@ -42,9 +43,11 @@ class FloatingBlock:
         if not isinstance(attention_weights, dict) or not isinstance(weights, dict):
             raise ValueError('block preparation requires parameter mappings')
         input_weight = attention_weights.get('wq_a.weight')
-        if not isinstance(input_weight, torch.Tensor) or input_weight.ndim != 2 or min(input_weight.shape) < 1:
+        if not is_projection(input_weight) or min(input_weight.shape) < 1:
             raise ValueError('missing block input projection geometry')
-        _check(input_weight[:1].unsqueeze(0), attention_weights, frequencies, groups, window, ratio, index_top_k, 16, epsilon)
+        probe = (torch.empty(1,1,input_weight.shape[1],dtype=input_weight.dtype,device=input_weight.device)
+                 if isinstance(input_weight,PackedProjection) else input_weight[:1].unsqueeze(0))
+        _check(probe, attention_weights, frequencies, groups, window, ratio, index_top_k, 16, epsilon)
         if (type(hc_mult) is not int or not 1 <= hc_mult <= 16
                 or type(top_k) is not int or top_k < 1 or type(iterations) is not int or not 1 <= iterations <= 128
                 or any(type(v) not in (int, float) or not 0 < v <= torch.finfo(torch.float32).max
@@ -81,7 +84,7 @@ class FloatingBlock:
             banks, shared = tuple(weights[n] for n in bank_names), tuple(weights[n] for n in shared_names)
             routes = torch.empty(0,top_k,dtype=torch.int64,device=device)
             coefficients = torch.empty(0,top_k,dtype=torch.float32,device=device)
-            validate_moe_inputs(input_weight[:0], *banks, routes, coefficients, shared=shared,
+            validate_moe_inputs(probe.reshape(1,-1)[:0], *banks, routes, coefficients, shared=shared,
                                 activation_limit=activation_limit, workspace_bytes=workspace_bytes)
             if banks[0].shape[0] != experts:
                 raise ValueError('gate and expert-bank counts disagree')

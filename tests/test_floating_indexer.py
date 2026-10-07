@@ -63,7 +63,7 @@ class FloatingIndexerTests(unittest.TestCase):
         def record(x, weight):
             rows.append(x.shape[1])
             return original(x, weight)
-        with patch('dllm.floating_indexer.F.linear', side_effect=record), \
+        with patch('dllm.floating_indexer.linear', side_effect=record), \
                 patch.object(torch.Tensor, 'cpu', side_effect=AssertionError('host copy')), \
                 patch.object(torch.Tensor, 'tolist', side_effect=AssertionError('host values')), \
                 patch.object(torch.Tensor, 'item', side_effect=AssertionError('host scalar')):
@@ -74,7 +74,7 @@ class FloatingIndexerTests(unittest.TestCase):
 
     def test_invalid_contracts_fail_before_projection(self):
         args = self.fixture()
-        with patch('dllm.floating_indexer.F.linear', side_effect=AssertionError('projection started')):
+        with patch('dllm.floating_indexer.linear', side_effect=AssertionError('projection started')):
             for options in ({'top_k':0}, {'top_k':3, 'offset':-1}, {'top_k':3, 'query_chunk':False}):
                 with self.assertRaises(ValueError):
                     index_hidden(*args, **options)

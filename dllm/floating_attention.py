@@ -1,6 +1,6 @@
 """Floating DeepSeek attention prefill and cached decode; not a serving admission path.
 
-Prepared floating projection weights replace packed GEMMs for component checks.
+Projection weights may be floating tensors or explicit CPU packed adapters.
 Reference accelerator rounding, packed arithmetic and model/GPU qualification
 remain separate. Parameter names are relative to a checkpoint attention module.
 """
@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 import threading
 
 import torch
-from torch.nn import functional as F
 
 from .activation_simulation import simulate_fp8
 from .cache_indices import prefill_indices, ring_decode_indices
@@ -16,6 +15,7 @@ from .compressed_pool import PoolState
 from .deepseek_position import rotate_pairs
 from .floating_compressor import compress_hidden
 from .floating_indexer import index_hidden
+from .prepared_projection import PackedProjection, is_projection, linear
 from .selected_attention import selected_attention
 
 
@@ -97,7 +97,7 @@ def _check(hidden, weights, freq, groups, window, ratio, top_k, chunk, epsilon):
             raise ValueError('missing or invalid attention normalization/sink geometry')
     heads, width, qrank = (weights[n].numel() for n in ('attn_sink', 'kv_norm.weight', 'q_norm.weight'))
     output = weights.get('wo_a.weight')
-    if not isinstance(output, torch.Tensor) or output.ndim != 2 or output.shape[0] < 1 or output.shape[0] % groups or heads % groups:
+    if not is_projection(output) or output.shape[0] < 1 or output.shape[0] % groups or heads % groups:
         raise ValueError('invalid grouped output projection geometry')
     orank = output.shape[0]//groups
     if (not isinstance(freq, torch.Tensor) or freq.ndim != 1 or freq.dtype != torch.float32
@@ -120,7 +120,7 @@ def _check(hidden, weights, freq, groups, window, ratio, top_k, chunk, epsilon):
         compressor('compressor', width)
     if ratio == 4:
         norm, head_weight = weights.get('indexer.compressor.norm.weight'), weights.get('indexer.weights_proj.weight')
-        if not isinstance(norm, torch.Tensor) or norm.ndim != 1 or not isinstance(head_weight, torch.Tensor) or head_weight.ndim != 2:
+        if not isinstance(norm, torch.Tensor) or norm.ndim != 1 or not is_projection(head_weight):
             raise ValueError('missing indexer geometry')
         index_width, index_heads = norm.numel(), head_weight.shape[0]
         if not 32 <= index_width <= 4096 or index_width & (index_width-1) or index_width < 2*freq.numel() or index_heads < 1:
@@ -132,9 +132,19 @@ def _check(hidden, weights, freq, groups, window, ratio, top_k, chunk, epsilon):
         raise ValueError('floating attention parameter names do not match the declared variant')
     for name, (shape, dtype) in expected.items():
         value = weights[name]
-        if not isinstance(value, torch.Tensor) or value.shape != shape or value.dtype != dtype or value.device != hidden.device:
+        packed_allowed = name in ('wq_a.weight','wq_b.weight','wkv.weight','wo_a.weight','wo_b.weight',
+                                   'indexer.wq_b.weight','indexer.weights_proj.weight')
+        valid_type = isinstance(value,torch.Tensor) or (packed_allowed and isinstance(value,PackedProjection))
+        if not valid_type or value.shape != shape or value.dtype != dtype or value.device != hidden.device:
             raise ValueError(f'floating attention parameter shape/dtype/device mismatch: {name}')
     return heads, width, orank, index_width
+
+
+def _grouped_project(grouped, weight, groups, orank):
+    if isinstance(weight,PackedProjection):
+        return torch.stack([linear(grouped[:,:,group],weight.rows(group*orank,(group+1)*orank))
+                            for group in range(groups)],dim=2)
+    return torch.einsum('bsgd,grd->bsgr',grouped,weight.reshape(groups,orank,-1))
 
 
 @torch.no_grad()
@@ -181,7 +191,7 @@ def attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, r
     for start in range(0, length, query_chunk):
         stop = min(length, start+query_chunk)
         part = hidden[:, start:stop]
-        vectors = _norm(F.linear(part, weights['wkv.weight']), weights['kv_norm.weight'], epsilon)
+        vectors = _norm(linear(part, weights['wkv.weight']), weights['kv_norm.weight'], epsilon)
         vectors[..., -rd:] = rotate_pairs(vectors[..., -rd:], positions[start:stop], inverse_frequencies)
         if width > rd:
             vectors[..., :-rd] = simulate_fp8(vectors[..., :-rd])
@@ -197,8 +207,8 @@ def attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, r
     for start in range(0, length, query_chunk):
         stop = min(length, start+query_chunk)
         part, pos = hidden[:, start:stop], positions[start:stop]
-        low_rank = _norm(F.linear(part, weights['wq_a.weight']), weights['q_norm.weight'], epsilon)
-        query = F.linear(low_rank, weights['wq_b.weight']).unflatten(-1, (heads, width))
+        low_rank = _norm(linear(part, weights['wq_a.weight']), weights['q_norm.weight'], epsilon)
+        query = linear(low_rank, weights['wq_b.weight']).unflatten(-1, (heads, width))
         query = query*(query.square().mean(-1, keepdim=True)+epsilon).rsqrt()
         query[..., -rd:] = rotate_pairs(query[..., -rd:], pos, inverse_frequencies)
         indices = prefill_indices(length, window=window, ratio=ratio if ratio != 4 else 0,
@@ -211,8 +221,8 @@ def attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, r
         attended = selected_attention(query, combined, indices, weights['attn_sink'], query_chunk=query_chunk)
         attended[..., -rd:] = rotate_pairs(attended[..., -rd:], pos, inverse_frequencies, inverse=True)
         grouped = attended.reshape(batch, stop-start, groups, heads*width//groups)
-        projected = torch.einsum('bsgd,grd->bsgr', grouped, weights['wo_a.weight'].reshape(groups, orank, -1))
-        output[:, start:stop] = F.linear(projected.flatten(2), weights['wo_b.weight'])
+        projected = _grouped_project(grouped,weights['wo_a.weight'],groups,orank)
+        output[:, start:stop] = linear(projected.flatten(2), weights['wo_b.weight'])
     ring = cache[:, :window]
     first = max(0, length-window)
     ring.index_copy_(1, positions[first:] % window, kv[:, first:])
@@ -244,11 +254,11 @@ def attention_decode(hidden, state, *, position):
                                       state.ratio, state.index_top_k, 1, epsilon)
         batch, rd = hidden.shape[0], freq.numel()*2
         pos = torch.tensor([position], dtype=torch.int64, device=hidden.device)
-        low_rank = _norm(F.linear(hidden, weights['wq_a.weight']), weights['q_norm.weight'], epsilon)
-        query = F.linear(low_rank, weights['wq_b.weight']).unflatten(-1, (heads,width))
+        low_rank = _norm(linear(hidden, weights['wq_a.weight']), weights['q_norm.weight'], epsilon)
+        query = linear(low_rank, weights['wq_b.weight']).unflatten(-1, (heads,width))
         query = query*(query.square().mean(-1, keepdim=True)+epsilon).rsqrt()
         query[..., -rd:] = rotate_pairs(query[..., -rd:], pos, freq)
-        vectors = _norm(F.linear(hidden, weights['wkv.weight']), weights['kv_norm.weight'], epsilon)
+        vectors = _norm(linear(hidden, weights['wkv.weight']), weights['kv_norm.weight'], epsilon)
         vectors[..., -rd:] = rotate_pairs(vectors[..., -rd:], pos, freq)
         if width > rd:
             vectors[..., :-rd] = simulate_fp8(vectors[..., :-rd])
@@ -279,8 +289,8 @@ def attention_decode(hidden, state, *, position):
             attended = selected_attention(query, state.cache, indices, weights['attn_sink'], query_chunk=1)
             attended[..., -rd:] = rotate_pairs(attended[..., -rd:], pos, freq, inverse=True)
             grouped = attended.reshape(batch, 1, state.groups, heads*width//state.groups)
-            projected = torch.einsum('bsgd,grd->bsgr', grouped, weights['wo_a.weight'].reshape(state.groups, orank, -1))
-            output = F.linear(projected.flatten(2), weights['wo_b.weight'])
+            projected = _grouped_project(grouped,weights['wo_a.weight'],state.groups,orank)
+            output = linear(projected.flatten(2), weights['wo_b.weight'])
         except BaseException:
             state.poisoned = True
             raise

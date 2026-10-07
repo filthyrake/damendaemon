@@ -392,6 +392,17 @@ decode against independently decoded floating expert controls, exercise slot
 fanout and poison the complete cache after a packed expert failure. Full packed
 attention, checkpoint loading, accelerator execution and serving remain open.
 
+`dllm.prepared_projection.PackedProjection` also connects packed CPU weight
+storage to attention query/KV/output and indexer projections. Grouped output
+row views retain original matrix coordinates so E8M0 scale blocks stay aligned.
+Compressors, norms, routing gates, embeddings and the vocabulary head remain
+explicit floating parameters. Ordinary, ratio-four and ratio-128 attention,
+cached decode and complete mixed-storage model fixtures match scalar-decoded
+dense projection controls. No dense packed-weight expansion is retained.
+Scratch allowances exclude projection output buffers and backend scratch;
+accelerator activation quantization and accumulation are not emulated. Actual
+checkpoint loading, GPU qualification and serving admission remain open.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with

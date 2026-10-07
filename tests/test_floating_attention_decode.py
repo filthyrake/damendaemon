@@ -88,7 +88,7 @@ class FloatingAttentionDecodeTests(unittest.TestCase):
 
     def test_preflight_failures_preserve_state_and_budget_fails_before_projection(self):
         hidden, weights, freq = fixture(4,9)
-        with patch('dllm.floating_attention.F.linear', side_effect=AssertionError('projection started')):
+        with patch('dllm.floating_attention.linear', side_effect=AssertionError('projection started')):
             with self.assertRaises(ValueError):
                 attention_prefill(hidden,weights,freq,groups=2,window=4,ratio=4,max_cache_bytes=1)
         _, state = attention_prefill(hidden[:,:3],weights,freq,groups=2,window=4,ratio=4,max_tokens=4)
@@ -100,7 +100,7 @@ class FloatingAttentionDecodeTests(unittest.TestCase):
             attention_decode(hidden[:,3:5],state,position=3)
         torch.testing.assert_close(state.cache,before)
         self.assertFalse(state.poisoned)
-        with patch('dllm.floating_attention.F.linear', side_effect=RuntimeError('preparation failed')):
+        with patch('dllm.floating_attention.linear', side_effect=RuntimeError('preparation failed')):
             with self.assertRaisesRegex(RuntimeError, 'preparation failed'):
                 attention_decode(hidden[:,3:4],state,position=3)
         torch.testing.assert_close(state.cache,before)

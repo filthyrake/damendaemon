@@ -21,7 +21,7 @@ def projection_plan(weight, scales, *, format, row_chunk, column_chunk, workspac
 
 @torch.no_grad()
 def packed_linear(hidden, weight, scales, *, format, row_chunk=64, column_chunk=256,
-                  workspace_bytes=8*1024*1024):
+                  workspace_bytes=8*1024*1024, row_range=None):
     """Project CPU [tokens,features] to FP32 without a full weight expansion.
 
     E2M1/E4M3FN weights and E8M0 scales stay in raw uint8 storage. Inputs may be
@@ -35,15 +35,16 @@ def packed_linear(hidden, weight, scales, *, format, row_chunk=64, column_chunk=
     """
     rows, columns, token_chunk = projection_plan(weight, scales, format=format, row_chunk=row_chunk,
                                                  column_chunk=column_chunk, workspace_bytes=workspace_bytes)
+    first, last = validate_row_range(row_range, rows)
     if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 2
             or hidden.device.type != 'cpu' or hidden.dtype not in (torch.float16, torch.bfloat16, torch.float32)
             or hidden.shape[1] != columns):
         raise ValueError('packed projection needs CPU floating [tokens,features] matching the weight')
-    output = torch.zeros((hidden.shape[0], rows), dtype=torch.float32)
+    output = torch.zeros((hidden.shape[0], last-first), dtype=torch.float32)
     if hidden.shape[0] == 0:
         return output
-    for row in range(0, rows, row_chunk):
-        end_row = min(rows, row+row_chunk)
+    for row in range(first, last, row_chunk):
+        end_row = min(last, row+row_chunk)
         for column in range(0, columns, column_chunk):
             end_column = min(columns, column+column_chunk)
             tile = decode_tile(weight, scales, format=format, row_start=row, row_stop=end_row,
@@ -51,7 +52,17 @@ def packed_linear(hidden, weight, scales, *, format, row_chunk=64, column_chunk=
             for token in range(0, hidden.shape[0], token_chunk):
                 end_token = min(hidden.shape[0], token+token_chunk)
                 inputs = hidden[token:end_token, column:end_column].float()
-                output[token:end_token, row:end_row].add_(inputs @ tile.T)
+                output[token:end_token, row-first:end_row-first].add_(inputs @ tile.T)
             # Drop before the next decode so two expanded weight tiles do not overlap.
             del tile, inputs
     return output
+
+
+def validate_row_range(row_range, rows):
+    if row_range is None:
+        return 0, rows
+    if (not isinstance(row_range,tuple) or len(row_range) != 2
+            or any(type(v) is not int for v in row_range)
+            or not 0 <= row_range[0] < row_range[1] <= rows):
+        raise ValueError('projection row range must be a nonempty logical interval')
+    return row_range

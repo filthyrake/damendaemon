@@ -90,7 +90,7 @@ class FloatingAttentionTests(unittest.TestCase):
 
     def test_contract_rejection_precedes_projection(self):
         hidden, weights, freq = fixture()
-        with patch('dllm.floating_attention.F.linear', side_effect=AssertionError('projection started')):
+        with patch('dllm.floating_attention.linear', side_effect=AssertionError('projection started')):
             for options in ({'groups':3,'window':4}, {'groups':2,'window':0}, {'groups':2,'window':4,'ratio':8}):
                 with self.assertRaises(ValueError):
                     attention_prefill(hidden, weights, freq, **options)

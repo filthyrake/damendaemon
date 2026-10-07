@@ -1,6 +1,6 @@
 """Floating indexer projection/rotation/QAT composition; no packed GEMM claim."""
 import torch
-from torch.nn import functional as F
+from .prepared_projection import is_projection, linear
 
 from .activation_simulation import normalized_hadamard, simulate_fp4
 from .compressed_indexer import select_compressed
@@ -15,17 +15,20 @@ def index_hidden(hidden, low_rank, query_weight, head_weight, keys, positions, i
     hidden [batch,sequence,model_width], low_rank [batch,sequence,query_rank],
     query_weight [heads*index_width,query_rank], head_weight [heads,model_width],
     keys [batch,blocks,index_width]. All use the same FP16/BF16/FP32 dtype/device.
-    Keys must already have the indexer compressor's rotation/FP4 transform.
-    Frequency and position contracts match rotate_pairs. Query projection stays
-    floating here; packed FP8 projection/activation arithmetic is unqualified.
+    Projection matrices may instead be explicit CPU packed adapters with matching
+    result dtype. Keys must already have the compressor's rotation/FP4 transform.
+    Frequency and position contracts match rotate_pairs. Accelerator FP8 activation rounding and performance remain unqualified.
     """
     if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 3 or hidden.shape[-1] < 1
             or hidden.dtype not in (torch.float16, torch.bfloat16, torch.float32)):
         raise ValueError('indexer hidden input must be floating [batch,sequence,width]')
-    for tensor, rank in ((low_rank, 3), (query_weight, 2), (head_weight, 2), (keys, 3)):
+    for tensor, rank in ((low_rank, 3), (keys, 3)):
         if (not isinstance(tensor, torch.Tensor) or tensor.ndim != rank
                 or tensor.dtype != hidden.dtype or tensor.device != hidden.device):
             raise ValueError('floating indexer inputs/weights must match hidden dtype and device')
+    for weight in (query_weight,head_weight):
+        if not is_projection(weight) or weight.dtype != hidden.dtype or weight.device != hidden.device:
+            raise ValueError('indexer projections must match hidden dtype and device')
     width, heads = keys.shape[-1], head_weight.shape[0]
     if (not 32 <= width <= 4096 or width & (width-1) or heads < 1 or low_rank.shape[-1] < 1
             or low_rank.shape[:2] != hidden.shape[:2] or keys.shape[0] != hidden.shape[0]
@@ -49,11 +52,11 @@ def index_hidden(hidden, low_rank, query_weight, head_weight, keys, positions, i
     rotary_width = inverse_frequencies.numel()*2
     for start in range(0, hidden.shape[1], query_chunk):
         stop = min(start+query_chunk, hidden.shape[1])
-        queries = F.linear(low_rank[:, start:stop], query_weight).unflatten(-1, (heads, width))
+        queries = linear(low_rank[:, start:stop], query_weight).unflatten(-1, (heads, width))
         queries[..., -rotary_width:] = rotate_pairs(queries[..., -rotary_width:], positions[:, start:stop], inverse_frequencies)
         queries = simulate_fp4(normalized_hadamard(queries))
         # Preserve the reference BF16/FP16 coefficient rounding before FP32 scoring.
-        weights = (F.linear(hidden[:, start:stop], head_weight)*(width**-.5*heads**-.5)).float()
+        weights = (linear(hidden[:, start:stop], head_weight)*(width**-.5*heads**-.5)).float()
         selected, selected_scores = select_compressed(queries, keys, weights, positions[:, start:stop],
                                                      ratio=4, top_k=top_k, offset=offset, query_chunk=query_chunk,
                                                      key_chunk=key_chunk, scale_head_weights=False)
