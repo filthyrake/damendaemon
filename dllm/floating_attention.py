@@ -1,16 +1,17 @@
-"""Complete floating DeepSeek attention prefill; not a serving admission path.
+"""Floating DeepSeek attention prefill and cached decode; not a serving admission path.
 
 Prepared floating projection weights replace packed GEMMs for component checks.
 Reference accelerator rounding, packed arithmetic and model/GPU qualification
 remain separate. Parameter names are relative to a checkpoint attention module.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import threading
 
 import torch
 from torch.nn import functional as F
 
 from .activation_simulation import simulate_fp8
-from .cache_indices import prefill_indices
+from .cache_indices import prefill_indices, ring_decode_indices
 from .compressed_pool import PoolState
 from .deepseek_position import rotate_pairs
 from .floating_compressor import compress_hidden
@@ -18,14 +19,60 @@ from .floating_indexer import index_hidden
 from .selected_attention import selected_attention
 
 
-@dataclass(frozen=True)
-class AttentionPrefillState:
+@dataclass
+class AttentionState:
     position: int
-    window: torch.Tensor
-    compressed: torch.Tensor
+    cache: torch.Tensor
+    window_size: int
     pool: PoolState | None
     index_keys: torch.Tensor | None
     index_pool: PoolState | None
+    capacity: int
+    ratio: int
+    groups: int
+    index_top_k: int
+    epsilon: float
+    weights: dict = field(repr=False)
+    frequencies: torch.Tensor = field(repr=False)
+    max_cache_bytes: int
+    bytes_per_slot: int
+    poisoned: bool = False
+    closed: bool = False
+    lock: object = field(default_factory=threading.RLock, repr=False)
+
+    @property
+    def window(self):
+        return None if self.cache is None else self.cache[:, :self.window_size]
+
+    @property
+    def compressed(self):
+        return None if self.cache is None else self.cache[:, self.window_size:]
+
+    def _usable(self):
+        if self.closed or self.poisoned:
+            raise RuntimeError('attention cache is closed or poisoned')
+
+    def reorder(self, indices):
+        """Copy/reorder slots atomically; all slots share the logical position."""
+        with self.lock:
+            self._usable()
+            if (not isinstance(indices, torch.Tensor) or indices.ndim != 1 or indices.numel() < 1
+                    or indices.dtype != torch.int64 or indices.device != self.cache.device
+                    or indices.numel()*self.bytes_per_slot > self.max_cache_bytes):
+                raise ValueError('invalid slot order or cache budget exceeded')
+            cache = self.cache.index_select(0, indices)
+            index_keys = self.index_keys.index_select(0, indices) if self.index_keys is not None else None
+            pool = self.pool.reorder(indices) if self.pool is not None else None
+            index_pool = self.index_pool.reorder(indices) if self.index_pool is not None else None
+            self.cache, self.index_keys, self.pool, self.index_pool = cache, index_keys, pool, index_pool
+
+    def close(self):
+        """Release this component's references; caller-owned weights remain owned by caller."""
+        with self.lock:
+            self.cache = self.index_keys = self.pool = self.index_pool = None
+            self.weights = {}
+            self.frequencies = None
+            self.closed = True
 
 
 def _norm(value, weight, epsilon):
@@ -92,21 +139,39 @@ def _check(hidden, weights, freq, groups, window, ratio, top_k, chunk, epsilon):
 
 @torch.no_grad()
 def attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, ratio=0,
-                      index_top_k=512, query_chunk=16, epsilon=1e-6):
+                      index_top_k=512, query_chunk=16, epsilon=1e-6, max_tokens=None,
+                      max_cache_bytes=256*1024*1024):
     """Return projected output and compact prepared caches for a fresh sequence.
 
     Two bounded passes avoid retaining full-sequence multi-head queries. Persistent
     results own the ring allocation and compressed vectors; they do not retain a
-    view of the entire raw prefill KV. This API does not yet execute cached decode.
-    Caller supplies the appropriate plain/compressed rotary frequency schedule.
+    view of the entire raw prefill KV. max_tokens reserves decode capacity (default:
+    prefill length). Cache budget includes pool buffers, excluding weights, output
+    and transient prefill/workspace tensors. Caller supplies the correct frequency
+    schedule and must keep prepared weights/frequencies immutable while state lives.
+    Device synchronization/lifetime qualification remains separate from CPU proof.
     """
     heads, width, orank, index_width = _check(hidden, weights, inverse_frequencies, groups, window, ratio,
                                            index_top_k, query_chunk, epsilon)
     batch, length = hidden.shape[:2]
+    capacity = length if max_tokens is None else max_tokens
+    if (type(capacity) is not int or not length <= capacity < 2**31
+            or type(max_cache_bytes) is not int or max_cache_bytes < 1):
+        raise ValueError('invalid attention cache capacity/budget')
+    blocks = capacity//ratio if ratio else 0
+    bytes_per_slot = (window+blocks)*width*hidden.element_size()
+    if ratio:
+        factor = 2 if ratio == 4 else 1
+        bytes_per_slot += 2*factor*ratio*factor*width*4
+    if ratio == 4:
+        bytes_per_slot += blocks*index_width*hidden.element_size()+2*2*ratio*2*index_width*4
+    if batch*bytes_per_slot > max_cache_bytes:
+        raise ValueError('attention cache reservation exceeds budget')
     rd = inverse_frequencies.numel()*2
+    cache = hidden.new_zeros(batch, window+blocks, width)
     kv = hidden.new_empty(batch, length, width)
-    compressed = hidden.new_empty(batch, length//ratio if ratio else 0, width)
-    index_keys = hidden.new_empty(batch, length//ratio, index_width) if ratio == 4 else None
+    compressed = cache[:, window:]
+    index_keys = hidden.new_zeros(batch, blocks, index_width) if ratio == 4 else None
     pool = index_pool = None
     positions = torch.arange(length, device=hidden.device, dtype=torch.int64)
     def compress(part, prefix, state, mode):
@@ -127,7 +192,7 @@ def attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, r
         if ratio == 4:
             ready, index_pool, _ = compress(part, 'indexer.compressor', index_pool, 'index_fp4')
             index_keys[:, start//ratio:stop//ratio] = ready
-    combined = torch.cat((kv, compressed), 1) if ratio else kv
+    combined = torch.cat((kv, compressed[:, :length//ratio]), 1) if ratio else kv
     output = torch.empty_like(hidden)
     for start in range(0, length, query_chunk):
         stop = min(length, start+query_chunk)
@@ -140,7 +205,7 @@ def attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, r
                                   batch=batch, query_start=start, query_stop=stop, device=hidden.device)
         if ratio == 4:
             selected, _ = index_hidden(part, low_rank, weights['indexer.wq_b.weight'], weights['indexer.weights_proj.weight'],
-                                       index_keys, pos.unsqueeze(0).expand(batch, -1), inverse_frequencies,
+                                       index_keys[:, :length//ratio], pos.unsqueeze(0).expand(batch, -1), inverse_frequencies,
                                        top_k=index_top_k, offset=length, query_chunk=query_chunk)
             indices = torch.cat((indices, selected), -1)
         attended = selected_attention(query, combined, indices, weights['attn_sink'], query_chunk=query_chunk)
@@ -148,7 +213,76 @@ def attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, r
         grouped = attended.reshape(batch, stop-start, groups, heads*width//groups)
         projected = torch.einsum('bsgd,grd->bsgr', grouped, weights['wo_a.weight'].reshape(groups, orank, -1))
         output[:, start:stop] = F.linear(projected.flatten(2), weights['wo_b.weight'])
-    ring = hidden.new_zeros(batch, window, width)
+    ring = cache[:, :window]
     first = max(0, length-window)
     ring.index_copy_(1, positions[first:] % window, kv[:, first:])
-    return output, AttentionPrefillState(length, ring, compressed, pool, index_keys, index_pool)
+    return output, AttentionState(length, cache, window, pool, index_keys, index_pool, capacity,
+                                        ratio, groups, index_top_k, epsilon, dict(weights), inverse_frequencies,
+                                        max_cache_bytes, bytes_per_slot)
+
+
+@torch.no_grad()
+def attention_decode(hidden, state, *, position):
+    """Advance one token per slot; a failed mutated state cannot be reused.
+
+    Positions are explicit to reject duplicate/stale updates. Shared state access
+    is serialized. Prepared weights/frequencies are retained by the state; no
+    alternate model parameters may be supplied to this decode operation.
+    """
+    if not isinstance(state, AttentionState):
+        raise ValueError('attention decode requires prepared cache state')
+    with state.lock:
+        state._usable()
+        if type(position) is not int or position != state.position or position >= state.capacity:
+            raise ValueError('stale position or attention cache capacity exhausted')
+        if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 3 or hidden.shape[1] != 1
+                or hidden.shape[0] != state.cache.shape[0] or hidden.device != state.cache.device
+                or hidden.dtype != state.cache.dtype):
+            raise ValueError('decode must provide one matching token per prepared slot')
+        weights, freq, epsilon = state.weights, state.frequencies, state.epsilon
+        heads, width, orank, _ = _check(hidden, weights, freq, state.groups, state.window_size,
+                                      state.ratio, state.index_top_k, 1, epsilon)
+        batch, rd = hidden.shape[0], freq.numel()*2
+        pos = torch.tensor([position], dtype=torch.int64, device=hidden.device)
+        low_rank = _norm(F.linear(hidden, weights['wq_a.weight']), weights['q_norm.weight'], epsilon)
+        query = F.linear(low_rank, weights['wq_b.weight']).unflatten(-1, (heads,width))
+        query = query*(query.square().mean(-1, keepdim=True)+epsilon).rsqrt()
+        query[..., -rd:] = rotate_pairs(query[..., -rd:], pos, freq)
+        vectors = _norm(F.linear(hidden, weights['wkv.weight']), weights['kv_norm.weight'], epsilon)
+        vectors[..., -rd:] = rotate_pairs(vectors[..., -rd:], pos, freq)
+        if width > rd:
+            vectors[..., :-rd] = simulate_fp8(vectors[..., :-rd])
+        def compress(prefix, pool, mode):
+            return compress_hidden(hidden, weights[prefix+'.wkv.weight'], weights[prefix+'.wgate.weight'],
+                                   weights[prefix+'.ape'], weights[prefix+'.norm.weight'], freq,
+                                   state=pool, epsilon=epsilon, cache_transform=mode)
+        pool, index_pool = state.pool, state.index_pool
+        if state.ratio:
+            ready, pool, _ = compress('compressor', pool, 'kv_fp8')
+        if state.ratio == 4:
+            index_ready, index_pool, _ = compress('indexer.compressor', index_pool, 'index_fp4')
+        # Everything above is pure preparation. Mutations below poison on failure.
+        try:
+            state.window[:, position % state.window_size] = vectors[:, 0]
+            visible = (position+1)//state.ratio if state.ratio else 0
+            if state.ratio and ready.shape[1]:
+                state.compressed[:, visible-1:visible] = ready
+            if state.ratio == 4 and index_ready.shape[1]:
+                state.index_keys[:, visible-1:visible] = index_ready
+            indices = ring_decode_indices([position]*batch, window=state.window_size,
+                                          ratio=state.ratio if state.ratio != 4 else 0, device=hidden.device)
+            if state.ratio == 4:
+                selected, _ = index_hidden(hidden, low_rank, weights['indexer.wq_b.weight'], weights['indexer.weights_proj.weight'],
+                                           state.index_keys[:, :visible], pos.unsqueeze(0).expand(batch,-1), freq,
+                                           top_k=state.index_top_k, offset=state.window_size, query_chunk=1)
+                indices = torch.cat((indices, selected), -1)
+            attended = selected_attention(query, state.cache, indices, weights['attn_sink'], query_chunk=1)
+            attended[..., -rd:] = rotate_pairs(attended[..., -rd:], pos, freq, inverse=True)
+            grouped = attended.reshape(batch, 1, state.groups, heads*width//state.groups)
+            projected = torch.einsum('bsgd,grd->bsgr', grouped, weights['wo_a.weight'].reshape(state.groups, orank, -1))
+            output = F.linear(projected.flatten(2), weights['wo_b.weight'])
+        except BaseException:
+            state.poisoned = True
+            raise
+        state.pool, state.index_pool, state.position = pool, index_pool, position+1
+        return output

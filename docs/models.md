@@ -325,12 +325,23 @@ unqualified.
 prefill for ordinary windows, ratio-four indexed compression and ratio-128
 compression. It connects prepared projections, normalization, cache transforms,
 causal selection, sink attention, inverse RoPE and grouped output projections.
-Two chunked passes avoid retaining all multi-head queries. Returned ring storage
-owns only the window allocation rather than a view retaining the full prefill;
-compressed vectors and partial pool states are retained explicitly. CPU dense
-attention controls and independent grouped projections check full composition,
-with chunk and low-precision fixtures. Cached decode, packed projection arithmetic
-and full-model/GPU qualification remain separate; this path is not serving admission.
+Two chunked passes avoid retaining all multi-head queries. Returned cache storage
+owns the ring window plus explicitly reserved compressed capacity, rather than a
+view retaining the full raw prefill. Pool buffers count toward the cache budget;
+weights, outputs and transient workspace are separate. `max_tokens` defaults to
+the prefill length; reserve a larger value explicitly for subsequent decode.
+CPU dense attention controls and independent grouped projections check composition.
+
+`attention_decode` advances one token per slot in place, using an explicit expected
+position and serialized state ownership. Cache history is not concatenated or
+reallocated per step. Failed updates after mutation poison the cache; preflight
+failures preserve it. Slot reorder/shrink copies are published only after all
+copies succeed, within the cache budget; `close()` releases the state's references.
+All slots in a state share one position. Tests compare every decode step with a
+fresh prefill across ring/compression boundaries and verify failure/release paths.
+Prepared weights/frequencies must stay immutable for the cache lifetime. Packed
+projection arithmetic, full-model scheduling, GPU synchronization/lifecycle and
+performance qualification remain separate; this path is not serving admission.
 
 ## GPT-OSS (CUDA)
 

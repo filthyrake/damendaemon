@@ -40,7 +40,7 @@ class FloatingAttentionTests(unittest.TestCase):
                 torch.testing.assert_close(actual, expected, rtol=3e-5, atol=2e-6)
                 torch.testing.assert_close(state.window, expected_state.window, rtol=3e-5, atol=1e-6)
                 self.assertEqual(state.position, length)
-                self.assertEqual(state.window.untyped_storage().nbytes(), 1*4*128*4)
+                self.assertEqual(state.cache.untyped_storage().nbytes(), 1*(4+(length//ratio if ratio else 0))*128*4)
                 self.assertEqual(state.compressed.shape, (1,length//ratio if ratio else 0,128))
                 if ratio:
                     torch.testing.assert_close(state.compressed, expected_state.compressed, rtol=3e-5, atol=1e-6)
