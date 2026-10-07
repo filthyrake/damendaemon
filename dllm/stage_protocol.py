@@ -96,8 +96,8 @@ class StageState:
             if len(command.entries) != 1 or not 1 <= command.rows <= self.context:
                 raise ValueError('invalid stage prefill shape')
             slot, generation, position = command.entries[0]
-            if generation != self.generations[slot] + 1 or position != 0:
-                raise ValueError('stale stage prefill generation')
+            if self.lengths[slot] or generation != self.generations[slot] + 1 or position != 0:
+                raise ValueError('occupied slot or stale stage prefill generation')
         elif command.operation == PREFILL_BATCH:
             if (not 2 <= len(command.entries) <= self.slots
                     or not 1 <= command.rows <= self.context

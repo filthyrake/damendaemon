@@ -38,6 +38,20 @@ class StageProtocolTests(unittest.TestCase):
             self.assertEqual(state.sequence, 2)
             self.assertEqual(state.lengths, [8, 0, 0, 0])
 
+    def test_single_prefill_cannot_replace_live_receiver_ownership(self):
+        state=StageState(7,32,2)
+        self.run_command(state,PREFILL,4,[(1,1,0)])
+        replacement=Command(7,2,PREFILL,3,((1,2,0),))
+        with self.assertRaises(ValueError):state.begin(replacement.encode())
+        self.assertEqual(state.lengths,[0,4])
+        self.assertEqual(state.generations,[0,1])
+        self.assertEqual(state.sequence,2)
+        self.assertIsNone(state.pending)
+        self.run_command(state,RELEASE,0,[(1,1,4)])
+        self.run_command(state,PREFILL,3,[(1,2,0)])
+        self.assertEqual(state.lengths,[0,3])
+        self.assertEqual(state.generations,[0,2])
+
     def test_commit_after_ack_and_poison_after_failure(self):
         state = StageState(1, 8)
         command = state.begin(Command(1, 1, PREFILL, 3, ((0, 1, 0),)).encode())

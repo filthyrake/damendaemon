@@ -41,6 +41,25 @@ class StageTransportTests(unittest.TestCase):
             self.assertEqual(channel.state.lengths, [0] * 4)
             self.assertEqual(channel.header.cpu.call_count, rank)
 
+    def test_receiver_rejects_live_slot_before_activation_and_poisons(self):
+        channel=StageChannel.__new__(StageChannel)
+        channel.state=StageState(1,32)
+        original=Command(1,1,PREFILL,4,((0,1,0),))
+        channel.state.commit(channel.state.begin(original.encode()))
+        channel.rank=1
+        channel.header=Mock()
+        channel.header.cpu.return_value.tolist.return_value=Command(1,2,PREFILL,3,((0,2,0),)).encode()
+        channel.acknowledgement=Mock()
+        channel.acknowledgement.item.return_value=0
+        with patch('dllm.stage_transport.dist.broadcast'),patch('dllm.stage_transport.dist.all_reduce'):
+            with self.assertRaisesRegex(ValueError,'rejected before activation') as error:channel.begin()
+        self.assertIn('occupied slot',str(error.exception.__cause__))
+        channel.acknowledgement.fill_.assert_called_once_with(0)
+        self.assertTrue(channel.state.failed)
+        self.assertIsNone(channel.state.pending)
+        self.assertEqual(channel.state.generations,[1,0,0,0])
+        self.assertEqual(channel.state.sequence,2)
+
     def pending(self):
         state = StageState(1, 512)
         command = state.begin(Command(1, 1, PREFILL, 31, ((0, 1, 0),)).encode())
