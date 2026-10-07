@@ -294,6 +294,24 @@ E2M1 simulation. Scalar rounding and transform-matrix controls cover these modes
 including signed zero, tie-to-even rounding and chunks that complete no block.
 Accelerator rounding and real-checkpoint cache behavior remain unqualified.
 
+`dllm.deepseek_checkpoint` describes main-model checkpoint tensor names, physical
+packed shapes and expected storage families without materializing values. The
+pinned official tensor index matches all 67,612 generated main-model names;
+1,575 MTP entries are explicitly reported as excluded and unqualified. A checked-in
+configuration/name fingerprint preserves this independent metadata comparison.
+The official 44-entry compression schedule includes one MTP layer beyond the 43
+main layers; the contract does not misinterpret it as an extra main layer. CPU
+fixtures reject missing/extra tensors and wrong packed/scale shapes. Actual shard
+headers, tensor contents and full-model execution have not been qualified by this
+name-only comparison. The metadata fixture retains its source revision and MIT
+license attribution; no checkpoint weight payload was downloaded for the audit.
+
+Run the offline audit with `python -m scripts.audit_deepseek_checkpoint SNAPSHOT`.
+It checks config plus shard headers without reading tensor values. Add
+`--names-only` when only `config.json` and `model.safetensors.index.json` are
+available; this mode does not open or require shards and reports the narrower
+scope. Neither mode admits the architecture to serving.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
