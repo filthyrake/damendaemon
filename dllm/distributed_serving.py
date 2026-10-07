@@ -68,6 +68,8 @@ class DistributedRuntime:
         self.requests=DistributedAdmission(queue_size,queue_timeout)
         self.closed=threading.Event()
         self.prepare_lock=threading.Lock()
+        self.admission_lock=threading.RLock()
+        self.draining=False;self.accepted={}
         self.failure=None
         self.active=False
         self.max_batch=getattr(pair,'max_batch',1)
@@ -84,6 +86,40 @@ class DistributedRuntime:
                     or getattr(state,'pending',None) is not None or any(state.lengths)):
                 raise ValueError('distributed serving requires an unclaimed ready empty pair')
             pair._serving_owner=self.owner
+
+    def scheduler_status(self):
+        """Admission ownership only; never wait for transport or tokenization."""
+        with self.admission_lock:
+            pending=list(self.accepted.values())
+            queued=[request for request in pending if not request.started.is_set()]
+            return dict(closed=self.closed.is_set(),failed=self.failure is not None,draining=self.draining,
+                drained=self.draining and not pending and not self.active and not self.closed.is_set() and self.failure is None,
+                worker_busy=self.active,queue_capacity=self.requests.maxsize,queue_timeout_seconds=self.queue_timeout,
+                batch_capacity=self.max_batch,queued_generation_requests=len(queued),
+                worker_owned_generation_requests=len(pending)-len(queued),queued_commands=0,worker_owned_commands=0,
+                oldest_queued_seconds=max((max(0,time.monotonic()-r.submitted) for r in queued),default=0))
+
+    def drain(self):
+        with self.admission_lock:
+            self.draining=True
+            return self.scheduler_status()
+
+    def _check_admission(self):
+        if self.closed.is_set():raise BusyError('distributed session is closed')
+        if self.draining:raise BusyError('distributed session is draining')
+
+    def _retire(self,requests):
+        with self.admission_lock:
+            for request in requests:self.accepted.pop(id(request),None)
+
+    def _close_admission(self):
+        with self.admission_lock:
+            self.closed.set()
+            while True:
+                try:waiting=self.requests.get_nowait()
+                except queue.Empty:break
+                self._publish(waiting,BusyError('distributed session is closed'))
+                self.accepted.pop(id(waiting),None)
 
     def model_ids(self):return [self.alias]
 
@@ -106,7 +142,7 @@ class DistributedRuntime:
 
     def generate(self, alias, messages, max_tokens, *, raw_prompt=None, enable_thinking=None, **options):
         if alias!=self.alias:raise ValueError('unknown distributed model')
-        if self.closed.is_set():raise BusyError('distributed session is closed')
+        with self.admission_lock:self._check_admission()
         if type(max_tokens) is not int or not 1 <= max_tokens <= self.pair.model.max_context:
             raise ValueError('invalid completion limit')
         stops=options.pop('stop',None)
@@ -121,8 +157,11 @@ class DistributedRuntime:
         # One extra position is reserved for a release-acknowledged final or error.
         # The owner never schedules a token when eight data events are buffered.
         request=Request(tokens,max_tokens,time.monotonic(),queue.Queue(STREAM_BUFFER_EVENTS+1))
-        try:self.requests.put_nowait(request)
-        except queue.Full:raise BusyError('distributed request queue is full') from None
+        with self.admission_lock:
+            self._check_admission()
+            try:self.requests.put_nowait(request)
+            except queue.Full:raise BusyError('distributed request queue is full') from None
+            self.accepted[id(request)]=request
         received=False
         try:
             while True:
@@ -220,6 +259,7 @@ class DistributedRuntime:
                 retired=[item for item in active if item.done or item.request.cancelled.is_set()]
                 progressed=bool(retired)
                 self._release(retired)
+                self._retire(item.request for item in retired)
                 active=[item for item in active if item not in retired]
                 self.active=bool(active)
                 free=[slot for slot in range(self.max_batch) if all(item.slot!=slot for item in active)]
@@ -231,6 +271,7 @@ class DistributedRuntime:
                     except queue.Empty:break
                     if request.cancelled.is_set() or time.monotonic()-request.submitted>=self.queue_timeout:
                         self._publish(request,BusyError('distributed request queue deadline exceeded'))
+                        self._retire([request])
                         continue
                     request.started.set()
                     item=Active(request,slot,time.monotonic())
@@ -285,7 +326,7 @@ class DistributedRuntime:
             for item in active:self._publish(item.request,RuntimeError('distributed worker session failed'))
             raise
         finally:
-            self.closed.set()
+            self._close_admission()
             try:
                 if active and not self.pair.state.failed:self._release(active)
             except BaseException as cleanup:
@@ -294,9 +335,6 @@ class DistributedRuntime:
             finally:
                 self.active=False
                 self.decode_turns.reset();self.prefill_turn=0
-                while True:
-                    try:waiting=self.requests.get_nowait()
-                    except queue.Empty:break
-                    self._publish(waiting,BusyError('distributed session is closed'))
+                with self.admission_lock:self.accepted.clear()
 
-    def close(self):self.closed.set()
+    def close(self):self._close_admission()

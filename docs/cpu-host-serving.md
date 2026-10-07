@@ -151,3 +151,25 @@ output and nondefault sampling remain unsupported. A thinking option affects
 prompt formatting; it does not promise separated reasoning output or official
 model quality. Actual local CPU peer tests compare chat output/usage against
 independently constructed raw tokens; no GPU or performance claim is made.
+
+### Graceful drain
+
+`POST /v1/scheduler/drain` with `{}` stops new distributed admission. Existing
+queued and active requests keep their normal completion, cancellation, queue
+expiry and release-acknowledgment behavior. The route retains the ordinary
+administrative authorization policy. Repeated calls are safe; there is no
+resume operation on the same runtime.
+
+`GET /v1/scheduler/status` reports accepted queued/owned requests and
+`draining`/`drained` without waiting for tokenization or transport operations.
+`drained` requires all accepted work retired, slots released, and a still-open,
+nonfailed runtime. A failed release or closed session cannot claim a successful
+drain. Slow consumers still apply backpressure: drain does not discard their
+work to make progress. Cancellation permits release as usual.
+
+Drain leaves the peer connected and continues idle heartbeats; it does not
+implicitly stop the service. The existing explicit idle timeout and shutdown
+controls remain responsible for stopping it. New inference returns 503. Admission
+is rechecked atomically after prompt preparation, so a racing drain or shutdown
+cannot leave a newly queued request behind an exited owner. These guarantees
+are covered with CPU TLS peers; they are not GPU/SLO qualification.
