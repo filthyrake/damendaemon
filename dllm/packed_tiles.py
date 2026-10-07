@@ -38,6 +38,19 @@ def _e4m3(raw):
     return torch.where((code & 128) != 0, -magnitude, magnitude)
 
 
+def validate_layout(weight, scales, *, format):
+    """Validate raw CPU storage metadata without decoding or reading values."""
+    if (format not in ('e2m1', 'e4m3fn') or not _bytes(weight) or not _bytes(scales)
+            or weight.ndim != 2 or scales.ndim != 2 or min(weight.shape) < 1):
+        raise ValueError('packed tile inputs must be nonempty raw uint8 CPU matrices with a supported format')
+    rows, packed_columns = weight.shape
+    columns = packed_columns*2 if format == 'e2m1' else packed_columns
+    expected = (rows, columns//32) if format == 'e2m1' else ((rows+127)//128, (columns+127)//128)
+    if (format == 'e2m1' and columns % 32) or scales.shape != expected:
+        raise ValueError('packed weight shape and E8M0 scale layout do not agree')
+    return rows, columns
+
+
 def decode_tile(weight, scales, *, format, row_start, row_stop, column_start, column_stop):
     """Decode at most 65,536 values into FP32, preserving format special values.
 
@@ -47,14 +60,7 @@ def decode_tile(weight, scales, *, format, row_start, row_stop, column_start, co
     No full-input cast, scan or copy occurs; only the requested tile is expanded.
     NaN scale bytes propagate; finite products may overflow FP32.
     """
-    if (format not in ('e2m1', 'e4m3fn') or not _bytes(weight) or not _bytes(scales)
-            or weight.ndim != 2 or scales.ndim != 2 or min(weight.shape) < 1):
-        raise ValueError('packed tile inputs must be nonempty raw uint8 CPU matrices with a supported format')
-    rows, packed_columns = weight.shape
-    columns = packed_columns*2 if format == 'e2m1' else packed_columns
-    expected = (rows, columns//32) if format == 'e2m1' else ((rows+127)//128, (columns+127)//128)
-    if (format == 'e2m1' and columns % 32) or scales.shape != expected:
-        raise ValueError('packed weight shape and E8M0 scale layout do not agree')
+    rows, columns = validate_layout(weight, scales, format=format)
     bounds = (row_start, row_stop, column_start, column_stop)
     if (any(type(value) is not int for value in bounds)
             or not 0 <= row_start < row_stop <= rows

@@ -365,6 +365,15 @@ prefill, and exercise budget, owner, ordering and failure boundaries. This is a
 prepared-floating reference stack: packed checkpoint loading, real-model logit
 equivalence, serving admission and GPU qualification remain open.
 
+`dllm.packed_projection.packed_linear` supplies a CPU FP32 projection control
+for raw E2M1/E4M3FN weights with E8M0 scales. It expands only one bounded weight
+tile at a time and chunks input tokens within a declared conservative tensor
+scratch allowance. Resident inputs, the final output, allocator overhead and
+BLAS scratch are outside that allowance. Tests compare against independently
+decoded scalar weights across scale boundaries, strided and low-precision
+inputs, and verify tile release between expansions. It is not a fused GPU
+kernel and does not reproduce accelerator activation-quantization rounding.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with

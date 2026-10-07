@@ -1,0 +1,50 @@
+"""Bounded CPU packed-weight projection control, not a GPU execution kernel."""
+import torch
+
+from .packed_tiles import MAX_TILE_ELEMENTS, decode_tile, validate_layout
+
+
+@torch.no_grad()
+def packed_linear(hidden, weight, scales, *, format, row_chunk=64, column_chunk=256,
+                  workspace_bytes=8*1024*1024):
+    """Project CPU [tokens,features] to FP32 without a full weight expansion.
+
+    E2M1/E4M3FN weights and E8M0 scales stay in raw uint8 storage. Inputs may be
+    strided FP16/BF16/FP32. Multiplication and accumulation use FP32; this does
+    not emulate accelerator activation quantization or accumulation rounding.
+
+    The scratch allowance conservatively reserves 128 bytes per decoded weight
+    element and per tile axis entry, plus activation and product tiles. Resident
+    inputs, final output, allocator overhead and BLAS scratch are excluded.
+    Tile sizes are explicit; insufficient allowance fails before computation.
+    """
+    rows, columns = validate_layout(weight, scales, format=format)
+    if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 2
+            or hidden.device.type != 'cpu' or hidden.dtype not in (torch.float16, torch.bfloat16, torch.float32)
+            or hidden.shape[1] != columns):
+        raise ValueError('packed projection needs CPU floating [tokens,features] matching the weight')
+    if (any(type(v) is not int or v < 1 for v in (row_chunk, column_chunk, workspace_bytes))
+            or row_chunk*column_chunk > MAX_TILE_ELEMENTS):
+        raise ValueError('invalid packed projection tile dimensions or workspace allowance')
+    r, c = min(row_chunk, rows), min(column_chunk, columns)
+    weight_scratch = 128*(r*c+r+c)
+    per_token = 8*c+8*r
+    token_chunk = (workspace_bytes-weight_scratch)//per_token
+    if token_chunk < 1:
+        raise ValueError('packed projection workspace cannot hold one tile and token')
+    output = torch.zeros((hidden.shape[0], rows), dtype=torch.float32)
+    if hidden.shape[0] == 0:
+        return output
+    for row in range(0, rows, row_chunk):
+        end_row = min(rows, row+row_chunk)
+        for column in range(0, columns, column_chunk):
+            end_column = min(columns, column+column_chunk)
+            tile = decode_tile(weight, scales, format=format, row_start=row, row_stop=end_row,
+                               column_start=column, column_stop=end_column)
+            for token in range(0, hidden.shape[0], token_chunk):
+                end_token = min(hidden.shape[0], token+token_chunk)
+                inputs = hidden[token:end_token, column:end_column].float()
+                output[token:end_token, row:end_row].add_(inputs @ tile.T)
+            # Drop before the next decode so two expanded weight tiles do not overlap.
+            del tile, inputs
+    return output
