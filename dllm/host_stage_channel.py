@@ -118,6 +118,9 @@ class HostStageChannel:
                 if command.operation==STOP:self.close()
             except BaseException:self.abort();raise
 
+    def _valid_tokens(self,tokens):
+        return not bool(((tokens<0)|(tokens>=self.vocab_size)).any())
+
     def complete_tokens(self,command,tokens=None):
         """Worker supplies CPU int64 sampled IDs; coordinator receives and checks.
 
@@ -132,13 +135,13 @@ class HostStageChannel:
                 if self.rank==1:
                     if (not isinstance(tokens,torch.Tensor) or tokens.dtype!=torch.int64 or tokens.device.type!='cpu'
                             or tokens.shape!=shape or not tokens.is_contiguous()
-                            or bool(((tokens<0)|(tokens>=self.vocab_size)).any())):
+                            or not self._valid_tokens(tokens)):
                         raise ValueError('invalid host stage sampled token result')
                     self.transport.send(tokens)
                 else:
                     if tokens is not None:raise ValueError('coordinator cannot supply worker results')
                     tokens=self.transport.receive(shape,torch.int64)
-                    if bool(((tokens<0)|(tokens>=self.vocab_size)).any()):
+                    if not self._valid_tokens(tokens):
                         raise ValueError('invalid host stage sampled token result')
                 self._commit(command)
                 return tokens
