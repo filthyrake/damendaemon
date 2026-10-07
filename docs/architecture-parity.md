@@ -1850,3 +1850,14 @@ controls. Full/chunk/decode and batch reorder/shrink preserve state. Partial
 layer/head/reorder failures poison the model; failed cleanup remains owned and
 retryable. Checkpoint loading, tokenization, generation, official weight quality,
 vision/MTP, serving and hardware qualification remain separate gates.
+
+`glm_flash_reference_loader.load_reference_model` loads admitted local main-text
+snapshots into the mixed reference stack. Config/index/header and component policy
+checks precede payload reads. Aggregate weight admission includes retained packed
+bytes/FP32 parameters plus the largest source conversion overlap; shard count and
+header bytes are bounded separately. KDA, indexer and mHC tensors stay floating;
+main FP8 attention/FFN matrices stay packed with FP32 scales. Visual and MTP values
+are excluded. Tiny two-shard fixtures execute against independently decoded model
+controls and cover exact admission, malformed headers/index, changed files and
+descriptor cleanup. The default 256 MiB weight budget does not admit the official
+checkpoint; no official Flash weight values have been read or executed.
