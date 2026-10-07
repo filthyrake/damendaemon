@@ -21,6 +21,7 @@ def main(argv=None):
     source=parser.add_mutually_exclusive_group(required=True)
     source.add_argument('--prompt',help='raw text completion, without a chat template')
     source.add_argument('--tokens',help='local JSON list of prompt token IDs')
+    source.add_argument('--batch-inputs',help='local JSON list of 1..4 raw prompt/token request objects')
     parser.add_argument('--quantization',choices=('none','q4_0','q8_0'),default='none')
     parser.add_argument('--context',type=_positive,default=512)
     parser.add_argument('--max-new-tokens',type=_positive,default=128)
@@ -37,9 +38,24 @@ def main(argv=None):
         config=read_json(Path(args.snapshot)/'config.json',1024**2)
         if not isinstance(config,dict) or config.get('model_type')!='qwen3_5_text':raise ValueError('CPU completion requires Qwen3.5 text config')
         text=CpuReferenceText(args.snapshot,config)
-        prompt=args.prompt if args.prompt is not None else read_json(args.tokens,1024**2)
-        if args.tokens and not isinstance(prompt,list):raise ValueError('token file must contain a JSON list')
-        tokens=text.tokens(prompt,max_context=args.context,max_new_tokens=args.max_new_tokens,chunk_size=args.prefill_chunk)
+        if args.batch_inputs:
+            requests=read_json(args.batch_inputs,1024**2)
+            if not isinstance(requests,list) or not 1<=len(requests)<=4:raise ValueError('CPU batch needs 1..4 requests')
+            tokens=[];limits=[]
+            for request in requests:
+                if (not isinstance(request,dict) or set(request)-{'prompt','tokens','max_new_tokens'}
+                        or ('prompt' in request)==('tokens' in request)
+                        or ('prompt' in request and not isinstance(request['prompt'],str))
+                        or ('tokens' in request and not isinstance(request['tokens'],list))):
+                    raise ValueError('CPU batch requests need exactly one raw prompt or token list')
+                limit=request.get('max_new_tokens',args.max_new_tokens);limits.append(limit)
+                tokens.append(text.tokens(request.get('prompt',request.get('tokens')),max_context=args.context,
+                                          max_new_tokens=limit,chunk_size=args.prefill_chunk))
+        else:
+            prompt=args.prompt if args.prompt is not None else read_json(args.tokens,1024**2)
+            if args.tokens and not isinstance(prompt,list):raise ValueError('token file must contain a JSON list')
+            tokens=text.tokens(prompt,max_context=args.context,max_new_tokens=args.max_new_tokens,chunk_size=args.prefill_chunk)
+            limits=args.max_new_tokens
         model=load_cpu_checkpoint(args.snapshot,quantization=args.quantization,max_context=args.context,
                                  max_weight_bytes=args.weight_mib*1024**2,max_workspace_bytes=args.loader_workspace_mib*1024**2)
         runner=CpuPipelineReferenceGenerator(model,[args.stage_mib*1024**2]*args.stages,vocab_size=text.vocab_size,
@@ -47,12 +63,14 @@ def main(argv=None):
                 max_cache_bytes=args.cache_mib*1024**2,max_workspace_bytes=args.workspace_mib*1024**2,
                 projection_workspace_bytes=args.projection_workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
         print(json.dumps(dict(scope='cpu_reference',official_model_qualified=False,quantization=args.quantization)),flush=True)
-        generated=[];primary=None
+        generated=[[] for _ in tokens] if args.batch_inputs else [[]];primary=None
+        generate=runner.generate_batch if args.batch_inputs else runner.generate
         try:
-            with closing(runner.generate(tokens,max_new_tokens=args.max_new_tokens,chunk_size=args.prefill_chunk)) as stream:
+            with closing(generate(tokens,max_new_tokens=limits,chunk_size=args.prefill_chunk)) as stream:
                 for event in stream:
-                    if 'token_id' in event:generated.append(event['token_id'])
-                    else:event=dict(event,text=text.decode(generated))
+                    row=event.get('row',0)
+                    if 'token_id' in event:generated[row].append(event['token_id'])
+                    else:event=dict(event,text=text.decode(generated[row]))
                     print(json.dumps(event,ensure_ascii=False),flush=True)
         except BaseException as error:primary=error;raise
         finally:
