@@ -286,9 +286,13 @@ adjacent-pair RoPE at completed blocks' start positions. The DeepSeek frequency
 schedule is independent of other architectures' YaRN magnitude scaling. Scalar
 frequency/rotation tests and full-vs-chunked compressor tests cover the equations;
 low-precision controls distinguish the required cast order from late casting.
-A downstream rotation failure leaves prior state unchanged. The result is before
-QAT/Hadamard processing and must not be treated as checkpoint-compatible cached
-KV until those required transformations are integrated and qualified.
+A downstream rotation failure leaves prior state unchanged. The default result
+is an unquantized floating reference. Explicit `cache_transform="kv_fp8"` applies
+power-of-two block FP8 simulation only to non-rotary channels;
+`cache_transform="index_fp4"` applies normalized Hadamard rotation and 32-value
+E2M1 simulation. Scalar rounding and transform-matrix controls cover these modes,
+including signed zero, tie-to-even rounding and chunks that complete no block.
+Accelerator rounding and real-checkpoint cache behavior remain unqualified.
 
 ## GPT-OSS (CUDA)
 

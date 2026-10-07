@@ -1,4 +1,4 @@
-"""Floating projected compressor composition, before QAT/cache publication."""
+"""Floating projected compressor composition with explicit cache simulations."""
 import math
 
 import torch
@@ -10,7 +10,7 @@ from .deepseek_position import rotate_pairs
 
 @torch.no_grad()
 def compress_hidden(hidden, value_weight, gate_weight, offsets, norm_weight, inverse_frequencies,
-                    *, state=None, epsilon=1e-6):
+                    *, state=None, epsilon=1e-6, cache_transform=None):
     """Return storage-dtype compressed vectors, replacement state and positions.
 
     Projection/norm parameters are explicitly resident FP32 tensors, matching the
@@ -18,8 +18,9 @@ def compress_hidden(hidden, value_weight, gate_weight, offsets, norm_weight, inv
     are implicitly converted here. Input chunks bound projection activations.
     Pooling is FP32; its result casts to input storage dtype BEFORE FP32 RMSNorm,
     casts back, then rotates at block START positions. This preserves the reference
-    cast/position order. QAT/Hadamard transformations remain separate and required
-    before claiming checkpoint-compatible cache output. Prior state is immutable.
+    cast/position order. Select kv_fp8 or index_fp4 explicitly for cache simulation;
+    None retains the unquantized reference output. Prior state is immutable.
+    Accelerator rounding and checkpoint-level behavior remain unqualified.
     """
     if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 3 or hidden.shape[-1] < 1
             or hidden.dtype not in (torch.float16, torch.bfloat16, torch.float32)):
@@ -42,6 +43,13 @@ def compress_hidden(hidden, value_weight, gate_weight, offsets, norm_weight, inv
         raise ValueError('compressor rotary frequencies must fit an even suffix of the output width')
     if type(epsilon) not in (int, float) or not math.isfinite(epsilon) or not 0 < epsilon <= torch.finfo(torch.float32).max:
         raise ValueError('compressor normalization epsilon must be finite and positive')
+    rotary_width = inverse_frequencies.numel()*2
+    if cache_transform not in (None, 'kv_fp8', 'index_fp4'):
+        raise ValueError('compressor cache transform must be kv_fp8, index_fp4 or None')
+    if cache_transform == 'kv_fp8' and (width-rotary_width) % 64:
+        raise ValueError('KV FP8 simulation requires complete non-rotary blocks of 64')
+    if cache_transform == 'index_fp4' and (width % 32 or width & (width-1) or width > 4096):
+        raise ValueError('indexer transform requires a power-of-two width in 32..4096')
     source = hidden.float()
     pooled, replacement, starts = pool_projected(F.linear(source, value_weight), F.linear(source, gate_weight), offsets, state=state)
     rounded = pooled.to(hidden.dtype).float()
@@ -49,4 +57,10 @@ def compress_hidden(hidden, value_weight, gate_weight, offsets, norm_weight, inv
     rotary_width = inverse_frequencies.numel()*2
     result = normalized.clone()
     result[..., -rotary_width:] = rotate_pairs(normalized[..., -rotary_width:], starts, inverse_frequencies)
+    if cache_transform == 'kv_fp8' and rotary_width < width:
+        from .activation_simulation import simulate_fp8
+        result[..., :-rotary_width] = simulate_fp8(result[..., :-rotary_width])
+    elif cache_transform == 'index_fp4':
+        from .activation_simulation import normalized_hadamard, simulate_fp4
+        result = simulate_fp4(normalized_hadamard(result))
     return result, replacement, starts
