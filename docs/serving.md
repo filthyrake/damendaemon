@@ -819,3 +819,48 @@ for queued clients, preempt a running chunk, equalize attention/computation cost
 provide weighted prefill or coordinate quotas across processes. It establishes
 no wall-clock latency or throughput SLO. Scheduler status reports the boolean
 `client_prefill_turns` setting.
+
+### Shared local-process rate accounting
+
+Set `DLLM_CLIENT_RATE_DB` to an explicit absolute SQLite file path to share named
+client rolling request and declared-output allowances across server processes on
+one host and retain them across restart. Without this variable, existing
+in-memory behavior is unchanged and no database is created. Configure at least
+one named client's rate limit before opting in.
+
+Use a dedicated local directory owned by the server user and not writable by
+other users/groups. The file is created with mode 0600; existing files must be
+private, regular, single-link files owned by that user. Symlinks, FIFOs, unsafe
+permissions, replaced files and incompatible/corrupt databases fail closed.
+Network filesystems and cross-host sharing are unsupported.
+
+All processes sharing a named client must use identical request/output rate
+limits. Other client settings may differ, and rotating a key while keeping the
+same name and rate policy preserves its counters. The database stores only client
+names, rate limits, a clock high-water mark and count buckets—no API keys,
+prompts or output text. It holds at most 128 registered names, 61 live buckets
+per client and 32 MiB of database pages. Names are not silently evicted to make
+room for new policies.
+
+Transactions atomically charge admitted attempts and declared output tokens.
+Both dimensions use conservative second buckets expiring after 60–61 seconds;
+this differs from the default in-memory request counter's exact 60-second window.
+`Retry-After` waits for enough budget, including after a backwards wall-clock
+change. A persisted per-client high-water mark prevents clock rollback from
+reopening previously consumed allowance. Forward system-clock changes still
+advance expiry; this is local accounting, not a trusted billing clock.
+
+Rejected rate charges are not added; admitted validation failures, cancellation,
+disconnection or model failure are not refunded. Output above the entire allowance
+still fails request validation. Shared/admin keys retain their unlimited rate
+policy. Outstanding-request/output reservations and cache limits remain
+process-local; this option does not create persistent inflight leases or a
+cluster quota service.
+
+Lock waiting is bounded to one second per SQLite connection. Missing/replaced,
+locked-too-long or corrupt storage returns 503 before model dispatch rather than
+falling back to a fresh allowance. Process-local reservations release on these
+failures. Filesystem I/O itself is not preempted by that lock timeout. Stop all
+users before deliberately replacing/resetting the database or changing a stored
+client's rate limits; running owners reject inode replacement. No automatic
+reset, migration, credential storage or deployment is performed.

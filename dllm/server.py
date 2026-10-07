@@ -17,7 +17,7 @@ from .prompts import validate_raw
 def handler_for(runtime, auth=None):
     from .http_auth import AuthPolicy
     auth = AuthPolicy.from_env() if auth is None else auth
-    from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError, ClientRateLimitError, ClientOutputRateLimitError
+    from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError, ClientRateLimitError, ClientOutputRateLimitError, SharedRateUnavailable
     from .http_auth import INFERENCE_ROUTES
     admission = ClientAdmission(auth)
     from .request_scope import CacheScope, cache_scope
@@ -94,6 +94,8 @@ def handler_for(runtime, auth=None):
                 try:
                     with admission.lease(self.headers.get_all('Authorization', [])):
                         self.post_authorized()
+                except SharedRateUnavailable:
+                    self.send_json(503, {'error': 'shared client rate accounting unavailable'})
                 except ClientRateLimitError as error:
                     self.send_json(429, {'error': 'client inference request rate limit reached'}, retry_after=error.retry_after)
                 except ClientLimitError:
@@ -314,7 +316,9 @@ def handler_for(runtime, auth=None):
             except (BrokenPipeError, ConnectionResetError, TimeoutError):
                 self.close_connection = True
             except Exception as error:
-                if isinstance(error, ClientOutputLimitError):
+                if isinstance(error, SharedRateUnavailable):
+                    status, message = 503, 'shared client rate accounting unavailable'
+                elif isinstance(error, ClientOutputLimitError):
                     status, message = 429, 'client outstanding output token budget exceeded'
                 elif isinstance(error, ClientOutputRateLimitError):
                     status, message = 429, 'client declared output token rate limit reached'

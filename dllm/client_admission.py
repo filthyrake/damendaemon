@@ -3,6 +3,8 @@ from contextlib import contextmanager
 import threading
 import time
 import math
+import os
+from .shared_client_rates import SharedClientRates,SharedRateRejected,SharedRateUnavailable
 from collections import deque
 
 
@@ -27,8 +29,10 @@ class ClientOutputRateLimitError(ClientLimitError):
 
 
 class ClientAdmission:
-    def __init__(self, auth, *, clock=None):
+    def __init__(self, auth, *, clock=None, rate_store=None):
         self.auth = auth
+        path=os.environ.get('DLLM_CLIENT_RATE_DB')
+        self.rate_store=rate_store if rate_store is not None else (SharedClientRates(path,auth.clients) if path is not None else None)
         self.active = {}
         self.requests = {}
         self.output_windows = {}
@@ -47,7 +51,10 @@ class ClientAdmission:
             count = self.active.get(client.name, 0)
             if count >= client.max_inflight:
                 raise ClientLimitError('client outstanding inference limit reached')
-            if client.max_requests_per_minute is not None:
+            if client.max_requests_per_minute is not None and self.rate_store is not None:
+                try:self.rate_store.charge(client,'requests',1)
+                except SharedRateRejected as error:raise ClientRateLimitError(error.retry_after) from None
+            elif client.max_requests_per_minute is not None:
                 now=self.clock()
                 history=self.requests.setdefault(client.name,deque())
                 while history and history[0]<=now-60:history.popleft()
@@ -71,6 +78,10 @@ class ClientAdmission:
         """Caller holds lock; second buckets expire conservatively after 60s."""
         limit = client.max_output_tokens_per_minute
         if limit is None:
+            return
+        if self.rate_store is not None:
+            try:self.rate_store.charge(client,'outputs',tokens)
+            except SharedRateRejected as error:raise ClientOutputRateLimitError(error.retry_after) from None
             return
         now = self.clock()
         history = self.output_windows.setdefault(client.name, deque())
