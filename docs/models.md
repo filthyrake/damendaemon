@@ -321,6 +321,17 @@ Projection rows obey the query chunk limit, and reordered/empty input and cache
 fixtures pass. Packed FP8 projection arithmetic and full-model/GPU behavior remain
 unqualified.
 
+`dllm.floating_attention.attention_prefill` composes complete floating attention
+prefill for ordinary windows, ratio-four indexed compression and ratio-128
+compression. It connects prepared projections, normalization, cache transforms,
+causal selection, sink attention, inverse RoPE and grouped output projections.
+Two chunked passes avoid retaining all multi-head queries. Returned ring storage
+owns only the window allocation rather than a view retaining the full prefill;
+compressed vectors and partial pool states are retained explicitly. CPU dense
+attention controls and independent grouped projections check full composition,
+with chunk and low-precision fixtures. Cached decode, packed projection arithmetic
+and full-model/GPU qualification remain separate; this path is not serving admission.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
