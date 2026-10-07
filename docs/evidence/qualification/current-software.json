@@ -20,8 +20,8 @@
         "prompts_sha256": null,
         "eos_policy": null
       },
-      "implementation_commit": "83f3e82b0825d51368f7a36620cb783127f30411",
-      "reason": "Pinned still-image/tool prompting, feature insertion and schema-bound tool generation pass tiny CPU fixtures and actual queued HTTP requests. Scoped token-boundary cancellation releases owned state. Official checkpoint, semantic image/tool quality, video, GPU and SLOs remain unqualified.",
+      "implementation_commit": "9ecb1150f472b8bb61676de8179aaca847888b56",
+      "reason": "Packed still-image/text/tool CPU reference and local pipelines extend through coordinator-owned vision and prepared language stages, native multi-process commands and bounded serialized image HTTP queues. Actual local TLS/HTTP fixtures cover JSON/SSE, tools, cancellation, backpressure, source identity, peer loss and retained cleanup. Official checkpoint semantics, video, GPU, practical context and SLOs remain unqualified.",
       "comparators": []
     },
     {
@@ -43,8 +43,8 @@
         "prompts_sha256": null,
         "eos_policy": null
       },
-      "implementation_commit": "83f3e82b0825d51368f7a36620cb783127f30411",
-      "reason": "Pinned text/tool formats, packed CPU arithmetic, explicit ragged ordinary/tool cohorts, serialized fair bounded CPU HTTP queues and token-boundary cancellation pass fixtures. Cohorts are sequential; queued HTTP is not continuous batching. Official checkpoint semantics, long context, GPU and SLOs remain unqualified.",
+      "implementation_commit": "57b05a518cdbeb606014a6d9f867c6e2c0b928d6",
+      "reason": "Packed Flash layer stages, owned slots, complete CPU pipelines and authenticated multi-process native text/tool commands and serialized HTTP queues are implemented. Residual-stream boundaries, stage-local loading, backpressure, drain, cancellation and peer failure have CPU controls. Ragged cohorts are sequential and native HTTP queues serialize generation; neither is continuous batching. Official checkpoint quality, GPU, long context and SLOs remain unqualified.",
       "comparators": []
     },
     {
@@ -66,8 +66,8 @@
         "prompts_sha256": null,
         "eos_policy": null
       },
-      "implementation_commit": "83f3e82b0825d51368f7a36620cb783127f30411",
-      "reason": "Packed CPU loading, strict opt-in tool schemas, ragged text/tool cohorts and serialized bounded HTTP queues pass fixtures. Buffered DSML cancellation closes parser/cache owners and failed cleanup remains retryable. Official checkpoint quality, long context, GPU and SLOs remain unqualified.",
+      "implementation_commit": "6d564beb150c1072ac47cd17d1e3d331364d5b43",
+      "reason": "Packed FP4/FP8 DeepSeek stages and CPU pipelines preserve routing token IDs, full residual streams and compressed cache ownership. Native DSML text/tool generation, authenticated host commands and bounded serialized HTTP queues cover source verification, backpressure, drain, cancellation and peer loss. Official checkpoint quality, GPU, practical long context and concurrency SLOs remain unqualified.",
       "comparators": []
     },
     {
@@ -112,8 +112,100 @@
         "prompts_sha256": null,
         "eos_policy": null
       },
-      "implementation_commit": "83f3e82b0825d51368f7a36620cb783127f30411",
-      "reason": "Pinned text/tool formats, packed CPU arithmetic, explicit ragged ordinary/tool cohorts, serialized fair bounded CPU HTTP queues and token-boundary cancellation pass fixtures. Cohorts are sequential; queued HTTP is not continuous batching. Official checkpoint semantics, long context, GPU and SLOs remain unqualified.",
+      "implementation_commit": "4f70145e4da086cfe6695630c72c6f32ad5fda8f",
+      "reason": "Packed GLM indexer-aligned stages, owned CPU pipelines, stage-local host construction and native text/tool multi-process commands and serialized HTTP queues are implemented. Explicit source verification, bounded queues, backpressure, drain, cancellation, peer loss and retained cleanup have CPU/TLS controls. Official checkpoint quality, accelerator arithmetic, practical context and concurrency SLOs remain unqualified.",
+      "comparators": []
+    },
+    {
+      "id": "modern-packed-cpu-storage-planning",
+      "issue": "https://github.com/filthyrake/dllm/issues/51",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": null,
+        "model_revision": null,
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "Header-only declared packed CPU tensor storage",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "ac4806f6918e09613914ed195568e9900a31dbf8",
+      "reason": "Bounded metadata-only GLM/Flash/DeepSeek accounting and ordered contiguous 2-8-stage placement preserve context/slot budgets, GLM indexer groups and exact no-fit results. Loaded tiny CPU weights/caches and exhaustive partition controls validate accounting. This excludes allocator/OS overhead, derived tensors and unmeasured temporaries; it is not measured peak memory, device admission or hardware placement qualification.",
+      "comparators": []
+    },
+    {
+      "id": "weighted-client-token-service",
+      "issue": "https://github.com/filthyrake/dllm/issues/59",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": null,
+        "model_revision": null,
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "Scheduler accounting; model arithmetic unchanged",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "66a5eb28df2302a803d104aefcf053cf1f166400",
+      "reason": "Independent named-client prefill/decode weights, exact prompt-token charging, bounded service history and client scope propagation are implemented. All 256 prefill weight pairs, unequal chunks, ordinary/paged scheduling and actual CPU host controls pass. Turn accounting does not establish per-user throughput, long-context fairness under real load, GPU resource reservations or an SLO.",
+      "comparators": []
+    },
+    {
+      "id": "same-host-client-quota-accounting",
+      "issue": "https://github.com/filthyrake/dllm/issues/59",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": null,
+        "model_revision": null,
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "CPU SQLite admission accounting",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "32a4c92b4d43abdb41e8565551f9df24569c47fb",
+      "reason": "Optional same-host rolling rates and outstanding request/output leases share bounded private SQLite state across frontends. Owned lock slots reclaim crashed local processes; uncertain mutations and releases retain claims for exact retry. HTTP capacity rejection, client isolation, disconnect, model failure and post-response cleanup are tested. Local locks do not fence remote execution, and no GPU capacity or saturation SLO is measured.",
+      "comparators": []
+    },
+    {
+      "id": "remote-owner-quota-http",
+      "issue": "https://github.com/filthyrake/dllm/issues/59",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": null,
+        "model_revision": null,
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "CPU durable authority and TLS admission accounting",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "00ae64845986fb7a0f3a178d5e69a3f33ff1211e",
+      "reason": "Explicit durable owner quotas, mutually authenticated bounded TLS RPC, policy-matched HTTP admission and private standalone authority/frontend configuration are implemented. Restart retains charges; immutable recovery operations, conflicting writers, lost replies, real CPU HTTP JSON/SSE and request-body shutdown cleanup have local controls. No automatic dead-host reclaim, remote workload fence, distributed rolling-rate store, GPU resource reservation or measured network/user SLO is claimed.",
       "comparators": []
     }
   ]

@@ -13,15 +13,40 @@ workload/hardware/checkpoint pins are explicitly `null`, so every row remains
 `implemented_unvalidated`. It is not a replacement for the retained historical
 hardware reports or a complete measured platform matrix.
 
-Current software evidence includes explicit ragged text/tool cohorts and bounded
-serialized HTTP queues for GLM/Flash/DeepSeek, token-boundary cancellation, Flash
-still-image HTTP, and stage-local Qwen CPU topology commands with authenticated
-three-/four-process fixtures. These capabilities have different execution scopes:
-ragged reference cohorts run sequentially, modern reference HTTP serializes model
-execution, and the separate Qwen topology owner interleaves bounded active slots.
-None establishes a named practical model's quality, GPU support or concurrency SLO.
-Remaining implementation and measurement gates live in #51, #54 and #55–#59;
-fixture sizes and process counts must never fill unknown qualification identities.
+Current software evidence includes stage-local packed GLM/Flash/DeepSeek CPU
+pipelines, native text/tool multi-process commands and serialized HTTP queues;
+Flash image features are owned by the coordinator and carried through language
+stages. The Qwen topology owner separately interleaves bounded active slots.
+Ragged native reference cohorts remain sequential, and native HTTP queues are
+not continuous batching. Header-only placement accounts for declared storage,
+not measured peak memory. Weighted scheduling and durable quota accounting
+provide software controls; they do not establish GPU capacity or a user SLO.
+
+The snapshot contains nine explicit software cells. Their pushed commit pins
+identify implementations, not experiment revisions. The source/test map below
+makes those scopes reviewable; tests are local CPU/loopback controls, not raw
+hardware benchmark reports. Unknown practical model/workload/device values stay
+null. No numerical, lifecycle or performance qualification record is synthesized
+from fixture dimensions or a test count.
+
+| Software scope | Supporting documentation | Focused controls |
+|---|---|---|
+| GLM packed stages and native host HTTP | [GLM stages](glm-layer-stages.md), [host HTTP](glm-host-http.md) | `tests/test_glm_host_http_command.py`, `tests/test_queued_glm_host_http_command.py` |
+| Flash packed stages and native text/tools | [Flash stages](flash-layer-stages.md) | `tests/test_glm_flash_host_http_command.py`, `tests/test_queued_glm_flash_host_http_command.py` |
+| Flash image host execution and HTTP | [Prepared image embeddings](flash-host-embeddings.md) | `tests/test_glm_flash_image_host_http.py`, `tests/test_glm_flash_image_host_http_command.py` |
+| DeepSeek packed stages and native DSML HTTP | [DeepSeek stages](deepseek-layer-stages.md) | `tests/test_deepseek_host_serving.py`, `tests/test_deepseek_native_host_command.py` |
+| Qwen quantized CPU host topology | [Topology commands](cpu-host-topology-command.md) | `tests/test_cpu_host_topology_command.py` |
+| Metadata-only modern storage planning | [Storage planning](reference-stage-planning.md) | `tests/test_reference_stage_plan.py` |
+| Weighted prompt/decode service | [Serving](serving.md) | `tests/test_weighted_prefill_turns.py`, `tests/test_client_decode_turns.py` |
+| Same-host rates and outstanding leases | [Shared reservations](shared-client-reservations.md) | `tests/test_shared_client_rates.py`, `tests/test_shared_reservation_http.py` |
+| Remote owner quota authority and HTTP | [Quota commands](quota-commands.md), [admission](remote-quota-admission.md) | `tests/test_remote_quota_admission.py`, `tests/test_quota_commands.py` |
+
+The remaining measured matrix stays under #54 and its parent model/platform
+issues. Existing bounded historical reports remain separate and retain failures.
+Production-scale arithmetic, checkpoint quality, accelerator integration, actual
+network transfer, practical contexts and concurrency/swap/soak SLOs still need
+their own pinned evidence. Any remaining command lifecycle bug is tracked in
+GitHub; a software snapshot is not a claim that no bugs remain.
 
 ## Version 1 records
 
