@@ -9,6 +9,7 @@ from dllm.glm_flash_text import FlashText
 from dllm.glm_flash_reference_loader import load_reference_model
 from dllm.glm_generation import validate_text_config
 from dllm.glm_flash_generation import FlashReferenceGenerator,flash_text_config
+from dllm.glm_flash_batch_generation import FlashBatchReferenceGenerator,prepare_batch
 
 
 def _positive(value):
@@ -24,6 +25,7 @@ def main(argv=None):
     source=parser.add_mutually_exclusive_group(required=True)
     source.add_argument('--prompt',help='one ordinary user text turn')
     source.add_argument('--messages',help='local JSON file containing ordinary text messages')
+    source.add_argument('--batch-messages',help='local JSON list of 1..16 equal-prompt-length text conversations')
     parser.add_argument('--reasoning-effort',choices=('low','high','max'),default='max')
     parser.add_argument('--clear-history-reasoning',action='store_true')
     parser.add_argument('--max-new-tokens',type=_positive,default=128)
@@ -45,19 +47,24 @@ def main(argv=None):
         text=FlashText(args.snapshot,vocab_size=text_config.get('vocab_size'))
         validate_text_config(text_config,text,args.context)
         messages=([dict(role='user',content=args.prompt)] if args.prompt is not None
-                  else json.loads(_read(args.messages,1024**2),object_pairs_hook=_unique_fields))
+                  else json.loads(_read(args.batch_messages or args.messages,1024**2),object_pairs_hook=_unique_fields))
         options=dict(reasoning_effort=args.reasoning_effort,clear_thinking=args.clear_history_reasoning)
-        tokens=text.chat_tokens(messages,**options)
-        if len(tokens)+args.max_new_tokens>args.context:
-            raise ValueError('Flash prompt and requested output exceed context before weight loading')
+        if args.batch_messages:
+            prepare_batch(text,messages,args.max_new_tokens,args.context,**options)
+        else:
+            tokens=text.chat_tokens(messages,**options)
+            if len(tokens)+args.max_new_tokens>args.context:
+                raise ValueError('Flash prompt and requested output exceed context before weight loading')
         model=load_reference_model(args.snapshot,max_weight_bytes=args.weight_mib*1024**2,
                                    projection_workspace_bytes=args.projection_workspace_mib*1024**2,
                                    max_workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
-        runner=FlashReferenceGenerator(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
+        runner_type=FlashBatchReferenceGenerator if args.batch_messages else FlashReferenceGenerator
+        runner=runner_type(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
         print(json.dumps(dict(scope='cpu_reference',official_model_qualified=False,dtype='float32')),flush=True)
         primary=None
         try:
-            with closing(runner.generate(messages,max_new_tokens=args.max_new_tokens,**options)) as generation:
+            generate=runner.generate_batch if args.batch_messages else runner.generate
+            with closing(generate(messages,max_new_tokens=args.max_new_tokens,**options)) as generation:
                 for event in generation:print(json.dumps(event,ensure_ascii=False),flush=True)
         except BaseException as error:primary=error;raise
         finally:
