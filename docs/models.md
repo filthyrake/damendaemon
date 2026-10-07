@@ -312,6 +312,15 @@ It checks config plus shard headers without reading tensor values. Add
 available; this mode does not open or require shards and reports the narrower
 scope. Neither mode admits the architecture to serving.
 
+`dllm.floating_indexer.index_hidden` connects floating low-rank query projection,
+rotary suffix positioning, Hadamard/FP4 simulation and bounded causal selection
+against prepared indexer caches. Head-weight scaling occurs in the projection's
+storage dtype before FP32 scoring; the selector explicitly avoids applying that
+scale twice. Low-precision controls distinguish this boundary from late scaling.
+Projection rows obey the query chunk limit, and reordered/empty input and cache
+fixtures pass. Packed FP8 projection arithmetic and full-model/GPU behavior remain
+unqualified.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with

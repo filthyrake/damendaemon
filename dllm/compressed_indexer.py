@@ -9,7 +9,7 @@ import torch
 
 @torch.no_grad()
 def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
-                      offset=0, query_chunk=16, key_chunk=64):
+                      offset=0, query_chunk=16, key_chunk=64, scale_head_weights=True):
     """Return physical IDs and FP32 scores, padding unavailable blocks with -1/-inf.
 
     query [batch,sequence,heads,width], keys [batch,blocks,width], head_weights
@@ -17,6 +17,8 @@ def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
     caller validates nonnegative positions and supplies finite projected inputs.
     Blocks are visible once (position+1)//ratio input blocks have completed.
     Equal scores choose lower logical block IDs, independently of chunk sizes.
+    Set scale_head_weights=False only for coefficients already scaled by
+    1/sqrt(width*heads), such as storage-rounded projection outputs.
     Only chunks of query/key tensors are promoted; resident inputs remain intact.
     """
     if (not isinstance(query, torch.Tensor) or query.ndim != 4
@@ -37,7 +39,8 @@ def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
             or type(top_k) is not int or not 1 <= top_k <= 4096
             or type(offset) is not int or not 0 <= offset < 2**31
             or type(query_chunk) is not int or not 1 <= query_chunk <= 128
-            or type(key_chunk) is not int or not 1 <= key_chunk <= 256):
+            or type(key_chunk) is not int or not 1 <= key_chunk <= 256
+            or type(scale_head_weights) is not bool):
         raise ValueError('invalid indexer ratio, top-k, offset or chunk bounds')
     top = min(top_k, keys.shape[1])
     selected = torch.empty(batch, sequence, top, device=query.device, dtype=torch.int64)
@@ -45,7 +48,9 @@ def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
     for start in range(0, sequence, query_chunk):
         stop = min(sequence, start+query_chunk)
         q = query[:, start:stop].float()
-        weights = head_weights[:, start:stop]*(width**-.5*heads**-.5)
+        weights = head_weights[:, start:stop]
+        if scale_head_weights:
+            weights = weights*(width**-.5*heads**-.5)
         visible = (positions[:, start:stop]+1)//ratio
         best_scores = selected_scores[:, start:stop, :0]
         best_ids = selected[:, start:stop, :0]
