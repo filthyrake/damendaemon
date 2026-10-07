@@ -39,7 +39,7 @@ class HostServingTests(unittest.TestCase):
             finally:self.workers[1].close()
         self.peer=threading.Thread(target=peer,daemon=True);self.peer.start()
         self.pair=HostServingPair(self.workers[0],self.text,chunk_size=1)
-        self.runtime=HostDistributedRuntime(self.pair,queue_timeout=2);self.owner=None;self.errors=[]
+        self.runtime=HostDistributedRuntime(self.pair,queue_timeout=2,**getattr(self,'runtime_options',{}));self.owner=None;self.errors=[]
         self.addCleanup(self.close)
 
     def close(self):

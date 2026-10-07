@@ -45,6 +45,8 @@ class HostServingPair:
             result=self.worker.prefill_chunk(tokens[start:start+self.chunk_size],slot,start)
         return result
 
+    def prefill_chunk(self,tokens,slot,start):return self.worker.prefill_chunk(tokens,slot,start)
+
     def decode(self,tokens,slots):return self.worker.decode(tokens,slots)
 
     def step(self,tokens):
@@ -64,9 +66,9 @@ class HostDistributedRuntime(DistributedRuntime):
     source_tier='cpu_reference'
     kernel_backend='cpu-host-reference'
 
-    def __init__(self,pair,alias='model',queue_size=8,queue_timeout=120,*,client_decode_turns=False):
+    def __init__(self,pair,alias='model',queue_size=8,queue_timeout=120,*,client_decode_turns=False,interleaved_prefill=False):
         if not isinstance(pair,HostServingPair):raise ValueError('CPU host runtime requires its explicit pair adapter')
-        super().__init__(pair,alias,queue_size,queue_timeout,client_decode_turns=client_decode_turns)
+        super().__init__(pair,alias,queue_size,queue_timeout,client_decode_turns=client_decode_turns,interleaved_prefill=interleaved_prefill)
 
     def model_manifest(self):raise ValueError('CPU host sessions cannot be exported as GPU model manifests')
 
@@ -82,6 +84,7 @@ class HostDistributedRuntime(DistributedRuntime):
             completed=self.completed,heartbeats=self.heartbeats,
             stream_buffer_events=STREAM_BUFFER_EVENTS,client_admission_turns=True,
             client_decode_turns=self.client_decode_turns,
+            interleaved_prefill=self.interleaved_prefill,prefill_chunk_size=self.pair.chunk_size,
             failed=self.failure is not None,closed=self.closed.is_set())
 
     def generate(self,alias,messages,max_tokens,**options):

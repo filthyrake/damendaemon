@@ -16,8 +16,7 @@ The peer owner continuously runs `step()`. The coordinator owner runs
 Successful requests release their peer slots before final results, allowing the
 next requests to reuse resident weights and transport. Up to the session's four
 slots may be active. Prompts are split into bounded activation chunks; ordinary
-decode batches retain original slot identity. Prefill is sequential per request,
-not interleaved fairly with already active decode.
+decode batches retain original slot identity. By default prefill is sequential per request; the explicit interleaving option below permits active decode between prompt chunks.
 
 The supported endpoint is `/v1/completions` with raw text or mapped token IDs,
 default greedy sampling and 1–4096 output tokens within the declared context.
@@ -89,3 +88,25 @@ client, full batching is retained. Backpressured slots are excluded before
 selection. Status exposes the setting, and idle/shutdown clears retained turn
 history. This may reduce aggregate batch utilization. It does not preempt prefill,
 reserve slots or establish a token-time SLO; GPU performance was not remeasured.
+
+`--interleaved-prefill` on the CPU host `serve` role is a separate default-off
+option. The owner executes at most one `--prefill-chunk` slice, then advances
+ready decode slots. Partial prompts receive round-robin chunk turns. Each chunk
+commits its own acknowledged slot/generation offset; only the last prompt chunk's
+sample becomes a generated token and counts toward completion usage. Intermediate
+samples never appear in SSE or consume the output allowance.
+
+Cancellation after any acknowledged partial chunk releases that slot before
+reuse. Peer failure discards the uncertain session without a final success.
+Unstarted cancellation still sends no RELEASE. The option can be combined with
+client decode turns and bounded output backpressure. The wait used for fully
+backpressured consumers is skipped while prefill, decode, admission or release
+made progress. Status reports `interleaved_prefill` and `prefill_chunk_size`.
+
+This option requires an explicitly chunk-capable pair and is exposed only by the
+CPU host command. It does not enable chunks on the existing GPU StagePair. Chunk
+size bounds tokens/workspace per command, not elapsed kernel time; no latency SLO,
+long-context qualification or weighted prefill fairness is implied. Actual CPU
+TLS-peer tests cover unequal and newly arriving prompts, decode interleaving,
+partial cancellation/reuse, failure and output/usage agreement with whole-model
+controls.
