@@ -177,7 +177,7 @@ class SharedClientReservations:
         if {row[0] for row in tables}!=set(SCHEMA):raise SharedReservationUnavailable(self)
         indexes={row[0] for row in connection.execute("SELECT sql FROM sqlite_master WHERE type='index' AND sql IS NOT NULL")}
         if indexes!=set(INDEXES):raise SharedReservationUnavailable(self)
-        if connection.execute("SELECT 1 FROM claims WHERE typeof(outputs)!='integer' OR typeof(requests)!='integer' OR length(id)!=32 LIMIT 1").fetchone():raise SharedReservationUnavailable(self)
+        if connection.execute("SELECT 1 FROM claims WHERE typeof(outputs)!='integer' OR typeof(requests)!='integer' OR requests NOT IN (0,1) OR outputs<0 OR outputs>2147483647 OR requests+outputs=0 OR length(id)!=32 LIMIT 1").fetchone():raise SharedReservationUnavailable(self)
         if connection.execute("SELECT 1 FROM owners WHERE length(token)!=32 LIMIT 1").fetchone():raise SharedReservationUnavailable(self)
         if connection.execute("SELECT count(*) FROM sqlite_master WHERE type IN ('trigger','view')").fetchone()[0]:raise SharedReservationUnavailable(self)
         if dict((kind,(dev,ino)) for kind,dev,ino in connection.execute('SELECT * FROM storage'))!={'file':self.file_identity,'directory':self.directory_identity}:

@@ -148,7 +148,12 @@ class SharedReservationTests(unittest.TestCase):
         try:
             with self.assertRaises(SharedReservationUnavailable):a.release(claim)
         finally:connection.execute('DROP VIEW extra');connection.commit();connection.close()
-        a.release(claim)
+        connection=sqlite3.connect(self.path);connection.execute('PRAGMA ignore_check_constraints=ON')
+        connection.execute('UPDATE claims SET requests=-1');connection.commit()
+        try:
+            with self.assertRaises(SharedReservationUnavailable):a.reserve(self.client)
+        finally:connection.execute('UPDATE claims SET requests=1');connection.commit();connection.close()
+        for pending in list(a.claims.values()):a.release(pending)
 
     def test_owner_and_claim_bounds_and_fork_rejection(self):
         a=self.store()
