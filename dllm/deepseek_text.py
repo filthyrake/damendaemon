@@ -2,7 +2,7 @@
 
 Reference: deepseek-ai/DeepSeek-V4-Flash, revision
 60d8d70770c6776ff598c94bb586a859a38244f1, encoding/encoding_dsv4.py.
-Tools, internal tasks and developer/reminder roles require separate integration.
+Tool histories use deepseek_tool_prompt; internal tasks and developer/reminder roles remain unsupported.
 """
 import json
 from pathlib import Path
@@ -20,8 +20,12 @@ END_THINK='</think>'
 MAX_TEXT_BYTES=1024*1024
 
 
-def render_chat(messages, *, enable_thinking=False, drop_thinking=True, reasoning_effort=None):
+def render_chat(messages, *, enable_thinking=False, drop_thinking=True, reasoning_effort=None, tools=None):
     """Render ordinary complete text turns followed by a generation prefix."""
+    if tools is not None:
+        from .deepseek_tool_prompt import render_tool_chat
+        return render_tool_chat(messages,tools,enable_thinking=enable_thinking,
+                                drop_thinking=drop_thinking,reasoning_effort=reasoning_effort)
     if (type(enable_thinking) is not bool or type(drop_thinking) is not bool
             or reasoning_effort not in (None,'high')):
         raise ValueError('unsupported V4 text thinking options')

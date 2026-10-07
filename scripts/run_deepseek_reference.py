@@ -24,6 +24,7 @@ def main(argv=None):
     source=parser.add_mutually_exclusive_group(required=True)
     source.add_argument('--prompt',help='one ordinary user text turn')
     source.add_argument('--messages',help='local JSON file containing ordinary text messages')
+    parser.add_argument('--tools',help='local JSON file containing function schemas; calls are returned, never executed')
     parser.add_argument('--thinking',action='store_true')
     parser.add_argument('--keep-history-reasoning',action='store_true')
     parser.add_argument('--max-new-tokens',type=_positive,default=128)
@@ -46,6 +47,9 @@ def main(argv=None):
         messages=([{'role':'user','content':args.prompt}] if args.prompt is not None
                   else json.loads(_read(args.messages,1024*1024),object_pairs_hook=_unique_fields))
         options=dict(enable_thinking=args.thinking,drop_thinking=not args.keep_history_reasoning)
+        if args.tools is not None:
+            options['tools']=json.loads(_read(args.tools,1024*1024),object_pairs_hook=_unique_fields)
+            if not isinstance(options['tools'],list):raise ValueError('tools file must contain a function schema list')
         tokens=text.chat_tokens(messages,**options)
         if len(tokens)+args.max_new_tokens > args.context:
             raise ValueError('prompt and requested output exceed context before weight loading')

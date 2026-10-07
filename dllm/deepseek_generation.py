@@ -114,13 +114,13 @@ class ReferenceGenerator:
             with self.lock:self.failed_cleanups.append(state)
             raise
 
-    def generate(self,messages,*,max_new_tokens=128,enable_thinking=False,drop_thinking=True):
+    def generate(self,messages,*,max_new_tokens=128,enable_thinking=False,drop_thinking=True,tools=None):
         if type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 4096:
             raise ValueError('reference output length must be 1..4096 tokens')
-        tokens=self.text.chat_tokens(messages,enable_thinking=enable_thinking,drop_thinking=drop_thinking)
+        tokens=self.text.chat_tokens(messages,enable_thinking=enable_thinking,drop_thinking=drop_thinking,tools=tools)
         if not tokens or len(tokens)+max_new_tokens > self.max_context:
             raise ValueError('prompt and requested output exceed reference context')
-        stream=TokenStream(self.text,enable_thinking=enable_thinking)
+        stream=TokenStream(self.text,enable_thinking=enable_thinking,allow_tool_calls=tools is not None)
         state=None
         primary_error=None
         try:
@@ -138,7 +138,13 @@ class ReferenceGenerator:
                     break
                 if index+1 < max_new_tokens:
                     logits=self.model.decode(torch.tensor([[token]],dtype=torch.int64),state,position=len(tokens)+index)
-            for event in stream.finish(truncated=reason == 'length'):yield event
+            for event in stream.finish(truncated=reason == 'length'):
+                if event.get('tool_calls'):
+                    names={tool['function']['name'] for tool in tools}
+                    if any(call['function']['name'] not in names for call in event['tool_calls']):
+                        raise ValueError('generated undeclared V4 tool')
+                    reason='tool_calls'
+                yield event
         except BaseException as error:
             primary_error=error
             raise

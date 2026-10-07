@@ -514,9 +514,8 @@ values, up to 64 calls, 256 parameters per call and 1 MiB per block. Names are
 model/DSML markers in values are rejected because the wire format has no escape
 for them. Duplicate parameters/JSON keys, nonfinite numbers, malformed syntax,
 truncated blocks and trailing text fail closed. IDs are application metadata and
-are not encoded in this wire format. This codec does not execute tools, validate
-argument schemas, add schemas to prompts, or enable tools in the CPU reference
-CLI/HTTP server. Those integration and model qualification gates remain open.
+are not encoded in this wire format. The codec does not execute tools or validate argument schemas. Reference prompting
+is described below; HTTP and model qualification gates remain open.
 
 `DeepSeekOutput` and `TokenStream` accept explicit `allow_tool_calls=True` for
 structured completion decoding. Ordinary content/reasoning remains incremental;
@@ -524,5 +523,20 @@ only the DSML block is buffered within the 1 MiB completion limit. Complete call
 are emitted atomically by `finish()` after block and EOS validation. Partial tool
 openers/blocks fail even for length-truncated completions. The pinned tokenizer's
 added DSML marker is admitted only in this opt-in mode. Default text decoding
-still rejects tool output. This decoder option does not enable tool prompting or
-automatic tool execution in the reference runner or HTTP API.
+still rejects tool output. The HTTP API does not enable this path.
+
+The CPU reference command accepts `--tools tools.json`, a local list of OpenAI
+function schemas. The canonical pinned tool prompt is preserved with its MIT
+license in `docs/licenses/deepseek-MIT.txt`. `--messages` can include historical
+assistant `tool_calls` and text `tool` results: call IDs must be distinct within
+the turn, every call must have exactly one result, and results are rendered in
+call order. Calls must name declared tools. When tools are supplied, historical
+reasoning is retained according to the pinned format. No input objects are mutated.
+
+The runner emits complete `tool_calls` and `finish_reason: tool_calls`; it never
+executes a tool. The caller assigns call IDs before adding returned calls/results
+to later history, and validates arguments against the tool schema before use.
+Malformed, undeclared or length-truncated calls fail and release the reference
+cache. Schemas, histories and expanded prompt/context limits are checked before
+weight loading. This is CPU development coverage, not real-model tool accuracy
+or production HTTP qualification.

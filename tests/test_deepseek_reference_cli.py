@@ -64,3 +64,25 @@ class ReferenceCLITests(unittest.TestCase):
                 patch('builtins.print',side_effect=fail_output):
             self.assertEqual(main([str(self.path),'--prompt','Hello','--max-new-tokens','2','--context','128']),0)
         self.assertEqual(closed,[True])
+
+    def test_tool_command_returns_calls_and_invalid_schemas_preflight(self):
+        from dllm.deepseek_text import EOS
+        from dllm.deepseek_tools import render_tool_calls
+        from tests.test_deepseek_generation import ScriptedModel
+        tools=self.path/'tools.json'
+        tools.write_text(json.dumps([{'type':'function','function':{'name':'f'}}]))
+        calls=[{'type':'function','function':{'name':'f','arguments':'{}'}}]
+        model=ScriptedModel(self.text,'\n\n'+render_tool_calls(calls)+EOS)
+        output=io.StringIO()
+        with patch('scripts.run_deepseek_reference.load_reference_model',return_value=model),contextlib.redirect_stdout(output):
+            self.assertEqual(main([str(self.path),'--prompt','Hello','--tools',str(tools),'--max-new-tokens','512']),0)
+        events=[json.loads(line) for line in output.getvalue().splitlines()]
+        self.assertIn({'tool_calls':calls},events)
+        self.assertEqual(events[-1]['finish_reason'],'tool_calls')
+        self.assertTrue(model.states[0].closed)
+        for invalid in (None,[],[{'type':'function','function':{'name':'bad','parameters':[]}}]):
+            tools.write_text(json.dumps(invalid))
+            with patch('scripts.run_deepseek_reference.load_reference_model',side_effect=AssertionError('weights opened')),contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    main([str(self.path),'--prompt','Hello','--tools',str(tools)])
+                self.assertEqual(error.exception.code,2)

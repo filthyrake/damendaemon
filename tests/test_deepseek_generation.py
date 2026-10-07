@@ -162,3 +162,20 @@ class ReferenceGenerationTests(unittest.TestCase):
         stream=TokenStream(self.text)
         with self.assertRaises(ValueError):
             for token in tokens:stream.feed(token)
+
+    def test_reference_tools_finish_reason_cleanup_and_undeclared_rejection(self):
+        from dllm.deepseek_tools import render_tool_calls
+        tools=[{'type':'function','function':{'name':'f','parameters':{'type':'object'}}}]
+        calls=[{'type':'function','function':{'name':'f','arguments':'{"x": "🙂"}'}}]
+        completion='\n\n'+render_tool_calls(calls)+EOS
+        model=ScriptedModel(self.text,completion)
+        runner=ReferenceGenerator(model,self.text)
+        events=list(runner.generate(self.messages,tools=tools,max_new_tokens=512))
+        self.assertIn({'tool_calls':calls},events)
+        self.assertEqual(events[-1]['finish_reason'],'tool_calls')
+        self.assertTrue(model.states[0].closed)
+        tools[0]['function']['name']='other'
+        with self.assertRaises(ValueError):list(runner.generate(self.messages,tools=tools,max_new_tokens=512))
+        self.assertTrue(model.states[-1].closed)
+        with self.assertRaises(ValueError):list(runner.generate(self.messages,tools=tools,max_new_tokens=30))
+        self.assertTrue(model.states[-1].closed)
