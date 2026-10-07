@@ -660,6 +660,14 @@ cleanup. Limits are shared across that server's handler threads and independent
 between clients; they do not replace global connection or scheduler queue limits.
 Shared inference/admin keys retain their existing unrestricted per-client behavior,
 so omit the shared inference key when every inference client must have a cap.
-All clients can see the same registered model aliases; these limits do not provide
-token-rate fairness, per-model permissions, distributed quotas or tenant data
+Named clients may add `"models":["alias-a","alias-b"]` to restrict inference to
+exact registered aliases and filter `/v1/models` discovery. Omit `models` to retain
+access to all models; an empty list denies every model. Lists contain at most 128
+distinct aliases and use the same alias validation as model registration. There
+are no wildcards or path normalization. Forbidden models receive a generic `403`
+before runtime dispatch on all inference routes, including streams, embeddings,
+reranking and token scoring. Model aliases are authorization identities: an
+administrator changing an alias's checkpoint also changes what that permission
+allows. Shared inference/admin keys retain access to all aliases. These controls
+do not provide token-rate fairness, distributed quotas or tenant cache/data
 isolation. Client-only configuration still protects the API; `/health` stays public.

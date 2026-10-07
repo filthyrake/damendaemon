@@ -57,9 +57,11 @@ def handler_for(runtime, auth=None):
             if self.path == "/health":
                 self.send_json(200, {"status": "ok"})
             elif self.path == "/v1/models":
+                client = auth.client(self.headers.get_all('Authorization', []))
                 self.send_json(200, {"object": "list", "data": [
                     {"id": alias, "object": "model", "owned_by": "dllm"}
                     for alias in runtime.model_ids()
+                    if client is None or client.allows_model(alias)
                 ]})
             elif self.path == '/v1/scheduler/status':
                 snapshot = getattr(runtime, 'scheduler_status', None)
@@ -106,6 +108,11 @@ def handler_for(runtime, auth=None):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 body = json.loads(self.rfile.read(length))
+                if self.path in INFERENCE_ROUTES and isinstance(body, dict) and isinstance(body.get('model'), str):
+                    client = auth.client(self.headers.get_all('Authorization', []))
+                    if client is not None and not client.allows_model(body['model']):
+                        self.send_json(403, {'error': 'forbidden'})
+                        return
                 if self.path == '/v1/scheduler/drain':
                     if body != {}:
                         raise ValueError('drain requires an empty JSON object')

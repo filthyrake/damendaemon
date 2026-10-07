@@ -25,6 +25,7 @@ class ClientKey:
     name: str
     key: str = field(repr=False)
     max_inflight: int
+    models: frozenset | None = None
 
     def __post_init__(self):
         if not isinstance(self.name, str) or re.fullmatch(r'[A-Za-z0-9_.-]{1,64}', self.name) is None:
@@ -34,6 +35,15 @@ class ClientKey:
             raise ValueError('client key is required')
         if type(self.max_inflight) is not int or not 1 <= self.max_inflight <= 128:
             raise ValueError('client max_inflight must be an integer from 1 to 128')
+        if self.models is not None:
+            if not isinstance(self.models, frozenset) or len(self.models) > 128:
+                raise ValueError('client models must be a frozenset of at most 128 exact aliases')
+            from .management import command
+            for alias in self.models:
+                command('load', model=alias)
+
+    def allows_model(self, alias):
+        return self.models is None or alias in self.models
 
 
 @dataclass(frozen=True)
@@ -69,12 +79,24 @@ class AuthPolicy:
                     return result
                 raw = json.loads(text, object_pairs_hook=unique_pairs)
                 if (not isinstance(raw, dict) or not 1 <= len(raw) <= 128
-                        or any(not isinstance(value, dict) or set(value) != {'key', 'max_inflight'}
+                        or any(not isinstance(value, dict) or not {'key', 'max_inflight'} <= set(value)
+                               or set(value) - {'key', 'max_inflight', 'models'}
                                for value in raw.values())):
                     raise ValueError('invalid client configuration')
-                clients = tuple(ClientKey(name, value['key'], value['max_inflight']) for name, value in raw.items())
+                parsed = []
+                for name, value in raw.items():
+                    models = None
+                    if 'models' in value:
+                        aliases = value['models']
+                        if (not isinstance(aliases, list) or len(aliases) > 128
+                                or any(not isinstance(alias, str) for alias in aliases)
+                                or len(set(aliases)) != len(aliases)):
+                            raise ValueError('invalid client model aliases')
+                        models = frozenset(aliases)
+                    parsed.append(ClientKey(name, value['key'], value['max_inflight'], models))
+                clients = tuple(parsed)
             except (ValueError, TypeError):
-                raise ValueError('DLLM_CLIENT_KEYS must map distinct client names to valid key/max_inflight objects') from None
+                raise ValueError('DLLM_CLIENT_KEYS must map distinct client names to valid key/max_inflight objects with optional model alias lists') from None
         return cls(os.environ.get('DLLM_API_KEY'), os.environ.get('DLLM_ADMIN_API_KEY'), clients)
 
     def client(self, headers):
