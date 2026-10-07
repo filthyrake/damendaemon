@@ -504,3 +504,16 @@ projections. These repair the tested routing-sensitive output mismatch; 4K HTTP
 and tool lifecycles pass, but long-context internal-state numerical qualification
 remains open in [issue #41](https://github.com/filthyrake/dllm/issues/41).
 See [fused-prefill evidence and scope](evidence/gpt-oss/fused-prefill/README.md). See [architecture evidence](architecture-parity.md#gpt-oss-20b-packed-raw-execution).
+
+`dllm.deepseek_tools` provides a bounded, independent V4 DSML tool-call codec
+from the same pinned MIT format specification. `render_tool_calls` accepts
+OpenAI-shaped function calls with JSON object arguments; `parse_tool_calls`
+returns complete calls atomically. It supports Unicode strings and finite JSON
+values, up to 64 calls, 256 parameters per call and 1 MiB per block. Names are
+1–128 characters without quotes, angle brackets or control characters; reserved
+model/DSML markers in values are rejected because the wire format has no escape
+for them. Duplicate parameters/JSON keys, nonfinite numbers, malformed syntax,
+truncated blocks and trailing text fail closed. IDs are application metadata and
+are not encoded in this wire format. This codec does not execute tools, validate
+argument schemas, add schemas to prompts, or enable tools in the CPU reference
+CLI/HTTP server. Those integration and model qualification gates remain open.
