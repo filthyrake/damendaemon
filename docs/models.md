@@ -564,3 +564,22 @@ Names-only success does not prove actual shard shapes, tensor values, numerical
 quality, model execution, context capacity or hardware support. The local header
 tests use synthetic tensors; official full-shard and model qualification remain
 open under #56.
+
+`dllm.glm_indexer.GlmIndexer` is a CPU FP32 primitive for the full-indexer layers:
+query/key/head projections, key LayerNorm with epsilon 1e-6, and prefix
+interleaved RoPE. `project_keys` returns rotated keys; `select` consumes resident
+keys indexed by absolute token position and returns causal top-k IDs/scores.
+Unavailable entries use `-1`/negative infinity. Equal scores choose lower token
+IDs deterministically; upstream top-k tie ordering is not promised equivalent.
+Shared-indexer layers can reuse these selections; persistent cache ownership is
+not implemented by this primitive.
+
+Projection/score arithmetic is tiled, with explicit output-storage and conservative
+tensor-scratch budgets (64 MiB each by default). These budgets exclude already
+resident caller-owned inputs/weights and framework allocator overhead. Queries
+may have different logical positions per batch slot. The GLM dot-product scale
+is applied before ReLU, separately from the head-weight scale; DeepSeek selector
+defaults retain their prior arithmetic. Dense CPU controls cover projections,
+normalization, rotation, selection, chunking and budget rejection. Packed FP8
+execution, complete MLA attention/model arithmetic and GPU performance remain
+unqualified.

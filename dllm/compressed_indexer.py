@@ -9,7 +9,7 @@ import torch
 
 @torch.no_grad()
 def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
-                      offset=0, query_chunk=16, key_chunk=64, scale_head_weights=True):
+                      offset=0, query_chunk=16, key_chunk=64, scale_head_weights=True, dot_scale=1.):
     """Return physical IDs and FP32 scores, padding unavailable blocks with -1/-inf.
 
     query [batch,sequence,heads,width], keys [batch,blocks,width], head_weights
@@ -19,6 +19,7 @@ def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
     Equal scores choose lower logical block IDs, independently of chunk sizes.
     Set scale_head_weights=False only for coefficients already scaled by
     1/sqrt(width*heads), such as storage-rounded projection outputs.
+    dot_scale applies before ReLU; its default preserves V4 arithmetic.
     Only chunks of query/key tensors are promoted; resident inputs remain intact.
     """
     if (not isinstance(query, torch.Tensor) or query.ndim != 4
@@ -40,7 +41,8 @@ def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
             or type(offset) is not int or not 0 <= offset < 2**31
             or type(query_chunk) is not int or not 1 <= query_chunk <= 128
             or type(key_chunk) is not int or not 1 <= key_chunk <= 256
-            or type(scale_head_weights) is not bool):
+            or type(scale_head_weights) is not bool or type(dot_scale) not in (int,float)
+            or not 0 < dot_scale <= torch.finfo(torch.float32).max):
         raise ValueError('invalid indexer ratio, top-k, offset or chunk bounds')
     top = min(top_k, keys.shape[1])
     selected = torch.empty(batch, sequence, top, device=query.device, dtype=torch.int64)
@@ -58,6 +60,7 @@ def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
             key_stop = min(key_start+key_chunk, keys.shape[1])
             key = keys[:, key_start:key_stop].float()
             dots = torch.matmul(q, key[:, None].transpose(-1, -2))
+            if dot_scale != 1.:dots = dots*dot_scale
             scores = (dots.relu()*weights.unsqueeze(-1)).sum(-2)
             ids = torch.arange(key_start, key_stop, device=query.device).reshape(1, 1, -1).expand(batch, stop-start, -1)
             scores = scores.masked_fill(ids >= visible.unsqueeze(-1), -float('inf'))
