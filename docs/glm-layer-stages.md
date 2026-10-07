@@ -75,3 +75,29 @@ block a new request until cleanup succeeds. Generation tests compare real packed
 pipeline text and usage with a whole-model floating control; tool parser tests
 use controlled token selection after real stage execution, without claiming
 trained tool-call competence. CLI/HTTP/network integration is still separate.
+
+## Checkpoint construction and command
+
+`load_reference_pipeline(path, layer_splits, ...)` audits the complete snapshot
+before any tensor payload reads and applies one global weight budget: all retained
+stage weights plus the largest source conversion buffer. It then loads each
+assigned range under that same cap. Configuration, shard and index file identity
+receipts are checked around admission and each construction step. These detect
+ordinary concurrent changes; they are not content authentication against a
+hostile writer. Header/Python storage, activation scratch and KV cache allowances
+remain separate.
+
+The existing local command accepts explicit full-indexer cuts:
+
+```sh
+python -m scripts.run_glm_reference /path/to/snapshot \
+  --layer-splits 2 --prompt 'Hello' --max-new-tokens 16 \
+  --context 1024 --weight-mib 256 --cache-mib 256
+```
+
+Replace the cut with valid internal full-indexer layer indices for the snapshot.
+One to seven ordered cuts produce two to eight stages. Default command execution
+is unchanged. Single text, tools, equal-length batches and opt-in ragged cohorts
+use the explicit pipeline adapters when cuts are supplied. The initial output
+identifies `execution: local_cpu_pipeline` and every stage range. This is one
+local CPU process; it does not start workers, open a network or qualify hardware.

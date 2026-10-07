@@ -61,7 +61,7 @@ def load_reference_stage(path, start, end, *, max_weight_bytes=256*1024**2,
 
 
 def _load_reference(path, layer_range, *, max_weight_bytes, projection_workspace_bytes,
-                    max_workspace_bytes, max_output_bytes):
+                    max_workspace_bytes, max_output_bytes, inspect_only=False):
     if sys.byteorder!='little':raise ValueError('GLM reference loading requires a little-endian host')
     if (type(max_weight_bytes) is not int or max_weight_bytes<1
             or any(type(v) is not int or not 1<=v<=2**31
@@ -113,6 +113,10 @@ def _load_reference(path, layer_range, *, max_weight_bytes, projection_workspace
             raise ValueError('GLM expert and routing workspace exceeds component allowance')
         if retained+largest>max_weight_bytes:
             raise ValueError('GLM parameters exceed aggregate weight budget')
+        if inspect_only:
+            if any(file_stamp(reader)!=stamp for reader,stamp in opened):
+                raise ValueError('GLM checkpoint changed during header admission')
+            return config,retained,largest
         for name,spec in specs.items():
             reader,base,entry=selected[name]
             size=entry['data_offsets'][1]-entry['data_offsets'][0]
