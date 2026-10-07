@@ -80,14 +80,15 @@ class ReferenceGenerator:
         tokens=self.text.chat_tokens(messages,reasoning_effort=reasoning_effort,clear_thinking=clear_thinking)
         yield from self._generate_tokens(tokens,max_new_tokens)
 
-    def _generate_tokens(self,tokens,max_new_tokens,*,prefill=None,blocked_token_ids=()):
+    def _generate_tokens(self,tokens,max_new_tokens,*,prefill=None,blocked_token_ids=(),stream=None):
         if type(max_new_tokens) is not int or not 1<=max_new_tokens<=4096:
             raise ValueError('GLM output length must be 1..4096 tokens')
         if any(type(token) is not int or not 0<=token<self.text.tokenizer_size for token in blocked_token_ids):
             raise ValueError('invalid GLM blocked output tokens')
         if not tokens or len(tokens)+max_new_tokens>self.max_context:
             raise ValueError('GLM prompt and requested output exceed context')
-        stream=TokenStream(self.text);state=None;primary=None
+        stream=TokenStream(self.text) if stream is None else stream
+        state=None;primary=None
         try:
             with self.lock:
                 self.cleanup()
@@ -110,7 +111,9 @@ class ReferenceGenerator:
                 if token in self.text.eos:reason='stop';break
                 if index+1<max_new_tokens:
                     logits=self.model.forward(torch.tensor([[token]],dtype=torch.int64,device='cpu'),state,position=len(tokens)+index)
-            yield from stream.finish(truncated=reason=='length')
+            for event in stream.finish(truncated=reason=='length'):
+                if event.get('tool_calls'):reason='tool_calls'
+                yield event
         except BaseException as error:primary=error;raise
         finally:
             if state is not None:

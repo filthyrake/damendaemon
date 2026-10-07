@@ -35,5 +35,6 @@ list after construction.
 
 This module does not execute tools or change ordinary generation admission.
 The explicit [tool-history adapter](flash-tool-prompts.md) adds pinned prompt and
-tokenizer behavior. Incremental output integration, official-model semantics and
-hardware qualification remain separate gates under GitHub #57.
+tokenizer behavior; the [CPU tool generator](flash-tool-generation.md) composes
+incremental output and owned state. Official-model semantics and hardware
+qualification remain separate gates under GitHub #57.

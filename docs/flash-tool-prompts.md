@@ -33,6 +33,7 @@ full-prompt cases also matched official tokenizer IDs during implementation;
 ordinary tests replay the prompts with the local synthetic tokenizer. The pinned
 fixture preserves both the expected IDs and template hash.
 
-This is prompt/tokenizer capability under #123/#57. Incremental output parsing,
-generation integration, official-weight semantic behavior and hardware serving
-remain separate qualification work. No tools are executed.
+This is prompt/tokenizer capability under #123/#57. The explicit
+[CPU tool generator](flash-tool-generation.md) composes incremental output and
+owned generation. Official-weight semantic behavior and hardware serving remain
+separate qualification work. No tools are executed.
