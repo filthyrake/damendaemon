@@ -383,6 +383,15 @@ scalar-decoded dense controls, reordered/empty batches, rejected invalid routes
 before projection and unchanged packed storage. It is not the device-resident
 GPU routing implementation or a real-checkpoint qualification.
 
+`FloatingBlock(..., packed_experts=..., packed_shared=...)` explicitly selects
+that packed expert control inside the existing model stack. This mode rejects
+floating expert-bank parameters, non-CPU placement, mismatched expert counts,
+widths, activation limits and scratch allowances. Attention remains floating.
+Two-layer model fixtures with both routing modes compare prefill and cached
+decode against independently decoded floating expert controls, exercise slot
+fanout and poison the complete cache after a packed expert failure. Full packed
+attention, checkpoint loading, accelerator execution and serving remain open.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with

@@ -8,6 +8,7 @@ from .expert_selection import select_experts, validate_token_expert_table
 from .floating_attention import _check, _norm, attention_prefill, attention_decode, AttentionState
 from .floating_moe import floating_moe, validate_moe_inputs
 from .hyper_connections import reduce_streams, restore_streams
+from .packed_moe import PackedExpert, packed_moe
 
 
 @dataclass
@@ -29,12 +30,15 @@ class FloatingBlock:
     Expert banks use stacked [experts,rows,columns] tensors under
     ffn.experts.w1/w3/w2.weight. Other names follow the canonical block layout.
     Immutable hash tables are checked once on CPU during preparation, never by
-    extracting routing values in prefill/decode. Packed parameter loading is not
-    implemented by this floating component.
+    extracting routing values in floating prefill/decode. An explicit
+    packed_experts/shared pair instead selects the CPU packed expert control;
+    that path reads CPU route IDs and supplies no floating expert banks.
+    Attention and stream parameters remain prepared floating tensors.
     """
     def __init__(self, attention_weights, weights, frequencies, *, groups, window, ratio=0,
                  hc_mult=4, top_k=6, route_scale=1.5, index_top_k=512, epsilon=1e-6,
-                 connection_epsilon=1e-6, iterations=20, activation_limit=10., workspace_bytes=64*1024*1024):
+                 connection_epsilon=1e-6, iterations=20, activation_limit=10., workspace_bytes=64*1024*1024,
+                 packed_experts=None, packed_shared=None):
         if not isinstance(attention_weights, dict) or not isinstance(weights, dict):
             raise ValueError('block preparation requires parameter mappings')
         input_weight = attention_weights.get('wq_a.weight')
@@ -68,15 +72,29 @@ class FloatingBlock:
                 raise ValueError(f'invalid FP32 block parameter: {name}')
         bank_names = [f'ffn.experts.{p}.weight' for p in ('w1','w3','w2')]
         shared_names = [f'ffn.shared_experts.{p}.weight' for p in ('w1','w3','w2')]
-        if set(weights) != set(expected) | set(bank_names+shared_names) | ({'ffn.gate.tid2eid'} if table is not None else set()):
+        projection_names = bank_names+shared_names if packed_experts is None else []
+        if set(weights) != set(expected) | set(projection_names) | ({'ffn.gate.tid2eid'} if table is not None else set()):
             raise ValueError('block parameter names do not match routing mode')
-        banks, shared = tuple(weights[n] for n in bank_names), tuple(weights[n] for n in shared_names)
-        routes = torch.empty(0,top_k,dtype=torch.int64,device=device)
-        coefficients = torch.empty(0,top_k,dtype=torch.float32,device=device)
-        validate_moe_inputs(input_weight[:0], *banks, routes, coefficients, shared=shared,
-                            activation_limit=activation_limit, workspace_bytes=workspace_bytes)
-        if banks[0].shape[0] != experts:
-            raise ValueError('gate and expert-bank counts disagree')
+        if packed_experts is None:
+            if packed_shared is not None:
+                raise ValueError('packed shared expert requires packed routed experts')
+            banks, shared = tuple(weights[n] for n in bank_names), tuple(weights[n] for n in shared_names)
+            routes = torch.empty(0,top_k,dtype=torch.int64,device=device)
+            coefficients = torch.empty(0,top_k,dtype=torch.float32,device=device)
+            validate_moe_inputs(input_weight[:0], *banks, routes, coefficients, shared=shared,
+                                activation_limit=activation_limit, workspace_bytes=workspace_bytes)
+            if banks[0].shape[0] != experts:
+                raise ValueError('gate and expert-bank counts disagree')
+        else:
+            if (device.type != 'cpu' or not isinstance(packed_experts,(tuple,list)) or len(packed_experts) != experts
+                    or type(workspace_bytes) is not int or workspace_bytes < 1):
+                raise ValueError('packed expert mode requires a matching CPU expert bank and workspace')
+            for expert in (*packed_experts,packed_shared):
+                if (not isinstance(expert,PackedExpert) or expert.width != dim
+                        or expert.activation_limit != activation_limit or expert.workspace_bytes > workspace_bytes):
+                    raise ValueError('packed expert width, activation or workspace differs from block contract')
+            packed_experts = tuple(packed_experts)
+            banks, shared = None, None
         if table is not None:
             if not isinstance(table, torch.Tensor) or table.ndim != 2 or table.device != device:
                 raise ValueError('invalid token-to-expert table geometry/device')
@@ -88,6 +106,7 @@ class FloatingBlock:
         self.activation_limit, self.workspace_bytes = activation_limit, workspace_bytes
         self.dim, self.device, self.dtype = dim, device, dtype
         self.banks, self.shared, self.table = banks, shared, table
+        self.packed_experts, self.packed_shared = packed_experts, packed_shared
 
     def _input(self, hidden, token_ids):
         if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 4 or min(hidden.shape[:2]) < 1
@@ -115,8 +134,11 @@ class FloatingBlock:
         coefficients, selected = select_experts(logits,self.top_k,scoring='sqrtsoftplus',renormalize=True,
                                                 scale=self.route_scale,selected_experts=token_routes,
                                                 correction_bias=self.weights.get('ffn.gate.bias'))
-        output = floating_moe(rows,*self.banks,selected.contiguous(),coefficients.contiguous(),shared=self.shared,
-                              activation_limit=self.activation_limit,workspace_bytes=self.workspace_bytes)
+        if self.packed_experts is None:
+            output = floating_moe(rows,*self.banks,selected.contiguous(),coefficients.contiguous(),shared=self.shared,
+                                  activation_limit=self.activation_limit,workspace_bytes=self.workspace_bytes)
+        else:
+            output = packed_moe(rows,self.packed_experts,selected,coefficients,shared=self.packed_shared)
         return restore_streams(output.reshape(reduced.shape),hidden,post,matrix)
 
     @torch.no_grad()

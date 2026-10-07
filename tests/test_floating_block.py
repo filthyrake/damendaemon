@@ -11,21 +11,21 @@ from dllm.expert_selection import select_experts
 from tests.test_floating_attention import fixture as attention_fixture
 
 
-def fixture(hashed=False, ratio=4, dtype=torch.float32):
-    hidden, attention, freq = attention_fixture(ratio,9,dtype)
+def fixture(hashed=False, ratio=4, dtype=torch.float32, dim=8):
+    hidden, attention, freq = attention_fixture(ratio,9,dtype,dim)
     rng = torch.Generator().manual_seed(127)
     weights = {}
     for part in ('attn','ffn'):
-        for suffix,shape in (('fn',(8,16)),('base',(8,)),('scale',(3,))):
+        for suffix,shape in (('fn',(8,2*dim)),('base',(8,)),('scale',(3,))):
             weights[f'hc_{part}_{suffix}'] = torch.randn(shape,generator=rng)*.1
-        weights[f'{part}_norm.weight'] = torch.randn(8,generator=rng)*.2
-    weights['ffn.gate.weight'] = torch.randn(3,8,generator=rng)*.2
+        weights[f'{part}_norm.weight'] = torch.randn(dim,generator=rng)*.2
+    weights['ffn.gate.weight'] = torch.randn(3,dim,generator=rng)*.2
     if hashed:
         weights['ffn.gate.tid2eid'] = torch.tensor([[0,1],[1,2],[2,0],[0,2]])
     else:
         weights['ffn.gate.bias'] = torch.tensor([.2,-.3,.1])
-    for prefix, shapes in (('ffn.experts',((3,6,8),(3,6,8),(3,8,6))),
-                           ('ffn.shared_experts',((7,8),(7,8),(8,7)))):
+    for prefix, shapes in (('ffn.experts',((3,6,dim),(3,6,dim),(3,dim,6))),
+                           ('ffn.shared_experts',((7,dim),(7,dim),(dim,7)))):
         for name,shape in zip(('w1','w3','w2'),shapes):
             weights[f'{prefix}.{name}.weight'] = (torch.randn(shape,generator=rng)*.2).to(dtype)
     block = FloatingBlock(attention,weights,freq,groups=2,window=4,ratio=ratio,hc_mult=2,top_k=2,index_top_k=2)

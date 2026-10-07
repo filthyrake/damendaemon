@@ -7,18 +7,18 @@ from dllm.deepseek_position import frequencies, rotate_pairs
 from dllm.floating_attention import attention_prefill
 
 
-def fixture(ratio=0, length=13, dtype=torch.float32):
+def fixture(ratio=0, length=13, dtype=torch.float32, dim=8):
     rng = torch.Generator().manual_seed(113)
-    hidden = torch.randn(1, length, 8, generator=rng).to(dtype)
+    hidden = torch.randn(1, length, dim, generator=rng).to(dtype)
     weights = {}
-    for name, shape in {'wq_a.weight':(4,8), 'wq_b.weight':(2*128,4), 'wkv.weight':(128,8),
-                        'wo_a.weight':(2*3,128), 'wo_b.weight':(8,2*3)}.items():
+    for name, shape in {'wq_a.weight':(4,dim), 'wq_b.weight':(2*128,4), 'wkv.weight':(128,dim),
+                        'wo_a.weight':(2*3,128), 'wo_b.weight':(dim,2*3)}.items():
         weights[name] = (torch.randn(shape, generator=rng)*.1).to(dtype)
     for name, width in (('q_norm.weight',4), ('kv_norm.weight',128), ('attn_sink',2)):
         weights[name] = torch.randn(width, generator=rng)
     def compressor(prefix, width):
         channels = width*(2 if ratio == 4 else 1)
-        for suffix, shape in (('wkv.weight',(channels,8)), ('wgate.weight',(channels,8)),
+        for suffix, shape in (('wkv.weight',(channels,dim)), ('wgate.weight',(channels,dim)),
                               ('ape',(ratio,channels)), ('norm.weight',(width,))):
             weights[prefix+'.'+suffix] = torch.randn(shape, generator=rng)*.1
     if ratio:
@@ -26,7 +26,7 @@ def fixture(ratio=0, length=13, dtype=torch.float32):
     if ratio == 4:
         compressor('indexer.compressor',128)
         weights['indexer.wq_b.weight'] = (torch.randn(2*128,4,generator=rng)*.1).to(dtype)
-        weights['indexer.weights_proj.weight'] = (torch.randn(2,8,generator=rng)*.1).to(dtype)
+        weights['indexer.weights_proj.weight'] = (torch.randn(2,dim,generator=rng)*.1).to(dtype)
     return hidden, weights, frequencies(64, base=160000 if ratio else 10000)
 
 
