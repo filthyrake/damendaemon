@@ -16,13 +16,12 @@ from .packed_tiles import validate_layout
 from .packed_projection import projection_plan
 
 
-def _layout(model,start,end):
-    c=model.config;mode=model.quantization
+def cpu_hybrid_shapes(c,start,end):
+    """Validate CPU reference geometry and return its tensor shapes, without storage."""
     integers=('hidden_size','vocab_size','num_hidden_layers','num_attention_heads','num_key_value_heads','head_dim',
               'linear_num_key_heads','linear_num_value_heads','linear_key_head_dim','linear_value_head_dim',
               'linear_conv_kernel_dim','intermediate_size','rotary_dim','max_position_embeddings')
-    if (not isinstance(c,dict) or c.get('model_type')!='qwen3_5_text' or mode not in ('none','q4_0','q8_0')
-            or getattr(model,'vision_weights',None) is not None or not isinstance(model.weights,dict) or not isinstance(model.scales,dict)
+    if (not isinstance(c,dict) or c.get('model_type')!='qwen3_5_text'
             or any(type(c.get(k)) is not int or not 1<=c[k]<=2**21 for k in integers)
             or c['num_hidden_layers']>256 or c['num_attention_heads']%c['num_key_value_heads']
             or c['linear_num_value_heads']%c['linear_num_key_heads'] or c['rotary_dim']%2 or c['rotary_dim']>c['head_dim']
@@ -30,9 +29,8 @@ def _layout(model,start,end):
             or any(k not in ('full_attention','linear_attention') for k in c['layer_types'])
             or type(c.get('rms_norm_eps')) not in (int,float) or not 0<c['rms_norm_eps']<=1
             or type(c.get('rope_theta')) not in (int,float) or not 0<c['rope_theta']<float('inf')
-            or any(not isinstance(n,str) for n in model.weights) or set(model.scales)-set(model.weights)):
+            or type(start) is not int or type(end) is not int or not 0<=start<end<=c['num_hidden_layers']):
         raise ValueError('invalid prepared CPU hybrid configuration/storage')
-    names=stage_weight_names(model.weights,c['num_hidden_layers'],start,end)
     d=c['hidden_size'];h=c['num_attention_heads'];kh=c['num_key_value_heads'];hd=c['head_dim']
     lk=c['linear_num_key_heads'];lv=c['linear_num_value_heads'];dk=c['linear_key_head_dim'];dv=c['linear_value_head_dim']
     expected={}
@@ -47,6 +45,17 @@ def _layout(model,start,end):
             shapes={'qkv':(cw,d),'z':(lv*dv,d),'b':(lv,d),'a':(lv,d),'out':(d,lv*dv),
                     'conv':(cw,1,c['linear_conv_kernel_dim']),'dt':(lv,),'A':(lv,),'gated_norm':(dv,)}
         expected.update({f'{i}.{n}':shape for n,shape in shapes.items()})
+    return expected
+
+
+def _layout(model,start,end):
+    c=model.config;mode=model.quantization
+    expected=cpu_hybrid_shapes(c,start,end)
+    if (mode not in ('none','q4_0','q8_0') or getattr(model,'vision_weights',None) is not None
+            or not isinstance(model.weights,dict) or not isinstance(model.scales,dict)
+            or any(not isinstance(n,str) for n in model.weights) or set(model.scales)-set(model.weights)):
+        raise ValueError('invalid prepared CPU hybrid configuration/storage')
+    names=stage_weight_names(model.weights,c['num_hidden_layers'],start,end)
     if set(names)!=set(expected):raise ValueError('CPU hybrid stage tensor inventory mismatch')
     selected={n:model.weights[n] for n in names};scales={n:model.scales[n] for n in names if n in model.scales}
     format={'q4_0':'q4_0_f16','q8_0':'q8_0_f16'}.get(mode);bindings={}
