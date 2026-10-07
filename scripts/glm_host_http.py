@@ -1,21 +1,26 @@
-"""Owned loopback HTTP lifetime for an explicit native GLM host topology."""
+"""Owned loopback HTTP lifetime for an explicit native GLM/Flash host topology."""
 import signal
 import threading
 import time
-from dllm.glm_host_generation import HostGlmGenerator
-from dllm.glm_host_serving import HostGlmReferenceRuntime
 from dllm.reference_serving import handler_for_reference
 from dllm.runtime import BusyError
 from dllm.server import BoundedHTTPServer
 from scripts.run_cpu_host_reference import emit
 
 
-def serve(worker,text,args,auth):
-    runner=HostGlmGenerator(worker,text,chunk_size=args.prefill_chunk)
-    if args.queue_size:
-        from dllm.queued_glm_host_serving import QueuedHostGlmReferenceRuntime
-        runtime=QueuedHostGlmReferenceRuntime(runner,args.alias,queue_size=args.queue_size,queue_timeout=args.queue_timeout)
-    else:runtime=HostGlmReferenceRuntime(runner,args.alias)
+def serve(worker,text,args,auth,*,family='glm'):
+    if family=='flash':
+        from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
+        from dllm.glm_flash_host_serving import HostFlashReferenceRuntime as Runtime
+        from dllm.queued_glm_flash_host_serving import QueuedHostFlashReferenceRuntime as QueuedRuntime
+    elif family=='glm':
+        from dllm.glm_host_generation import HostGlmGenerator as Runner
+        from dllm.glm_host_serving import HostGlmReferenceRuntime as Runtime
+        from dllm.queued_glm_host_serving import QueuedHostGlmReferenceRuntime as QueuedRuntime
+    else:raise ValueError('unsupported native host HTTP family')
+    runner=Runner(worker,text,chunk_size=args.prefill_chunk)
+    runtime=(QueuedRuntime(runner,args.alias,queue_size=args.queue_size,queue_timeout=args.queue_timeout)
+             if args.queue_size else Runtime(runner,args.alias))
     server=None;previous={};primary=None;stopping=threading.Event()
     graceful=False
     def interrupt(*_):stopping.set();runtime.stopping.set()
@@ -33,13 +38,13 @@ def serve(worker,text,args,auth):
                 stopping.set();runtime.stopping.set();break
             if not runtime.is_healthy():
                 if stopping.is_set():break
-                raise RuntimeError('native GLM host HTTP epoch ended')
+                raise RuntimeError('native host HTTP epoch ended')
             server.handle_request()
             if (not stopping.is_set() and time.monotonic()>=next_ping
                     and worker.lock.acquire(blocking=False)):
                 try:
                     if stopping.is_set():continue
-                    if not runtime.is_healthy():raise RuntimeError('native GLM host HTTP epoch ended')
+                    if not runtime.is_healthy():raise RuntimeError('native host HTTP epoch ended')
                     # PING also keeps backpressured streams alive. It leaves
                     # slot state unchanged and shares the worker
                     # command lock. A racing request waits there, not a false
@@ -70,6 +75,6 @@ def serve(worker,text,args,auth):
         except BaseException as error:failures.append(error)
         for sig,handler in previous.items():signal.signal(sig,handler)
         if failures:
-            if primary is not None:primary.add_note('native GLM host HTTP cleanup failed; retain owners for retry')
+            if primary is not None:primary.add_note('native host HTTP cleanup failed; retain owners for retry')
             else:raise failures[0]
     emit(dict(event='stopped',scope='cpu_reference',execution='cpu_host_topology',graceful_stop=True))

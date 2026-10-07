@@ -121,9 +121,9 @@ def run(args,*,family='qwen'):
             while not worker.closed:worker.step()
             emit(dict(event='stopped',stage=args.index))
         elif args.role=='serve':
-            if family=='glm':
+            if family in ('glm','flash'):
                 from scripts.glm_host_http import serve
-                serve(worker,text,args,auth)
+                serve(worker,text,args,auth,family=family)
             else:serve_worker_pair(worker,text,args,auth,pair_type=HostServingTopology)
         elif family in ('glm','flash') and args.native_chat:
             if family=='flash':

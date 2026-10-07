@@ -168,7 +168,7 @@ Ephemeral loopback TLS tests compare packed two/three-stage logits and tokens
 with independent whole-model controls; they cover ragged/chunked prefill,
 reordered decode, release/reuse, STOP, identity/frame rejection, peer failures,
 range-local loads, source mutation and retryable construction cleanup. These prepared APIs do not qualify actual remote hardware, image-host execution
-or speed. Native command admission is described below; HTTP remains separate.
+or speed. Native command and explicit HTTP admission are described below.
 
 
 ## Native host text and tool command
@@ -187,8 +187,8 @@ Supply `--native-chat` on every worker and coordinator, an ordered `--plan`,
 coordinator `--peers`, pinned TLS material and the existing bounded resource
 options. `complete` accepts one of `--prompt`, `--messages`, or
 `--batch-messages`; tools, reasoning options and ragged batches use the same
-pinned native format as the local Flash reference. Raw tokens and `serve` are
-rejected by this command at this gate. The coordinator publishes final events
+pinned native format as the local Flash reference. Raw tokens are rejected. The `serve` role uses the explicit native host HTTP
+adapter described below. The coordinator publishes final events
 only after every peer acknowledges STOP. Optional `--verify-model-id` hashes the
 bounded snapshot before connecting, then rechecks receipts after stage loading.
 
@@ -197,3 +197,30 @@ CPU controls for native text/ragged/tool requests. Controlled tool tokens after
 real stage math cover parser behavior, not trained tool quality. Invalid request
 preflight, identity/family/media policy, failed STOP, cancellation and retained
 cleanup are covered. Existing GLM and Qwen command behavior remains unchanged.
+
+
+## Native host HTTP and serialized admission
+
+`HostFlashReferenceRuntime` and `QueuedHostFlashReferenceRuntime` explicitly own
+Flash native host runners. GLM/Flash runtimes share terminal-epoch and queue
+lifetime mechanics through exact family bindings; the generic local runtime
+still rejects host runners. Status exposes the Flash family, stage ranges,
+source/topology IDs, verification mode and terminal state. This is text/tool HTTP
+only; inline images remain limited to the local image pipeline.
+
+Use `scripts.run_glm_flash_host_topology serve ... --native-chat` with the same
+prepared worker plan, peer pins and resource bounds. Existing reference API and
+admin authentication apply to native JSON/SSE, status and drain. Admission is
+immediate by default; `--queue-size` opts into a bounded serialized queue with
+input snapshots, client admission turns and deadlines. `--stop-after-drain`
+requires a queue and acknowledges STOP only after outstanding work finishes.
+PING uses the worker command lock and preserves occupied slots during output
+backpressure. Idle signal shutdown can stop gracefully; active cancellation or
+peer/parser failure discards the epoch and never reports successful completion.
+
+Tests cover authenticated local TLS/HTTP and real subprocess JSON/SSE, native
+tools, simultaneous queued requests, overflow/expiry, drain, signals, peer loss,
+backpressure and retryable cleanup. Long queue-lifetime fixtures zero the
+untrained vocabulary head before loading, keeping real packed stage execution
+while emitting ordinary tokens. Independent numerical/native-format tests remain
+separate. No GPU, trained-quality, remote-network or service-capacity claim follows.

@@ -20,6 +20,17 @@ from tests.test_glm_flash_reference_loader import fixture,floating_control
 from tests.test_glm_tools import TOOLS,CALLS
 
 
+def zero_fixture_head(path,values=None):
+    """Keep packed stage math while fixing untrained long-output protocol tokens."""
+    import struct
+    mapping=json.loads((path/'model.safetensors.index.json').read_text())['weight_map']
+    shard=path/mapping['lm_head.weight'];raw=bytearray(shard.read_bytes())
+    length=struct.unpack('<Q',raw[:8])[0];header=json.loads(raw[8:8+length])
+    start,end=header['lm_head.weight']['data_offsets']
+    raw[8+length+start:8+length+end]=bytes(end-start);shard.write_bytes(raw)
+    if values is not None:values['lm_head.weight'].zero_()
+
+
 class FlashHostGenerationTests(unittest.TestCase):
     def links(self,plan):
         fixture_tls=test_host_tls.HostTlsTests();self.addCleanup(fixture_tls.doCleanups)
@@ -31,7 +42,7 @@ class FlashHostGenerationTests(unittest.TestCase):
     together=build_tests.CpuHostPipelineBuildTests.together
     pump=worker_tests.HostPipelineWorkerTests.pump
 
-    def session(self,media=False,**policy):
+    def session(self,media=False,zero_head=False,**policy):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup);path=Path(temp.name)
         base=text_fixture(path)
         if media:
@@ -39,6 +50,7 @@ class FlashHostGenerationTests(unittest.TestCase):
             base.tokenizer.add_special_tokens(list(MEDIA));base.tokenizer.save(str(path/'tokenizer.json'))
         text=FlashToolText(path,vocab_size=base.vocab_size)
         config,_,values=fixture(path,vocab_size=text.vocab_size)
+        if zero_head:zero_fixture_head(path,values)
         if media:config['image_token_id']=text.tokenizer.token_to_id('<|image|>')
         config['text_config'].update(eos_token_id=sorted(text.eos),pad_token_id=text.tokenizer.token_to_id(EOS),bos_token_id=None)
         (path/'config.json').write_text(json.dumps(config))

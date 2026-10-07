@@ -85,8 +85,8 @@ def prepare(args,*,family='qwen'):
     if family in ('glm','flash') and (args.role not in ('worker','complete','serve') or args.chat_template is not None
             or args.quantization!='fp8_reference' or args.loader_workspace_mib!=64):
         raise ValueError('reference topology requires fp8_reference and no template/loader override')
-    if family=='flash' and (args.role=='serve' or not args.native_chat):
-        raise ValueError('Flash host command requires native chat; serve is not yet admitted')
+    if family=='flash' and not args.native_chat:
+        raise ValueError('Flash host command requires native chat')
     native=False
     if family in ('glm','flash'):
         from scripts.glm_host_native import validate_mode
