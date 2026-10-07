@@ -124,3 +124,30 @@ cleanup note; retain the owner for backend cleanup. Pair ownership is permanent
 for that lifetime: after shutdown, create a new prepared session rather than
 reusing the same pair under a different runtime. These guards enforce ownership;
 they do not make direct caller submissions to a transferred pair safe.
+
+### Explicit text chat
+
+Supply `--chat-template /path/to/template.jinja` to both CPU peer commands to
+also enable `/v1/chat/completions`. The template is trusted local operator
+configuration, at most 128 KiB. Its content and tokenizer-config BOS/EOS strings
+are bound into peer session identity; missing or different templates reject
+agreement. The template file is read once before connection. No template is
+implicitly downloaded, inferred or executed as checkpoint Python code.
+
+The adapter passes text `system`, `user` and `assistant` messages,
+`add_generation_prompt=True`, `tools=None`, BOS/EOS metadata and, when supplied,
+boolean `chat_template_kwargs.enable_thinking`. It tokenizes the rendered prompt
+without automatically adding special tokens, matching explicit chat-template
+semantics. Maximums are 256 messages, 1 MiB aggregate message text and 1 MiB
+rendered UTF-8. Existing mapped-vocabulary/media exclusions, context and output
+limits still apply. A streaming renderer bounds retained output; the sandbox
+is not a hard CPU/memory limit for a malicious operator-supplied template.
+
+HTTP JSON and SSE use the same owned queue, chunking, cancellation, cleanup and
+usage path as raw completion. Readiness and status disclose `text_chat`. Without
+an explicit template, raw completion remains available and chat is rejected.
+Tool declarations/history, separate reasoning history, images/video, structured
+output and nondefault sampling remain unsupported. A thinking option affects
+prompt formatting; it does not promise separated reasoning output or official
+model quality. Actual local CPU peer tests compare chat output/usage against
+independently constructed raw tokens; no GPU or performance claim is made.

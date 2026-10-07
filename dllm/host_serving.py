@@ -38,7 +38,10 @@ class HostServingPair:
         self.worker._tokens(tokens)
         return tokens
 
-    def _chat(self,*args,**kwargs):raise ValueError('CPU host serving accepts raw completions only')
+    def _chat(self,messages,**options):
+        if not callable(getattr(self.text,'chat_tokens',None)):
+            raise ValueError('CPU host text chat requires an explicit local template')
+        return self._tokens(self.text.chat_tokens(messages,**options))
 
     def prefill(self,tokens,slot):
         for start in range(0,len(tokens),self.chunk_size):
@@ -62,7 +65,7 @@ class HostServingPair:
 
 
 class HostDistributedRuntime(DistributedRuntime):
-    """Raw HTTP serving over CPU peers; all performance metadata stays explicit."""
+    """HTTP serving over CPU peers; all performance metadata stays explicit."""
     source_tier='cpu_reference'
     kernel_backend='cpu-host-reference'
 
@@ -79,7 +82,7 @@ class HostDistributedRuntime(DistributedRuntime):
         if action!='status' or options:raise ValueError('CPU host session model management is unsupported')
         stage=self.pair.worker.stage
         return dict(device='cpu',scope='cpu_host_reference',official_model_qualified=False,
-            context=self.pair.model.max_context,
+            context=self.pair.model.max_context,text_chat=hasattr(self.pair.text,'chat_identity'),
             models=[dict(id=self.alias,residency='cpu',quantization=self.pair.model.quantization,
                          session_identity=self.pair.identity.hex())],
             distributed=True,stage_layers=[[0,stage.layer_end],[stage.layer_end,stage.c['num_hidden_layers']]],

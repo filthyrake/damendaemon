@@ -135,6 +135,16 @@ class CpuHostCommandTests(unittest.TestCase):
             self.assertEqual(caught.exception.code,2)
         worker.handshake.assert_not_called();worker.close.assert_called_once()
 
+    def test_chat_template_identity_mismatch_rejects_peer(self):
+        template=self.path/'chat.jinja';template.write_text('hello')
+        worker,port=self.start_worker(extra=['--chat-template',str(template)])
+        template.write_text('world')
+        complete=subprocess.run([sys.executable,'-m','scripts.run_cpu_host_reference',*self.args('complete',port),
+            '--chat-template',str(template)],capture_output=True,text=True,timeout=15,env=self.environment)
+        _,error=worker.communicate(timeout=8)
+        self.assertEqual(complete.returncode,2,complete.stderr);self.assertEqual(worker.returncode,2,error)
+        self.assertNotIn('finish_reason',complete.stdout)
+
     def test_worker_accept_timeout_is_bounded(self):
         worker,_=self.start_worker(extra=['--timeout','0.2'])
         output,error=worker.communicate(timeout=5)

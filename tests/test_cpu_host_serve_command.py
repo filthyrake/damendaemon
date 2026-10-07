@@ -75,6 +75,35 @@ class CpuHostServeCommandTests(unittest.TestCase):
         _,error=service.communicate(timeout=6);_,peer_error=worker.communicate(timeout=6)
         self.assertEqual(service.returncode,0,error);self.assertEqual(worker.returncode,0,peer_error)
 
+    def test_text_chat_and_sse_match_independent_raw_tokens(self):
+        template=self.fixture.path/'chat.jinja'
+        template.write_text("{% for m in messages %}{{ m.content }} {% endfor %}{% if enable_thinking %}w3{% endif %}")
+        extra=['--chat-template',str(template)]
+        service,worker,ready,_=self.start_service(idle='2',extra=extra,worker_extra=extra)
+        self.assertTrue(ready['text_chat'])
+        def request(route,body):
+            return urlopen(Request(ready['url']+route,json.dumps(body).encode(),{'Content-Type':'application/json'}),timeout=5)
+        body=dict(model='model',messages=[dict(role='user',content='hello world')],max_tokens=3,
+                  chat_template_kwargs=dict(enable_thinking=True))
+        with request('/v1/chat/completions',body) as response:chat=json.load(response)
+        with request('/v1/completions',dict(model='model',prompt=[1,2,3],max_tokens=3)) as response:raw=json.load(response)
+        self.assertEqual(chat['choices'][0]['message']['content'],raw['choices'][0]['text'])
+        self.assertEqual(chat['usage'],raw['usage'])
+        with request('/v1/chat/completions',dict(body,stream=True,stream_options=dict(include_usage=True))) as response:
+            wire=response.read().decode()
+        self.assertIn('data: [DONE]',wire)
+        events=[json.loads(line[6:]) for line in wire.splitlines() if line.startswith('data: ') and line!='data: [DONE]']
+        content=''.join(choice.get('delta',{}).get('content','') for event in events for choice in event['choices'])
+        self.assertEqual(content,raw['choices'][0]['text']);self.assertEqual(events[-1]['usage'],raw['usage'])
+        for messages in ([dict(role='user',content=[dict(type='text',text='hello')])],
+                         [dict(role='assistant',content='hello',reasoning_content='world')]):
+            with self.assertRaises(HTTPError) as error:request('/v1/chat/completions',dict(body,messages=messages))
+            self.assertEqual(error.exception.code,400)
+        with request('/v1/completions',dict(model='model',prompt=[1,2,3],max_tokens=3)) as response:
+            self.assertEqual(json.load(response)['choices'][0]['text'],raw['choices'][0]['text'])
+        _,error=service.communicate(timeout=6);_,peer_error=worker.communicate(timeout=6)
+        self.assertEqual(service.returncode,0,error);self.assertEqual(worker.returncode,0,peer_error)
+
     def test_sigterm_closes_service_and_peer(self):
         service,worker,ready,_=self.start_service(idle='0')
         service.terminate();_,error=service.communicate(timeout=6)

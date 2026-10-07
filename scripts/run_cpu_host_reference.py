@@ -1,4 +1,4 @@
-"""Explicit authenticated two-process CPU reference; raw completions only."""
+"""Explicit authenticated two-process CPU reference with optional explicit text chat."""
 import argparse
 from contextlib import closing
 import hashlib
@@ -28,6 +28,7 @@ def parser_for_command():
     parser.add_argument('--server-name',help='TLS server certificate hostname; required for complete')
     for name in ('ca','cert','key','peer-cert'):
         parser.add_argument('--'+name,required=True,help='local TLS file')
+    parser.add_argument('--chat-template',help='trusted local text template; both peers must supply matching content')
     parser.add_argument('--model-id',required=True,help='64 hex digits identifying the snapshot; operator asserted unless --verify-model-id')
     parser.add_argument('--verify-model-id',action='store_true',help='hash contained local snapshot before connecting and check it stays unchanged through loading')
     parser.add_argument('--identity-max-mib',type=_positive,default=2048)
@@ -102,7 +103,10 @@ def prepare(args):
     c=hybrid_config(config);cpu_hybrid_shapes(c,0,c['num_hidden_layers'])
     if not 1<=args.split<c['num_hidden_layers'] or args.context>c['max_position_embeddings']:
         raise ValueError('invalid CPU host split/context')
-    text=CpuReferenceText(args.snapshot,config)
+    if args.chat_template is None:text=CpuReferenceText(args.snapshot,config)
+    else:
+        from dllm.cpu_reference_chat import CpuReferenceChat
+        text=CpuReferenceChat(args.snapshot,config,args.chat_template)
     inputs=limits=None
     if args.role=='complete':
         inputs,limits=completion_inputs(text,prompt=args.prompt,tokens_file=args.tokens,batch_file=args.batch_inputs,
@@ -116,6 +120,7 @@ def prepare(args):
     digest=hashlib.sha256(bytes.fromhex(args.model_id))
     digest.update(hashlib.sha256(text.tokenizer.to_str().encode()).digest())
     digest.update(json.dumps(sorted(text.eos_ids)).encode())
+    if hasattr(text,'chat_identity'):digest.update(b'cpu-chat-template-v1'+text.chat_identity)
     if verified is not None:
         verified.verify_unchanged()
         digest.update(b'verified-cpu-source-v1')
@@ -159,7 +164,7 @@ def run(args):
         if verified is not None:verified.verify_unchanged()
         worker.handshake()
         if args.role!='serve':
-            emit(dict(scope='cpu_host_reference',event='ready',role=args.role,quantization=args.quantization,official_model_qualified=False,model_identity_verified=args.verify_model_id,source_model_id=args.model_id.lower()))
+            emit(dict(scope='cpu_host_reference',event='ready',role=args.role,quantization=args.quantization,official_model_qualified=False,model_identity_verified=args.verify_model_id,source_model_id=args.model_id.lower(),text_chat=args.chat_template is not None))
         if rank:
             while not worker.closed:worker.step()
             emit(dict(event='stopped'))
@@ -211,7 +216,7 @@ def serve_worker_pair(worker,text,args,auth):
         previous=signal.signal(signal.SIGTERM,interrupt)
         emit(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',
             scope='cpu_host_reference',official_model_qualified=False,model=args.alias,
-            model_identity_verified=args.verify_model_id,source_model_id=args.model_id.lower()))
+            model_identity_verified=args.verify_model_id,source_model_id=args.model_id.lower(),text_chat=args.chat_template is not None))
         try:runtime.run(idle_timeout=args.idle_timeout,heartbeat_interval=args.heartbeat_interval)
         except KeyboardInterrupt:interrupt()
         except (OSError,RuntimeError,EOFError,ValueError):
