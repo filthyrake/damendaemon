@@ -35,9 +35,9 @@ def validate_mode(args):
     if args.role=='worker' and request_options:raise ValueError('GLM worker cannot accept native request options')
     if args.role=='serve':
         if not native or request_options:raise ValueError('GLM serve requires native chat and no request options')
-        if (args.queue_size!=0 or args.queue_timeout!=120 or args.client_decode_turns or args.client_prefill_turns
-                or args.interleaved_prefill or args.stop_after_drain or args.idle_timeout!=0):
-            raise ValueError('GLM host HTTP has no queue, fairness, drain or idle-stop policy yet')
+        if (not 0<=args.queue_size<=64 or (args.queue_size==0 and (args.queue_timeout!=120 or args.stop_after_drain))
+                or args.client_decode_turns or args.client_prefill_turns or args.interleaved_prefill or args.idle_timeout!=0):
+            raise ValueError('GLM host HTTP needs an explicit queue for drain; decode/prefill fairness and idle-stop are unsupported')
     return native
 
 

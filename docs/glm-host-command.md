@@ -68,10 +68,19 @@ in the environment. HTTP binds only to loopback. Readiness and model status
 identify CPU reference scope, topology and source-verification state.
 
 This path owns one HTTP generation at a time. Healthy JSON/SSE native chat/tool
-requests release slots for reuse. Queue/fairness/drain and idle-stop options are
-rejected in this gate; there is no silent queue. `--heartbeat-interval` must be
-positive and below the bounded transport timeout. Idle PING commands share the
-worker command lock and leave slot state unchanged; they do not take the HTTP
+requests release slots for reuse. `--queue-size 1..64` explicitly adds bounded
+serialized admission; `--queue-timeout` bounds waiting time (up to 300 seconds).
+The default queue size is zero and concurrent requests receive busy responses.
+Queued admission preserves per-client turns and bounded event buffers; it does
+not batch decode or promise throughput. Decode/prefill fairness flags and idle
+stop remain unsupported. An admin can drain a queued service through
+`/v1/scheduler/drain`; `--stop-after-drain` waits for all admitted work, then
+acknowledges STOP across the topology. Queue expiry or cancellation before
+dispatch preserves a healthy epoch; active abandonment or failure retires it
+and fails remaining waiters. `--heartbeat-interval` must be
+positive and below the bounded transport timeout. PING commands between model commands share the
+worker command lock and leave slot state unchanged, including while output is
+backpressured; they do not take the HTTP
 admission lock or cause false busy responses.
 
 SIGTERM or SIGINT stops admission. When idle, the service sends STOP to every

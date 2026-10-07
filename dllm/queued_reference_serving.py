@@ -108,6 +108,9 @@ class QueuedReferenceRuntime(ReferenceRuntime):
                 self._publish(request,BusyError('CPU reference queue is closing'),terminal=True)
                 self.accepted.pop(id(request),None)
 
+    def _generate_owned(self,request):
+        return ReferenceRuntime.generate(self,self.alias,request.messages,request.maximum,**request.options)
+
     def _work(self):
         try:
             while not self.stopping.is_set():
@@ -119,7 +122,7 @@ class QueuedReferenceRuntime(ReferenceRuntime):
                         self._publish(request,BusyError('CPU reference request queue deadline exceeded'),terminal=True)
                         continue
                     request.started.set();started=time.monotonic()
-                    with cancellation_scope(request.cancelled.is_set),closing(ReferenceRuntime.generate(self,self.alias,request.messages,request.maximum,**request.options)) as generation:
+                    with cancellation_scope(request.cancelled.is_set),closing(self._generate_owned(request)) as generation:
                         for event in generation:
                             if request.cancelled.is_set() or self.stopping.is_set():break
                             final='finish_reason' in event

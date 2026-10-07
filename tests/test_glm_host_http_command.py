@@ -66,7 +66,7 @@ class GlmHostHttpCommandTests(unittest.TestCase):
     def test_bad_serving_options_fail_before_network(self):
         self.peers.write_text(json.dumps([dict(stage=i,address='127.0.0.1',port=1234+i,
             server_name='localhost',peer_cert=str(self.cert/'server.pem')) for i in (1,2)]))
-        for extra in (['--queue-size','1'],['--queue-timeout','1'],['--idle-timeout','1'],['--stop-after-drain'],
+        for extra in (['--queue-size','65'],['--queue-timeout','1'],['--idle-timeout','1'],['--stop-after-drain'],
                       ['--client-decode-turns'],['--interleaved-prefill'],['--tools','unused'],['--prompt','Hi'],
                       ['--heartbeat-interval','6'],['--http-port','65536']):
             with self.subTest(extra=extra),patch.object(shared,'connect_peer',side_effect=AssertionError('network')),redirect_stderr(io.StringIO()):
