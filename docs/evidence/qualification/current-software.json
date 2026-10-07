@@ -25,6 +25,29 @@
       "comparators": []
     },
     {
+      "id": "flash-text-tools-batch-cpu-foundation",
+      "issue": "https://github.com/filthyrake/dllm/issues/57",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": "zai-org/GLM-5.3-Flash",
+        "model_revision": "eb9eb208eb0d988989d07a6a12d0fdeb5f52574a",
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "FP32 CPU reference; packed text projections",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "71fa4e33b6d8e5f00e1959f61c10ebce1bfeec12",
+      "reason": "Pinned tool prompts/codec, owned single and equal-length batch generation pass CPU fixtures; official checkpoint semantics and hardware remain unqualified.",
+      "comparators": []
+    },
+    {
       "id": "deepseek-v4-flash-cpu-foundation",
       "issue": "https://github.com/filthyrake/dllm/issues/58",
       "availability": "implemented",
@@ -43,8 +66,8 @@
         "prompts_sha256": null,
         "eos_policy": null
       },
-      "implementation_commit": "d8b54e2c39ba12b7c990d452abf7829f6aabfa34",
-      "reason": "Packed snapshot, ordinary/tool prompting and owned generation fixtures pass; official model/hardware qualification remains open.",
+      "implementation_commit": "e05275ee8c2e555d9b9e855fa4d53e2ee4ec830f",
+      "reason": "Packed snapshots, overflow rejection, ordinary/tool prompting and owned equal-length batch generation pass CPU fixtures; official model/hardware qualification remains open.",
       "comparators": []
     },
     {
