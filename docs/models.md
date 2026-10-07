@@ -454,6 +454,21 @@ another prefill. Tests cover scripted failure paths and actual synthetic packed
 snapshot generation against fresh-prefix logits. This remains a CPU reference,
 with no official-model quality, speed or HTTP support claim.
 
+For a deliberately small local reference snapshot with tokenizer files:
+
+```sh
+python -m scripts.run_deepseek_reference SNAPSHOT --prompt 'Hello' \
+  --max-new-tokens 16 --context 128 --weight-mib 256 --cache-mib 64
+```
+
+This CPU-only command emits JSON lines, starting with its unqualified reference
+scope. It checks prompt capacity and declared tokenizer IDs before loading
+weights, applies explicit weight/cache/workspace budgets, and closes generation
+on broken output pipes. Use `--messages` for a local ordinary-text conversation
+file and `--thinking` for the pinned thinking mode. Default weight admission is
+intentionally far below the official model size; this is a development entry
+point, not a benchmark or automatic full-model deployment.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with

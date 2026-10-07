@@ -66,6 +66,21 @@ class TokenStream:
             raise
 
 
+def validate_text_config(config,text,max_context):
+    """Check declared tokenizer IDs/context before weight loading or prefill."""
+    if 'eos_token_id' in config:
+        eos=config['eos_token_id']
+        eos=eos if isinstance(eos,list) else [eos]
+        if any(type(value) is not int for value in eos) or set(eos) != text.eos:
+            raise ValueError('model and tokenizer EOS IDs disagree')
+    if 'bos_token_id' in config and (type(config['bos_token_id']) is not int
+            or config['bos_token_id'] != text.tokenizer.token_to_id(BOS)):
+        raise ValueError('model and tokenizer BOS IDs disagree')
+    if 'max_position_embeddings' in config and (type(config['max_position_embeddings']) is not int
+            or max_context > config['max_position_embeddings']):
+        raise ValueError('reference context exceeds model position limit')
+
+
 class ReferenceGenerator:
     """Greedy CPU reference generation with retryable failed-cleanup ownership.
 
@@ -80,18 +95,7 @@ class ReferenceGenerator:
             raise ValueError('reference generator needs matching CPU model and ByteLevel tokenizer')
         if type(max_context) is not int or not 1 <= max_context <= 2**20 or type(max_cache_bytes) is not int or max_cache_bytes < 1:
             raise ValueError('invalid reference context/cache bounds')
-        config=getattr(model,'config',{})
-        if 'eos_token_id' in config:
-            eos=config['eos_token_id']
-            eos=eos if isinstance(eos,list) else [eos]
-            if any(type(value) is not int for value in eos) or set(eos) != text.eos:
-                raise ValueError('model and tokenizer EOS IDs disagree')
-        if 'bos_token_id' in config and (type(config['bos_token_id']) is not int
-                or config['bos_token_id'] != text.tokenizer.token_to_id(BOS)):
-            raise ValueError('model and tokenizer BOS IDs disagree')
-        if 'max_position_embeddings' in config and (type(config['max_position_embeddings']) is not int
-                or max_context > config['max_position_embeddings']):
-            raise ValueError('reference context exceeds model position limit')
+        validate_text_config(getattr(model,'config',{}),text,max_context)
         self.model,self.text=model,text
         self.max_context,self.max_cache_bytes=max_context,max_cache_bytes
         self.failed_cleanups=[]
