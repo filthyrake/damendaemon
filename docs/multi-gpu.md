@@ -450,3 +450,10 @@ reports packed scales separately from weight storage. Failed stages and mixed
 quantization contracts cannot transfer to a coordinator; cancellation after
 execution begins poisons the pipeline without committing request cursors.
 This builder is not registered as a normal serving backend.
+
+The bounded `packed_checkpoint.read_packed_matrix` reader accepts explicit
+`q4_0_f16` (U8 nibbles) and `q8_0_f16` (signed I8) matrices with F16 row/32-column
+scales. It validates both headers and their joint raw byte budget before either
+payload, supports same-shard or cross-shard pairs, and preserves packed storage.
+Returned owned tensors feed `PackedProjection` or prepared CPU stages. This is
+selected-matrix loading; it does not import GGUF or admit an entire model.

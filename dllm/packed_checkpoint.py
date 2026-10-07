@@ -1,7 +1,7 @@
 """Bounded raw packed safetensors reads, including E8M0 byte storage.
 
-This is a selected-matrix CPU loader, not whole-model admission. Raw byte
-weights and E8M0 byte or explicit FP32 block scales are returned; no weight expansion or device allocation occurs.
+This is a selected-matrix CPU loader, not whole-model admission. Raw packed
+weights and E8M0 byte, FP32 block or canonical FP16 row scales are returned; no weight expansion or device allocation occurs.
 """
 from contextlib import ExitStack
 from pathlib import Path
@@ -40,10 +40,10 @@ def read_packed_matrix(weight_path, weight_name, scale_path, scale_name, *, form
     File descriptors close on success and every failure. Files must stay unchanged
     while reading; mutation detected by descriptor metadata is rejected.
     """
-    if format not in ('e2m1','e4m3fn','e4m3fn_f32') or type(max_bytes) is not int or max_bytes < 1:
+    if format not in ('e2m1','e4m3fn','e4m3fn_f32','q4_0_f16','q8_0_f16') or type(max_bytes) is not int or max_bytes < 1:
         raise ValueError('invalid packed checkpoint format or byte budget')
-    if format == 'e4m3fn_f32' and sys.byteorder != 'little':
-        raise ValueError('FP32 packed scales require a little-endian host')
+    if format in ('e4m3fn_f32','q4_0_f16','q8_0_f16') and sys.byteorder != 'little':
+        raise ValueError('floating packed scales require a little-endian host')
     if any(not isinstance(name,str) or not name or name == '__metadata__' for name in (weight_name,scale_name)):
         raise ValueError('packed checkpoint tensor names must be nonempty')
     with ExitStack() as stack:
@@ -60,26 +60,29 @@ def read_packed_matrix(weight_path, weight_name, scale_path, scale_name, *, form
                 raise ValueError('packed checkpoint tensor is missing')
             selected.append((reader,base,entries[name]))
         weight,scale=(item[2] for item in selected)
-        expected_dtype=('I8','U8') if format == 'e2m1' else ('F8_E4M3','F8_E4M3FN')
-        scale_dtypes=('F32',) if format == 'e4m3fn_f32' else ('F8_E8M0','F8_E8M0FNU')
+        expected_dtype={'e2m1':('I8','U8'),'e4m3fn':('F8_E4M3','F8_E4M3FN'),
+                        'e4m3fn_f32':('F8_E4M3','F8_E4M3FN'),'q4_0_f16':('U8',),'q8_0_f16':('I8',)}[format]
+        scale_dtypes=('F16',) if format in ('q4_0_f16','q8_0_f16') else ('F32',) if format=='e4m3fn_f32' else ('F8_E8M0','F8_E8M0FNU')
         if (weight['dtype'] not in expected_dtype or scale['dtype'] not in scale_dtypes
                 or len(weight['shape']) != 2 or min(weight['shape']) < 1):
             raise ValueError('packed checkpoint weight/scale storage does not match format')
         rows,columns=weight['shape']
-        if format == 'e2m1':columns*=2
-        scale_shape=[rows,columns//32] if format == 'e2m1' else [(rows+127)//128,(columns+127)//128]
-        if (format == 'e2m1' and columns%32) or scale['shape'] != scale_shape:
+        if format in ('e2m1','q4_0_f16'):columns*=2
+        grouped=format in ('e2m1','q4_0_f16','q8_0_f16')
+        scale_shape=[rows,columns//32] if grouped else [(rows+127)//128,(columns+127)//128]
+        if (grouped and columns%32) or scale['shape'] != scale_shape:
             raise ValueError('packed checkpoint scale geometry does not match weight')
         needed=sum(entry['data_offsets'][1]-entry['data_offsets'][0] for _,_,entry in selected)
         if needed > max_bytes:
             raise ValueError('packed checkpoint pair exceeds raw byte budget')
         values=[]
         for index,(reader,base,entry) in enumerate(selected):
-            if index == 1 and format == 'e4m3fn_f32':
-                size=entry['data_offsets'][1]-entry['data_offsets'][0]
-                raw=_payload(reader,base,entry|{'shape':[size]})
-                values.append(raw.view(torch.float32).reshape(entry['shape']))
-            else:values.append(_payload(reader,base,entry))
+            dtype=(torch.float32 if index==1 and format=='e4m3fn_f32' else
+                   torch.float16 if index==1 and format in ('q4_0_f16','q8_0_f16') else
+                   torch.int8 if index==0 and format=='q8_0_f16' else torch.uint8)
+            size=entry['data_offsets'][1]-entry['data_offsets'][0]
+            raw=_payload(reader,base,entry|{'shape':[size]})
+            values.append(raw.view(dtype).reshape(entry['shape']))
         if any(_stamp(reader) != stamp for reader,_,_,stamp in opened.values()):
             raise ValueError('packed checkpoint changed while reading values')
         return PackedMatrix(*values,format)
