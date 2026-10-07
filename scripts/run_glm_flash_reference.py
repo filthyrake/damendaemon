@@ -28,6 +28,7 @@ def main(argv=None):
     source.add_argument('--prompt',help='one ordinary user text turn')
     source.add_argument('--messages',help='local JSON file containing ordinary text messages')
     source.add_argument('--batch-messages',help='local JSON list of 1..16 equal-prompt-length text conversations')
+    parser.add_argument('--ragged-batch',action='store_true',help='ordinary batch only: sequential equal-length cohorts')
     parser.add_argument('--tools',help='local JSON function declarations for text or equal-length batches; never executed')
     parser.add_argument('--reasoning-effort',choices=('low','high','max'),default='max')
     parser.add_argument('--clear-history-reasoning',action='store_true')
@@ -40,6 +41,8 @@ def main(argv=None):
     parser.add_argument('--output-mib',type=_positive,default=64)
     args=parser.parse_args(argv)
     try:
+        if args.ragged_batch and (not args.batch_messages or args.tools is not None):
+            raise ValueError('ragged batches require ordinary batch messages without tools')
         tools=(json.loads(_read(args.tools,1024**2),object_pairs_hook=_unique_fields) if args.tools else None)
         if args.tools and tools is None:raise ValueError('tools file must contain function declarations')
         config=json.loads(_read(Path(args.snapshot)/'config.json',1024**2),object_pairs_hook=_unique_fields)
@@ -57,7 +60,7 @@ def main(argv=None):
         options=dict(reasoning_effort=args.reasoning_effort,clear_thinking=args.clear_history_reasoning)
         if args.batch_messages:
             tokenize=(lambda row,**opts:text.tool_chat_tokens(row,tools,**opts)) if args.tools else None
-            prepare_batch(text,messages,args.max_new_tokens,args.context,tokenize=tokenize,**options)
+            prepare_batch(text,messages,args.max_new_tokens,args.context,tokenize=tokenize,ragged=args.ragged_batch,**options)
         else:
             tokens=(text.tool_chat_tokens(messages,tools,**options) if args.tools else text.chat_tokens(messages,**options))
             if len(tokens)+args.max_new_tokens>args.context:
@@ -68,6 +71,7 @@ def main(argv=None):
         runner_type=FlashToolReferenceGenerator if args.tools else FlashBatchReferenceGenerator if args.batch_messages else FlashReferenceGenerator
         runner=runner_type(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
         print(json.dumps(dict(scope='cpu_reference',official_model_qualified=False,dtype='float32')),flush=True)
+        if args.batch_messages and args.tools is None:options['ragged']=args.ragged_batch
         primary=None
         try:
             if args.tools:

@@ -6,9 +6,10 @@ from .reference_batch import prepare_batch, generate_prepared_batch
 
 class BatchReferenceGenerator(ReferenceGenerator):
     def generate_batch(self, conversations, *, max_new_tokens=128,
-                       enable_thinking=False, drop_thinking=True, tools=None):
+                       enable_thinking=False, drop_thinking=True, tools=None, ragged=False):
+        if ragged and tools is not None:raise ValueError('ragged tool batches are unsupported')
         prompts, limits = prepare_batch(self.text, conversations, max_new_tokens, self.max_context,
-                                        enable_thinking=enable_thinking, drop_thinking=drop_thinking, tools=tools)
+                                        enable_thinking=enable_thinking, drop_thinking=drop_thinking, tools=tools, ragged=ragged)
         contract = prepare_tools(tools)[1] if tools is not None else {}
         streams = [TokenStream(self.text, enable_thinking=enable_thinking,
                                allow_tool_calls=tools is not None) for _ in prompts]

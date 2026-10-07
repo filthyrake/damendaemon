@@ -1,9 +1,11 @@
 """Owned equal-length CPU reference batches, independent of model family."""
+from contextlib import closing
 import torch
 
 
-def prepare_batch(text, conversations, max_new_tokens, max_context, *, tokenize=None, **options):
+def prepare_batch(text, conversations, max_new_tokens, max_context, *, tokenize=None, ragged=False, **options):
     """Validate the entire batch before any model payload/state work."""
+    if type(ragged) is not bool:raise ValueError('ragged batch option must be boolean')
     if not isinstance(conversations, list) or not 1 <= len(conversations) <= 16:
         raise ValueError('reference batch requires 1..16 conversations')
     limits = ([max_new_tokens] * len(conversations)
@@ -13,14 +15,15 @@ def prepare_batch(text, conversations, max_new_tokens, max_context, *, tokenize=
         raise ValueError('reference batch output limits require 1..4096 tokens per row')
     encode = text.chat_tokens if tokenize is None else tokenize
     prompts = [encode(messages, **options) for messages in conversations]
-    if not prompts[0] or any(len(row) != len(prompts[0]) for row in prompts):
+    if any(not row for row in prompts):raise ValueError('reference batch needs nonempty encoded prompts')
+    if not ragged and any(len(row) != len(prompts[0]) for row in prompts):
         raise ValueError('reference batch requires equal encoded prompt lengths')
-    if len(prompts[0]) + max(limits) > max_context:
+    if any(len(row)+limit>max_context for row,limit in zip(prompts,limits)):
         raise ValueError('reference batch prompt and requested output exceed context')
     return prompts, list(limits)
 
 
-def generate_prepared_batch(runner, prompts, limits, streams, *, mapped_vocab_size, prefill, decode, finalize=None):
+def _generate_equal_batch(runner, prompts, limits, streams, *, mapped_vocab_size, prefill, decode, finalize=None):
     """Internal lifecycle; family adapters validate prompts and construct parsers."""
     prompt_length = len(prompts[0])
     active = list(range(len(prompts)))
@@ -81,3 +84,24 @@ def generate_prepared_batch(runner, prompts, limits, streams, *, mapped_vocab_si
                 primary.add_note('reference batch cache cleanup failed; retained for retry before another prefill')
     # Report success only after every owned row's cache has been released.
     yield from sorted(finals, key=lambda event: event['row'])
+
+
+def generate_prepared_batch(runner, prompts, limits, streams, *, mapped_vocab_size, prefill, decode, finalize=None):
+    """Run stable equal-length cohorts sequentially, with one live cache budget.
+
+    Entire-batch validation belongs to prepare_batch. No success is published
+    until all cohorts release their caches, even if later execution fails.
+    """
+    cohorts={}
+    for row,prompt in enumerate(prompts):cohorts.setdefault(len(prompt),[]).append(row)
+    finals=[]
+    for rows in cohorts.values():
+        finish=None if finalize is None else lambda row,events,reason:finalize(rows[row],events,reason)
+        generation=_generate_equal_batch(runner,[prompts[row] for row in rows],[limits[row] for row in rows],
+            [streams[row] for row in rows],mapped_vocab_size=mapped_vocab_size,prefill=prefill,decode=decode,finalize=finish)
+        with closing(generation):
+            for event in generation:
+                event=dict(event,row=rows[event['row']])
+                if 'finish_reason' in event:finals.append(event)
+                else:yield event
+    yield from sorted(finals,key=lambda event:event['row'])

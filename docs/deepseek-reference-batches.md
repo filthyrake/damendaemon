@@ -69,3 +69,26 @@ success event is emitted on failure. This is final-value validation, not grammar
 constrained sampling: a model can still generate invalid arguments and fail the
 request. Tools are never executed. CPU tests do not establish official-model tool
 quality or hardware performance.
+
+
+## Optional unequal-length text batches
+
+Add `--ragged-batch` with `--batch-messages`, or pass `ragged=True` to the
+ordinary Python `generate_batch` method. The default still requires equal
+encoded prompt lengths. The opt-in validates every row's own prompt plus output
+limit before payload loading or prefill, then groups matching prompt lengths in
+first-appearance order. Original row numbers are preserved even when execution
+order differs from input order.
+
+Groups execute sequentially. Each group's cache is released before the next
+allocation, so the existing cache budget covers one live group; prompts are not
+padded and this is not continuous batching. All success finals wait until every
+group has released state. Cancellation closes the current group without starting
+the next; later failures suppress earlier success finals, and failed release
+remains retryable through the existing cleanup owner.
+
+This option currently accepts ordinary text batches only; combining it with tools
+or single-conversation input fails before weight loading. Tiny loaded checkpoints
+for all three families match independent per-row logits and generation/usage,
+including unequal limits and shrinking rows. This adds input coverage, not GPU,
+official-model, throughput or serving-concurrency qualification.

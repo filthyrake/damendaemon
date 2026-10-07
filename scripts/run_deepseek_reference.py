@@ -27,6 +27,7 @@ def main(argv=None):
     source.add_argument('--prompt',help='one ordinary user text turn')
     source.add_argument('--messages',help='local JSON file containing ordinary text messages')
     source.add_argument('--batch-messages',help='local JSON list of 1..16 equal-token-length conversations')
+    parser.add_argument('--ragged-batch',action='store_true',help='ordinary batch only: sequential equal-length cohorts')
     parser.add_argument('--tools',help='local JSON file containing function schemas; calls are returned, never executed')
     parser.add_argument('--thinking',action='store_true')
     parser.add_argument('--keep-history-reasoning',action='store_true')
@@ -38,6 +39,8 @@ def main(argv=None):
     parser.add_argument('--dtype',choices=('float32','bfloat16','float16'),default='float32')
     args=parser.parse_args(argv)
     try:
+        if args.ragged_batch and (not args.batch_messages or args.tools is not None):
+            raise ValueError('ragged batches require ordinary batch messages without tools')
         from pathlib import Path
         config=json.loads(_read(Path(args.snapshot)/'config.json',1024*1024),object_pairs_hook=_unique_fields)
         if not isinstance(config,dict) or config.get('model_type') != 'deepseek_v4':
@@ -54,7 +57,7 @@ def main(argv=None):
             options['tools']=json.loads(_read(args.tools,1024*1024),object_pairs_hook=_unique_fields)
             if not isinstance(options['tools'],list):raise ValueError('tools file must contain a function schema list')
         if args.batch_messages:
-            prepare_batch(text,messages,args.max_new_tokens,args.context,**options)
+            prepare_batch(text,messages,args.max_new_tokens,args.context,ragged=args.ragged_batch,**options)
         else:
             tokens=text.chat_tokens(messages,**options)
             if len(tokens)+args.max_new_tokens > args.context:
@@ -64,6 +67,7 @@ def main(argv=None):
         runner_type=BatchReferenceGenerator if args.batch_messages else ReferenceGenerator
         runner=runner_type(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
         print(json.dumps({'scope':'cpu_reference','official_model_qualified':False,'dtype':args.dtype}),flush=True)
+        if args.batch_messages and args.tools is None:options['ragged']=args.ragged_batch
         primary=None
         try:
             generate=runner.generate_batch if args.batch_messages else runner.generate
