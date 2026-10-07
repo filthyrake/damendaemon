@@ -391,3 +391,27 @@ frames fail before a command is sent; no prompt truncation or hidden downgrade
 occurs. Tests cover 32K control counters without tensor allocation, and actual
 synthetic 513-token CPU arithmetic/state parity through 128-token loopback frames.
 Neither result qualifies practical checkpoint context, quality or hardware speed.
+
+### Authenticated connected host sockets
+
+`host_tls.client_context` and `server_context` load an explicit trust CA and
+local certificate/key, require peer certificates and TLS 1.3, and negotiate
+`dllm-host/1`. `wrap_peer` takes an already-connected TCP socket, a context, the
+exact expected SHA-256 DER certificate pin and (on the client) a server hostname.
+It checks hostname/trust, protocol and pin before returning the owned TLS socket
+for `HostTensorChannel`. Model/session digest agreement and stage setup still
+follow TLS. There is no plaintext fallback or listener/connector deployment.
+
+Local option errors leave the socket with its caller; wrapping/handshake errors
+close the owned descriptor. The handshake deadline is bounded to at most thirty
+seconds. Configured contexts must remain immutable during use. Certificate
+issuance, protected private-key storage, peer-pin distribution/rotation and
+listener/service provisioning remain operator responsibilities and unimplemented
+deployment gates. Published credentials under `tests/fixtures/host_tls` are
+synthetic test-only keys and must never be used for a deployed service.
+
+Actual loopback tests cover tensor/stage frames, certificate/hostname/pin/ALPN
+rejection, stalled handshake cleanup and close interruption. TLS 1.3 may surface
+a rejected client certificate at the client's first application I/O; the required
+framed session handshake must succeed before any stage is admitted. No remote
+hardware, network throughput or GPU qualification is claimed.

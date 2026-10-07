@@ -1,0 +1,1 @@
+Synthetic public test credentials for local TLS tests only. These private keys are intentionally published and must never be used for deployment. The test CA signing key is not included. Certificates use long validity solely to keep deterministic offline tests independent of regeneration.

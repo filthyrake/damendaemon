@@ -3,7 +3,8 @@
 This is a trusted-link transport primitive, not a remote model worker. Identity
 agreement is not authentication or encryption. The owner supplies the connected
 socket and model/session digest, and orders sends/receives between peers.
-No GPU transfer, listener, pickle, or distributed state commit is performed.
+Use host_tls to authenticate and pin a connected socket before constructing this
+channel. No GPU transfer, listener, pickle, or distributed state commit is performed.
 """
 import ctypes
 import socket
