@@ -1,5 +1,7 @@
 # Bounded remote quota transport
 
+Operator bootstrap, enrollment, frontend opt-in and explicit recovery are documented in [quota commands](quota-commands.md).
+
 `RemoteQuotaServer` and `RemoteQuotaClient` expose the existing
 [durable remote-owner ledger](remote-reservation-ledger.md) over one-request
 mutual-TLS connections. Construction is explicit; no inference server, command

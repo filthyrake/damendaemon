@@ -148,6 +148,10 @@ def serve(runtime,auth,args):
     def interrupt(*_):stopping.set();runtime.stopping.set()
     try:
         server=BoundedHTTPServer(('127.0.0.1',args.port),handler_for_reference(runtime,auth),args.connections)
+        # Own accepted requests through their final admission release. The base
+        # ThreadingHTTPServer defaults to daemon threads and skips that join.
+        server.daemon_threads=False
+        server.block_on_close=True
         server.timeout=.2
         if threading.current_thread() is threading.main_thread():
             for sig in (signal.SIGTERM,signal.SIGINT):previous[sig]=signal.signal(sig,interrupt)

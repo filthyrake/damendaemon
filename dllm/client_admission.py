@@ -35,6 +35,13 @@ class ClientAdmission:
         path=os.environ.get('DLLM_CLIENT_RATE_DB')
         self.rate_store=rate_store if rate_store is not None else (SharedClientRates(path,auth.clients) if path is not None else None)
         reservation_path=os.environ.get('DLLM_CLIENT_RESERVATION_DB')
+        remote_path=os.environ.get('DLLM_REMOTE_QUOTA_CONFIG')
+        if reservation_store is None and reservation_path is not None and remote_path is not None:
+            raise ValueError('configure only one outstanding quota authority')
+        if reservation_store is None and remote_path is not None:
+            from .remote_quota_config import frontend_client
+            from .remote_quota_admission import RemoteQuotaReservations
+            reservation_store=RemoteQuotaReservations(frontend_client(remote_path),auth.clients)
         self.reservation_store=reservation_store if reservation_store is not None else (
             SharedClientReservations(reservation_path,auth.clients) if reservation_path is not None else None)
         self.pending_releases={}

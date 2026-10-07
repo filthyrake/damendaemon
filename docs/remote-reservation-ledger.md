@@ -1,5 +1,7 @@
 # Durable remote-owner reservation ledger
 
+Operator bootstrap, enrollment, frontend opt-in and explicit recovery are documented in [quota commands](quota-commands.md).
+
 `RemoteReservationLedger` is a local accounting foundation for cross-host
 admission. It does not start a listener, change HTTP defaults, fence remote
 workloads, reserve GPU memory or establish an inference SLO. The [authenticated transport](remote-quota-transport.md) and
@@ -17,8 +19,9 @@ Privileged local code registers a stable 32-character lowercase hexadecimal
 owner ID, a random 32-byte owner credential and a bounded client-name allowlist.
 Only a SHA-256 credential hash is stored. Registration retries require the same
 credential and allowlist. These owner credentials are distinct from end-user API
-keys. A future network layer must authorize registration separately; possessing
-an owner's credential must not grant enrollment authority.
+keys. Network RPC never permits registration; possessing an owner's credential
+does not grant enrollment authority. The privileged local registration command
+requires access to private ledger storage.
 
 Each owner serializes commands with integer sequences starting at one:
 

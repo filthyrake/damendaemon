@@ -1,10 +1,12 @@
 # Remote quota HTTP admission
 
+Operator bootstrap, enrollment, frontend opt-in and explicit recovery are documented in [quota commands](quota-commands.md).
+
 `RemoteQuotaReservations` adapts the mutually authenticated quota client to the
-existing named-client HTTP lease boundary. This is explicit library integration:
-construct the adapter, then pass it as `reservation_store` to `handler_for` (or
-`ClientAdmission` for an embedder). No environment variable starts a network
-connection automatically in this gate. Standalone configuration is separate.
+existing named-client HTTP lease boundary. Embedders can construct the adapter
+and pass it as `reservation_store` to `handler_for` or `ClientAdmission`.
+Commands opt in with `DLLM_REMOTE_QUOTA_CONFIG` and the owner's runtime credential;
+unset configuration preserves local admission without a network connection.
 
 The authority's authenticated `policy` RPC returns only that owner's allowed
 client names and request/output caps. Before admission, the adapter verifies all

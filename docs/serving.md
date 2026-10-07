@@ -891,3 +891,5 @@ Explicit embedders can also pass a [remote quota admission adapter](remote-quota
 to the handler. It verifies authority policy and retains uncertain operations
 through the same HTTP cleanup path. Network-backed admission is not enabled by
 default, and prior unresolved remote claims block owner startup.
+
+Explicit cross-host outstanding quotas are configured with `DLLM_REMOTE_QUOTA_CONFIG`; see [quota commands](quota-commands.md) for authority bootstrap, pinned mutual TLS, owner recovery and CPU command shutdown behavior.
