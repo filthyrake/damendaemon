@@ -17,6 +17,7 @@ from .floating_compressor import compress_hidden
 from .floating_indexer import index_hidden
 from .prepared_projection import PackedProjection, is_projection, linear
 from .selected_attention import selected_attention
+from .reference_numerics import finite
 
 
 @dataclass
@@ -76,8 +77,10 @@ class AttentionState:
 
 
 def _norm(value, weight, epsilon):
-    fp32 = value.float()
-    return (weight*(fp32*(fp32.square().mean(-1, keepdim=True)+epsilon).rsqrt())).to(value.dtype)
+    fp32 = finite(value.float(), 'normalization input')
+    finite(weight, 'normalization weight')
+    variance = finite(fp32.square().mean(-1, keepdim=True)+epsilon, 'normalization variance')
+    return finite((weight*(fp32*variance.rsqrt())).to(value.dtype), 'normalization output')
 
 
 def _check(hidden, weights, freq, groups, window, ratio, top_k, chunk, epsilon):

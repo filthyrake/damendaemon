@@ -8,6 +8,7 @@ from torch.nn import functional as F
 from .floating_attention import _norm
 from .floating_block import FloatingBlock
 from .hyper_connections import reduce_head
+from .reference_numerics import finite
 
 
 @dataclass
@@ -119,7 +120,8 @@ class FloatingModel:
         reduced = reduce_head(hidden[:,-1:],h['hc_head_fn'],h['hc_head_scale'],h['hc_head_base'],
                               norm_epsilon=self.epsilon,connection_epsilon=self.connection_epsilon)
         normalized = _norm(reduced,h['norm.weight'],self.epsilon)
-        return F.linear(normalized[:,0].float(),h['head.weight'])
+        finite(h['head.weight'], 'vocabulary weight')
+        return finite(F.linear(normalized[:,0].float(),h['head.weight']), 'vocabulary logits')
 
     def cleanup_failed_prefills(self):
         with self.build_lock:

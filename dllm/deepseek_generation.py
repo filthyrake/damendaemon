@@ -108,6 +108,11 @@ class ReferenceGenerator:
                                                  max_tokens=len(tokens)+max_new_tokens,max_cache_bytes=self.max_cache_bytes)
             reason='length'
             for index in range(max_new_tokens):
+                if (not isinstance(logits,torch.Tensor) or logits.shape != (1,self.text.vocab_size)
+                        or logits.device.type != 'cpu' or logits.dtype != torch.float32):
+                    raise ValueError('invalid V4 generation logits')
+                if not torch.isfinite(logits).all():
+                    raise ValueError('nonfinite V4 generation logits')
                 token=int(logits[0].argmax())
                 events=stream.feed(token)
                 for event in events:yield event

@@ -1977,3 +1977,19 @@ The command owns generator cleanup and emits `cpu_reference`, `still_image`,
 `official_model_qualified: false` metadata before response events. A complete tiny
 indexed checkpoint/inline-PNG command fixture passes; this is runnable software
 coverage, not trained-model semantic or GPU qualification.
+
+### DeepSeek CPU reference numerical failure boundaries
+
+The floating reference normalization and hyper-connection paths reject
+nonfinite inputs/parameters and intermediate overflow before reciprocal square
+root, sigmoid, softmax, mixing normalization or dtype conversion can conceal
+failed arithmetic. Finite `1e20` normalization inputs previously overflowed the
+FP32 variance and returned zeros; overflowing finite head projections could
+become saturated finite sigmoid coefficients. These cases now fail explicitly.
+Final vocabulary projection and generation logits are checked before sampling.
+Existing finite equations, output dtypes and numerical tolerances are unchanged.
+
+CPU regressions cover these reproduced cases, FP16 cast overflow, prefill
+release, partially advanced decode poisoning and generation cleanup. This is a
+bounded correction under #119/#58, not official-weight or hardware qualification
+or a claim that every arithmetic operation has a finite-intermediate guard.
