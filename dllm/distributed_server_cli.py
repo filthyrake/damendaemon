@@ -16,6 +16,7 @@ def main(argv=None):
     p.add_argument('--batch-size',type=int,choices=range(1,5),default=1)
     p.add_argument('--queue-size',type=int,default=8)
     p.add_argument('--queue-timeout',type=float,default=120)
+    p.add_argument('--client-decode-turns',action='store_true',help='equal ready decode rows per client')
     p.add_argument('--idle-timeout',type=float,default=0,help='optional coordinator shutdown after idle seconds; zero disables')
     args=p.parse_args(argv)
     if not 1<=args.context<=512 or not 0<=args.port<=65535 or not 0<=args.idle_timeout<=86400:
@@ -32,7 +33,7 @@ def main(argv=None):
     try:
         if pair.rank==1:
             pair.serve_worker();return
-        runtime=DistributedRuntime(pair,args.alias,args.queue_size,args.queue_timeout)
+        runtime=DistributedRuntime(pair,args.alias,args.queue_size,args.queue_timeout,client_decode_turns=args.client_decode_turns)
         base=handler_for(runtime)
         class Handler(base):
             def do_GET(self):

@@ -15,6 +15,7 @@ from .sampling import Sampling
 from .stopping import text_delta
 from .request_scope import cache_scope
 from .distributed_admission import DistributedAdmission
+from .client_decode_turns import ClientDecodeTurns
 
 STREAM_BUFFER_EVENTS=8
 
@@ -50,7 +51,8 @@ class DistributedRuntime:
     source_tier='gpu'
     kernel_backend='distributed-stage-graphs'
 
-    def __init__(self, pair, alias='model', queue_size=8, queue_timeout=120):
+    def __init__(self, pair, alias='model', queue_size=8, queue_timeout=120, *, client_decode_turns=False):
+        if type(client_decode_turns) is not bool:raise ValueError('client decode turns must be boolean')
         if pair.rank != 0:raise ValueError('only the coordinator exposes HTTP')
         if not isinstance(alias,str) or not 1 <= len(alias) <= 128:raise ValueError('invalid model alias')
         if type(queue_size) is not int or not 1 <= queue_size <= 64:raise ValueError('queue size must be 1..64')
@@ -65,6 +67,7 @@ class DistributedRuntime:
         self.packed_prefill=getattr(pair,'packed_prefill',False)
         self.completed=0
         self.heartbeats=0
+        self.client_decode_turns=client_decode_turns;self.decode_turns=ClientDecodeTurns()
 
     def model_ids(self):return [self.alias]
 
@@ -77,6 +80,7 @@ class DistributedRuntime:
             distributed=True,stage_layers=[[0,12],[12,24]],max_batch_size=self.max_batch,packed_prefill=self.packed_prefill,
             active=self.active,queued=self.requests.qsize(),completed=self.completed,
             heartbeats=self.heartbeats,stream_buffer_events=STREAM_BUFFER_EVENTS,client_admission_turns=True,
+            client_decode_turns=self.client_decode_turns,
             failed=self.failure is not None,closed=self.closed.is_set())
 
     def embed(self,*args,**kwargs):raise ValueError('distributed embeddings are unsupported')
@@ -208,6 +212,9 @@ class DistributedRuntime:
                     last_request=last_control=time.monotonic()
                 ready=[item for item in active if not item.done and not item.request.cancelled.is_set()
                        and item.request.events.qsize()<STREAM_BUFFER_EVENTS]
+                if self.client_decode_turns:
+                    ready=[item for _,_,item in self.decode_turns.choose([(item.slot,item.request,item) for item in ready])]
+                if not active:self.decode_turns.reset()
                 if ready and not self.closed.is_set():
                     tokens=[item.output[-1] for item in ready]
                     result=([self.pair.step(tokens)] if self.max_batch==1 else
@@ -232,6 +239,7 @@ class DistributedRuntime:
                 if active and not self.pair.state.failed:self._release(active)
             finally:
                 self.active=False
+                self.decode_turns.reset()
                 while True:
                     try:waiting=self.requests.get_nowait()
                     except queue.Empty:break

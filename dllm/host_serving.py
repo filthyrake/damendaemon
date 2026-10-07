@@ -64,9 +64,9 @@ class HostDistributedRuntime(DistributedRuntime):
     source_tier='cpu_reference'
     kernel_backend='cpu-host-reference'
 
-    def __init__(self,pair,alias='model',queue_size=8,queue_timeout=120):
+    def __init__(self,pair,alias='model',queue_size=8,queue_timeout=120,*,client_decode_turns=False):
         if not isinstance(pair,HostServingPair):raise ValueError('CPU host runtime requires its explicit pair adapter')
-        super().__init__(pair,alias,queue_size,queue_timeout)
+        super().__init__(pair,alias,queue_size,queue_timeout,client_decode_turns=client_decode_turns)
 
     def model_manifest(self):raise ValueError('CPU host sessions cannot be exported as GPU model manifests')
 
@@ -81,6 +81,7 @@ class HostDistributedRuntime(DistributedRuntime):
             max_batch_size=self.max_batch,packed_prefill=False,active=self.active,queued=self.requests.qsize(),
             completed=self.completed,heartbeats=self.heartbeats,
             stream_buffer_events=STREAM_BUFFER_EVENTS,client_admission_turns=True,
+            client_decode_turns=self.client_decode_turns,
             failed=self.failure is not None,closed=self.closed.is_set())
 
     def generate(self,alias,messages,max_tokens,**options):

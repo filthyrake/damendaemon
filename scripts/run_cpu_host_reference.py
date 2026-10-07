@@ -40,6 +40,7 @@ def parser_for_command():
     parser.add_argument('--alias',default='model')
     parser.add_argument('--queue-size',type=_positive,default=8)
     parser.add_argument('--queue-timeout',type=float,default=120.)
+    parser.add_argument('--client-decode-turns',action='store_true',help='serve role: equal ready decode rows per client')
     parser.add_argument('--idle-timeout',type=float,default=0.,help='serve role: stop after idle seconds; 0 disables')
     parser.add_argument('--heartbeat-interval',type=float,default=5.)
     parser.add_argument('--frame-mib',type=_positive,default=64)
@@ -59,6 +60,7 @@ def prepare(args):
     """All request and endpoint metadata is checked before network/payload work."""
     if '%' in args.address:raise ValueError('scoped IP addresses are unsupported')
     address=ipaddress.ip_address(args.address)
+    if args.client_decode_turns and args.role!='serve':raise ValueError('client decode turns require the serve role')
     if (not 0<args.timeout<=30 or not 1<=args.slots<=4 or not 1<=args.frame_mib<=64
             or not 1<=args.context<=args.context_limit<=2**20
             or not (0 if args.role=='worker' else 1)<=args.port<=65535
@@ -178,7 +180,7 @@ def serve_worker_pair(worker,text,args,auth):
     from dllm.host_serving import HostServingPair,HostDistributedRuntime,handler_for_host
     from dllm.server import BoundedHTTPServer
     pair=HostServingPair(worker,text,chunk_size=args.prefill_chunk)
-    runtime=HostDistributedRuntime(pair,args.alias,args.queue_size,args.queue_timeout)
+    runtime=HostDistributedRuntime(pair,args.alias,args.queue_size,args.queue_timeout,client_decode_turns=args.client_decode_turns)
     server=thread=None;previous=None;primary=None
     stopping=threading.Event()
     def interrupt(*_):

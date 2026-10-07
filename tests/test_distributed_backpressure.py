@@ -24,7 +24,7 @@ class BackpressureTests(RuntimeHelpers,unittest.TestCase):
         return stream,requests[0],first
 
     def test_slow_client_pauses_its_slot_while_other_clients_complete(self):
-        pair=BatchedPair();runtime=DistributedRuntime(pair);_,errors=self.start(runtime,heartbeat_interval=.02)
+        pair=BatchedPair();runtime=DistributedRuntime(pair,client_decode_turns=True);_,errors=self.start(runtime,heartbeat_interval=.02)
         stream,request,first=self.stream(runtime)
         self.wait_for(lambda:request.events.qsize()==STREAM_BUFFER_EVENTS)
         before=pair.state.lengths[0];self.assertLess(before,20)

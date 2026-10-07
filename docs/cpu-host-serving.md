@@ -79,3 +79,13 @@ used as keys. Status reports `client_admission_turns: true`.
 This prevents a queued burst from taking every next admission ahead of another
 waiting client. It does not reserve active slots, preempt a long prefill, provide
 weighted token service or coordinate quotas across separate server processes.
+
+`--client-decode-turns` on the CPU host `serve` role enables equal ready decode
+rows per client, reusing the ordinary scheduler's opt-in policy. It is also
+available on the experimental `distributed-serve` command. Default is off. An
+active client with several ready requests rotates those requests while a peer
+with one ready request gets the same number of rows per step; with one ready
+client, full batching is retained. Backpressured slots are excluded before
+selection. Status exposes the setting, and idle/shutdown clears retained turn
+history. This may reduce aggregate batch utilization. It does not preempt prefill,
+reserve slots or establish a token-time SLO; GPU performance was not remeasured.
