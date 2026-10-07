@@ -28,6 +28,10 @@ class DeepSeekOutput:
         self.bytes=0
         self.ended=self.closed=self.failed=False
 
+    def close(self):
+        self.closed=True;self.pending=''
+        if self.tool_buffer is not None:self.tool_buffer.close()
+
     def _usable(self):
         if self.closed or self.failed:
             raise RuntimeError('V4 output parser is closed or failed')

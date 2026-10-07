@@ -1,6 +1,7 @@
 """Owned equal-length CPU reference batches, independent of model family."""
 from contextlib import closing
 import torch
+from .reference_cancellation import check_cancelled
 
 
 def prepare_batch(text, conversations, max_new_tokens, max_context, *, tokenize=None, ragged=False, **options):
@@ -31,11 +32,13 @@ def _generate_equal_batch(runner, prompts, limits, streams, *, mapped_vocab_size
     state = None
     primary = None
     try:
+        check_cancelled()
         with runner.lock:
             runner.cleanup()
             logits, state = prefill(torch.tensor(prompts, dtype=torch.int64, device='cpu'),
                 capacity=prompt_length + max(limits), max_cache_bytes=runner.max_cache_bytes)
         for step in range(max(limits)):
+            check_cancelled()
             if (not isinstance(logits, torch.Tensor) or logits.shape != (len(active), runner.text.vocab_size)
                     or logits.device.type != 'cpu' or logits.dtype != torch.float32):
                 raise ValueError('invalid reference batch generation logits')
@@ -52,6 +55,7 @@ def _generate_equal_batch(runner, prompts, limits, streams, *, mapped_vocab_size
                 stopped = token in runner.text.eos
                 finished = stopped or step + 1 == limits[row]
                 if finished:
+                    check_cancelled()
                     events = streams[row].finish(truncated=not stopped)
                     reason = 'stop' if stopped else 'length'
                     if finalize is not None:
@@ -69,6 +73,7 @@ def _generate_equal_batch(runner, prompts, limits, streams, *, mapped_vocab_size
             if len(surviving_rows) != len(active):
                 state.reorder(torch.tensor(surviving_slots, dtype=torch.int64, device='cpu'))
             active = surviving_rows
+            check_cancelled()
             logits = decode(torch.tensor(next_tokens, dtype=torch.int64, device='cpu'),
                                         state, position=prompt_length + step)
     except BaseException as error:
@@ -83,6 +88,7 @@ def _generate_equal_batch(runner, prompts, limits, streams, *, mapped_vocab_size
                     raise
                 primary.add_note('reference batch cache cleanup failed; retained for retry before another prefill')
     # Report success only after every owned row's cache has been released.
+    check_cancelled()
     yield from sorted(finals, key=lambda event: event['row'])
 
 
@@ -104,4 +110,5 @@ def generate_prepared_batch(runner, prompts, limits, streams, *, mapped_vocab_si
                 event=dict(event,row=rows[event['row']])
                 if 'finish_reason' in event:finals.append(event)
                 else:yield event
+    check_cancelled()
     yield from sorted(finals,key=lambda event:event['row'])

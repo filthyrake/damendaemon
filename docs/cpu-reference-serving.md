@@ -150,8 +150,20 @@ stop admission and retain the owner for explicit cleanup retry.
 `/v1/scheduler/status` stays responsive while generation is busy; the existing
 admin-authorized drain route stops new admission and lets accepted work finish.
 Drain does not exit the service. Shutdown wakes queued clients, cooperatively
-stops active generation at an event boundary, joins the worker (up to five
+stops active generation at a token boundary, joins the worker (up to five
 seconds per close attempt), and closes the prepared reference owner. A busy
 close retains ownership for retry; this is not preemption of a CPU kernel or a
 hard generation deadline. Queue timing is reported separately from execution,
 and all metadata remains explicitly CPU/reference/unqualified.
+
+
+CPU reference cancellation is checked before prefill, between generated tokens
+and before further decode, including while a native tool parser buffers a call.
+Runtime shutdown and queued-request abandonment are combined in an execution
+scope that is reset before the next request and does not cross threads. Running
+kernels and image encoding are not preempted; cancellation is cooperative after
+control returns. Cancelled calls produce neither a tool result nor a success
+final, and caches/parser buffers are closed through the existing cleanup path.
+DeepSeek single and batch generators now explicitly close their parser buffers
+on abandonment as well as normal completion. Failed cache release remains
+owned and retryable, preserving the cancellation error as the primary cause.

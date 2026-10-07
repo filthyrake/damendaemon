@@ -10,6 +10,7 @@ from .distributed_admission import DistributedAdmission
 from .reference_serving import ReferenceRuntime
 from .request_scope import cache_scope
 from .runtime import BusyError
+from .reference_cancellation import cancellation_scope
 
 BUFFER_EVENTS=8
 
@@ -118,7 +119,7 @@ class QueuedReferenceRuntime(ReferenceRuntime):
                         self._publish(request,BusyError('CPU reference request queue deadline exceeded'),terminal=True)
                         continue
                     request.started.set();started=time.monotonic()
-                    with closing(ReferenceRuntime.generate(self,self.alias,request.messages,request.maximum,**request.options)) as generation:
+                    with cancellation_scope(request.cancelled.is_set),closing(ReferenceRuntime.generate(self,self.alias,request.messages,request.maximum,**request.options)) as generation:
                         for event in generation:
                             if request.cancelled.is_set() or self.stopping.is_set():break
                             final='finish_reason' in event

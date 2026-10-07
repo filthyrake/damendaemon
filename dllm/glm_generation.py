@@ -1,5 +1,6 @@
 """Owned bounded greedy GLM CPU reference generation, separate from serving."""
 import threading
+from .reference_cancellation import check_cancelled
 import torch
 from tokenizers import decoders
 from .bytelevel_stream import ByteLevelStream
@@ -90,6 +91,7 @@ class ReferenceGenerator:
         stream=TokenStream(self.text) if stream is None else stream
         state=None;primary=None
         try:
+            check_cancelled()
             with self.lock:
                 self.cleanup()
                 prepare=self.model.prefill if prefill is None else prefill
@@ -97,6 +99,7 @@ class ReferenceGenerator:
                                      capacity=len(tokens)+max_new_tokens,max_cache_bytes=self.max_cache_bytes)
             reason='length'
             for index in range(max_new_tokens):
+                check_cancelled()
                 if (not isinstance(logits,torch.Tensor) or logits.shape!=(1,self.text.vocab_size)
                         or logits.device.type!='cpu' or logits.dtype!=torch.float32):
                     raise ValueError('invalid GLM generation logits')
@@ -110,7 +113,9 @@ class ReferenceGenerator:
                 for event in stream.feed(token):yield event
                 if token in self.text.eos:reason='stop';break
                 if index+1<max_new_tokens:
+                    check_cancelled()
                     logits=self.model.forward(torch.tensor([[token]],dtype=torch.int64,device='cpu'),state,position=len(tokens)+index)
+            check_cancelled()
             for event in stream.finish(truncated=reason=='length'):
                 if event.get('tool_calls'):reason='tool_calls'
                 yield event
@@ -121,4 +126,5 @@ class ReferenceGenerator:
                 except BaseException:
                     if primary is None:raise
                     primary.add_note('GLM cache cleanup failed; retained for retry before another prefill')
+        check_cancelled()
         yield {'finish_reason':reason,'usage':{'prompt_tokens':len(tokens),'completion_tokens':index+1}}

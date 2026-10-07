@@ -1,5 +1,6 @@
 """Owned, bounded CPU reference text generation; not a serving runtime."""
 import threading
+from .reference_cancellation import check_cancelled
 
 import torch
 from tokenizers import decoders
@@ -35,6 +36,8 @@ class TokenStream:
         except BaseException:
             self.failed=True
             raise
+
+    def close(self):self.parser.close()
 
     def finish(self,*,truncated=False):
         if self.failed:raise RuntimeError('V4 token stream failed')
@@ -106,12 +109,14 @@ class ReferenceGenerator:
         state=None
         primary_error=None
         try:
+            check_cancelled()
             with self.lock:
                 self.cleanup()
                 logits,state=self.model.prefill(torch.tensor([tokens],dtype=torch.int64),
                                                  max_tokens=len(tokens)+max_new_tokens,max_cache_bytes=self.max_cache_bytes)
             reason='length'
             for index in range(max_new_tokens):
+                check_cancelled()
                 if (not isinstance(logits,torch.Tensor) or logits.shape != (1,self.text.vocab_size)
                         or logits.device.type != 'cpu' or logits.dtype != torch.float32):
                     raise ValueError('invalid V4 generation logits')
@@ -124,7 +129,9 @@ class ReferenceGenerator:
                     reason='stop'
                     break
                 if index+1 < max_new_tokens:
+                    check_cancelled()
                     logits=self.model.decode(torch.tensor([[token]],dtype=torch.int64),state,position=len(tokens)+index)
+            check_cancelled()
             for event in stream.finish(truncated=reason == 'length'):
                 if event.get('tool_calls'):
                     validate_tool_arguments(event['tool_calls'],contract)
@@ -134,9 +141,12 @@ class ReferenceGenerator:
             primary_error=error
             raise
         finally:
-            if state is not None:
-                try:self._release(state)
-                except BaseException:
-                    if primary_error is None:raise
-                    primary_error.add_note('reference cache cleanup failed; retained for retry before another prefill')
+            try:
+                if state is not None:
+                    try:self._release(state)
+                    except BaseException:
+                        if primary_error is None:raise
+                        primary_error.add_note('reference cache cleanup failed; retained for retry before another prefill')
+            finally:stream.close()
+        check_cancelled()
         yield {'finish_reason':reason,'usage':{'prompt_tokens':len(tokens),'completion_tokens':index+1}}

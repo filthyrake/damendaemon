@@ -11,6 +11,7 @@ from .glm_flash_tool_generation import FlashToolReferenceGenerator
 from .glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
 from .glm_flash_tools import FlashTools
 from .runtime import BusyError
+from .reference_cancellation import cancellation_scope,ReferenceCancelled
 from .sampling import Sampling
 from .tool_calls import validate_tools,validate_messages
 
@@ -113,7 +114,7 @@ class ReferenceRuntime:
             elif self.family!='deepseek_v4' and tools:
                 iterator=runner.generate_tools(messages,tools,max_new_tokens=max_tokens,**kwargs)
             else:iterator=runner.generate(messages,max_new_tokens=max_tokens,**kwargs)
-            with closing(iterator) as stream:
+            with cancellation_scope(self.stopping.is_set),closing(iterator) as stream:
                 for event in stream:
                     if self.stopping.is_set():raise BusyError('CPU reference runtime closed during generation')
                     if 'finish_reason' in event:final=event
@@ -124,6 +125,9 @@ class ReferenceRuntime:
                             output['tool_calls']=[dict(call,id='call_'+uuid.uuid4().hex) for call in event['tool_calls']]
                         yield output
             if final is None:raise RuntimeError('CPU reference ended without a completion result')
+        except ReferenceCancelled as error:
+            primary=error
+            raise BusyError('CPU reference generation cancelled') from error
         except BaseException as error:primary=error;raise
         finally:
             try:

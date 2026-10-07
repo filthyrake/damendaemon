@@ -20,5 +20,8 @@ class BatchReferenceGenerator(ReferenceGenerator):
             return reason
         def prefill(tokens, *, capacity, max_cache_bytes):
             return self.model.prefill(tokens, max_tokens=capacity, max_cache_bytes=max_cache_bytes)
-        yield from generate_prepared_batch(self, prompts, limits, streams,
-            mapped_vocab_size=self.text.vocab_size, prefill=prefill, decode=lambda *args, **kwargs: self.model.decode(*args, **kwargs), finalize=finalize)
+        try:
+            yield from generate_prepared_batch(self, prompts, limits, streams,
+                mapped_vocab_size=self.text.vocab_size, prefill=prefill, decode=lambda *args, **kwargs: self.model.decode(*args, **kwargs), finalize=finalize)
+        finally:
+            for stream in streams:stream.close()
