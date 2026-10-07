@@ -114,3 +114,47 @@ class HostHybridWorkerTests(unittest.TestCase):
             with self.assertRaises((RuntimeError,OSError,EOFError)):first.result(timeout=5)
             self.assertTrue(error.exception.__notes__);self.assertFalse(right.closed);self.assertTrue(right.stage.w)
         right.close();self.assertTrue(right.closed);self.assertFalse(right.stage.w)
+
+    def test_interleaved_chunks_match_full_prefix_and_preserve_offsets(self):
+        left,_=self.workers;full=self.fixture.fixture.fixture.executor()
+        self.run_command(lambda:left.prefill_chunk([1,2],0,0))
+        self.run_command(lambda:left.prefill_chunk([7],1,0))
+        expected=full.prefill([1,2,3,4],0).argmax(-1).tolist()[0]
+        self.assertEqual(self.run_command(lambda:left.prefill_chunk([3,4],0,2)),expected)
+        expected=full.prefill([7,8,9],1).argmax(-1).tolist()[0]
+        self.assertEqual(self.run_command(lambda:left.prefill_chunk([8,9],1,1)),expected)
+        with patch.object(left.channel,'begin',side_effect=AssertionError('command sent')):
+            for start in (0,1,3,True):
+                with self.assertRaises(ValueError):left.prefill_chunk([5],0,start)
+        for worker in self.workers:
+            for name in ('kv','conv','state'):
+                for layer,tensor in getattr(worker.stage,name).items():
+                    torch.testing.assert_close(tensor,getattr(full,name)[layer],rtol=3e-5,atol=3e-6)
+        _,ids=full.decode_batch([5,10],[0,1])
+        self.assertEqual(self.run_command(lambda:left.decode([5,10],[0,1])),ids.tolist())
+
+    def test_explicit_large_context_uses_bounded_frames_not_whole_prompt(self):
+        model=self.fixture.model;model.max_context=1024
+        stages=[self.fixture.stage(0,2),self.fixture.stage(2,4)]
+        cap=128*model.config['hidden_size']*4
+        transports=test_host_tensor_channel.HostTensorChannelTests.pair(self,caps=(cap,cap),timeout=3)
+        workers=[HostHybridWorker(HostStageChannel(t,StageState(1,1024,2,context_limit=1024),vocab_size=s.c['vocab_size']),s)
+                 for t,s in zip(transports,stages)]
+        for worker in workers:self.addCleanup(worker.close)
+        self.parallel([w.handshake for w in workers]);left,right=workers
+        prompt=[1+i%10 for i in range(513)]
+        with patch.object(left.channel,'begin',side_effect=AssertionError('oversized command sent')):
+            with self.assertRaisesRegex(ValueError,'frame cap'):left.prefill(prompt)
+        self.assertFalse(left.failed)
+        # Fresh full executor uses the same explicit synthetic context. This is
+        # numerical/lifecycle coverage, not trained-model long-context quality.
+        fixture=self.fixture.fixture.fixture
+        with patch.object(fixture,'model',return_value=model):full=fixture.executor()
+        expected=full.prefill(prompt).argmax(-1).tolist()[0]
+        for start in range(0,len(prompt),128):
+            result=self.parallel([lambda start=start:left.prefill_chunk(prompt[start:start+128],0,start),right.step])[0]
+        self.assertEqual(result,expected);self.assertEqual(left.channel.state.lengths[0],513)
+        for worker in workers:
+            for name in ('kv','conv','state'):
+                for layer,tensor in getattr(worker.stage,name).items():
+                    torch.testing.assert_close(tensor,getattr(full,name)[layer],rtol=5e-5,atol=5e-6)

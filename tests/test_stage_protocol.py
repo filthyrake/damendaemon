@@ -122,3 +122,27 @@ class PackedPrefillProtocolTests(unittest.TestCase):
         state.commit(state.begin(Command(1,1,PREFILL,2,((0,1,0),)).encode()))
         with self.assertRaises(ValueError):state.begin(Command(1,2,PREFILL_BATCH,4,((0,2,2),(1,1,2))).encode())
         self.assertEqual(state.lengths,[2,0,0,0])
+
+
+class ChunkProtocolTests(unittest.TestCase):
+    def test_explicit_context_limit_and_chunk_generation_offsets(self):
+        from dllm.stage_protocol import PREFILL_CHUNK
+        with self.assertRaises(ValueError):StageState(1,513)
+        for limit in (True,0,2**20+1):
+            with self.assertRaises(ValueError):StageState(1,512,context_limit=limit)
+        state=StageState(1,32768,context_limit=32768)
+        first=Command(1,1,PREFILL_CHUNK,32767,((0,1,0),))
+        self.assertEqual(token_rows(first),1);state.commit(state.begin(first.encode()))
+        for entry in ((0,2,32767),(0,1,32766),(0,2,0)):
+            with self.assertRaises(ValueError):state.begin(Command(1,2,PREFILL_CHUNK,1,(entry,)).encode())
+        command=Command(1,2,PREFILL_CHUNK,1,((0,1,32767),));state.commit(state.begin(command.encode()))
+        self.assertEqual(state.lengths[0],32768)
+        with self.assertRaises(ValueError):state.begin(Command(1,3,PREFILL_CHUNK,1,((0,1,32768),)).encode())
+        state.commit(state.begin(Command(1,3,RELEASE,0,((0,1,32768),)).encode()))
+        state.commit(state.begin(Command(1,4,PREFILL_CHUNK,2,((0,2,0),)).encode()))
+        self.assertEqual((state.lengths[0],state.generations[0]),(2,2))
+
+    def test_previous_wire_version_cannot_silently_accept_chunk_protocol(self):
+        from dllm.stage_protocol import VERSION,PREFILL_CHUNK
+        words=Command(1,1,PREFILL_CHUNK,2,((0,1,0),)).encode();words[1]=VERSION-1
+        with self.assertRaisesRegex(ValueError,'protocol'):decode(words)

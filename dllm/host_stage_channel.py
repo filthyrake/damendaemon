@@ -9,10 +9,10 @@ not a durable distributed transaction or a recovery protocol.
 import threading
 import torch
 from .host_tensor_channel import HostTensorChannel
-from .stage_protocol import StageState,Command,HEADER_WORDS,VERSION,PREFILL,DECODE,PREFILL_BATCH,RELEASE,STOP,PING,token_rows
+from .stage_protocol import StageState,Command,HEADER_WORDS,VERSION,PREFILL,DECODE,PREFILL_BATCH,PREFILL_CHUNK,RELEASE,STOP,PING,token_rows
 
 ADMISSION,COMPLETION=1,2
-EXECUTION=(PREFILL,DECODE,PREFILL_BATCH)
+EXECUTION=(PREFILL,DECODE,PREFILL_BATCH,PREFILL_CHUNK)
 
 
 class HostStageChannel:

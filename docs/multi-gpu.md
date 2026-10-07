@@ -340,9 +340,9 @@ The owner must finish CPU work before acknowledging and abort on execution error
 
 Local TCP tests cover prefill, decode, packed prefill, slot release/reuse, stop,
 receiver ownership rejection, corrupted acknowledgements/results, deadlines and
-prompt close cancellation. This retains `StageState`'s existing explicit bounds
-(up to four slots and 512 context); it is transport/lifecycle groundwork, not
-modern-model or long-context admission. There is no remote model worker,
+prompt close cancellation. This retains `StageState`'s four-slot bound and default 512 context limit;
+explicit larger host control contexts are described below. It is
+transport/lifecycle groundwork, not modern-model qualification. There is no remote model worker,
 listener, authenticated provisioning or GPU fence in this component. Each frame
 uses an absolute transport deadline; each method has a fixed number of frames.
 
@@ -358,7 +358,7 @@ range and local KV/recurrent/convolution state. Setup checks matching normalized
 configuration/FP32 precision and complete nonoverlapping ranges; the transport
 owner still supplies the shared weight/session identity. Ordinary/packed prefill,
 reordered or shrinking decode, release/reuse, ping and stop are supported within
-the explicit existing four-slot/512-context protocol bounds. Only sampled token
+four slots and the explicitly admitted control context (512 by default). Only sampled token
 IDs return from the final stage. Input token/slot/frame checks precede commands.
 
 The implementation requires prepared CPU FP32 stages. Local TCP tests compare
@@ -373,3 +373,21 @@ This supplies prepared worker composition, not a listener, remote provisioning,
 HTTP registration, quantized execution, GPU transport, practical long context or
 network performance qualification. A caller must explicitly own connected trusted
 sockets and prepared stages. It does not build a full executor on each worker.
+
+Protocol version 5 adds an owned `PREFILL_CHUNK` command. A fresh chunk requires
+an empty slot and its next generation; continuing chunks require the exact live
+generation and current offset. Commit advances by the chunk length only after
+result/completion acknowledgement. Stale offsets, live-slot restarts and context
+overflow fail. The version change prevents old peers from silently accepting the
+new semantics; both participants must use the same protocol version.
+
+`StageState(..., context_limit=...)` permits an explicit control bound up to
+1,048,576 while its default remains 512. This does not change legacy/GPU model
+admission. `HostHybridWorker.prefill_chunk(tokens, slot, start)` executes one
+bounded frame and returns that chunk's sampled continuation. Callers keep
+appending prompt chunks before switching to decode. The prepared stage's actual
+context/state budget must agree with the control session. Oversized unchunked
+frames fail before a command is sent; no prompt truncation or hidden downgrade
+occurs. Tests cover 32K control counters without tensor allocation, and actual
+synthetic 513-token CPU arithmetic/state parity through 128-token loopback frames.
+Neither result qualifies practical checkpoint context, quality or hardware speed.

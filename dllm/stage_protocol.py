@@ -8,12 +8,12 @@ execution or transport failure poisons the epoch and requires fresh workers.
 from dataclasses import dataclass
 
 MAGIC = 0x444C4C4D
-VERSION = 4
+VERSION = 5
 # Reserved output payload for an output-stage exception with a usable transport.
 FAILED_TOKEN = -1
 MAX_SLOTS = 4
 HEADER_WORDS = 7 + 3 * MAX_SLOTS
-PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH = range(1, 7)
+PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK = range(1, 8)
 MAX_INTEGER = (1 << 63) - 1
 
 
@@ -49,7 +49,7 @@ def decode(words):
     magic, version, epoch, sequence, operation, rows, count = words[:7]
     if magic != MAGIC or version != VERSION:
         raise ValueError('unsupported stage control protocol')
-    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH):
+    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK):
         raise ValueError('invalid stage epoch, sequence or operation')
     if not 0 <= count <= MAX_SLOTS or rows < 0:
         raise ValueError('invalid stage shape')
@@ -64,16 +64,22 @@ def decode(words):
 
 
 def token_rows(command):
-    if command.operation == PREFILL:return 1
+    if command.operation in (PREFILL,PREFILL_CHUNK):return 1
     if command.operation == PREFILL_BATCH:return len(command.entries)
     if command.operation == DECODE:return command.rows
     raise ValueError('operation has no token result')
 
 
 class StageState:
-    def __init__(self, epoch, context, slots=MAX_SLOTS):
+    """Control ownership only; larger contexts require explicit caller admission.
+
+    The default 512 limit preserves legacy callers. An explicit context_limit
+    up to 2**20 enables metadata accounting, not model/hardware qualification.
+    """
+    def __init__(self, epoch, context, slots=MAX_SLOTS, *, context_limit=512):
         if (type(epoch) is not int or not 1 <= epoch <= MAX_INTEGER or
-                type(context) is not int or not 1 <= context <= 512 or
+                type(context_limit) is not int or not 1 <= context_limit <= 2**20 or
+                type(context) is not int or not 1 <= context <= context_limit or
                 type(slots) is not int or not 1 <= slots <= MAX_SLOTS):
             raise ValueError('unsupported stage session bounds')
         self.epoch, self.context, self.slots = epoch, context, slots
@@ -98,6 +104,16 @@ class StageState:
             slot, generation, position = command.entries[0]
             if self.lengths[slot] or generation != self.generations[slot] + 1 or position != 0:
                 raise ValueError('occupied slot or stale stage prefill generation')
+        elif command.operation == PREFILL_CHUNK:
+            if len(command.entries) != 1 or not 1 <= command.rows <= self.context:
+                raise ValueError('invalid stage prefill chunk shape')
+            slot,generation,position=command.entries[0]
+            if position == 0:
+                valid=not self.lengths[slot] and generation==self.generations[slot]+1
+            else:
+                valid=position==self.lengths[slot] and generation==self.generations[slot]
+            if not valid or position+command.rows>self.context:
+                raise ValueError('stale stage prefill chunk ownership or exhausted context')
         elif command.operation == PREFILL_BATCH:
             if (not 2 <= len(command.entries) <= self.slots
                     or not 1 <= command.rows <= self.context
@@ -130,6 +146,9 @@ class StageState:
             elif command.operation == PREFILL:
                 self.generations[slot] = generation
                 self.lengths[slot] = command.rows
+            elif command.operation == PREFILL_CHUNK:
+                self.generations[slot] = generation
+                self.lengths[slot] = extent+command.rows
             elif command.operation == DECODE:
                 self.lengths[slot] += 1
             elif command.operation == RELEASE:

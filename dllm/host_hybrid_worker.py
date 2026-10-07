@@ -11,7 +11,7 @@ import threading
 import torch
 from .host_stage_channel import HostStageChannel
 from .hybrid_stage import HybridLayerStage
-from .stage_protocol import Command,PREFILL,PREFILL_BATCH,DECODE,RELEASE,PING,STOP
+from .stage_protocol import Command,PREFILL,PREFILL_BATCH,PREFILL_CHUNK,DECODE,RELEASE,PING,STOP
 
 
 class HostHybridWorker:
@@ -107,6 +107,19 @@ class HostHybridWorker:
             entries=[(slot,state.generations[slot]+1,0 if operation==PREFILL else len(prompt)) for slot,prompt in zip(slots,prompts)]
             return self._execute(self._command(operation,rows,entries),[v for prompt in prompts for v in prompt])
 
+    def prefill_chunk(self,tokens,slot=0,start=0):
+        """Return this chunk's sampled continuation; callers choose when to decode."""
+        with self.lock:
+            self._ready(True);self._slots([slot]);self._tokens(tokens)
+            state=self.channel.state
+            if (type(start) is not int or start<0 or start+len(tokens)>state.context
+                    or (start==0 and state.lengths[slot])
+                    or (start>0 and start!=state.lengths[slot])):
+                raise ValueError('invalid host hybrid prefill chunk offset/ownership')
+            generation=state.generations[slot]+(start==0)
+            command=self._command(PREFILL_CHUNK,len(tokens),[(slot,generation,start)])
+            return self._execute(command,list(tokens))[0]
+
     def decode(self,tokens,slots):
         with self.lock:
             self._ready(True);self._tokens(tokens);self._slots(slots)
@@ -144,11 +157,12 @@ class HostHybridWorker:
             return result,result
         chunks=[];last=[];offset=0
         for slot,_,extent in command.entries:
-            size=command.rows if command.operation==PREFILL else extent
+            size=extent if command.operation==PREFILL_BATCH else command.rows
+            start=extent if command.operation==PREFILL_CHUNK else 0
             chunk=values[offset:offset+size]
             hidden=stage.embedding(chunk[None]) if self.rank==0 else chunk[None]
-            result=stage.forward_layers(hidden,torch.arange(size,device='cpu')[None],
-                                        torch.tensor([slot],dtype=torch.int64,device='cpu'),True,0)[0]
+            result=stage.forward_layers(hidden,torch.arange(start,start+size,device='cpu')[None],
+                                        torch.tensor([slot],dtype=torch.int64,device='cpu'),True,start)[0]
             chunks.append(result);last.append(result[-1]);offset+=size
         return torch.cat(chunks),torch.stack(last)
 
