@@ -271,6 +271,15 @@ state after downstream cache writes succeed. Scalar tests cover overlap math,
 chunk invariance, reordered/shrinking slots and injected failure. Projection
 loading, normalization, RoPE, QAT and model integration remain separate gates.
 
+`dllm.compressed_indexer.select_compressed` scores compressed blocks with
+weighted ReLU query/key products and selects causal top-k IDs. Query and key
+chunks bound score tensors; deterministic equal-score ties choose lower block
+IDs. Negative learned head weights remain valid. Completion masks prevent future
+or incomplete blocks from entering the result, including poisoned future cache
+entries. CPU scalar tests cover scores, IDs, block boundaries, chunk invariance,
+reordered inputs and empty caches. FP32 scoring is a component reference;
+projection/Hadamard/QAT integration and accelerator rounding remain unqualified.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
