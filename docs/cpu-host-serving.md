@@ -79,14 +79,16 @@ This prevents a queued burst from taking every next admission ahead of another
 waiting client. It does not reserve active slots, preempt a long prefill, provide
 weighted token service or coordinate quotas across separate server processes.
 
-`--client-decode-turns` on the CPU host `serve` role enables equal ready decode
-rows per client, reusing the ordinary scheduler's opt-in policy. It is also
+`--client-decode-turns` on the CPU host `serve` role enables configured ready decode
+shares per client (equal by default), reusing the ordinary scheduler's opt-in policy. It is also
 available on the experimental `distributed-serve` command. Default is off. An
 active client with several ready requests rotates those requests while a peer
 with one ready request gets the same number of rows per step; with one ready
 client, full batching is retained. Backpressured slots are excluded before
 selection. Status exposes the setting, and idle/shutdown clears retained turn
-history. This may reduce aggregate batch utilization. It does not preempt prefill,
+history. Named client `decode_weight` values (1–16, default 1) use the same
+bounded fractional-row policy as ordinary serving; a fully backpressured or
+absent lane earns no credit. This may reduce aggregate batch utilization. It does not preempt prefill,
 reserve slots or establish a token-time SLO; GPU performance was not remeasured.
 
 `--interleaved-prefill` on the CPU host `serve` role is a separate default-off

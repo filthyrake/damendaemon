@@ -757,14 +757,29 @@ input-token accounting, weighted execution fairness or distributed billing.
 Restarting the process resets it. Other clients, shared/admin credentials and
 non-generation routes retain their existing policies.
 
-### Optional equal client decode turns
+### Optional client decode shares
 
 `dllm serve --client-decode-turns` gives each currently ready client an equal
-number of rows in each ordinary decode step. For example, with three ready
+number of rows in each ordinary decode step by default. For example, with three ready
 requests from client A and one from B, the step decodes one A request and the B
 request; A's requests rotate on later steps. With four A requests and two B
 requests, each gets two rows. When only one client is ready, all its ready rows
 can decode. The default remains disabled and decodes every ready request.
+
+Named entries in `DLLM_CLIENT_KEYS` may set `decode_weight` to an integer from
+1 to 16 (default 1). With decode turns enabled, ready token rows are proportional
+to these weights across iterations. For example, two continuously ready clients
+with one request each and weights 3 and 1 decode the first request every step and
+the second every third step. With enough ready rows, a step can serve multiple
+rows from each client; requests within a client rotate. One ready client still
+uses its full batch. With the option disabled, weights have no scheduling effect.
+
+Weights are administrator policy, captured in immutable opaque scopes; clients
+cannot choose weights in request bodies. Fractional credits are exact bounded
+integers smaller than one token row, retained only for currently ready lanes.
+An absent or fully backpressured lane loses its credit and earns none while away.
+Weights count rows, not request admissions, prefill work, compute time or wall
+clock service. The policy makes no throughput or latency guarantee.
 
 The policy uses the opaque named-client identity captured before scheduler
 handoff. Anonymous/shared-key requests form one lane; request payloads cannot
@@ -775,7 +790,7 @@ page release, model/management barriers and sampling retain their existing rules
 Ordinary, chunked and paged scheduler paths share this selection policy.
 
 `GET /v1/scheduler/status` reports the boolean `client_decode_turns` setting. This
-option trades potential batch utilization for equal shares across ready clients;
+option trades potential batch utilization for configured shares across ready clients;
 no throughput improvement is claimed. Shares count decode rows, not computation
 time or wall-clock token rate. Prompt work and the first token from prefill are
 outside this policy. It does not reserve slots for waiting clients, provide

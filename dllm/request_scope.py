@@ -13,8 +13,11 @@ cache_scope = ContextVar('dllm_cache_scope', default=None)
 class CacheScope:
     """Identity-based ownership with immutable optional per-cache capacity."""
     max_prefix_cache_tokens: int | None = None
+    decode_weight: int = 1
 
     def __post_init__(self):
+        if type(self.decode_weight) is not int or not 1<=self.decode_weight<=16:
+            raise ValueError('invalid scope decode weight')
         limit = self.max_prefix_cache_tokens
         if limit is not None and (type(limit) is not int or not 0 <= limit <= 2**31-1):
             raise ValueError('invalid scope prefix cache token limit')

@@ -89,7 +89,7 @@ def main():
                         help="seconds waiting for worker ownership; not an execution deadline (default 120)")
     server.add_argument("--batch-wait-ms",type=float,default=0,help="idle prompt coalescing delay, 0..10 ms; default 0 disables")
     server.add_argument("--prefill-chunk-size",type=int,default=0,help="opt-in prompt token budget per decode step; 0 disables")
-    server.add_argument("--client-decode-turns",action="store_true",help="opt-in equal decode rows per ready client; may reduce batch utilization")
+    server.add_argument("--client-decode-turns",action="store_true",help="opt-in configured decode shares per ready client; default equal; may reduce batch utilization")
     server.add_argument("--prefix-cache-tokens",type=int,default=0,help="opt-in GPU prefix snapshot token budget per model")
     for command in (run, server):
         command.add_argument("--device", choices=("cuda", "rocm", "mps", "xpu"), default=os.environ.get("DLLM_DEVICE", "cuda"))

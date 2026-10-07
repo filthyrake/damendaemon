@@ -16,7 +16,7 @@ def main(argv=None):
     p.add_argument('--batch-size',type=int,choices=range(1,5),default=1)
     p.add_argument('--queue-size',type=int,default=8)
     p.add_argument('--queue-timeout',type=float,default=120)
-    p.add_argument('--client-decode-turns',action='store_true',help='equal ready decode rows per client')
+    p.add_argument('--client-decode-turns',action='store_true',help='configured ready decode shares per client; default equal')
     p.add_argument('--idle-timeout',type=float,default=0,help='optional coordinator shutdown after idle seconds; zero disables')
     args=p.parse_args(argv)
     if not 1<=args.context<=512 or not 0<=args.port<=65535 or not 0<=args.idle_timeout<=86400:

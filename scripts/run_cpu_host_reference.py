@@ -49,7 +49,7 @@ def parser_for_command(*,topology=False):
     parser.add_argument('--alias',default='model')
     parser.add_argument('--queue-size',type=_positive,default=8)
     parser.add_argument('--queue-timeout',type=float,default=120.)
-    parser.add_argument('--client-decode-turns',action='store_true',help='serve role: equal ready decode rows per client')
+    parser.add_argument('--client-decode-turns',action='store_true',help='serve role: configured ready decode shares per client; default equal')
     parser.add_argument('--interleaved-prefill',action='store_true',help='serve role: one prompt chunk before ready decode')
     parser.add_argument('--stop-after-drain',action='store_true',help='serve role: stop peers after administrative drain finishes')
     parser.add_argument('--idle-timeout',type=float,default=0.,help='serve role: stop after idle seconds; 0 disables')

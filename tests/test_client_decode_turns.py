@@ -36,7 +36,8 @@ class ClientDecodeTurnTests(unittest.TestCase):
         self.assertEqual([s for s,_,_ in policy.choose(ready)],[0,2])
         self.assertEqual(policy.choose(ready[:2]),ready[:2])
         self.assertEqual(len(policy.recent),2)
-        self.assertEqual([s for s,_,_ in policy.choose(ready)],[0,2])
+        # Full-batch service preserves individual order instead of tying timestamps.
+        self.assertEqual([s for s,_,_ in policy.choose(ready)],[1,2])
         policy.reset();self.assertFalse(policy.recent)
         anonymous=rows([None]*4);self.assertEqual(policy.choose(anonymous),anonymous)
 
@@ -54,6 +55,12 @@ class ClientDecodeTurnTests(unittest.TestCase):
         self.assertEqual([s for s,_,_ in runtime._ready_decode(active)],[0,1,2])
 
     def test_real_scheduler_paths_preserve_outputs_and_equal_ready_shares(self):
+        self.exercise_scheduler_paths(1)
+
+    def test_weighted_scheduler_paths_preserve_outputs_and_release(self):
+        self.exercise_scheduler_paths(3)
+
+    def exercise_scheduler_paths(self,weight):
         for executor_type in (fixtures.FakeExecutor,fixtures.ChunkExecutor,fixtures.FakePagedExecutor,fixtures.PagedChunkExecutor):
             with self.subTest(path=executor_type.__name__):
                 with patch('dllm.scheduler.Runtime',fixtures.FakeRuntime):
@@ -63,14 +70,17 @@ class ClientDecodeTurnTests(unittest.TestCase):
                 if hasattr(executor,'pool'):
                     from dllm.pages import PagePool
                     executor.pool=PagePool(128,4,executor.context)
-                a,b=CacheScope(),CacheScope();observed=[];choose=runtime.decode_turns.choose
+                a,b=CacheScope(decode_weight=weight),CacheScope();observed=[];choose=runtime.decode_turns.choose
+                service={id(a):0,id(b):0}
                 def select(ready):
                     selected=choose(ready)
                     counts={id(r.cache_scope):0 for _,r,_ in ready}
                     for _,r,_ in selected:counts[id(r.cache_scope)]+=1
                     if len(counts)>1:
-                        self.assertEqual(len(set(counts.values())),1)
+                        for key,value in counts.items():service[key]+=value
+                        self.assertLess(abs(service[id(a)]-weight*service[id(b)]),weight)
                         observed.append((len(ready),len(selected)))
+                    else:service.update({id(a):0,id(b):0})
                     return selected
                 runtime.decode_turns.choose=select
                 def run(scope):
@@ -86,7 +96,8 @@ class ClientDecodeTurnTests(unittest.TestCase):
                             self.assertTrue(runtime.condition.wait_for(lambda:len(runtime.pending)==3,timeout=2))
                         executor.release.set()
                         results=[f.result(timeout=5) for f in futures]
-                    self.assertTrue(any(before>after for before,after in observed),observed)
+                    self.assertTrue(observed)
+                    if weight==1:self.assertTrue(any(before>after for before,after in observed),observed)
                     for events in results:
                         self.assertEqual(events[-1]['usage']['completion_tokens'],7)
                         self.assertEqual(''.join(e.get('text','') for e in events),'1234567')
