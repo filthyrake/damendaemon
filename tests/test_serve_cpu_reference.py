@@ -100,10 +100,29 @@ class ReferenceCommandTests(unittest.TestCase):
                     if process.poll() is None:process.kill();process.communicate()
                     process.stdout.close();process.stderr.close()
 
+    def test_actual_queue_command_concurrency_and_shutdown(self):
+        from concurrent.futures import ThreadPoolExecutor
+        path=self.snapshot('glm')
+        process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','glm',str(path),
+            '--context','128','--port','0','--queue-size','3','--queue-timeout','2'],
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=self.env)
+        try:
+            ready=self.event(process);self.assertTrue(ready['queue_enabled']);self.assertEqual(ready['queue_capacity'],3)
+            body=json.dumps(dict(model='model',messages=[dict(role='user',content='Hi')],max_tokens=2)).encode()
+            def request():
+                with urlopen(Request(ready['url']+'/v1/chat/completions',body,{'Content-Type':'application/json'}),timeout=5) as response:return json.load(response)
+            with ThreadPoolExecutor(3) as pool:results=list(pool.map(lambda _:request(),range(3)))
+            self.assertEqual([r['usage']['completion_tokens'] for r in results],[2,2,2])
+            process.terminate();output,error=process.communicate(timeout=8)
+            self.assertEqual(process.returncode,0,error);self.assertEqual(json.loads(output)['event'],'stopped')
+        finally:
+            if process.poll() is None:process.kill();process.communicate()
+            process.stdout.close();process.stderr.close()
+
     def test_preflight_rejects_policy_family_metadata_and_budgets_before_payload(self):
         path=self.snapshot('glm')
         with patch.dict(os.environ,self.env,clear=True),patch('dllm.glm_reference_loader.load_reference_model',side_effect=AssertionError('payload')) as load:
-            for extra in (('--alias',''),('--context','1048577'),('--cache-mib','2049'),('--port','65536'),('--connections','0')):
+            for extra in (('--alias',''),('--context','1048577'),('--cache-mib','2049'),('--port','65536'),('--connections','0'),('--queue-size','65'),('--queue-size','1','--queue-timeout','nan'),('--queue-timeout','1')):
                 with self.subTest(extra=extra),contextlib.redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):
                     command.main(['glm',str(path),*extra])
             with patch.dict(os.environ,{'DLLM_API_KEY':'bad'}),self.assertRaises(ValueError):command.prepare(self.args('glm',path))

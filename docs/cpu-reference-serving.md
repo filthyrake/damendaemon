@@ -124,3 +124,34 @@ The local gate covers actual tiny packed text+vision snapshots through a separat
 HTTP process, native tool/SSE/history routing, malformed/remote/over-budget input,
 concurrent rejection and cache cleanup. It does not establish official-checkpoint
 image semantics, accelerator support or practical-model performance.
+
+## Optional bounded serialized admission
+
+`serve_cpu_reference` accepts `--queue-size 1..64` and `--queue-timeout` within
+300 seconds. The default size is zero, preserving immediate busy rejection.
+`QueuedReferenceRuntime` exposes the same opt-in to prepared Python callers.
+Text, native tools and Flash still images retain their existing contracts.
+
+One owned worker performs generation and cache cleanup. Named clients receive
+the existing opaque-identity admission turns, preserving FIFO within a client;
+HTTP authentication, model permissions and outstanding/output quotas remain in
+force while waiting. This is serialized service, not continuous batching or
+simultaneous execution. Images are decoded only once their request owns execution.
+
+Requests snapshot at most 1 MiB of JSON metadata at admission; later caller
+mutation cannot change them. Queue expiry is checked before prefill. Full queues
+and expired requests return 503. Each stream buffers at most eight data events
+plus one final/error event. A slow consumer backpressures the one owner, so other
+requests can reach their queue deadline; buffering does not reserve a latency
+SLO or bound total process memory. Cancellation closes the current iterator and
+releases its cache before another request executes. Pending cleanup failures
+stop admission and retain the owner for explicit cleanup retry.
+
+`/v1/scheduler/status` stays responsive while generation is busy; the existing
+admin-authorized drain route stops new admission and lets accepted work finish.
+Drain does not exit the service. Shutdown wakes queued clients, cooperatively
+stops active generation at an event boundary, joins the worker (up to five
+seconds per close attempt), and closes the prepared reference owner. A busy
+close retains ownership for retry; this is not preemption of a CPU kernel or a
+hard generation deadline. Queue timing is reported separately from execution,
+and all metadata remains explicitly CPU/reference/unqualified.

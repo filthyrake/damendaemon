@@ -28,6 +28,8 @@ def parser_for_command():
     parser.add_argument('--alias',default='model')
     parser.add_argument('--port',type=bounded_integer(0,65535),default=8088)
     parser.add_argument('--connections',type=bounded_integer(1,64),default=16)
+    parser.add_argument('--queue-size',type=bounded_integer(0,64),default=0,help='0 preserves immediate busy rejection; otherwise bounded serialized admission')
+    parser.add_argument('--queue-timeout',type=float,default=120.)
     parser.add_argument('--context',type=bounded_integer(1,2**20),default=4096)
     parser.add_argument('--weight-mib',type=bounded_integer(1,2**20),default=256)
     parser.add_argument('--cache-mib',type=bounded_integer(1,2048),default=256)
@@ -56,6 +58,8 @@ def image_metadata(config,args):
 def prepare(args):
     """Validate policy and text metadata before any tensor payload is loaded."""
     auth=AuthPolicy.from_env()
+    if not 0<args.queue_timeout<=300 or (not args.queue_size and args.queue_timeout!=120):
+        raise ValueError('queue timeout requires an enabled queue and a bound within 300 seconds')
     if not isinstance(args.alias,str) or not 1<=len(args.alias)<=128:raise ValueError('invalid model alias')
     if args.flash_images and args.family!='flash':raise ValueError('still-image HTTP requires explicit flash family')
     if not args.flash_images and any(getattr(args,key) is not None for key in
@@ -106,7 +110,10 @@ def prepare(args):
             image_options=dict(vision=vision,image_workspace_bytes=(args.image_workspace_mib or 64)*1024**2,
                 image_output_bytes=(args.image_output_mib or 64)*1024**2)
         runner=Runner(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2,**image_options)
-        runtime=ReferenceRuntime(runner,args.alias)
+        if args.queue_size:
+            from dllm.queued_reference_serving import QueuedReferenceRuntime
+            runtime=QueuedReferenceRuntime(runner,args.alias,queue_size=args.queue_size,queue_timeout=args.queue_timeout)
+        else:runtime=ReferenceRuntime(runner,args.alias)
     except BaseException as error:
         try:
             cleanup=getattr(model,'cleanup',None) or model.cleanup_failed_prefills
@@ -131,7 +138,7 @@ def serve(runtime,auth,args):
             for sig in (signal.SIGTERM,signal.SIGINT):previous[sig]=signal.signal(sig,interrupt)
         print(json.dumps(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',
             model=args.alias,model_type=runtime.family,modality='still_image' if runtime.images else 'text',scope='cpu_reference',dtype='float32',
-            official_model_qualified=False)),flush=True)
+            official_model_qualified=False,queue_enabled=bool(args.queue_size),queue_capacity=args.queue_size)),flush=True)
         while not stopping.is_set():server.handle_request()
     except BaseException as error:primary=error;raise
     finally:
