@@ -1877,3 +1877,24 @@ loading weights, emits an unqualified CPU scope record, and releases abandoned
 or failed generation state with owned cleanup retry. Tiny real checkpoint CLI
 tests use a controlled head for deterministic lifecycle checks; no output quality
 or official-weight execution is implied. Hardware tests remain paused.
+
+### GLM-5.3-Flash prepared vision reference
+
+`glm_flash_vision` independently describes all 347 visual tensor names in the
+pinned Flash index and executes prepared CPU FP32 vision parameters. The pinned
+[Transformers v5.17.0 architecture](https://github.com/huggingface/transformers/blob/v5.17.0/src/transformers/models/glm5_next/modeling_glm5_next.py)
+uses biased temporal patch projection, full axial rotary attention with Q/K
+RMSNorm, clipped SwiGLU blocks, spatial convolutional downsampling, then a
+LayerNorm/GELU/clipped-SwiGLU merger. Frames attend independently and patch rows
+use spatial merge-block order. Attribution/licenses remain in
+`docs/licenses/transformers-Apache-2.0.txt` and `glm53-flash-MIT.txt`.
+
+The reference validates exact prepared shapes and CPU FP32 storage, parameter
+bytes, token counts, quadratic attention scratch and output limits before
+execution. Overflow/nonfinite values fail rather than being hidden by clipping
+or normalization. Fixture controls separately express Conv3d/Conv2d, explicit
+head attention, scalar rotary coordinates and the merger, checking intermediate
+and final results plus image/frame isolation. No official visual payloads were
+loaded. This does not qualify trained image semantics, preprocessing, language
+image insertion, video support, HTTP, GPU execution or performance; existing
+text-only loader and serving guards remain unchanged.
