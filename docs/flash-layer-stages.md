@@ -140,3 +140,33 @@ The internal base is not directly constructible. Host transports still admit
 only their previously supported families; Flash transport integration is a
 separate gate. Packed two/three-stage controls cover chunks, unequal cursors,
 reordered decode, exact mixed-cache reservation, release/reuse and failures.
+
+## Prepared host stages
+
+`HostTopology` explicitly validates Flash root/text geometry and FP8 reference
+precision. Its identity binds the complete configuration, residual stream count,
+layer ranges, source/session policy, context, slots and mapped vocabulary. Wire
+width is `hidden_size * hc_mult`; frame and chunk limits cover every stream.
+Configured image/video/audio IDs remain excluded from this text-only path.
+
+`HostPipelineCoordinator` and `HostPipelineWorker` admit explicit Flash slot
+owners. They flatten streams only for bounded transport rows and restore the full
+shape before each range executes. No stream reduction occurs between stages.
+All participants admit each command before execution. Intermediate stages return
+full activations; the last stage returns policy-checked sampled token IDs.
+Partial execution, peer loss and abandoned completion discard the whole epoch.
+
+`glm_flash_host_pipeline_build.build_glm_flash_host_pipeline_worker` claims
+already authenticated, fresh, identity-matched transports, then loads only the
+assigned packed range. Optional bounded snapshot fingerprinting checks actual
+bytes and rechecks receipts across construction; without it, the source identity
+is an operator assertion. Shared GLM/Flash construction uses explicit family
+callbacks. Invalid controls leave links caller-owned, while post-claim failure
+closes every resource and retains failed cleanup in the build error.
+
+Ephemeral loopback TLS tests compare packed two/three-stage logits and tokens
+with independent whole-model controls; they cover ragged/chunked prefill,
+reordered decode, release/reuse, STOP, identity/frame rejection, peer failures,
+range-local loads, source mutation and retryable construction cleanup. These
+prepared APIs do not yet provide a Flash host command, native-chat owner or HTTP
+service, and do not qualify actual remote hardware, image-host execution or speed.

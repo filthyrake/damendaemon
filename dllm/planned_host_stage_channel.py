@@ -21,7 +21,7 @@ class PlannedHostStageChannel(HostStageChannel):
                 or transport.identity!=topology.stage_identity(stage_index) or transport.max_frame_bytes!=topology.frame_bytes
                 or state.context!=topology.context or state.slots!=topology.slots):
             raise ValueError('planned stage transport/state differs from topology contract')
-        super().__init__(transport,state,vocab_size=topology.config['vocab_size'])
+        super().__init__(transport,state,vocab_size=topology.text_config['vocab_size'])
         self.topology,self.stage_index=topology,stage_index
         self.result_kind=topology.result_kind(stage_index)
 

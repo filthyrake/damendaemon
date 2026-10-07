@@ -4,10 +4,11 @@ import torch
 
 from .cpu_hybrid_stage import CpuHybridStage
 from .glm_stage_slots import GlmStageSlots
+from .glm_flash_stage_slots import FlashStageSlots
 from .host_hybrid_worker import HostHybridWorker
 from .host_topology import HostTopology
 from .planned_host_stage_channel import PlannedHostStageChannel
-from .stage_protocol import DECODE,RELEASE,PING,STOP
+from .stage_protocol import DECODE,RELEASE,PING,STOP,PREFILL_BATCH,PREFILL_CHUNK
 
 _claim_lock=threading.Lock()
 
@@ -28,16 +29,18 @@ class _PlannedWorker(HostHybridWorker):
                            for c in channels)
                     or len({c.state.epoch for c in channels})!=1):
                 raise ValueError('host pipeline needs fresh ordered links matching one topology and epoch')
-            glm=topology.quantization=='fp8_reference'
-            expected_stage=GlmStageSlots if glm else CpuHybridStage
+            glm=topology.config.get('model_type')=='glm_moe_dsa'
+            flash=topology.config.get('model_type')=='glm5_next'
+            reference=glm or flash
+            expected_stage=FlashStageSlots if flash else GlmStageSlots if glm else CpuHybridStage
             if (not isinstance(stage,expected_stage) or stage.closed or getattr(stage,'failed',False)
                     or getattr(stage,'_pipeline_owner',None) is not None or any(stage.lengths)
                     or stage.actual_device.type!='cpu' or stage.compute_dtype!=torch.float32
                     or (stage.layer_start,stage.layer_end)!=topology.ranges[index]
                     or stage.context!=topology.context or stage.max_batch!=topology.slots
                     or stage.c!=topology.config
-                    or (glm and (any(state is not None for state in stage.states) or stage.stage.failed_cleanups))
-                    or (not glm and stage.model.quantization!=topology.quantization)):
+                    or (reference and (any(state is not None for state in stage.states) or stage.stage.failed_cleanups))
+                    or (not reference and stage.model.quantization!=topology.quantization)):
                 raise ValueError('prepared CPU stage differs from topology or already has an owner')
             self.topology,self.stage_index,self.channels=topology,index,tuple(channels)
             self.channel=self.channels[-1];self.stage,self.rank=stage,rank
@@ -80,8 +83,27 @@ class _PlannedWorker(HostHybridWorker):
             raise ValueError('host pipeline prefill exceeds explicit chunk rows')
         return super()._command(operation,rows,entries)
 
+    def _run(self,command,values):
+        if not isinstance(self.stage,FlashStageSlots):return super()._run(command,values)
+        stage=self.stage;streams,dim=stage.stage.streams,stage.stage.dim
+        if command.operation==DECODE:
+            ids=torch.tensor([entry[0] for entry in command.entries],dtype=torch.int64)
+            positions=torch.tensor([[entry[2]] for entry in command.entries],dtype=torch.int64)
+            hidden=stage.embedding(values[:,None]) if self.rank==0 else values.reshape(-1,1,streams,dim)
+            result=stage.forward_layers(hidden,positions,ids,False).squeeze(1)
+            return result.flatten(1),result
+        chunks=[];last=[];offset=0
+        for slot,_,extent in command.entries:
+            size=extent if command.operation==PREFILL_BATCH else command.rows
+            start=extent if command.operation==PREFILL_CHUNK else 0
+            chunk=values[offset:offset+size]
+            hidden=stage.embedding(chunk[None]) if self.rank==0 else chunk.reshape(1,size,streams,dim)
+            result=stage.forward_layers(hidden,torch.arange(start,start+size)[None],torch.tensor([slot]),True,start)[0]
+            chunks.append(result.flatten(1));last.append(result[-1]);offset+=size
+        return torch.cat(chunks),torch.stack(last)
+
     def _clear_slots(self,command):
-        if isinstance(self.stage,GlmStageSlots):
+        if isinstance(self.stage,(GlmStageSlots,FlashStageSlots)):
             self.stage.release([slot for slot,_,_ in command.entries])
         else:super()._clear_slots(command)
 
