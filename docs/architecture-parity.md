@@ -1807,5 +1807,15 @@ KV tile expansion and online softmax, and now rejects overflow in latent RMS
 normalization instead of allowing a finite zero result. Independent dense masked
 controls cover NoPE output and tile boundaries; packed E4M3/FP32-scale projection
 fixtures agree with independently decoded floating controls. Existing rotary
-GLM tests remain part of regression coverage. These stateless primitives do not
-yet supply an owned Flash sparse-attention layer or full-model execution.
+GLM tests remain part of regression coverage. Full-model execution remains unqualified; owned layer composition follows.
+
+`glm_flash_sparse.FlashSparseAttention` joins NoPE projections, pooled indexing,
+selected latent expansion and output projection with owned latent/key/gate
+histories. It admits the full declared cache capacity but grows actual retained
+history with committed tokens. Temporary replacements and indexer scratch are
+covered by separate workspace admission; explicit packed adapters retain their
+own tile-workspace allowance in addition to the layer budget. No expanded full
+KV cache is retained. CPU controls cover dense and packed projections, full/chunk/
+decode, pool-boundary continuation, reorder/shrink/duplicate, release and rollback
+after late failure. Inputs are unpadded at this layer; standalone indexer padding
+support does not imply padded model admission. Official weights are unexecuted.
