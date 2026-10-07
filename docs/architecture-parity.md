@@ -1861,3 +1861,19 @@ are excluded. Tiny two-shard fixtures execute against independently decoded mode
 controls and cover exact admission, malformed headers/index, changed files and
 descriptor cleanup. The default 256 MiB weight budget does not admit the official
 checkpoint; no official Flash weight values have been read or executed.
+
+`glm_flash_text.FlashText` and `glm_flash_generation.FlashReferenceGenerator`
+provide ordinary text and owned greedy CPU generation. The pinned Flash tokenizer
+is byte-identical to the pinned regular GLM tokenizer: 154,856 mapped IDs within
+154,880 model rows. Six literal prompts and token-ID cases were checked with the
+official Flash template in a sandbox and the actual tokenizer. Flash media
+branches differ and remain unsupported; tools are also rejected. Shared ordinary
+format/parser/lifecycle code is reused with explicit Flash model/text binding and
+nested configuration validation. Unmapped padded logits cannot be sampled.
+
+Run `python -m scripts.run_glm_flash_reference SNAPSHOT --prompt 'Hello'` for the
+explicit CPU reference command. It admits context/text and byte budgets before
+loading weights, emits an unqualified CPU scope record, and releases abandoned
+or failed generation state with owned cleanup retry. Tiny real checkpoint CLI
+tests use a controlled head for deterministic lifecycle checks; no output quality
+or official-weight execution is implied. Hardware tests remain paused.

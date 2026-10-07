@@ -44,15 +44,21 @@ def validate_text_config(config,text,max_context):
 
 class ReferenceGenerator:
     """Close abandoned iterators; failed releases stay owned until cleanup succeeds."""
+    model_type=GlmModel
+    text_type=GlmText
+
+    def _configuration(self,model):
+        return getattr(model,'config',{})
+
     def __init__(self,model,text,*,max_context=4096,max_cache_bytes=256*1024**2):
-        if (not isinstance(model,GlmModel) or not isinstance(text,GlmText)
+        if (not isinstance(model,self.model_type) or not isinstance(text,self.text_type)
                 or model.embedding.device.type!='cpu' or model.embedding.shape[0]!=text.vocab_size
                 or not isinstance(text.tokenizer.decoder,decoders.ByteLevel)):
             raise ValueError('GLM generation requires matching CPU model and ByteLevel tokenizer')
         if (type(max_context) is not int or not 1<=max_context<=2**20
                 or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**31):
             raise ValueError('invalid GLM generation context/cache budget')
-        validate_text_config(getattr(model,'config',{}),text,max_context)
+        validate_text_config(self._configuration(model),text,max_context)
         self.model,self.text=model,text;self.max_context,self.max_cache_bytes=max_context,max_cache_bytes
         self.failed_cleanups=[];self.lock=threading.RLock()
 
