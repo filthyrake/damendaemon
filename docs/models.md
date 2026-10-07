@@ -626,3 +626,19 @@ after the FFN succeeds; downstream failure after attention mutation poisons both
 states. Dense/sparse expert controls, tiny-score routing and cached/fresh-prefix
 block comparisons are local FP32 evidence only. Complete-model, actual packed
 checkpoint and hardware qualification remain open.
+
+`GlmModel` composes prepared CPU FP32 embedding, mixed dense/sparse blocks,
+full/shared indexers, final RMS norm and vocabulary head. Aggregate retained
+cache admission precedes every layer allocation. It returns last-token logits
+by default; explicit all-token logits have a separate output budget. Cache
+cursors publish only after every block and the head succeed. Partial layer
+advances or cross-layer reorder failures poison the entire model state.
+Failed allocation/prefill cleanup retains ownership for retry before another
+allocation. Callers must close returned states when finished.
+
+The tiny prepared-model controls compare incremental logits with full-prefix
+and manually composed stack results, and cover reordered slots, aggregate
+budgets, cursor drift, head failures and cleanup retry. The CPU primitives use
+explicit CPU output/cache allocation. This completes the prepared FP32 reference
+stack, not actual GLM FP8 snapshot loading, tokenizer/command integration, trained
+model quality or hardware qualification.

@@ -62,7 +62,7 @@ class GlmIndexer:
         batch,sequence=self._inputs(hidden,positions,chunk)
         rows=min(chunk,sequence)
         self._budget(4*batch*sequence*self.width,4*batch*rows*(self.dim+12*self.width))
-        keys=torch.empty(batch,sequence,self.width,dtype=torch.float32)
+        keys=torch.empty(batch,sequence,self.width,dtype=torch.float32,device='cpu')
         for start in range(0,sequence,chunk):
             stop=min(start+chunk,sequence)
             projected=F.linear(hidden[:,start:stop],self.weights['wk.weight'])
@@ -88,8 +88,8 @@ class GlmIndexer:
         scratch=4*batch*(q*self.heads*(12*self.width+4*k)+q*(self.dim+self.rank)
                          +k*self.width+12*q*(top+k))
         self._budget(12*batch*sequence*top,scratch)
-        selected=torch.empty(batch,sequence,top,dtype=torch.int64)
-        scores=torch.empty(batch,sequence,top,dtype=torch.float32)
+        selected=torch.empty(batch,sequence,top,dtype=torch.int64,device='cpu')
+        scores=torch.empty(batch,sequence,top,dtype=torch.float32,device='cpu')
         for start in range(0,sequence,query_chunk):
             stop=min(start+query_chunk,sequence)
             queries=F.linear(low_rank[:,start:stop],self.weights['wq_b.weight']).unflatten(-1,(self.heads,self.width))

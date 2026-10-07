@@ -93,9 +93,9 @@ class CachedGlmAttention:
         width=self.rank+self.rope_dim+(self.indexer.width if self.indexer is not None else 0)
         per_slot=4*capacity*width
         if batch*per_slot>max_cache_bytes:raise ValueError('GLM cache reservation exceeds budget')
-        return GlmAttentionState(self,torch.empty(batch,capacity,self.rank,dtype=torch.float32),
-                                 torch.empty(batch,capacity,self.rope_dim,dtype=torch.float32),
-                                 None if self.indexer is None else torch.empty(batch,capacity,self.indexer.width,dtype=torch.float32),
+        return GlmAttentionState(self,torch.empty(batch,capacity,self.rank,dtype=torch.float32,device='cpu'),
+                                 torch.empty(batch,capacity,self.rope_dim,dtype=torch.float32,device='cpu'),
+                                 None if self.indexer is None else torch.empty(batch,capacity,self.indexer.width,dtype=torch.float32,device='cpu'),
                                  capacity,max_cache_bytes,per_slot)
 
     @torch.no_grad()
@@ -116,7 +116,7 @@ class CachedGlmAttention:
                         or previous_indices.shape!=(*hidden.shape[:2],min(self.index_top_k,end))):
                     raise ValueError('shared GLM attention requires matching prior full-indexer selections')
             elif previous_indices is not None:raise ValueError('full GLM indexer does not accept shared selections')
-            positions=torch.arange(position,end,dtype=torch.int64).expand(hidden.shape[0],-1)
+            positions=torch.arange(position,end,dtype=torch.int64,device='cpu').expand(hidden.shape[0],-1)
             projected=project_mla(hidden,positions,self.projections,heads=self.heads,nope_dim=self.nope_dim,
                                   rope_dim=self.rope_dim,rope_base=self.rope_base,eps=self.epsilon,**self.budgets)
             new_index=None if self.indexer is None else self.indexer.project_keys(hidden,positions)

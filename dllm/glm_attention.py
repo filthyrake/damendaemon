@@ -55,10 +55,10 @@ def project_mla(hidden,positions,weights,*,heads,nope_dim,rope_dim,rope_base=800
     if not torch.isfinite(hidden).all() or any(not torch.isfinite(w).all() for w in weights.values()):
         raise ValueError('GLM latent projection inputs must be finite')
     inverse=frequencies(rope_dim,base=rope_base)
-    result={'query':torch.empty(batch,sequence,heads,width,dtype=torch.float32),
-            'low_rank':torch.empty(batch,sequence,qr,dtype=torch.float32),
-            'latents':torch.empty(batch,sequence,kr,dtype=torch.float32),
-            'rotary_keys':torch.empty(batch,sequence,rope_dim,dtype=torch.float32)}
+    result={'query':torch.empty(batch,sequence,heads,width,dtype=torch.float32,device='cpu'),
+            'low_rank':torch.empty(batch,sequence,qr,dtype=torch.float32,device='cpu'),
+            'latents':torch.empty(batch,sequence,kr,dtype=torch.float32,device='cpu'),
+            'rotary_keys':torch.empty(batch,sequence,rope_dim,dtype=torch.float32,device='cpu')}
     def norm(value,weight):return value*torch.rsqrt(value.square().mean(-1,keepdim=True)+eps)*weight
     for start in range(0,sequence,chunk):
         stop=min(start+chunk,sequence);x=hidden[:,start:stop];position=positions[:,start:stop]
@@ -101,7 +101,7 @@ def sparse_latent_attention(query,latents,rotary_keys,kv_weight,indices,position
     _budgets(4*batch*sequence*heads*value_dim,scratch,max_output_bytes,max_workspace_bytes)
     if any(not torch.isfinite(t).all() for t in (query,latents,rotary_keys,kv_weight)):
         raise ValueError('GLM sparse attention inputs must be finite')
-    result=torch.empty(batch,sequence,heads,value_dim,dtype=torch.float32)
+    result=torch.empty(batch,sequence,heads,value_dim,dtype=torch.float32,device='cpu')
     for b in range(batch):
         for s in range(sequence):
             row=indices[b,s]
@@ -110,9 +110,9 @@ def sparse_latent_attention(query,latents,rotary_keys,kv_weight,indices,position
             selected=row[row>=0]
             if not selected.numel() or selected.unique().numel()!=selected.numel():
                 raise ValueError('GLM selection must contain distinct causal tokens')
-            maximum=torch.full((heads,),-float('inf'),dtype=torch.float32)
-            denominator=torch.zeros(heads,dtype=torch.float32)
-            numerator=torch.zeros(heads,value_dim,dtype=torch.float32)
+            maximum=torch.full((heads,),-float('inf'),dtype=torch.float32,device='cpu')
+            denominator=torch.zeros(heads,dtype=torch.float32,device='cpu')
+            numerator=torch.zeros(heads,value_dim,dtype=torch.float32,device='cpu')
             for start in range(0,selected.numel(),key_chunk):
                 ids=selected[start:start+key_chunk]
                 expanded=F.linear(latents[b,ids],kv_weight).unflatten(-1,(heads,nope_dim+value_dim)).transpose(0,1)
