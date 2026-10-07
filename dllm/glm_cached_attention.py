@@ -1,9 +1,9 @@
-"""Owned CPU FP32 GLM attention composition; no serving or packed admission."""
+"""Owned CPU FP32 GLM attention composition; no serving or snapshot admission."""
 from dataclasses import dataclass,field
 import threading
 import torch
-import torch.nn.functional as F
-from .glm_attention import project_mla,sparse_latent_attention,_float,_budgets
+from .prepared_projection import linear
+from .glm_attention import project_mla,sparse_latent_attention,_float,_budgets,_projection,_finite_parameter
 from .glm_indexer import GlmIndexer
 from .deepseek_position import frequencies
 
@@ -61,7 +61,8 @@ class CachedGlmAttention:
             raise ValueError('invalid full/shared GLM attention parameter names')
         for name,value in weights.items():
             rank=1 if 'layernorm' in name or 'k_norm.' in name else 2
-            if not _float(value,rank) or not torch.isfinite(value).all():
+            valid=(_float(value,rank) if rank==1 or name=='indexer.weights_proj.weight' else _projection(value))
+            if not valid or not _finite_parameter(value):
                 raise ValueError('GLM attention weights require finite CPU FP32 tensors')
         if (any(type(v) is not int or not 1<=v<=4096 for v in (heads,nope_dim,rope_dim,value_dim,index_top_k))
                 or heads>256 or rope_dim<2 or rope_dim%2
@@ -131,7 +132,7 @@ class CachedGlmAttention:
                 attended=sparse_latent_attention(projected['query'],state.latents[:,:end],state.rotary_keys[:,:end],
                                                   self.weights['kv_b_proj.weight'],selected,positions,
                                                   nope_dim=self.nope_dim,value_dim=self.value_dim,**self.budgets)
-                output=F.linear(attended.flatten(-2),self.weights['o_proj.weight'])
+                output=linear(attended.flatten(-2),self.weights['o_proj.weight'])
                 if not torch.isfinite(output).all():raise ValueError('nonfinite GLM attention output')
             except BaseException:
                 state.poisoned=True

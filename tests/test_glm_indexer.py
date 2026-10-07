@@ -66,7 +66,7 @@ class GlmIndexerTests(unittest.TestCase):
 
     def test_budget_and_input_rejection_before_projection(self):
         bounded=GlmIndexer(self.weights,rope_dim=4,max_output_bytes=1)
-        with patch('dllm.glm_indexer.F.linear',side_effect=AssertionError('projection started')):
+        with patch('dllm.glm_indexer.linear',side_effect=AssertionError('projection started')):
             with self.assertRaises(ValueError):bounded.project_keys(self.hidden,self.positions)
             with self.assertRaises(ValueError):bounded.select(self.hidden,self.low,torch.zeros(2,7,8),self.positions,top_k=4)
         for position in (self.positions.float(),self.positions-1,self.positions+2**20):

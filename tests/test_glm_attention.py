@@ -61,7 +61,7 @@ class GlmAttentionTests(unittest.TestCase):
         for bad in (torch.full_like(valid,-1),torch.full_like(valid,-2),torch.full_like(valid,7),
                     torch.ones_like(valid),valid.expand(2,7,2)):
             with self.assertRaises(ValueError):attend(bad)
-        with patch('dllm.glm_attention.F.linear',side_effect=AssertionError('projection started')):
+        with patch('dllm.glm_attention.linear',side_effect=AssertionError('projection started')):
             with self.assertRaises(ValueError):attend(max_workspace_bytes=1)
             with self.assertRaises(ValueError):self.projected(max_output_bytes=1)
         p['query'][0,0,0,0]=float('nan')

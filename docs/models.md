@@ -652,3 +652,13 @@ FP32 checkpoint reads require a little-endian host. Only selected tiles expand;
 row views retain their original block coordinates. Special scale values propagate
 for diagnostics. This is a CPU FP32 arithmetic control, without accelerator
 activation quantization or actual GLM checkpoint qualification.
+
+GLM latent Q/KV projections, selected KV expansion, full-indexer Q/K
+projections and the attention output accept these explicit packed adapters
+with FP32 results. Norms and index head weights remain floating. Full/shared
+cache tests compare against independently decoded dense weights, including
+chunked prefill, duplicated/reordered slots and failures before/after cache
+mutation. Nonfinite index keys now fail before cache writes. Each packed
+adapter has its own explicit scratch allowance, additional to attention tensor
+scratch; these are not a combined process-memory cap. No dense weight matrix
+is retained and no accelerator activation rounding is emulated.

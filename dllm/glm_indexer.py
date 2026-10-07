@@ -1,11 +1,13 @@
 """Bounded CPU FP32 GLM-5.3 full-indexer reference equations.
 
 Independent composition from Transformers v5.15.0 glm_moe_dsa. This is not
-FP8 execution, a persistent cache, a complete attention layer or a GPU kernel.
+accelerator FP8 arithmetic, a persistent cache or a GPU kernel.
 """
 import torch
 import torch.nn.functional as F
 from .compressed_indexer import select_compressed
+from .glm_attention import _projection,_finite_parameter
+from .prepared_projection import linear
 from .deepseek_position import frequencies,rotate_pairs
 
 
@@ -22,7 +24,9 @@ class GlmIndexer:
         if not isinstance(weights,dict) or set(weights)!=names:
             raise ValueError('GLM indexer requires exactly its five projection/norm tensors')
         for name,value in weights.items():
-            if not _tensor(value,1 if name.startswith('k_norm.') else 2):
+            valid=(_projection(value) if name in ('wq_b.weight','wk.weight')
+                   else _tensor(value,1 if name.startswith('k_norm.') else 2))
+            if not valid:
                 raise ValueError('GLM indexer weights require nonempty CPU FP32 tensors')
         width,dim=weights['wk.weight'].shape
         heads=weights['weights_proj.weight'].shape[0]
@@ -36,7 +40,7 @@ class GlmIndexer:
         for bound in (max_output_bytes,max_workspace_bytes):
             if type(bound) is not int or not 1<=bound<=2**31:
                 raise ValueError('invalid GLM indexer tensor storage budget')
-        if any(not torch.isfinite(value).all() for value in weights.values()):
+        if any(not _finite_parameter(value) for value in weights.values()):
             raise ValueError('GLM indexer weights must be finite')
         self.weights=weights.copy()
         self.width,self.dim,self.heads,self.rank=width,dim,heads,rank
@@ -65,11 +69,12 @@ class GlmIndexer:
         keys=torch.empty(batch,sequence,self.width,dtype=torch.float32,device='cpu')
         for start in range(0,sequence,chunk):
             stop=min(start+chunk,sequence)
-            projected=F.linear(hidden[:,start:stop],self.weights['wk.weight'])
+            projected=linear(hidden[:,start:stop],self.weights['wk.weight'])
             normalized=F.layer_norm(projected,(self.width,),self.weights['k_norm.weight'],
                                     self.weights['k_norm.bias'],eps=1e-6)
             normalized[...,:self.rope_dim]=rotate_pairs(normalized[...,:self.rope_dim],
                                                         positions[:,start:stop],self.inverse)
+            if not torch.isfinite(normalized).all():raise ValueError('nonfinite GLM index key projection')
             keys[:,start:stop]=normalized
         return keys
 
@@ -92,9 +97,11 @@ class GlmIndexer:
         scores=torch.empty(batch,sequence,top,dtype=torch.float32,device='cpu')
         for start in range(0,sequence,query_chunk):
             stop=min(start+query_chunk,sequence)
-            queries=F.linear(low_rank[:,start:stop],self.weights['wq_b.weight']).unflatten(-1,(self.heads,self.width))
+            queries=linear(low_rank[:,start:stop],self.weights['wq_b.weight']).unflatten(-1,(self.heads,self.width))
             queries[...,:self.rope_dim]=rotate_pairs(queries[...,:self.rope_dim],positions[:,start:stop],self.inverse)
-            weights=F.linear(hidden[:,start:stop],self.weights['weights_proj.weight'])*(self.heads**-.5)
+            weights=linear(hidden[:,start:stop],self.weights['weights_proj.weight'])*(self.heads**-.5)
+            if not torch.isfinite(queries).all() or not torch.isfinite(weights).all():
+                raise ValueError('nonfinite GLM index query projection')
             ids,values=select_compressed(queries,keys,weights,positions[:,start:stop],ratio=1,top_k=top_k,
                                         query_chunk=query_chunk,key_chunk=key_chunk,
                                         scale_head_weights=False,dot_scale=self.width**-.5)

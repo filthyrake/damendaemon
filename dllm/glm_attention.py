@@ -1,16 +1,28 @@
 """Stateless CPU FP32 GLM latent projections and tiled sparse attention.
 
 Independent equations from Transformers v5.15.0 glm_moe_dsa. No persistent cache,
-packed execution, model admission or GPU qualification is supplied here.
+model admission or GPU qualification is supplied here. Packed adapters expand tiles only.
 """
 import torch
-import torch.nn.functional as F
 from .deepseek_position import frequencies,rotate_pairs
+from .prepared_projection import PackedProjection,linear
 
 
 def _float(value,rank):
     return (isinstance(value,torch.Tensor) and value.ndim==rank and min(value.shape)>0
             and value.dtype==torch.float32 and value.device.type=='cpu')
+
+
+def _projection(value):
+    return (_float(value,2) or (isinstance(value,PackedProjection)
+            and value.dtype==torch.float32 and value.device.type=='cpu'
+            and value.format=='e4m3fn_f32'))
+
+
+def _finite_parameter(value):
+    # Packed values are checked through bounded decoded results, never expanded
+    # or scanned as a whole matrix during admission.
+    return not isinstance(value,torch.Tensor) or bool(torch.isfinite(value).all())
 
 
 def _positions(positions,shape):
@@ -40,7 +52,8 @@ def project_mla(hidden,positions,weights,*,heads,nope_dim,rope_dim,rope_base=800
             or type(eps) not in (int,float) or not 0<eps<=1):
         raise ValueError('invalid GLM latent projection geometry/options')
     for name,value in weights.items():
-        if not _float(value,1 if 'layernorm' in name else 2):raise ValueError('latent weights require CPU FP32')
+        if not (_float(value,1) if 'layernorm' in name else _projection(value)):
+            raise ValueError('latent weights require CPU FP32 or explicit packed projections')
     batch,sequence,dim=hidden.shape
     qr=weights['q_a_layernorm.weight'].numel();kr=weights['kv_a_layernorm.weight'].numel()
     width=nope_dim+rope_dim
@@ -52,7 +65,7 @@ def project_mla(hidden,positions,weights,*,heads,nope_dim,rope_dim,rope_base=800
     output=4*batch*sequence*(heads*width+qr+kr+rope_dim)
     scratch=4*batch*min(chunk,sequence)*(6*heads*width+4*qr+8*kr+8*rope_dim+dim)
     _budgets(output,scratch,max_output_bytes,max_workspace_bytes)
-    if not torch.isfinite(hidden).all() or any(not torch.isfinite(w).all() for w in weights.values()):
+    if not torch.isfinite(hidden).all() or any(not _finite_parameter(w) for w in weights.values()):
         raise ValueError('GLM latent projection inputs must be finite')
     inverse=frequencies(rope_dim,base=rope_base)
     result={'query':torch.empty(batch,sequence,heads,width,dtype=torch.float32,device='cpu'),
@@ -62,10 +75,10 @@ def project_mla(hidden,positions,weights,*,heads,nope_dim,rope_dim,rope_base=800
     def norm(value,weight):return value*torch.rsqrt(value.square().mean(-1,keepdim=True)+eps)*weight
     for start in range(0,sequence,chunk):
         stop=min(start+chunk,sequence);x=hidden[:,start:stop];position=positions[:,start:stop]
-        low=norm(F.linear(x,weights['q_a_proj.weight']),weights['q_a_layernorm.weight'])
-        query=F.linear(low,weights['q_b_proj.weight']).unflatten(-1,(heads,width))
+        low=norm(linear(x,weights['q_a_proj.weight']),weights['q_a_layernorm.weight'])
+        query=linear(low,weights['q_b_proj.weight']).unflatten(-1,(heads,width))
         query[...,nope_dim:]=rotate_pairs(query[...,nope_dim:],position,inverse)
-        packed=F.linear(x,weights['kv_a_proj_with_mqa.weight'])
+        packed=linear(x,weights['kv_a_proj_with_mqa.weight'])
         latent=norm(packed[...,:kr],weights['kv_a_layernorm.weight'])
         rotary=rotate_pairs(packed[...,kr:],position,inverse)
         for name,value in (('query',query),('low_rank',low),('latents',latent),('rotary_keys',rotary)):
@@ -84,7 +97,7 @@ def sparse_latent_attention(query,latents,rotary_keys,kv_weight,indices,position
     indexed by absolute token position. -1 padding is ignored; each row must
     select at least one distinct causal token. Returns [B,S,H,value].
     """
-    if not _float(query,4) or not _float(latents,3) or not _float(rotary_keys,3) or not _float(kv_weight,2):
+    if not _float(query,4) or not _float(latents,3) or not _float(rotary_keys,3) or not _projection(kv_weight):
         raise ValueError('GLM sparse attention requires CPU FP32 inputs')
     batch,sequence,heads,width=query.shape
     if (type(nope_dim) is not int or not 1<=nope_dim<width or type(value_dim) is not int or not 1<=value_dim<=4096
@@ -99,7 +112,7 @@ def sparse_latent_attention(query,latents,rotary_keys,kv_weight,indices,position
     scratch=4*(tile*(latents.shape[-1]+width-nope_dim+4*heads*(width+value_dim))
                +heads*(4*value_dim+4*tile+width))
     _budgets(4*batch*sequence*heads*value_dim,scratch,max_output_bytes,max_workspace_bytes)
-    if any(not torch.isfinite(t).all() for t in (query,latents,rotary_keys,kv_weight)):
+    if any(not _finite_parameter(t) for t in (query,latents,rotary_keys,kv_weight)):
         raise ValueError('GLM sparse attention inputs must be finite')
     result=torch.empty(batch,sequence,heads,value_dim,dtype=torch.float32,device='cpu')
     for b in range(batch):
@@ -115,7 +128,7 @@ def sparse_latent_attention(query,latents,rotary_keys,kv_weight,indices,position
             numerator=torch.zeros(heads,value_dim,dtype=torch.float32,device='cpu')
             for start in range(0,selected.numel(),key_chunk):
                 ids=selected[start:start+key_chunk]
-                expanded=F.linear(latents[b,ids],kv_weight).unflatten(-1,(heads,nope_dim+value_dim)).transpose(0,1)
+                expanded=linear(latents[b,ids],kv_weight).unflatten(-1,(heads,nope_dim+value_dim)).transpose(0,1)
                 key=torch.cat((expanded[...,:nope_dim],rotary_keys[b,ids][None].expand(heads,-1,-1)),-1)
                 values=expanded[...,nope_dim:]
                 scores=torch.matmul(query[b,s,:,None,:],key.transpose(-1,-2)).squeeze(-2)*(width**-.5)
