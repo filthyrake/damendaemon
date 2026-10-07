@@ -236,13 +236,14 @@ class DistributedRuntime:
         if end==len(item.request.tokens):self._advance(item,token,1)
         return True
 
-    def run(self, idle_timeout=0, heartbeat_interval=5):
+    def run(self, idle_timeout=0, heartbeat_interval=5, *, stop_after_drain=False):
+        if type(stop_after_drain) is not bool:raise ValueError('stop after drain must be boolean')
         if not 0 < heartbeat_interval <= 10 or not 0 <= idle_timeout <= 86400:
             raise ValueError('invalid distributed serving time bounds')
         if not self.execution_lock.acquire(blocking=False):raise BusyError('distributed execution already has an owner')
         try:
             if self.closed.is_set():raise BusyError('distributed runtime is closed')
-            try:return self._run_owned(idle_timeout,heartbeat_interval)
+            try:return self._run_owned(idle_timeout,heartbeat_interval,stop_after_drain)
             except BaseException as primary:
                 self._execution_failed(primary)
                 raise
@@ -251,7 +252,7 @@ class DistributedRuntime:
     def _execution_failed(self,primary):
         """Backend-specific teardown, only after actual owned execution fails."""
 
-    def _run_owned(self,idle_timeout,heartbeat_interval):
+    def _run_owned(self,idle_timeout,heartbeat_interval,stop_after_drain):
         last_request=last_control=time.monotonic()
         active=[]
         try:
@@ -315,6 +316,7 @@ class DistributedRuntime:
                     for item,token in zip(ready,result):self._advance(item,token,len(ready))
                     last_request=last_control=time.monotonic()
                 now=time.monotonic()
+                if stop_after_drain and self.scheduler_status()['drained']:break
                 if not active and idle_timeout and now-last_request>=idle_timeout:break
                 # A live slot can be idle because its consumer is backpressured.
                 # Keep the peer alive without advancing its state or busy spinning.

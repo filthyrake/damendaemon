@@ -104,6 +104,25 @@ class CpuHostServeCommandTests(unittest.TestCase):
         _,error=service.communicate(timeout=6);_,peer_error=worker.communicate(timeout=6)
         self.assertEqual(service.returncode,0,error);self.assertEqual(worker.returncode,0,peer_error)
 
+    def test_admin_drain_stops_both_peers_with_acknowledged_success(self):
+        environment=dict(self.fixture.environment,DLLM_API_KEY=secrets.token_urlsafe(32),DLLM_ADMIN_API_KEY=secrets.token_urlsafe(32))
+        service,worker,ready,path=self.start_service(idle='0',environment=environment,extra=['--stop-after-drain'])
+        payload=json.dumps(dict(model='model',prompt=[1,2],max_tokens=3,stream=True)).encode()
+        response=urlopen(Request(ready['url']+'/v1/completions',payload,{'Content-Type':'application/json',
+            'Authorization':'Bearer '+environment['DLLM_API_KEY']}),timeout=5)
+        with response:
+            with urlopen(Request(ready['url']+'/v1/scheduler/drain',b'{}',{'Content-Type':'application/json',
+                'Authorization':'Bearer '+environment['DLLM_ADMIN_API_KEY']}),timeout=5) as drained:
+                self.assertTrue(json.load(drained)['draining'])
+            self.assertIn('data: [DONE]',response.read().decode())
+        _,error=service.communicate(timeout=6);peer_output,peer_error=worker.communicate(timeout=6)
+        self.assertEqual(service.returncode,0,error);self.assertEqual(worker.returncode,0,peer_error)
+        self.assertEqual(json.loads(path.read_text().splitlines()[-1])['event'],'stopped')
+        self.assertEqual(json.loads(peer_output.splitlines()[-1])['event'],'stopped')
+        with self.assertRaises(OSError):urlopen(ready['url']+'/health',timeout=1)
+        with patch.object(cli,'connect_peer',side_effect=AssertionError('network')),redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):cli.main(self.fixture.args('complete',1234)+['--stop-after-drain'])
+
     def test_sigterm_closes_service_and_peer(self):
         service,worker,ready,_=self.start_service(idle='0')
         service.terminate();_,error=service.communicate(timeout=6)

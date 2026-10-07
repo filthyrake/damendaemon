@@ -35,6 +35,18 @@ class DistributedDrainTests(RuntimeHelpers,unittest.TestCase):
             self.assertTrue(runtime.requests.empty());self.assertEqual(runtime.accepted,{})
             self.assertEqual(pair.calls,[]);runtime.close()
 
+    def test_stop_after_drain_waits_for_acceptance_and_rejects_bad_type(self):
+        runtime=DistributedRuntime(Pair())
+        with self.assertRaises(ValueError):runtime.run(stop_after_drain=1)
+        self.assertFalse(runtime.closed.is_set())
+        with ThreadPoolExecutor(1) as pool:
+            future=pool.submit(lambda:list(runtime.generate('model',None,2,raw_prompt=[1])))
+            wait_for(lambda:runtime.scheduler_status()['queued_generation_requests']==1)
+            runtime.drain();owner,errors=self.start(runtime,stop_after_drain=True)
+            self.assertEqual(future.result(3)[-1]['usage']['completion_tokens'],2)
+            owner.join(3);self.assertFalse(owner.is_alive());self.assertFalse(errors)
+        self.assertTrue(runtime.closed.is_set());self.assertEqual(runtime.accepted,{})
+
     def test_close_flushes_accepted_queue_without_started_owner(self):
         runtime=DistributedRuntime(Pair())
         with ThreadPoolExecutor(1) as pool:

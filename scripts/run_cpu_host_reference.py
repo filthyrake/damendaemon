@@ -46,6 +46,7 @@ def parser_for_command():
     parser.add_argument('--queue-timeout',type=float,default=120.)
     parser.add_argument('--client-decode-turns',action='store_true',help='serve role: equal ready decode rows per client')
     parser.add_argument('--interleaved-prefill',action='store_true',help='serve role: one prompt chunk before ready decode')
+    parser.add_argument('--stop-after-drain',action='store_true',help='serve role: stop peers after administrative drain finishes')
     parser.add_argument('--idle-timeout',type=float,default=0.,help='serve role: stop after idle seconds; 0 disables')
     parser.add_argument('--heartbeat-interval',type=float,default=5.)
     parser.add_argument('--frame-mib',type=_positive,default=64)
@@ -65,6 +66,7 @@ def prepare(args):
     """All request and endpoint metadata is checked before network/payload work."""
     if '%' in args.address:raise ValueError('scoped IP addresses are unsupported')
     address=ipaddress.ip_address(args.address)
+    if args.stop_after_drain and args.role!='serve':raise ValueError('stop after drain requires the serve role')
     if args.client_decode_turns and args.role!='serve':raise ValueError('client decode turns require the serve role')
     if args.interleaved_prefill and args.role!='serve':raise ValueError('interleaved prefill requires the serve role')
     if (not 0<args.timeout<=30 or not 1<=args.slots<=4 or not 1<=args.frame_mib<=64
@@ -217,7 +219,7 @@ def serve_worker_pair(worker,text,args,auth):
         emit(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',
             scope='cpu_host_reference',official_model_qualified=False,model=args.alias,
             model_identity_verified=args.verify_model_id,source_model_id=args.model_id.lower(),text_chat=args.chat_template is not None))
-        try:runtime.run(idle_timeout=args.idle_timeout,heartbeat_interval=args.heartbeat_interval)
+        try:runtime.run(idle_timeout=args.idle_timeout,heartbeat_interval=args.heartbeat_interval,stop_after_drain=args.stop_after_drain)
         except KeyboardInterrupt:interrupt()
         except (OSError,RuntimeError,EOFError,ValueError):
             if not stopping.is_set():raise

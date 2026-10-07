@@ -173,3 +173,21 @@ controls remain responsible for stopping it. New inference returns 503. Admissio
 is rechecked atomically after prompt preparation, so a racing drain or shutdown
 cannot leave a newly queued request behind an exited owner. These guarantees
 are covered with CPU TLS peers; they are not GPU/SLO qualification.
+
+### Stop after drain and replace a session
+
+The CPU `serve` command accepts `--stop-after-drain`. It does not initiate a
+drain: the service runs normally until an administrator posts `{}` to the drain
+route. Once all accepted work has retired and released its slots, the owner exits,
+the command obtains the peer STOP acknowledgement, and HTTP handlers finish
+before the service closes. Both processes report `stopped` on a successful
+shutdown. Slow consumers can delay drain; a failed release or peer STOP is an
+error, not a successful rollover. Single completion/worker roles reject this flag.
+
+This creates a deliberate boundary for an operator-controlled credential change:
+start the session with the flag, request administrative drain, wait for both
+processes to exit successfully, then start a new pair with the intended CA,
+certificate/key paths, hostname and exact peer certificate pins. Existing SSL
+contexts are immutable during the session. No credentials are issued, copied,
+rotated in place or deployed automatically, and no reconnect or availability
+promise is made. Without the flag, drain continues to leave the service running.
