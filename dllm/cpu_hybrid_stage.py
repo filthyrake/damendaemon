@@ -13,6 +13,7 @@ from .hybrid_stage import HybridLayerStage
 from .hybrid_layout import stage_weight_names,hybrid_state_bytes
 from .prepared_projection import PackedProjection
 from .packed_tiles import validate_layout
+from .packed_projection import projection_plan
 
 
 def _layout(model,start,end):
@@ -61,26 +62,49 @@ def _layout(model,start,end):
     return selected,scales,format
 
 
+class CpuStageCapacityError(ValueError):
+    """Valid prepared geometry exceeds the caller's allocation limits."""
+
+
+def cpu_stage_budget(model,start,end,max_batch=4,*,max_weight_bytes=256*1024**2,max_cache_bytes=256*1024**2,
+                     projection_workspace_bytes=8*1024**2,max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
+    """Validate storage metadata and report conservative peak bytes without allocating tensors."""
+    weights,scales,format=_layout(model,start,end);c=model.config
+    bounds=(max_weight_bytes,max_cache_bytes,projection_workspace_bytes,max_workspace_bytes,max_output_bytes)
+    if (any(type(v) is not int or not 1<=v<=2**31 for v in bounds)
+            or type(max_batch) is not int or not 1<=max_batch<=4
+            or type(model.max_context) is not int or not 1<=model.max_context<=min(2**20,c['max_position_embeddings'])):
+        raise ValueError('invalid CPU hybrid stage capacity/budgets')
+    unique={id(v):v for v in weights.values()}
+    weight_bytes=sum(v.numel()*(4 if v.is_floating_point() else v.element_size()) for v in unique.values())
+    weight_bytes+=sum(v.numel()*v.element_size() for v in {id(v):v for v in scales.values()}.values())
+    largest=max((v.numel()*v.element_size() for v in unique.values() if v.dtype in (torch.float16,torch.bfloat16)),default=0)
+    owned=dict(c,num_hidden_layers=end-start,layer_types=c['layer_types'][start:end])
+    cache_bytes=hybrid_state_bytes(owned,model.max_context,max_batch,4)
+    rotary_bytes=8*model.max_context*(c['rotary_dim']+1)
+    if (weight_bytes+largest>max_weight_bytes or cache_bytes+rotary_bytes>max_cache_bytes
+            or 32*model.max_context*c['rotary_dim']>max_workspace_bytes
+            or projection_workspace_bytes>max_workspace_bytes):
+        raise CpuStageCapacityError('CPU hybrid stage weight/cache/workspace budget exceeded')
+    for name,scale in scales.items():
+        try:projection_plan(weights[name],scale,format=format,row_chunk=64,column_chunk=256,
+                            workspace_bytes=projection_workspace_bytes)
+        except ValueError as error:raise CpuStageCapacityError('CPU packed projection workspace budget exceeded') from error
+    return dict(layer_start=start,layer_end=end,weight_bytes=weight_bytes,conversion_overlap_bytes=largest,
+                state_bytes=cache_bytes,rotary_bytes=rotary_bytes,workspace_bytes=max_workspace_bytes,
+                output_bytes=max_output_bytes,
+                required_memory_bytes=weight_bytes+largest+cache_bytes+rotary_bytes+max_workspace_bytes+max_output_bytes)
+
+
 class CpuHybridStage(HybridLayerStage):
     def __init__(self,model,start,end,max_batch=4,*,max_weight_bytes=256*1024**2,max_cache_bytes=256*1024**2,
                  projection_workspace_bytes=8*1024**2,max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
         weights,scales,format=_layout(model,start,end);c=model.config
-        bounds=(max_weight_bytes,max_cache_bytes,projection_workspace_bytes,max_workspace_bytes,max_output_bytes)
-        if (any(type(v) is not int or not 1<=v<=2**31 for v in bounds)
-                or type(max_batch) is not int or not 1<=max_batch<=4
-                or type(model.max_context) is not int or not 1<=model.max_context<=min(2**20,c['max_position_embeddings'])):
-            raise ValueError('invalid CPU hybrid stage capacity/budgets')
+        budget=cpu_stage_budget(model,start,end,max_batch,max_weight_bytes=max_weight_bytes,max_cache_bytes=max_cache_bytes,
+                                projection_workspace_bytes=projection_workspace_bytes,max_workspace_bytes=max_workspace_bytes,
+                                max_output_bytes=max_output_bytes)
         unique={id(v):v for v in weights.values()}
-        weight_bytes=sum(v.numel()*(4 if v.is_floating_point() else v.element_size()) for v in unique.values())
-        weight_bytes+=sum(v.numel()*v.element_size() for v in {id(v):v for v in scales.values()}.values())
-        largest=max((v.numel()*v.element_size() for v in unique.values() if v.dtype in (torch.float16,torch.bfloat16)),default=0)
-        owned=dict(c,num_hidden_layers=end-start,layer_types=c['layer_types'][start:end])
-        cache_bytes=hybrid_state_bytes(owned,model.max_context,max_batch,4)
-        rotary_bytes=8*model.max_context*(c['rotary_dim']+1)
-        if (weight_bytes+largest>max_weight_bytes or cache_bytes+rotary_bytes>max_cache_bytes
-                or 32*model.max_context*c['rotary_dim']>max_workspace_bytes
-                or projection_workspace_bytes>max_workspace_bytes):
-            raise ValueError('CPU hybrid stage weight/cache/workspace budget exceeded')
+        weight_bytes=budget['weight_bytes']
         # Construct adapters (metadata only) before any promotion/cache allocation.
         adapters={id(weights[n]):PackedProjection(weights[n],scale,format=format,workspace_bytes=projection_workspace_bytes)
                   for n,scale in scales.items()}
@@ -88,6 +112,7 @@ class CpuHybridStage(HybridLayerStage):
         identity=getattr(model,'_hybrid_stage_identity',None)
         if identity is None:identity=model._hybrid_stage_identity=object()
         self.source_identity=identity;self.model=copy.copy(model);self.model.config=dict(c)
+        self.model.weights={};self.model.scales={}
         self.c=self.model.config
         promoted={id(v):v.float() if v.is_floating_point() else v for v in unique.values()}
         self.w={n:promoted[id(v)] for n,v in weights.items()}
@@ -101,7 +126,7 @@ class CpuHybridStage(HybridLayerStage):
         self.lk,self.lv=c['linear_num_key_heads'],c['linear_num_value_heads'];self.dk,self.dv=c['linear_key_head_dim'],c['linear_value_head_dim']
         self.conv_width=2*self.lk*self.dk+self.lv*self.dv
         self.max_workspace_bytes,self.max_output_bytes=max_workspace_bytes,max_output_bytes
-        self.required_memory_bytes=weight_bytes+cache_bytes+rotary_bytes+max_workspace_bytes
+        self.required_memory_bytes=budget['required_memory_bytes']
         self.kv={};self.conv={};self.state={};self.batch_graphs={}
         for i in range(start,end):
             if c['layer_types'][i]=='full_attention':self.kv[i]=torch.zeros(2,max_batch,self.kh,self.context,self.dim,dtype=torch.float32,device='cpu')

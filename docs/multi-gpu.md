@@ -432,3 +432,11 @@ reordered decode and actual loopback token exchange with decoded FP32 controls.
 This is a CPU reference building block, not accelerator admission, trained-model
 quality, practical-context or network performance qualification. Existing GPU
 stage restrictions remain in force.
+
+`cpu_stage_budget` and `cpu_stage_plan.plan_cpu_stages` share the explicit CPU
+constructor's admission. Planning includes unique scales, FP32 promotion,
+conversion overlap, cache/rotary storage, output ceilings and workspace; it also
+checks the packed projection's minimum tile workspace. Ordered byte budgets
+produce deterministic contiguous placement or a no-fit result. Invalid storage
+remains an error. Reserve source mappings and unrelated process memory before
+supplying budgets. A storage plan is not a speed estimate or live-memory probe.
