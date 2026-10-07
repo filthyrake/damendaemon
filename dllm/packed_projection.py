@@ -4,6 +4,21 @@ import torch
 from .packed_tiles import MAX_TILE_ELEMENTS, decode_tile, validate_layout
 
 
+def projection_plan(weight, scales, *, format, row_chunk, column_chunk, workspace_bytes):
+    """Validate projection metadata and return rows, columns and token chunk."""
+    rows, columns = validate_layout(weight, scales, format=format)
+    if (any(type(v) is not int or v < 1 for v in (row_chunk, column_chunk, workspace_bytes))
+            or row_chunk*column_chunk > MAX_TILE_ELEMENTS):
+        raise ValueError('invalid packed projection tile dimensions or workspace allowance')
+    r, c = min(row_chunk, rows), min(column_chunk, columns)
+    weight_scratch = 128*(r*c+r+c)
+    per_token = 8*c+8*r
+    token_chunk = (workspace_bytes-weight_scratch)//per_token
+    if token_chunk < 1:
+        raise ValueError('packed projection workspace cannot hold one tile and token')
+    return rows, columns, token_chunk
+
+
 @torch.no_grad()
 def packed_linear(hidden, weight, scales, *, format, row_chunk=64, column_chunk=256,
                   workspace_bytes=8*1024*1024):
@@ -18,20 +33,12 @@ def packed_linear(hidden, weight, scales, *, format, row_chunk=64, column_chunk=
     inputs, final output, allocator overhead and BLAS scratch are excluded.
     Tile sizes are explicit; insufficient allowance fails before computation.
     """
-    rows, columns = validate_layout(weight, scales, format=format)
+    rows, columns, token_chunk = projection_plan(weight, scales, format=format, row_chunk=row_chunk,
+                                                 column_chunk=column_chunk, workspace_bytes=workspace_bytes)
     if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 2
             or hidden.device.type != 'cpu' or hidden.dtype not in (torch.float16, torch.bfloat16, torch.float32)
             or hidden.shape[1] != columns):
         raise ValueError('packed projection needs CPU floating [tokens,features] matching the weight')
-    if (any(type(v) is not int or v < 1 for v in (row_chunk, column_chunk, workspace_bytes))
-            or row_chunk*column_chunk > MAX_TILE_ELEMENTS):
-        raise ValueError('invalid packed projection tile dimensions or workspace allowance')
-    r, c = min(row_chunk, rows), min(column_chunk, columns)
-    weight_scratch = 128*(r*c+r+c)
-    per_token = 8*c+8*r
-    token_chunk = (workspace_bytes-weight_scratch)//per_token
-    if token_chunk < 1:
-        raise ValueError('packed projection workspace cannot hold one tile and token')
     output = torch.zeros((hidden.shape[0], rows), dtype=torch.float32)
     if hidden.shape[0] == 0:
         return output

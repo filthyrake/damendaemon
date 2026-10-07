@@ -374,6 +374,15 @@ decoded scalar weights across scale boundaries, strided and low-precision
 inputs, and verify tile release between expansions. It is not a fused GPU
 kernel and does not reproduce accelerator activation-quantization rounding.
 
+`dllm.packed_moe.PackedExpert` prepares gate/up/down packed matrices with an
+explicit per-expert scratch allowance. `packed_moe` composes selected experts
+and an optional unweighted shared expert, preserving coefficient-before-cast
+ordering and additive duplicate routes. This CPU control reads route IDs on the
+host and processes one token/expert at a time. Tests cover mixed FP4/FP8 storage,
+scalar-decoded dense controls, reordered/empty batches, rejected invalid routes
+before projection and unchanged packed storage. It is not the device-resident
+GPU routing implementation or a real-checkpoint qualification.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
