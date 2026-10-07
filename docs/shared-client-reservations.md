@@ -2,8 +2,8 @@
 
 `SharedClientReservations` is an explicit POSIX local-storage backend for
 named-client outstanding request counts and declared-output token caps. HTTP
-integration is tracked separately in issue #209. Constructing ordinary servers
-still creates no reservation store. These counts do not reserve model memory,
+admission opts in with `DLLM_CLIENT_RESERVATION_DB=/private/path/claims.sqlite`.
+Without this variable, ordinary servers still create no reservation store. These counts do not reserve model memory,
 establish cross-host quotas or demonstrate an inference SLO.
 
 Pass an absolute SQLite path in a private, owned local directory and the named
@@ -45,3 +45,33 @@ Local tests cover process contention and crash recovery, surviving owners,
 request/output caps, output resizing, commit uncertainty, retry, ownership and
 pool bounds, storage replacement, corruption and unsafe permissions. They do
 not qualify distributed performance or GPU capacity.
+
+## HTTP ownership and recovery
+
+Every participating server must use the same absolute local database and matching
+named-client caps. Request claims span the entire HTTP handler, including invalid
+body rejection and response cleanup. Separate output claims cover declared output
+through generator cleanup. Shared/admin keys retain their existing bypass policy;
+client keys, model allowlists and opaque scheduling identities are unchanged.
+Use a separate `DLLM_CLIENT_RATE_DB` when rolling rates must also be shared:
+returning outstanding capacity never refunds an accepted rate charge.
+
+A cap rejection returns 429. Unavailable accounting returns a redacted 503 before
+response headers; a failed output release during SSE emits an error and suppresses
+`[DONE]`. If request cleanup fails after a complete response, the connection closes
+without a second HTTP response. The uncertain claim remains charged, and that
+admission owner rejects new named-client work until cleanup succeeds.
+
+`BoundedHTTPServer.server_close()` closes the reservation owner after leases have
+ended. It refuses active leases and retains failed cleanup for a later close
+attempt. Drain/stop generation and end HTTP requests before closing. Bind failure
+also cleans up an unused owner. Embedders using another HTTP server class must
+explicitly own and close `handler.client_admission` after draining their server.
+Do not share one admission store object between independent handlers.
+
+For an embedded server, `handler.client_admission.retry_releases()` retries only
+ended or failed leases; it never frees live request claims. A controlled process
+restart also permits a new owner to reclaim the old unlocked slot after exit.
+Storage identity failures require restoring the original intact storage first;
+restarting is not permission to discard a live or unknown owner. No network admin
+endpoint can override these ownership checks.

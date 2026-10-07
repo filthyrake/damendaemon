@@ -876,3 +876,13 @@ failures. Filesystem I/O itself is not preempted by that lock timeout. Stop all
 users before deliberately replacing/resetting the database or changing a stored
 client's rate limits; running owners reject inode replacement. No automatic
 reset, migration, credential storage or deployment is performed.
+
+### Shared outstanding admission across local servers
+
+Set `DLLM_CLIENT_RESERVATION_DB` to the same absolute private local SQLite path
+for participating named-client servers. This coordinates `max_inflight` and
+`max_reserved_output_tokens` independently of rolling rate limits. Defaults remain
+process-local. Owner locks permit crash reclamation without unsafe lease expiry;
+uncertain release remains charged and requires cleanup retry or a controlled
+restart. See [storage bounds, shutdown and recovery](shared-client-reservations.md).
+This does not coordinate different machines or reserve GPU memory.

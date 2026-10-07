@@ -6,7 +6,8 @@ not GPU memory reservations. Never unlink or replace the store while in use.
 """
 from contextlib import contextmanager
 from dataclasses import dataclass,field
-import fcntl
+try:import fcntl
+except ImportError:fcntl=None
 import os
 from pathlib import Path
 import secrets
@@ -35,6 +36,7 @@ class SharedReservationUnavailable(RuntimeError):
         # A failed mutation may have committed. Retain the owner and its claims
         # for explicit retry; never release the OS lock optimistically.
         self.store=store
+        self.claim=None
 
 
 class SharedReservationRejected(Exception):
@@ -61,6 +63,7 @@ class SharedClientReservations:
     No finalizer silently returns capacity. Forked copies cannot use an owner.
     """
     def __init__(self,path,clients):
+        if fcntl is None:raise ValueError('shared reservations require POSIX owner locks')
         from .http_auth import ClientKey
         if (not isinstance(clients,(list,tuple)) or not 1<=len(clients)<=128
                 or any(not isinstance(c,ClientKey) for c in clients)
@@ -262,8 +265,10 @@ class SharedClientReservations:
                     connection.execute('INSERT INTO claims VALUES(?,?,?,?,?)',(claim.id,self.token,name,requests,outputs))
             except SharedReservationRejected:
                 self.claims.pop(claim.id);raise
-            except BaseException:
-                self.uncertain.add(claim.id);raise
+            except BaseException as error:
+                self.uncertain.add(claim.id)
+                if isinstance(error,SharedReservationUnavailable):error.claim=claim
+                raise
             return claim
 
     def _claim(self,claim):

@@ -17,7 +17,7 @@ from .prompts import validate_raw
 def handler_for(runtime, auth=None):
     from .http_auth import AuthPolicy
     auth = AuthPolicy.from_env() if auth is None else auth
-    from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError, ClientRateLimitError, ClientOutputRateLimitError, SharedRateUnavailable
+    from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError, ClientRateLimitError, ClientOutputRateLimitError, SharedRateUnavailable, SharedReservationUnavailable
     from .http_auth import INFERENCE_ROUTES
     admission = ClientAdmission(auth)
     from .request_scope import CacheScope, cache_scope
@@ -25,6 +25,10 @@ def handler_for(runtime, auth=None):
     client_scopes = {client.name: CacheScope(client.max_prefix_cache_tokens,client.decode_weight,client.prefill_weight) for client in auth.clients}
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
+
+        def send_response(self,*args,**kwargs):
+            self.response_started=True
+            return super().send_response(*args,**kwargs)
 
         def setup(self):
             super().setup()
@@ -86,6 +90,7 @@ def handler_for(runtime, auth=None):
                 self.send_json(404, {"error": "not found"})
 
         def do_POST(self):
+            self.response_started=False
             if not self.authorize():
                 return
             if self.path in INFERENCE_ROUTES:
@@ -94,6 +99,9 @@ def handler_for(runtime, auth=None):
                 try:
                     with admission.lease(self.headers.get_all('Authorization', [])):
                         self.post_authorized()
+                except SharedReservationUnavailable:
+                    if self.response_started:self.close_connection=True
+                    else:self.send_json(503, {'error': 'shared client reservation accounting unavailable'})
                 except SharedRateUnavailable:
                     self.send_json(503, {'error': 'shared client rate accounting unavailable'})
                 except ClientRateLimitError as error:
@@ -316,7 +324,9 @@ def handler_for(runtime, auth=None):
             except (BrokenPipeError, ConnectionResetError, TimeoutError):
                 self.close_connection = True
             except Exception as error:
-                if isinstance(error, SharedRateUnavailable):
+                if isinstance(error, SharedReservationUnavailable):
+                    status, message = 503, 'shared client reservation accounting unavailable'
+                elif isinstance(error, SharedRateUnavailable):
                     status, message = 503, 'shared client rate accounting unavailable'
                 elif isinstance(error, ClientOutputLimitError):
                     status, message = 429, 'client outstanding output token budget exceeded'
@@ -338,6 +348,7 @@ def handler_for(runtime, auth=None):
                     self.close_connection = True
                 else:
                     self.send_json(status, {"error": message}, retry_after=getattr(error, "retry_after", 1))
+    Handler.client_admission=admission
     return Handler
 
 
@@ -345,7 +356,16 @@ class BoundedHTTPServer(ThreadingHTTPServer):
     """Cap connection threads as well as the runtime's inference queue."""
     def __init__(self, address, handler, max_connections=16):
         self.connections = threading.BoundedSemaphore(max_connections)
-        super().__init__(address, handler)
+        try:super().__init__(address, handler)
+        except BaseException:
+            admission=getattr(handler,'client_admission',None)
+            if admission is not None and admission.reservation_store is not None:admission.close()
+            raise
+
+    def server_close(self):
+        super().server_close()
+        admission=getattr(self.RequestHandlerClass,'client_admission',None)
+        if admission is not None and admission.reservation_store is not None:admission.close()
 
     def process_request(self, request, client_address):
         if not self.connections.acquire(blocking=False):
