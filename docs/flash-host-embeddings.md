@@ -74,3 +74,25 @@ retires it, and failed cleanup remains retryable. `close()` drops the generator'
 vision reference after host cleanup succeeds; callers still own any borrowed
 vision references. Ordinary native text/tool methods also remain available on
 this explicit owner. Native command and HTTP admission are separate gates.
+
+## Standalone command
+
+Use `scripts.run_glm_flash_host_topology` with `--native-chat --flash-images` on
+**every participant**. The complete role accepts one `--messages` JSON file
+containing bounded inline PNG/JPEG `image_url` parts, plus optional `--tools`.
+Existing plan, stage index, explicit peer addresses, TLS certificates and source
+identity arguments are unchanged. Image/text policy disagreement fails the
+handshake. Image mode currently rejects raw prompts, batch messages and serve.
+
+Coordinator-only image controls are `--vision-weight-mib` (default 256),
+`--image-workspace-mib` and `--image-output-mib` (default 64 each), and
+`--max-patches` (default 4096). Ordinary workspace/output controls also bound
+vision execution. Worker processes reject image-budget overrides and load only
+their assigned language layers. All participants require matching image marker
+metadata and the pinned processor configuration.
+
+The coordinator validates the inline request and loads vision before connecting
+peers. Optional snapshot verification checks the already-hashed source again
+after vision and language loading. Ready metadata reports `still_image`;
+completion success is emitted only after every peer acknowledges STOP. No
+provisioning, discovery, remote image fetch or hardware execution is implied.

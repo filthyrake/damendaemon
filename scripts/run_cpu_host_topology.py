@@ -61,8 +61,9 @@ def prepare(args,*,family='qwen'):
         context=args.context,context_limit=args.context_limit,slots=args.slots,chunk_size=args.prefill_chunk,
         frame_bytes=args.frame_mib*2**20,
         mapped_vocab_size=text.tokenizer_size if getattr(args,'native_chat',False) else text.vocab_size,
-        excluded_ids=exclusions,session_identity=session)
-    if getattr(args,'native_chat',False) and inputs is not None and any(set(prompt)&set(plan.excluded_ids) for prompt in inputs.prompts):
+        excluded_ids=exclusions,session_identity=session,
+        input_kind='flash_embeddings' if getattr(args,'flash_images',False) else 'tokens')
+    if plan.input_kind=='tokens' and getattr(args,'native_chat',False) and inputs is not None and any(set(prompt)&set(plan.excluded_ids) for prompt in inputs.prompts):
         raise ValueError('native host request contains excluded media/control IDs')
     if verified is not None:verified.verify_unchanged()
     args.snapshot=local.snapshot
@@ -74,8 +75,11 @@ def run(args,*,family='qwen'):
     auth=AuthPolicy.from_env() if args.role=='serve' else None
     address,plan,text,inputs,limits,context,pin,verified,peers=(prepare(args) if family=='qwen' else prepare(args,family=family))
     scope=f'{family}_cpu_host_topology_reference' if family!='qwen' else 'cpu_host_topology_reference'
-    connections=[];transports=[];listener=worker=runner=None;primary=None
+    connections=[];transports=[];listener=worker=runner=vision=None;primary=None
     try:
+        if plan.input_kind=='flash_embeddings' and args.role=='complete':
+            from scripts.flash_host_images import load_vision
+            vision=load_vision(args,plan,verified)
         if args.role=='worker':
             connection=socket.socket(socket.AF_INET if address.version==4 else socket.AF_INET6,socket.SOCK_STREAM)
             connections.append(connection);connection.bind((str(address),args.port))
@@ -120,7 +124,7 @@ def run(args,*,family='qwen'):
             emit(dict(scope=scope,event='ready',role=args.role,stage=args.index,
                 stage_layers=[list(pair) for pair in plan.ranges],topology_identity=plan.identity.hex(),
                 model_identity_verified=worker.model_identity_verified,source_model_id=plan.source_identity.hex(),
-                official_model_qualified=False,**({'native_chat':args.native_chat} if family in ('glm','flash','deepseek') else {})))
+                official_model_qualified=False,**(dict(modality='still_image') if plan.input_kind=='flash_embeddings' else {}),**({'native_chat':args.native_chat} if family in ('glm','flash','deepseek') else {})))
         if args.role=='worker':
             while not worker.closed:worker.step()
             emit(dict(event='stopped',stage=args.index))
@@ -133,10 +137,15 @@ def run(args,*,family='qwen'):
             if family=='deepseek':
                 from dllm.deepseek_host_generation import HostDeepSeekGenerator as Runner
             elif family=='flash':
-                from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
+                if plan.input_kind=='flash_embeddings':
+                    from dllm.glm_flash_host_image_generation import HostFlashImageGenerator as Runner
+                else:from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
             else:
                 from dllm.glm_host_generation import HostGlmGenerator as Runner
-            runner=Runner(worker,text,chunk_size=args.prefill_chunk)
+            if vision is not None:
+                from scripts.flash_host_images import generation_options
+                runner=Runner(worker,text,vision,chunk_size=args.prefill_chunk,**generation_options(args))
+            else:runner=Runner(worker,text,chunk_size=args.prefill_chunk)
             finals=[]
             with closing(inputs.generate(runner)) as stream:
                 for event in stream:

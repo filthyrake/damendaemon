@@ -75,6 +75,10 @@ def parser_for_command(*,topology=False,family='qwen'):
         else:
             parser.add_argument('--reasoning-effort',choices=('low','high','max'))
             parser.add_argument('--clear-history-reasoning',action='store_true')
+    if family=='flash':
+        parser.add_argument('--flash-images',action='store_true',help='all stages: explicit native still-image policy')
+        for name in ('vision-weight-mib','image-workspace-mib','image-output-mib','max-patches'):
+            parser.add_argument('--'+name,type=_positive,help='coordinator only; requires --flash-images')
     parser.add_argument('--max-new-tokens',type=_positive,default=128)
     parser.add_argument('--prefill-chunk',type=_positive,default=128)
     for name,default in (('weight-mib',256),('cache-mib',256),('workspace-mib',64),
@@ -86,6 +90,8 @@ def parser_for_command(*,topology=False,family='qwen'):
 def prepare(args,*,family='qwen'):
     """All request and endpoint metadata is checked before network/payload work."""
     if family not in ('qwen','glm','flash','deepseek'):raise ValueError('unsupported CPU host family')
+    from scripts.flash_host_images import validate_options
+    images=validate_options(args,family=family)
     if family in ('glm','flash','deepseek') and (args.role not in ('worker','complete','serve') or args.chat_template is not None
             or args.quantization!=('fp4_fp8_reference' if family=='deepseek' else 'fp8_reference') or args.loader_workspace_mib!=64):
         raise ValueError('reference topology requires its declared packed reference format and no template/loader override')
@@ -140,6 +146,9 @@ def prepare(args,*,family='qwen'):
         from dllm.glm_flash_layer_stage import validate_range
         tensor_specs(config);c=config['text_config'];_options(c)
         validate_range(0,args.split,c['num_hidden_layers'])
+        if images:
+            from scripts.flash_host_images import validate_metadata
+            validate_metadata(args,config)
     elif family=='deepseek':
         from dllm.deepseek_checkpoint import tensor_specs
         from dllm.deepseek_reference_loader import _options
@@ -166,7 +175,8 @@ def prepare(args,*,family='qwen'):
         if family=='deepseek':
             from dllm.deepseek_text import DeepSeekText as Text
         elif family=='flash':
-            from dllm.glm_flash_tool_text import FlashToolText as Text
+            if images:from dllm.glm_flash_image_tool_text import FlashImageToolText as Text
+            else:from dllm.glm_flash_tool_text import FlashToolText as Text
         else:
             from dllm.glm_tool_text import GlmToolText as Text
         if family=='deepseek':
@@ -177,6 +187,8 @@ def prepare(args,*,family='qwen'):
             from dllm.glm_generation import validate_text_config
             text=Text(args.snapshot,vocab_size=c['vocab_size'])
         validate_text_config(c,text,args.context)
+        if images and config.get('image_token_id')!=text.image_token_id:
+            raise ValueError('Flash image token disagrees with native tokenizer')
     elif args.chat_template is None:text=CpuReferenceText(args.snapshot,config)
     else:
         from dllm.cpu_reference_chat import CpuReferenceChat
@@ -184,8 +196,13 @@ def prepare(args,*,family='qwen'):
     inputs=limits=None
     if args.role=='complete':
         if native:
-            from scripts.glm_host_native import prepare_request
-            inputs=prepare_request(args,text,family=family);limits=args.max_new_tokens;rows=inputs.prompts
+            if images:
+                from scripts.flash_host_images import prepare_request
+                inputs=prepare_request(args,text,config)
+            else:
+                from scripts.glm_host_native import prepare_request
+                inputs=prepare_request(args,text,family=family)
+            limits=args.max_new_tokens;rows=inputs.prompts
         else:
             inputs,limits=completion_inputs(text,prompt=args.prompt,tokens_file=args.tokens,batch_file=args.batch_inputs,
                 max_context=args.context,max_new_tokens=args.max_new_tokens,chunk_size=args.prefill_chunk)
@@ -199,7 +216,8 @@ def prepare(args,*,family='qwen'):
         if family=='deepseek':
             from dllm.deepseek_host_generation import native_session_identity
         elif family=='flash':
-            from dllm.glm_flash_host_generation import native_session_identity
+            if images:from dllm.glm_flash_host_image_generation import native_image_session_identity as native_session_identity
+            else:from dllm.glm_flash_host_generation import native_session_identity
         else:
             from dllm.glm_host_generation import native_session_identity
         identity=native_session_identity(text,verified=verified is not None)
