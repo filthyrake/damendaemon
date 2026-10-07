@@ -38,8 +38,6 @@ def main(argv=None):
     parser.add_argument('--dtype',choices=('float32','bfloat16','float16'),default='float32')
     args=parser.parse_args(argv)
     try:
-        if args.batch_messages and args.tools:
-            raise ValueError('DeepSeek reference batches do not yet support tool calls')
         from pathlib import Path
         config=json.loads(_read(Path(args.snapshot)/'config.json',1024*1024),object_pairs_hook=_unique_fields)
         if not isinstance(config,dict) or config.get('model_type') != 'deepseek_v4':

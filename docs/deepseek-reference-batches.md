@@ -12,11 +12,19 @@ python -m scripts.run_deepseek_reference /path/to/local/snapshot \
 ```
 
 `conversations.json` is a list of conversation arrays, bounded to 1 MiB. Ragged
-encoded prompts, invalid limits and batch tool requests fail before checkpoint
-weight loading. The ordinary single-request `--tools` interface remains available;
-this bounded batch path does not support tools. Existing explicit weight,
+encoded prompts and invalid limits/tool declarations fail before checkpoint
+weight loading. `--tools tools.json` supplies one shared declaration list to the
+batch; the Python interface accepts the same list through `tools=`. Existing explicit weight,
 workspace and aggregate cache limits remain in force. Defaults do not admit the
 full official checkpoint.
+
+Calls are returned as data and are never executed. Each row buffers DSML calls
+until its complete tool block and EOS are parsed. Undeclared names, malformed or
+truncated calls fail the batch before any such call is emitted. The allowed-name
+set is captured before generation, so later caller mutations cannot authorize a
+new tool. Tool rows finish with `tool_calls`; other rows retain `stop`/`length`.
+This preserves the existing codec scope: JSON object arguments and declared
+names are validated; arbitrary supplied parameter JSON Schemas are not enforced.
 
 Events include the original zero-based `row`. Every row has its own parser,
 reasoning/content channels, stop condition and output limit. Finished rows are

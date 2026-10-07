@@ -19,7 +19,7 @@ def prepare_batch(text, conversations, max_new_tokens, max_context, **options):
     return prompts, list(limits)
 
 
-def generate_prepared_batch(runner, prompts, limits, streams, *, mapped_vocab_size, prefill, decode):
+def generate_prepared_batch(runner, prompts, limits, streams, *, mapped_vocab_size, prefill, decode, finalize=None):
     """Internal lifecycle; family adapters validate prompts and construct parsers."""
     prompt_length = len(prompts[0])
     active = list(range(len(prompts)))
@@ -48,9 +48,13 @@ def generate_prepared_batch(runner, prompts, limits, streams, *, mapped_vocab_si
                 stopped = token in runner.text.eos
                 finished = stopped or step + 1 == limits[row]
                 if finished:
-                    for event in streams[row].finish(truncated=not stopped):
+                    events = streams[row].finish(truncated=not stopped)
+                    reason = 'stop' if stopped else 'length'
+                    if finalize is not None:
+                        reason = finalize(row, events, reason)
+                    for event in events:
                         yield dict(event, row=row)
-                    finals.append(dict(row=row, finish_reason='stop' if stopped else 'length',
+                    finals.append(dict(row=row, finish_reason=reason,
                         usage=dict(prompt_tokens=prompt_length, completion_tokens=step + 1)))
                 else:
                     surviving_slots.append(slot)
