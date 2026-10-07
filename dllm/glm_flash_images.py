@@ -49,15 +49,9 @@ def image_layout(height,width):
     return canvas_h,canvas_w,content_h,content_w
 
 
-@torch.inference_mode()
-def prepare_images(images,*,processor_config=None,max_patches=4096,max_output_bytes=64*1024**2,
-                   max_workspace_bytes=64*1024**2):
-    """Return owned FP32 [patches,1176] rows and [1,rows,columns] grids.
-
-    All images and complete retained output/scratch budgets are checked before
-    resize or normalization. Caller-owned uint8 images and library allocator
-    overhead are excluded. Still images duplicate the temporal patch dimension.
-    """
+def plan_images(images,*,processor_config=None,max_patches=4096,max_output_bytes=64*1024**2,
+                max_workspace_bytes=64*1024**2):
+    """Validate complete CPU RGB input and allocation bounds using metadata only."""
     validate_processor(CONTRACT if processor_config is None else processor_config)
     if (not isinstance(images,(list,tuple)) or not 1<=len(images)<=256
             or type(max_patches) is not int or not 1<=max_patches<=65536
@@ -72,6 +66,22 @@ def prepare_images(images,*,processor_config=None,max_patches=4096,max_output_by
         workspace=max(workspace,64*3*(h*w+ch*cw))
     if count>max_patches or 4*count*1176>max_output_bytes or workspace>max_workspace_bytes:
         raise ValueError('Flash image patch/output/workspace budget exceeded')
+    return dict(layouts=layouts,patches=count,output_bytes=4*count*1176,workspace_bytes=workspace,
+                grids=[[1,h//14,w//14] for h,w,_,_ in layouts])
+
+
+@torch.inference_mode()
+def prepare_images(images,*,processor_config=None,max_patches=4096,max_output_bytes=64*1024**2,
+                   max_workspace_bytes=64*1024**2):
+    """Return owned FP32 [patches,1176] rows and [1,rows,columns] grids.
+
+    All images and complete retained output/scratch budgets are checked before
+    resize or normalization. Caller-owned uint8 images and library allocator
+    overhead are excluded. Still images duplicate the temporal patch dimension.
+    """
+    plan=plan_images(images,processor_config=processor_config,max_patches=max_patches,
+                     max_output_bytes=max_output_bytes,max_workspace_bytes=max_workspace_bytes)
+    layouts,count=plan['layouts'],plan['patches']
     output=torch.empty((count,1176),dtype=torch.float32,device='cpu');offset=0;grids=[]
     mean=torch.tensor(MEAN,dtype=torch.float32,device='cpu')[:,None,None]
     std=torch.tensor(STD,dtype=torch.float32,device='cpu')[:,None,None]

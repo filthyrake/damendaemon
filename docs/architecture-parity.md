@@ -1956,3 +1956,24 @@ image-response sampling. Existing plain-text generation remains available.
 Fixture tests cover real tiny language execution and separately controlled
 response/lifecycle cases. This reference API adds no HTTP or accelerator
 admission and makes no trained image-semantic or performance claim.
+
+The runnable reference command is:
+
+```sh
+python -m scripts.run_glm_flash_image_reference SNAPSHOT \
+  --messages inline-image-messages.json --context 4096 --max-new-tokens 128
+```
+
+The JSON file contains alternating Flash chat turns with user text parts and
+inline `image_url` PNG/JPEG data URLs. The Flash adapter reuses the bounded shared
+decoder (four images, 8 MiB encoded bytes, 16 Mi pixels), preserves typed Flash
+markers and image identities, and never fetches network URLs. Snapshot processor
+metadata, image layout/output/workspace and expanded prompt/context are checked
+before model weights load. Separate text/vision weight caps default to 256 MiB
+apiece; cache/workspace/output/image limits are explicit command options. These
+small defaults intentionally do not admit the full official checkpoint.
+
+The command owns generator cleanup and emits `cpu_reference`, `still_image`,
+`official_model_qualified: false` metadata before response events. A complete tiny
+indexed checkpoint/inline-PNG command fixture passes; this is runnable software
+coverage, not trained-model semantic or GPU qualification.
