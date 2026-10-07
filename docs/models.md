@@ -261,6 +261,16 @@ the shared contribution stays unscaled. CPU fixtures cover token-table routing,
 reordering, empty input, low-precision composition and chunk budgets. This is not
 packed execution, distributed expert placement or full-model qualification.
 
+`dllm.compressed_pool.pool_projected` incrementally pools projected FP32 values
+and gate scores with learned positional offsets. Ratio four combines the previous
+block's first channel half with the current block's second half; other ratios
+use disjoint blocks. Partial blocks survive arbitrary chunking. The function
+returns completed vectors, their logical block-start positions and replacement
+state; it never mutates published input state. The caller commits replacement
+state after downstream cache writes succeed. Scalar tests cover overlap math,
+chunk invariance, reordered/shrinking slots and injected failure. Projection
+loading, normalization, RoPE, QAT and model integration remain separate gates.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
