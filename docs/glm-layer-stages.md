@@ -57,3 +57,21 @@ transport, model registration or automatic serving admission. Packed checkpoint
 controls compare logits with an independently expanded whole model. Fault tests
 cover later-stage execution, reorder, allocation and cleanup failures. A fresh
 state can be used after successful cleanup; poisoned states cannot be resumed.
+
+## Explicit prepared generation
+
+`PipelineReferenceGenerator(pipeline, text, ...)` supports ordinary single,
+equal-length and opt-in ragged GLM text generation. For the independently pinned
+native-tool grammar, use `PipelineToolReferenceGenerator` with `GlmToolText` and
+its `generate_tools` / `generate_batch_tools` methods. These adapters reuse the
+existing tokenizer, mapped vocabulary, parser, context limits, usage accounting,
+cooperative cancellation and abandoned-iterator cleanup. Returned tool calls are
+never executed. Close abandoned iterators and call runner cleanup before reuse.
+
+Admission is explicit: ordinary complete-model generators still reject pipeline
+objects, and these pipeline adapters reject individual stages. Ragged cohorts
+execute sequentially under the shared cache limit. Failed aggregate releases
+block a new request until cleanup succeeds. Generation tests compare real packed
+pipeline text and usage with a whole-model floating control; tool parser tests
+use controlled token selection after real stage execution, without claiming
+trained tool-call competence. CLI/HTTP/network integration is still separate.

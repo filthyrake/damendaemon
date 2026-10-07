@@ -87,6 +87,17 @@ class GlmLayerPipeline:
         self.failed_cleanups = []
         self.lock = threading.RLock()
 
+    @property
+    def embedding(self):
+        return self.stages[0].embedding
+
+    @property
+    def config(self):
+        # Prepared stages without checkpoint metadata use the existing bounded
+        # reference defaults; loaded stages were checked for identical config.
+        import copy
+        return copy.deepcopy(getattr(self.stages[0], 'config', {}))
+
     def cache_bytes_per_row(self, capacity):
         return 4 * capacity * sum(block.attention.rank + block.attention.rope_dim
             + (block.attention.indexer.width if block.attention.indexer is not None else 0)
