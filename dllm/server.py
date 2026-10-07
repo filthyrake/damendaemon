@@ -20,9 +20,9 @@ def handler_for(runtime, auth=None):
     from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError
     from .http_auth import INFERENCE_ROUTES
     admission = ClientAdmission(auth)
-    from .request_scope import cache_scope
+    from .request_scope import CacheScope, cache_scope
     shared_scope = object()
-    client_scopes = {client.name: object() for client in auth.clients}
+    client_scopes = {client.name: CacheScope(client.max_prefix_cache_tokens) for client in auth.clients}
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 

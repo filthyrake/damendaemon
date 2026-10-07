@@ -675,8 +675,8 @@ scope. Exact and partial reuse require the same client scope, including cached
 logits; the scope follows queued requests into both scheduler prefill paths.
 Request payloads cannot select a scope. Shared inference/admin credentials and
 anonymous requests use one shared scope per server handler policy. Direct local
-runtime callers retain their separate default shared scope. Cache token and entry
-limits remain global, so clients can still evict each other's entries; this does
+runtime callers retain their separate default shared scope. Global cache token and
+entry limits still apply, so clients can still evict each other's entries; this does
 not reserve per-client capacity or provide process/data isolation, token-rate
 fairness or distributed quotas. Client-only configuration still protects the API;
 `/health` stays public.
@@ -691,3 +691,14 @@ failure or cancellation. Excess commitments return 429 with `Retry-After: 1`.
 This conservative budget is separate from request-count limits and does not
 measure actual token rate, prompt/KV memory, or quotas across server processes.
 Shared/admin credentials and non-generation routes retain their existing policy.
+
+Named clients may set `"max_prefix_cache_tokens":4096` to limit retained prefix
+tokens in each executor's cache. Omission preserves global-only limits; zero
+disables snapshot retention for that client. Values are integers from 0 through
+2147483647. When adding a snapshot, the cache evicts that client's least recently
+used snapshots to fit its cap before applying the global token/entry limits.
+Rewindable snapshots may retain a shortened prefix; recurrent snapshots that
+cannot rewind are skipped when the full prefix exceeds the cap. The cap follows
+the opaque request scope through both scheduler paths. It limits retained token
+counts, not bytes or active-request KV memory, and does not guarantee reserved
+capacity or aggregate quotas across executors/processes.

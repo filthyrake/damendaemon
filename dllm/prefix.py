@@ -3,6 +3,7 @@ from collections import OrderedDict
 import torch
 import weakref
 from .device import available_memory,empty_cache
+from .request_scope import CacheScope
 
 
 class PrefixCache:
@@ -47,11 +48,21 @@ class PrefixCache:
 
     @torch.inference_mode()
     def remember(self,prompt,slot,logits,*,scope=None):
-        if not getattr(self.executor,'prefix_can_rewind',True) and len(prompt)>self.token_budget:
+        scope_limit = scope.max_prefix_cache_tokens if isinstance(scope, CacheScope) else None
+        budget = self.token_budget if scope_limit is None else min(self.token_budget, scope_limit)
+        if not budget or (not getattr(self.executor,'prefix_can_rewind',True) and len(prompt)>budget):
             return
-        count=min(len(prompt),self.token_budget)
+        count=min(len(prompt),budget)
         key=(scope,tuple(prompt[:count]))
         if not count or key in self.entries:return
+        if scope_limit is not None:
+            owned = [key for key in self.entries if key[0] is scope]
+            retained = sum(len(key[1]) for key in owned)
+            for old in owned:
+                if retained+count <= scope_limit:break
+                del self.entries[old]
+                retained -= len(old[1])
+                self.tokens -= len(old[1])
         while self.entries and (self.tokens+count>self.token_budget or len(self.entries)>=self.max_entries):
             old,_=self.entries.popitem(last=False)
             self.tokens-=len(old[1])

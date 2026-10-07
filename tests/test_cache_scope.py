@@ -27,7 +27,7 @@ class CacheScopeTests(unittest.TestCase):
         self.assertIs(pending.cache_scope,scope)
         self.assertIsNone(Pending('a',[],1).cache_scope)
 
-    def exercise_http(self,executor_type):
+    def exercise_http(self,executor_type,capacity=None):
         alice='alice-cache-isolation-key'
         bob='bob-cache-isolation-key-1'
         with patch('dllm.scheduler.Runtime',FakeRuntime), \
@@ -38,7 +38,7 @@ class CacheScopeTests(unittest.TestCase):
             executor.lengths=[0,0]
             executor.release.set()
             runtime.runtime.executor=executor
-            policy=AuthPolicy(clients=(ClientKey('alice',alice,2),ClientKey('bob',bob,2)))
+            policy=AuthPolicy(clients=(ClientKey('alice',alice,2,max_prefix_cache_tokens=capacity),ClientKey('bob',bob,2,max_prefix_cache_tokens=capacity)))
             handler=handler_for(runtime,policy)
             observed=[]
             # The wrapper verifies reset in the same HTTP worker context,
@@ -68,6 +68,16 @@ class CacheScopeTests(unittest.TestCase):
                 self.assertEqual(status,200,body)
                 return json.loads(body)['dllm_timing']['cached_prompt_tokens']
             try:
+                if capacity is not None:
+                    expected=min(4,capacity)
+                    for key in (alice,bob):
+                        self.assertEqual(cached(key),0)
+                        self.assertEqual(cached(key),expected)
+                    entries=executor.prefix_cache.entries
+                    self.assertTrue(all(scope.max_prefix_cache_tokens == capacity for scope,_ in entries))
+                    for scope,_ in entries:
+                        self.assertLessEqual(sum(len(tokens) for owner,tokens in entries if owner is scope),capacity)
+                    return
                 self.assertEqual(cached(alice),0)
                 self.assertEqual(cached(alice),4)
                 self.assertEqual(cached(bob),0)
@@ -96,3 +106,23 @@ class CacheScopeTests(unittest.TestCase):
 
     def test_http_identity_survives_paged_scheduler_handoff(self):
         self.exercise_http(PagedChunkExecutor)
+
+    def test_http_capacity_survives_both_scheduler_paths(self):
+        for executor in (ChunkExecutor,PagedChunkExecutor):
+            for capacity in (0,2,4):
+                with self.subTest(executor=executor,capacity=capacity):
+                    self.exercise_http(executor,capacity)
+
+    def test_prefix_capacity_configuration(self):
+        from dllm.request_scope import CacheScope
+        key='alice-cache-isolation-key'
+        for value in (None,True,-1,1.5,'8',2**31):
+            config={'alice':{'key':key,'max_inflight':1,'max_prefix_cache_tokens':value}}
+            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps(config)},clear=True):
+                with self.assertRaises(ValueError):AuthPolicy.from_env()
+        for value in (0,8,2**31-1):
+            config={'alice':{'key':key,'max_inflight':1,'max_prefix_cache_tokens':value}}
+            with patch.dict('os.environ',{'DLLM_CLIENT_KEYS':json.dumps(config)},clear=True):
+                self.assertEqual(AuthPolicy.from_env().clients[0].max_prefix_cache_tokens,value)
+        for value in (True,-1,1.5,'8',2**31):
+            with self.assertRaises(ValueError):CacheScope(value)

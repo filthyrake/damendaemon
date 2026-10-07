@@ -110,3 +110,41 @@ class PrefixTests(unittest.TestCase):
             self.remember([1,2,3])
         self.assertEqual(self.cache.tokens,0)
         self.assertFalse(self.cache.entries)
+
+    def test_scope_capacity_evicts_own_lru_before_global(self):
+        from dllm.request_scope import CacheScope
+        self.cache=PrefixCache(self.executor,32,max_entries=8)
+        alice,bob=CacheScope(8),CacheScope(8)
+        logits=torch.zeros(1,2)
+        for scope,prompt in ((bob,[9]*4),(alice,[1]*4),(alice,[2]*4)):
+            self.cache.remember(prompt,0,logits,scope=scope)
+        self.cache.restore([1]*4,1,scope=alice)
+        self.cache.remember([3]*4,0,logits,scope=alice)
+        self.assertEqual(self.cache.restore([2]*4,1,scope=alice),(0,None))
+        self.assertEqual(self.cache.restore([9]*4,1,scope=bob)[0],4)
+        self.assertEqual(self.cache.restore([1]*4,1,scope=alice)[0],4)
+        self.assertEqual(self.cache.tokens,12)
+        self.cache.remember([7]*12,0,logits,scope=alice)
+        self.assertEqual(self.cache.restore([7]*12,1,scope=alice),(8,None))
+        self.assertEqual(self.cache.tokens,12)
+        self.assertEqual(self.cache.restore([9]*4,1,scope=bob)[0],4)
+
+    def test_scope_zero_recurrent_and_global_caps(self):
+        from dllm.request_scope import CacheScope
+        logits=torch.zeros(1,2)
+        with patch.object(torch.Tensor,'clone',side_effect=AssertionError('disabled snapshot')):
+            self.cache.remember([1,2],0,logits,scope=CacheScope(0))
+        self.assertFalse(self.cache.entries)
+        alice=CacheScope(3)
+        self.executor.prefix_can_rewind=False
+        self.cache.remember([1,2,3,4],0,logits,scope=alice)
+        self.assertFalse(self.cache.entries)
+        self.cache.remember([1,2,3],0,logits,scope=alice)
+        self.assertEqual(self.cache.restore([1,2,3],1,scope=alice)[0],3)
+        self.executor.prefix_can_rewind=True
+        unlimited=CacheScope()
+        self.cache.remember([7]*16,0,logits,scope=unlimited)
+        self.assertEqual(self.cache.tokens,12)
+        self.assertEqual(len(self.cache.entries),1)
+        self.assertEqual(self.cache.restore([7]*16,1,scope=unlimited),(12,None))
+        self.assertNotEqual(CacheScope(3),CacheScope(3))
