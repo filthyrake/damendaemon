@@ -673,3 +673,16 @@ Mixed dense/sparse, full/shared packed-model tests compare incremental/reordered
 logits with independently decoded dense weights and poison all cache layers after
 a nonfinite expert failure. These synthetic controls establish prepared CPU
 composition, not actual checkpoint loading, trained-model quality or GPU speed.
+
+`glm_reference_loader.load_reference_model` admits local indexed or single-shard
+snapshots into that packed CPU stack. It validates configuration/component
+limits, complete headers/index agreement, typed storage and projection/expert
+workspace before reading values. The default 256 MiB parameter cap includes
+retained packed weights/FP32 floating parameters plus one largest source tensor
+for conversion overlap; real GLM-5.3 weights exceed this default. At most 256
+open shards and 64 MiB aggregate raw headers are admitted. MTP is inventoried
+but its values are skipped. Owned descriptors close on failures, and changed
+files are rejected. Shared index reading now bounds the read itself, eliminating
+a stat-versus-file-growth gap. Synthetic snapshot controls match independent
+native FP8 decoding and full/cached logits; official checkpoint values, tokenizer
+integration, serving and hardware qualification remain open.

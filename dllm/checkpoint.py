@@ -12,10 +12,14 @@ from .safetensor_header import _unique_fields, read_header
 def snapshot_shards(path):
     """Validate bounded index metadata and shard paths without opening shards."""
     path = Path(path)
-    if (path/INDEX).exists() and (path/INDEX).stat().st_size > 16*1024*1024:
-        raise ValueError('checkpoint index exceeds 16 MiB metadata limit')
-    index = (json.loads((path/INDEX).read_text(), object_pairs_hook=_unique_fields)
-             if (path/INDEX).exists() else None)
+    index = None
+    if (path/INDEX).exists():
+        # Bound the read itself: a preceding stat can race with file growth.
+        with (path/INDEX).open('rb') as reader:
+            raw = reader.read(16*1024*1024+1)
+        if len(raw) > 16*1024*1024:
+            raise ValueError('checkpoint index exceeds 16 MiB metadata limit')
+        index = json.loads(raw, object_pairs_hook=_unique_fields)
     names = [entry.name for entry in path.iterdir() if entry.is_file()]
     # Validate indexed paths before examining them, including nested shards.
     if isinstance(index, dict) and isinstance(index.get('weight_map'), dict):
