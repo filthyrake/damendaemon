@@ -20,6 +20,7 @@ from .prompts import decode_output
 from .admission import wait_for_batch, validate_queue_limits
 from .request_scope import cache_scope
 from .fair_admission import FairAdmission
+from .client_decode_turns import ClientDecodeTurns
 from .token_observation import TokenObservation
 
 
@@ -66,7 +67,10 @@ class Pending:
 
 
 class BatchedRuntime:
-    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, prefix_cache_tokens=0, batch_wait_ms=0, **kwargs):
+    def __init__(self, models, batch_size=4, queue_size=8, queue_timeout=120, prefill_chunk_size=0, prefix_cache_tokens=0, batch_wait_ms=0, client_decode_turns=False, **kwargs):
+        if type(client_decode_turns) is not bool:raise ValueError("client decode turns must be boolean")
+        self.client_decode_turns=client_decode_turns
+        self.decode_turns=ClientDecodeTurns()
         validate_queue_limits(queue_size, queue_timeout)
         if type(batch_size) is not int or not 1 <= batch_size <= 16 or queue_size < batch_size:
             raise ValueError("batch size must be 1..16 and fit inside the request queue")
@@ -126,6 +130,7 @@ class BatchedRuntime:
                 "queue_capacity": self.queue_capacity,
                 "queue_timeout_seconds": self.queue_timeout,
                 "batch_capacity": self.batch_size,
+                "client_decode_turns": self.client_decode_turns,
                 "queued_generation_requests": sum(r.command is None for r in queued),
                 "worker_owned_generation_requests": sum(r.command is None for r in owned),
                 "queued_commands": sum(r.command is not None for r in queued),
@@ -399,6 +404,10 @@ class BatchedRuntime:
         self.fair_admission.reset()
         return None
 
+    def _ready_decode(self,active):
+        ready=[(slot,request,length) for slot,(request,length) in active.items() if not request.events.full()]
+        return self.decode_turns.choose(ready) if self.client_decode_turns else ready
+
     def _prepare(self,request,executor):
         from .prompts import encode,validate_lengths,decoder_prefix
         thinking=request.enable_thinking
@@ -532,7 +541,7 @@ class BatchedRuntime:
                     elif request.events.full() and time.monotonic()-request.last_progress>self.queue_timeout:
                         self._finish(request,BusyError('stream backpressure timeout'))
                         del active[slot]
-                ready=[(slot,request,length) for slot,(request,length) in active.items() if not request.events.full()]
+                ready=self._ready_decode(active)
                 if ready:
                     logits,next_tokens=executor.decode_batch([r.output[-1] for _,r,_ in ready],[slot for slot,_,_ in ready])
                     selected=sample_rows(logits,[r.sampler for _,r,_ in ready],next_tokens)
@@ -670,7 +679,7 @@ class BatchedRuntime:
                         executor.release_request(slot)
                         owned.remove(slot)
                         del active[slot]
-                ready=[(slot,r,length) for slot,(r,length) in active.items() if not r.events.full()]
+                ready=self._ready_decode(active)
                 if ready:
                     logits,next_ids=executor.decode_batch([r.output[-1] for _,r,_ in ready],[slot for slot,_,_ in ready])
                     selected=sample_rows(logits,[r.sampler for _,r,_ in ready],next_ids)
@@ -752,8 +761,7 @@ class BatchedRuntime:
                     elif request.events.full() and time.monotonic() - request.last_progress > self.queue_timeout:
                         self._finish(request, BusyError("stream backpressure timeout"))
                         del active[slot]
-                ready = [(slot, request, length) for slot, (request, length) in active.items()
-                         if not request.events.full()]
+                ready = self._ready_decode(active)
                 if ready and not self._speculate(ready,active,executor):
                     logits, next_tokens = executor.decode_batch([r.output[-1] for _, r, _ in ready],
                                                            [slot for slot, _, _ in ready])
@@ -810,6 +818,7 @@ class BatchedRuntime:
             try:
                 with self.runtime.session(first.alias) as (executor, tier, activation):
                     wait_for_batch(self,first,self.batch_wait_seconds)
+                    self.decode_turns.reset()
                     self._group(first, executor, tier, activation)
             except Exception as error:
                 if not first.done.is_set():
@@ -818,6 +827,7 @@ class BatchedRuntime:
                 # A worker local otherwise retains the previous model while the
                 # next session tries to evict it and reserve replacement VRAM.
                 executor = None
+                self.decode_turns.reset()
                 with self.condition:
                     self.worker_busy = False
                     self.condition.notify_all()

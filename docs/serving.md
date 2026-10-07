@@ -756,3 +756,29 @@ This is a process-local admission allowance, not measured token throughput,
 input-token accounting, weighted execution fairness or distributed billing.
 Restarting the process resets it. Other clients, shared/admin credentials and
 non-generation routes retain their existing policies.
+
+### Optional equal client decode turns
+
+`dllm serve --client-decode-turns` gives each currently ready client an equal
+number of rows in each ordinary decode step. For example, with three ready
+requests from client A and one from B, the step decodes one A request and the B
+request; A's requests rotate on later steps. With four A requests and two B
+requests, each gets two rows. When only one client is ready, all its ready rows
+can decode. The default remains disabled and decodes every ready request.
+
+The policy uses the opaque named-client identity captured before scheduler
+handoff. Anonymous/shared-key requests form one lane; request payloads cannot
+select another client's lane. Backpressured requests are omitted without blocking
+other clients or accumulating future service credit. Rotation state retains at
+most the current ready batch and resets at model-group boundaries. Cancellation,
+page release, model/management barriers and sampling retain their existing rules.
+Ordinary, chunked and paged scheduler paths share this selection policy.
+
+`GET /v1/scheduler/status` reports the boolean `client_decode_turns` setting. This
+option trades potential batch utilization for equal shares across ready clients;
+no throughput improvement is claimed. Shares count decode rows, not computation
+time or wall-clock token rate. Prompt work and the first token from prefill are
+outside this policy. It does not reserve slots for waiting clients, provide
+weighted quotas, isolate prefill cost, or establish a latency/throughput SLO.
+Local scheduler controls preserve per-request output and release behavior; real
+hardware measurements are still needed to quantify the cost.

@@ -55,7 +55,7 @@ class SchedulerStatusTests(unittest.TestCase):
                     self.assertFalse(self.runtime.admission.acquire(blocking=False))
                     with urlopen(base+'/v1/scheduler/status', timeout=1) as response:
                         snapshot = json.load(response)
-                    self.assertEqual(set(snapshot), {'closed', 'draining', 'drained', 'worker_busy', 'queue_capacity', 'queue_timeout_seconds', 'batch_capacity',
+                    self.assertEqual(set(snapshot), {'closed', 'draining', 'drained', 'worker_busy', 'queue_capacity', 'queue_timeout_seconds', 'batch_capacity', 'client_decode_turns',
                         'queued_generation_requests', 'worker_owned_generation_requests',
                         'queued_commands', 'worker_owned_commands', 'oldest_queued_seconds'})
                     self.assertEqual(snapshot['queue_capacity'], 4)
