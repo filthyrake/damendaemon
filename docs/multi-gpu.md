@@ -407,8 +407,10 @@ close the owned descriptor. The handshake deadline is bounded to at most thirty
 seconds. Configured contexts must remain immutable during use. Certificate
 issuance, protected private-key storage, peer-pin distribution/rotation and
 listener/service provisioning remain operator responsibilities and unimplemented
-deployment gates. Published credentials under `tests/fixtures/host_tls` are
-synthetic test-only keys and must never be used for a deployed service.
+deployment gates. Tests generate short-lived certificates and private keys in a
+private temporary directory using OpenSSL; no static test keys are required.
+Keys in older repository history were synthetic and must never be trusted by a
+deployed service.
 
 Actual loopback tests cover tensor/stage frames, certificate/hostname/pin/ALPN
 rejection, stalled handshake cleanup and close interruption. TLS 1.3 may surface

@@ -12,7 +12,9 @@ from dllm.host_tensor_channel import HostTensorChannel
 from dllm.host_stage_channel import HostStageChannel
 from dllm.stage_protocol import StageState,Command,PREFILL
 
-FIXTURES=Path(__file__).parent/'fixtures/host_tls'
+from tests.tls_credentials import credentials
+
+FIXTURES=credentials()
 
 
 def contexts(client='client'):
