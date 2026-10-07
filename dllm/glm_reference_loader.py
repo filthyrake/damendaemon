@@ -46,6 +46,22 @@ def load_reference_model(path,*,max_weight_bytes=256*1024**2,projection_workspac
     This CPU FP32 control does not emulate accelerator activation quantization
     and does not register a tokenizer, GPU backend or HTTP serving model.
     """
+    return _load_reference(path, None, max_weight_bytes=max_weight_bytes,
+        projection_workspace_bytes=projection_workspace_bytes,
+        max_workspace_bytes=max_workspace_bytes, max_output_bytes=max_output_bytes)
+
+
+def load_reference_stage(path, start, end, *, max_weight_bytes=256*1024**2,
+                         projection_workspace_bytes=8*1024**2,
+                         max_workspace_bytes=64*1024**2, max_output_bytes=64*1024**2):
+    """Load only an indexer-aligned range; audit all headers before payloads."""
+    return _load_reference(path, (start, end), max_weight_bytes=max_weight_bytes,
+        projection_workspace_bytes=projection_workspace_bytes,
+        max_workspace_bytes=max_workspace_bytes, max_output_bytes=max_output_bytes)
+
+
+def _load_reference(path, layer_range, *, max_weight_bytes, projection_workspace_bytes,
+                    max_workspace_bytes, max_output_bytes):
     if sys.byteorder!='little':raise ValueError('GLM reference loading requires a little-endian host')
     if (type(max_weight_bytes) is not int or max_weight_bytes<1
             or any(type(v) is not int or not 1<=v<=2**31
@@ -56,6 +72,15 @@ def load_reference_model(path,*,max_weight_bytes=256*1024**2,projection_workspac
     if len(raw)>1024**2:raise ValueError('GLM configuration exceeds metadata limit')
     config=json.loads(raw,object_pairs_hook=_unique_fields)
     specs=tensor_specs(config);_options(config)
+    start,end=0,config['num_hidden_layers']
+    if layer_range is not None:
+        from .glm_layer_stage import validate_range
+        start,end=layer_range
+        validate_range(start,end,config['num_hidden_layers'],config['indexer_types'])
+        prefixes=tuple(f'model.layers.{layer}.' for layer in range(start,end))
+        boundary=({'model.embed_tokens.weight'} if start==0 else set())
+        if end==config['num_hidden_layers']:boundary|={'model.norm.weight','lm_head.weight'}
+        specs={name:spec for name,spec in specs.items() if name in boundary or name.startswith(prefixes)}
     files,index=snapshot_shards(path)
     if len(files)>256:raise ValueError('GLM checkpoint exceeds open-shard limit')
     tensors={}
@@ -105,7 +130,8 @@ def load_reference_model(path,*,max_weight_bytes=256*1024**2,projection_workspac
                   for name in ('gate_proj','up_proj','down_proj')]
         return PackedExpert(*matrices,workspace_bytes=projection_workspace_bytes)
     budgets=dict(max_output_bytes=max_output_bytes,max_workspace_bytes=max_workspace_bytes)
-    for layer,kind in enumerate(config['indexer_types']):
+    for layer in range(start,end):
+        kind=config['indexer_types'][layer]
         prefix=f'model.layers.{layer}';attn=prefix+'.self_attn.'
         weights={}
         for name,spec in specs.items():
@@ -129,7 +155,13 @@ def load_reference_model(path,*,max_weight_bytes=256*1024**2,projection_workspac
                                     route_scale=config['routed_scaling_factor'],**ff_options)
         blocks.append(GlmBlock(attention,ffn,tensors[prefix+'.input_layernorm.weight'],
                                tensors[prefix+'.post_attention_layernorm.weight'],epsilon=config['rms_norm_eps']))
-    model=GlmModel(tensors['model.embed_tokens.weight'],blocks,tensors['model.norm.weight'],tensors['lm_head.weight'],
-                   epsilon=config['rms_norm_eps'],max_output_bytes=max_output_bytes)
+    if layer_range is None:
+        model=GlmModel(tensors['model.embed_tokens.weight'],blocks,tensors['model.norm.weight'],tensors['lm_head.weight'],
+                       epsilon=config['rms_norm_eps'],max_output_bytes=max_output_bytes)
+    else:
+        from .glm_layer_stage import GlmLayerStage
+        model=GlmLayerStage(blocks,start=start,total=config['num_hidden_layers'],
+            embedding=tensors.get('model.embed_tokens.weight'),norm=tensors.get('model.norm.weight'),
+            head=tensors.get('lm_head.weight'),epsilon=config['rms_norm_eps'],max_output_bytes=max_output_bytes)
     model.config=dict(config)
     return model
