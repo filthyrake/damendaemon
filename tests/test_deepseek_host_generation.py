@@ -20,7 +20,14 @@ TOOLS=[dict(type='function',function=dict(name='lookup',strict=True,parameters=d
 
 
 class DeepSeekHostGenerationTests(unittest.TestCase):
-    links=glm.GlmHostGenerationTests.links
+    def links(self,plan):
+        links=glm.GlmHostGenerationTests.links(self,plan)
+        # Full DSML prompts execute real compressed-attention CPU arithmetic.
+        # A two-second transport-test budget also includes that computation;
+        # it is not a latency acceptance gate for this numerical fixture.
+        for group in links:
+            for transport in group:transport.timeout=10
+        return links
     together=glm.GlmHostGenerationTests.together
     pump=glm.GlmHostGenerationTests.pump
     rows=staticmethod(glm.GlmHostGenerationTests.rows)

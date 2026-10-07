@@ -802,7 +802,7 @@ hardware measurements are still needed to quantify the cost.
 
 `--client-prefill-turns` requires an explicit positive `--prefill-chunk-size`
 (at most 1,048,576 tokens) and a chunk-capable executor. It chooses the pending
-client with the least prompt-token service, then rotates that client's pending
+client with the least weighted prompt-token service, then rotates that client's pending
 requests. A client occupying three prompt slots therefore does not receive three
 times the aggregate token service of a client with one slot. A short final chunk
 is charged for its actual token count. Default per-request rotation is unchanged.
@@ -812,11 +812,23 @@ New/rejoining clients start at the current service floor; cancelled/completed
 requests and absent lanes lose history. Normalized service counters remain within
 one maximum dispatched chunk across continuously pending lanes, and all state
 clears when prompt work/model ownership ends. Decode still runs between chunks.
-Client decode weights do not affect this separate, equal prefill-token policy.
+Named `DLLM_CLIENT_KEYS` entries may set `prefill_weight` to an integer from 1
+through 16 (default 1), independently of `decode_weight`. Each dispatched chunk
+charges its actual token count divided by this declared weight. Continuously
+pending clients with weights 3 and 1 therefore approach a 3:1 prompt-token share,
+within one chunk of normalized service. Exact integer accounting uses a common
+unit divisible by every allowed weight; counters are rebased to the live minimum
+and bounded by the largest normalized chunk. Equal weights preserve the existing
+selection order, and anonymous/shared-key clients use weight 1.
+
+Weights are administrator configuration copied into immutable opaque scopes
+before handoff. Request bodies cannot choose a scope or weight. Without
+`--client-prefill-turns`, prefill weights have no scheduling effect. Decode
+weights remain independent; neither weight changes request/rate/output quotas.
 
 This applies only to admitted, runnable prompt work. It does not reserve slots
 for queued clients, preempt a running chunk, equalize attention/computation cost,
-provide weighted prefill or coordinate quotas across processes. It establishes
+coordinate quotas across processes or guarantee proportional wall-clock service. It establishes
 no wall-clock latency or throughput SLO. Scheduler status reports the boolean
 `client_prefill_turns` setting.
 

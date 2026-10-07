@@ -194,11 +194,14 @@ contexts are immutable during the session. No credentials are issued, copied,
 rotated in place or deployed automatically, and no reconnect or availability
 promise is made. Without the flag, drain continues to leave the service running.
 
-`--client-prefill-turns` requires `--interleaved-prefill` and enables equal
-aggregate prompt-token turns across pending opaque client lanes, with request
+`--client-prefill-turns` requires `--interleaved-prefill` and enables declared
+aggregate prompt-token shares across pending opaque client lanes, with request
 rotation within each lane and actual short-final-chunk accounting. It is available
 in both CPU host commands, including explicit multi-stage topologies. Existing
-decode weighting is independent. New/returning lanes begin at the current service
+decode weighting is independent. Named client `prefill_weight` values from 1 to
+16 divide actual chunk-token charges; the default 1 preserves equal turns.
+Weights are captured in opaque scopes and cannot be selected by request payloads.
+With the flag disabled, weights have no scheduling effect. New/returning lanes begin at the current service
 floor; no historical token debt is retained while absent. Status reports the flag.
 This is admitted prompt-token fairness, not equal compute time, slot reservation,
-weighted prefill, cross-process quota accounting or a measured SLO.
+cross-process quota accounting or a measured SLO.

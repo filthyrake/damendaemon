@@ -22,7 +22,7 @@ def handler_for(runtime, auth=None):
     admission = ClientAdmission(auth)
     from .request_scope import CacheScope, cache_scope
     shared_scope = object()
-    client_scopes = {client.name: CacheScope(client.max_prefix_cache_tokens,client.decode_weight) for client in auth.clients}
+    client_scopes = {client.name: CacheScope(client.max_prefix_cache_tokens,client.decode_weight,client.prefill_weight) for client in auth.clients}
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 

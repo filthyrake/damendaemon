@@ -4,7 +4,7 @@ import queue
 import time
 import unittest
 from unittest.mock import patch
-from dllm.client_prefill_turns import ClientPrefillTurns
+from dllm.client_prefill_turns import ClientPrefillTurns,SERVICE_UNITS
 from dllm.request_scope import CacheScope,cache_scope
 from dllm.scheduler import BatchedRuntime
 from dllm.distributed_serving import DistributedRuntime,Request
@@ -35,7 +35,7 @@ class ClientPrefillTurnTests(unittest.TestCase):
         self.assertEqual([policy.choose(ready)[0] for _ in range(6)],[0,1,1,1,1,0])
         for _ in range(50):
             policy.choose(ready)
-            self.assertLessEqual(max(value[1] for value in policy.service.values()),4)
+            self.assertLessEqual(max(value[1] for value in policy.service.values()),4*SERVICE_UNITS)
         policy.choose(ready[:1]);self.assertEqual(set(policy.service),{id(a)})
         self.assertEqual(len(policy.recent),1)
         self.assertEqual(policy.choose(ready)[0],1) # A rejoining lane starts at the floor.
