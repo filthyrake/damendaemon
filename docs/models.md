@@ -662,3 +662,14 @@ mutation. Nonfinite index keys now fail before cache writes. Each packed
 adapter has its own explicit scratch allowance, additional to attention tensor
 scratch; these are not a combined process-memory cap. No dense weight matrix
 is retained and no accelerator activation rounding is emulated.
+
+`PackedGlmFeedForward` composes prepared E4M3FN/FP32-scale dense or routed/shared
+experts with the same GLM blocks/model. Routing and correction bias remain FP32;
+coefficients multiply expert outputs after the down projection. One token and
+one selected expert execute at a time. Its scratch preflight includes the
+largest expert allowance plus routing/accumulation storage; output has a separate
+cap. Weights remain packed, and optional DeepSeek activation clipping is rejected.
+Mixed dense/sparse, full/shared packed-model tests compare incremental/reordered
+logits with independently decoded dense weights and poison all cache layers after
+a nonfinite expert failure. These synthetic controls establish prepared CPU
+composition, not actual checkpoint loading, trained-model quality or GPU speed.
