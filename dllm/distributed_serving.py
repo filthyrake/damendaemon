@@ -38,9 +38,13 @@ class Active:
     finish: str = 'length'
     batch_size: int = 1
     prefill_batch_size: int = 1
+    acquired: bool = False
 
 
 class DistributedRuntime:
+    source_tier='gpu'
+    kernel_backend='distributed-stage-graphs'
+
     def __init__(self, pair, alias='model', queue_size=8, queue_timeout=120):
         if pair.rank != 0:raise ValueError('only the coordinator exposes HTTP')
         if not isinstance(alias,str) or not 1 <= len(alias) <= 128:raise ValueError('invalid model alias')
@@ -125,6 +129,9 @@ class DistributedRuntime:
         active.generated=time.monotonic()
 
     def _release(self, active):
+        # Cancellation can arrive after admission but before prefill dispatch.
+        # Such a request never owned a peer slot and must not send RELEASE.
+        active=[item for item in active if item.acquired]
         if not active:return
         started=time.monotonic()
         if self.max_batch==1:self.pair.release()
@@ -137,14 +144,14 @@ class DistributedRuntime:
             self._publish(request,dict(finish_reason=item.finish,
                 usage=dict(prompt_tokens=len(request.tokens),completion_tokens=count,
                            total_tokens=len(request.tokens)+count),
-                timing=dict(source_tier='gpu',activation_seconds=0,
+                timing=dict(source_tier=self.source_tier,activation_seconds=0,
                     queue_seconds=item.started-request.submitted,
                     first_token_seconds=item.first-request.submitted,
                     generation_first_token_seconds=item.first-item.started,
                     generation_seconds=item.generated-item.started,
                     release_seconds=released-started,total_seconds=released-request.submitted,
                     decode_tokens_per_second=(count-1)/(item.generated-item.first) if count>1 else None,
-                    max_batch_size=item.batch_size,prefill_batch_size=item.prefill_batch_size,kernel_backend='distributed-stage-graphs',
+                    max_batch_size=item.batch_size,prefill_batch_size=item.prefill_batch_size,kernel_backend=self.kernel_backend,
                     weight_quantization=self.pair.model.quantization)))
             self.completed+=1
 
@@ -179,6 +186,7 @@ class DistributedRuntime:
                     if self.closed.is_set():break
                     items=[item for item in items if not item.request.cancelled.is_set()]
                     if not items:continue
+                    for item in items:item.acquired=True
                     if len(items)>1:
                         result=self.pair.prefill_batch([item.request.tokens for item in items],[item.slot for item in items])
                     else:
