@@ -51,3 +51,26 @@ decode, release/reuse and stop. Setup mismatch, invalid control, failed loads,
 partial stage construction and retryable cleanup are tested. These CPU fixtures
 do not qualify trained-model quality, practical context, real-network throughput,
 hardware, continuous service or production concurrency.
+
+## Mapped output policy
+
+Pass `mapped_vocab_size` and optional `excluded_ids` to the factory or prepared
+`HostHybridWorker` constructor when the tokenizer maps only a prefix of the model
+head. Use a validated contiguous tokenizer map (for example `CpuReferenceText`),
+not a count from a vocabulary containing holes. Omitting the size preserves the
+explicit all-head-rows-mapped contract; the worker cannot infer a tokenizer it has
+not received.
+
+Configured media IDs are automatically excluded, including with default options.
+Additional exclusions must be valid model IDs. Reserved media IDs outside the
+head remain naturally unreachable. At least one mapped output must remain.
+Both peers bind this immutable policy into setup identity and reject mismatches
+before inference. Input rejects excluded/unmapped IDs before command dispatch;
+output masks them before greedy sampling. A policy-violating peer result poisons
+and closes the epoch instead of returning success. Such failure is not a durable
+distributed rollback; a peer may already have advanced its local cursor.
+
+This fixes a reproduced asymmetry: a configured media ID rejected on input was
+previously returned when its output logit was highest. CPU loopback regressions
+cover high media/padded logits through chunked/batched prefill and reordered
+decode, default media exclusion, bad-policy ownership and mismatched peers.

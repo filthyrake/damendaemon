@@ -14,8 +14,23 @@ from .hybrid_stage import HybridLayerStage
 from .stage_protocol import Command,PREFILL,PREFILL_BATCH,PREFILL_CHUNK,DECODE,RELEASE,PING,STOP
 
 
+def _token_policy(config,mapped_vocab_size,excluded_ids):
+    size=config['vocab_size'] if mapped_vocab_size is None else mapped_vocab_size
+    if type(size) is not int or not 1<=size<=config['vocab_size']:
+        raise ValueError('invalid host-worker mapped vocabulary size')
+    media=config.get('multimodal_token_ids',[])
+    for group,bound in ((excluded_ids,config['vocab_size']),(media,2**31)):
+        if (not isinstance(group,(list,tuple,set,frozenset)) or len(group)>256
+                or any(type(t) is not int or not 0<=t<bound for t in group)):
+            raise ValueError('invalid host-worker excluded token IDs')
+    excluded=frozenset(excluded_ids)|frozenset(media)
+    if len(excluded)>256 or sum(t<size for t in excluded)>=size:
+        raise ValueError('host-worker output policy excludes all mapped tokens or exceeds bounds')
+    return size,excluded
+
+
 class HostHybridWorker:
-    def __init__(self,channel,stage):
+    def __init__(self,channel,stage,*,mapped_vocab_size=None,excluded_ids=()):
         if (not isinstance(channel,HostStageChannel) or channel.ready or channel.closed
                 or getattr(channel,'_worker_owner',None) is not None
                 or not isinstance(stage,HybridLayerStage) or stage.closed or getattr(stage,'failed',False)
@@ -26,10 +41,13 @@ class HostHybridWorker:
                 or (channel.rank==0 and (not stage.first or stage.last))
                 or (channel.rank==1 and (stage.first or not stage.last))):
             raise ValueError('host hybrid worker needs fresh compatible CPU FP32 stage ownership')
-        encoded=json.dumps(dict(config=stage.c,dtype=str(stage.compute_dtype),quantization=stage.model.quantization),sort_keys=True,
+        mapped,excluded=_token_policy(stage.c,mapped_vocab_size,excluded_ids)
+        encoded=json.dumps(dict(config=stage.c,dtype=str(stage.compute_dtype),quantization=stage.model.quantization,
+                                token_policy=dict(mapped_vocab_size=mapped,excluded_ids=sorted(excluded))),sort_keys=True,
                            separators=(',',':'),allow_nan=False).encode()
         if len(encoded)>1024**2:raise ValueError('host hybrid configuration exceeds metadata limit')
         self.contract=hashlib.sha256(encoded).digest()
+        self.mapped_vocab_size,self.excluded_ids=mapped,excluded
         self.channel,self.stage,self.rank=channel,stage,channel.rank
         self.width=stage.c['hidden_size'];self.ready=self.failed=self.closed=False
         self.lock=threading.RLock();self.owner=object()
@@ -78,8 +96,8 @@ class HostHybridWorker:
 
     def _tokens(self,tokens):
         if (not isinstance(tokens,(list,tuple)) or not tokens or len(tokens)>self.channel.state.context
-                or any(type(v) is not int or not 0<=v<self.channel.vocab_size for v in tokens)
-                or set(tokens)&set(self.stage.c.get('multimodal_token_ids',[]))):
+                or any(type(v) is not int or not 0<=v<self.mapped_vocab_size for v in tokens)
+                or set(tokens)&self.excluded_ids):
             raise ValueError('invalid host hybrid text token IDs')
 
     def _slots(self,slots):
@@ -196,9 +214,15 @@ class HostHybridWorker:
                 if not torch.isfinite(hidden).all():raise ValueError('nonfinite host hybrid received activation')
                 _,last=self._run(command,hidden)
                 logits=self.stage.output_logits(last)
-                if logits.shape!=(len(command.entries),self.channel.vocab_size) or not torch.isfinite(logits).all():
+                if (logits.shape!=(len(command.entries),self.channel.vocab_size) or logits.dtype!=torch.float32
+                        or logits.device.type!='cpu' or not torch.isfinite(logits).all()):
                     raise ValueError('invalid host hybrid output logits')
-                result=self.channel.complete_tokens(command,logits.argmax(-1))
+                scores=logits[:,:self.mapped_vocab_size].clone()
+                excluded=[t for t in self.excluded_ids if t<self.mapped_vocab_size]
+                if excluded:scores[:,excluded]=-float('inf')
+                result=self.channel.complete_tokens(command,scores.argmax(-1))
+            if any(not 0<=t<self.mapped_vocab_size or t in self.excluded_ids for t in result.tolist()):
+                raise ValueError('host-worker received excluded or unmapped output token')
             self.stage.lengths[:]=self.channel.state.lengths;self.stage.length=self.stage.lengths[0]
             return result.tolist() if self.rank==0 else None
         except BaseException as error:self._fail(error);raise

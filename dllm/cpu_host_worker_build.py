@@ -23,7 +23,7 @@ class CpuHostWorkerBuildError(RuntimeError):
 
 
 def build_cpu_host_worker(path,start,end,transport,*,epoch,max_context=512,max_batch=4,context_limit=512,
-                          quantization='none',max_weight_bytes=256*1024**2,loader_workspace_bytes=64*1024**2,
+                          quantization='none',mapped_vocab_size=None,excluded_ids=(),max_weight_bytes=256*1024**2,loader_workspace_bytes=64*1024**2,
                           **stage_options):
     """Claim a fresh transport and construct its selected CPU stage and worker.
 
@@ -54,7 +54,7 @@ def build_cpu_host_worker(path,start,end,transport,*,epoch,max_context=512,max_b
         channel=HostStageChannel(transport,state,vocab_size=model.config['vocab_size'])
         stage=CpuHybridStage.__new__(CpuHybridStage)
         stage.__init__(model,start,end,max_batch,max_weight_bytes=max_weight_bytes,**stage_options)
-        return HostHybridWorker(channel,stage)
+        return HostHybridWorker(channel,stage,mapped_vocab_size=mapped_vocab_size,excluded_ids=excluded_ids)
     except BaseException as error:
         failure=CpuHostWorkerBuildError(f'CPU host-worker construction failed: {type(error).__name__}: {error}',transport,channel,stage)
     model=None  # Do not retain loader locals/source tensors in a failure traceback.
