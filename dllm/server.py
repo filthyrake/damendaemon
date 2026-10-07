@@ -17,7 +17,7 @@ from .prompts import validate_raw
 def handler_for(runtime, auth=None):
     from .http_auth import AuthPolicy
     auth = AuthPolicy.from_env() if auth is None else auth
-    from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError, ClientRateLimitError
+    from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError, ClientRateLimitError, ClientOutputRateLimitError
     from .http_auth import INFERENCE_ROUTES
     admission = ClientAdmission(auth)
     from .request_scope import CacheScope, cache_scope
@@ -312,6 +312,8 @@ def handler_for(runtime, auth=None):
             except Exception as error:
                 if isinstance(error, ClientOutputLimitError):
                     status, message = 429, 'client outstanding output token budget exceeded'
+                elif isinstance(error, ClientOutputRateLimitError):
+                    status, message = 429, 'client declared output token rate limit reached'
                 elif isinstance(error, BusyError):
                     status, message = 503, str(error)
                 elif isinstance(error, (ValueError, KeyError, TypeError)):
@@ -327,7 +329,7 @@ def handler_for(runtime, auth=None):
                         pass
                     self.close_connection = True
                 else:
-                    self.send_json(status, {"error": message})
+                    self.send_json(status, {"error": message}, retry_after=getattr(error, "retry_after", 1))
     return Handler
 
 

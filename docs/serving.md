@@ -734,3 +734,25 @@ model draining and command order. Embedding/reranking/scoring commands remain
 serialized barriers. This is request admission fairness, not token-weighted
 service, distributed quotas or a measured user latency/throughput SLO. Active
 requests retain their existing execution and cancellation behavior.
+
+Named clients may also set `"max_output_tokens_per_minute":8192` to limit
+**declared output admission** across completed and active generation requests.
+Values are integers from 1 through 2147483647; omission is unlimited and explicit
+null is invalid. Both completion routes charge `max_tokens` (default 128), or
+chat's `max_completion_tokens` alias, after request validation and before runtime
+dispatch. A request larger than the entire allowance receives 400. Other output
+budget rejections do not charge this allowance. The independent request-count
+limit still counts admitted HTTP attempts according to its own policy.
+
+Charge and outstanding-output reservation checks are atomic. Accepted output
+charges persist after early EOS, execution failure, cancellation or disconnect;
+unused declared tokens are not refunded. Output rate rejection returns 429 with
+a calculated whole-second `Retry-After` until enough weighted budget expires,
+not merely the oldest request. Each client retains at most 61 one-second buckets.
+Charges expire 60 to 61 seconds after admission, conservatively rounded to the
+end of their admission second; this never permits a larger 60-second burst.
+
+This is a process-local admission allowance, not measured token throughput,
+input-token accounting, weighted execution fairness or distributed billing.
+Restarting the process resets it. Other clients, shared/admin credentials and
+non-generation routes retain their existing policies.

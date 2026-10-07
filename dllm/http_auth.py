@@ -29,6 +29,7 @@ class ClientKey:
     max_reserved_output_tokens: int | None = None
     max_prefix_cache_tokens: int | None = None
     max_requests_per_minute: int | None = None
+    max_output_tokens_per_minute: int | None = None
 
     def __post_init__(self):
         if not isinstance(self.name, str) or re.fullmatch(r'[A-Za-z0-9_.-]{1,64}', self.name) is None:
@@ -47,6 +48,9 @@ class ClientKey:
         if self.max_requests_per_minute is not None and (type(self.max_requests_per_minute) is not int
                 or not 1 <= self.max_requests_per_minute <= 60000):
             raise ValueError('client max_requests_per_minute must be an integer from 1 to 60000')
+        if self.max_output_tokens_per_minute is not None and (type(self.max_output_tokens_per_minute) is not int
+                or not 1 <= self.max_output_tokens_per_minute <= 2**31-1):
+            raise ValueError('client max_output_tokens_per_minute must be an integer from 1 to 2147483647')
         if self.models is not None:
             if not isinstance(self.models, frozenset) or len(self.models) > 128:
                 raise ValueError('client models must be a frozenset of at most 128 exact aliases')
@@ -92,7 +96,7 @@ class AuthPolicy:
                 raw = json.loads(text, object_pairs_hook=unique_pairs)
                 if (not isinstance(raw, dict) or not 1 <= len(raw) <= 128
                         or any(not isinstance(value, dict) or not {'key', 'max_inflight'} <= set(value)
-                               or set(value) - {'key', 'max_inflight', 'models', 'max_reserved_output_tokens', 'max_prefix_cache_tokens', 'max_requests_per_minute'}
+                               or set(value) - {'key', 'max_inflight', 'models', 'max_reserved_output_tokens', 'max_prefix_cache_tokens', 'max_requests_per_minute', 'max_output_tokens_per_minute'}
                                for value in raw.values())):
                     raise ValueError('invalid client configuration')
                 parsed = []
@@ -111,12 +115,14 @@ class AuthPolicy:
                         raise ValueError('explicit prefix cache limit cannot be null')
                     if 'max_requests_per_minute' in value and value['max_requests_per_minute'] is None:
                         raise ValueError('explicit request rate limit cannot be null')
+                    if 'max_output_tokens_per_minute' in value and value['max_output_tokens_per_minute'] is None:
+                        raise ValueError('explicit output rate limit cannot be null')
                     parsed.append(ClientKey(name, value['key'], value['max_inflight'], models,
                                             value.get('max_reserved_output_tokens'), value.get('max_prefix_cache_tokens'),
-                                            value.get('max_requests_per_minute')))
+                                            value.get('max_requests_per_minute'), value.get('max_output_tokens_per_minute')))
                 clients = tuple(parsed)
             except (ValueError, TypeError):
-                raise ValueError('DLLM_CLIENT_KEYS requires valid distinct clients with key/max_inflight and optional models/max_reserved_output_tokens/max_prefix_cache_tokens/max_requests_per_minute') from None
+                raise ValueError('DLLM_CLIENT_KEYS requires valid distinct clients with key/max_inflight and optional models/max_reserved_output_tokens/max_prefix_cache_tokens/max_requests_per_minute/max_output_tokens_per_minute') from None
         return cls(os.environ.get('DLLM_API_KEY'), os.environ.get('DLLM_ADMIN_API_KEY'), clients)
 
     def client(self, headers):
