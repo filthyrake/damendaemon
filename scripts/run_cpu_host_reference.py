@@ -23,7 +23,7 @@ def parser_for_command(*,topology=False,family='qwen'):
     if family not in ('qwen','glm','flash','deepseek') or (family!='qwen' and not topology):
         raise ValueError('unsupported CPU host command family/topology')
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('role',choices=('worker','complete') if family=='deepseek' else ('worker','complete','serve'))
+    parser.add_argument('role',choices=('worker','complete','serve'))
     parser.add_argument('snapshot')
     parser.add_argument('--address',required=not topology,help='literal bind IP for worker, peer IP for complete')
     parser.add_argument('--port',type=int,required=not topology,help='explicit port; worker may use 0 for an ephemeral port')
@@ -91,8 +91,8 @@ def prepare(args,*,family='qwen'):
         raise ValueError('reference topology requires its declared packed reference format and no template/loader override')
     if family in ('flash','deepseek') and not args.native_chat:
         raise ValueError('this reference host command requires native chat')
-    if family=='deepseek' and (args.role=='serve' or args.workspace_mib!=64):
-        raise ValueError('DeepSeek host command supports worker/complete with projection-workspace-mib')
+    if family=='deepseek' and args.workspace_mib!=64:
+        raise ValueError('DeepSeek host command uses projection-workspace-mib')
     native=False
     if family in ('glm','flash','deepseek'):
         from scripts.glm_host_native import validate_mode

@@ -1,4 +1,4 @@
-"""Owned loopback HTTP lifetime for an explicit native GLM/Flash host topology."""
+"""Owned loopback HTTP lifetime for an explicit native GLM/Flash/DeepSeek host topology."""
 import signal
 import threading
 import time
@@ -9,7 +9,11 @@ from scripts.run_cpu_host_reference import emit
 
 
 def serve(worker,text,args,auth,*,family='glm'):
-    if family=='flash':
+    if family=='deepseek':
+        from dllm.deepseek_host_generation import HostDeepSeekGenerator as Runner
+        from dllm.deepseek_host_serving import HostDeepSeekReferenceRuntime as Runtime
+        from dllm.queued_deepseek_host_serving import QueuedHostDeepSeekReferenceRuntime as QueuedRuntime
+    elif family=='flash':
         from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
         from dllm.glm_flash_host_serving import HostFlashReferenceRuntime as Runtime
         from dllm.queued_glm_flash_host_serving import QueuedHostFlashReferenceRuntime as QueuedRuntime

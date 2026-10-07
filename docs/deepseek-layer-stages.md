@@ -38,7 +38,7 @@ Tests compare separately loaded full stacks with two/three packed ranges over
 window and 4/128-token compression boundaries, including reordered slots and a
 hash-routed layer after a cut. Exact selected weight/cache limits, unowned-header
 audits, invalid IDs/streams/cursors, layers-only boundaries, partial failures and
-block/model/generator/HTTP cleanup retry are covered. Complete pipeline integration is described below; host transport remains a subsequent gate.
+block/model/generator/HTTP cleanup retry are covered. Complete pipeline and host integration are described below.
 
 ## Complete local pipelines
 
@@ -128,7 +128,7 @@ so closing during buffered-call finalization cannot publish a successful tool ca
 and failure constructing a later parser closes those already created.
 
 This is explicit prepared-host admission, separate from generic local reference
-HTTP. Native host command/HTTP integration follows. CPU controls, real local TLS
+HTTP. Native host command/HTTP integration is described below. CPU controls, real local TLS
 and controlled output tokens after packed arithmetic test format and lifecycle;
 they do not establish trained-model tool quality or accelerator performance.
 
@@ -153,4 +153,28 @@ Completion accepts `--prompt`, `--messages` or `--batch-messages`, optional
 request formats, tools, context and topology are checked before connections or
 weight payloads. Output reports actual stage ranges and verification status.
 Final completion events are withheld until every worker acknowledges STOP.
-Raw token mode, foreign thinking options and HTTP are not admitted by this gate.
+Raw token mode and foreign thinking options remain unsupported. HTTP is described below.
+
+## Native host HTTP and serialized queues
+
+The explicit `HostDeepSeekReferenceRuntime` and
+`QueuedHostDeepSeekReferenceRuntime` admit the exact native DeepSeek host runner.
+The command's `serve` role exposes loopback HTTP with the existing API/admin auth
+policy, JSON/SSE, status and source/range/verification metadata. DeepSeek thinking
+uses `chat_template_kwargs: {"enable_thinking": true}`; tools retain native DSML
+and declared strict-schema validation. Whole-model/local pipeline HTTP and other
+host families keep their existing admission contracts.
+
+`--queue-size N` enables bounded serialized requests with per-client admission
+turns and bounded output buffering. Undispatched expiry/cancellation preserves the
+session; active abandonment/cancellation, peer loss or parser failure retires it
+and flushes waiting work. Cleanup failures remain visible and retryable. Heartbeat
+PING preserves occupied slots during output backpressure. Authenticated scheduler
+drain stops new admission, and `--stop-after-drain` waits for accepted work before
+acknowledged peer STOP. Idle signals may stop gracefully; active signals cancel
+without an SSE success terminator or graceful-stop claim.
+
+Real loopback TLS/HTTP and subprocess tests cover ordinary/thinking/tool results,
+concurrency, source verification, auth, drain, queue expiry, keepalive, peer failure
+and retryable cleanup. These are CPU reference and serialized-admission controls,
+not continuous batching, real-network, trained-model or performance qualification.
