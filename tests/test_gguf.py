@@ -15,12 +15,12 @@ if HAS_GGUF:
     from dllm.gguf_model import GgufWeights, plan, tensor_groups, weight_bytes
 
 
-def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32, window=None):
+def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32, window=None, split_max_tensors=0, small_first_shard=False):
     from tokenizers.pre_tokenizers import ByteLevel
     tokens = sorted(ByteLevel.alphabet()) + ['<|endoftext|>', '<|im_start|>', '<|im_end|>']
     c = dict(model_type=arch, hidden_size=hidden, num_attention_heads=4, head_dim=hidden//4,
              num_key_value_heads=2, intermediate_size=hidden*2, num_hidden_layers=1, vocab_size=len(tokens))
-    writer = GGUFWriter(str(path), arch)
+    writer = GGUFWriter(str(path), arch, split_max_tensors=split_max_tensors, small_first_shard=small_first_shard)
     for key, value in [('context_length', 128), ('embedding_length', hidden), ('feed_forward_length', hidden*2),
                        ('block_count', 1), ('attention.head_count', 4), ('attention.head_count_kv', 2)]:
         writer.add_uint32(f'{arch}.{key}', value)

@@ -22,7 +22,7 @@ FORMATS = {0: (1, 4), 1: (1, 2), **PACKED_FORMATS}
 
 
 class BoundedReader(GGUFReader):
-    def __init__(self, path):
+    def __init__(self, path, *, allow_empty=False):
         with Path(path).open('rb') as file:
             header = file.read(24)
         if len(header) != 24:
@@ -30,13 +30,23 @@ class BoundedReader(GGUFReader):
         magic, version, tensors, fields = struct.unpack('<4sIQQ', header)
         if magic != b'GGUF' or version not in (2, 3):
             raise ValueError('expected little-endian GGUF version 2 or 3')
-        if not 0 < tensors <= 100_000 or fields > 100_000:
+        if type(allow_empty) is not bool or not (0 if allow_empty else 1) <= tensors <= 100_000 or fields > 100_000:
             raise ValueError('GGUF tensor or metadata count exceeds supported bounds')
         self._header_phase = True
         try:
             super().__init__(path, mode='r')
         except (IndexError, KeyError, OverflowError, UnicodeError) as error:
+            self.close()
             raise ValueError('malformed GGUF metadata') from error
+        except BaseException:
+            self.close();raise
+
+    def close(self):
+        mapping=getattr(getattr(self,'data',None),'_mmap',None)
+        if mapping is not None and not mapping.closed:mapping.close()
+
+    def __enter__(self):return self
+    def __exit__(self,*_):self.close()
 
     def _get(self, offset, dtype, count=1, override_order=None):
         offset, count = int(offset), int(count)

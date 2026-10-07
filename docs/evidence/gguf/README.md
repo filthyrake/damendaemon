@@ -46,8 +46,10 @@ between unrelated quantizations.
 The importer accepts dense Qwen2/Qwen3 and Llama 3 BPE checkpoints in
 little-endian GGUF v2/v3 with F16/F32 or Q4_0/Q8_0 tensors. The Llama extension
 below includes explicit FP32 rotary-factor vectors. Later sections describe
-experimental K-quants and Llama-style SentencePiece BPE. IQ formats, split
-checkpoints, other architectures, other scaled-RoPE metadata, vision/audio
+experimental K-quants and Llama-style SentencePiece BPE. Standard numbered
+[split checkpoints](../../gguf-split.md) now have CPU fixture coverage; real
+split-checkpoint GPU qualification remains open. IQ formats, other architectures,
+other scaled-RoPE metadata, vision/audio
 adapters and arbitrary GGUF tokenizer families are not implemented. Q/K/V and gate/up fused components must each use compatible
 formats; distinct projections may use different supported formats.
 

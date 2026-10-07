@@ -1,7 +1,11 @@
 """Standalone Qwen2/Qwen3/Llama GGUF import into dllm's own decoder and kernels."""
+from contextlib import ExitStack
 from dataclasses import dataclass
 from functools import lru_cache
 import math
+import os
+import re
+import stat
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +14,7 @@ from tokenizers import AddedToken, Regex, Tokenizer, decoders, models, pre_token
 
 from .config import decoder_config
 from .device import selected_device
-from .gguf_reader import BoundedReader
+from .gguf_reader import BoundedReader,MAX_HEADER
 from .gguf_packed import FORMATS, KQUANTS, NAMES, read_raw, layout as packed_layout
 from .qwen2 import ModelWeights
 from .quantization import dequantize, dequantize_q4, mode
@@ -22,8 +26,12 @@ QWEN_PATTERN = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[
 
 
 def identity(path):
-    stat = Path(path).stat()
-    return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
+    info = Path(path).stat()
+    if not stat.S_ISREG(info.st_mode):raise ValueError('GGUF requires regular files')
+    return file_identity(info)
+
+
+def file_identity(info):return info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns
 
 
 @dataclass(frozen=True)
@@ -33,6 +41,7 @@ class TensorInfo:
     kind: int
     offset: int
     length: int
+    file_index: int = 0
 
     @property
     def host_bytes(self):
@@ -204,18 +213,70 @@ def tensor_groups(c, tensors):
         yield f'{i}.norm2', [(p + 'ffn_norm.weight', (h,))]
 
 
-def plan(path):
-    path = Path(path).resolve()
-    return _plan(path, identity(path))
+SPLIT_KEYS=frozenset(('split.no','split.count','split.tensors.count'))
+
+
+def split_metadata(metadata,index=None,count=None,total=None):
+    present={key for key in metadata if key.startswith('split.')}
+    if not present:return None
+    if present!=SPLIT_KEYS:raise ValueError('incomplete or unsupported GGUF split metadata')
+    values=tuple(metadata[key] for key in ('split.no','split.count','split.tensors.count'))
+    if (any(type(value) is not int for value in values) or not 2<=values[1]<=64
+            or not 0<=values[0]<values[1] or not 1<=values[2]<=100_000
+            or (index is not None and values!=(index,count,total))):
+        raise ValueError('GGUF split index/count/tensor total disagrees or exceeds bounds')
+    return values
 
 
 @lru_cache(maxsize=2)
-def _plan(path, version):
-    reader = BoundedReader(path)
-    metadata = {name: field.contents() for name, field in reader.fields.items()}
-    tensors = {t.name: TensorInfo(t.name, tuple(int(n) for n in reversed(t.shape)), int(t.tensor_type), int(t.data_offset), int(t.n_bytes)) for t in reader.tensors}
-    # The cache retains metadata, never memory maps or weight arrays.
-    del reader
+def _shard_paths(path,version):
+    # This small cache retains names only, never token metadata or mmap views.
+    with BoundedReader(path,allow_empty=True) as reader:
+        split=split_metadata({name:field.contents() for name,field in reader.fields.items() if name.startswith('split.')})
+        if split is None:
+            if not reader.tensors:raise ValueError('single GGUF file has no tensors')
+            paths=(path,)
+        else:
+            index,count,_=split
+            match=re.fullmatch(r'(.+)-00001-of-([0-9]{5})\.gguf',path.name)
+            if index!=0 or match is None or int(match[2])!=count:
+                raise ValueError('select the standard numbered first GGUF shard')
+            paths=tuple(path.with_name(f'{match[1]}-{i:05d}-of-{count:05d}.gguf') for i in range(1,count+1))
+    if identity(path)!=version:raise ValueError('GGUF file changed while discovering shards')
+    return paths
+
+
+def plan(path):
+    path=Path(path).resolve()
+    paths=_shard_paths(path,identity(path))
+    return _plan(path,tuple((part,identity(part)) for part in paths))
+
+
+@lru_cache(maxsize=2)
+def _plan(path,version):
+    metadata={};tensors={};headers=0;total=None
+    for index,(part,stamp) in enumerate(version):
+        with BoundedReader(part,allow_empty=index==0) as reader:
+            headers+=int(reader.data_offset)
+            if headers>MAX_HEADER:raise ValueError('aggregate GGUF shard metadata exceeds bounds')
+            shard={name:field.contents() for name,field in reader.fields.items() if not name.startswith('GGUF.')}
+            split=split_metadata(shard)
+            if len(version)>1:
+                if split is None:raise ValueError('GGUF shard is missing split metadata')
+                if index==0:total=split[2]
+                split_metadata(shard,index,len(version),total)
+            elif split is not None:raise ValueError('GGUF split membership changed')
+            shard={name:value for name,value in shard.items() if not name.startswith('split.')}
+            if index==0:metadata=shard
+            elif any(name!='general.alignment' and (name not in metadata or value!=metadata[name]) for name,value in shard.items()):
+                raise ValueError('GGUF shard model/tokenizer metadata disagrees')
+            for tensor in reader.tensors:
+                if tensor.name in tensors:raise ValueError('duplicate tensor across GGUF shards')
+                tensors[tensor.name]=TensorInfo(tensor.name,tuple(int(n) for n in reversed(tensor.shape)),
+                    int(tensor.tensor_type),int(tensor.data_offset),int(tensor.n_bytes),index)
+            if len(tensors)>100_000:raise ValueError('aggregate GGUF tensor count exceeds bounds')
+        if identity(part)!=stamp:raise ValueError('GGUF shard changed while reading metadata')
+    if total is not None and len(tensors)!=total:raise ValueError('GGUF split total tensor count disagrees')
     tok, special, eos = tokenizer(metadata)
     c = model_config(metadata, tensors, len(metadata['tokenizer.ggml.tokens']), eos)
     expected = set(); raw_groups = set()
@@ -246,7 +307,7 @@ def _plan(path, version):
     template = metadata.get('tokenizer.chat_template')
     if template is not None and not isinstance(template, str):
         raise ValueError('GGUF needs a single text chat template')
-    if identity(path) != version:
+    if any(identity(part)!=stamp for part,stamp in version):
         raise ValueError('GGUF file changed while reading metadata')
     return Plan(path, version, c, tensors, tok.to_str(), template, special, eos, quantization, total, frozenset(raw_groups),
                 metadata.get('tokenizer.ggml.model') == 'llama' and metadata.get('tokenizer.ggml.add_space_prefix', True))
@@ -321,17 +382,20 @@ class GgufWeights(ModelWeights):
         self.eos = set(source.eos)
         weights, scales = {}, {}
         self.packed_formats = {}
-        with self.path.open('rb') as file:
+        with ExitStack() as owned:
+            files=[owned.enter_context(part.open('rb')) for part,_ in source.identity]
+            if any(file_identity(os.fstat(file.fileno()))!=stamp for file,(_,stamp) in zip(files,source.identity)):
+                raise ValueError('GGUF shard changed before payload loading')
             for destination, group in tensor_groups(self.config, source.tensors):
                 if destination in source.raw_groups:
                     native = []
                     for name, shape in group:
                         info = source.tensors[name]
                         if info.kind in FORMATS:
-                            value = read_raw(file, info, embedding=destination == 'embed')
+                            value = read_raw(files[info.file_index], info, embedding=destination == 'embed')
                             kind = info.kind
                         else:
-                            value, _ = read_tensor(file, info)
+                            value, _ = read_tensor(files[info.file_index], info)
                             value = value.view(torch.uint8)
                             kind = 1  # Floating decoder weights preserve the FP16 policy.
                         if self.config['model_type'] in ('llama', 'mistral'):
@@ -340,7 +404,7 @@ class GgufWeights(ModelWeights):
                     self.packed_formats[destination] = packed_layout(group[0][1][1], native)
                     weights[destination] = torch.cat([value.reshape(-1) for value, _ in native])
                     continue
-                parts = [read_tensor(file, source.tensors[name]) for name, _ in group]
+                parts = [read_tensor(files[source.tensors[name].file_index], source.tensors[name]) for name, _ in group]
                 if self.config['model_type'] in ('llama', 'mistral'):
                     parts = [restore_llama_rows(name, part, self.config) for (name, _), part in zip(group, parts)]
                 values = [p[0] for p in parts]
@@ -348,6 +412,8 @@ class GgufWeights(ModelWeights):
                 if parts[0][1] is not None:
                     parts_scales = [p[1] for p in parts]
                     scales[destination] = parts_scales[0] if len(parts_scales) == 1 else torch.cat(parts_scales)
+            if any(file_identity(os.fstat(file.fileno()))!=stamp for file,(_,stamp) in zip(files,source.identity)):
+                raise ValueError('GGUF shard changed while loading payloads')
         if self.config['tie_word_embeddings']:
             weights['head'] = weights['embed']
             if 'embed' in scales:
@@ -375,7 +441,7 @@ class GgufWeights(ModelWeights):
                     raise ValueError('GGUF embedding exceeds finite FP16 range')
                 weights['embed'] = embedding
                 del scales['embed']
-        if identity(self.path) != source.identity:
+        if any(identity(part)!=stamp for part,stamp in source.identity):
             raise ValueError('GGUF file changed while loading weights')
         self.finalize_weights(weights, scales)
         if self.bytes != estimated:
