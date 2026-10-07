@@ -1898,3 +1898,14 @@ and final results plus image/frame isolation. No official visual payloads were
 loaded. This does not qualify trained image semantics, preprocessing, language
 image insertion, video support, HTTP, GPU execution or performance; existing
 text-only loader and serving guards remain unchanged.
+
+`glm_flash_images` adds the separate pinned Flash still-image processor for CPU
+HWC uint8 RGB tensors. Unlike Qwen, it uses 14-pixel patches, CLIP normalization,
+aligned aspect-preserving resize with bottom/right black padding, and duplicated
+temporal patches. The implementation validates the entire batch's patch,
+workspace and retained output limits before resizing or allocating output. CPU
+bicubic interpolation retains uint8 semantics before normalization. Resize cases
+come from the pinned v5.17.0 processor; scalar patch checks cover normalization,
+padding and merge-block order. Fixture images also execute through the prepared
+Flash vision encoder. Encoded files, network image retrieval, video and language
+feature insertion remain outside this gate.
