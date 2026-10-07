@@ -55,6 +55,9 @@ class HostCompletion:
         if (len(rows)>worker.channel.state.slots
                 or max(len(rows),min(chunk_size,max(map(len,rows))))*worker.width*4>worker.channel.transport.max_frame_bytes):
             raise ValueError('host completion exceeds session slot/frame capacity')
+        topology=getattr(worker,'topology',None)
+        if topology is not None and min(chunk_size,max(map(len,rows)))>topology.chunk_size:
+            raise ValueError('host completion exceeds planned prefill chunk rows')
         if cancelled is not None and not callable(cancelled):raise ValueError('cancellation must be callable')
         if not self.lock.acquire(blocking=False):raise RuntimeError('host completion is active')
         primary=None;counts=[0]*len(rows);reasons=['length']*len(rows)

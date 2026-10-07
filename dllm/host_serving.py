@@ -17,6 +17,8 @@ class HostServingPair:
     def __init__(self,worker,text,*,chunk_size=128):
         if not isinstance(worker,HostHybridWorker) or not isinstance(text,CpuReferenceText):
             raise ValueError('host serving needs a prepared worker and CPU tokenizer')
+        if getattr(worker,'topology',None) is not None:
+            raise ValueError('planned host HTTP requires an explicit topology adapter')
         with worker.lock:
             if (worker.rank!=0 or not worker.ready or worker.failed or worker.closed
                     or any(worker.channel.state.lengths) or getattr(worker,'_completion_owner',None) is not None
