@@ -1759,3 +1759,13 @@ Source/index fingerprints are recorded in `tests/fixtures/glm53_flash_contract.j
 The checkpoint's MIT license is preserved in `docs/licenses/glm53-flash-MIT.txt`.
 Flash text execution, vision, MTP, quality and hardware qualification remain open
 in [#57](https://github.com/filthyrake/dllm/issues/57).
+
+`glm_flash_hyper.FlashHyperConnection` supplies bounded CPU FP32 residual
+collapse/restoration and the Flash unweighted final stream mean. It normalizes
+the flattened state before projecting, shares the existing Sinkhorn coefficient
+calculation, and restores with source-to-destination matrix orientation.
+Parameters are borrowed and checked for mutation-induced nonfinite values;
+workspace/output limits are checked before input scans or arithmetic. Independent
+Python scalar controls cover one and twenty normalization iterations, plus
+noncontiguous state, asymmetric restoration, malformed inputs and budget failures.
+These are synthetic primitive checks, not complete Flash text execution.
