@@ -1923,3 +1923,12 @@ language logits, chunked image prefixes and ordinary token decode. This explicit
 prepared-feature API does not render media chat, establish image identity or
 semantic correctness, load official visual weights, or change the ordinary text
 adapter's media rejection.
+
+`glm_flash_vision_loader.load_reference_vision` loads only visual payloads from
+an indexed or single-file snapshot. Exact names, floating shapes/storage,
+quantization exclusions and whole-index consistency are checked first. FP32
+retention, largest source conversion overlap and parameter-validation scratch
+are admitted before payload reads. Descriptor and metadata limits remain
+explicit; mutation or read failures close all opened descriptors. Mixed
+FP16/BF16/F32 fixture snapshots match independently prepared vision controls.
+Text/MTP payloads remain unread, and official visual weights have not been run.
