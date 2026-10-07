@@ -167,6 +167,33 @@ closes every resource and retains failed cleanup in the build error.
 Ephemeral loopback TLS tests compare packed two/three-stage logits and tokens
 with independent whole-model controls; they cover ragged/chunked prefill,
 reordered decode, release/reuse, STOP, identity/frame rejection, peer failures,
-range-local loads, source mutation and retryable construction cleanup. These
-prepared APIs do not yet provide a Flash host command, native-chat owner or HTTP
-service, and do not qualify actual remote hardware, image-host execution or speed.
+range-local loads, source mutation and retryable construction cleanup. These prepared APIs do not qualify actual remote hardware, image-host execution
+or speed. Native command admission is described below; HTTP remains separate.
+
+
+## Native host text and tool command
+
+`HostFlashGenerator` binds the pinned Flash renderer/tool parser, a canonical
+snapshot of the tokenizer, stop/media policy and verification mode to the host
+session identity. GLM and Flash share `NativeHostGenerator` ownership mechanics
+with explicit family hooks; their native identities and exact admission remain
+separate. Single/equal/ragged conversations are prepared before dispatch. Invalid
+input leaves a healthy epoch reusable; cancellation, abandonment, parser or peer
+failure after dispatch discards it. Success finals follow every remote release
+and parser cleanup. Media token IDs are excluded from this text-only path.
+
+`scripts.run_glm_flash_host_topology` is the explicit multi-process command.
+Supply `--native-chat` on every worker and coordinator, an ordered `--plan`,
+coordinator `--peers`, pinned TLS material and the existing bounded resource
+options. `complete` accepts one of `--prompt`, `--messages`, or
+`--batch-messages`; tools, reasoning options and ragged batches use the same
+pinned native format as the local Flash reference. Raw tokens and `serve` are
+rejected by this command at this gate. The coordinator publishes final events
+only after every peer acknowledges STOP. Optional `--verify-model-id` hashes the
+bounded snapshot before connecting, then rechecks receipts after stage loading.
+
+Tests use actual two/three-process loopback TLS workers and independent packed
+CPU controls for native text/ragged/tool requests. Controlled tool tokens after
+real stage math cover parser behavior, not trained tool quality. Invalid request
+preflight, identity/family/media policy, failed STOP, cancellation and retained
+cleanup are covered. Existing GLM and Qwen command behavior remains unchanged.

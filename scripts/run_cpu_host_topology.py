@@ -53,11 +53,17 @@ def prepare(args,*,family='qwen'):
         first=peers[0]
         local.address,local.port,local.server_name,local.peer_cert=first['address'],first['port'],first['server_name'],first['peer_cert']
     address,config,text,inputs,limits,session,context,pin,verified=(prepare_pair(local) if family=='qwen' else prepare_pair(local,family=family))
+    if family=='flash':
+        from dllm.glm_flash_host_generation import native_excluded_ids
+        exclusions=native_excluded_ids(text)
+    else:exclusions=() if getattr(args,'native_chat',False) else text.excluded_ids
     plan=HostTopology(config,ranges,bytes.fromhex(args.model_id),quantization=args.quantization,
         context=args.context,context_limit=args.context_limit,slots=args.slots,chunk_size=args.prefill_chunk,
         frame_bytes=args.frame_mib*2**20,
         mapped_vocab_size=text.tokenizer_size if getattr(args,'native_chat',False) else text.vocab_size,
-        excluded_ids=() if getattr(args,'native_chat',False) else text.excluded_ids,session_identity=session)
+        excluded_ids=exclusions,session_identity=session)
+    if getattr(args,'native_chat',False) and inputs is not None and any(set(prompt)&set(plan.excluded_ids) for prompt in inputs.prompts):
+        raise ValueError('native host request contains excluded media/control IDs')
     if verified is not None:verified.verify_unchanged()
     args.snapshot=local.snapshot
     return address,plan,text,inputs,limits,context,pin,verified,peers
@@ -67,7 +73,7 @@ def run(args,*,family='qwen'):
     from dllm.http_auth import AuthPolicy
     auth=AuthPolicy.from_env() if args.role=='serve' else None
     address,plan,text,inputs,limits,context,pin,verified,peers=(prepare(args) if family=='qwen' else prepare(args,family=family))
-    scope='glm_cpu_host_topology_reference' if family=='glm' else 'cpu_host_topology_reference'
+    scope=f'{family}_cpu_host_topology_reference' if family!='qwen' else 'cpu_host_topology_reference'
     connections=[];transports=[];listener=worker=runner=None;primary=None
     try:
         if args.role=='worker':
@@ -91,7 +97,10 @@ def run(args,*,family='qwen'):
             options=dict(epoch=args.epoch,max_weight_bytes=args.weight_mib*2**20,
                 max_cache_bytes=args.cache_mib*2**20,max_workspace_bytes=args.workspace_mib*2**20,
                 projection_workspace_bytes=args.projection_workspace_mib*2**20,max_output_bytes=args.output_mib*2**20)
-            if family=='glm':
+            if family=='flash':
+                from dllm.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
+                worker=build_glm_flash_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options)
+            elif family=='glm':
                 from dllm.glm_host_pipeline_build import build_glm_host_pipeline_worker
                 worker=build_glm_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options)
             else:
@@ -107,7 +116,7 @@ def run(args,*,family='qwen'):
             emit(dict(scope=scope,event='ready',role=args.role,stage=args.index,
                 stage_layers=[list(pair) for pair in plan.ranges],topology_identity=plan.identity.hex(),
                 model_identity_verified=worker.model_identity_verified,source_model_id=plan.source_identity.hex(),
-                official_model_qualified=False,**({'native_chat':args.native_chat} if family=='glm' else {})))
+                official_model_qualified=False,**({'native_chat':args.native_chat} if family in ('glm','flash') else {})))
         if args.role=='worker':
             while not worker.closed:worker.step()
             emit(dict(event='stopped',stage=args.index))
@@ -116,9 +125,12 @@ def run(args,*,family='qwen'):
                 from scripts.glm_host_http import serve
                 serve(worker,text,args,auth)
             else:serve_worker_pair(worker,text,args,auth,pair_type=HostServingTopology)
-        elif family=='glm' and args.native_chat:
-            from dllm.glm_host_generation import HostGlmGenerator
-            runner=HostGlmGenerator(worker,text,chunk_size=args.prefill_chunk)
+        elif family in ('glm','flash') and args.native_chat:
+            if family=='flash':
+                from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
+            else:
+                from dllm.glm_host_generation import HostGlmGenerator as Runner
+            runner=Runner(worker,text,chunk_size=args.prefill_chunk)
             finals=[]
             with closing(inputs.generate(runner)) as stream:
                 for event in stream:
