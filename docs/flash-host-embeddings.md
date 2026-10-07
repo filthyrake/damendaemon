@@ -42,3 +42,35 @@ remains available on the same low-level owner. Invalid feature preflight leaves
 it usable; failure after dispatch, cancellation during execution or abandoned
 iteration retires the epoch. `close()` interrupts blocked transport; retain the
 owner and retry `cleanup()` when resource release fails.
+
+## Native image and tool policy
+
+`HostFlashImageGenerator` adds separate native still-image admission. Construct
+its topology with `native_image_session_identity(text, verified=...)`, explicit
+`flash_embeddings` input and the ordinary Flash output-media exclusions. Its
+`FlashImageToolText` tokenizer is detached and its atomic image markers, native
+tool/text policy, fixed processor contract and verification mode are bound to
+that session identity. Ordinary native text owners still reject this mode.
+
+The generator borrows immutable CPU `FlashVision` parameters whose geometry
+matches the language snapshot. For a byte-verified language session, use
+`load_host_image_vision(snapshot, worker, ...)`; it hashes the bounded complete
+snapshot and checks for changes after vision loading. A separately prepared
+vision object cannot claim that verification merely because its shape matches.
+The processor policy itself is fixed by the session; this is not a claim that
+arbitrary processor metadata or arbitrary external image preprocessing was
+verified.
+
+`generate_images(messages, images, ...)` and
+`generate_image_tools(messages, images, tools, ...)` accept explicit image
+markers plus CPU uint8 RGB tensors in prompt order. They validate markers,
+tools, processor bounds, context and prepared-language storage before host
+execution. Pixels are detached; the coordinator projects vision and replaces
+image placeholders once, then uses owned feature completion and the existing
+strict native tool parser. No image payload travels to language peers.
+Successful responses release slots for reuse; malformed preparation leaves the
+host epoch usable. Cancellation or parser failure after execution starts
+retires it, and failed cleanup remains retryable. `close()` drops the generator's
+vision reference after host cleanup succeeds; callers still own any borrowed
+vision references. Ordinary native text/tool methods also remain available on
+this explicit owner. Native command and HTTP admission are separate gates.

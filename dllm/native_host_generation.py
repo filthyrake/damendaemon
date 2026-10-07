@@ -121,16 +121,19 @@ class NativeHostGenerator:
             raise ValueError('native host prompt contains excluded media/control IDs')
         return prompts,limits,codec
 
-    def _generate(self,prompts,limits,codec):
+    def _generate(self,prompts,limits,codec,*,prepare_embeddings=None):
         if not self._active.acquire(blocking=False):raise RuntimeError('native host generation is active')
         streams=[];finals=[];primary=None;dispatched=False
         try:
-            self._retry_cleanup();check_cancelled()
+            self._retry_cleanup();self.completion._check_cancelled(None);check_cancelled()
             for _ in prompts:streams.append(self._stream(codec))
             calls=[False]*len(prompts)
             def cancelled():check_cancelled();return False
+            prepared=prepare_embeddings() if prepare_embeddings is not None else None
+            self.completion._check_cancelled(None);check_cancelled()
+            complete=(self.completion.generate_batch if prepared is None else self.completion.generate_embedding_batch)
             dispatched=True
-            with closing(self.completion.generate_batch(prompts,max_new_tokens=limits,
+            with closing(complete(prompts if prepared is None else prepared,max_new_tokens=limits,
                     chunk_size=self.chunk_size,cancelled=cancelled)) as events:
                 for event in events:
                     check_cancelled();row=event['row']
