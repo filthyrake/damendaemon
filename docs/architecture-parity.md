@@ -1788,3 +1788,15 @@ replacement state only after all output checks pass; injected failures preserve
 the previous state for retry. Closing releases the owned tensors; reuse requires
 a fresh state. Retained-cache limits exclude temporary overlap, which is covered
 by separate workspace admission. No official Flash weights have been executed.
+
+`glm_flash_indexer.FlashIndexer` projects normalized index keys and pooling gates,
+learns channel-wise weighted complete-pool keys, and selects causal pools with
+visible incomplete tails. Scoring uses ReLU per head before signed head weighting.
+CPU FP32 synthetic scalar controls cover learned pooling and scores; boundary
+fixtures cover left/right padding, all-padding rows, ties and cache causality.
+Valid tokens must form a contiguous interval; internal holes are rejected.
+Exact ties select earlier pools deterministically. Returned int64 indices reserve
+`top_k` complete-pool slots and `pool_size-1` tail slots with `-1` padding; this
+canonical placement preserves selected sets rather than reproducing the upstream
+variable tail offset. Workspace and output are separately bounded before scans.
+This is a stateless indexer primitive, not sparse-attention/model qualification.
