@@ -43,8 +43,8 @@
         "prompts_sha256": null,
         "eos_policy": null
       },
-      "implementation_commit": "71fa4e33b6d8e5f00e1959f61c10ebce1bfeec12",
-      "reason": "Pinned tool prompts/codec, owned single and equal-length batch generation pass CPU fixtures; official checkpoint semantics and hardware remain unqualified.",
+      "implementation_commit": "fec102fc55d8b5083230ebb63ae60e3b36d4ae0f",
+      "reason": "Pinned text/tool formats, owned batches and explicit local CPU HTTP/SSE command pass fixtures, including actual tiny packed snapshot subprocesses. Official checkpoint semantics, long context, GPU and SLOs remain unqualified.",
       "comparators": []
     },
     {
@@ -66,8 +66,8 @@
         "prompts_sha256": null,
         "eos_policy": null
       },
-      "implementation_commit": "e05275ee8c2e555d9b9e855fa4d53e2ee4ec830f",
-      "reason": "Packed snapshots, overflow rejection, ordinary/tool prompting and owned equal-length batch generation pass CPU fixtures; official model/hardware qualification remains open.",
+      "implementation_commit": "fec102fc55d8b5083230ebb63ae60e3b36d4ae0f",
+      "reason": "Packed CPU loading, strict opt-in tool schemas, owned batches and explicit HTTP/SSE command pass fixtures. Failed-prefill cleanup is retained and retried at shutdown. Official checkpoint quality, long context and hardware remain unqualified.",
       "comparators": []
     },
     {
@@ -89,8 +89,31 @@
         "prompts_sha256": null,
         "eos_policy": null
       },
-      "implementation_commit": "65057814b631088d74f7c12377eef703f8c61591",
-      "reason": "Bounded whole/stage-local snapshots, raw and ragged completion, quantized CPU stages and authenticated endpoint bootstrap pass CPU/loopback fixtures; target-model quality, network deployment and hardware/performance remain unqualified.",
+      "implementation_commit": "60cb14d30bfed7a809735212ef8ba6f18ab16ffa",
+      "reason": "Stage-local floating/Q4/Q8 snapshots and authenticated two-process raw HTTP/SSE serving pass actual loopback subprocess fixtures, with bounded slots, cancellation, heartbeat and failure cleanup. Operator model identity is not an internally verified checkpoint digest. Official-model, network deployment, GPU and performance remain unqualified.",
+      "comparators": []
+    },
+    {
+      "id": "glm-sparse-text-tools-batch-cpu-foundation",
+      "issue": "https://github.com/filthyrake/dllm/issues/56",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": "zai-org/GLM-5.3",
+        "model_revision": "aca966e4e02791568aa6a4ced368624b3d897f42",
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "FP32 CPU reference; packed text projections",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "fec102fc55d8b5083230ebb63ae60e3b36d4ae0f",
+      "reason": "Packed sparse-attention CPU arithmetic, independently pinned tool prompts, owned batches and explicit local HTTP/SSE command pass fixtures. Official model, long context, GPU execution and SLOs remain unqualified.",
       "comparators": []
     }
   ]

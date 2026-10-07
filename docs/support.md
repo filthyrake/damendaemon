@@ -50,6 +50,9 @@ Model licenses remain those of their respective publishers.
 | Model lifecycle | Download pinned snapshots or exact GGUF files; register/load/unload aliases; GPU and host residency; request-selected switching |
 | Resident projection cache | Opt-in, admission-accounted FP16 copies for qualified TinyLlama and Qwen3-1.7B K-quants; respectively 1973 and 3281.5 MiB extra VRAM, ordinary packed fallback when budget/free memory is insufficient |
 | Persistent prepared weights | Opt-in safetensors cache for dense Q4/Q8; source identity and layout checks; no automatic disk eviction |
+| Modern CPU reference chat | Explicit GLM-5.3, Flash and DeepSeek local snapshots, native tools and single-request HTTP/SSE; [command and limits](cpu-reference-serving.md); CPU fixtures only, no official-model or GPU qualification |
+| CPU peer reference serving | Explicit authenticated two-process floating/Q4/Q8 raw completions and bounded HTTP/SSE; [command and limits](cpu-host-command.md); loopback fixtures only |
+| Authentication and client policy | Optional inference/admin roles, named-client model permissions, concurrency/output/request allowances and prefix isolation; process-local accounting, loopback binding |
 | HTTP generation | Text chat and raw text/token-ID completions; streaming SSE; usage and timing; bounded admission and cancellation |
 | Sampling | Greedy or request-seeded temperature/top-p/top-k; repetition, frequency and presence penalties; token bias; text stops |
 | Token scores | Opt-in chat selected-token logprobs and up to 20 alternatives; raw distribution; no custom text stops with scores |
@@ -60,7 +63,7 @@ Model licenses remain those of their respective publishers.
 | Distributed CLI | Experimental `distributed-run` under torchrun: Qwen2.5-0.5B FP16/Q8/Q4, context <=512, local snapshots; single requests or bounded sequential resident sessions; A2/A30 FP16/Q8/Q4 and A2/3090 Q8/Q4 session proof; no model swapping within a distributed session |
 | Two-GPU serving | Opt-in same-host Qwen2.5-0.5B layer split 12/12, FP16/Q8/Q4, context <=512, batch <=4; independent reference, compatible swaps and HTTP lifecycle proof; cross-host uses the separate resident distributed service |
 | Distributed HTTP | Experimental resident two-rank `distributed-serve`: Qwen2.5-0.5B FP16/Q8/Q4, context <=512, up to four slots, greedy text/token completions and streaming; bounded queue, cancellation, heartbeat and failed-worker shutdown; no model swaps or sampling controls |
-| Prompt scheduling | Opt-in interleaved prefill for qualified dense architectures; bounded request-local state; optional 0–10 ms idle prompt coalescing (default 0), with measured first-output tradeoffs |
+| Prompt scheduling | Optional fair client admission and equal ready-client decode turns; opt-in interleaved prefill for qualified dense architectures; bounded request-local state; optional 0–10 ms idle prompt coalescing (default 0), with measured first-output tradeoffs |
 | Prompt graph reuse | Opt-in bounded Qwen2/Qwen3 CUDA single-prefill and candidate-scoring graphs; cold capture cost, exact shape/slot/choice keys |
 | Speculative decoding | Opt-in Qwen2/Qwen3 dense CUDA greedy n-gram proposals with full-target verification; one active request, ordinary-path fallbacks |
 | Prefix reuse | Opt-in bounded GPU prefix snapshots for qualified dense, OLMoE and recurrent configurations; model/precision isolation |
@@ -72,12 +75,11 @@ Model licenses remain those of their respective publishers.
 
 The runtime does **not** currently provide general vLLM/llama.cpp parity.
 Missing major capabilities include paged KV for other architectures/devices, shared prefix pages, KV quantization,
-general multi-GPU tensor/pipeline parallelism and cross-host serving, adapters, broader GGUF architectures and remaining K/IQ formats, broader AWQ and GPTQ checkpoint import,
+general multi-GPU tensor/pipeline/expert parallelism and production modern cross-host serving, adapters, broader GGUF architectures and remaining K/IQ formats, broader AWQ and GPTQ checkpoint import,
 broader multimodal inference, additional tool-call formats, prompt/raw-completion token log-probabilities,
-trained decision-head checkpoints, and a CPU inference backend. Model registration is
-process-local. The HTTP API is a supported subset, not full OpenAI or Ollama API
-compatibility. The development server is loopback-only and is not an authenticated
-multi-tenant service.
+trained decision-head checkpoints, and a qualified general CPU production backend. Explicit CPU reference commands above remain separately bounded. Live model registration is
+process-local; versioned manifests support explicit save/reload across restarts. The HTTP API is a supported subset, not full OpenAI or Ollama API
+compatibility. The development server remains loopback-only. Optional authentication and client limits do not establish full tenant isolation, distributed quotas or measured multi-user SLOs.
 
 K-quant qualification covers Llama 3.2 1B and Qwen3-0.6B Q4_K_M at 512
 context, with Qwen3 independent model checks also passing at 2048.
