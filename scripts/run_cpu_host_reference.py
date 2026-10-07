@@ -23,7 +23,7 @@ def parser_for_command(*,topology=False,family='qwen'):
     if family not in ('qwen','glm') or (family=='glm' and not topology):
         raise ValueError('unsupported CPU host command family/topology')
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('role',choices=('worker','complete') if family=='glm' else ('worker','complete','serve'))
+    parser.add_argument('role',choices=('worker','complete','serve'))
     parser.add_argument('snapshot')
     parser.add_argument('--address',required=not topology,help='literal bind IP for worker, peer IP for complete')
     parser.add_argument('--port',type=int,required=not topology,help='explicit port; worker may use 0 for an ephemeral port')
@@ -50,7 +50,7 @@ def parser_for_command(*,topology=False,family='qwen'):
     parser.add_argument('--timeout',type=float,default=10.,help='seconds per connection or transport operation, at most 30')
     parser.add_argument('--http-port',type=int,default=8088,help='serve role: loopback HTTP port, 0 chooses an available port')
     parser.add_argument('--alias',default='model')
-    parser.add_argument('--queue-size',type=_positive,default=8)
+    parser.add_argument('--queue-size',type=int if family=='glm' else _positive,default=0 if family=='glm' else 8)
     parser.add_argument('--queue-timeout',type=float,default=120.)
     parser.add_argument('--client-decode-turns',action='store_true',help='serve role: configured ready decode shares per client; default equal')
     parser.add_argument('--client-prefill-turns',action='store_true',help='serve role: client prompt-token fairness; requires interleaved prefill')
@@ -82,9 +82,9 @@ def parser_for_command(*,topology=False,family='qwen'):
 def prepare(args,*,family='qwen'):
     """All request and endpoint metadata is checked before network/payload work."""
     if family not in ('qwen','glm'):raise ValueError('unsupported CPU host family')
-    if family=='glm' and (args.role not in ('worker','complete') or args.chat_template is not None
+    if family=='glm' and (args.role not in ('worker','complete','serve') or args.chat_template is not None
             or args.quantization!='fp8_reference' or args.loader_workspace_mib!=64):
-        raise ValueError('GLM topology supports completion with fp8_reference; no serve/template/loader override')
+        raise ValueError('GLM topology supports completion with fp8_reference; no template/loader override')
     native=False
     if family=='glm':
         from scripts.glm_host_native import validate_mode
@@ -110,7 +110,7 @@ def prepare(args,*,family='qwen'):
         if (any(v is not None for v in (args.prompt,args.tokens,args.batch_inputs))
                 or not 0<=args.http_port<=65535 or not 1<=len(args.alias)<=128
                 or not 1<=args.prefill_chunk<=4096
-                or not 1<=args.queue_size<=64 or not 0<args.queue_timeout<=300
+                or not (0 if family=='glm' else 1)<=args.queue_size<=64 or not 0<args.queue_timeout<=300
                 or not 0<=args.idle_timeout<=86400 or not 0<args.heartbeat_interval<=10
                 or args.heartbeat_interval>=args.timeout):
             raise ValueError('invalid CPU host serving inputs, queue or lifetime bounds')

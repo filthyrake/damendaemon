@@ -4,8 +4,9 @@
 `HostGlmGenerator`. Use `handler_for_reference` and the existing bounded HTTP
 server/authentication policy. Peer workers must continue stepping externally.
 Generic `ReferenceRuntime` still rejects a host runner, and the prepared host
-owner must be healthy, idle and unclaimed. This gate does not add command serving
-or a queue; concurrent generation receives the existing busy response.
+owner must be healthy, idle and unclaimed. The explicit topology command can launch this owner in native `serve` mode;
+see [glm-host-command.md](glm-host-command.md). There is no queue here; concurrent
+generation receives the existing busy response.
 
 The ordinary reference chat JSON/SSE routes retain their native reasoning,
 function declaration, history, usage and default-greedy restrictions. No tools

@@ -111,7 +111,11 @@ def run(args,*,family='qwen'):
         if args.role=='worker':
             while not worker.closed:worker.step()
             emit(dict(event='stopped',stage=args.index))
-        elif args.role=='serve':serve_worker_pair(worker,text,args,auth,pair_type=HostServingTopology)
+        elif args.role=='serve':
+            if family=='glm':
+                from scripts.glm_host_http import serve
+                serve(worker,text,args,auth)
+            else:serve_worker_pair(worker,text,args,auth,pair_type=HostServingTopology)
         elif family=='glm' and args.native_chat:
             from dllm.glm_host_generation import HostGlmGenerator
             runner=HostGlmGenerator(worker,text,chunk_size=args.prefill_chunk)

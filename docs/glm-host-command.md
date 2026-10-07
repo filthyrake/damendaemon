@@ -1,7 +1,7 @@
 # GLM CPU host topology completion
 
 `python -m scripts.run_glm_host_topology` is the explicit GLM counterpart to the
-Qwen CPU topology command. It accepts only `worker` and `complete` roles, an
+Qwen CPU topology command. It accepts `worker`, `complete`, and explicit native `serve` roles, an
 admitted `glm_moe_dsa` snapshot and `fp8_reference` precision. It never selects an
 accelerator, discovers hosts or provisions services. Start workers yourself.
 
@@ -38,8 +38,7 @@ JSON files are bounded to 1 MiB. Native and raw session policies cannot mix;
 all stages bind the pinned renderer, canonical tokenizer/stops and verification
 mode. Native mode emits semantic content/reasoning/tool events and per-row usage,
 not raw token events. Its success finals still wait for every STOP acknowledgement.
-The `ready` event identifies `native_chat`. Arbitrary templates and the `serve`
-role remain unsupported. GLM projections retain the supported packed FP8 source values with
+The `ready` event identifies `native_chat`. Arbitrary templates remain unsupported. GLM projections retain the supported packed FP8 source values with
 CPU FP32 reference arithmetic; there is no alternative quantization mode here.
 
 Events identify `glm_cpu_host_topology_reference`, all ranges and whether this
@@ -57,3 +56,32 @@ with controlled selection after actual stage execution; random fixture outputs
 are not evidence of trained-model tool quality.
 Physical networks, official model behavior, practical context and performance
 remain unqualified.
+
+
+## Native loopback HTTP
+
+Use `serve --native-chat` at index zero with the same plan, peer file, native
+workers, TLS files and identity policy. `--http-port` defaults to 8088 (0 chooses
+an available port), and `--alias` names the served model. The existing
+`DLLM_API_KEY`, `DLLM_ADMIN_API_KEY` and named-client policies apply; secrets stay
+in the environment. HTTP binds only to loopback. Readiness and model status
+identify CPU reference scope, topology and source-verification state.
+
+This path owns one HTTP generation at a time. Healthy JSON/SSE native chat/tool
+requests release slots for reuse. Queue/fairness/drain and idle-stop options are
+rejected in this gate; there is no silent queue. `--heartbeat-interval` must be
+positive and below the bounded transport timeout. Idle PING commands share the
+worker command lock and leave slot state unchanged; they do not take the HTTP
+admission lock or cause false busy responses.
+
+SIGTERM or SIGINT stops admission. When idle, the service sends STOP to every
+worker and reports `graceful_stop: true` only after acknowledgement and cleanup.
+When a request is active, shutdown interrupts transport I/O, waits for request
+threads and discards the epoch; the coordinator exits 130 without a graceful
+stopped event, and workers report their closed/failed transport. Cancelled SSE
+has no success sentinel. Peer failure terminates the service with an error.
+A newly prepared session is required after any discarded epoch.
+
+See [glm-host-http.md](glm-host-http.md) for prepared ownership semantics. Tests
+use actual local CPU subprocesses and ephemeral TLS credentials; they do not
+qualify real hardware, trained tool quality or physical-network performance.

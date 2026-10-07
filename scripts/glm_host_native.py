@@ -33,6 +33,11 @@ def validate_mode(args):
     if native and (args.tokens is not None or args.batch_inputs is not None):
         raise ValueError('native GLM chat cannot accept raw token inputs')
     if args.role=='worker' and request_options:raise ValueError('GLM worker cannot accept native request options')
+    if args.role=='serve':
+        if not native or request_options:raise ValueError('GLM serve requires native chat and no request options')
+        if (args.queue_size!=0 or args.queue_timeout!=120 or args.client_decode_turns or args.client_prefill_turns
+                or args.interleaved_prefill or args.stop_after_drain or args.idle_timeout!=0):
+            raise ValueError('GLM host HTTP has no queue, fairness, drain or idle-stop policy yet')
     return native
 
 
