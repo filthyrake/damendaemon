@@ -13,6 +13,16 @@ workload/hardware/checkpoint pins are explicitly `null`, so every row remains
 `implemented_unvalidated`. It is not a replacement for the retained historical
 hardware reports or a complete measured platform matrix.
 
+Current software evidence includes explicit ragged text/tool cohorts and bounded
+serialized HTTP queues for GLM/Flash/DeepSeek, token-boundary cancellation, Flash
+still-image HTTP, and stage-local Qwen CPU topology commands with authenticated
+three-/four-process fixtures. These capabilities have different execution scopes:
+ragged reference cohorts run sequentially, modern reference HTTP serializes model
+execution, and the separate Qwen topology owner interleaves bounded active slots.
+None establishes a named practical model's quality, GPU support or concurrency SLO.
+Remaining implementation and measurement gates live in #51, #54 and #55–#59;
+fixture sizes and process counts must never fill unknown qualification identities.
+
 ## Version 1 records
 
 The root contains `version: 1` and 1–512 `cells`. Each cell requires:

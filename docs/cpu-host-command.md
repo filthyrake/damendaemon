@@ -6,8 +6,8 @@ Qwen3.5 snapshots, not a production server or hardware qualification.
 
 Both processes need local copies of the same externally verified snapshot and
 compatible tokenizer/generation metadata. Supply its 64-digit hexadecimal identity
-through `--model-id` on both sides. This value is an operator assertion; the command
-does not hash every weight payload to independently verify it. Setup additionally
+through `--model-id` on both sides. This value is an operator assertion by default; `--verify-model-id` independently
+hashes the bounded local snapshot before connecting, as described below. Setup additionally
 binds tokenizer serialization, EOS, model configuration, quantization, token policy,
 context, slots and layer coverage. No checkpoint is downloaded or transmitted.
 
@@ -67,8 +67,10 @@ admission still occur locally before selected payload reads.
 
 Separate authenticated local processes match whole CPU completions for floating,
 Q4_0 and Q8_0 fixtures. Wrong identity/pins and accept timeouts fail without success.
-HTTP admission, persistent workers, remote provisioning, practical model quality,
-hardware and network performance remain open under #51.
+Loopback HTTP admission and explicit resident peer lifetimes are implemented
+below. Multi-stage processes use the separate [topology command](cpu-host-topology-command.md).
+Remote provisioning, practical model quality, hardware and network performance
+remain open under #51.
 
 ## Loopback HTTP service
 
