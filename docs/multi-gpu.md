@@ -440,3 +440,13 @@ checks the packed projection's minimum tile workspace. Ordered byte budgets
 produce deterministic contiguous placement or a no-fit result. Invalid storage
 remains an error. Reserve source mappings and unrelated process memory before
 supplying budgets. A storage plan is not a speed estimate or live-memory probe.
+
+`cpu_pipeline_build.build_cpu_pipeline(prepared_model, ordered_budgets, ...)`
+constructs those explicit CPU plans into the existing synchronous coordinator.
+It retains partially constructed stages before initialization, cleans them on
+failure, and returns a retryable `CpuPipelineBuildError` if cleanup is incomplete.
+Callers retain that exception until `close()` succeeds. CPU pipeline status
+reports packed scales separately from weight storage. Failed stages and mixed
+quantization contracts cannot transfer to a coordinator; cancellation after
+execution begins poisons the pipeline without committing request cursors.
+This builder is not registered as a normal serving backend.

@@ -127,6 +127,8 @@ class CpuHybridStage(HybridLayerStage):
         self.conv_width=2*self.lk*self.dk+self.lv*self.dv
         self.max_workspace_bytes,self.max_output_bytes=max_workspace_bytes,max_output_bytes
         self.required_memory_bytes=budget['required_memory_bytes']
+        self.stage_activation_workspace_bytes=max_workspace_bytes
+        self.output_head_workspace_bytes=max_output_bytes if self.last else 0
         self.kv={};self.conv={};self.state={};self.batch_graphs={}
         for i in range(start,end):
             if c['layer_types'][i]=='full_attention':self.kv[i]=torch.zeros(2,max_batch,self.kh,self.context,self.dim,dtype=torch.float32,device='cpu')

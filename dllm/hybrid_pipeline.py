@@ -26,10 +26,10 @@ class HybridPipeline:
         first = self.stages[0]
         end = 0
         for stage in self.stages:
-            if (stage.closed or getattr(stage, '_pipeline_owner', None) is not None
+            if (stage.closed or getattr(stage, 'failed', False) or getattr(stage, '_pipeline_owner', None) is not None
                     or stage.layer_start != end or stage.layer_end <= end
                     or stage.source_identity is not first.source_identity
-                    or stage.c != first.c or stage.context != first.context
+                    or stage.c != first.c or stage.model.quantization != first.model.quantization or stage.context != first.context
                     or stage.max_batch != first.max_batch or stage.compute_dtype != first.compute_dtype
                     or any(stage.lengths)):
                 raise ValueError('hybrid stages must be fresh, contiguous and share model, precision and limits')
@@ -153,6 +153,8 @@ class HybridPipeline:
                             output_head_workspace_bytes=s.output_head_workspace_bytes,
                             resident_weight_bytes=sum(t.numel()*t.element_size()
                                 for t in {id(t):t for t in s.w.values()}.values()),
+                            resident_scale_bytes=sum(t.numel()*t.element_size()
+                                for t in {id(t):t for t in s.model.scales.values()}.values()),
                             state_bytes=sum(t.numel()*t.element_size()
                                 for group in (s.kv, s.conv, s.state) for t in group.values()))
                             for s in self.stages])

@@ -18,7 +18,7 @@ class HostHybridWorker:
     def __init__(self,channel,stage):
         if (not isinstance(channel,HostStageChannel) or channel.ready or channel.closed
                 or getattr(channel,'_worker_owner',None) is not None
-                or not isinstance(stage,HybridLayerStage) or stage.closed
+                or not isinstance(stage,HybridLayerStage) or stage.closed or getattr(stage,'failed',False)
                 or getattr(stage,'_pipeline_owner',None) is not None or any(stage.lengths)
                 or stage.actual_device.type!='cpu' or stage.compute_dtype!=torch.float32
                 or stage.context!=channel.state.context or stage.max_batch!=channel.state.slots
