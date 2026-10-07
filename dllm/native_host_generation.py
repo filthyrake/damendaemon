@@ -39,21 +39,30 @@ class NativeHostGenerator:
     cleanup/close again when transport or parser cleanup cannot finish.
     """
     text_type=stream_type=policy=model_type=None
+    quantization='fp8_reference'
+
+    def _snapshot_text(self,text):return snapshot_text(text,self.text_type)
+
+    def _validate_text(self,config,text,context):validate_text_config(config,text,context)
+
+    def _stream(self,codec):return TokenStream(self.text) if codec is None else self.stream_type(self.text,codec)
+
+    def _validate_piece(self,piece,codec):pass
 
     def _excluded_matches(self,worker,text):
         return not any(token<text.tokenizer_size for token in worker.excluded_ids)
 
     def __init__(self,worker,text,*,chunk_size=128):
-        text=snapshot_text(text,self.text_type)
+        text=self._snapshot_text(text)
         verified=getattr(worker,'model_identity_verified',False)
         if (not isinstance(worker,HostPipelineCoordinator) or worker.topology.config.get('model_type')!=self.model_type
-                or worker.topology.quantization!='fp8_reference'
+                or worker.topology.quantization!=self.quantization
                 or worker.topology.session_identity!=self.policy(text,verified)
                 or worker.mapped_vocab_size!=text.tokenizer_size or worker.topology.text_config['vocab_size']!=text.vocab_size
                 or not self._excluded_matches(worker,text)
                 or type(chunk_size) is not int or not 1<=chunk_size<=worker.topology.chunk_size):
             raise ValueError('native host generation requires matching native policy and bounded ready topology')
-        validate_text_config(worker.topology.text_config,text,worker.stage.context)
+        self._validate_text(worker.topology.text_config,text,worker.stage.context)
         self.worker,self.text,self.chunk_size=worker,text,chunk_size
         self.max_context,self.max_batch_size=worker.stage.context,worker.stage.max_batch
         self.failed_cleanups=[];self._active=threading.Lock()
@@ -115,7 +124,7 @@ class NativeHostGenerator:
         streams=[];finals=[];primary=None;dispatched=False
         try:
             self._retry_cleanup();check_cancelled()
-            streams=[TokenStream(self.text) if codec is None else self.stream_type(self.text,codec) for _ in prompts]
+            for _ in prompts:streams.append(self._stream(codec))
             calls=[False]*len(prompts)
             def cancelled():check_cancelled();return False
             dispatched=True
@@ -126,6 +135,8 @@ class NativeHostGenerator:
                     pieces=(streams[row].feed(event['token_id']) if 'token_id' in event
                             else streams[row].finish(truncated=event['finish_reason']=='length'))
                     for piece in pieces:
+                        self.completion._check_cancelled(None);check_cancelled()
+                        self._validate_piece(piece,codec)
                         calls[row]|=bool(piece.get('tool_calls'))
                         yield dict(piece,row=row)
                     if 'finish_reason' in event:

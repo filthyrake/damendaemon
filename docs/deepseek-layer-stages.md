@@ -108,3 +108,26 @@ loading/construction. Claimed construction failures retain retryable cleanup thr
 `DeepSeekHostPipelineBuildError`. No network listeners or native host command/HTTP
 admission are supplied by this builder. Tests use real pinned loopback TLS and tiny
 packed CPU snapshots; remote deployment and performance remain unqualified.
+
+## Native host generation
+
+`deepseek_host_generation.native_session_identity(text, verified=...)` binds a
+detached validated ByteLevel tokenizer, EOS, the pinned V4 text/DSML renderer and
+source-verification mode. Supply that identity to every topology participant.
+`HostDeepSeekGenerator` accepts only this matching, ready, unclaimed DeepSeek
+coordinator. It supports native `generate`/`generate_batch`, ordinary/thinking text,
+explicit ragged batches and optional declared tools with existing strict schemas.
+Tool declarations are snapshotted before dispatch; results return calls without
+executing them.
+
+Healthy requests release all slots before final success and allow reuse. Parser
+errors, partial computation, cancellation and abandoned streams discard the host
+epoch. Parser/transport cleanup remains owned for retry. The shared native lifecycle
+checks cancellation after parser output and retains each parser as it is constructed,
+so closing during buffered-call finalization cannot publish a successful tool call,
+and failure constructing a later parser closes those already created.
+
+This is explicit prepared-host admission, separate from generic local reference
+HTTP. Native host command/HTTP integration follows. CPU controls, real local TLS
+and controlled output tokens after packed arithmetic test format and lifecycle;
+they do not establish trained-model tool quality or accelerator performance.
