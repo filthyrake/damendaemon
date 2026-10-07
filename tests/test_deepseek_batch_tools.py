@@ -11,7 +11,8 @@ from dllm.deepseek_text import EOS, END_THINK
 from dllm.deepseek_tools import render_tool_calls
 from scripts import run_deepseek_reference as cli
 from tests.test_deepseek_batch_generation import ScriptedDeepSeek
-from tests.test_deepseek_generation import text_fixture
+from tests.test_deepseek_generation import text_fixture,ScriptedModel
+from dllm.deepseek_generation import ReferenceGenerator
 from tests.test_deepseek_reference_loader import fixture
 
 
@@ -64,6 +65,31 @@ class DeepSeekBatchToolTests(unittest.TestCase):
         tools.append(dict(type='function',function=dict(name='unknown')))
         with self.assertRaisesRegex(ValueError,'undeclared'):list(stream)
         self.assertTrue(model.states[-1].closed)
+
+    def test_single_request_cannot_add_declaration_after_stream_starts(self):
+        tools=[dict(type='function',function=dict(name='lookup'))]
+        model=ScriptedModel(self.text,'lead'+completion('unknown'))
+        runner=ReferenceGenerator(model,self.text,max_context=4096)
+        stream=runner.generate(self.messages,max_new_tokens=512,tools=tools);next(stream)
+        tools.append(dict(type='function',function=dict(name='unknown')))
+        emitted=[]
+        with self.assertRaisesRegex(ValueError,'undeclared'):
+            for event in stream:emitted.append(event)
+        self.assertFalse(any('tool_calls' in e or 'finish_reason' in e for e in emitted))
+        self.assertTrue(model.states[-1].closed)
+        # The updated declaration is allowed on a subsequent, freshly rendered request.
+        events=list(runner.generate(self.messages,max_new_tokens=512,tools=tools))
+        self.assertEqual(events[-1]['finish_reason'],'tool_calls');self.assertTrue(model.states[-1].closed)
+
+    def test_single_request_keeps_original_declarations_after_removal_or_rename(self):
+        for mutate in (lambda tools:tools.clear(),lambda tools:tools[0]['function'].update(name='other')):
+            tools=[dict(type='function',function=dict(name='lookup'))]
+            model=ScriptedModel(self.text,'lead'+completion('lookup'))
+            runner=ReferenceGenerator(model,self.text,max_context=4096)
+            stream=runner.generate(self.messages,max_new_tokens=512,tools=tools);next(stream);mutate(tools)
+            events=list(stream);self.assertEqual(events[-1]['finish_reason'],'tool_calls')
+            self.assertEqual([c['function']['name'] for e in events for c in e.get('tool_calls',[])],['lookup'])
+            self.assertTrue(model.states[-1].closed)
 
     def test_cancel_while_another_row_buffers_tool_block_releases_state(self):
         model=ScriptedDeepSeek(self.text,[completion(),'x'*512]);runner=BatchReferenceGenerator(model,self.text,max_context=4096)

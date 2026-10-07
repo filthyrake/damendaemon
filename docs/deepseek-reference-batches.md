@@ -43,3 +43,9 @@ independent forced decoding, including row compaction across a ratio-4 compresse
 attention boundary. This does not establish official-weight semantics, ratio-128
 boundary qualification, ragged/continuous HTTP batching, hardware performance or
 multi-user SLOs. GitHub #58/#59 retain those broader gates.
+
+The declared function-name set is captured after prompt validation and before
+prefill in both single-request and batch generation. Mutating the caller's tools
+while a stream is suspended cannot add or revoke declarations for that rendered
+request. A subsequent request validates the then-current declarations afresh.
+This is name/lifetime enforcement, not parameter JSON-schema validation.
