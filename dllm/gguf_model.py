@@ -235,21 +235,23 @@ def _shard_paths(path,version):
         split=split_metadata({name:field.contents() for name,field in reader.fields.items() if name.startswith('split.')})
         if split is None:
             if not reader.tensors:raise ValueError('single GGUF file has no tensors')
-            paths=(path,)
+            paths=(path.resolve(),)
         else:
             index,count,_=split
-            match=re.fullmatch(r'(.+)-00001-of-([0-9]{5})\.gguf',path.name)
+            match=re.fullmatch(r'(.+)-00001-of-([0-9]{5})(\.gguf)',path.name,re.IGNORECASE)
             if index!=0 or match is None or int(match[2])!=count:
                 raise ValueError('select the standard numbered first GGUF shard')
-            paths=tuple(path.with_name(f'{match[1]}-{i:05d}-of-{count:05d}.gguf') for i in range(1,count+1))
+            paths=tuple(path.with_name(f'{match[1]}-{i:05d}-of-{count:05d}{match[3]}') for i in range(1,count+1))
     if identity(path)!=version:raise ValueError('GGUF file changed while discovering shards')
     return paths
 
 
 def plan(path):
-    path=Path(path).resolve()
+    path=Path(path).expanduser()
+    # Resolve directories, but retain the file namespace containing sibling links.
+    path=path.parent.resolve()/path.name
     paths=_shard_paths(path,identity(path))
-    return _plan(path,tuple((part,identity(part)) for part in paths))
+    return _plan(paths[0],tuple((part,identity(part)) for part in paths))
 
 
 @lru_cache(maxsize=2)

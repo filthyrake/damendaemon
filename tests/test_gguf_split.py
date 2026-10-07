@@ -155,3 +155,36 @@ class SplitGgufTests(unittest.TestCase):
                 with self.assertRaisesRegex(OSError, 'injected'): importer.GgufWeights(parts[0], 64, 'none')
             self.assertEqual(len(opened), len(parts) - 1)
             self.assertTrue(all(file.closed for file in opened))
+
+    def test_opaque_cache_links_preserve_sibling_namespace_and_invalidation(self):
+        from dllm.cli import resolve_model
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder).resolve()
+            materialized = root/'source'; materialized.mkdir()
+            parts = shards(materialized)
+            cache = root/'snapshot'; cache.mkdir()
+            blobs = root/'blobs'; blobs.mkdir()
+            links = []
+            for index, path in enumerate(parts):
+                blob = blobs/f'opaque{index}'; blob.write_bytes(path.read_bytes())
+                link = cache/path.name; link.symlink_to(blob); links.append(link)
+            selected = resolve_model(str(links[0]))
+            self.assertEqual(selected, links[0])
+            a = importer.GgufWeights(parts[0], 64, 'none')
+            b = importer.GgufWeights(selected, 64, 'none')
+            for name in a.weights: self.assertTrue(torch.equal(a.weights[name], b.weights[name]))
+            source = importer.plan(selected)
+            replacement = blobs/'new-target'; replacement.write_bytes(links[-1].read_bytes())
+            links[-1].unlink(); links[-1].symlink_to(replacement)
+            self.assertIsNot(source, importer.plan(selected))
+            # Swapping the target while a payload handle is open must fail the
+            # final namespace check, even if the old open file stays unchanged.
+            read = importer.read_tensor; changed = False
+            def retarget(file, tensor):
+                nonlocal changed
+                if not changed:
+                    changed = True
+                    links[-1].unlink(); links[-1].symlink_to(blobs/f'opaque{len(parts)-1}')
+                return read(file, tensor)
+            with patch.object(importer, 'read_tensor', retarget):
+                with self.assertRaisesRegex(ValueError, 'changed'): importer.GgufWeights(selected, 64, 'none')

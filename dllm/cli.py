@@ -8,15 +8,18 @@ import sys
 
 def download(repository, revision="main", filename=None):
     from huggingface_hub import HfApi, hf_hub_download, snapshot_download
-    from .download import INDEX, snapshot_files, gguf_file
+    from .download import INDEX, snapshot_files, gguf_files
     info = HfApi().model_info(repository, revision=revision)
     revision = info.sha
     if not revision:raise ValueError("repository revision could not be resolved")
     filenames = [entry.rfilename for entry in info.siblings or []]
     if filename is not None:
-        filename = gguf_file(filenames, filename)
-        path = hf_hub_download(repository, filename, revision=revision)
-        return {"repository": repository, "revision": revision, "filename": filename, "path": path}
+        names = gguf_files(filenames, filename)
+        paths = [hf_hub_download(repository, name, revision=revision) for name in names]
+        result = {"repository": repository, "revision": revision, "filename": filename, "path": paths[0]}
+        if len(names) > 1:
+            result['filenames'] = list(names)
+        return result
     index = None
     if INDEX in filenames:
         index = json.loads(Path(hf_hub_download(repository, INDEX, revision=revision)).read_text())
@@ -31,6 +34,8 @@ def resolve_model(value, revision="main", filename=None):
     if path.is_dir() or is_gguf(path):
         if filename is not None:
             raise ValueError('--filename applies to a Hugging Face repository, not a local path')
+        if path.is_file() and re.fullmatch(r'.+-00001-of-[0-9]{5}\.gguf', path.name, re.IGNORECASE):
+            return path.parent.resolve()/path.name
         return path.resolve()
     if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*", str(value)):
         result = download(str(value), revision) if filename is None else download(str(value), revision, filename=filename)
@@ -62,7 +67,7 @@ def main():
     placement.add_argument('--layer-splits', type=int, nargs='*', help='explicit internal layer boundaries; no values plans a single stage')
     placement.add_argument('--device-budgets-mib', type=int, nargs='+', help='ordered per-device storage budgets; estimates only')
     capacity.add_argument('--stage-weight-dtype', choices=('native', 'float32'), default='native')
-    pull = commands.add_parser("pull", help="download a safetensors snapshot or one GGUF file from Hugging Face")
+    pull = commands.add_parser("pull", help="download a safetensors snapshot or selected GGUF shard family from Hugging Face")
     pull.add_argument("repository")
     pull.add_argument("--revision", default="main")
     pull.add_argument("--filename", help="exact GGUF filename within the repository")

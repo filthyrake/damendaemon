@@ -370,7 +370,8 @@ other quantized formats, or malformed tensors fail explicitly. Q4, K-quants,
 and mixed-format fused groups require CUDA.
 
 For a Hugging Face GGUF repository, `pull`, `run`, and `add` accept
-`--filename EXACT_FILE.gguf` and optional `--revision`. Only that file is fetched
+`--filename EXACT_FILE.gguf` and optional `--revision`. Only that file (or the
+complete bounded numbered shard family when selecting its first member) is fetched
 at an immutable resolved revision; other quantization variants are not downloaded.
 Resolved HF cache symlinks work even when their backing blob has no extension.
 

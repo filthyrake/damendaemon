@@ -80,3 +80,27 @@ class GgufDownloadTests(unittest.TestCase):
             api.return_value.model_info.return_value = info
             with self.assertRaises(ValueError): download('owner/model', filename='missing.gguf')
             fetch.assert_not_called(); snapshot.assert_not_called()
+
+    def test_complete_shard_family_pins_every_download_without_other_variants(self):
+        from dllm.download import gguf_files
+        names = [f'Q4/model-0000{i}-of-00003.gguf' for i in range(1, 4)]
+        files = names + ['Q8/model-00001-of-00003.gguf', 'Q4/other.gguf']
+        self.assertEqual(gguf_files(files, names[0]), tuple(names))
+        info = SimpleNamespace(sha='pinned-sha', siblings=[SimpleNamespace(rfilename=n) for n in files])
+        with patch('huggingface_hub.HfApi') as api, patch('huggingface_hub.hf_hub_download', side_effect=lambda repo, name, **kw: '/cache/'+name) as fetch, patch('huggingface_hub.snapshot_download') as snapshot:
+            api.return_value.model_info.return_value = info
+            result = download('owner/model', 'moving', names[0])
+            self.assertEqual(result['path'], '/cache/'+names[0])
+            self.assertEqual(result['filenames'], names)
+            self.assertEqual([call.args[1] for call in fetch.call_args_list], names)
+            self.assertTrue(all(call.kwargs == {'revision': 'pinned-sha'} for call in fetch.call_args_list))
+            snapshot.assert_not_called()
+
+    def test_missing_or_invalid_family_rejects_before_any_download(self):
+        for name in ('model-00002-of-00002.gguf', 'model-00001-of-00065.gguf',
+                     'model-00001-of-00000.gguf', 'model-00001-of-00001.gguf',
+                     'model-00001-of-00002.gguf'):
+            with self.subTest(name=name), patch('huggingface_hub.HfApi') as api, patch('huggingface_hub.hf_hub_download') as fetch:
+                api.return_value.model_info.return_value = SimpleNamespace(sha='sha', siblings=[SimpleNamespace(rfilename=name)])
+                with self.assertRaises(ValueError): download('owner/model', filename=name)
+                fetch.assert_not_called()
