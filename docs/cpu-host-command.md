@@ -69,3 +69,44 @@ Separate authenticated local processes match whole CPU completions for floating,
 Q4_0 and Q8_0 fixtures. Wrong identity/pins and accept timeouts fail without success.
 HTTP admission, persistent workers, remote provisioning, practical model quality,
 hardware and network performance remain open under #51.
+
+## Loopback HTTP service
+
+Use `serve` instead of `complete` on the coordinator to keep the authenticated
+session resident behind the existing HTTP request owner:
+
+```sh
+python -m scripts.run_cpu_host_reference serve /path/to/snapshot \
+  --address 127.0.0.1 --port 9501 --server-name localhost --split 2 \
+  --model-id "$SNAPSHOT_SHA256" \
+  --ca /path/to/ca.pem --cert /path/to/coordinator.pem --key /path/to/coordinator.key \
+  --peer-cert /path/to/worker.pem --context 512 --slots 2 \
+  --http-port 8088 --alias model --queue-size 8 --queue-timeout 120 \
+  --heartbeat-interval 5 --timeout 10
+```
+
+Start the same `worker` command first. The serve role takes no prompt/input file.
+It reports `http_ready` only after authenticated model setup and binding its HTTP
+listener to `127.0.0.1`. `--http-port 0` selects an available port and reports the
+URL. TLS secures the worker link; the HTTP listener stays loopback-only and uses
+the existing `DLLM_API_KEY`, admin and named-client authentication/admission
+configuration. Invalid authentication configuration fails before peer connection.
+
+Submit raw text or token IDs to `/v1/completions`; SSE and per-request usage are
+supported. Chat/tools and model changes remain unsupported. See
+[CPU host serving](cpu-host-serving.md) for exact request, ownership and metadata
+boundaries. This command does not broaden production GPU admission.
+
+`--idle-timeout` optionally stops the owner after 0–86400 idle seconds (0 disables).
+`--heartbeat-interval` must be positive, at most 10 seconds and smaller than the
+transport `--timeout`; choose enough margin for normal CPU scheduling and I/O.
+The worker also has its own operation timeout: it must exceed the coordinator's
+heartbeat interval with margin. There is no automatic reconnect or state replay.
+Normal idle shutdown sends STOP and closes both peers. SIGTERM or Ctrl-C closes
+the HTTP service and aborts the uncertain session; the worker reports EOF/failure
+rather than a fabricated graceful STOP. All admitted requests remain bounded by
+the shared queue, context, slot and output limits.
+
+Local subprocess tests cover real authenticated HTTP/SSE, authentication failure,
+normal idle STOP, SIGTERM cleanup and invalid serving preflight. No service was
+deployed to remote hardware, and no GPU or full-model performance is claimed.

@@ -46,3 +46,7 @@ RELEASE for it. Actual TLS/HTTP tests cover output parity against whole CPU
 execution, streaming, concurrent slots, reuse, heartbeat, invalid inputs, peer
 failure and health after shutdown. Legacy distributed scheduler tests remain in
 the regression gate. Hardware and full-model qualification remain open in #51.
+
+The [explicit serving command](cpu-host-command.md#loopback-http-service) owns the
+listener, HTTP thread, request owner and peer lifecycle for this adapter. It emits
+readiness only after authenticated worker setup and loopback binding.

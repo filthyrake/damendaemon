@@ -21,7 +21,7 @@ from scripts.run_cpu_pipeline_reference import _positive
 
 def parser_for_command():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('role',choices=('worker','complete'))
+    parser.add_argument('role',choices=('worker','complete','serve'))
     parser.add_argument('snapshot')
     parser.add_argument('--address',required=True,help='literal bind IP for worker, peer IP for complete')
     parser.add_argument('--port',type=int,required=True,help='explicit port; worker may use 0 for an ephemeral port')
@@ -36,6 +36,12 @@ def parser_for_command():
     parser.add_argument('--slots',type=_positive,default=4)
     parser.add_argument('--quantization',choices=('none','q4_0','q8_0'),default='none')
     parser.add_argument('--timeout',type=float,default=10.,help='seconds per connection or transport operation, at most 30')
+    parser.add_argument('--http-port',type=int,default=8088,help='serve role: loopback HTTP port, 0 chooses an available port')
+    parser.add_argument('--alias',default='model')
+    parser.add_argument('--queue-size',type=_positive,default=8)
+    parser.add_argument('--queue-timeout',type=float,default=120.)
+    parser.add_argument('--idle-timeout',type=float,default=0.,help='serve role: stop after idle seconds; 0 disables')
+    parser.add_argument('--heartbeat-interval',type=float,default=5.)
     parser.add_argument('--frame-mib',type=_positive,default=64)
     source=parser.add_mutually_exclusive_group()
     source.add_argument('--prompt')
@@ -59,10 +65,18 @@ def prepare(args):
             or any(getattr(args,n)>2048 for n in ('weight_mib','cache_mib','workspace_mib',
                 'loader_workspace_mib','projection_workspace_mib','output_mib'))):
         raise ValueError('invalid CPU host endpoint, context or resource limits')
-    if args.role=='complete' and (not args.server_name or len(args.server_name)>253 or '\0' in args.server_name):
-        raise ValueError('complete requires a TLS server hostname')
+    if args.role!='worker' and (not args.server_name or len(args.server_name)>253 or '\0' in args.server_name):
+        raise ValueError('coordinator requires a TLS server hostname')
     if args.role=='worker' and (args.server_name is not None or any(v is not None for v in (args.prompt,args.tokens,args.batch_inputs))):
         raise ValueError('worker does not accept request inputs or a server hostname')
+    if args.role=='serve':
+        if (any(v is not None for v in (args.prompt,args.tokens,args.batch_inputs))
+                or not 0<=args.http_port<=65535 or not 1<=len(args.alias)<=128
+                or not 1<=args.prefill_chunk<=4096
+                or not 1<=args.queue_size<=64 or not 0<args.queue_timeout<=300
+                or not 0<=args.idle_timeout<=86400 or not 0<args.heartbeat_interval<=10
+                or args.heartbeat_interval>=args.timeout):
+            raise ValueError('invalid CPU host serving inputs, queue or lifetime bounds')
     if len(args.model_id)!=64 or any(c not in '0123456789abcdefABCDEF' for c in args.model_id):
         raise ValueError('model identity requires exactly 64 hexadecimal digits')
     config=read_json(Path(args.snapshot)/'config.json',1024**2)
@@ -80,6 +94,8 @@ def prepare(args):
         rows=inputs if args.batch_inputs is not None else [inputs]
         if (len(rows)>args.slots or max(len(rows),min(args.prefill_chunk,max(map(len,rows))))*c['hidden_size']*4>args.frame_mib*1024**2):
             raise ValueError('request exceeds host slots or activation frame capacity')
+    if args.role=='serve' and max(args.slots,min(args.prefill_chunk,args.context))*c['hidden_size']*4>args.frame_mib*1024**2:
+        raise ValueError('serving chunks exceed activation frame capacity')
     # Bind tokenizer semantics and EOS in addition to the caller's model identity.
     digest=hashlib.sha256(bytes.fromhex(args.model_id))
     digest.update(hashlib.sha256(text.tokenizer.to_str().encode()).digest())
@@ -94,6 +110,8 @@ def emit(event):print(json.dumps(event,ensure_ascii=False),flush=True)
 
 def run(args):
     address,c,text,inputs,limits,identity,context,pin=prepare(args)
+    from dllm.http_auth import AuthPolicy
+    auth=AuthPolicy.from_env() if args.role=='serve' else None
     connection=listener=transport=worker=runner=None
     primary=None
     try:
@@ -120,10 +138,13 @@ def run(args):
             worker=error
             raise
         worker.handshake()
-        emit(dict(scope='cpu_host_reference',event='ready',role=args.role,quantization=args.quantization,official_model_qualified=False))
+        if args.role!='serve':
+            emit(dict(scope='cpu_host_reference',event='ready',role=args.role,quantization=args.quantization,official_model_qualified=False))
         if rank:
             while not worker.closed:worker.step()
             emit(dict(event='stopped'))
+        elif args.role=='serve':
+            serve_worker_pair(worker,text,args,auth)
         else:
             runner=HostCompletion(worker,eos_ids=text.eos_ids)
             generated=[[] for _ in inputs] if args.batch_inputs is not None else [[]]
@@ -150,10 +171,52 @@ def run(args):
             else:raise failures[0]
 
 
+def serve_worker_pair(worker,text,args,auth):
+    """Run one HTTP service lifetime with explicit peer and thread ownership."""
+    import signal
+    import threading
+    from dllm.host_serving import HostServingPair,HostDistributedRuntime,handler_for_host
+    from dllm.server import BoundedHTTPServer
+    pair=HostServingPair(worker,text,chunk_size=args.prefill_chunk)
+    runtime=HostDistributedRuntime(pair,args.alias,args.queue_size,args.queue_timeout)
+    server=thread=None;previous=None;primary=None
+    stopping=threading.Event()
+    def interrupt(*_):
+        stopping.set();runtime.closed.set();worker.channel.close()
+    try:
+        server=BoundedHTTPServer(('127.0.0.1',args.http_port),handler_for_host(runtime,auth))
+        server.daemon_threads=True
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        previous=signal.signal(signal.SIGTERM,interrupt)
+        emit(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',
+            scope='cpu_host_reference',official_model_qualified=False,model=args.alias))
+        try:runtime.run(idle_timeout=args.idle_timeout,heartbeat_interval=args.heartbeat_interval)
+        except KeyboardInterrupt:interrupt()
+        except (OSError,RuntimeError,EOFError,ValueError):
+            if not stopping.is_set():raise
+        if worker.ready:worker.stop()
+        emit(dict(event='stopped',scope='cpu_host_reference'))
+    except BaseException as error:primary=error;raise
+    finally:
+        if previous is not None:signal.signal(signal.SIGTERM,previous)
+        errors=[]
+        if server is not None:
+            try:
+                if thread is not None and thread.is_alive():server.shutdown();thread.join(timeout=5)
+                server.server_close()
+            except BaseException as error:errors.append(error)
+        try:runtime.close()
+        except BaseException as error:errors.append(error)
+        if errors:
+            if primary is not None:primary.add_note('CPU host HTTP shutdown cleanup failed')
+            else:raise errors[0]
+
+
 def main(argv=None):
     parser=parser_for_command();args=parser.parse_args(argv)
     try:run(args)
     except BrokenPipeError:return 0
+    except KeyboardInterrupt:return 130
     except (ValueError,TypeError,OSError,RuntimeError,MemoryError,EOFError) as error:
         parser.exit(2,f'CPU host reference failed: {error}\n')
     return 0
