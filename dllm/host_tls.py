@@ -6,6 +6,8 @@ Only a successful return transfers ownership to the caller (normally a host chan
 """
 import hashlib
 import hmac
+import math
+import select
 import socket
 import ssl
 import time
@@ -42,39 +44,75 @@ def certificate_pin(path):
     return hashlib.sha256(ssl.PEM_cert_to_DER_cert(pem.decode('ascii'))).digest()
 
 
-def wrap_peer(connection,context,*,server_side,peer_pin,server_hostname=None,timeout=10.):
-    """Authenticate and pin a connected TCP peer within one handshake deadline.
+class HostTlsCancelled(RuntimeError):
+    pass
 
-    Both endpoints must use this policy; the server requires a trusted client
-    certificate, and the client also checks the server hostname. The model/session
-    identity handshake remains necessary after TLS. Keep contexts immutable after
-    configuration; do not share a socket with another owner during wrapping.
-    """
-    if (not isinstance(connection,socket.socket) or isinstance(connection,ssl.SSLSocket)
-            or connection.family not in (socket.AF_INET,socket.AF_INET6)
-            or connection.getsockopt(socket.SOL_SOCKET,socket.SO_TYPE)!=socket.SOCK_STREAM
-            or type(server_side) is not bool or not isinstance(context,ssl.SSLContext)
+
+def _validate_policy(context,*,server_side,peer_pin,server_hostname,timeout,cancelled=None):
+    if (type(server_side) is not bool or not isinstance(context,ssl.SSLContext)
             or context.protocol!=(ssl.PROTOCOL_TLS_SERVER if server_side else ssl.PROTOCOL_TLS_CLIENT)
             or context.verify_mode!=ssl.CERT_REQUIRED or context.check_hostname!=(not server_side)
             or context.minimum_version<ssl.TLSVersion.TLSv1_3
             or not isinstance(peer_pin,bytes) or len(peer_pin)!=32
             or type(timeout) not in (int,float) or not 0<timeout<=30
             or (server_side and server_hostname is not None)
-            or (not server_side and (not isinstance(server_hostname,str) or not 1<=len(server_hostname)<=253 or '\0' in server_hostname))):
+            or (not server_side and (not isinstance(server_hostname,str) or not 1<=len(server_hostname)<=253 or '\0' in server_hostname))
+            or (cancelled is not None and not callable(cancelled))):
         raise ValueError('invalid or unsafe host TLS configuration')
+
+
+def _remaining(deadline,cancelled):
+    if cancelled is not None and cancelled():raise HostTlsCancelled('host connection cancelled')
+    remaining=deadline-time.monotonic()
+    if remaining<=0:raise TimeoutError('host connection deadline exceeded')
+    return remaining
+
+
+def _wait_socket(connection,read,deadline,cancelled):
+    while True:
+        remaining=_remaining(deadline,cancelled)
+        readable,writable,_=select.select([connection] if read else [],[] if read else [connection],[],min(remaining,.05))
+        if readable or writable:
+            _remaining(deadline,cancelled)
+            return
+
+
+def wrap_peer(connection,context,*,server_side,peer_pin,server_hostname=None,timeout=10.,cancelled=None,_deadline=None):
+    """Authenticate a connected TCP peer within a cancellable handshake deadline.
+
+    Both endpoints require mutual TLS, ALPN and exact certificate pins. Keep
+    contexts immutable and cancellation callbacks prompt/nonblocking. Local
+    validation failures leave ownership with the caller; after validation the
+    socket is owned until successful return or closed on every failure.
+    """
+    if (not isinstance(connection,socket.socket) or isinstance(connection,ssl.SSLSocket)
+            or connection.family not in (socket.AF_INET,socket.AF_INET6)
+            or connection.getsockopt(socket.SOL_SOCKET,socket.SO_TYPE)!=socket.SOCK_STREAM):
+        raise ValueError('invalid or unsafe host TLS connection')
+    _validate_policy(context,server_side=server_side,peer_pin=peer_pin,server_hostname=server_hostname,
+                     timeout=timeout,cancelled=cancelled)
+    if _deadline is not None and (type(_deadline) not in (int,float) or not math.isfinite(_deadline)):
+        raise ValueError('invalid host TLS absolute deadline')
     connection.getpeername() # an unconnected invalid socket remains caller-owned
-    deadline=time.monotonic()+timeout;previous_timeout=connection.gettimeout();wrapped=None
+    deadline=time.monotonic()+timeout
+    if _deadline is not None:deadline=min(deadline,_deadline)
+    previous_timeout=connection.gettimeout();wrapped=None
     try:
+        _remaining(deadline,cancelled)
         wrapped=context.wrap_socket(connection,server_side=server_side,server_hostname=server_hostname,do_handshake_on_connect=False)
-        remaining=deadline-time.monotonic()
-        if remaining<=0:raise TimeoutError('host TLS handshake deadline exceeded')
-        wrapped.settimeout(remaining);wrapped.do_handshake()
-        if time.monotonic()>deadline:raise TimeoutError('host TLS handshake deadline exceeded')
+        wrapped.setblocking(False)
+        while True:
+            _remaining(deadline,cancelled)
+            try:wrapped.do_handshake();break
+            except ssl.SSLWantReadError:_wait_socket(wrapped,True,deadline,cancelled)
+            except ssl.SSLWantWriteError:_wait_socket(wrapped,False,deadline,cancelled)
+        _remaining(deadline,cancelled)
         if wrapped.version()!='TLSv1.3' or wrapped.selected_alpn_protocol()!=ALPN:
             raise ValueError('host TLS version/application protocol mismatch')
         certificate=wrapped.getpeercert(binary_form=True)
         if not certificate or not hmac.compare_digest(hashlib.sha256(certificate).digest(),peer_pin):
             raise ValueError('host TLS peer certificate pin mismatch')
+        _remaining(deadline,cancelled)
         wrapped.settimeout(previous_timeout)
         return wrapped
     except BaseException:
