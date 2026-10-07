@@ -95,3 +95,28 @@ class DeepSeekCheckpointTests(unittest.TestCase):
                        {'quantization_config':{'quant_method':'fp8'}}):
             with self.assertRaises(ValueError):
                 tensor_specs(config() | update)
+
+    def test_complete_tiny_snapshot_e8m0_header_audit_without_payload_reads(self):
+        import math
+        from dllm.safetensor_header import ITEM_BYTES
+        from tests.test_packed_checkpoint import write_raw
+        storage={'floating':'BF16','fp8':'F8_E4M3','fp4':'I8','scale':'F8_E8M0','integer':'I32'}
+        header={}
+        offset=0
+        for name,spec in tensor_specs(config()).items():
+            dtype=storage[spec.storage]
+            size=math.prod(spec.shape)*ITEM_BYTES[dtype]
+            header[name]={'dtype':dtype,'shape':list(spec.shape),'data_offsets':[offset,offset+size]}
+            offset+=size
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)
+            (path/'config.json').write_text(json.dumps(config()))
+            (path/'model.safetensors.index.json').write_text(json.dumps({'weight_map':{name:'model.safetensors' for name in header}}))
+            write_raw(path/'model.safetensors',header,bytes(offset))
+            with patch('dllm.packed_checkpoint._payload',side_effect=AssertionError('values read')), \
+                    patch('torch.cuda._lazy_init',side_effect=AssertionError('GPU initialized')):
+                report=audit_snapshot(path)
+            self.assertEqual(report['main_tensors'],len(header))
+            self.assertEqual(report['scope'],'tensor_header_contract')
+            self.assertFalse(report['weight_values_read'])
+            self.assertFalse(report['model_execution_qualified'])

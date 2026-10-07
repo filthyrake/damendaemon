@@ -11,6 +11,27 @@ from dllm.qwen2 import weight_files
 
 
 class CheckpointInventoryTests(unittest.TestCase):
+    def test_e8m0_fallback_preserves_index_duplicate_and_offset_checks(self):
+        from dllm.checkpoint import inspect_snapshot
+        from tests.test_packed_checkpoint import write_raw
+        header={'s':{'dtype':'F8_E8M0','shape':[1],'data_offsets':[0,1]}}
+        with TemporaryDirectory() as directory:
+            path=Path(directory)
+            write_raw(path/'one.safetensors',header,b'\x7f')
+            write_raw(path/'two.safetensors',header,b'\x7f')
+            index=path/'model.safetensors.index.json'
+            index.write_text(json.dumps({'weight_map':{'s':'one.safetensors','other':'two.safetensors'}}))
+            with self.assertRaisesRegex(ValueError,'duplicate tensor'):
+                inspect_snapshot(path)
+            index.write_text(json.dumps({'weight_map':{'other':'one.safetensors'}}))
+            with self.assertRaisesRegex(ValueError,'shard index'):
+                inspect_snapshot(path)
+            index.unlink();(path/'two.safetensors').unlink()
+            header['overlap']={'dtype':'U8','shape':[1],'data_offsets':[0,1]}
+            write_raw(path/'model.safetensors',header,b'\x7f')
+            with self.assertRaisesRegex(ValueError,'safetensors header'):
+                inspect_snapshot(path)
+
     def test_duplicate_tensor_and_mismatched_index_reject_before_loading(self):
         with TemporaryDirectory() as directory:
             path = Path(directory)

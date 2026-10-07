@@ -5,15 +5,8 @@ from pathlib import Path
 from safetensors import safe_open, SafetensorError
 
 from .download import INDEX, snapshot_files
+from .safetensor_header import _unique_fields, read_header
 
-
-def _unique_fields(pairs):
-    result = {}
-    for name, value in pairs:
-        if name in result:
-            raise ValueError('duplicate checkpoint index field')
-        result[name] = value
-    return result
 
 
 def inspect_snapshot(path):
@@ -34,13 +27,25 @@ def inspect_snapshot(path):
         try:
             with safe_open(str(path/filename), framework='pt', device='cpu') as reader:
                 for name in reader.keys():
-                    if name in actual:
-                        raise ValueError(f'duplicate tensor: {name}')
                     header = reader.get_slice(name)
                     tensors[name] = {'shape':header.get_shape(), 'dtype':header.get_dtype()}
-                    actual[name] = filename
         except SafetensorError as error:
-            raise ValueError('invalid safetensors header') from error
+            # Older safetensors releases reject E8M0 before exposing any slices.
+            # Only this explicit byte format gets the independently validated
+            # header fallback; payload values remain unread.
+            try:
+                with (path/filename).open('rb') as raw_reader:
+                    entries, _, _ = read_header(raw_reader)
+                if not any(entry['dtype'] in ('F8_E8M0','F8_E8M0FNU') for entry in entries.values()):
+                    raise ValueError('no E8M0 compatibility fallback applies')
+                tensors = {name:{'shape':entry['shape'],'dtype':entry['dtype']}
+                           for name,entry in entries.items()}
+            except ValueError:
+                raise ValueError('invalid safetensors header') from error
+        for name in tensors:
+            if name in actual:
+                raise ValueError(f'duplicate tensor: {name}')
+            actual[name] = filename
         metadata[filename] = {'tensors':tensors}
     if index is not None and actual != index['weight_map']:
         raise ValueError('tensor headers do not match the shard index')

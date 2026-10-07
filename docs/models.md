@@ -412,6 +412,12 @@ file tests cover both formats, cross-shard reads, malformed/overlapping/truncate
 headers, budget rejection and file changes during reading. This is selected
 tensor loading, not real-checkpoint or whole-model admission qualification.
 
+The shared checkpoint inventory uses the same bounded, tensor-library-free
+header validator when an older safetensors parser rejects an E8M0-containing
+shard. The fallback reads metadata only and preserves cross-shard duplicate,
+index and payload-range validation. A complete synthetic DeepSeek snapshot
+passes the header audit; official checkpoint contents remain unqualified.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
