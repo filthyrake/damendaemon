@@ -229,6 +229,17 @@ follow [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-form
 scale geometry follows the pinned DeepSeek reference above. This does not replace
 packed GPU projections or establish checkpoint numerical qualification.
 
+`dllm.selected_attention.selected_attention` computes the shared-key/value,
+per-query selection and learned sink equations using FP32 accumulation. Query
+and selected-key chunks bound temporary gathers and scores; the full KV cache is
+never cast to FP32. The sink contributes only to the denominator. Negative IDs
+are padding, repeated selections count repeatedly, and selection/causal rules
+belong to the caller. Empty selections return zero. A scalar oracle covers
+chunking, padding, reordered batches, sink effects and large logits. The tensor
+component preserves query storage dtype but does not reproduce the reference
+accelerator's intermediate probability rounding. Cache compression, selection
+construction, model integration and GPU qualification remain separate gates.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
