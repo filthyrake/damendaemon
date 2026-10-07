@@ -1,0 +1,152 @@
+{
+  "repo": "deepseek-ai/DeepSeek-V4-Flash",
+  "revision": "60d8d70770c6776ff598c94bb586a859a38244f1",
+  "license": "MIT",
+  "tokenizer_sha256": "8f9f37ca37fdc4f5fd36d5cf4d3b0e8392edb4e894fd10cc0d70b4957c8633cf",
+  "vocab_size": 129280,
+  "cases": [
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hello"
+        }
+      ],
+      "options": {},
+      "prompt": "<｜begin▁of▁sentence｜><｜User｜>Hello<｜Assistant｜></think>",
+      "tokens": [
+        0,
+        128803,
+        19923,
+        128804,
+        128822
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "Be brief."
+        },
+        {
+          "role": "user",
+          "content": "What is 2+2?"
+        }
+      ],
+      "options": {
+        "enable_thinking": true
+      },
+      "prompt": "<｜begin▁of▁sentence｜>Be brief.<｜User｜>What is 2+2?<｜Assistant｜><think>",
+      "tokens": [
+        0,
+        7153,
+        9708,
+        16,
+        128803,
+        3085,
+        344,
+        223,
+        20,
+        13,
+        20,
+        33,
+        128804,
+        128821
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "你好，世界！\n🦙"
+        }
+      ],
+      "options": {},
+      "prompt": "<｜begin▁of▁sentence｜><｜User｜>你好，世界！\n🦙<｜Assistant｜></think>",
+      "tokens": [
+        0,
+        128803,
+        30594,
+        303,
+        3427,
+        5632,
+        3574,
+        102,
+        250,
+        128804,
+        128822
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "one"
+        },
+        {
+          "role": "assistant",
+          "content": "two",
+          "reasoning_content": "old"
+        },
+        {
+          "role": "user",
+          "content": "three"
+        }
+      ],
+      "options": {
+        "enable_thinking": true
+      },
+      "prompt": "<｜begin▁of▁sentence｜><｜User｜>one<｜Assistant｜></think>two<｜end▁of▁sentence｜><｜User｜>three<｜Assistant｜><think>",
+      "tokens": [
+        0,
+        128803,
+        791,
+        128804,
+        128822,
+        23315,
+        1,
+        128803,
+        30230,
+        128804,
+        128821
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "one"
+        },
+        {
+          "role": "assistant",
+          "content": "two",
+          "reasoning_content": "old"
+        },
+        {
+          "role": "user",
+          "content": "three"
+        }
+      ],
+      "options": {
+        "enable_thinking": true,
+        "drop_thinking": false
+      },
+      "prompt": "<｜begin▁of▁sentence｜><｜User｜>one<｜Assistant｜><think>old</think>two<｜end▁of▁sentence｜><｜User｜>three<｜Assistant｜><think>",
+      "tokens": [
+        0,
+        128803,
+        791,
+        128804,
+        128821,
+        1129,
+        128822,
+        23315,
+        1,
+        128803,
+        30230,
+        128804,
+        128821
+      ]
+    }
+  ]
+}
