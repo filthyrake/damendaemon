@@ -41,17 +41,19 @@ def _options(config):
 
 def load_reference_model(path,**options):
     """Load the admitted complete main-text model within explicit byte budgets."""
+    if 'inspect_only' in options:raise ValueError('use explicit pipeline inspection')
     return _load_reference(path,None,None,**options)
 
 
 def load_reference_stage(path,start,end,**options):
     """Audit the whole snapshot but read/retain only the requested main-text range."""
+    if 'inspect_only' in options:raise ValueError('stage loading requires payloads')
     if start is None or end is None:raise ValueError('Flash stage needs explicit range boundaries')
     return _load_reference(path,start,end,**options)
 
 
 def _load_reference(path,start,end,*,max_weight_bytes=256*1024**2,projection_workspace_bytes=8*1024**2,
-                         max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
+                         max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2,inspect_only=False):
     """Read admitted main-model tensors; leave FP8 weights packed and omit visual/MTP values.
 
     Weight admission includes retained byte weights/FP32 parameters and one
@@ -111,6 +113,10 @@ def _load_reference(path,start,end,*,max_weight_bytes=256*1024**2,projection_wor
             raise ValueError('Flash expert and routing workspace exceeds component allowance')
         if retained+largest>max_weight_bytes:
             raise ValueError('Flash parameters exceed aggregate weight budget')
+        if inspect_only:
+            if any(file_stamp(reader)!=stamp for reader,stamp in opened):
+                raise ValueError('Flash checkpoint changed during header inspection')
+            return root_config,retained,largest
         for name,spec in specs.items():
             reader,base,entry=selected[name]
             size=entry['data_offsets'][1]-entry['data_offsets'][0]

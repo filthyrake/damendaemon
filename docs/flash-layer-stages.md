@@ -52,12 +52,43 @@ pipeline inherits the other or masquerades as an ordinary complete model.
 `FlashPipelineReferenceGenerator` and `FlashPipelineToolReferenceGenerator`
 provide explicit native single/equal/ragged text and tool generation. They reuse
 the pinned Flash format and existing bounded generation lifecycle; tool calls
-are returned, never executed. Ordinary model and generic HTTP admission remain
-unchanged. Image-input, checkpoint-pipeline construction and command admission
-are separate gates.
+are returned, never executed. Ordinary model admission remains unchanged. HTTP explicitly admits the native
+Flash pipeline tool adapter, with the same reference authentication and request
+policy. Image-input remains a separate gate.
 
 Pipeline tests compare real packed chunked/reordered logits and native text/usage
 against independent whole-model CPU controls, exercise aggregate budget and
 retained failure ownership, and test cancellation/abandonment/reuse. Tool tests
 select controlled tokens after real stage execution to verify protocol handling;
 they do not establish trained-model tool quality.
+
+
+## Checkpoint builder, native command and reference HTTP
+
+`glm_flash_checkpoint_pipeline.load_reference_pipeline(snapshot, layer_splits,
+...)` preflights all retained stage weights plus the largest conversion source
+against one total allowance, before reading any tensor payload. It then loads
+only each assigned range, checking config/shard/index receipts before and after
+loads and after complete construction. These ordinary file-stat receipts detect
+concurrent replacement/modification; they are not content authentication or a
+claim against hostile writers. The same global-admission implementation serves
+GLM through explicit family callbacks.
+
+Use `--layer-splits` with `scripts.run_glm_flash_reference` to select the local
+pipeline for native prompt/history, equal/ragged batches and tools. Cuts must be
+ordered distinct internal layer indices; a three-layer fixture can use
+`--layer-splits 1 2`. Defaults still select the whole-model reference. Output
+identifies `execution: local_cpu_pipeline` and the complete stage ranges.
+
+`scripts.serve_cpu_reference flash ... --layer-splits ...` admits the explicit
+pipeline tool adapter to the existing loopback HTTP service. It supports the
+same authenticated native JSON/SSE, optional serialized request queue and admin
+drain as the whole-model reference. Readiness, status and timing expose pipeline
+ranges and CPU reference scope. `--flash-images` with layer splits is rejected
+before payload loading; this gate supplies only text/tool pipeline admission.
+
+Tests check exact global admission, source receipts including final-construction
+replacement, invalid request/cut preflight, native command equivalence and
+actual queued HTTP subprocess JSON/SSE/drain/shutdown. Default and pipeline
+responses agree. Stage cleanup failure remains observable and retryable. None
+of this qualifies GPU execution, official checkpoints or practical performance.

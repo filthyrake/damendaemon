@@ -28,6 +28,7 @@ def main(argv=None):
     source.add_argument('--prompt',help='one ordinary user text turn')
     source.add_argument('--messages',help='local JSON file containing ordinary text messages')
     source.add_argument('--batch-messages',help='local JSON list of 1..16 equal-prompt-length text conversations')
+    parser.add_argument('--layer-splits',type=_positive,nargs='+',help='explicit local CPU pipeline layer cuts')
     parser.add_argument('--ragged-batch',action='store_true',help='batch only: sequential equal-length cohorts')
     parser.add_argument('--tools',help='local JSON function declarations for text or equal-length batches; never executed')
     parser.add_argument('--reasoning-effort',choices=('low','high','max'),default='max')
@@ -65,12 +66,22 @@ def main(argv=None):
             tokens=(text.tool_chat_tokens(messages,tools,**options) if args.tools else text.chat_tokens(messages,**options))
             if len(tokens)+args.max_new_tokens>args.context:
                 raise ValueError('Flash prompt and requested output exceed context before weight loading')
-        model=load_reference_model(args.snapshot,max_weight_bytes=args.weight_mib*1024**2,
-                                   projection_workspace_bytes=args.projection_workspace_mib*1024**2,
-                                   max_workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
-        runner_type=FlashToolReferenceGenerator if args.tools else FlashBatchReferenceGenerator if args.batch_messages else FlashReferenceGenerator
+        load_options=dict(max_weight_bytes=args.weight_mib*1024**2,
+                          projection_workspace_bytes=args.projection_workspace_mib*1024**2,
+                          max_workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
+        if args.layer_splits is not None:
+            from dllm.glm_flash_checkpoint_pipeline import load_reference_pipeline
+            from dllm.glm_flash_pipeline_generation import FlashPipelineReferenceGenerator,FlashPipelineToolReferenceGenerator
+            model=load_reference_pipeline(args.snapshot,args.layer_splits,**load_options)
+            runner_type=FlashPipelineToolReferenceGenerator if args.tools else FlashPipelineReferenceGenerator
+        else:
+            model=load_reference_model(args.snapshot,**load_options)
+            runner_type=FlashToolReferenceGenerator if args.tools else FlashBatchReferenceGenerator if args.batch_messages else FlashReferenceGenerator
         runner=runner_type(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
-        print(json.dumps(dict(scope='cpu_reference',official_model_qualified=False,dtype='float32')),flush=True)
+        scope=dict(scope='cpu_reference',official_model_qualified=False,dtype='float32')
+        if args.layer_splits is not None:
+            scope.update(execution='local_cpu_pipeline',stage_layers=[[stage.start,stage.end] for stage in model.stages])
+        print(json.dumps(scope),flush=True)
         if args.batch_messages:options['ragged']=args.ragged_batch
         primary=None
         try:

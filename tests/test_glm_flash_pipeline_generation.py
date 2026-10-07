@@ -60,7 +60,9 @@ class FlashPipelineGenerationTests(unittest.TestCase):
         self.assertEqual(json.loads(call['function']['arguments']),json.loads(CALLS[0]['function']['arguments']))
         self.assertEqual([e['row'] for e in rows if 'finish_reason' in e],[0,1])
         self.assertTrue(all(state.closed for state in self.states))
-        with self.assertRaises(ValueError):ReferenceRuntime(runner)
+        runtime=ReferenceRuntime(runner);self.addCleanup(runtime.close)
+        self.assertEqual(runtime.family,'glm5_next')
+        self.assertEqual(runtime.execution_status()['stage_layers'],[[0,1],[1,3]])
 
     def test_abandonment_cancellation_and_failed_cleanup_before_reuse(self):
         runner=FlashPipelineReferenceGenerator(self.pipeline,self.text,max_context=1024)

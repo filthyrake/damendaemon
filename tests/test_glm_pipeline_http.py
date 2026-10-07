@@ -65,7 +65,7 @@ class GlmPipelineHttpTests(unittest.TestCase):
     def test_invalid_family_or_cuts_precede_payload(self):
         path=self.snapshot('glm')
         with patch.dict(os.environ,self.env,clear=True),patch('dllm.glm_reference_loader._payload',side_effect=AssertionError('payload')):
-            for family,cuts in (('flash',['2']),('deepseek',['2']),('glm',['1']),('glm',['2','2'])):
+            for family,cuts in (('flash',['4']),('deepseek',['2']),('glm',['1']),('glm',['2','2'])):
                 with self.subTest(family=family,cuts=cuts),self.assertRaises(ValueError):
                     command.prepare(self.args(family,path,'--layer-splits',*cuts))
 
