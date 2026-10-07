@@ -17,8 +17,8 @@ from tests.test_glm_checkpoint import config as geometry
 from tests.test_packed_checkpoint import write_raw
 
 
-def fixture(path):
-    config=geometry()|dict(rms_norm_eps=1e-5,routed_scaling_factor=2.5)
+def fixture(path,vocab_size=32):
+    config=geometry()|dict(vocab_size=vocab_size,rms_norm_eps=1e-5,routed_scaling_factor=2.5)
     headers=[{},{}];payloads=[bytearray(),bytearray()];values={}
     generator=torch.Generator().manual_seed(113)
     for index,(name,spec) in enumerate(tensor_specs(config).items()):

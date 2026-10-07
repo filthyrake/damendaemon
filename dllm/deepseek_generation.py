@@ -1,5 +1,4 @@
 """Owned, bounded CPU reference text generation; not a serving runtime."""
-import codecs
 import threading
 
 import torch
@@ -10,18 +9,7 @@ from .deepseek_output import DeepSeekOutput
 from .floating_model import FloatingModel
 
 
-def _byte_alphabet():
-    visible=list(range(33,127))+list(range(161,173))+list(range(174,256))
-    result={chr(value):value for value in visible}
-    extra=256
-    for value in range(256):
-        if value not in visible:
-            result[chr(extra)]=value
-            extra+=1
-    return result
-
-
-BYTE_VALUES=_byte_alphabet()
+from .bytelevel_stream import BYTE_VALUES,ByteLevelStream
 
 
 class TokenStream:
@@ -30,8 +18,8 @@ class TokenStream:
         if not isinstance(text,DeepSeekText) or not isinstance(text.tokenizer.decoder,decoders.ByteLevel):
             raise ValueError('V4 generation requires a prepared ByteLevel tokenizer')
         self.text=text
-        self.added=text.tokenizer.get_added_tokens_decoder()
-        self.utf8=codecs.getincrementaldecoder('utf-8')(errors='replace')
+        allowed=(BOS,EOS,USER,ASSISTANT,THINK,END_THINK)+(('｜DSML｜',) if allow_tool_calls else ())
+        self.decoder=ByteLevelStream(text.tokenizer,allowed)
         self.parser=DeepSeekOutput(enable_thinking=enable_thinking,allow_tool_calls=allow_tool_calls)
         self.allow_tool_calls=allow_tool_calls
         self.failed=False
@@ -41,17 +29,7 @@ class TokenStream:
         try:
             if type(token) is not int or not 0 <= token < self.text.vocab_size:
                 raise ValueError('invalid generated V4 token ID')
-            if token in self.added:
-                value=self.added[token].content
-                if value not in (BOS,EOS,USER,ASSISTANT,THINK,END_THINK) and not (self.allow_tool_calls and value == '｜DSML｜'):
-                    raise ValueError('unsupported generated V4 added/control token')
-                decoded=self.utf8.decode(b'',final=True)+value
-                self.utf8.reset()
-            else:
-                value=self.text.tokenizer.id_to_token(token)
-                try:raw=bytes(BYTE_VALUES[char] for char in value)
-                except (KeyError,TypeError) as error:raise ValueError('invalid ByteLevel vocabulary token') from error
-                decoded=self.utf8.decode(raw,final=False)
+            decoded=self.decoder.feed(token)
             return self.parser.feed(decoded)
         except BaseException:
             self.failed=True
@@ -60,7 +38,7 @@ class TokenStream:
     def finish(self,*,truncated=False):
         if self.failed:raise RuntimeError('V4 token stream failed')
         try:
-            events=self.parser.feed(self.utf8.decode(b'',final=True))
+            events=self.parser.feed(self.decoder.finish())
             return events+self.parser.finish(truncated=truncated)
         except BaseException:
             self.failed=True

@@ -700,3 +700,28 @@ observation markers are the declared generation stops. The tokenizer/template
 revision and file hashes are recorded in `tests/fixtures/glm53_text_contract.json`;
 the preserved GLM license remains in `docs/licenses/glm53-LICENSE.txt`. This is
 text-format evidence, not trained-model generation or tool support.
+
+`glm_generation.ReferenceGenerator` and `python -m scripts.run_glm_reference`
+provide explicit ordinary greedy CPU generation. The command validates text,
+stop IDs, context and component budgets before loading weights, emits JSON
+reasoning/content deltas, and labels output as unqualified CPU-reference work.
+Incremental ByteLevel decoding is shared with DeepSeek and preserves split UTF-8
+without repeatedly decoding history. GLM padded vocabulary rows are excluded
+from selection; unsupported tool/media controls and nonfinite logits fail.
+Cache release precedes the completion event and runs on length, stop, iterator
+close and errors. Failed releases remain owned for retry before another prefill;
+primary decode errors survive cleanup failures. Tests include a real tiny packed
+snapshot through the command with a controlled synthetic head. They establish
+wiring and ownership, not useful trained-model output or accelerator performance.
+
+Example for an explicitly admitted local fixture:
+
+```sh
+python -m scripts.run_glm_reference /path/to/snapshot --prompt 'Hello' \
+  --max-new-tokens 16 --context 128 --weight-mib 256 --cache-mib 64
+```
+
+The default weight cap deliberately cannot admit the full official GLM-5.3
+snapshot. No downloads, model registration or hardware jobs are started by this
+command. Full official-weight, tool, HTTP and long-context qualification remain
+separate open gates.
