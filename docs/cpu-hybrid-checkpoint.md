@@ -56,3 +56,33 @@ and output modes. Independent mappings, nonzero norm offsets, packed scales,
 tied aliases, chunked prefill and reordered pipeline decode agree. Invalid
 metadata/capacity fails before payload reads; injected read failure, nonfinite
 values and file mutation exercise descriptor cleanup. GPU admission is unchanged.
+
+## Stage-local source residency
+
+`load_cpu_stage_checkpoint(snapshot, start, end, ...)` accepts the same precision,
+context and loader budgets but retains only a contiguous half-open layer range.
+The first range owns embeddings; the last owns final norm and output head; middle
+ranges own neither. Use the returned partial model with
+`CpuHybridStage(model, start, end, ...)`. Its `layer_range` records the requested
+range. Whole-pipeline construction rejects partial inventories.
+
+All source headers, shapes, dtypes and the shard index are still validated against
+the complete checkpoint. Only selected payloads are copied, converted and scanned
+for finiteness. Consequently a malformed excluded header rejects, while an
+excluded nonfinite payload is deliberately not inspected; this loader does not
+attest to excluded tensor values. Retained and conversion budgets cover the
+selected range, allowing it to fit when the complete source model cannot.
+
+For a tied final head, the loader reads the source embedding directly into the
+head's selected representation. It does not retain an unused embedding tensor.
+When one range owns both endpoints, FP32 aliasing and single-source read behavior
+remain unchanged. Independent range loads have independent source ownership;
+they are not automatically assigned a common in-process pipeline identity.
+Authenticated worker setup still requires the caller's explicit model/session
+identity and matching configuration. No deployment or automatic partitioning is
+performed.
+
+Tests track exact payload reads across first/middle/last ranges, compare selected
+weights/scales and byte accounting to whole loads, and compare split execution
+through chunked prefill/reordered decode. FP32, Q4 and Q8, tied/untied heads and
+BF16 source rounding are covered; these are CPU fixture proofs.

@@ -49,13 +49,23 @@ def _groups(c,prefix):
 
 def load_cpu_checkpoint(path,*,quantization='none',max_context=512,max_weight_bytes=256*1024**2,
                         max_workspace_bytes=64*1024**2):
-    """Load bounded floating safetensors into a prepared CPU model.
+    """Load a whole prepared CPU model under retained and conversion budgets."""
+    return _load_cpu_checkpoint(path,quantization=quantization,max_context=max_context,max_weight_bytes=max_weight_bytes,
+                                max_workspace_bytes=max_workspace_bytes)
 
-    max_weight_bytes covers retained weights/scales. max_workspace_bytes covers
-    a conservative peak source/cast/fusion/quantization overlap; both are admitted
-    before payload reads. Metadata/allocator overhead is separate. Text-only
-    configurations and exact inventories are required; visual/MTP extras reject.
+
+def load_cpu_stage_checkpoint(path,start,end,*,quantization='none',max_context=512,max_weight_bytes=256*1024**2,
+                              max_workspace_bytes=64*1024**2):
+    """Validate the complete snapshot but read only this stage's owned payloads.
+
+    The returned partial model feeds CpuHybridStage(model,start,end), not a whole
+    pipeline builder. Excluded payload values are deliberately not inspected.
     """
+    return _load_cpu_checkpoint(path,quantization=quantization,max_context=max_context,max_weight_bytes=max_weight_bytes,
+                                max_workspace_bytes=max_workspace_bytes,layer_range=(start,end))
+
+
+def _load_cpu_checkpoint(path,*,quantization,max_context,max_weight_bytes,max_workspace_bytes,layer_range=None):
     if (sys.byteorder!='little' or quantization not in ('none','q4_0','q8_0')
             or any(type(v) is not int or not 1<=v<=2**31 for v in (max_weight_bytes,max_workspace_bytes))):
         raise ValueError('invalid CPU checkpoint format/budgets')
@@ -68,7 +78,8 @@ def load_cpu_checkpoint(path,*,quantization='none',max_context=512,max_weight_by
     try:c=hybrid_config(source)
     except (TypeError,OverflowError,AttributeError) as error:raise ValueError('invalid CPU checkpoint configuration') from error
     if type(c.get('tie_word_embeddings')) is not bool:raise ValueError('invalid CPU checkpoint tied embedding flag')
-    shapes,_=_groups(c,'model.')
+    start,end=(0,c['num_hidden_layers']) if layer_range is None else layer_range
+    shapes=cpu_hybrid_shapes(c,start,end)
     if type(max_context) is not int or not 1<=max_context<=min(2**20,c['max_position_embeddings']):
         raise ValueError('invalid CPU checkpoint context')
     packed={n for n,shape in shapes.items() if quantization!='none' and n!='embed' and len(shape)==2}
@@ -76,7 +87,8 @@ def load_cpu_checkpoint(path,*,quantization='none',max_context=512,max_weight_by
     retained=sum(math.prod(shape)*4 if n not in packed else
                  math.prod(shape)//(2 if quantization=='q4_0' else 1)+math.prod(shape)//32*2
                  for n,shape in shapes.items())
-    if c['tie_word_embeddings'] and quantization=='none':retained-=math.prod(shapes['head'])*4
+    tied_pair=c['tie_word_embeddings'] and 'embed' in shapes and 'head' in shapes
+    if tied_pair and quantization=='none':retained-=math.prod(shapes['head'])*4
     # 32 bytes per largest fused element conservatively bounds source bytes,
     # FP32 pieces + concatenation and the quantizer's 128-row temporaries.
     workspace=32*max(math.prod(s) for s in shapes.values())
@@ -102,7 +114,10 @@ def load_cpu_checkpoint(path,*,quantization='none',max_context=512,max_weight_by
             entry=entries[name][2]
             if entry['dtype'] not in ('F16','BF16','F32') or tuple(entry['shape'])!=shape:
                 raise ValueError('CPU checkpoint tensor shape/dtype mismatch')
+        if c['tie_word_embeddings'] and 'head' in shapes and not tied_pair:
+            groups['head']=groups['embed']
         for name,(pieces,offset) in groups.items():
+            if name not in shapes:continue
             values=[]
             for source_name,shape in pieces:
                 reader,base,entry=entries[source_name];size=entry['data_offsets'][1]-entry['data_offsets'][0]
@@ -116,10 +131,10 @@ def load_cpu_checkpoint(path,*,quantization='none',max_context=512,max_weight_by
             if name in packed:weights[name],scales[name]=(quantize_q4 if quantization=='q4_0' else quantize)(value)
             else:weights[name]=value
             del value
-        if c['tie_word_embeddings']:
+        if tied_pair:
             if quantization=='none':weights['head']=weights['embed']
             else:weights['head'],scales['head']=(quantize_q4 if quantization=='q4_0' else quantize)(weights['embed'])
         if any(file_stamp(reader)!=stamp for reader,stamp in opened):raise ValueError('CPU checkpoint changed during reads')
     return SimpleNamespace(config=c,source_config=source,weights=weights,scales=scales,quantization=quantization,
                            max_context=max_context,vision_weights=None,bytes=int(retained),
-                           loader_workspace_bytes=workspace)
+                           loader_workspace_bytes=workspace,layer_range=(start,end))
