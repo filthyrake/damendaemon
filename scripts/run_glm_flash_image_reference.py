@@ -8,6 +8,8 @@ from dllm.glm_text import _read
 from dllm.glm_generation import validate_text_config
 from dllm.glm_flash_generation import flash_text_config
 from dllm.glm_flash_image_text import FlashImageText
+from dllm.glm_flash_image_tool_text import FlashImageToolText
+from dllm.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
 from dllm.glm_flash_inline_images import decode_inline_images
 from dllm.glm_flash_images import plan_images,validate_processor
 from dllm.glm_flash_vision import vision_specs,audit_vision,ROOT
@@ -20,6 +22,7 @@ from scripts.run_glm_flash_reference import _positive
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('snapshot');parser.add_argument('--messages',required=True,help='local JSON with inline PNG/JPEG image_url parts')
+    parser.add_argument('--tools',help='local schema-bound function declarations; calls are returned, never executed')
     parser.add_argument('--context',type=_positive,default=4096);parser.add_argument('--max-new-tokens',type=_positive,default=128)
     parser.add_argument('--reasoning-effort',choices=('low','high','max'),default='max')
     parser.add_argument('--clear-history-reasoning',action='store_true')
@@ -29,6 +32,8 @@ def main(argv=None):
     parser.add_argument('--max-patches',type=_positive,default=4096)
     args=parser.parse_args(argv)
     try:
+        tools=(json.loads(_read(args.tools,1024**2),object_pairs_hook=_unique_fields) if args.tools else None)
+        if args.tools and tools is None:raise ValueError('tools file must contain function declarations')
         byte_options={name:value*1024**2 for name,value in vars(args).items() if name.endswith('_mib')}
         if any(value>2**31 for value in byte_options.values()) or args.max_new_tokens>4096 or args.max_patches>65536:
             raise ValueError('Flash image reference exceeds component/output limits')
@@ -41,28 +46,33 @@ def main(argv=None):
         if not isinstance(processor,dict) or processor.get('processor_class')!='Glm5NextProcessor':
             raise ValueError('Flash image command requires the pinned processor class')
         validate_processor(processor.get('image_processor'))
-        text=FlashImageText(args.snapshot,vocab_size=text_config.get('vocab_size'));validate_text_config(text_config,text,args.context)
+        text_type=FlashImageToolText if args.tools else FlashImageText
+        text=text_type(args.snapshot,vocab_size=text_config.get('vocab_size'));validate_text_config(text_config,text,args.context)
         if config.get('image_token_id')!=text.image_token_id:raise ValueError('Flash snapshot image token disagrees with tokenizer')
         messages=json.loads(_read(args.messages,16*1024**2),object_pairs_hook=_unique_fields)
-        decoded=decode_inline_images(messages)
+        decoded=decode_inline_images(messages,tools=tools)
         if not decoded.images:raise ValueError('Flash image command requires at least one inline image')
         plan=plan_images(decoded.images,max_patches=args.max_patches,max_workspace_bytes=byte_options['image_workspace_mib'],
                          max_output_bytes=byte_options['image_output_mib'])
         options=dict(reasoning_effort=args.reasoning_effort,clear_thinking=args.clear_history_reasoning)
-        tokens=text.image_chat_tokens(decoded.messages,plan['grids'],**options)
+        tokens=(text.image_tool_chat_tokens(decoded.messages,plan['grids'],tools,**options)
+                if args.tools else text.image_chat_tokens(decoded.messages,plan['grids'],**options))
         if len(tokens)+args.max_new_tokens>args.context:raise ValueError('Flash image prompt and output exceed context before weight loading')
         model=load_reference_model(args.snapshot,max_weight_bytes=byte_options['text_weight_mib'],
                                    projection_workspace_bytes=byte_options['projection_workspace_mib'],
                                    max_workspace_bytes=byte_options['workspace_mib'],max_output_bytes=byte_options['output_mib'])
         vision=load_reference_vision(args.snapshot,max_weight_bytes=byte_options['vision_weight_mib'],max_tokens=args.max_patches,
                                      max_workspace_bytes=byte_options['workspace_mib'],max_output_bytes=byte_options['output_mib'])
-        runner=FlashImageReferenceGenerator(model,text,vision,max_context=args.context,max_cache_bytes=byte_options['cache_mib'],
+        runner_type=FlashImageToolReferenceGenerator if args.tools else FlashImageReferenceGenerator
+        runner=runner_type(model,text,vision,max_context=args.context,max_cache_bytes=byte_options['cache_mib'],
                                             image_workspace_bytes=byte_options['image_workspace_mib'],image_output_bytes=byte_options['image_output_mib'])
         print(json.dumps(dict(scope='cpu_reference',modality='still_image',official_model_qualified=False,
                               dtype='float32',images=len(decoded.images))),flush=True)
         primary=None
         try:
-            with closing(runner.generate_images(decoded.messages,decoded.images,max_new_tokens=args.max_new_tokens,**options)) as generation:
+            iterator=(runner.generate_image_tools(decoded.messages,decoded.images,tools,max_new_tokens=args.max_new_tokens,**options)
+                      if args.tools else runner.generate_images(decoded.messages,decoded.images,max_new_tokens=args.max_new_tokens,**options))
+            with closing(iterator) as generation:
                 for event in generation:print(json.dumps(event,ensure_ascii=False),flush=True)
         except BaseException as error:primary=error;raise
         finally:

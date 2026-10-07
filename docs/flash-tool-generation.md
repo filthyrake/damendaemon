@@ -14,8 +14,9 @@ validated before checkpoint payload loading. Existing weight, cache, workspace
 and output budgets remain explicit; defaults do not admit the full official
 checkpoint. `--batch-messages conversations.json --tools functions.json` also
 accepts 1–16 equal-token-length tool histories with a shared declaration snapshot.
-Tool-plus-image generation remains outside this gate. Ordinary text, ordinary
-batch and still-image commands retain their admission.
+The separate [still-image/tool path](flash-image-tools.md) composes image inputs
+with single-request tool output. Ordinary text, ordinary batch and still-image
+commands retain their admission.
 
 Reasoning and ordinary content stream incrementally. Tool blocks are buffered
 until complete, terminated by a supported model stop marker, and validated as a

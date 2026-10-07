@@ -28,11 +28,16 @@ class FlashImageReferenceGenerator(FlashReferenceGenerator):
         if type(max_new_tokens) is not int or not 1<=max_new_tokens<=4096:raise ValueError('GLM output length must be 1..4096 tokens')
         options=dict(reasoning_effort=reasoning_effort,clear_thinking=clear_thinking)
         _,count=_render(messages,**options)
+        tokenize=lambda grids:self.text.image_chat_tokens(messages,grids,**options)
+        yield from self._generate_images(images,count,tokenize,max_new_tokens)
+
+    def _generate_images(self,images,count,tokenize,max_new_tokens,*,stream=None):
+        if type(max_new_tokens) is not int or not 1<=max_new_tokens<=4096:raise ValueError('GLM output length must be 1..4096 tokens')
         if not isinstance(images,(list,tuple)) or not 1<=len(images)==count:
             raise ValueError('Flash image response requires one prepared RGB tensor per image marker')
         patches,grids=prepare_images(images,max_patches=self.vision.max_tokens,max_workspace_bytes=self.image_workspace_bytes,
                                     max_output_bytes=self.image_output_bytes)
-        tokens=self.text.image_chat_tokens(messages,grids,**options)
+        tokens=tokenize(grids)
         if not tokens or len(tokens)+max_new_tokens>self.max_context:raise ValueError('GLM prompt and requested output exceed context')
         self.model._input_budget((1,len(tokens)),False)
         def prefill(ids,**limits):
@@ -41,4 +46,4 @@ class FlashImageReferenceGenerator(FlashReferenceGenerator):
             patches=None  # Release processor output before language cache allocation.
             values=image_embeddings(self.model,ids,[features],image_token_id=self.text.image_token_id)
             return self.model.prefill_embeddings(values,**limits)
-        yield from self._generate_tokens(tokens,max_new_tokens,prefill=prefill,blocked_token_ids=self.blocked_media)
+        yield from self._generate_tokens(tokens,max_new_tokens,prefill=prefill,blocked_token_ids=self.blocked_media,stream=stream)

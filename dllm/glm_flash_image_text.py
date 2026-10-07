@@ -64,6 +64,9 @@ class FlashImageText(FlashText):
 
     def image_chat_tokens(self,messages,image_grids,**options):
         prompt,count=_render(messages,**options)
+        return self._expand_image_tokens(prompt,count,image_grids)
+
+    def _expand_image_tokens(self,prompt,count,image_grids):
         if not isinstance(image_grids,(list,tuple)) or len(image_grids)!=count:
             raise ValueError('Flash image marker/grid count mismatch')
         lengths=[]

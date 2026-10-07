@@ -28,7 +28,7 @@ def _identity(value):
     return value
 
 
-def render_tool_chat(messages,tools,*,reasoning_effort=None,clear_thinking=False):
+def _render_tool_chat(messages,tools,*,reasoning_effort=None,clear_thinking=False,_user_content=_literal):
     if reasoning_effort not in (None,'low','high','max') or type(clear_thinking) is not bool:
         raise ValueError('unsupported Flash tool reasoning options')
     if not isinstance(messages,list) or not 1<=len(messages)<=4096:
@@ -61,7 +61,7 @@ def render_tool_chat(messages,tools,*,reasoning_effort=None,clear_thinking=False
             append(SYSTEM+_literal(message['content']));index+=1;continue
         if role=='user' and expected in ('user','after_tools'):
             if set(message)!={'role','content'}:raise ValueError('unsupported Flash user fields')
-            append(USER+_literal(message['content']));expected='assistant';index+=1;continue
+            append(USER+_user_content(message['content']));expected='assistant';index+=1;continue
         if role!='assistant' or expected not in ('assistant','after_tools'):
             raise ValueError('invalid Flash tool conversation order')
         if set(message)-{'role','content','reasoning_content','tool_calls'}:
@@ -90,6 +90,10 @@ def render_tool_chat(messages,tools,*,reasoning_effort=None,clear_thinking=False
     if expected not in ('assistant','after_tools'):raise ValueError('Flash generation needs a final user or complete tool results')
     append(ASSISTANT+THINK)
     return ''.join(parts)
+
+
+def render_tool_chat(messages,tools,*,reasoning_effort=None,clear_thinking=False):
+    return _render_tool_chat(messages,tools,reasoning_effort=reasoning_effort,clear_thinking=clear_thinking)
 
 
 class FlashToolText(FlashText):
