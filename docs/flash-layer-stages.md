@@ -15,7 +15,8 @@ Every intermediate boundary retains `[batch, tokens, residual_streams, width]`
 as finite CPU FP32 values. Only the final stage averages residual streams and
 projects logits. Reducing streams at a layer cut would change the model.
 
-First-stage input is nonempty CPU integer token IDs. Other stages accept the full
+First-stage input is nonempty CPU integer token IDs or explicitly prepared
+finite CPU FP32 embeddings. Other stages accept the full
 residual-stream chunk. Strict ranges, input geometry, vocabulary/cursors, finite
 values, context and boundary output budgets are checked before mutation. The
 existing mixed linear/sparse cache lifecycle provides per-range ownership,
@@ -54,7 +55,7 @@ provide explicit native single/equal/ragged text and tool generation. They reuse
 the pinned Flash format and existing bounded generation lifecycle; tool calls
 are returned, never executed. Ordinary model admission remains unchanged. HTTP explicitly admits the native
 Flash pipeline tool adapter, with the same reference authentication and request
-policy. Image-input remains a separate gate.
+policy. Separate image adapters admit prepared still-image features as described below.
 
 Pipeline tests compare real packed chunked/reordered logits and native text/usage
 against independent whole-model CPU controls, exercise aggregate budget and
@@ -84,11 +85,35 @@ identifies `execution: local_cpu_pipeline` and the complete stage ranges.
 pipeline tool adapter to the existing loopback HTTP service. It supports the
 same authenticated native JSON/SSE, optional serialized request queue and admin
 drain as the whole-model reference. Readiness, status and timing expose pipeline
-ranges and CPU reference scope. `--flash-images` with layer splits is rejected
-before payload loading; this gate supplies only text/tool pipeline admission.
+ranges and CPU reference scope. Add `--flash-images` for the explicit image/tool
+pipeline adapter with a separately bounded vision model.
 
 Tests check exact global admission, source receipts including final-construction
 replacement, invalid request/cut preflight, native command equivalence and
 actual queued HTTP subprocess JSON/SSE/drain/shutdown. Default and pipeline
 responses agree. Stage cleanup failure remains observable and retryable. None
 of this qualifies GPU execution, official checkpoints or practical performance.
+
+## Still-image pipelines
+
+`FlashLayerPipeline.forward_embeddings` and `prefill_embeddings` accept finite
+CPU FP32 `[batch, tokens, width]` input at the first stage. Residual streams are
+expanded exactly once, then preserved through every text-stage boundary. Normal
+token decode and row reorder continue with the same mixed-cache owner. Invalid
+feature geometry and all intermediate/final output budgets fail before execution.
+Partial stages are never accepted by the image-feature insertion helper.
+
+`FlashPipelineImageReferenceGenerator` and
+`FlashPipelineImageToolReferenceGenerator` reuse the pinned image processor,
+placeholder counts, native chat/tool format and cleanup lifecycle. Use
+`--layer-splits` with `scripts.run_glm_flash_image_reference`, or combine it with
+`--flash-images` in `scripts.serve_cpu_reference`. Text pipeline and vision weight
+allowances remain separate; processor, image/workspace, context and cache limits
+still apply. Queued HTTP retains still-image modality and full stage metadata.
+
+Tests compare prepared-feature chunks, reordered state and subsequent token
+decode against an independently expanded whole-model control. Real packed
+vision/text fixtures exercise native commands, tools, concurrent queued HTTP,
+JSON/SSE, drain and shutdown. Cancellation and retained cleanup block reuse until
+release succeeds. Controlled tool tokens prove parser plumbing, not trained image
+or tool quality; this remains local CPU evidence only.

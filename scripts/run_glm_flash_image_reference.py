@@ -22,6 +22,7 @@ from scripts.run_glm_flash_reference import _positive
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('snapshot');parser.add_argument('--messages',required=True,help='local JSON with inline PNG/JPEG image_url parts')
+    parser.add_argument('--layer-splits',type=_positive,nargs='+',help='explicit local CPU text pipeline layer cuts')
     parser.add_argument('--tools',help='local schema-bound function declarations; calls are returned, never executed')
     parser.add_argument('--context',type=_positive,default=4096);parser.add_argument('--max-new-tokens',type=_positive,default=128)
     parser.add_argument('--reasoning-effort',choices=('low','high','max'),default='max')
@@ -58,16 +59,25 @@ def main(argv=None):
         tokens=(text.image_tool_chat_tokens(decoded.messages,plan['grids'],tools,**options)
                 if args.tools else text.image_chat_tokens(decoded.messages,plan['grids'],**options))
         if len(tokens)+args.max_new_tokens>args.context:raise ValueError('Flash image prompt and output exceed context before weight loading')
-        model=load_reference_model(args.snapshot,max_weight_bytes=byte_options['text_weight_mib'],
-                                   projection_workspace_bytes=byte_options['projection_workspace_mib'],
-                                   max_workspace_bytes=byte_options['workspace_mib'],max_output_bytes=byte_options['output_mib'])
+        load_options=dict(max_weight_bytes=byte_options['text_weight_mib'],
+                          projection_workspace_bytes=byte_options['projection_workspace_mib'],
+                          max_workspace_bytes=byte_options['workspace_mib'],max_output_bytes=byte_options['output_mib'])
+        if args.layer_splits is not None:
+            from dllm.glm_flash_checkpoint_pipeline import load_reference_pipeline
+            from dllm.glm_flash_pipeline_image_generation import FlashPipelineImageReferenceGenerator,FlashPipelineImageToolReferenceGenerator
+            model=load_reference_pipeline(args.snapshot,args.layer_splits,**load_options)
+            runner_type=FlashPipelineImageToolReferenceGenerator if args.tools else FlashPipelineImageReferenceGenerator
+        else:
+            model=load_reference_model(args.snapshot,**load_options)
+            runner_type=FlashImageToolReferenceGenerator if args.tools else FlashImageReferenceGenerator
         vision=load_reference_vision(args.snapshot,max_weight_bytes=byte_options['vision_weight_mib'],max_tokens=args.max_patches,
                                      max_workspace_bytes=byte_options['workspace_mib'],max_output_bytes=byte_options['output_mib'])
-        runner_type=FlashImageToolReferenceGenerator if args.tools else FlashImageReferenceGenerator
         runner=runner_type(model,text,vision,max_context=args.context,max_cache_bytes=byte_options['cache_mib'],
                                             image_workspace_bytes=byte_options['image_workspace_mib'],image_output_bytes=byte_options['image_output_mib'])
-        print(json.dumps(dict(scope='cpu_reference',modality='still_image',official_model_qualified=False,
-                              dtype='float32',images=len(decoded.images))),flush=True)
+        scope=dict(scope='cpu_reference',modality='still_image',official_model_qualified=False,dtype='float32',images=len(decoded.images))
+        if args.layer_splits is not None:
+            scope.update(execution='local_cpu_pipeline',stage_layers=[[stage.start,stage.end] for stage in model.stages])
+        print(json.dumps(scope),flush=True)
         primary=None
         try:
             iterator=(runner.generate_image_tools(decoded.messages,decoded.images,tools,max_new_tokens=args.max_new_tokens,**options)

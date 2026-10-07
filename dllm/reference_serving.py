@@ -9,6 +9,7 @@ from .deepseek_tool_prompt import prepare_tools as prepare_deepseek_tools
 from .glm_tool_generation import GlmToolReferenceGenerator
 from .glm_pipeline_generation import PipelineToolReferenceGenerator
 from .glm_flash_pipeline_generation import FlashPipelineToolReferenceGenerator
+from .glm_flash_pipeline_image_generation import FlashPipelineImageToolReferenceGenerator
 from .glm_flash_tool_generation import FlashToolReferenceGenerator
 from .glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
 from .glm_flash_tools import FlashTools
@@ -29,13 +30,13 @@ class ReferenceRuntime:
     native_tool_calls=True
 
     def __init__(self,runner,alias='model'):
-        if type(runner) not in (DeepSeekGenerator,GlmToolReferenceGenerator,PipelineToolReferenceGenerator,FlashPipelineToolReferenceGenerator,FlashToolReferenceGenerator,FlashImageToolReferenceGenerator):
+        if type(runner) not in (DeepSeekGenerator,GlmToolReferenceGenerator,PipelineToolReferenceGenerator,FlashPipelineToolReferenceGenerator,FlashToolReferenceGenerator,FlashImageToolReferenceGenerator,FlashPipelineImageToolReferenceGenerator):
             raise ValueError('CPU HTTP needs an explicit prepared text/tool reference runner')
         if not isinstance(alias,str) or not 1<=len(alias)<=128:raise ValueError('invalid CPU reference alias')
         self.runner=runner;self.alias=alias;self.lock=threading.Lock();self.stopping=threading.Event()
-        self.images=type(runner) is FlashImageToolReferenceGenerator
+        self.images=type(runner) in (FlashImageToolReferenceGenerator,FlashPipelineImageToolReferenceGenerator)
         self.family='deepseek_v4' if isinstance(runner,DeepSeekGenerator) else 'glm5_next' if self.images or isinstance(runner,FlashToolReferenceGenerator) else 'glm_moe_dsa'
-        self.stage_layers=tuple((stage.start,stage.end) for stage in runner.model.stages) if type(runner) in (PipelineToolReferenceGenerator,FlashPipelineToolReferenceGenerator) else ()
+        self.stage_layers=tuple((stage.start,stage.end) for stage in runner.model.stages) if type(runner) in (PipelineToolReferenceGenerator,FlashPipelineToolReferenceGenerator,FlashPipelineImageToolReferenceGenerator) else ()
         self.context=runner.max_context;self.active=False;self.closed=False
         self.owner=object()
         with runner.lock:

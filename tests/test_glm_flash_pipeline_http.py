@@ -59,7 +59,7 @@ class FlashPipelineHttpTests(unittest.TestCase):
         path=self.snapshot('flash')
         with patch.dict(os.environ,self.env,clear=True),patch('dllm.glm_flash_reference_loader._payload',side_effect=AssertionError('payload')):
             for family,options in (('deepseek',['--layer-splits','1']),('flash',['--layer-splits','3']),
-                                   ('flash',['--layer-splits','1','--flash-images'])):
+                                   ('glm',['--layer-splits','1','--flash-images'])):
                 with self.assertRaises(ValueError):command.prepare(self.args(family,path,*options))
 
     def test_pipeline_cleanup_failure_remains_observable_and_retryable(self):

@@ -25,7 +25,7 @@ def parser_for_command():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('family',choices=('glm','flash','deepseek'))
     parser.add_argument('snapshot',help='existing local snapshot directory; never downloaded')
-    parser.add_argument('--layer-splits',type=bounded_integer(1,127),nargs='+',help='explicit GLM/Flash text CPU pipeline cuts; GLM cuts preserve indexer groups')
+    parser.add_argument('--layer-splits',type=bounded_integer(1,127),nargs='+',help='explicit GLM/Flash CPU pipeline cuts; GLM cuts preserve indexer groups')
     parser.add_argument('--alias',default='model')
     parser.add_argument('--port',type=bounded_integer(0,65535),default=8088)
     parser.add_argument('--connections',type=bounded_integer(1,64),default=16)
@@ -62,8 +62,8 @@ def prepare(args):
     if not 0<args.queue_timeout<=300 or (not args.queue_size and args.queue_timeout!=120):
         raise ValueError('queue timeout requires an enabled queue and a bound within 300 seconds')
     if not isinstance(args.alias,str) or not 1<=len(args.alias)<=128:raise ValueError('invalid model alias')
-    if args.layer_splits is not None and (args.family not in ('glm','flash') or args.flash_images):
-        raise ValueError('layer splits require explicit GLM or Flash text-only family')
+    if args.layer_splits is not None and (args.family not in ('glm','flash')):
+        raise ValueError('layer splits require explicit GLM or Flash family')
     if args.flash_images and args.family!='flash':raise ValueError('still-image HTTP requires explicit flash family')
     if not args.flash_images and any(getattr(args,key) is not None for key in
             ('vision_weight_mib','image_workspace_mib','image_output_mib','max_patches')):
@@ -109,6 +109,8 @@ def prepare(args):
         else:
             from dllm.glm_flash_checkpoint_pipeline import load_reference_pipeline
             from dllm.glm_flash_pipeline_generation import FlashPipelineToolReferenceGenerator as Runner
+            if args.flash_images:
+                from dllm.glm_flash_pipeline_image_generation import FlashPipelineImageToolReferenceGenerator as Runner
         model=load_reference_pipeline(args.snapshot,args.layer_splits,max_weight_bytes=args.weight_mib*1024**2,**options)
     else:model=load_reference_model(args.snapshot,max_weight_bytes=args.weight_mib*1024**2,**options)
     try:

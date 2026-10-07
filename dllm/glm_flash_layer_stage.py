@@ -67,14 +67,32 @@ class FlashLayerStage:
         elif (not _float(inputs,4) or min(inputs.shape)<1 or tuple(inputs.shape[2:])!=(self.streams,self.dim)
                 or not torch.isfinite(inputs).all()):
             raise ValueError('Flash stage requires finite CPU FP32 residual-stream chunks')
-        batch,length=inputs.shape[:2]
+        self._input_budget(inputs.shape[:2],all_logits)
+
+    def _input_budget(self,shape,all_logits):
+        batch,length=shape
         required=4*batch*length*self.streams*self.dim
         if self.last:required=max(required,4*batch*(length if all_logits else 1)*self.head.shape[0])
         if required>self.max_output_bytes:raise ValueError('Flash stage boundary exceeds output budget')
 
-    @torch.no_grad()
+    def _embeddings(self,values,all_logits):
+        if not self.first:raise ValueError('only the first Flash stage accepts prepared embeddings')
+        if type(all_logits) is not bool or (all_logits and not self.last):
+            raise ValueError('only the final Flash stage produces all-token logits')
+        if (not _float(values,3) or min(values.shape)<1 or values.shape[-1]!=self.dim or not torch.isfinite(values).all()):
+            raise ValueError('Flash prepared embeddings require finite CPU FP32 batch/token/width values')
+        self._input_budget(values.shape[:2],all_logits)
+
     def forward(self,inputs,state,*,position,all_logits=False):
         self._tokens(inputs,all_logits)
+        return self._forward(inputs,state,position=position,all_logits=all_logits,embedded=False)
+
+    def forward_embeddings(self,values,state,*,position,all_logits=False):
+        self._embeddings(values,all_logits)
+        return self._forward(values,state,position=position,all_logits=all_logits,embedded=True)
+
+    @torch.no_grad()
+    def _forward(self,inputs,state,*,position,all_logits,embedded):
         if not isinstance(state,FlashModelState):raise ValueError('invalid Flash stage cache')
         with state.lock:
             state._usable()
@@ -82,8 +100,8 @@ class FlashLayerStage:
                     or inputs.shape[0]!=_batch(state.layers[0].attention)
                     or position+inputs.shape[1]>state.capacity):
                 raise ValueError('Flash stage cache owner/position/shape mismatch')
-            hidden=(F.embedding(inputs,self.embedding).unsqueeze(-2).expand(-1,-1,self.streams,-1)
-                    if self.first else inputs)
+            hidden=inputs if embedded or not self.first else F.embedding(inputs,self.embedding)
+            if self.first:hidden=hidden.unsqueeze(-2).expand(-1,-1,self.streams,-1)
             try:
                 for block,layer in zip(self.blocks,state.layers):hidden=block.forward(hidden,layer,position=position)
                 result=self._logits(hidden,all_logits) if self.last else hidden

@@ -2,6 +2,7 @@
 import torch
 from torch.nn import functional as F
 from .glm_flash_model import FlashModel
+from .glm_flash_layer_pipeline import FlashLayerPipeline
 
 
 @torch.no_grad()
@@ -13,7 +14,8 @@ def image_embeddings(model,tokens,features,*,image_token_id):
     rows provide an empty matrix. This validates count/width, not semantic image
     identity, processor provenance or chat marker syntax. No input is mutated.
     """
-    if not isinstance(model,FlashModel):raise ValueError('image insertion requires a Flash reference model')
+    if not isinstance(model,FlashModel) and type(model) is not FlashLayerPipeline:
+        raise ValueError('image insertion requires an explicit Flash reference model or pipeline')
     model._tokens(tokens,False)
     if (type(image_token_id) is not int or not 0<=image_token_id<model.embedding.shape[0]
             or not isinstance(features,(list,tuple)) or len(features)!=tokens.shape[0]

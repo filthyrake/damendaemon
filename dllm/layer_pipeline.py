@@ -151,7 +151,12 @@ class CpuLayerPipeline:
     def _tokens(self, tokens, all_logits):
         if type(all_logits) is not bool: raise ValueError('CPU layer pipeline all_logits must be boolean')
         self.stages[0]._tokens(tokens, False)
-        batch, length = tokens.shape
+        self._input_budget(tokens.shape,all_logits)
+
+    def _input_budget(self,shape,all_logits):
+        if (type(all_logits) is not bool or len(shape)!=2 or any(type(v) is not int or v<1 for v in shape)):
+            raise ValueError('invalid CPU pipeline input geometry')
+        batch, length = shape
         hidden_bytes = 4 * batch * length * self.boundary_width
         if any(hidden_bytes > stage.max_output_bytes for stage in self.stages):
             raise ValueError('CPU layer pipeline hidden boundary exceeds output budget')
@@ -162,6 +167,10 @@ class CpuLayerPipeline:
     @torch.no_grad()
     def forward(self, tokens, state, *, position, all_logits=False):
         self._tokens(tokens, all_logits)
+        return self._forward(tokens,state,position=position,all_logits=all_logits)
+
+    @torch.no_grad()
+    def _forward(self,tokens,state,*,position,all_logits,first_forward=None):
         if not isinstance(state, LayerPipelineState) or state.owner is not self:
             raise ValueError('CPU layer pipeline cache belongs to another owner')
         with state.lock:
@@ -171,8 +180,9 @@ class CpuLayerPipeline:
                 raise ValueError('CPU layer pipeline input/cursor/capacity mismatch')
             hidden = tokens
             try:
-                for stage, local in zip(self.stages, state.stages):
-                    hidden = stage.forward(hidden, local, position=position, all_logits=all_logits and stage.last)
+                for index,(stage,local) in enumerate(zip(self.stages,state.stages)):
+                    forward=first_forward if index==0 and first_forward is not None else stage.forward
+                    hidden=forward(hidden,local,position=position,all_logits=all_logits and stage.last)
             except BaseException:
                 state._poison(); raise
             state.position = position + tokens.shape[1]
