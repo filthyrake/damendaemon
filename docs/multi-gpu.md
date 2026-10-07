@@ -328,3 +328,26 @@ headers before payload reads, truncated payloads, absolute deadlines and close
 cancellation. Remote worker lifecycle, model-state acknowledgement, secure socket
 provisioning, GPU copies, cross-vendor execution, RDMA and throughput remain
 unqualified. No model-serving or hardware-support claim follows from these tests.
+
+`dllm.host_stage_channel.HostStageChannel` binds the owned host tensor transport
+to fixed stage command and completion records. Its setup exchange checks epoch,
+context, slot count and vocabulary after the caller-supplied model/session
+identity agrees. Both peers admit a command before the caller may transfer
+activations. Execution completion transfers checked sampled int64 IDs and
+exchanges a phase/sequence-bound acknowledgement before the coordinator commits
+its slot cursor. Release, ping and stop use the same acknowledgement boundary.
+The owner must finish CPU work before acknowledging and abort on execution errors.
+
+Local TCP tests cover prefill, decode, packed prefill, slot release/reuse, stop,
+receiver ownership rejection, corrupted acknowledgements/results, deadlines and
+prompt close cancellation. This retains `StageState`'s existing explicit bounds
+(up to four slots and 512 context); it is transport/lifecycle groundwork, not
+modern-model or long-context admission. There is no remote model worker,
+listener, authenticated provisioning or GPU fence in this component. Each frame
+uses an absolute transport deadline; each method has a fixed number of frames.
+
+Completion is not a durable distributed transaction: a peer can send its last
+acknowledgement before learning that the other side disconnected or rejected it.
+Peers may briefly have different local commit positions. Failure closes and
+poisons the epoch when observed; uncertain commands are never replayed and no
+cache recovery is attempted. A fresh owned session is required after failure.
