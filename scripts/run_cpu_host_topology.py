@@ -97,7 +97,11 @@ def run(args,*,family='qwen'):
             options=dict(epoch=args.epoch,max_weight_bytes=args.weight_mib*2**20,
                 max_cache_bytes=args.cache_mib*2**20,max_workspace_bytes=args.workspace_mib*2**20,
                 projection_workspace_bytes=args.projection_workspace_mib*2**20,max_output_bytes=args.output_mib*2**20)
-            if family=='flash':
+            if family=='deepseek':
+                from dllm.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker
+                options.pop('max_workspace_bytes');options['workspace_bytes']=options.pop('projection_workspace_bytes')
+                worker=build_deepseek_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options)
+            elif family=='flash':
                 from dllm.glm_flash_host_pipeline_build import build_glm_flash_host_pipeline_worker
                 worker=build_glm_flash_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options)
             elif family=='glm':
@@ -116,17 +120,19 @@ def run(args,*,family='qwen'):
             emit(dict(scope=scope,event='ready',role=args.role,stage=args.index,
                 stage_layers=[list(pair) for pair in plan.ranges],topology_identity=plan.identity.hex(),
                 model_identity_verified=worker.model_identity_verified,source_model_id=plan.source_identity.hex(),
-                official_model_qualified=False,**({'native_chat':args.native_chat} if family in ('glm','flash') else {})))
+                official_model_qualified=False,**({'native_chat':args.native_chat} if family in ('glm','flash','deepseek') else {})))
         if args.role=='worker':
             while not worker.closed:worker.step()
             emit(dict(event='stopped',stage=args.index))
         elif args.role=='serve':
-            if family in ('glm','flash'):
+            if family in ('glm','flash','deepseek'):
                 from scripts.glm_host_http import serve
                 serve(worker,text,args,auth,family=family)
             else:serve_worker_pair(worker,text,args,auth,pair_type=HostServingTopology)
-        elif family in ('glm','flash') and args.native_chat:
-            if family=='flash':
+        elif family in ('glm','flash','deepseek') and args.native_chat:
+            if family=='deepseek':
+                from dllm.deepseek_host_generation import HostDeepSeekGenerator as Runner
+            elif family=='flash':
                 from dllm.glm_flash_host_generation import HostFlashGenerator as Runner
             else:
                 from dllm.glm_host_generation import HostGlmGenerator as Runner

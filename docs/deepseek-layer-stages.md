@@ -131,3 +131,26 @@ This is explicit prepared-host admission, separate from generic local reference
 HTTP. Native host command/HTTP integration follows. CPU controls, real local TLS
 and controlled output tokens after packed arithmetic test format and lifecycle;
 they do not establish trained-model tool quality or accelerator performance.
+
+## Standalone native host command
+
+`python -m scripts.run_deepseek_host_topology worker|complete SNAPSHOT ...`
+uses the shared explicit topology launcher. All participants require `--native-chat`,
+matching `--model-id`, epoch, context/slot/chunk limits and a `--plan` JSON object
+containing complete `ranges`. Workers use nonzero `--index`, literal bind address,
+port and the coordinator's `--peer-cert`. The coordinator uses index zero and an
+ordered `--peers` file with each stage's literal address, port, TLS hostname and
+certificate. Every process supplies `--ca`, `--cert` and `--key`; credentials are
+provisioned by the caller. No discovery or remote provisioning occurs.
+
+The command uses `fp4_fp8_reference` and projection `--projection-workspace-mib`,
+with separate weight/cache/output limits. `--verify-model-id` hashes the bounded
+snapshot before connecting and checks source receipts after loading. Verification
+mode is part of the session identity and must match on every process.
+
+Completion accepts `--prompt`, `--messages` or `--batch-messages`, optional
+`--ragged-batch`, `--tools`, `--thinking` and `--keep-history-reasoning`. Native
+request formats, tools, context and topology are checked before connections or
+weight payloads. Output reports actual stage ranges and verification status.
+Final completion events are withheld until every worker acknowledges STOP.
+Raw token mode, foreign thinking options and HTTP are not admitted by this gate.

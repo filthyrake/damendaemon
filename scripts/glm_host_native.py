@@ -28,7 +28,7 @@ def validate_mode(args):
     native=getattr(args,'native_chat',False)
     fields=('messages','batch_messages','tools','reasoning_effort')
     request_options=any(getattr(args,name,None) is not None for name in fields)
-    request_options|=getattr(args,'ragged_batch',False) or getattr(args,'clear_history_reasoning',False)
+    request_options|=any(getattr(args,name,False) for name in ('ragged_batch','clear_history_reasoning','thinking','keep_history_reasoning'))
     if not native and request_options:raise ValueError('native host options require --native-chat')
     if native and (args.tokens is not None or args.batch_inputs is not None):
         raise ValueError('native host chat cannot accept raw token inputs')
@@ -41,7 +41,7 @@ def validate_mode(args):
     return native
 
 
-def prepare_request(args,text):
+def prepare_request(args,text,*,family='glm'):
     if args.role=='worker':return None
     if sum(value is not None for value in (args.prompt,args.messages,args.batch_messages))!=1:
         raise ValueError('native host completion requires one prompt or messages source')
@@ -53,7 +53,12 @@ def prepare_request(args,text):
     if args.tools is not None and tools is None:raise ValueError('native tools require function declarations')
     batch=args.batch_messages is not None;rows=messages if batch else [messages]
     if not isinstance(rows,list) or not 1<=len(rows)<=args.slots:raise ValueError('native host batch exceeds host slots')
-    options=dict(reasoning_effort=args.reasoning_effort,clear_thinking=args.clear_history_reasoning)
-    tokenize=(lambda row,**kw:text.tool_chat_tokens(row,tools,**kw)) if tools is not None else None
+    if family=='deepseek':
+        options=dict(enable_thinking=args.thinking,drop_thinking=not args.keep_history_reasoning,tools=tools)
+        tokenize=None
+    else:
+        options=dict(reasoning_effort=args.reasoning_effort,clear_thinking=args.clear_history_reasoning)
+        tokenize=(lambda row,**kw:text.tool_chat_tokens(row,tools,**kw)) if tools is not None else None
     prompts,_=prepare_batch(text,rows,args.max_new_tokens,args.context,tokenize=tokenize,ragged=args.ragged_batch,**options)
+    if family=='deepseek':options.pop('tools')
     return NativeRequest(messages,tools,batch,args.ragged_batch,options,args.max_new_tokens,prompts)
