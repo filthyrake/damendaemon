@@ -1776,5 +1776,15 @@ It returns independently owned final state and leaves all inputs unchanged.
 Temporary/output budgets are admitted before scans or allocations; nonfinite
 inputs, overflow, invalid gate ranges and malformed geometry fail explicitly.
 Independent scalar controls and exact full/chunk/single-token continuation checks
-pass on synthetic fixtures. Convolution/projection integration and owned layer
-state are separate remaining gates.
+pass on synthetic fixtures. The owned layer integration is described below.
+
+`glm_flash_linear.FlashLinearAttention` composes floating checkpoint-shaped
+projections, depthwise causal SiLU convolution, the bounded forget gate, KDA
+recurrence, sigmoid-gated RMS normalization and output projection. Its CPU FP32
+state owns convolution tails, recurrent matrices and an explicit cursor/capacity.
+Full prefill, continued chunks, decode and reordered/shrinking/duplicated batches
+are checked against independently assembled synthetic controls. Calls publish
+replacement state only after all output checks pass; injected failures preserve
+the previous state for retry. Closing releases the owned tensors; reuse requires
+a fresh state. Retained-cache limits exclude temporary overlap, which is covered
+by separate workspace admission. No official Flash weights have been executed.
