@@ -68,20 +68,39 @@ class CpuStageSlots:
         try: self.close()
         except BaseException: error.add_note('CPU stage slot cleanup incomplete; retain owner and retry close')
 
+    def _embedding_tokens(self, tokens): self.stage._tokens(tokens, False)
+
+    def _routing_tokens(self, hidden, tokens):
+        if tokens is not None: raise ValueError('this CPU stage does not accept routing token IDs')
+
+    def _allocate_slots(self, ids):
+        for slot in ids:
+            if self.states[slot] is None:
+                self.states[slot] = self.stage.new_state(1, self.context, max_cache_bytes=self.max_cache_bytes)
+
+    def _forward_slot(self, hidden, slot, start, tokens):
+        return self.stage.forward_activations(hidden, self.states[slot], position=start)
+
+    @property
+    def _vocab_size(self): return self.stage.head.shape[0]
+
+    def _project(self, hidden): return self.stage._logits(hidden, False)
+
     @torch.no_grad()
     def embedding(self, tokens):
         with self.lock:
             self._ready()
             if not self.stage.first: raise ValueError('only the first CPU stage embeds tokens')
-            self.stage._tokens(tokens, False)
+            self._embedding_tokens(tokens)
             return self._embed(tokens)
 
     @torch.no_grad()
-    def forward_layers(self, hidden, positions, slots, prefill, prefill_start=0):
+    def forward_layers(self, hidden, positions, slots, prefill, prefill_start=0, *, token_ids=None):
         with self.lock:
             self._ready()
             if (not _float(hidden, 2+len(self._hidden_shape)) or tuple(hidden.shape[2:]) != self._hidden_shape
-                    or hidden.shape[0] > self.max_batch or hidden.numel()*4 > self.stage.max_output_bytes
+                    or not 1 <= hidden.shape[0] <= self.max_batch or hidden.shape[1] < 1
+                    or hidden.numel()*4 > self.stage.max_output_bytes
                     or not torch.isfinite(hidden).all()
                     or not isinstance(positions, torch.Tensor) or positions.dtype != torch.int64
                     or positions.device.type != 'cpu' or positions.shape != hidden.shape[:2]
@@ -89,6 +108,7 @@ class CpuStageSlots:
                     or slots.device.type != 'cpu' or slots.shape != (hidden.shape[0],)
                     or type(prefill) is not bool):
                 raise ValueError('invalid CPU slot hidden/position/slot geometry')
+            self._routing_tokens(hidden, token_ids)
             ids = slots.tolist(); starts = positions[:, 0].tolist(); length = hidden.shape[1]
             if (len(set(ids)) != len(ids) or any(not 0 <= slot < self.max_batch for slot in ids)
                     or (not prefill and length != 1)
@@ -101,11 +121,10 @@ class CpuStageSlots:
                     raise ValueError('CPU slot cursor/positions/context disagree')
             outputs = []
             try:
-                for slot in ids:
-                    if self.states[slot] is None:
-                        self.states[slot] = self.stage.new_state(1, self.context, max_cache_bytes=self.max_cache_bytes)
+                self._allocate_slots(ids)
                 for row, (slot, start) in enumerate(zip(ids, starts)):
-                    outputs.append(self.stage.forward_activations(hidden[row:row+1], self.states[slot], position=start))
+                    tokens = None if token_ids is None else token_ids[row:row+1]
+                    outputs.append(self._forward_slot(hidden[row:row+1], slot, start, tokens))
                 result = torch.cat(outputs, dim=0)
             except BaseException as error:
                 self._fail(error); raise
@@ -117,10 +136,10 @@ class CpuStageSlots:
         with self.lock:
             self._ready()
             if (not self.stage.last or not _float(hidden, 1+len(self._hidden_shape)) or tuple(hidden.shape[1:]) != self._hidden_shape
-                    or hidden.shape[0] > self.max_batch or not torch.isfinite(hidden).all()
-                    or hidden.shape[0]*self.stage.head.shape[0]*4 > self.stage.max_output_bytes):
+                    or not 1 <= hidden.shape[0] <= self.max_batch or not torch.isfinite(hidden).all()
+                    or hidden.shape[0]*self._vocab_size*4 > self.stage.max_output_bytes):
                 raise ValueError('invalid CPU slot final hidden/logit extent')
-            try: return self.stage._logits(hidden[:, None], False)
+            try: return self._project(hidden[:, None])
             except BaseException as error:
                 self._fail(error); raise
 

@@ -67,3 +67,20 @@ optional serialized queue, SSE, drain and signal cleanup apply. Metadata reports
 Packed arithmetic comparisons, source receipts, native single/equal/ragged/tool
 requests, real subprocess commands and HTTP JSON/SSE/queue/drain controls are tested.
 CPU fixtures do not qualify official weights, practical context, GPUs or speed.
+
+## Independent request slots
+
+`DeepSeekStageSlots(stage, context, max_batch=4, max_cache_bytes=...)` reserves
+capacity for every admitted slot before allocating compressed-attention state.
+It shares checked cursor, release and failure ownership with GLM/Flash slots,
+but explicitly requires `forward_layers(..., token_ids=original_ids)`. Both IDs
+and full residual streams are checked before mutation. New slots use stage
+prefill; continuation chunks use cached per-token decode and preserve every
+intermediate activation for the next stage. This bounded reference path makes no
+chunked-prefill speed claim.
+
+Slots may have unequal cursors and be selected in any distinct order. Release
+clears only selected requests and permits reuse at position zero. Partial compute
+or release failure retires the owner; retain it and retry close until all stage
+and block cleanup succeeds. The final stage applies the learned head only through
+`output_logits`. No token-bearing network transport is admitted by this interface.
