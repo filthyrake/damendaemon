@@ -7,6 +7,7 @@ from tokenizers import decoders
 from .deepseek_text import DeepSeekText, BOS, EOS, USER, ASSISTANT, THINK, END_THINK
 from .deepseek_output import DeepSeekOutput
 from .floating_model import FloatingModel
+from .deepseek_tool_prompt import prepare_tools, validate_tool_arguments
 
 
 from .bytelevel_stream import BYTE_VALUES,ByteLevelStream
@@ -96,7 +97,7 @@ class ReferenceGenerator:
         if type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 4096:
             raise ValueError('reference output length must be 1..4096 tokens')
         tokens=self.text.chat_tokens(messages,enable_thinking=enable_thinking,drop_thinking=drop_thinking,tools=tools)
-        names=frozenset(tool['function']['name'] for tool in tools) if tools is not None else frozenset()
+        contract=prepare_tools(tools)[1] if tools is not None else {}
         if not tokens or len(tokens)+max_new_tokens > self.max_context:
             raise ValueError('prompt and requested output exceed reference context')
         stream=TokenStream(self.text,enable_thinking=enable_thinking,allow_tool_calls=tools is not None)
@@ -124,8 +125,7 @@ class ReferenceGenerator:
                     logits=self.model.decode(torch.tensor([[token]],dtype=torch.int64),state,position=len(tokens)+index)
             for event in stream.finish(truncated=reason == 'length'):
                 if event.get('tool_calls'):
-                    if any(call['function']['name'] not in names for call in event['tool_calls']):
-                        raise ValueError('generated undeclared V4 tool')
+                    validate_tool_arguments(event['tool_calls'],contract)
                     reason='tool_calls'
                 yield event
         except BaseException as error:

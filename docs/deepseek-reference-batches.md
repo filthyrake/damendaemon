@@ -23,8 +23,8 @@ until its complete tool block and EOS are parsed. Undeclared names, malformed or
 truncated calls fail the batch before any such call is emitted. The allowed-name
 set is captured before generation, so later caller mutations cannot authorize a
 new tool. Tool rows finish with `tool_calls`; other rows retain `stop`/`length`.
-This preserves the existing codec scope: JSON object arguments and declared
-names are validated; arbitrary supplied parameter JSON Schemas are not enforced.
+Tools with `strict: true` additionally enforce their parameter schema on historical
+and generated calls. Other tools retain name and finite JSON-object validation.
 
 Events include the original zero-based `row`. Every row has its own parser,
 reasoning/content channels, stop condition and output limit. Finished rows are
@@ -48,4 +48,24 @@ The declared function-name set is captured after prompt validation and before
 prefill in both single-request and batch generation. Mutating the caller's tools
 while a stream is suspended cannot add or revoke declarations for that rendered
 request. A subsequent request validates the then-current declarations afresh.
-This is name/lifetime enforcement, not parameter JSON-schema validation.
+Strict schemas are also copied before prefill, so caller mutation cannot relax or
+tighten an in-flight request's parameter contract.
+
+## Strict parameter validation
+
+Set `strict: true` inside the tool's `function` object. Its `parameters` must be an
+object schema; omitted parameters mean an empty object with no extra properties.
+The bounded shared subset supports object properties/required/additionalProperties,
+array items, primitive types, primitive enum/const, and nested anyOf. Extra object
+properties default to disallowed. Each schema is limited to 16 KiB, depth 16 and
+256 nodes; unsupported keywords fail before prefill and CLI checkpoint payload
+loading. Non-strict schemas retain their previous behavior.
+
+Historical calls must satisfy the same contract before prompt encoding. Generated
+calls are checked as a complete block before publication. An invalid block emits
+no tool calls from that block, fails generation and releases owned state; earlier
+content or another row's already returned calls cannot be retracted. No final
+success event is emitted on failure. This is final-value validation, not grammar
+constrained sampling: a model can still generate invalid arguments and fail the
+request. Tools are never executed. CPU tests do not establish official-model tool
+quality or hardware performance.

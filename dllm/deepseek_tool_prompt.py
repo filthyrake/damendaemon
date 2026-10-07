@@ -7,6 +7,7 @@ Copyright (c) 2023 DeepSeek. See docs/licenses/deepseek-MIT.txt.
 import json
 
 from .deepseek_tools import render_tool_calls, _name, _json
+from .structured import response_schema, matches_schema
 from .deepseek_text import MAX_TEXT_BYTES, THINK, END_THINK
 
 TOOLS_TEMPLATE = """## Tools
@@ -37,10 +38,11 @@ You MUST strictly follow the above defined tool name and parameter schemas to in
 """
 
 
-def tool_schema_prompt(tools):
+def prepare_tools(tools):
+    """Render declarations and own a detached, validated name/schema contract."""
     if not isinstance(tools,list) or not 1 <= len(tools) <= 64:
         raise ValueError('V4 tools require 1..64 function schemas')
-    names=set()
+    contract={}
     schemas=[]
     size=0
     for tool in tools:
@@ -50,8 +52,7 @@ def tool_schema_prompt(tools):
         if not isinstance(function,dict) or set(function)-{'name','description','parameters','strict'}:
             raise ValueError('unsupported V4 function fields')
         name=_name(function.get('name'))
-        if name in names:raise ValueError('duplicate V4 tool name')
-        names.add(name)
+        if name in contract:raise ValueError('duplicate V4 tool name')
         if ('description' in function and not isinstance(function['description'],str)
                 or 'parameters' in function and not isinstance(function['parameters'],dict)
                 or 'strict' in function and type(function['strict']) is not bool):
@@ -61,11 +62,36 @@ def tool_schema_prompt(tools):
         _json(encoded) # finite JSON and bounded Unicode, including nested schema values
         size+=len(encoded.encode('utf-8'))
         if size>MAX_TEXT_BYTES:raise ValueError('V4 schemas exceed text byte limit')
+        parameters=None
+        if function.get('strict') is True:
+            parameters=function.get('parameters', {'type':'object','additionalProperties':False})
+            if parameters.get('type') != 'object':
+                raise ValueError('strict V4 parameters require an object schema')
+            parameters=json.loads(response_schema({'type':'json_schema','json_schema':{
+                'name':'tool_parameters','schema':parameters}}))
+        contract[name]=parameters
         schemas.append(encoded)
     prompt=TOOLS_TEMPLATE.format(dsml_token='｜DSML｜',thinking_start_token=THINK,
                                  thinking_end_token=END_THINK,tool_schemas='\n'.join(schemas))
     if len(prompt.encode('utf-8'))>MAX_TEXT_BYTES:raise ValueError('V4 tool prompt exceeds text byte limit')
-    return prompt,names
+    return prompt,contract
+
+
+def tool_schema_prompt(tools):
+    prompt,contract=prepare_tools(tools)
+    return prompt,set(contract)
+
+
+def validate_tool_arguments(calls,contract):
+    """Check an entire parsed/renderable call block before it is published."""
+    for call in calls:
+        function=call['function']
+        name=function['name']
+        if name not in contract:
+            raise ValueError('undeclared V4 tool')
+        schema=contract[name]
+        if schema is not None and not matches_schema(_json(function['arguments']),schema):
+            raise ValueError('V4 tool arguments violate strict parameter schema')
 
 
 def render_tool_chat(messages,tools,*,enable_thinking=False,drop_thinking=True,reasoning_effort=None):
@@ -73,7 +99,7 @@ def render_tool_chat(messages,tools,*,enable_thinking=False,drop_thinking=True,r
     if type(drop_thinking) is not bool:raise ValueError('thinking retention must be boolean')
     if not isinstance(messages,list) or not 1<=len(messages)<=4096:
         raise ValueError('V4 tool chat requires 1..4096 messages')
-    schema,names=tool_schema_prompt(tools)
+    schema,contract=prepare_tools(tools)
     prepared=[]
     index=0
     consumed=len(schema.encode('utf-8'))
@@ -106,12 +132,12 @@ def render_tool_chat(messages,tools,*,enable_thinking=False,drop_thinking=True,r
                 or set(message)-{'role','content','reasoning_content','tool_calls'}):
             raise ValueError('tool calls require an assistant message')
         block=render_tool_calls(calls)
+        validate_tool_arguments(calls,contract)
         ids=[]
         for call in calls:
             identity=call.get('id')
             if not isinstance(identity,str) or not 1<=len(identity)<=128 or identity in ids:
                 raise ValueError('tool history requires distinct call IDs')
-            if call['function']['name'] not in names:raise ValueError('undeclared historical tool')
             ids.append(identity)
         content=message.get('content')
         if content is None:content=''
