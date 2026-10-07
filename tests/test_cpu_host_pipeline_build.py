@@ -30,8 +30,8 @@ class CpuHostPipelineBuildTests(unittest.TestCase):
                             context=16,slots=2,chunk_size=4,frame_bytes=4096,**options)
 
     def links(self,plan):
-        links=[[],[],[]]
-        for index in (1,2):
+        links=[[] for _ in plan.ranges]
+        for index in range(1,len(plan.ranges)):
             fixture=test_host_tls.HostTlsTests();self.addCleanup(fixture.doCleanups)
             for rank,sock in enumerate(fixture.pair()):
                 transport=HostTensorChannel(sock,plan.stage_identity(index),rank,max_frame_bytes=4096,timeout=2)

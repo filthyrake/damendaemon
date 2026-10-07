@@ -17,9 +17,8 @@ class HostServingPair:
     def __init__(self,worker,text,*,chunk_size=128):
         if not isinstance(worker,HostHybridWorker) or not isinstance(text,CpuReferenceText):
             raise ValueError('host serving needs a prepared worker and CPU tokenizer')
-        if getattr(worker,'topology',None) is not None:
-            raise ValueError('planned host HTTP requires an explicit topology adapter')
         with worker.lock:
+            self._validate_topology(worker,chunk_size)
             if (worker.rank!=0 or not worker.ready or worker.failed or worker.closed
                     or any(worker.channel.state.lengths) or getattr(worker,'_completion_owner',None) is not None
                     or worker.mapped_vocab_size!=text.vocab_size or not text.excluded_ids<=worker.excluded_ids
@@ -31,9 +30,14 @@ class HostServingPair:
             self.max_batch=worker.stage.max_batch
             self.state=worker.channel.state
             self.identity=worker.channel.transport.identity
+            self.stage_layers=[[0,worker.stage.layer_end],[worker.stage.layer_end,worker.stage.c['num_hidden_layers']]]
             self.model=SimpleNamespace(max_context=worker.stage.context,quantization=worker.stage.model.quantization,
                 eos=text.eos_ids,tokenizer=text.tokenizer,raw_tokens=self._tokens,chat_tokens=self._chat)
             worker._completion_owner=object()
+
+    def _validate_topology(self,worker,chunk_size):
+        if getattr(worker,'topology',None) is not None:
+            raise ValueError('planned host HTTP requires an explicit topology adapter')
 
     def _tokens(self,prompt):
         tokens=self.text.tokens(prompt,max_context=self.model.max_context,max_new_tokens=1,chunk_size=self.chunk_size)
@@ -66,6 +70,23 @@ class HostServingPair:
     def close(self):self.worker.close()
 
 
+class HostServingTopology(HostServingPair):
+    """Explicit adapter for a ready planned coordinator and all its owned links."""
+    def _validate_topology(self,worker,chunk_size):
+        from .host_pipeline_worker import HostPipelineCoordinator
+        if (not isinstance(worker,HostPipelineCoordinator) or type(chunk_size) is not int
+                or not 1<=chunk_size<=worker.topology.chunk_size
+                or any(not c.ready or c.closed or c.state.failed or c.state.closed
+                       or c.state.pending is not None or any(c.state.lengths)
+                       or c.state.sequence!=worker.channel.state.sequence for c in worker.channels)):
+            raise ValueError('planned HTTP requires an idle ready topology and bounded chunk rows')
+
+    def __init__(self,worker,text,*,chunk_size=128):
+        super().__init__(worker,text,chunk_size=chunk_size)
+        self.identity=worker.topology.identity
+        self.stage_layers=[list(pair) for pair in worker.topology.ranges]
+
+
 class HostDistributedRuntime(DistributedRuntime):
     """HTTP serving over CPU peers; all performance metadata stays explicit."""
     source_tier='cpu_reference'
@@ -82,12 +103,17 @@ class HostDistributedRuntime(DistributedRuntime):
 
     def manage(self,action,**options):
         if action!='status' or options:raise ValueError('CPU host session model management is unsupported')
-        stage=self.pair.worker.stage
+        worker=self.pair.worker
+        topology=getattr(worker,'topology',None)
+        details={} if topology is None else dict(topology_identity=topology.identity.hex(),
+            source_model_id=topology.source_identity.hex(),
+            coordinator_model_identity_verified=bool(getattr(worker,'model_identity_verified',False)),
+            remote_source_verification='not_attested')
         return dict(device='cpu',scope='cpu_host_reference',official_model_qualified=False,
             context=self.pair.model.max_context,text_chat=hasattr(self.pair.text,'chat_identity'),
             models=[dict(id=self.alias,residency='cpu',quantization=self.pair.model.quantization,
                          session_identity=self.pair.identity.hex())],
-            distributed=True,stage_layers=[[0,stage.layer_end],[stage.layer_end,stage.c['num_hidden_layers']]],
+            distributed=True,stage_layers=[list(pair) for pair in self.pair.stage_layers],**details,
             max_batch_size=self.max_batch,packed_prefill=False,active=self.active,queued=self.requests.qsize(),
             completed=self.completed,heartbeats=self.heartbeats,
             stream_buffer_events=STREAM_BUFFER_EVENTS,client_admission_turns=True,

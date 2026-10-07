@@ -48,8 +48,8 @@ commit before a later stage fails, so reconnect/resume/replay is unsupported.
 Actual loopback mutual-TLS tests compare three- and four-stage FP32/Q4/Q8
 execution against independently expanded whole-model logits and cache state,
 and cover cancellation, admission failure and intermediate/final worker loss.
-These are prepared-stage APIs: snapshot construction, command bootstrap and HTTP
-integration still need explicit topology adapters. Source identity remains a
+Stage-local snapshot construction and explicit HTTP integration are described
+below. Multi-process command bootstrap remains a separate integration gate. Source identity remains a
 caller assertion unless a separate verified snapshot path supplies it. No GPU,
 real-network, model-quality or performance qualification is implied.
 
@@ -77,3 +77,24 @@ worker reports `model_identity_verified` and `source_model_id`; the default is
 an unverified operator assertion. Verification is a local property of that build,
 not remote attestation or proof against a privileged writer racing the filesystem.
 No network listener, remote deployment or credential issuance is performed.
+
+## Explicit HTTP adapter
+
+`HostServingTopology(coordinator, text, chunk_size=...)` transfers an idle,
+ready planned coordinator to `HostDistributedRuntime`. Every link must be ready
+at the same sequence, with no occupied or pending slot; chunk rows cannot exceed
+the plan. The original `HostServingPair` continues to require two-stage workers.
+Only one completion/serving owner may claim the coordinator.
+
+The adapter uses the existing bounded queue, client admission/decode turns,
+optional interleaved prefill, stream backpressure, cancellation and drain owner.
+It supports raw completions and, with an explicitly prepared `CpuReferenceChat`,
+text chat. Cancellation releases slots across all stages before reuse; uncertain
+execution closes every owned link and health becomes unavailable. Drain stops
+new admission and waits for acknowledged release. The caller still owns peer
+loops, HTTP lifetime and explicit STOP after the scheduler exits.
+
+Status reports all planned layer ranges and the topology identity. Source-byte
+verification is reported only as `coordinator_model_identity_verified`; remote
+verification remains `not_attested`. CPU fixture success does not establish
+real-network latency, practical model quality, GPU execution or a service SLO.
