@@ -4,13 +4,7 @@ Names/geometry follow official inference/model.py and the tensor index at
 60d8d70770c6776ff598c94bb586a859a38244f1 (MIT). No model admission or weight
 materialization. MTP tensors are explicitly excluded and reported, not validated.
 """
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True)
-class TensorSpec:
-    shape: tuple
-    storage: str
+from .checkpoint_contract import TensorSpec
 
 
 DTYPES = {
@@ -138,30 +132,5 @@ def audit_headers(config, headers):
 
 def audit_snapshot(path, *, names_only=False):
     """Audit local metadata; names-only mode needs no shard files at all."""
-    import json
-    from pathlib import Path
-    from .checkpoint import _unique_fields, inspect_snapshot
-    from .download import INDEX, snapshot_files
-    path = Path(path)
-    def read(filename, limit):
-        target = path/filename
-        if target.stat().st_size > limit:
-            raise ValueError('checkpoint metadata exceeds audit size limit')
-        return json.loads(target.read_text(), object_pairs_hook=_unique_fields)
-    config = read('config.json', 1024*1024)
-    # Validate architecture/size before inspecting shard files.
-    tensor_specs(config)
-    if names_only:
-        index = read(INDEX, 16*1024*1024)
-        if (not isinstance(index, dict) or not isinstance(index.get('weight_map'), dict)
-                or any(not isinstance(v, str) for v in index['weight_map'].values())):
-            raise ValueError('checkpoint index requires string shard paths')
-        snapshot_files([INDEX, *index['weight_map'].values()], index)
-        report = audit_names(config, index['weight_map'])
-    else:
-        _, inventory = inspect_snapshot(path)
-        headers = {name:header for shard in inventory.values() for name, header in shard['tensors'].items()}
-        report = audit_headers(config, headers)
-    return dict(scope='tensor_names_only' if names_only else 'tensor_header_contract',
-                main_tensors=report['main_tensors'], excluded_mtp_count=len(report['excluded_mtp']),
-                mtp_validated=False, weight_values_read=False, model_execution_qualified=False)
+    from .checkpoint_contract import audit_snapshot as audit
+    return audit(path,tensor_specs,audit_names,audit_headers,names_only=names_only)

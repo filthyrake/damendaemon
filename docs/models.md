@@ -540,3 +540,27 @@ Malformed, undeclared or length-truncated calls fail and release the reference
 cache. Schemas, histories and expanded prompt/context limits are checked before
 weight loading. This is CPU development coverage, not real-model tool accuracy
 or production HTTP qualification.
+
+### GLM-5.3 checkpoint contract (metadata only)
+
+`python -m scripts.audit_glm_checkpoint SNAPSHOT --names-only` checks the pinned
+`zai-org/GLM-5.3` layout at `aca966e4e02791568aa6a4ced368624b3d897f42`
+using only local config/index files. Omit `--names-only` to check local tensor
+headers as well, without materializing tensor values. The pinned index SHA-256
+is `e0fe7f28c1f853d4824e4d796374e3dacf1fe470988773952c79b063768134bf`.
+It contains 117,060 main tensors and 1,569 explicitly excluded MTP tensors.
+The index-name fingerprint is checked in the regression suite.
+
+The independent contract covers latent Q/KV projection dimensions, per-layer
+full/shared indexer ownership, dense and routed/shared expert matrices, and
+128×128 E4M3 block layouts with FP32 `weight_scale_inv` metadata. Geometry follows
+the [official Transformers v5.15.0 GLM implementation](https://github.com/huggingface/transformers/blob/v5.15.0/src/transformers/models/glm_moe_dsa/modeling_glm_moe_dsa.py).
+Unsupported geometry, quantization changes, missing/extra tensors and header
+shape/storage mismatches fail before payload loading. Shared bounded audit
+plumbing also serves the DeepSeek metadata command.
+
+The included config fixture retains the pinned [GLM-5.3 license](licenses/glm53-LICENSE.txt).
+Names-only success does not prove actual shard shapes, tensor values, numerical
+quality, model execution, context capacity or hardware support. The local header
+tests use synthetic tensors; official full-shard and model qualification remain
+open under #56.
