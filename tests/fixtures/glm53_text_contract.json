@@ -1,0 +1,246 @@
+{
+  "repository": "zai-org/GLM-5.3",
+  "revision": "aca966e4e02791568aa6a4ced368624b3d897f42",
+  "model_vocab_size": 154880,
+  "tokenizer_vocab_size": 154856,
+  "sha256": {
+    "tokenizer.json": "19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d",
+    "tokenizer_config.json": "98b1271574f41abf89427ae2dda030d94dc9478f0edc5a8bd240db213c6fd5fc",
+    "generation_config.json": "ac76b43d8683d3b930126870fc8be73d8679308fe752fa1f381096d8354f6a55",
+    "chat_template.jinja": "3740abcea51c45830cb3ca562084ad5fb2ef53589376f73332e9886f93ade41c"
+  },
+  "cases": [
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hello"
+        }
+      ],
+      "options": {},
+      "prompt": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+      "token_ids": [
+        154822,
+        154824,
+        154826,
+        25062,
+        287,
+        29905,
+        371,
+        25,
+        7487,
+        154827,
+        9703,
+        154828,
+        154841
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "你好，世界！"
+        }
+      ],
+      "options": {
+        "reasoning_effort": "low"
+      },
+      "prompt": "[gMASK]<sop><|system|>Reasoning Effort: Low<|user|>你好，世界！<|assistant|><think>",
+      "token_ids": [
+        154822,
+        154824,
+        154826,
+        25062,
+        287,
+        29905,
+        371,
+        25,
+        12035,
+        154827,
+        109377,
+        3837,
+        99011,
+        6313,
+        154828,
+        154841
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "Be clear."
+        },
+        {
+          "role": "user",
+          "content": "Hi"
+        },
+        {
+          "role": "assistant",
+          "content": "  Answer  ",
+          "reasoning_content": "Prior reasoning."
+        },
+        {
+          "role": "user",
+          "content": "Continue"
+        }
+      ],
+      "options": {
+        "reasoning_effort": "high"
+      },
+      "prompt": "[gMASK]<sop><|system|>Reasoning Effort: High<|system|>Be clear.<|user|>Hi<|assistant|><think>Prior reasoning.</think>Answer<|user|>Continue<|assistant|><think>",
+      "token_ids": [
+        154822,
+        154824,
+        154826,
+        25062,
+        287,
+        29905,
+        371,
+        25,
+        5124,
+        154826,
+        3430,
+        2797,
+        13,
+        154827,
+        13041,
+        154828,
+        154841,
+        49154,
+        32559,
+        13,
+        154842,
+        16127,
+        154827,
+        23461,
+        154828,
+        154841
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hi"
+        },
+        {
+          "role": "assistant",
+          "content": "<think>prior</think>  Answer  "
+        },
+        {
+          "role": "user",
+          "content": "Continue"
+        }
+      ],
+      "options": {},
+      "prompt": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hi<|assistant|><think>prior</think>Answer<|user|>Continue<|assistant|><think>",
+      "token_ids": [
+        154822,
+        154824,
+        154826,
+        25062,
+        287,
+        29905,
+        371,
+        25,
+        7487,
+        154827,
+        13041,
+        154828,
+        154841,
+        63772,
+        154842,
+        16127,
+        154827,
+        23461,
+        154828,
+        154841
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hi"
+        },
+        {
+          "role": "assistant",
+          "content": "  Answer ",
+          "reasoning_content": "prior"
+        },
+        {
+          "role": "user",
+          "content": "Continue"
+        }
+      ],
+      "options": {
+        "clear_thinking": true
+      },
+      "prompt": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hi<|assistant|><think></think>Answer<|user|>Continue<|assistant|><think>",
+      "token_ids": [
+        154822,
+        154824,
+        154826,
+        25062,
+        287,
+        29905,
+        371,
+        25,
+        7487,
+        154827,
+        13041,
+        154828,
+        154841,
+        154842,
+        16127,
+        154827,
+        23461,
+        154828,
+        154841
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hi"
+        },
+        {
+          "role": "assistant",
+          "content": "before<think>a</think>between</think> final"
+        },
+        {
+          "role": "user",
+          "content": "Continue"
+        }
+      ],
+      "options": {
+        "reasoning_effort": "max"
+      },
+      "prompt": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hi<|assistant|><think>a</think>final<|user|>Continue<|assistant|><think>",
+      "token_ids": [
+        154822,
+        154824,
+        154826,
+        25062,
+        287,
+        29905,
+        371,
+        25,
+        7487,
+        154827,
+        13041,
+        154828,
+        154841,
+        64,
+        154842,
+        11816,
+        154827,
+        23461,
+        154828,
+        154841
+      ]
+    }
+  ]
+}

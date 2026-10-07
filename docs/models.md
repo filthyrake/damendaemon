@@ -686,3 +686,17 @@ files are rejected. Shared index reading now bounds the read itself, eliminating
 a stat-versus-file-growth gap. Synthetic snapshot controls match independent
 native FP8 decoding and full/cached logits; official checkpoint values, tokenizer
 integration, serving and hardware qualification remain open.
+
+`GlmText` independently renders the pinned ordinary text template, including
+default Max reasoning effort, explicit Low/High, assistant history extraction
+and optional history-reasoning clearing. The official template always opens
+`<think>`; this adapter does not invent a non-thinking switch. Tools, media,
+developer messages and incomplete histories fail explicitly. Inputs and local
+metadata reads are bounded, and no remote tokenizer code is imported. Six
+pinned official-template prompt/token-ID fixtures were checked with the actual
+local tokenizer. Its 154,856 contiguous mapped IDs occupy a 154,880-row model
+vocabulary; the 24 padded rows cannot be decoded as text. EOS, next-user and
+observation markers are the declared generation stops. The tokenizer/template
+revision and file hashes are recorded in `tests/fixtures/glm53_text_contract.json`;
+the preserved GLM license remains in `docs/licenses/glm53-LICENSE.txt`. This is
+text-format evidence, not trained-model generation or tool support.
