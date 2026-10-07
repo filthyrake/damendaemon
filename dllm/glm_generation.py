@@ -78,14 +78,22 @@ class ReferenceGenerator:
         if type(max_new_tokens) is not int or not 1<=max_new_tokens<=4096:
             raise ValueError('GLM output length must be 1..4096 tokens')
         tokens=self.text.chat_tokens(messages,reasoning_effort=reasoning_effort,clear_thinking=clear_thinking)
+        yield from self._generate_tokens(tokens,max_new_tokens)
+
+    def _generate_tokens(self,tokens,max_new_tokens,*,prefill=None,blocked_token_ids=()):
+        if type(max_new_tokens) is not int or not 1<=max_new_tokens<=4096:
+            raise ValueError('GLM output length must be 1..4096 tokens')
+        if any(type(token) is not int or not 0<=token<self.text.tokenizer_size for token in blocked_token_ids):
+            raise ValueError('invalid GLM blocked output tokens')
         if not tokens or len(tokens)+max_new_tokens>self.max_context:
             raise ValueError('GLM prompt and requested output exceed context')
         stream=TokenStream(self.text);state=None;primary=None
         try:
             with self.lock:
                 self.cleanup()
-                logits,state=self.model.prefill(torch.tensor([tokens],dtype=torch.int64,device='cpu'),
-                                                 capacity=len(tokens)+max_new_tokens,max_cache_bytes=self.max_cache_bytes)
+                prepare=self.model.prefill if prefill is None else prefill
+                logits,state=prepare(torch.tensor([tokens],dtype=torch.int64,device='cpu'),
+                                     capacity=len(tokens)+max_new_tokens,max_cache_bytes=self.max_cache_bytes)
             reason='length'
             for index in range(max_new_tokens):
                 if (not isinstance(logits,torch.Tensor) or logits.shape!=(1,self.text.vocab_size)
@@ -94,6 +102,9 @@ class ReferenceGenerator:
                 # Unmapped padded rows are excluded without mutating model logits.
                 mapped=logits[0,:self.text.tokenizer_size]
                 if not torch.isfinite(mapped).all():raise ValueError('nonfinite GLM generation logits')
+                if blocked_token_ids:
+                    mapped=mapped.clone();mapped[list(blocked_token_ids)]=-torch.inf
+                    if not torch.isfinite(mapped).any():raise ValueError('no eligible GLM output tokens')
                 token=int(mapped.argmax())
                 for event in stream.feed(token):yield event
                 if token in self.text.eos:reason='stop';break

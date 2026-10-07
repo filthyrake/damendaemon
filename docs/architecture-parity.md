@@ -1944,3 +1944,15 @@ Literal media markers in text, video/audio and URL parts are rejected. The
 inherited ordinary `chat_tokens` still rejects multipart content. This adapter
 binds placeholder counts; callers remain responsible for supplying the matching
 images/features, and no network/file retrieval or serving admission is added.
+
+`FlashImageReferenceGenerator.generate_images(messages, rgb_images, ...)`
+composes the explicit CPU path: bounded RGB patches, grid-expanded chat tokens,
+vision features, checked language embeddings and ordinary autoregressive decode.
+It validates geometry/tokenizer/configuration agreement and context before vision
+execution or cache allocation. The common generation loop owns streaming,
+stop/length handling, padded-vocabulary exclusion, abandoned-iterator release and
+retryable failed cleanup. Unsupported media-output markers are excluded from
+image-response sampling. Existing plain-text generation remains available.
+Fixture tests cover real tiny language execution and separately controlled
+response/lifecycle cases. This reference API adds no HTTP or accelerator
+admission and makes no trained image-semantic or performance claim.
