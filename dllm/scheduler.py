@@ -19,6 +19,7 @@ from .stopping import stop_sequences, text_delta
 from .prompts import decode_output
 from .admission import wait_for_batch, validate_queue_limits
 from .request_scope import cache_scope
+from .fair_admission import FairAdmission
 
 
 @dataclass(eq=False)
@@ -96,6 +97,7 @@ class BatchedRuntime:
         self.admission = threading.BoundedSemaphore(queue_size)
         self.condition = threading.Condition()
         self.pending = deque()
+        self.fair_admission = FairAdmission()
         self.requests = set()
         self.closed = False
         self.draining = False
@@ -360,20 +362,37 @@ class BatchedRuntime:
         return finished
 
     def _next(self, alias=None):
-        """Caller holds the condition. Preserve FIFO across model groups."""
+        """Caller holds the condition; client turns never cross group barriers."""
         while self.pending:
-            first = self.pending[0]
-            if first.cancelled.is_set():
+            first=self.pending[0]
+            now=time.perf_counter()
+            if first.cancelled.is_set() or now-first.start>self.queue_timeout:
                 self.pending.popleft()
-                self._finish(first)
-            elif time.perf_counter() - first.start > self.queue_timeout:
-                self.pending.popleft()
-                self._finish(first, BusyError("request queue timeout"))
-            elif alias is not None and (first.command is not None or first.alias != alias):
+                self._finish(first,None if first.cancelled.is_set() else BusyError('request queue timeout'))
+                continue
+            if alias is not None and (first.command is not None or first.alias!=alias):
                 return None
-            else:
-                first.queue_seconds = max(0, time.perf_counter()-first.start)
+            if first.command is not None:
+                self.fair_admission.reset()
+                first.queue_seconds=max(0,now-first.start)
                 return self.pending.popleft()
+            # Inspect only the leading same-model generation group. Compact its
+            # expired/cancelled entries in one pass, avoiding repeated deque
+            # removal and preserving every later command/model barrier.
+            live=[];scanned=0
+            for request in self.pending:
+                if request.command is not None or request.alias!=first.alias:break
+                scanned+=1
+                if request.cancelled.is_set():self._finish(request)
+                elif now-request.start>self.queue_timeout:self._finish(request,BusyError('request queue timeout'))
+                else:live.append(request)
+            for _ in range(scanned):self.pending.popleft()
+            if not live:continue # cancellation can arrive without taking this condition
+            chosen=self.fair_admission.choose(first.alias,live)
+            self.pending.extendleft(reversed([request for request in live if request is not chosen]))
+            chosen.queue_seconds=max(0,now-chosen.start)
+            return chosen
+        self.fair_admission.reset()
         return None
 
     def _prepare(self,request,executor):

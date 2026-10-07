@@ -718,3 +718,19 @@ This uses a monotonic rolling window shared by handler threads in one server.
 History is bounded by each configured request cap, pruned on the next attempt,
 and resets on process restart. It is request admission control, not actual token
 rate fairness, a persistent/distributed quota or a per-client capacity reservation.
+
+### Client turns within generation groups
+
+Named clients use their existing opaque request scopes for scheduler admission
+turns. Within the leading contiguous generation group for one model, the client
+least recently admitted receives the next slot; FIFO is preserved within each
+client. A newly waiting client can receive a turn ahead of another client's
+queued burst. Shared/admin/anonymous generation remains one lane. Identity state
+is bounded by waiting lanes and cleared when idle, on a model change, or at a
+management command. Cancelled/expired entries are removed before selection.
+
+Turns never cross a different-model or management-command barrier, preserving
+model draining and command order. Embedding/reranking/scoring commands remain
+serialized barriers. This is request admission fairness, not token-weighted
+service, distributed quotas or a measured user latency/throughput SLO. Active
+requests retain their existing execution and cancellation behavior.
