@@ -415,3 +415,20 @@ rejection, stalled handshake cleanup and close interruption. TLS 1.3 may surface
 a rejected client certificate at the client's first application I/O; the required
 framed session handshake must succeed before any stage is admitted. No remote
 hardware, network throughput or GPU qualification is claimed.
+
+### Prepared CPU quantized stage reference
+
+`dllm.cpu_hybrid_stage.CpuHybridStage` accepts explicitly prepared CPU
+Qwen3.5 text tensors in floating, canonical Q4_0 or Q8_0 form. Each stage owns
+only its layer caches and selected weight/scale bindings. Packed projections
+remain tiled; floating controls use FP32. Constructor limits admit retained
+weights, cache/rotary tables and conversion scratch before allocation, while
+execution separately bounds workspace and outputs. A failure after execution
+starts poisons the stage; close remains available. Coordinators own cursors.
+
+The host worker accepts these explicit CPU stages and includes quantization in
+its setup contract. Fixture tests compare split stages, chunked prefill,
+reordered decode and actual loopback token exchange with decoded FP32 controls.
+This is a CPU reference building block, not accelerator admission, trained-model
+quality, practical-context or network performance qualification. Existing GPU
+stage restrictions remain in force.

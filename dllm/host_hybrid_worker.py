@@ -26,7 +26,7 @@ class HostHybridWorker:
                 or (channel.rank==0 and (not stage.first or stage.last))
                 or (channel.rank==1 and (stage.first or not stage.last))):
             raise ValueError('host hybrid worker needs fresh compatible CPU FP32 stage ownership')
-        encoded=json.dumps(dict(config=stage.c,dtype=str(stage.compute_dtype)),sort_keys=True,
+        encoded=json.dumps(dict(config=stage.c,dtype=str(stage.compute_dtype),quantization=stage.model.quantization),sort_keys=True,
                            separators=(',',':'),allow_nan=False).encode()
         if len(encoded)>1024**2:raise ValueError('host hybrid configuration exceeds metadata limit')
         self.contract=hashlib.sha256(encoded).digest()
