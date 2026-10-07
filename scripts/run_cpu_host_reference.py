@@ -28,7 +28,10 @@ def parser_for_command():
     parser.add_argument('--server-name',help='TLS server certificate hostname; required for complete')
     for name in ('ca','cert','key','peer-cert'):
         parser.add_argument('--'+name,required=True,help='local TLS file')
-    parser.add_argument('--model-id',required=True,help='64 hex digits identifying the externally verified snapshot')
+    parser.add_argument('--model-id',required=True,help='64 hex digits identifying the snapshot; operator asserted unless --verify-model-id')
+    parser.add_argument('--verify-model-id',action='store_true',help='hash contained local snapshot before connecting and check it stays unchanged through loading')
+    parser.add_argument('--identity-max-mib',type=_positive,default=2048)
+    parser.add_argument('--identity-timeout',type=float,default=60.)
     parser.add_argument('--split',type=_positive,required=True,help='first layer owned by output worker')
     parser.add_argument('--epoch',type=_positive,default=1)
     parser.add_argument('--context',type=_positive,default=512)
@@ -83,6 +86,15 @@ def prepare(args):
             raise ValueError('invalid CPU host serving inputs, queue or lifetime bounds')
     if len(args.model_id)!=64 or any(c not in '0123456789abcdefABCDEF' for c in args.model_id):
         raise ValueError('model identity requires exactly 64 hexadecimal digits')
+    if (not 1<=args.identity_max_mib<=2**20 or not 0<args.identity_timeout<=3600
+            or (not args.verify_model_id and (args.identity_max_mib!=2048 or args.identity_timeout!=60))):
+        raise ValueError('identity limits require verification and valid byte/time bounds')
+    verified=None
+    if args.verify_model_id:
+        from dllm.cpu_snapshot_identity import fingerprint
+        verified=fingerprint(args.snapshot,max_bytes=args.identity_max_mib*1024**2,timeout=args.identity_timeout)
+        if verified.model_id!=args.model_id.lower():raise ValueError('local snapshot does not match model identity')
+        args.snapshot=str(verified.root)
     config=read_json(Path(args.snapshot)/'config.json',1024**2)
     if (not isinstance(config,dict) or config.get('model_type')!='qwen3_5_text'
             or 'text_config' in config or 'vision_config' in config):
@@ -104,18 +116,21 @@ def prepare(args):
     digest=hashlib.sha256(bytes.fromhex(args.model_id))
     digest.update(hashlib.sha256(text.tokenizer.to_str().encode()).digest())
     digest.update(json.dumps(sorted(text.eos_ids)).encode())
+    if verified is not None:
+        verified.verify_unchanged()
+        digest.update(b'verified-cpu-source-v1')
     context=(server_context if args.role=='worker' else client_context)(ca_file=args.ca,cert_file=args.cert,key_file=args.key)
     pin=certificate_pin(args.peer_cert)
-    return address,c,text,inputs,limits,digest.digest(),context,pin
+    return address,c,text,inputs,limits,digest.digest(),context,pin,verified
 
 
 def emit(event):print(json.dumps(event,ensure_ascii=False),flush=True)
 
 
 def run(args):
-    address,c,text,inputs,limits,identity,context,pin=prepare(args)
     from dllm.http_auth import AuthPolicy
     auth=AuthPolicy.from_env() if args.role=='serve' else None
+    address,c,text,inputs,limits,identity,context,pin,verified=prepare(args)
     connection=listener=transport=worker=runner=None
     primary=None
     try:
@@ -141,9 +156,10 @@ def run(args):
         except CpuHostWorkerBuildError as error:
             worker=error
             raise
+        if verified is not None:verified.verify_unchanged()
         worker.handshake()
         if args.role!='serve':
-            emit(dict(scope='cpu_host_reference',event='ready',role=args.role,quantization=args.quantization,official_model_qualified=False))
+            emit(dict(scope='cpu_host_reference',event='ready',role=args.role,quantization=args.quantization,official_model_qualified=False,model_identity_verified=args.verify_model_id,source_model_id=args.model_id.lower()))
         if rank:
             while not worker.closed:worker.step()
             emit(dict(event='stopped'))
@@ -194,7 +210,8 @@ def serve_worker_pair(worker,text,args,auth):
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         previous=signal.signal(signal.SIGTERM,interrupt)
         emit(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',
-            scope='cpu_host_reference',official_model_qualified=False,model=args.alias))
+            scope='cpu_host_reference',official_model_qualified=False,model=args.alias,
+            model_identity_verified=args.verify_model_id,source_model_id=args.model_id.lower()))
         try:runtime.run(idle_timeout=args.idle_timeout,heartbeat_interval=args.heartbeat_interval)
         except KeyboardInterrupt:interrupt()
         except (OSError,RuntimeError,EOFError,ValueError):

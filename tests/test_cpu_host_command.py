@@ -92,6 +92,49 @@ class CpuHostCommandTests(unittest.TestCase):
         with patch.object(cli,'connect_peer',side_effect=AssertionError('network')),redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit):cli.main(self.args('complete',1234))
 
+    def test_verified_snapshot_peers_and_mixed_mode_rejection(self):
+        from dllm.cpu_snapshot_identity import fingerprint
+        identity=fingerprint(self.path).model_id
+        extra=['--verify-model-id','--model-id',identity]
+        for verified in (True,False):
+            worker,port=self.start_worker(extra=extra)
+            complete=subprocess.run([sys.executable,'-m','scripts.run_cpu_host_reference',
+                *self.args('complete',port),*(extra if verified else ['--model-id',identity])],
+                capture_output=True,text=True,timeout=15,env=self.environment)
+            _,error=worker.communicate(timeout=8)
+            self.assertEqual(complete.returncode,0 if verified else 2,complete.stderr)
+            self.assertEqual(worker.returncode,0 if verified else 2,error)
+            if verified:
+                events=[json.loads(line) for line in complete.stdout.splitlines()]
+                self.assertTrue(events[0]['model_identity_verified'])
+                self.assertEqual(events[0]['source_model_id'],identity)
+                self.assertEqual([e['usage']['completion_tokens'] for e in events if 'finish_reason' in e],[3,1])
+            else:self.assertNotIn('finish_reason',complete.stdout)
+
+    def test_verified_mismatch_precedes_network_and_loading(self):
+        with (patch.object(cli,'connect_peer',side_effect=AssertionError('network')),
+              patch.object(cli,'build_cpu_host_worker',side_effect=AssertionError('payload')),
+              redirect_stderr(io.StringIO())):
+            with self.assertRaises(SystemExit) as caught:
+                cli.main(self.args('complete',1234)+['--verify-model-id'])
+            self.assertEqual(caught.exception.code,2)
+
+    def test_mutation_during_load_fails_before_handshake(self):
+        from dllm.cpu_snapshot_identity import fingerprint
+        from unittest.mock import Mock
+        identity=fingerprint(self.path).model_id
+        worker=Mock()
+        def build(*args,**kwargs):
+            config=self.path/'config.json';config.write_text(config.read_text()+' ')
+            return worker
+        with (patch.object(cli,'connect_peer',return_value=Mock()),
+              patch.object(cli,'HostTensorChannel',return_value=Mock()),
+              patch.object(cli,'build_cpu_host_worker',side_effect=build),redirect_stderr(io.StringIO())):
+            with self.assertRaises(SystemExit) as caught:
+                cli.main(self.args('complete',1234)+['--verify-model-id','--model-id',identity])
+            self.assertEqual(caught.exception.code,2)
+        worker.handshake.assert_not_called();worker.close.assert_called_once()
+
     def test_worker_accept_timeout_is_bounded(self):
         worker,_=self.start_worker(extra=['--timeout','0.2'])
         output,error=worker.communicate(timeout=5)

@@ -110,3 +110,36 @@ the shared queue, context, slot and output limits.
 Local subprocess tests cover real authenticated HTTP/SSE, authentication failure,
 normal idle STOP, SIGTERM cleanup and invalid serving preflight. No service was
 deployed to remote hardware, and no GPU or full-model performance is claimed.
+
+### Optional local source identity verification
+
+`python -m scripts.fingerprint_cpu_snapshot SNAPSHOT` prints a versioned SHA-256
+identity and per-file digests. Pass that `model_id` to **both** peers with
+`--verify-model-id --model-id HEX`. Without the verification flag the identifier
+remains an operator assertion. Mixing modes fails session agreement.
+
+The fingerprint binds the selected safetensors shards, their relative paths,
+`config.json`, `tokenizer.json`, and any generation/tokenizer configuration and
+safetensors index. It includes source bytes, not merely decoded tensor values;
+repacking or changing JSON whitespace changes the identifier. Unrelated files
+are ignored. No tensor decoding or download occurs. Files must be regular and
+contained below the resolved snapshot directory; symlinks below that root,
+including Hugging Face cache blob links, are rejected. Use a materialized local
+snapshot. The utility does not copy it automatically.
+
+Defaults cap total source bytes at 2 GiB and hashing time at 60 seconds. Explicit
+utility `--max-mib`/`--timeout` and peer `--identity-max-mib`/`--identity-timeout`
+can increase those caps to 1 TiB/3600 seconds. Reads use at most 1 MiB buffers;
+there are also 256-shard, 1024-root-entry and metadata limits. The deadline is
+checked between filesystem operations; it cannot interrupt a blocked filesystem
+syscall. An oversized snapshot fails before shard hashing, rather than silently
+verifying only the stage-local subset.
+
+Each peer hashes before connecting, then checks inventory, inode, size and
+nanosecond modification/change timestamps after metadata preparation and stage
+loading, before handshake. Source changes abort the owned session. Readiness
+reports `model_identity_verified` and `source_model_id`; the transport's
+`session_identity` additionally binds effective tokenizer/EOS and verification
+mode. This detects ordinary local source changes, not malicious privileged
+filesystem manipulation or remote attestation. It does not qualify the model's
+quality, context capacity or performance.

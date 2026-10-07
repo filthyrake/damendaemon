@@ -24,8 +24,8 @@ class CpuHostServeCommandTests(unittest.TestCase):
         index=args.index('--batch-inputs');del args[index:index+2]
         return args+['--http-port','0','--heartbeat-interval','.1']
 
-    def start_service(self,*,idle='1',environment=None,extra=()):
-        worker,port=self.fixture.start_worker()
+    def start_service(self,*,idle='1',environment=None,extra=(),worker_extra=()):
+        worker,port=self.fixture.start_worker(extra=worker_extra)
         path=self.fixture.path/'http-service.jsonl';output=path.open('w')
         process=subprocess.Popen([sys.executable,'-m','scripts.run_cpu_host_reference',*self.args(port),'--idle-timeout',idle,*extra],
             stdout=output,stderr=subprocess.PIPE,text=True,env=environment or self.fixture.environment)
@@ -62,6 +62,18 @@ class CpuHostServeCommandTests(unittest.TestCase):
         self.assertEqual(json.loads(worker_output.splitlines()[-1])['event'],'stopped')
         self.assertEqual(json.loads(path.read_text().splitlines()[-1])['event'],'stopped')
         self.assertNotIn(environment['DLLM_API_KEY'],path.read_text()+error+worker_error)
+
+    def test_verified_http_snapshot_ready_and_completion(self):
+        from dllm.cpu_snapshot_identity import fingerprint
+        identity=fingerprint(self.fixture.path).model_id
+        extra=['--verify-model-id','--model-id',identity]
+        service,worker,ready,_=self.start_service(extra=extra,worker_extra=extra)
+        self.assertTrue(ready['model_identity_verified']);self.assertEqual(ready['source_model_id'],identity)
+        payload=json.dumps(dict(model='model',prompt=[1,2],max_tokens=2)).encode()
+        with urlopen(Request(ready['url']+'/v1/completions',payload,{'Content-Type':'application/json'}),timeout=5) as response:
+            self.assertEqual(json.load(response)['usage']['completion_tokens'],2)
+        _,error=service.communicate(timeout=6);_,peer_error=worker.communicate(timeout=6)
+        self.assertEqual(service.returncode,0,error);self.assertEqual(worker.returncode,0,peer_error)
 
     def test_sigterm_closes_service_and_peer(self):
         service,worker,ready,_=self.start_service(idle='0')
