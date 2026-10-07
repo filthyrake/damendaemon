@@ -101,3 +101,22 @@ is unchanged. Single text, tools, equal-length batches and opt-in ragged cohorts
 use the explicit pipeline adapters when cuts are supplied. The initial output
 identifies `execution: local_cpu_pipeline` and every stage range. This is one
 local CPU process; it does not start workers, open a network or qualify hardware.
+
+## Explicit loopback HTTP
+
+The CPU reference server accepts the same GLM-only cuts:
+
+```sh
+python -m scripts.serve_cpu_reference glm /path/to/snapshot \
+  --layer-splits 2 --context 1024 --weight-mib 256 --cache-mib 256 \
+  --port 8088 --queue-size 4
+```
+
+The command preserves existing authentication and bounded serialized queue/SSE
+behavior. Readiness, model status and response timing identify
+`local_cpu_pipeline` and its layer ranges. Failed cleanup inside a stage makes
+health unavailable just like a retained aggregate release. Cancellation and drain
+use the complete pipeline owner; a successfully cleaned request leaves the owner
+available for a fresh state. This remains local CPU execution, not multi-host or
+GPU serving. Tests use real loopback subprocesses, authenticated JSON/SSE,
+concurrent queued requests, drain and cooperative shutdown.

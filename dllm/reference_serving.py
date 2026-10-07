@@ -7,6 +7,7 @@ import uuid
 from .deepseek_generation import ReferenceGenerator as DeepSeekGenerator
 from .deepseek_tool_prompt import prepare_tools as prepare_deepseek_tools
 from .glm_tool_generation import GlmToolReferenceGenerator
+from .glm_pipeline_generation import PipelineToolReferenceGenerator
 from .glm_flash_tool_generation import FlashToolReferenceGenerator
 from .glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
 from .glm_flash_tools import FlashTools
@@ -27,17 +28,21 @@ class ReferenceRuntime:
     native_tool_calls=True
 
     def __init__(self,runner,alias='model'):
-        if type(runner) not in (DeepSeekGenerator,GlmToolReferenceGenerator,FlashToolReferenceGenerator,FlashImageToolReferenceGenerator):
+        if type(runner) not in (DeepSeekGenerator,GlmToolReferenceGenerator,PipelineToolReferenceGenerator,FlashToolReferenceGenerator,FlashImageToolReferenceGenerator):
             raise ValueError('CPU HTTP needs an explicit prepared text/tool reference runner')
         if not isinstance(alias,str) or not 1<=len(alias)<=128:raise ValueError('invalid CPU reference alias')
         self.runner=runner;self.alias=alias;self.lock=threading.Lock();self.stopping=threading.Event()
         self.images=type(runner) is FlashImageToolReferenceGenerator
         self.family='deepseek_v4' if isinstance(runner,DeepSeekGenerator) else 'glm5_next' if self.images or isinstance(runner,FlashToolReferenceGenerator) else 'glm_moe_dsa'
+        self.stage_layers=tuple((stage.start,stage.end) for stage in runner.model.stages) if type(runner) is PipelineToolReferenceGenerator else ()
         self.context=runner.max_context;self.active=False;self.closed=False
         self.owner=object()
         with runner.lock:
             if getattr(runner,'_http_owner',None) is not None:raise ValueError('CPU reference runner already belongs to HTTP')
             runner._http_owner=self.owner
+
+    def execution_status(self):
+        return dict(execution='local_cpu_pipeline',stage_layers=[list(pair) for pair in self.stage_layers]) if self.stage_layers else {}
 
     def model_ids(self):return [self.alias]
     def model_manifest(self):raise ValueError('CPU reference cannot be exported as a production GPU model manifest')
@@ -48,13 +53,14 @@ class ReferenceRuntime:
     def cleanup_pending(self):
         runner=self.runner
         return bool(runner is not None and (runner.failed_cleanups
-            or getattr(runner.model,'failed_cleanups',[]) or getattr(runner.model,'failed_prefills',[])))
+            or getattr(runner.model,'failed_cleanups',[]) or getattr(runner.model,'failed_prefills',[])
+            or getattr(runner.model,'cleanup_pending',False)))
 
     def manage(self,action,**options):
         if action!='status' or options:raise ValueError('CPU reference model management is unsupported')
         return dict(device='cpu',scope='cpu_reference',official_model_qualified=False,model_type=self.family,
             context=self.context,modality='still_image' if self.images else 'text',models=[dict(id=self.alias,residency='closed' if self.closed else 'cpu')],
-            active=self.active,closed=self.closed,closing=self.stopping.is_set(),cleanup_pending=self.cleanup_pending(),max_batch_size=1)
+            active=self.active,closed=self.closed,closing=self.stopping.is_set(),cleanup_pending=self.cleanup_pending(),max_batch_size=1,**self.execution_status())
 
     def prepare_tools(self,tools,choice=None):
         tools=validate_tools(tools)
@@ -139,7 +145,7 @@ class ReferenceRuntime:
         usage=dict(final['usage']);usage['total_tokens']=usage['prompt_tokens']+usage['completion_tokens']
         yield dict(finish_reason=final['finish_reason'],usage=usage,timing=dict(source_tier='cpu_reference',
             kernel_backend=self.family+'-cpu-reference',official_model_qualified=False,
-            total_seconds=time.perf_counter()-started,max_batch_size=1))
+            total_seconds=time.perf_counter()-started,max_batch_size=1,**self.execution_status()))
 
 
 def handler_for_reference(runtime,auth=None):

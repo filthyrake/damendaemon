@@ -88,6 +88,10 @@ class GlmLayerPipeline:
         self.lock = threading.RLock()
 
     @property
+    def cleanup_pending(self):
+        return bool(self.failed_cleanups or any(stage.failed_cleanups for stage in self.stages))
+
+    @property
     def embedding(self):
         return self.stages[0].embedding
 
