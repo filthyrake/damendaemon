@@ -7,7 +7,7 @@ from .planned_host_stage_channel import PlannedHostStageChannel
 from .stage_protocol import StageState
 
 
-def build_reference_host_worker(path, topology, index, transports, *, model_type, load_stage, owned_stage, error_type, epoch, verify_source=False,
+def build_reference_host_worker(path, topology, index, transports, *, model_type, load_stage, owned_stage, error_type, epoch, quantization='fp8_reference', verify_source=False,
         identity_max_bytes=2*1024**3, identity_timeout=60, max_weight_bytes=256*1024**2,
         projection_workspace_bytes=8*1024**2, max_workspace_bytes=64*1024**2,
         max_output_bytes=64*1024**2, max_cache_bytes=256*1024**2):
@@ -20,7 +20,7 @@ def build_reference_host_worker(path, topology, index, transports, *, model_type
     """
     bounds=(max_weight_bytes,projection_workspace_bytes,max_workspace_bytes,max_output_bytes,max_cache_bytes)
     if (not isinstance(topology,HostTopology) or topology.config.get('model_type')!=model_type
-            or topology.quantization!='fp8_reference' or type(index) is not int
+            or topology.quantization!=quantization or type(index) is not int
             or not 0<=index<len(topology.ranges) or type(verify_source) is not bool
             or type(identity_max_bytes) is not int or not 1<=identity_max_bytes<=2**40
             or type(identity_timeout) not in (int,float) or not 0<identity_timeout<=3600

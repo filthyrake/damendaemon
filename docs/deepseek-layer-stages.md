@@ -84,3 +84,27 @@ clears only selected requests and permits reuse at position zero. Partial comput
 or release failure retires the owner; retain it and retry close until all stage
 and block cleanup succeeds. The final stage applies the learned head only through
 `output_logits`. No token-bearing network transport is admitted by this interface.
+
+## Prepared token-bearing host stages
+
+`HostTopology` explicitly admits DeepSeek with `quantization='fp4_fp8_reference'`.
+Its immutable identity includes all model options, complete contiguous ranges,
+source identity, token exclusions, slot/context/frame limits and the DeepSeek
+integer-token-before-activation protocol. Width includes every residual stream.
+Other model families retain their existing wire format.
+
+Each execution sends checked CPU int64 original IDs, then FP32 flattened residual
+streams over already authenticated `PlannedHostStageChannel` links. Receivers check
+frame shape/type and mapped/excluded IDs before layers run. Intermediate stages
+return complete streams; only the final stage applies the learned head and samples.
+All participants acknowledge completion. Invalid frames, peer loss or partial
+execution discard the epoch and retain failed cleanup rather than reuse state.
+
+`build_deepseek_host_pipeline_worker` claims fresh prepared transports, loads only
+the assigned stage and owns both checkpoint weights and caches. It exposes separate
+weight, projection workspace, output and cache limits. Optional `verify_source=True`
+checks a bounded complete snapshot fingerprint and rechecks file receipts after
+loading/construction. Claimed construction failures retain retryable cleanup through
+`DeepSeekHostPipelineBuildError`. No network listeners or native host command/HTTP
+admission are supplied by this builder. Tests use real pinned loopback TLS and tiny
+packed CPU snapshots; remote deployment and performance remain unqualified.

@@ -5,6 +5,7 @@ import torch
 from .cpu_hybrid_stage import CpuHybridStage
 from .glm_stage_slots import GlmStageSlots
 from .glm_flash_stage_slots import FlashStageSlots
+from .deepseek_stage_slots import DeepSeekStageSlots
 from .host_hybrid_worker import HostHybridWorker
 from .host_topology import HostTopology
 from .planned_host_stage_channel import PlannedHostStageChannel
@@ -31,15 +32,16 @@ class _PlannedWorker(HostHybridWorker):
                 raise ValueError('host pipeline needs fresh ordered links matching one topology and epoch')
             glm=topology.config.get('model_type')=='glm_moe_dsa'
             flash=topology.config.get('model_type')=='glm5_next'
-            reference=glm or flash
-            expected_stage=FlashStageSlots if flash else GlmStageSlots if glm else CpuHybridStage
+            deepseek=topology.routing_tokens
+            reference=glm or flash or deepseek
+            expected_stage=DeepSeekStageSlots if deepseek else FlashStageSlots if flash else GlmStageSlots if glm else CpuHybridStage
             if (not isinstance(stage,expected_stage) or stage.closed or getattr(stage,'failed',False)
                     or getattr(stage,'_pipeline_owner',None) is not None or any(stage.lengths)
                     or stage.actual_device.type!='cpu' or stage.compute_dtype!=torch.float32
                     or (stage.layer_start,stage.layer_end)!=topology.ranges[index]
                     or stage.context!=topology.context or stage.max_batch!=topology.slots
                     or stage.c!=topology.config
-                    or (reference and (any(state is not None for state in stage.states) or stage.stage.failed_cleanups))
+                    or (reference and (any(state is not None for state in stage.states) or (stage.stage.prefill_cleanup_pending if deepseek else stage.stage.failed_cleanups)))
                     or (not reference and stage.model.quantization!=topology.quantization)):
                 raise ValueError('prepared CPU stage differs from topology or already has an owner')
             self.topology,self.stage_index,self.channels=topology,index,tuple(channels)
@@ -83,14 +85,16 @@ class _PlannedWorker(HostHybridWorker):
             raise ValueError('host pipeline prefill exceeds explicit chunk rows')
         return super()._command(operation,rows,entries)
 
-    def _run(self,command,values):
-        if not isinstance(self.stage,FlashStageSlots):return super()._run(command,values)
+    def _run(self,command,values,routing=None):
+        deepseek=isinstance(self.stage,DeepSeekStageSlots)
+        if not isinstance(self.stage,(FlashStageSlots,DeepSeekStageSlots)):return super()._run(command,values)
+        if deepseek:routing=self._routing(values if self.rank==0 else routing,command.rows)
         stage=self.stage;streams,dim=stage.stage.streams,stage.stage.dim
         if command.operation==DECODE:
             ids=torch.tensor([entry[0] for entry in command.entries],dtype=torch.int64)
             positions=torch.tensor([[entry[2]] for entry in command.entries],dtype=torch.int64)
             hidden=stage.embedding(values[:,None]) if self.rank==0 else values.reshape(-1,1,streams,dim)
-            result=stage.forward_layers(hidden,positions,ids,False).squeeze(1)
+            result=stage.forward_layers(hidden,positions,ids,False,**(dict(token_ids=routing[:,None]) if deepseek else {})).squeeze(1)
             return result.flatten(1),result
         chunks=[];last=[];offset=0
         for slot,_,extent in command.entries:
@@ -98,17 +102,25 @@ class _PlannedWorker(HostHybridWorker):
             start=extent if command.operation==PREFILL_CHUNK else 0
             chunk=values[offset:offset+size]
             hidden=stage.embedding(chunk[None]) if self.rank==0 else chunk.reshape(1,size,streams,dim)
-            result=stage.forward_layers(hidden,torch.arange(start,start+size)[None],torch.tensor([slot]),True,start)[0]
+            result=stage.forward_layers(hidden,torch.arange(start,start+size)[None],torch.tensor([slot]),True,start,
+                **(dict(token_ids=routing[offset:offset+size][None]) if deepseek else {}))[0]
             chunks.append(result.flatten(1));last.append(result[-1]);offset+=size
         return torch.cat(chunks),torch.stack(last)
 
     def _clear_slots(self,command):
-        if isinstance(self.stage,(GlmStageSlots,FlashStageSlots)):
+        if isinstance(self.stage,(GlmStageSlots,FlashStageSlots,DeepSeekStageSlots)):
             self.stage.release([slot for slot,_,_ in command.entries])
         else:super()._clear_slots(command)
 
     def _commit_stage(self):
         self.stage.lengths[:]=self.channel.state.lengths;self.stage.length=self.stage.lengths[0]
+
+    def _routing(self,tokens,rows):
+        if (not isinstance(tokens,torch.Tensor) or tokens.device.type!='cpu' or tokens.dtype!=torch.int64
+                or tuple(tokens.shape)!=(rows,) or not tokens.is_contiguous()
+                or rows*8>self.topology.frame_bytes or not self.channel._valid_tokens(tokens)):
+            raise ValueError('invalid DeepSeek host routing token frame')
+        return tokens
 
     def _activation(self,values,rows):
         if (not isinstance(values,torch.Tensor) or tuple(values.shape)!=(rows,self.width)
@@ -133,9 +145,11 @@ class HostPipelineCoordinator(_PlannedWorker):
                 self._commit_stage()
                 if command.operation==STOP:self.closed=True;self.ready=False
                 return None
-            hidden,_=self._run(command,torch.tensor(tokens,dtype=torch.int64,device='cpu'))
+            tokens=torch.tensor(tokens,dtype=torch.int64,device='cpu')
+            hidden,_=self._run(command,tokens)
             result=None
             for channel in self.channels:
+                if self.topology.routing_tokens:channel.transport.send(self._routing(tokens,command.rows))
                 channel.transport.send(self._activation(hidden,command.rows))
                 if channel.result_kind=='activation':hidden=channel.complete_activation(command)
                 else:result=channel.complete_tokens(command)
@@ -160,8 +174,10 @@ class HostPipelineWorker(_PlannedWorker):
                 self.channel.finish(command);self._commit_stage()
                 if command.operation==STOP:self.closed=True;self.ready=False
                 return None
+            routing=(self._routing(self.channel.transport.receive((command.rows,),torch.int64),command.rows)
+                     if self.topology.routing_tokens else None)
             hidden=self.channel.transport.receive((command.rows,self.width),torch.float32)
-            values,last=self._run(command,self._activation(hidden,command.rows))
+            values,last=self._run(command,self._activation(hidden,command.rows),routing)
             if self.channel.result_kind=='activation':self.channel.complete_activation(command,self._activation(values,command.rows))
             else:
                 logits=self.stage.output_logits(last)

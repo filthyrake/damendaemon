@@ -37,6 +37,7 @@ class HostTopology:
         config=json.loads(encoded)
         glm=config.get('model_type')=='glm_moe_dsa'
         flash=config.get('model_type')=='glm5_next'
+        deepseek=config.get('model_type')=='deepseek_v4'
         text=config['text_config'] if flash and isinstance(config.get('text_config'),dict) else config
         if glm:
             from .glm_checkpoint import tensor_specs
@@ -46,12 +47,17 @@ class HostTopology:
             from .glm_flash_checkpoint import tensor_specs
             from .glm_flash_reference_loader import _options
             tensor_specs(config);_options(text)
+        elif deepseek:
+            from .deepseek_checkpoint import tensor_specs
+            from .deepseek_reference_loader import _options
+            from .deepseek_layer_stage import validate_range
+            tensor_specs(config);_options(config);validate_range(0,config['num_hidden_layers'],config['num_hidden_layers'])
         else:cpu_hybrid_shapes(config,0,config.get('num_hidden_layers'))
-        width=text['hidden_size']*(text['hc_mult'] if flash else 1)
+        width=text['hidden_size']*(text['hc_mult'] if flash or deepseek else 1)
         if not isinstance(source_identity,bytes) or len(source_identity)!=32:raise ValueError('topology needs a 32-byte source/session identity')
         if session_identity is not None and (not isinstance(session_identity,bytes) or len(session_identity)!=32):
             raise ValueError('optional topology session identity must contain 32 bytes')
-        if quantization not in (('fp8_reference',) if glm or flash else ('none','q4_0','q8_0')):raise ValueError('unsupported CPU topology quantization')
+        if quantization not in (('fp4_fp8_reference',) if deepseek else ('fp8_reference',) if glm or flash else ('none','q4_0','q8_0')):raise ValueError('unsupported CPU topology quantization')
         if not isinstance(ranges,(list,tuple)) or not 2<=len(ranges)<=8:raise ValueError('host topology needs 2..8 stages')
         end=0;normalized=[]
         for pair in ranges:
@@ -69,7 +75,7 @@ class HostTopology:
             raise ValueError('topology context exceeds valid model positions')
         if (type(chunk_size) is not int or not 1<=chunk_size<=4096 or type(frame_bytes) is not int
                 or not 256<=frame_bytes<=MAX_FRAME_BYTES
-                or max(slots,min(context,chunk_size))*width*4>frame_bytes):
+                or max(slots,min(context,chunk_size))*max(width*4,8 if deepseek else 0)>frame_bytes):
             raise ValueError('topology activation chunk/decode exceeds frame budget')
         policy_config=dict(text)
         if flash:
@@ -86,6 +92,7 @@ class HostTopology:
             source_identity=source_identity.hex(),quantization=quantization,context=context,context_limit=context_limit,
             slots=slots,chunk_size=chunk_size,frame_bytes=frame_bytes,
             mapped_vocab_size=mapped,excluded_ids=sorted(excluded))
+        if deepseek:manifest['routing_tokens']='int64-before-activation-v1'
         if session_identity is not None:manifest['session_identity']=session_identity.hex()
         identity=hashlib.sha256(json.dumps(manifest,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).digest()
         values=dict(config_json=encoded,ranges=tuple(normalized),source_identity=source_identity,session_identity=session_identity,quantization=quantization,
@@ -95,6 +102,9 @@ class HostTopology:
 
     @property
     def config(self):return json.loads(self.config_json)
+
+    @property
+    def routing_tokens(self):return self.config.get('model_type')=='deepseek_v4'
 
     @property
     def text_config(self):
