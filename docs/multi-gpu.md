@@ -351,3 +351,25 @@ acknowledgement before learning that the other side disconnected or rejected it.
 Peers may briefly have different local commit positions. Failure closes and
 poisons the epoch when observed; uncertain commands are never replayed and no
 cache recovery is attempted. A fresh owned session is required after failure.
+
+`HostHybridWorker` now composes two prepared `HybridLayerStage` instances with
+the host control/tensor channel. Each worker owns only its contiguous layer
+range and local KV/recurrent/convolution state. Setup checks matching normalized
+configuration/FP32 precision and complete nonoverlapping ranges; the transport
+owner still supplies the shared weight/session identity. Ordinary/packed prefill,
+reordered or shrinking decode, release/reuse, ping and stop are supported within
+the explicit existing four-slot/512-context protocol bounds. Only sampled token
+IDs return from the final stage. Input token/slot/frame checks precede commands.
+
+The implementation requires prepared CPU FP32 stages. Local TCP tests compare
+sampled output and all retained layer state with the independent single-executor
+control, including interleaved slots and reuse. Release clears the selected local
+cache tensors before acknowledgement. Stop closes owned stage resources before
+acknowledgement. A stage/transport failure invalidates the session and closes
+both workers when observed. Close interrupts blocked socket reads; failed stage
+cleanup keeps ownership for retry and does not replace a primary execution error.
+
+This supplies prepared worker composition, not a listener, remote provisioning,
+HTTP registration, quantized execution, GPU transport, practical long context or
+network performance qualification. A caller must explicitly own connected trusted
+sockets and prepared stages. It does not build a full executor on each worker.
