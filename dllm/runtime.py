@@ -492,6 +492,8 @@ class Runtime:
             if enable_thinking is True or ignore_eos:
                 raise ValueError('forced tool calls cannot use thinking or ignore_eos')
             schema=tool_schema
+        from .token_observation import TokenObservation
+        token_observation = TokenObservation()
         start = time.perf_counter()
         with self.session(alias) as (executor, tier, load_seconds):
             model = executor.model
@@ -520,8 +522,10 @@ class Runtime:
                         sampler.constraint.accept(token)
                     sampler.observe(token)
                     output.append(token)
+                    observed = time.perf_counter() - start
+                    token_observation.observe(observed)
                     if first_time is None:
-                        first_time = time.perf_counter() - start
+                        first_time = observed
                     stop = not ignore_eos and token in model.eos
                     reasoning=''
                     if output_decoder is not None:
@@ -553,6 +557,7 @@ class Runtime:
                               "weight_quantization": getattr(model,"weight_format",model.quantization),
                               "residual_dtype": str(executor.residual_dtype).removeprefix("torch."),
                               "activation_seconds": load_seconds,
+                              "token_observation": token_observation.report(),
                               "first_token_seconds": first_time, "total_seconds": elapsed,
                               "decode_tokens_per_second": (len(output) - 1) / (elapsed - first_time)
                               if len(output) > 1 and elapsed > first_time else None}}

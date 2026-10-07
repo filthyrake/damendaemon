@@ -20,6 +20,7 @@ from .prompts import decode_output
 from .admission import wait_for_batch, validate_queue_limits
 from .request_scope import cache_scope
 from .fair_admission import FairAdmission
+from .token_observation import TokenObservation
 
 
 @dataclass(eq=False)
@@ -45,6 +46,7 @@ class Pending:
     output: list = field(default_factory=list)
     emitted: str = ""
     first_time: float | None = None
+    token_observation: TokenObservation = field(default_factory=TokenObservation)
     last_progress: float = field(default_factory=time.monotonic)
     max_batch_seen: int = 1
     slot: int = -1
@@ -317,6 +319,7 @@ class BatchedRuntime:
         request.sampler.observe(token)
         request.output.append(token)
         now = time.perf_counter()
+        request.token_observation.observe(now - request.start, sequential=not request.speculative_blocks)
         if request.first_time is None:
             request.first_time = now - request.start
         request.last_progress = time.monotonic()
@@ -348,6 +351,7 @@ class BatchedRuntime:
                 "total_tokens": prompt_count + count}, "timing": {
                 "source_tier": request.tier, "activation_seconds": request.activation,
                 "queue_seconds": request.queue_seconds,
+                "token_observation": request.token_observation.report(),
                 "cached_prompt_tokens":request.cached_tokens,
                 "speculative_blocks":request.speculative_blocks,
                 "speculative_proposed_drafts":request.speculative_proposed,
