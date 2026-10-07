@@ -30,6 +30,15 @@ transport or parser cleanup also retains the owner for retry. A terminal epoch
 requires a newly prepared session, even after cleanup succeeds. Explicit close
 uses transport shutdown rather than a graceful STOP exchange.
 
+The native GLM/Flash/DeepSeek command explicitly uses non-daemon HTTP request
+threads. Shutdown interrupts runtime/peer waits before joining these threads,
+then retries runtime cleanup; successful STOP output follows HTTP quota release.
+An incomplete HTTP body keeps ownership until the existing read timeout or body
+completion. Authority loss can leave remote claims charged and makes cleanup
+fail; it must not produce a graceful-stop report. Active generation cancellation
+still retires the epoch, while idle/drained shutdown requires acknowledged peer
+STOP before reporting graceful completion.
+
 Tests run actual local mutual-TLS stages behind authenticated loopback HTTP.
 JSON text/usage matches an independent whole-model CPU control; SSE and native
 tools execute actual packed stage math (controlled output selection is used for

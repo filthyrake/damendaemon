@@ -317,7 +317,8 @@ def serve_worker_pair(worker,text,args,auth,*,pair_type=None):
         for channel in getattr(worker,'channels',(worker.channel,)):channel.close()
     try:
         server=BoundedHTTPServer(('127.0.0.1',args.http_port),handler_for_host(runtime,auth))
-        server.daemon_threads=True
+        server.daemon_threads=False
+        server.block_on_close=True
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         previous=signal.signal(signal.SIGTERM,interrupt)
         emit(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',
@@ -328,21 +329,25 @@ def serve_worker_pair(worker,text,args,auth,*,pair_type=None):
         except (OSError,RuntimeError,EOFError,ValueError):
             if not stopping.is_set():raise
         if worker.ready and not stopping.is_set():worker.stop()
-        emit(dict(event='stopped',scope='cpu_host_reference'))
     except BaseException as error:primary=error;raise
     finally:
         if previous is not None:signal.signal(signal.SIGTERM,previous)
         errors=[]
+        # Wake queued/active HTTP consumers before joining their request threads.
+        try:runtime.close()
+        except BaseException as error:errors.append(error)
         if server is not None:
-            try:
-                if thread is not None and thread.is_alive():server.shutdown();thread.join(timeout=5)
-                server.server_close()
+            if thread is not None and thread.is_alive():
+                try:server.shutdown();thread.join(timeout=5)
+                except BaseException as error:errors.append(error)
+            try:server.server_close()
             except BaseException as error:errors.append(error)
         try:runtime.close()
         except BaseException as error:errors.append(error)
         if errors:
             if primary is not None:primary.add_note('CPU host HTTP shutdown cleanup failed')
             else:raise errors[0]
+    emit(dict(event='stopped',scope='cpu_host_reference'))
 
 
 def main(argv=None):

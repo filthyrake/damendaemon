@@ -145,3 +145,5 @@ reports `model_identity_verified` and `source_model_id`; the transport's
 mode. This detects ordinary local source changes, not malicious privileged
 filesystem manipulation or remote attestation. It does not qualify the model's
 quality, context capacity or performance.
+
+HTTP serving commands retain non-daemon request threads through quota release. They wake runtime consumers before joining HTTP threads and report `stopped` only after owned HTTP/runtime cleanup succeeds. Signal interruption still discards peer links rather than claiming an acknowledged worker STOP; failed remote quota cleanup remains charged and prevents success. Incomplete request bodies can hold cleanup until the existing read timeout.

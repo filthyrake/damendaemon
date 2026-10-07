@@ -29,7 +29,7 @@ def main(argv=None):
     from .server import BoundedHTTPServer,handler_for
     pair=StagePair(args.path,args.context,args.quantization,lambda model:[],session='distributed-serve',max_batch=args.batch_size)
     runtime=server=thread=None
-    previous=None
+    previous=None;primary=None
     try:
         if pair.rank==1:
             pair.serve_worker();return
@@ -42,17 +42,30 @@ def main(argv=None):
                     self.send_json(503 if stopped else 200,dict(status='closed' if stopped else 'ok'))
                 else:super().do_GET()
         server=BoundedHTTPServer(('127.0.0.1',args.port),Handler)
-        server.daemon_threads=True
+        server.daemon_threads=False
+        server.block_on_close=True
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         previous=signal.signal(signal.SIGTERM,lambda number,frame:runtime.close())
         print(f'dllm distributed listening on http://127.0.0.1:{server.server_port}',flush=True)
         try:runtime.run(idle_timeout=args.idle_timeout)
         except KeyboardInterrupt:runtime.close()
+    except BaseException as error:primary=error;raise
     finally:
         if previous is not None:signal.signal(signal.SIGTERM,previous)
-        if runtime is not None:runtime.close()
+        errors=[]
+        if runtime is not None:
+            try:runtime.close()
+            except BaseException as error:errors.append(error)
         if server is not None:
-            if thread is not None:server.shutdown();thread.join(timeout=5)
-            server.server_close()
+            try:
+                if thread is not None:server.shutdown();thread.join(timeout=5)
+            except BaseException as error:errors.append(error)
+            try:server.server_close()
+            except BaseException as error:errors.append(error)
         try:pair.stop()
-        finally:pair.close()
+        except BaseException as error:errors.append(error)
+        try:pair.close()
+        except BaseException as error:errors.append(error)
+        if errors:
+            if primary is not None:primary.add_note('distributed HTTP shutdown cleanup failed; retain owners for retry')
+            else:raise errors[0]

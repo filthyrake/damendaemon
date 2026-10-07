@@ -3,6 +3,7 @@
 from contextlib import closing
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import signal
 import threading
 import traceback
 import time
@@ -389,13 +390,30 @@ class BoundedHTTPServer(ThreadingHTTPServer):
 
 
 def serve(runtime, port):
-    server = BoundedHTTPServer(("127.0.0.1", port), handler_for(runtime))
-    print(f"dllm listening on http://127.0.0.1:{server.server_port}", flush=True)
+    server=None;previous={};primary=None;stopping=threading.Event()
+    def interrupt(*_):stopping.set()
     try:
-        server.serve_forever()
+        server=BoundedHTTPServer(("127.0.0.1",port),handler_for(runtime))
+        server.daemon_threads=False
+        server.block_on_close=True
+        server.timeout=.2
+        if threading.current_thread() is threading.main_thread():
+            for signum in (signal.SIGINT,signal.SIGTERM):previous[signum]=signal.signal(signum,interrupt)
+        print(f"dllm listening on http://127.0.0.1:{server.server_port}",flush=True)
+        while not stopping.is_set():server.handle_request()
     except KeyboardInterrupt:
         pass
+    except BaseException as error:primary=error;raise
     finally:
-        if hasattr(runtime, "close"):
-            runtime.close()
-        server.server_close()
+        errors=[]
+        # Stop/wake scheduler consumers before waiting for their HTTP threads.
+        if hasattr(runtime,'close'):
+            try:runtime.close()
+            except BaseException as error:errors.append(error)
+        if server is not None:
+            try:server.server_close()
+            except BaseException as error:errors.append(error)
+        for signum,handler in previous.items():signal.signal(signum,handler)
+        if errors:
+            if primary is not None:primary.add_note('HTTP shutdown cleanup failed; retain owners for retry')
+            else:raise errors[0]

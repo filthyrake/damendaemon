@@ -893,3 +893,13 @@ through the same HTTP cleanup path. Network-backed admission is not enabled by
 default, and prior unresolved remote claims block owner startup.
 
 Explicit cross-host outstanding quotas are configured with `DLLM_REMOTE_QUOTA_CONFIG`; see [quota commands](quota-commands.md) for authority bootstrap, pinned mutual TLS, owner recovery and CPU command shutdown behavior.
+
+Serving commands own accepted HTTP request threads through shutdown. SIGINT or
+SIGTERM stops ordinary server admission, then closes the scheduler before joining
+request threads and releasing their quota leases. Listener/configuration failures
+also close the owned runtime. A runtime cleanup error does not skip HTTP cleanup;
+failed owners remain the caller's responsibility and the command does not report
+success. Incomplete request bodies can hold shutdown until the existing socket
+read timeout. This is cooperative cleanup, not a kernel execution deadline.
+`BoundedHTTPServer` itself keeps its existing embedder defaults; custom owners
+must choose and manage their own request-thread lifecycle.

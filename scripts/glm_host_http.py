@@ -40,6 +40,8 @@ def serve(worker,text,args,auth,*,family='glm',vision=None):
     def interrupt(*_):stopping.set();runtime.stopping.set()
     try:
         server=BoundedHTTPServer(('127.0.0.1',args.http_port),handler_for_reference(runtime,auth))
+        server.daemon_threads=False
+        server.block_on_close=True
         server.timeout=min(.2,args.heartbeat_interval/2)
         if threading.current_thread() is threading.main_thread():
             for sig in (signal.SIGTERM,signal.SIGINT):previous[sig]=signal.signal(sig,interrupt)
