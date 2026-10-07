@@ -642,3 +642,13 @@ budgets, cursor drift, head failures and cleanup retry. The CPU primitives use
 explicit CPU output/cache allocation. This completes the prepared FP32 reference
 stack, not actual GLM FP8 snapshot loading, tokenizer/command integration, trained
 model quality or hardware qualification.
+
+The shared packed tile reader, projection adapter and selected checkpoint-pair
+loader now accept explicit `e4m3fn_f32`: raw E4M3FN byte weights with FP32
+128x128 block scales. Existing `e4m3fn` continues to mean E8M0 byte scales;
+the formats are never inferred from values. The raw loading budget includes
+four bytes per FP32 scale and rejects mismatched storage before reading values.
+FP32 checkpoint reads require a little-endian host. Only selected tiles expand;
+row views retain their original block coordinates. Special scale values propagate
+for diagnostics. This is a CPU FP32 arithmetic control, without accelerator
+activation quantization or actual GLM checkpoint qualification.

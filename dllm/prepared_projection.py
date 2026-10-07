@@ -10,7 +10,7 @@ from .packed_projection import packed_linear, projection_plan, validate_row_rang
 class PackedProjection:
     """Borrow immutable raw weights/scales with an explicit result storage dtype.
 
-    Row views retain original matrix coordinates, including E8M0 block scales.
+    Row views retain original matrix coordinates, including E8M0 or explicit FP32 block scales.
     This is a CPU reference adapter; output casting does not emulate activation
     quantization or accelerator accumulation. No dense weight is retained.
     """
@@ -36,7 +36,7 @@ class PackedProjection:
         if (not isinstance(hidden,torch.Tensor) or hidden.ndim < 2 or hidden.shape[-1] != self.shape[1]
                 or hidden.dtype != self.dtype or hidden.device != self.device):
             raise ValueError('packed projection input dtype/device/shape mismatch')
-        output = torch.empty((*hidden.shape[:-1],self.shape[0]),dtype=self.dtype)
+        output = torch.empty((*hidden.shape[:-1],self.shape[0]),dtype=self.dtype,device='cpu')
         # Visit leading batches without flattening/copying a strided whole input.
         for index in itertools.product(*(range(n) for n in hidden.shape[:-2])):
             output[index] = packed_linear(hidden[index],self.weight,self.scales,format=self.format,

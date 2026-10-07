@@ -24,7 +24,8 @@ def packed_linear(hidden, weight, scales, *, format, row_chunk=64, column_chunk=
                   workspace_bytes=8*1024*1024, row_range=None):
     """Project CPU [tokens,features] to FP32 without a full weight expansion.
 
-    E2M1/E4M3FN weights and E8M0 scales stay in raw uint8 storage. Inputs may be
+    E2M1/E4M3FN weights and E8M0 scales stay in raw uint8 storage; explicit
+    e4m3fn_f32 instead retains FP32 block scales. Inputs may be
     strided FP16/BF16/FP32. Multiplication and accumulation use FP32; this does
     not emulate accelerator activation quantization or accumulation rounding.
 
@@ -40,7 +41,7 @@ def packed_linear(hidden, weight, scales, *, format, row_chunk=64, column_chunk=
             or hidden.device.type != 'cpu' or hidden.dtype not in (torch.float16, torch.bfloat16, torch.float32)
             or hidden.shape[1] != columns):
         raise ValueError('packed projection needs CPU floating [tokens,features] matching the weight')
-    output = torch.zeros((hidden.shape[0], last-first), dtype=torch.float32)
+    output = torch.zeros((hidden.shape[0], last-first), dtype=torch.float32,device='cpu')
     if hidden.shape[0] == 0:
         return output
     for row in range(first, last, row_chunk):

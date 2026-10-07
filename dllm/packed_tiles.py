@@ -40,14 +40,16 @@ def _e4m3(raw):
 
 def validate_layout(weight, scales, *, format):
     """Validate raw CPU storage metadata without decoding or reading values."""
-    if (format not in ('e2m1', 'e4m3fn') or not _bytes(weight) or not _bytes(scales)
+    floating_scales = format == 'e4m3fn_f32'
+    valid_scales = (isinstance(scales,torch.Tensor) and scales.dtype == torch.float32 and scales.device.type == 'cpu') if floating_scales else _bytes(scales)
+    if (format not in ('e2m1', 'e4m3fn', 'e4m3fn_f32') or not _bytes(weight) or not valid_scales
             or weight.ndim != 2 or scales.ndim != 2 or min(weight.shape) < 1):
-        raise ValueError('packed tile inputs must be nonempty raw uint8 CPU matrices with a supported format')
+        raise ValueError('packed tile inputs require raw CPU byte weights and matching typed scales')
     rows, packed_columns = weight.shape
     columns = packed_columns*2 if format == 'e2m1' else packed_columns
     expected = (rows, columns//32) if format == 'e2m1' else ((rows+127)//128, (columns+127)//128)
     if (format == 'e2m1' and columns % 32) or scales.shape != expected:
-        raise ValueError('packed weight shape and E8M0 scale layout do not agree')
+        raise ValueError('packed weight shape and scale layout do not agree')
     return rows, columns
 
 
@@ -56,7 +58,8 @@ def decode_tile(weight, scales, *, format, row_start, row_stop, column_start, co
 
     Formats: 'e2m1' has low-nibble-first pairs and row/32-column E8M0 scales;
     'e4m3fn' has byte elements and 128x128-block E8M0 scales. Both inputs must
-    remain raw uint8 CPU matrices. Ranges are nonempty, half-open logical axes.
+    remain raw uint8 CPU matrices for those formats. Explicit e4m3fn_f32 uses
+    FP32 128x128 block scales instead. Ranges are nonempty, half-open logical axes.
     No full-input cast, scan or copy occurs; only the requested tile is expanded.
     NaN scale bytes propagate; finite products may overflow FP32.
     """
@@ -68,8 +71,8 @@ def decode_tile(weight, scales, *, format, row_start, row_stop, column_start, co
         raise ValueError('tile bounds must be nonempty integer ranges within logical weight axes')
     if (row_stop-row_start)*(column_stop-column_start) > MAX_TILE_ELEMENTS:
         raise ValueError('packed checkpoint tile exceeds 65536 decoded elements')
-    column_ids = torch.arange(column_start, column_stop)
-    row_ids = torch.arange(row_start, row_stop)
+    column_ids = torch.arange(column_start, column_stop, device='cpu')
+    row_ids = torch.arange(row_start, row_stop, device='cpu')
     if format == 'e2m1':
         packed = weight[row_start:row_stop, column_ids//2]
         codes = (packed >> ((column_ids % 2)*4)) & 15
@@ -78,4 +81,4 @@ def decode_tile(weight, scales, *, format, row_start, row_stop, column_start, co
     else:
         values = _e4m3(weight[row_start:row_stop, column_start:column_stop])
         scale_bytes = scales[row_ids[:, None]//128, column_ids[None, :]//128]
-    return values*_scale(scale_bytes)
+    return values*(scale_bytes if format == 'e4m3fn_f32' else _scale(scale_bytes))
