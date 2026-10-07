@@ -31,7 +31,9 @@ Each owner serializes commands with integer sequences starting at one:
 - `retire`: exact field `op`; retirement refuses outstanding claims.
 
 The last command's digest and result are committed with its effect. Retry the
-same sequence and exact payload after a lost/uncertain reply. Changed retries,
+same sequence and exact payload after a lost/uncertain reply. Network callers
+also supply a stable per-operation nonce, included in the digest; a distinct
+operation with identical counts still conflicts at the same sequence. Changed retries,
 stale commands and skipped sequences cannot mutate state. Quota rejection is
 also a durable result: use a new sequence for a later attempt. Do not issue the
 next command until the prior result is known. `status` returns the authenticated

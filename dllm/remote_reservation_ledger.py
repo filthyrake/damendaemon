@@ -248,10 +248,13 @@ class RemoteReservationLedger:
         if kind in ('resize','release') and not self._claim_id(command['claim'],owner):raise RemoteOwnerDenied()
         return _encode(command)
 
-    def execute(self,owner,credential,sequence,command):
+    def execute(self,owner,credential,sequence,command,*,operation_id=None):
         self._credentials(owner,credential)
         if type(sequence) is not int or not 1<=sequence<=MAX_SEQUENCE:raise RemoteSequenceError()
-        payload=self._command(owner,command);command=json.loads(payload);digest=hashlib.sha256(payload.encode()).hexdigest()
+        if operation_id is not None and not _hex(operation_id,32):raise ValueError('invalid remote operation identity')
+        payload=self._command(owner,command);command=json.loads(payload)
+        identity=payload if operation_id is None else _encode(dict(operation_id=operation_id,command=command))
+        digest=hashlib.sha256(identity.encode()).hexdigest()
         with self._transaction() as connection:
             _,allowed,retired,current,previous,receipt=self._owner(connection,owner,credential)
             if sequence==current:
