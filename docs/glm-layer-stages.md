@@ -35,3 +35,25 @@ decode and reordered/shrinking rows. They assert selected payload reads and exac
 storage-budget admission. These are synthetic software controls. Host protocol,
 bootstrap and serving integration, official checkpoint qualification, accelerator
 execution, capacity and performance remain open in #51/#56.
+
+## Owned local composition
+
+`GlmLayerPipeline(stages)` validates 2–8 distinct stages covering the complete
+model in order, with matching checkpoint configurations and boundary dimensions.
+It exposes `new_state`, `prefill` and `forward`; its returned state supports
+`reorder` and `close`. A single cache budget covers all stage reservations,
+including growth through duplicated rows. Output-size admission runs before the
+first stage executes.
+
+The owner poisons every stage after a partial forward or reorder failure. Its
+outer cursor advances only after the final result succeeds. Close attempts every
+stage even if an earlier release fails and keeps unsuccessful releases for retry.
+Failed allocation/prefill cleanup is retained by the pipeline or the allocating
+stage and retried before another allocation. Invalid input rejected before work
+leaves the state usable; an externally altered stage cursor poisons the epoch.
+
+This is synchronous local CPU composition over caller-prepared stages, with no
+transport, model registration or automatic serving admission. Packed checkpoint
+controls compare logits with an independently expanded whole model. Fault tests
+cover later-stage execution, reorder, allocation and cleanup failures. A fresh
+state can be used after successful cleanup; poisoned states cannot be resumed.
