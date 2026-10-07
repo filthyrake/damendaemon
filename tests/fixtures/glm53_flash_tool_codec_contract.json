@@ -1,0 +1,171 @@
+{
+  "repository": "zai-org/GLM-5.3-Flash",
+  "revision": "eb9eb208eb0d988989d07a6a12d0fdeb5f52574a",
+  "template_sha256": "0c4099f3382d6c92700dfb99725025360966fd73032f0ecf32377c0d9e6309c5",
+  "cases": [
+    {
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "inspect",
+            "parameters": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          }
+        }
+      ],
+      "calls": [
+        {
+          "type": "function",
+          "function": {
+            "name": "inspect",
+            "arguments": "{}"
+          }
+        }
+      ],
+      "wire": "<tool_call>inspect</tool_call>",
+      "rendered_sha256": "ac9fa19534f0acb6b395552c60fb09929b7fce79e0db2edc8659936faf6aa7a6"
+    },
+    {
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "inspect",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "string": {
+                  "type": "string"
+                },
+                "flag_text": {
+                  "type": "string"
+                },
+                "json_text": {
+                  "type": "string"
+                },
+                "integer": {
+                  "type": "integer"
+                },
+                "number": {
+                  "type": "number"
+                },
+                "boolean": {
+                  "type": "boolean"
+                },
+                "nothing": {
+                  "type": "null"
+                },
+                "array": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  }
+                },
+                "object": {
+                  "type": "object",
+                  "properties": {
+                    "nested": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "integer"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "nested"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "string",
+                "flag_text",
+                "json_text",
+                "integer",
+                "number",
+                "boolean",
+                "nothing",
+                "array",
+                "object"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      ],
+      "calls": [
+        {
+          "type": "function",
+          "function": {
+            "name": "inspect",
+            "arguments": "{\"string\": \"123\", \"flag_text\": \"false\", \"json_text\": \"{\\\"x\\\":1}\", \"integer\": 123, \"number\": 1.25, \"boolean\": false, \"nothing\": null, \"array\": [1, \"x\", true], \"object\": {\"nested\": [\"甲\", 2]}}"
+          }
+        }
+      ],
+      "wire": "<tool_call>inspect<arg_key>string</arg_key><arg_value>123</arg_value><arg_key>flag_text</arg_key><arg_value>false</arg_value><arg_key>json_text</arg_key><arg_value>{\"x\":1}</arg_value><arg_key>integer</arg_key><arg_value>123</arg_value><arg_key>number</arg_key><arg_value>1.25</arg_value><arg_key>boolean</arg_key><arg_value>false</arg_value><arg_key>nothing</arg_key><arg_value>null</arg_value><arg_key>array</arg_key><arg_value>[1, \"x\", true]</arg_value><arg_key>object</arg_key><arg_value>{\"nested\": [\"甲\", 2]}</arg_value></tool_call>",
+      "rendered_sha256": "4d357d053840335a78d267cd3fc63f7930a46feb4380622ec1365665f35525fa"
+    },
+    {
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "inspect",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "text"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      ],
+      "calls": [
+        {
+          "type": "function",
+          "function": {
+            "name": "inspect",
+            "arguments": "{\"text\": \"  whitespace\\n🦙 & symbols  \"}"
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "inspect",
+            "arguments": "{\"text\": \"  whitespace\\n🦙 & symbols  \"}"
+          }
+        }
+      ],
+      "wire": "<tool_call>inspect<arg_key>text</arg_key><arg_value>  whitespace\n🦙 & symbols  </arg_value></tool_call><tool_call>inspect<arg_key>text</arg_key><arg_value>  whitespace\n🦙 & symbols  </arg_value></tool_call>",
+      "rendered_sha256": "3c91f6d45b07a94c1e8894dae2d3df575f6c3542b83b5a19bc6ee793c13d96e7"
+    }
+  ]
+}
