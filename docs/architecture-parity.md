@@ -1932,3 +1932,15 @@ are admitted before payload reads. Descriptor and metadata limits remain
 explicit; mutation or read failures close all opened descriptors. Mixed
 FP16/BF16/F32 fixture snapshots match independently prepared vision controls.
 Text/MTP payloads remain unread, and official visual weights have not been run.
+
+`glm_flash_image_text.FlashImageText.image_chat_tokens` is a separate explicit
+still-image prompt adapter. User content accepts strict text parts and prepared
+`{"type":"image"}` markers; image grids supply the number of repeated image
+tokens (`height * width / 4`) in prompt order. The pinned template's system,
+reasoning and assistant behavior is retained. Three official local
+prompt/tokenizer cases match exactly. Atomic media tokens, image/grid agreement,
+conversation/part/image bounds and total expanded token limits are enforced.
+Literal media markers in text, video/audio and URL parts are rejected. The
+inherited ordinary `chat_tokens` still rejects multipart content. This adapter
+binds placeholder counts; callers remain responsible for supplying the matching
+images/features, and no network/file retrieval or serving admission is added.

@@ -1,0 +1,205 @@
+{
+  "revision": "eb9eb208eb0d988989d07a6a12d0fdeb5f52574a",
+  "template_sha256": "0c4099f3382d6c92700dfb99725025360966fd73032f0ecf32377c0d9e6309c5",
+  "cases": [
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Describe this: "
+            },
+            {
+              "type": "image"
+            }
+          ]
+        }
+      ],
+      "grids": [
+        [
+          1,
+          8,
+          8
+        ]
+      ],
+      "options": {},
+      "prompt": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Describe this: <|begin_of_image|><|image|><|end_of_image|><|assistant|><think>",
+      "token_ids": [
+        154822,
+        154824,
+        154826,
+        25062,
+        287,
+        29905,
+        371,
+        25,
+        7487,
+        154827,
+        74198,
+        419,
+        25,
+        220,
+        154830,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154831,
+        154828,
+        154841
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "Compare images."
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image"
+            },
+            {
+              "type": "text",
+              "text": " versus "
+            },
+            {
+              "type": "image"
+            }
+          ]
+        }
+      ],
+      "grids": [
+        [
+          1,
+          4,
+          6
+        ],
+        [
+          1,
+          2,
+          4
+        ]
+      ],
+      "options": {
+        "reasoning_effort": "low"
+      },
+      "prompt": "[gMASK]<sop><|system|>Reasoning Effort: Low<|system|>Compare images.<|user|><|begin_of_image|><|image|><|end_of_image|> versus <|begin_of_image|><|image|><|end_of_image|><|assistant|><think>",
+      "token_ids": [
+        154822,
+        154824,
+        154826,
+        25062,
+        287,
+        29905,
+        371,
+        25,
+        12035,
+        154826,
+        27283,
+        5335,
+        13,
+        154827,
+        154830,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154854,
+        154831,
+        19006,
+        220,
+        154830,
+        154854,
+        154854,
+        154831,
+        154828,
+        154841
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "image"
+            },
+            {
+              "type": "text",
+              "text": " What is here?"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "A fixture.",
+          "reasoning_content": "Inspecting."
+        },
+        {
+          "role": "user",
+          "content": "Explain."
+        }
+      ],
+      "grids": [
+        [
+          1,
+          2,
+          2
+        ]
+      ],
+      "options": {
+        "clear_thinking": true
+      },
+      "prompt": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|><|begin_of_image|><|image|><|end_of_image|> What is here?<|assistant|><think></think>A fixture.<|user|>Explain.<|assistant|><think>",
+      "token_ids": [
+        154822,
+        154824,
+        154826,
+        25062,
+        287,
+        29905,
+        371,
+        25,
+        7487,
+        154827,
+        154830,
+        154854,
+        154831,
+        3555,
+        374,
+        1588,
+        30,
+        154828,
+        154841,
+        154842,
+        32,
+        12501,
+        13,
+        154827,
+        840,
+        20726,
+        13,
+        154828,
+        154841
+      ]
+    }
+  ]
+}
