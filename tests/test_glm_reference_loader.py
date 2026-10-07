@@ -31,7 +31,7 @@ def fixture(path,vocab_size=32):
         payload.extend(bytes(value.contiguous().view(torch.uint8).flatten().tolist()))
         headers[shard][name]=dict(dtype=dtype,shape=list(spec.shape),data_offsets=[start,len(payload)])
         values[name]=value
-    payload=payloads[0];headers[0]['model.layers.3.unqualified']=dict(dtype='U8',shape=[1],data_offsets=[len(payload),len(payload)+1]);payload.append(9)
+    payload=payloads[0];headers[0][f"model.layers.{config['num_hidden_layers']}.unqualified"]=dict(dtype='U8',shape=[1],data_offsets=[len(payload),len(payload)+1]);payload.append(9)
     (path/'config.json').write_text(json.dumps(config))
     mapping={}
     for i in range(2):

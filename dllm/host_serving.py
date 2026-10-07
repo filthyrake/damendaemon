@@ -74,7 +74,8 @@ class HostServingTopology(HostServingPair):
     """Explicit adapter for a ready planned coordinator and all its owned links."""
     def _validate_topology(self,worker,chunk_size):
         from .host_pipeline_worker import HostPipelineCoordinator
-        if (not isinstance(worker,HostPipelineCoordinator) or type(chunk_size) is not int
+        if (not isinstance(worker,HostPipelineCoordinator) or worker.topology.config.get('model_type')!='qwen3_5_text'
+                or type(chunk_size) is not int
                 or not 1<=chunk_size<=worker.topology.chunk_size
                 or any(not c.ready or c.closed or c.state.failed or c.state.closed
                        or c.state.pending is not None or any(c.state.lengths)

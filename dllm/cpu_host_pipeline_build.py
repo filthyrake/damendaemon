@@ -45,7 +45,7 @@ def build_cpu_host_pipeline_worker(path,topology,index,transports,*,epoch,verify
     Optional full-snapshot fingerprinting verifies topology.source_identity;
     otherwise that value is an operator assertion, not byte verification.
     """
-    if (not isinstance(topology,HostTopology) or type(index) is not int
+    if (not isinstance(topology,HostTopology) or topology.config.get('model_type')!='qwen3_5_text' or type(index) is not int
             or not 0<=index<len(topology.ranges) or type(verify_source) is not bool
             or type(identity_max_bytes) is not int or not 1<=identity_max_bytes<=2**40
             or type(identity_timeout) not in (int,float) or not 0<identity_timeout<=3600

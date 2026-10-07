@@ -3,6 +3,7 @@ import threading
 import torch
 
 from .cpu_hybrid_stage import CpuHybridStage
+from .glm_stage_slots import GlmStageSlots
 from .host_hybrid_worker import HostHybridWorker
 from .host_topology import HostTopology
 from .planned_host_stage_channel import PlannedHostStageChannel
@@ -27,12 +28,16 @@ class _PlannedWorker(HostHybridWorker):
                            for c in channels)
                     or len({c.state.epoch for c in channels})!=1):
                 raise ValueError('host pipeline needs fresh ordered links matching one topology and epoch')
-            if (not isinstance(stage,CpuHybridStage) or stage.closed or getattr(stage,'failed',False)
+            glm=topology.quantization=='fp8_reference'
+            expected_stage=GlmStageSlots if glm else CpuHybridStage
+            if (not isinstance(stage,expected_stage) or stage.closed or getattr(stage,'failed',False)
                     or getattr(stage,'_pipeline_owner',None) is not None or any(stage.lengths)
                     or stage.actual_device.type!='cpu' or stage.compute_dtype!=torch.float32
                     or (stage.layer_start,stage.layer_end)!=topology.ranges[index]
                     or stage.context!=topology.context or stage.max_batch!=topology.slots
-                    or stage.c!=topology.config or stage.model.quantization!=topology.quantization):
+                    or stage.c!=topology.config
+                    or (glm and (any(state is not None for state in stage.states) or stage.stage.failed_cleanups))
+                    or (not glm and stage.model.quantization!=topology.quantization)):
                 raise ValueError('prepared CPU stage differs from topology or already has an owner')
             self.topology,self.stage_index,self.channels=topology,index,tuple(channels)
             self.channel=self.channels[-1];self.stage,self.rank=stage,rank
@@ -74,6 +79,11 @@ class _PlannedWorker(HostHybridWorker):
         if operation not in (DECODE,RELEASE,PING,STOP) and rows>self.topology.chunk_size:
             raise ValueError('host pipeline prefill exceeds explicit chunk rows')
         return super()._command(operation,rows,entries)
+
+    def _clear_slots(self,command):
+        if isinstance(self.stage,GlmStageSlots):
+            self.stage.release([slot for slot,_,_ in command.entries])
+        else:super()._clear_slots(command)
 
     def _commit_stage(self):
         self.stage.lengths[:]=self.channel.state.lengths;self.stage.length=self.stage.lengths[0]

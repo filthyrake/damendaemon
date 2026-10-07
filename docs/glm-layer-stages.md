@@ -139,3 +139,29 @@ resume. Prepared weights remain caller-owned and immutable. This slot adapter
 alone opens no sockets and does not widen existing host, GPU or HTTP admission.
 Packed multi-stage tests compare unequal cursors, reordered decode and slot reuse
 with independently expanded whole-model logits.
+
+## Prepared authenticated host links
+
+An explicit `HostTopology` with `quantization='fp8_reference'` can bind admitted
+GLM configuration and full-indexer ranges. Wrap each independently loaded stage
+in `GlmStageSlots`, authenticate/pin the caller-owned sockets, and construct
+`PlannedHostStageChannel` plus `HostPipelineCoordinator` / `HostPipelineWorker`
+owners as for the existing planned CPU topology. GLM uses its own configuration
+and packed-precision identity; existing Qwen identities are unchanged.
+
+The topology binds source/session identity, mapped/excluded vocabulary and all
+slot/context/chunk/frame limits. Intermediate activations travel through the
+coordinator; final workers return mapped sampled IDs. Release and STOP use owned
+GLM slot cleanup. A failed link or stage discards the epoch. The existing raw
+`HostCompletion` lifecycle also discards its session on abandoned generation;
+normal completion releases slots for reuse. This differs from the reusable local
+pipeline HTTP owner's request-level cancellation.
+
+Two/three-stage local TLS tests compare full packed logits and greedy results
+with independent floating controls, including unequal prefill, chunks, reordered
+decode and slot reuse. Policy identity disagreement fails setup, and middle-stage
+failure/peer loss closes links and caches. This prepared gate does not add a GLM
+host builder, command or host HTTP adapter; existing Qwen-specific bootstrap and
+HTTP admission reject GLM until those explicit integrations exist. Source bytes
+remain an operator assertion unless separately verified; this is no physical
+network, official-model or performance qualification.

@@ -30,6 +30,27 @@ class GlmStageSlots:
         self.closed = self.failed = False
         self.lock = threading.RLock()
 
+    actual_device = torch.device('cpu')
+    compute_dtype = torch.float32
+
+    @property
+    def c(self):
+        import copy
+        return copy.deepcopy(getattr(self.stage, 'config', {}))
+
+    @property
+    def layer_start(self): return self.stage.start
+
+    @property
+    def layer_end(self): return self.stage.end
+
+    @property
+    def length(self): return self.lengths[0]
+
+    @length.setter
+    def length(self, value):
+        if value != self.lengths[0]: raise ValueError('GLM slot zero cursor disagrees')
+
     def _usable(self):
         if self.closed or self.failed: raise RuntimeError('GLM stage slot owner is closed or failed')
         for index, state in enumerate(self.states):
