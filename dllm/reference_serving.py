@@ -8,6 +8,7 @@ from .deepseek_generation import ReferenceGenerator as DeepSeekGenerator
 from .deepseek_tool_prompt import prepare_tools as prepare_deepseek_tools
 from .glm_tool_generation import GlmToolReferenceGenerator
 from .glm_flash_tool_generation import FlashToolReferenceGenerator
+from .glm_flash_image_tool_generation import FlashImageToolReferenceGenerator
 from .glm_flash_tools import FlashTools
 from .runtime import BusyError
 from .sampling import Sampling
@@ -25,11 +26,12 @@ class ReferenceRuntime:
     native_tool_calls=True
 
     def __init__(self,runner,alias='model'):
-        if type(runner) not in (DeepSeekGenerator,GlmToolReferenceGenerator,FlashToolReferenceGenerator):
+        if type(runner) not in (DeepSeekGenerator,GlmToolReferenceGenerator,FlashToolReferenceGenerator,FlashImageToolReferenceGenerator):
             raise ValueError('CPU HTTP needs an explicit prepared text/tool reference runner')
         if not isinstance(alias,str) or not 1<=len(alias)<=128:raise ValueError('invalid CPU reference alias')
         self.runner=runner;self.alias=alias;self.lock=threading.Lock();self.stopping=threading.Event()
-        self.family='deepseek_v4' if isinstance(runner,DeepSeekGenerator) else 'glm5_next' if isinstance(runner,FlashToolReferenceGenerator) else 'glm_moe_dsa'
+        self.images=type(runner) is FlashImageToolReferenceGenerator
+        self.family='deepseek_v4' if isinstance(runner,DeepSeekGenerator) else 'glm5_next' if self.images or isinstance(runner,FlashToolReferenceGenerator) else 'glm_moe_dsa'
         self.context=runner.max_context;self.active=False;self.closed=False
         self.owner=object()
         with runner.lock:
@@ -50,7 +52,7 @@ class ReferenceRuntime:
     def manage(self,action,**options):
         if action!='status' or options:raise ValueError('CPU reference model management is unsupported')
         return dict(device='cpu',scope='cpu_reference',official_model_qualified=False,model_type=self.family,
-            context=self.context,models=[dict(id=self.alias,residency='closed' if self.closed else 'cpu')],
+            context=self.context,modality='still_image' if self.images else 'text',models=[dict(id=self.alias,residency='closed' if self.closed else 'cpu')],
             active=self.active,closed=self.closed,closing=self.stopping.is_set(),cleanup_pending=self.cleanup_pending(),max_batch_size=1)
 
     def prepare_tools(self,tools,choice=None):
@@ -61,6 +63,12 @@ class ReferenceRuntime:
         if self.family=='deepseek_v4':prepare_deepseek_tools(tools)
         else:FlashTools(tools)
         return tools,None
+
+    def prepare_messages(self,messages,*,tools=None):
+        if self.images:
+            from .glm_flash_inline_images import validate_inline_images
+            return validate_inline_images(messages,tools=tools)
+        return validate_messages(messages)
 
     def _cleanup(self):
         if self.runner is not None:self.runner.cleanup()
@@ -80,7 +88,7 @@ class ReferenceRuntime:
         if (response not in (None,{'type':'text'}) or stops
                 or set(options)-set(Sampling.__dataclass_fields__) or Sampling(**options)!=Sampling()):
             raise ValueError('CPU reference supports default greedy chat only')
-        messages=validate_messages(messages)
+        messages=self.prepare_messages(messages,tools=tools)
         if self.family=='deepseek_v4':
             if reasoning_effort is not None or (enable_thinking is not None and type(enable_thinking) is not bool):
                 raise ValueError('unsupported DeepSeek HTTP reasoning options')
@@ -95,7 +103,14 @@ class ReferenceRuntime:
         try:
             if self.stopping.is_set():raise BusyError('CPU reference runtime is closing')
             self.active=True;runner=self.runner
-            if self.family!='deepseek_v4' and tools:
+            if self.images:
+                from .glm_flash_inline_images import decode_inline_images
+                decoded=decode_inline_images(messages,tools=tools)
+                if not decoded.images:raise ValueError('Flash image HTTP requires at least one inline still image')
+                if tools:
+                    iterator=runner.generate_image_tools(decoded.messages,decoded.images,tools,max_new_tokens=max_tokens,**kwargs)
+                else:iterator=runner.generate_images(decoded.messages,decoded.images,max_new_tokens=max_tokens,**kwargs)
+            elif self.family!='deepseek_v4' and tools:
                 iterator=runner.generate_tools(messages,tools,max_new_tokens=max_tokens,**kwargs)
             else:iterator=runner.generate(messages,max_new_tokens=max_tokens,**kwargs)
             with closing(iterator) as stream:

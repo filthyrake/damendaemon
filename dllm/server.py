@@ -205,7 +205,9 @@ def handler_for(runtime, auth=None):
                     sampling['raw_prompt'] = validate_raw(body.get('prompt'))
                 else:
                     from .vision_policy import enabled as vision_enabled
-                    if vision_enabled():
+                    if native_tools:
+                        messages=runtime.prepare_messages(messages,tools=selected_tools)
+                    elif vision_enabled():
                         from .vision_messages import validate_image_messages
                         messages=validate_image_messages(messages)
                     else:

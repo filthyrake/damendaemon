@@ -34,13 +34,33 @@ def parser_for_command():
     parser.add_argument('--projection-workspace-mib',type=bounded_integer(1,2048),default=8)
     parser.add_argument('--workspace-mib',type=bounded_integer(1,2048),help='GLM/Flash attention scratch; default 64 MiB')
     parser.add_argument('--output-mib',type=bounded_integer(1,2048),help='GLM/Flash output scratch; default 64 MiB')
+    parser.add_argument('--flash-images',action='store_true',help='explicit Flash still-image/tool HTTP owner')
+    for name,maximum in (('vision-weight-mib',2048),('image-workspace-mib',2048),('image-output-mib',2048),('max-patches',65536)):
+        parser.add_argument('--'+name,type=bounded_integer(1,maximum),help='requires --flash-images')
     return parser
+
+
+def image_metadata(config,args):
+    from dllm.glm_flash_vision import vision_specs,audit_vision,ROOT
+    from dllm.glm_flash_images import validate_processor
+    specs=vision_specs(config.get('vision_config'));audit_vision(config,[ROOT+n for n in specs])
+    vc=config['vision_config']
+    if (vc['in_channels'],vc['patch_size'],vc['temporal_patch_size'],vc['spatial_merge_size'])!=(3,14,2,2):
+        raise ValueError('Flash image HTTP requires the pinned still-image patch geometry')
+    processor=json.loads(_read(Path(args.snapshot)/'processor_config.json',1024**2),object_pairs_hook=_unique_fields)
+    if not isinstance(processor,dict) or processor.get('processor_class')!='Glm5NextProcessor':
+        raise ValueError('Flash image HTTP requires the pinned processor class')
+    validate_processor(processor.get('image_processor'))
 
 
 def prepare(args):
     """Validate policy and text metadata before any tensor payload is loaded."""
     auth=AuthPolicy.from_env()
     if not isinstance(args.alias,str) or not 1<=len(args.alias)<=128:raise ValueError('invalid model alias')
+    if args.flash_images and args.family!='flash':raise ValueError('still-image HTTP requires explicit flash family')
+    if not args.flash_images and any(getattr(args,key) is not None for key in
+            ('vision_weight_mib','image_workspace_mib','image_output_mib','max_patches')):
+        raise ValueError('image budgets require --flash-images')
     if args.family=='deepseek' and (args.workspace_mib is not None or args.output_mib is not None):
         raise ValueError('workspace-mib and output-mib are GLM/Flash-only budgets')
     config=json.loads(_read(Path(args.snapshot)/'config.json',1024**2),object_pairs_hook=_unique_fields)
@@ -65,13 +85,27 @@ def prepare(args):
             from dllm.glm_flash_reference_loader import load_reference_model
             from dllm.glm_flash_generation import flash_text_config
             text_config=flash_text_config(config)
+            if args.flash_images:
+                image_metadata(config,args)
+                from dllm.glm_flash_image_tool_text import FlashImageToolText as Text
+                from dllm.glm_flash_image_tool_generation import FlashImageToolReferenceGenerator as Runner
         options=dict(projection_workspace_bytes=args.projection_workspace_mib*1024**2,
             max_workspace_bytes=(args.workspace_mib or 64)*1024**2,max_output_bytes=(args.output_mib or 64)*1024**2)
     text=Text(args.snapshot,vocab_size=text_config.get('vocab_size'))
     validate_text_config(text_config,text,args.context)
+    if args.flash_images and config.get('image_token_id')!=text.image_token_id:
+        raise ValueError('Flash image token disagrees with tokenizer')
     model=load_reference_model(args.snapshot,max_weight_bytes=args.weight_mib*1024**2,**options)
     try:
-        runner=Runner(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
+        image_options={}
+        if args.flash_images:
+            from dllm.glm_flash_vision_loader import load_reference_vision
+            vision=load_reference_vision(args.snapshot,max_weight_bytes=(args.vision_weight_mib or 256)*1024**2,
+                max_tokens=args.max_patches or 4096,max_workspace_bytes=(args.workspace_mib or 64)*1024**2,
+                max_output_bytes=(args.output_mib or 64)*1024**2)
+            image_options=dict(vision=vision,image_workspace_bytes=(args.image_workspace_mib or 64)*1024**2,
+                image_output_bytes=(args.image_output_mib or 64)*1024**2)
+        runner=Runner(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2,**image_options)
         runtime=ReferenceRuntime(runner,args.alias)
     except BaseException as error:
         try:
@@ -96,7 +130,7 @@ def serve(runtime,auth,args):
         if threading.current_thread() is threading.main_thread():
             for sig in (signal.SIGTERM,signal.SIGINT):previous[sig]=signal.signal(sig,interrupt)
         print(json.dumps(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',
-            model=args.alias,model_type=runtime.family,scope='cpu_reference',dtype='float32',
+            model=args.alias,model_type=runtime.family,modality='still_image' if runtime.images else 'text',scope='cpu_reference',dtype='float32',
             official_model_qualified=False)),flush=True)
         while not stopping.is_set():server.handle_request()
     except BaseException as error:primary=error;raise

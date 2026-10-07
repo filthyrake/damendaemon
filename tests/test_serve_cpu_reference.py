@@ -60,11 +60,16 @@ class ReferenceCommandTests(unittest.TestCase):
         return json.loads(line)
 
     def test_actual_snapshots_authenticated_http_and_signal_shutdown(self):
-        for family in ('glm','flash','deepseek'):
+        for family in ('glm','flash','deepseek','flash-image'):
             with self.subTest(family=family):
-                path=self.snapshot(family);key=secrets.token_urlsafe(32)
-                process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference',family,str(path),
-                    '--context','128','--port','0'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
+                if family=='flash-image':
+                    from tests.test_glm_flash_inline_images import snapshot as image_snapshot
+                    path=self.path/family;path.mkdir();image_snapshot(path)
+                else:path=self.snapshot(family)
+                key=secrets.token_urlsafe(32)
+                extra=['--flash-images'] if family=='flash-image' else []
+                process=subprocess.Popen([sys.executable,'-m','scripts.serve_cpu_reference','flash' if extra else family,str(path),
+                    '--context','256','--port','0',*extra],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
                     env=self.env|{'DLLM_API_KEY':key})
                 try:
                     ready=self.event(process);self.assertEqual(ready['event'],'http_ready')
@@ -75,7 +80,11 @@ class ReferenceCommandTests(unittest.TestCase):
                     with urlopen(Request(ready['url']+'/health',headers=headers),timeout=3) as response:
                         self.assertEqual(response.status,200)
                     for stream in (False,True):
-                        body=dict(model='model',messages=[dict(role='user',content='Hi')],max_tokens=1,stream=stream)
+                        messages=[dict(role='user',content='Hi')]
+                        if extra:
+                            from tests.test_glm_flash_inline_images import messages as image_messages
+                            messages=image_messages()
+                        body=dict(model='model',messages=messages,max_tokens=1,stream=stream)
                         if stream:body['stream_options']={'include_usage':True}
                         with urlopen(Request(ready['url']+'/v1/chat/completions',json.dumps(body).encode(),headers),timeout=10) as response:
                             payload=response.read().decode();self.assertEqual(response.status,200)
@@ -140,3 +149,16 @@ class ReferenceCommandTests(unittest.TestCase):
             self.assertIs(runtime.runner.model,model);self.assertFalse(runtime.closed)
         runtime.close()
         self.assertFalse(model.failed_prefills);self.assertTrue(runtime.closed)
+
+    def test_image_command_metadata_and_opt_in_fail_before_payload(self):
+        from tests.test_glm_flash_inline_images import snapshot
+        path=self.path/'images';path.mkdir();snapshot(path)
+        with patch.dict(os.environ,self.env,clear=True),patch('dllm.glm_flash_reference_loader.load_reference_model',side_effect=AssertionError('payload')) as load:
+            for family,options in (('glm',['--flash-images']),('flash',['--max-patches','16'])):
+                with self.assertRaises(ValueError):command.prepare(self.args(family,path,*options))
+            config=json.loads((path/'config.json').read_text());config['image_token_id']=-1
+            (path/'config.json').write_text(json.dumps(config))
+            with self.assertRaises(ValueError):command.prepare(self.args('flash',path,'--flash-images'))
+            (path/'processor_config.json').write_text('{}')
+            with self.assertRaises(ValueError):command.prepare(self.args('flash',path,'--flash-images'))
+            load.assert_not_called()

@@ -91,3 +91,36 @@ are included in the runner's cleanup and the HTTP pending-cleanup status.
 Tiny packed local snapshots exercise each family's command through real HTTP/SSE
 and process shutdown. This verifies wiring and lifecycle, not useful official-model
 answers or GPU performance.
+
+## Flash still-image HTTP opt-in
+
+```sh
+python -m scripts.serve_cpu_reference flash /path/to/snapshot --flash-images --context 4096 --port 8088
+```
+
+This selects a distinct prepared `FlashImageToolReferenceGenerator`. Each request
+must retain at least one inline PNG/JPEG `image_url` part in a user message. Send
+text and images as ordinary typed content parts; tool declarations and returned
+assistant/tool-result history use the same native schema-bound contract above.
+Tools are data only. Text-only requests use the default command without the image
+flag. No remote URLs, filesystem paths, video, audio or animated images are loaded.
+
+The existing HTTP body limit stays 1 MiB. At most four images and 16 million total
+decoded pixels are admitted; image processing has its own patch and byte budgets.
+Family history and encoded framing are checked before pixel decoding; the runtime
+acquires its single request owner before decoding pixels or running vision. Image
+context/patch/scratch failures occur before vision/text execution. A busy owner
+returns 503 without decoding the competing request's pixels.
+
+Image startup validates the pinned processor class/geometry and image-token
+identity before loading payloads. `--vision-weight-mib` defaults to 256,
+`--image-workspace-mib` and `--image-output-mib` to 64, and `--max-patches` to 4096.
+These options require `--flash-images`; other families reject the flag.
+`--workspace-mib`/`--output-mib` also bound vision execution scratch/output; they
+are distinct from image preprocessing budgets. Readiness and model status report
+`modality: still_image`, with the same CPU-reference qualification boundary.
+
+The local gate covers actual tiny packed text+vision snapshots through a separate
+HTTP process, native tool/SSE/history routing, malformed/remote/over-budget input,
+concurrent rejection and cache cleanup. It does not establish official-checkpoint
+image semantics, accelerator support or practical-model performance.

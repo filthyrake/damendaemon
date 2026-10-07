@@ -1,9 +1,10 @@
 """Flash inline-image message adapter over the shared bounded PNG/JPEG decoder."""
 from .glm_flash_image_text import _render
-from .vision_messages import decode_image_messages,ImageMessages
+import copy
+from .vision_messages import decode_image_messages,validate_image_messages,ImageMessages
 
 
-def decode_inline_images(messages,*,tools=None,max_images=4,max_bytes=8*1024**2,max_pixels=16*1024**2):
+def _prepare(messages,tools):
     if not isinstance(messages,list) or not 1<=len(messages)<=4096:raise ValueError('invalid Flash inline-image conversation')
     prepared=[]
     for message in messages:
@@ -23,7 +24,19 @@ def decode_inline_images(messages,*,tools=None,max_images=4,max_bytes=8*1024**2,
     # generic pixel decoder, so its unrelated tool-name conventions do not leak
     # into this explicitly validated Flash history contract.
     carriers=[dict(role='user',content=m['content']) for m in messages if isinstance(m.get('content'),list)]
-    decoded=decode_image_messages(carriers or [dict(role='user',content='')],
+    return prepared,carriers or [dict(role='user',content='')]
+
+
+def validate_inline_images(messages,*,tools=None):
+    """Validate family history and inline framing without decoding pixels."""
+    _,carriers=_prepare(messages,tools)
+    validate_image_messages(carriers)
+    return copy.deepcopy(messages)
+
+
+def decode_inline_images(messages,*,tools=None,max_images=4,max_bytes=8*1024**2,max_pixels=16*1024**2):
+    prepared,carriers=_prepare(messages,tools)
+    decoded=decode_image_messages(carriers,
                                   max_images=max_images,max_bytes=max_bytes,max_pixels=max_pixels)
     # The shared decoder's Qwen-rendered message strings are intentionally not
     # reused; Flash retains its own typed markers and pinned template semantics.
