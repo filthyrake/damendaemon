@@ -445,6 +445,15 @@ and reports explicit truncation separately. Malformed controls, trailing data
 and currently unsupported DSML tool output fail and make the parser unusable.
 Previously emitted deltas remain partial output when a later chunk fails.
 
+`dllm.deepseek_generation.ReferenceGenerator` connects the prepared CPU model
+and text adapter for bounded greedy reference generation. ByteLevel tokens decode
+incrementally, including split UTF-8 sequences, before channel parsing. EOS and
+length completion release the cache before the final result; closing an abandoned
+iterator also releases it. Failed cleanup stays owned and must succeed before
+another prefill. Tests cover scripted failure paths and actual synthetic packed
+snapshot generation against fresh-prefix logits. This remains a CPU reference,
+with no official-model quality, speed or HTTP support claim.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with

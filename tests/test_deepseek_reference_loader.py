@@ -15,8 +15,8 @@ from tests.test_deepseek_checkpoint import config as geometry
 from tests.test_packed_checkpoint import write_raw
 
 
-def fixture(path):
-    config=geometry()|dict(scoring_func='sqrtsoftplus',norm_topk_prob=True,topk_method='noaux_tc',hidden_act='silu',
+def fixture(path,vocab_size=16):
+    config=geometry()|dict(vocab_size=vocab_size,scoring_func='sqrtsoftplus',norm_topk_prob=True,topk_method='noaux_tc',hidden_act='silu',
                           tie_word_embeddings=False,sliding_window=4,hc_sinkhorn_iters=20,index_topk=2,
                           qk_rope_head_dim=64,rms_norm_eps=1e-6,hc_eps=1e-6,swiglu_limit=2.,routed_scaling_factor=1.5,
                           rope_theta=10000.,compress_rope_theta=160000.,

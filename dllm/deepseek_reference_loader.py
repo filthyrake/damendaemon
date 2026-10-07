@@ -161,4 +161,6 @@ def load_reference_model(path, *, max_weight_bytes=256*1024*1024, dtype=torch.fl
                                     iterations=config['hc_sinkhorn_iters'],activation_limit=config['swiglu_limit'],
                                     workspace_bytes=workspace_bytes,packed_experts=experts[:-1],packed_shared=experts[-1]))
     head={name:tensors[name] for name in ('head.weight','norm.weight','hc_head_fn','hc_head_scale','hc_head_base')}
-    return FloatingModel(tensors['embed.weight'],blocks,head,epsilon=config['rms_norm_eps'],connection_epsilon=config['hc_eps'])
+    model=FloatingModel(tensors['embed.weight'],blocks,head,epsilon=config['rms_norm_eps'],connection_epsilon=config['hc_eps'])
+    model.config=dict(config)
+    return model
