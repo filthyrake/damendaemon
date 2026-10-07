@@ -353,6 +353,18 @@ block cache; failed prefill closes its newly created attention state. Parameter
 banks are already resident floating tensors, not a packed-checkpoint loader.
 Full model/serving and GPU qualification remain open.
 
+`dllm.floating_model.FloatingModel` connects prepared blocks to token embeddings
+and the final hyper-connection reduction, learned RMS normalization and FP32
+vocabulary head. Prefill returns last-token logits and an owned model cache;
+single-token decode requires an explicit expected position. Aggregate cache
+budgets cover every layer and constrain slot fanout. A partial layer advance,
+head failure or partially published slot reorder poisons the entire model cache.
+Failed prefill cleanup remains owned and is retried before another build.
+Tiny CPU fixtures compare teacher-forced and greedy cached steps with fresh
+prefill, and exercise budget, owner, ordering and failure boundaries. This is a
+prepared-floating reference stack: packed checkpoint loading, real-model logit
+equivalence, serving admission and GPU qualification remain open.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
