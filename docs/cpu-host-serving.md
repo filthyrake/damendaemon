@@ -50,3 +50,19 @@ the regression gate. Hardware and full-model qualification remain open in #51.
 The [explicit serving command](cpu-host-command.md#loopback-http-service) owns the
 listener, HTTP thread, request owner and peer lifecycle for this adapter. It emits
 readiness only after authenticated worker setup and loopback binding.
+
+Distributed output buffering is fixed at eight token events plus one reserved
+terminal event per request, independent of the requested output allowance. A full
+buffer pauses that slot's decode while other ready slots advance. Final success
+still follows acknowledged RELEASE and can be queued without waiting for the
+client to consume its last text event. Cancellation and failure do not block on a
+full output buffer. When every slot is backpressured, the owner waits briefly and
+continues peer heartbeats instead of spinning or advancing model state.
+
+Status exposes `stream_buffer_events: 8`. This is a bound on queued events;
+context-bounded token history and cumulative detokenization text remain retained
+for each active request, and event byte sizes depend on the tokenizer. It is not
+a total process-memory cap. Slow consumers can still occupy their admitted slots
+until cancellation or the HTTP socket timeout; no prefill fairness or SLO claim
+follows from this change. The scheduling fix is shared with the existing
+experimental distributed GPU runtime, whose throughput has not been remeasured.

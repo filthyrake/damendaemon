@@ -14,6 +14,8 @@ from .runtime import BusyError
 from .sampling import Sampling
 from .stopping import text_delta
 
+STREAM_BUFFER_EVENTS=8
+
 
 @dataclass
 class Request:
@@ -71,7 +73,8 @@ class DistributedRuntime:
             weight_layout='q4-adjacent-body' if getattr(self.pair,'q4_stage_adjacent',False) else 'canonical',
             distributed=True,stage_layers=[[0,12],[12,24]],max_batch_size=self.max_batch,packed_prefill=self.packed_prefill,
             active=self.active,queued=self.requests.qsize(),completed=self.completed,
-            heartbeats=self.heartbeats,failed=self.failure is not None,closed=self.closed.is_set())
+            heartbeats=self.heartbeats,stream_buffer_events=STREAM_BUFFER_EVENTS,
+            failed=self.failure is not None,closed=self.closed.is_set())
 
     def embed(self,*args,**kwargs):raise ValueError('distributed embeddings are unsupported')
     def score(self,*args,**kwargs):raise ValueError('distributed token scoring is unsupported')
@@ -91,7 +94,9 @@ class DistributedRuntime:
             tokens=encode(self.pair.model,messages,raw_prompt=raw_prompt,enable_thinking=enable_thinking)
         if not tokens or len(tokens)+max_tokens>self.pair.model.max_context:
             raise ValueError('prompt plus completion limit exceeds distributed context')
-        request=Request(tokens,max_tokens,time.monotonic(),queue.Queue(max_tokens+1))
+        # One extra position is reserved for a release-acknowledged final or error.
+        # The owner never schedules a token when eight data events are buffered.
+        request=Request(tokens,max_tokens,time.monotonic(),queue.Queue(STREAM_BUFFER_EVENTS+1))
         try:self.requests.put_nowait(request)
         except queue.Full:raise BusyError('distributed request queue is full') from None
         received=False
@@ -198,7 +203,8 @@ class DistributedRuntime:
                         item.prefill_batch_size=len(items)
                         self._advance(item,token,1)
                     last_request=last_control=time.monotonic()
-                ready=[item for item in active if not item.done and not item.request.cancelled.is_set()]
+                ready=[item for item in active if not item.done and not item.request.cancelled.is_set()
+                       and item.request.events.qsize()<STREAM_BUFFER_EVENTS]
                 if ready and not self.closed.is_set():
                     tokens=[item.output[-1] for item in ready]
                     result=([self.pair.step(tokens)] if self.max_batch==1 else
@@ -206,11 +212,13 @@ class DistributedRuntime:
                     if len(result)!=len(ready):raise RuntimeError('distributed decode result size mismatch')
                     for item,token in zip(ready,result):self._advance(item,token,len(ready))
                     last_request=last_control=time.monotonic()
-                if not active:
-                    now=time.monotonic()
-                    if idle_timeout and now-last_request>=idle_timeout:break
-                    if now-last_control>=heartbeat_interval:
-                        self.pair.heartbeat();self.heartbeats+=1;last_control=time.monotonic()
+                now=time.monotonic()
+                if not active and idle_timeout and now-last_request>=idle_timeout:break
+                # A live slot can be idle because its consumer is backpressured.
+                # Keep the peer alive without advancing its state or busy spinning.
+                if now-last_control>=heartbeat_interval:
+                    self.pair.heartbeat();self.heartbeats+=1;last_control=time.monotonic()
+                if active and not ready:self.closed.wait(min(.01,heartbeat_interval))
         except BaseException as error:
             self.failure=error
             for item in active:self._publish(item.request,RuntimeError('distributed worker session failed'))

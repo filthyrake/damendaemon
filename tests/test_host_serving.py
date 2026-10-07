@@ -150,3 +150,33 @@ class HostServingTests(unittest.TestCase):
         self.runtime.close()
         with self.assertRaises(HTTPError) as error:urlopen(base+'/health')
         self.assertEqual(error.exception.code,503)
+
+    def test_real_tls_backpressure_keeps_peer_alive_and_preserves_other_slot(self):
+        from dllm.distributed_serving import STREAM_BUFFER_EVENTS
+        self.start(heartbeat_interval=.02)
+        requests=[]
+        def capture(*args,**kwargs):
+            request=Request(*args,**kwargs);requests.append(request);return request
+        generation=self.runtime.generate('model',None,13,raw_prompt=[1,2])
+        self.addCleanup(generation.close)
+        with patch('dllm.distributed_serving.Request',side_effect=capture):first=next(generation)
+        request=requests[0];deadline=time.monotonic()+3
+        while request.events.qsize()<STREAM_BUFFER_EVENTS and time.monotonic()<deadline:time.sleep(.005)
+        self.assertEqual(request.events.qsize(),STREAM_BUFFER_EVENTS)
+        before=self.pair.state.lengths[0];self.assertLess(before,15)
+        survivor=list(self.runtime.generate('model',None,3,raw_prompt=[1,2]))
+        self.assertEqual(survivor[-1]['usage']['completion_tokens'],3)
+        self.assertEqual(self.pair.state.lengths[0],before)
+        deadline=time.monotonic()+3;heartbeats=self.runtime.heartbeats
+        while self.runtime.heartbeats==heartbeats and time.monotonic()<deadline:time.sleep(.005)
+        self.assertGreater(self.runtime.heartbeats,heartbeats)
+        self.assertEqual(self.pair.state.lengths[0],before)
+        result=[first,*list(generation)]
+        self.assertEqual(result[-1]['usage']['completion_tokens'],13)
+        source=load_cpu_checkpoint(self.fixture.path,max_context=16,quantization='q4_0')
+        control=CpuPipelineReferenceGenerator(source,[2**22]*2,vocab_size=self.text.vocab_size,**OPTIONS)
+        self.addCleanup(control.cleanup)
+        expected=list(control.generate([1,2],max_new_tokens=13,chunk_size=1))
+        expected_text=self.text.decode([e['token_id'] for e in expected if 'token_id' in e])
+        self.assertEqual(''.join(e.get('text','') for e in result),expected_text)
+        self.assertFalse(any(self.pair.state.lengths));self.assertFalse(self.errors)

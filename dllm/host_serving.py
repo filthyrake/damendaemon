@@ -1,7 +1,7 @@
 """Explicit CPU host-worker adapter for the existing distributed HTTP owner."""
 from types import SimpleNamespace
 from .cpu_reference_text import CpuReferenceText
-from .distributed_serving import DistributedRuntime
+from .distributed_serving import DistributedRuntime,STREAM_BUFFER_EVENTS
 from .host_hybrid_worker import HostHybridWorker
 
 
@@ -79,7 +79,9 @@ class HostDistributedRuntime(DistributedRuntime):
                          session_identity=self.pair.identity.hex())],
             distributed=True,stage_layers=[[0,stage.layer_end],[stage.layer_end,stage.c['num_hidden_layers']]],
             max_batch_size=self.max_batch,packed_prefill=False,active=self.active,queued=self.requests.qsize(),
-            completed=self.completed,heartbeats=self.heartbeats,failed=self.failure is not None,closed=self.closed.is_set())
+            completed=self.completed,heartbeats=self.heartbeats,
+            stream_buffer_events=STREAM_BUFFER_EVENTS,
+            failed=self.failure is not None,closed=self.closed.is_set())
 
     def generate(self,alias,messages,max_tokens,**options):
         if type(max_tokens) is not int or not 1<=max_tokens<=4096:raise ValueError('CPU host output limit must be 1..4096')
