@@ -583,3 +583,15 @@ defaults retain their prior arithmetic. Dense CPU controls cover projections,
 normalization, rotation, selection, chunking and budget rejection. Packed FP8
 execution, complete MLA attention/model arithmetic and GPU performance remain
 unqualified.
+
+`dllm.glm_attention.project_mla` implements CPU FP32 Q/KV low-rank projections,
+RMS normalization and tail interleaved query RoPE, returning queries, query
+residuals, normalized KV latents and shared rotary keys. The indexer rotates a
+prefix instead; these layouts are intentionally distinct. `sparse_latent_attention`
+expands only selected KV tiles and combines softmax statistics incrementally,
+avoiding a full-context expanded KV tensor or full query/context score matrix.
+It accepts distinct causal token IDs with `-1` padding and rejects empty/future/
+duplicate selections, nonfinite arithmetic and requests exceeding configured
+output/tensor-scratch budgets. Dense full-expanded CPU controls cover projection
+and tiled attention equations. These are stateless primitives; persistent state,
+complete layers/models, packed precision and hardware behavior remain open.
