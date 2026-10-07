@@ -1,6 +1,7 @@
 """Greedy completion streams over an exclusively owned prepared host session."""
 from contextlib import closing
 import threading
+import torch
 
 from .cpu_pipeline_generation import prepare_cpu_batch
 from .host_hybrid_worker import HostHybridWorker
@@ -58,6 +59,54 @@ class HostCompletion:
         topology=getattr(worker,'topology',None)
         if topology is not None and min(chunk_size,max(map(len,rows)))>topology.chunk_size:
             raise ValueError('host completion exceeds planned prefill chunk rows')
+        yield from self._generate(rows,limits,chunk_size,cancelled,worker.prefill_chunk)
+
+    def generate_embeddings(self,values,*,max_new_tokens=128,chunk_size=128,cancelled=None):
+        """Complete one prepared Flash [sequence, hidden] row on CPU."""
+        if type(max_new_tokens) is not int:raise ValueError('single host completion requires an integer output limit')
+        with closing(self.generate_embedding_batch([values],max_new_tokens=max_new_tokens,
+                chunk_size=chunk_size,cancelled=cancelled)) as stream:
+            for event in stream:yield {k:v for k,v in event.items() if k!='row'}
+
+    def generate_embedding_batch(self,rows,*,max_new_tokens=128,chunk_size=128,cancelled=None):
+        """Detach bounded prepared features before entering the shared owned loop.
+
+        Features bind storage and positions only; callers own image preparation
+        and native prompt policy. Successful rows release their slots for reuse.
+        """
+        from .host_pipeline_worker import HostPipelineCoordinator
+        worker=self.worker;topology=getattr(worker,'topology',None)
+        if not isinstance(worker,HostPipelineCoordinator) or topology.input_kind!='flash_embeddings':
+            raise ValueError('embedding completion requires explicit Flash prepared-input topology')
+        self._check_cancelled(cancelled if callable(cancelled) else None)
+        if (not isinstance(rows,(list,tuple)) or not 1<=len(rows)<=topology.slots
+                or type(chunk_size) is not int or not 1<=chunk_size<=4096):
+            raise ValueError('invalid embedding completion slot/chunk limits')
+        limits=[max_new_tokens]*len(rows) if type(max_new_tokens) is int else max_new_tokens
+        if (not isinstance(limits,(list,tuple)) or len(limits)!=len(rows)
+                or any(type(limit) is not int or not 1<=limit<=4096 for limit in limits)
+                or cancelled is not None and not callable(cancelled)):
+            raise ValueError('invalid embedding completion output/cancellation limits')
+        worker._ready(True)
+        dim=topology.text_config['hidden_size']
+        output_bytes=getattr(getattr(worker.stage,'stage',None),'max_output_bytes',0)
+        retained=0
+        for row,limit in zip(rows,limits):
+            if (not isinstance(row,torch.Tensor) or row.device.type!='cpu' or row.dtype!=torch.float32
+                    or row.ndim!=2 or row.shape[1]!=dim or not 1<=row.shape[0]<=topology.context-limit):
+                raise ValueError('invalid embedding completion feature geometry/context')
+            retained+=row.numel()*4
+            if (retained>output_bytes or min(chunk_size,len(row))>topology.chunk_size
+                    or min(chunk_size,len(row))*topology.width*4>min(output_bytes,topology.frame_bytes)
+                    or not torch.isfinite(row).all()):
+                raise ValueError('embedding completion exceeds storage/frame bounds or has nonfinite features')
+        if len(rows)*topology.width*4>min(output_bytes,topology.frame_bytes):
+            raise ValueError('embedding completion decode exceeds output/frame bounds')
+        prepared=[row.detach().clone() for row in rows]
+        yield from self._generate(prepared,list(limits),chunk_size,cancelled,worker.prefill_embeddings)
+
+    def _generate(self,rows,limits,chunk_size,cancelled,prefill):
+        worker=self.worker
         if cancelled is not None and not callable(cancelled):raise ValueError('cancellation must be callable')
         if not self.lock.acquire(blocking=False):raise RuntimeError('host completion is active')
         primary=None;counts=[0]*len(rows);reasons=['length']*len(rows)
@@ -69,7 +118,7 @@ class HostCompletion:
             for slot,tokens in enumerate(rows):
                 for start in range(0,len(tokens),chunk_size):
                     self._check_cancelled(cancelled)
-                    value=worker.prefill_chunk(tokens[start:start+chunk_size],slot,start)
+                    value=prefill(tokens[start:start+chunk_size],slot,start)
                 sampled.append(value)
             active=list(range(len(rows)))
             while active:

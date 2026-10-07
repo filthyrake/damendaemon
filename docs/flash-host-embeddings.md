@@ -23,3 +23,22 @@ retry. Invalid input detected before dispatch leaves the session usable.
 CPU fixture tests compare two/three-stage TLS results with full-model prepared
 embeddings and a real vision projection. These are correctness controls, not
 remote deployment, official-model quality or accelerator performance evidence.
+
+## Owned completion
+
+Transfer a ready coordinator to `HostCompletion`. In prepared-input mode,
+`generate_embeddings(values, max_new_tokens=..., chunk_size=...)` completes one
+row; `generate_embedding_batch(rows, max_new_tokens=[...], chunk_size=...)`
+accepts up to the negotiated slot count, including unequal prompt/output lengths.
+Rows are detached before the first dispatch. Their aggregate FP32 storage must
+fit the first stage's output budget, and every expanded chunk and decode batch
+must fit its output/frame limits. Full prompt plus requested output must fit
+context; no budget is silently reduced.
+
+Events contain token IDs followed by per-row usage and a finish reason. Usage
+counts prepared language positions, including image feature positions. Each
+finished slot is released before final success. Ordinary token completion
+remains available on the same low-level owner. Invalid feature preflight leaves
+it usable; failure after dispatch, cancellation during execution or abandoned
+iteration retires the epoch. `close()` interrupts blocked transport; retain the
+owner and retry `cleanup()` when resource release fails.
