@@ -56,6 +56,9 @@ class ReferenceRuntime:
             or getattr(runner.model,'failed_cleanups',[]) or getattr(runner.model,'failed_prefills',[])
             or getattr(runner.model,'cleanup_pending',False)))
 
+    def is_healthy(self):
+        return not self.stopping.is_set() and not self.cleanup_pending()
+
     def manage(self,action,**options):
         if action!='status' or options:raise ValueError('CPU reference model management is unsupported')
         return dict(device='cpu',scope='cpu_reference',official_model_qualified=False,model_type=self.family,
@@ -157,7 +160,7 @@ def handler_for_reference(runtime,auth=None):
         def do_GET(self):
             if self.path!='/health':return super().do_GET()
             if not self.authorize():return
-            healthy=not runtime.stopping.is_set() and not runtime.cleanup_pending()
+            healthy=runtime.is_healthy()
             self.send_json(200 if healthy else 503,dict(status='ok' if healthy else 'closed',
                 scope='cpu_reference',official_model_qualified=False))
     return Handler
