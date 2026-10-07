@@ -34,5 +34,6 @@ explicitly. A caller cannot change accepted types by mutating its declaration
 list after construction.
 
 This module does not execute tools or change ordinary generation admission.
-Prompt/tool-result histories, incremental output integration, official-model
-semantics and hardware qualification remain separate gates under GitHub #57.
+The explicit [tool-history adapter](flash-tool-prompts.md) adds pinned prompt and
+tokenizer behavior. Incremental output integration, official-model semantics and
+hardware qualification remain separate gates under GitHub #57.
