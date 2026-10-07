@@ -159,15 +159,28 @@ class QueuedGlmHostServingTests(unittest.TestCase):
 
     def test_ping_during_output_backpressure_preserves_occupied_slots_and_completion(self):
         runtime,workers,control=self.runtime();messages=[dict(role='user',content='Hi')]
-        stream=runtime.generate('model',messages,32);first=next(stream)
-        self.until(lambda:next(iter(runtime.accepted.values())).events.qsize()>=8)
-        lengths=tuple(workers[0].channel.state.lengths)
-        # Peers have a two-second receive bound. Maintenance across a longer
-        # pause must preserve occupied slot cursors and exact final output.
-        for _ in range(3):
-            threading.Event().wait(.8);workers[0].ping()
-            self.assertEqual(tuple(workers[0].channel.state.lengths),lengths)
-        events=[first,*list(stream)]
+        blocked=threading.Event();resume=threading.Event();publish=runtime._publish;count=0
+        def observe(request,event,**options):
+            nonlocal count
+            if not options.get('terminal',False):count+=1
+            # The first consumer has removed exactly one item; publication ten
+            # reaches the full eight-event queue after that removal, not before.
+            if count==10:
+                self.assertEqual(request.events.qsize(),8);blocked.set()
+                if not resume.wait(5):raise RuntimeError('test publication barrier timed out')
+            return publish(request,event,**options)
+        with patch.object(runtime,'_publish',observe):
+            stream=runtime.generate('model',messages,32);first=next(stream)
+            try:
+                self.assertTrue(blocked.wait(2))
+                lengths=tuple(workers[0].channel.state.lengths)
+                # Peers have a two-second receive bound. Maintenance across a longer
+                # pause must preserve occupied slot cursors and exact final output.
+                for _ in range(3):
+                    threading.Event().wait(.8);workers[0].ping()
+                    self.assertEqual(tuple(workers[0].channel.state.lengths),lengths)
+            finally:resume.set()
+            events=[first,*list(stream)]
         expected=list(control.generate(messages,max_new_tokens=32))
         self.assertEqual(''.join(e.get('reasoning_content','') for e in events),''.join(e.get('reasoning_content','') for e in expected))
         self.assertEqual(events[-1]['usage']['completion_tokens'],expected[-1]['usage']['completion_tokens'])

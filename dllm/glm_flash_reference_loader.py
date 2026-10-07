@@ -18,6 +18,7 @@ from .glm_flash_hyper import FlashHyperConnection
 from .glm_flash_ffn import PackedFlashFeedForward
 from .glm_flash_block import FlashBlock
 from .glm_flash_model import FlashModel
+from .glm_flash_layer_stage import FlashLayerStage,validate_range
 
 
 def _options(config):
@@ -38,7 +39,18 @@ def _options(config):
             raise ValueError(f'invalid Flash reference option: {name}')
 
 
-def load_reference_model(path,*,max_weight_bytes=256*1024**2,projection_workspace_bytes=8*1024**2,
+def load_reference_model(path,**options):
+    """Load the admitted complete main-text model within explicit byte budgets."""
+    return _load_reference(path,None,None,**options)
+
+
+def load_reference_stage(path,start,end,**options):
+    """Audit the whole snapshot but read/retain only the requested main-text range."""
+    if start is None or end is None:raise ValueError('Flash stage needs explicit range boundaries')
+    return _load_reference(path,start,end,**options)
+
+
+def _load_reference(path,start,end,*,max_weight_bytes=256*1024**2,projection_workspace_bytes=8*1024**2,
                          max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
     """Read admitted main-model tensors; leave FP8 weights packed and omit visual/MTP values.
 
@@ -59,6 +71,14 @@ def load_reference_model(path,*,max_weight_bytes=256*1024**2,projection_workspac
     if len(raw)>1024**2:raise ValueError('Flash configuration exceeds metadata limit')
     config=json.loads(raw,object_pairs_hook=_unique_fields)
     specs=tensor_specs(config);root_config=config;config=root_config['text_config'];_options(config)
+    whole=start is None and end is None
+    if whole:start,end=0,config['num_hidden_layers']
+    validate_range(start,end,config['num_hidden_layers'])
+    if not whole:
+        prefixes=tuple(ROOT+f'layers.{layer}.' for layer in range(start,end))
+        boundary=({ROOT+'embed_tokens.weight'} if start==0 else set())
+        if end==config['num_hidden_layers']:boundary|={ROOT+'norm.weight','lm_head.weight'}
+        specs={name:spec for name,spec in specs.items() if name in boundary or name.startswith(prefixes)}
     files,index=snapshot_shards(path)
     if len(files)>256:raise ValueError('Flash checkpoint exceeds open-shard limit')
     tensors={}
@@ -86,7 +106,7 @@ def load_reference_model(path,*,max_weight_bytes=256*1024**2,projection_workspac
                 if '.mlp.' in name:required+=128*(rows+columns)
                 if projection_workspace_bytes<required:
                     raise ValueError('Flash packed projection workspace is insufficient')
-        count=config['n_routed_experts'] if config['first_k_dense_replace']<config['num_hidden_layers'] else 0
+        count=config['n_routed_experts'] if config['first_k_dense_replace']<end else 0
         if projection_workspace_bytes+128*(config['hidden_size']+count)>max_workspace_bytes:
             raise ValueError('Flash expert and routing workspace exceeds component allowance')
         if retained+largest>max_weight_bytes:
@@ -108,7 +128,8 @@ def load_reference_model(path,*,max_weight_bytes=256*1024**2,projection_workspac
                   for name in ('gate_proj','up_proj','down_proj')]
         return PackedExpert(*matrices,workspace_bytes=projection_workspace_bytes,activation_limit=config['swiglu_limit'])
     budgets=dict(max_output_bytes=max_output_bytes,max_workspace_bytes=max_workspace_bytes)
-    for layer,kind in enumerate(config['layer_types']):
+    for layer in range(start,end):
+        kind=config['layer_types'][layer]
         prefix=ROOT+f'layers.{layer}';attn=prefix+'.self_attn.'
         weights={}
         for name,spec in specs.items():
@@ -144,7 +165,12 @@ def load_reference_model(path,*,max_weight_bytes=256*1024**2,projection_workspac
                                         iterations=config['hc_sinkhorn_iters'],**budgets)
         blocks.append(FlashBlock(attention,ffn,hyper('attn'),hyper('ffn'),tensors[prefix+'.input_layernorm.weight'],
                                  tensors[prefix+'.post_attention_layernorm.weight'],epsilon=config['rms_norm_eps'],**budgets))
-    model=FlashModel(tensors[ROOT+'embed_tokens.weight'],blocks,tensors[ROOT+'norm.weight'],tensors['lm_head.weight'],
-                     epsilon=config['rms_norm_eps'],max_output_bytes=max_output_bytes)
+    if whole:
+        model=FlashModel(tensors[ROOT+'embed_tokens.weight'],blocks,tensors[ROOT+'norm.weight'],tensors['lm_head.weight'],
+                         epsilon=config['rms_norm_eps'],max_output_bytes=max_output_bytes)
+    else:
+        model=FlashLayerStage(blocks,start=start,total=config['num_hidden_layers'],
+            embedding=tensors.get(ROOT+'embed_tokens.weight'),norm=tensors.get(ROOT+'norm.weight'),head=tensors.get('lm_head.weight'),
+            epsilon=config['rms_norm_eps'],max_output_bytes=max_output_bytes)
     model.config=root_config
     return model
