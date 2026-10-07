@@ -612,3 +612,17 @@ partially constructed state. CPU tests compare incremental output to fresh-prefi
 execution and cover full/shared layers, reorder allocation failures, post-write
 failures and cleanup. This remains an FP32 reference attention component, without
 packed weights, complete-model qualification or production serving admission.
+
+`GlmFeedForward` implements CPU FP32 dense and routed/shared SiLU FFNs. Sparse
+routing uses sigmoid scores, correction bias only for selecting experts,
+`sum + 1e-20` normalization and post-down-projection route weights. Token chunks
+use views of resident expert matrices rather than gathering whole expert banks.
+Output and explicit scratch limits exclude resident parameters and backend
+allocator/matmul overhead. Deterministic biased ties prefer lower expert IDs.
+
+`GlmBlock` composes input RMS normalization, cached attention, residual addition,
+post-attention RMS normalization and the dense/MoE FFN. Its block cursor commits
+after the FFN succeeds; downstream failure after attention mutation poisons both
+states. Dense/sparse expert controls, tiny-score routing and cached/fresh-prefix
+block comparisons are local FP32 evidence only. Complete-model, actual packed
+checkpoint and hardware qualification remain open.
