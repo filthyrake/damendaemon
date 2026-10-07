@@ -1800,3 +1800,12 @@ Exact ties select earlier pools deterministically. Returned int64 indices reserv
 canonical placement preserves selected sets rather than reproducing the upstream
 variable tail offset. Workspace and output are separately bounded before scans.
 This is a stateless indexer primitive, not sparse-attention/model qualification.
+
+`glm_flash_attention` exposes explicit NoPE projection/selected-latent attention
+entry points. The shared GLM engine accepts zero rotary width, retains selected
+KV tile expansion and online softmax, and now rejects overflow in latent RMS
+normalization instead of allowing a finite zero result. Independent dense masked
+controls cover NoPE output and tile boundaries; packed E4M3/FP32-scale projection
+fixtures agree with independently decoded floating controls. Existing rotary
+GLM tests remain part of regression coverage. These stateless primitives do not
+yet supply an owned Flash sparse-attention layer or full-model execution.

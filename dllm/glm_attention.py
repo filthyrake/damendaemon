@@ -47,7 +47,7 @@ def project_mla(hidden,positions,weights,*,heads,nope_dim,rope_dim,rope_base=800
     if not _float(hidden,3) or not isinstance(weights,dict) or set(weights)!=names:
         raise ValueError('invalid GLM latent projection inputs')
     if (type(heads) is not int or not 1<=heads<=256 or type(nope_dim) is not int or not 1<=nope_dim<=4096
-            or type(rope_dim) is not int or not 2<=rope_dim<=4096 or rope_dim%2
+            or type(rope_dim) is not int or not 0<=rope_dim<=4096 or rope_dim%2
             or type(chunk) is not int or not 1<=chunk<=128
             or type(eps) not in (int,float) or not 0<eps<=1):
         raise ValueError('invalid GLM latent projection geometry/options')
@@ -67,20 +67,24 @@ def project_mla(hidden,positions,weights,*,heads,nope_dim,rope_dim,rope_base=800
     _budgets(output,scratch,max_output_bytes,max_workspace_bytes)
     if not torch.isfinite(hidden).all() or any(not _finite_parameter(w) for w in weights.values()):
         raise ValueError('GLM latent projection inputs must be finite')
-    inverse=frequencies(rope_dim,base=rope_base)
+    inverse=frequencies(rope_dim,base=rope_base) if rope_dim else None
     result={'query':torch.empty(batch,sequence,heads,width,dtype=torch.float32,device='cpu'),
             'low_rank':torch.empty(batch,sequence,qr,dtype=torch.float32,device='cpu'),
             'latents':torch.empty(batch,sequence,kr,dtype=torch.float32,device='cpu'),
             'rotary_keys':torch.empty(batch,sequence,rope_dim,dtype=torch.float32,device='cpu')}
-    def norm(value,weight):return value*torch.rsqrt(value.square().mean(-1,keepdim=True)+eps)*weight
+    def norm(value,weight):
+        variance=value.square().mean(-1,keepdim=True)
+        if not torch.isfinite(value).all() or not torch.isfinite(variance).all():
+            raise ValueError('nonfinite GLM latent normalization intermediate')
+        return value*torch.rsqrt(variance+eps)*weight
     for start in range(0,sequence,chunk):
         stop=min(start+chunk,sequence);x=hidden[:,start:stop];position=positions[:,start:stop]
         low=norm(linear(x,weights['q_a_proj.weight']),weights['q_a_layernorm.weight'])
         query=linear(low,weights['q_b_proj.weight']).unflatten(-1,(heads,width))
-        query[...,nope_dim:]=rotate_pairs(query[...,nope_dim:],position,inverse)
+        if rope_dim:query[...,nope_dim:]=rotate_pairs(query[...,nope_dim:],position,inverse)
         packed=linear(x,weights['kv_a_proj_with_mqa.weight'])
         latent=norm(packed[...,:kr],weights['kv_a_layernorm.weight'])
-        rotary=rotate_pairs(packed[...,kr:],position,inverse)
+        rotary=rotate_pairs(packed[...,kr:],position,inverse) if rope_dim else packed[...,kr:]
         for name,value in (('query',query),('low_rank',low),('latents',latent),('rotary_keys',rotary)):
             if not torch.isfinite(value).all():raise ValueError('nonfinite GLM latent projection result')
             result[name][:,start:stop]=value
@@ -97,10 +101,12 @@ def sparse_latent_attention(query,latents,rotary_keys,kv_weight,indices,position
     indexed by absolute token position. -1 padding is ignored; each row must
     select at least one distinct causal token. Returns [B,S,H,value].
     """
-    if not _float(query,4) or not _float(latents,3) or not _float(rotary_keys,3) or not _projection(kv_weight):
+    if (not _float(query,4) or not _float(latents,3) or not _projection(kv_weight)
+            or not isinstance(rotary_keys,torch.Tensor) or rotary_keys.ndim!=3
+            or rotary_keys.dtype!=torch.float32 or rotary_keys.device.type!='cpu'):
         raise ValueError('GLM sparse attention requires CPU FP32 inputs')
     batch,sequence,heads,width=query.shape
-    if (type(nope_dim) is not int or not 1<=nope_dim<width or type(value_dim) is not int or not 1<=value_dim<=4096
+    if (type(nope_dim) is not int or not 1<=nope_dim<=width or type(value_dim) is not int or not 1<=value_dim<=4096
             or type(key_chunk) is not int or not 1<=key_chunk<=256
             or latents.shape[0]!=batch or rotary_keys.shape!=(batch,latents.shape[1],width-nope_dim)
             or kv_weight.shape!=(heads*(nope_dim+value_dim),latents.shape[-1])
