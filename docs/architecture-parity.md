@@ -1839,3 +1839,14 @@ additional to each component's declared scratch. Full-model composition remains
 separate. Clipped expert activation now rejects nonfinite projections before
 clamping, preventing a positive-infinite packed projection from becoming an
 apparently finite result.
+
+`glm_flash_model.FlashModel` supplies prepared CPU mixed-model execution from
+embedding through KDA/sparse residual blocks to the unweighted stream mean,
+final RMS normalization and output head. Aggregate cache admission combines
+constant-size KDA histories with capacity-dependent sparse latent/index caches.
+Teacher-forced synthetic logits agree with an independently assembled mixed
+stack; packed attention and dense/routed/shared experts agree with decoded
+controls. Full/chunk/decode and batch reorder/shrink preserve state. Partial
+layer/head/reorder failures poison the model; failed cleanup remains owned and
+retryable. Checkpoint loading, tokenization, generation, official weight quality,
+vision/MTP, serving and hardware qualification remain separate gates.
