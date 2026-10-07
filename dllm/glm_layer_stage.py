@@ -83,9 +83,20 @@ class GlmLayerStage:
             required = max(required, 4 * batch * (length if all_logits else 1) * self.head.shape[0])
         if required > self.max_output_bytes: raise ValueError('GLM stage boundary exceeds output budget')
 
-    @torch.no_grad()
     def forward(self, inputs, state, *, position, all_logits=False):
-        self._tokens(inputs, all_logits)
+        return self._forward(inputs, state, position=position, all_logits=all_logits, activations=False)
+
+    def forward_activations(self, hidden, state, *, position):
+        """Execute owned layers only, with no embedding or final projection."""
+        return self._forward(hidden, state, position=position, all_logits=False, activations=True)
+
+    @torch.no_grad()
+    def _forward(self, inputs, state, *, position, all_logits, activations):
+        if activations:
+            if (not _float(inputs, 3) or inputs.shape[2] != self.dim
+                    or inputs.numel()*4 > self.max_output_bytes or not torch.isfinite(inputs).all()):
+                raise ValueError('GLM activation boundary requires bounded finite CPU FP32 hidden chunks')
+        else: self._tokens(inputs, all_logits)
         if not isinstance(state, GlmModelState): raise ValueError('invalid GLM stage cache')
         with state.lock:
             state._usable()
@@ -93,13 +104,13 @@ class GlmLayerStage:
                     or inputs.shape[0] != state.layers[0].attention.latents.shape[0]
                     or position + inputs.shape[1] > state.capacity):
                 raise ValueError('GLM stage cache owner/position/shape mismatch')
-            hidden = F.embedding(inputs, self.embedding) if self.first else inputs
+            hidden = F.embedding(inputs, self.embedding) if self.first and not activations else inputs
             selected = None
             try:
                 for block, layer in zip(self.blocks, state.layers):
                     hidden, selected = block.forward(hidden, layer, position=position,
                         previous_indices=selected if block.attention.indexer is None else None)
-                result = self._logits(hidden, all_logits) if self.last else hidden
+                result = self._logits(hidden, all_logits) if self.last and not activations else hidden
             except BaseException:
                 if any(layer.poisoned or layer.attention.poisoned or layer.position != position
                        or layer.attention.position != position for layer in state.layers): state._poison()

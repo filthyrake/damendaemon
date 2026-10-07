@@ -120,3 +120,22 @@ use the complete pipeline owner; a successfully cleaned request leaves the owner
 available for a fresh state. This remains local CPU execution, not multi-host or
 GPU serving. Tests use real loopback subprocesses, authenticated JSON/SSE,
 concurrent queued requests, drain and cooperative shutdown.
+
+## Independent stage slots
+
+`GlmStageSlots(stage, context, max_batch, max_cache_bytes=...)` reserves the
+aggregate cache allowance for 1–4 independent slots before allocating any cache.
+Each slot has its own cursor and can be prefetched in chunks, decoded in a
+reordered subset, released and reused. `forward_layers` consumes finite CPU FP32
+hidden chunks and exact contiguous position rows; `embedding` and `output_logits`
+are separate first/final-stage boundaries. The underlying stage now exposes
+`forward_activations` to execute only its owned layers, without embedding or
+projecting a second time.
+
+Bad input rejected before work preserves the owner. A partial row execution or
+release failure fails the entire owner and attempts all slot releases. Failed
+cleanup remains reachable for retry through `close`; a failed owner cannot
+resume. Prepared weights remain caller-owned and immutable. This slot adapter
+alone opens no sockets and does not widen existing host, GPU or HTTP admission.
+Packed multi-stage tests compare unequal cursors, reordered decode and slot reuse
+with independently expanded whole-model logits.
