@@ -297,6 +297,15 @@ class RemoteReservationLedger:
             count=connection.execute('SELECT count(*) FROM claims WHERE owner=?',(owner,)).fetchone()[0]
         return dict(ledger=self.identity,sequence=sequence,retired=bool(retired),claims=count,receipt=None if receipt is None else json.loads(receipt))
 
+    def policy(self,owner,credential):
+        with self._transaction() as connection:
+            _,allowed,_,_,_,_=self._owner(connection,owner,credential)
+            rows=[]
+            for name in json.loads(allowed):
+                requests,outputs=connection.execute('SELECT requests,outputs FROM clients WHERE name=?',(name,)).fetchone()
+                rows.append(dict(name=name,max_inflight=requests,max_reserved_output_tokens=outputs))
+        return dict(clients=rows)
+
     def list_claims(self,owner,credential,*,after=None,limit=128):
         if type(limit) is not int or not 1<=limit<=128:raise ValueError('invalid claim page limit')
         if after is not None and not self._claim_id(after,owner):raise RemoteOwnerDenied()

@@ -2,8 +2,8 @@
 
 `RemoteReservationLedger` is a local accounting foundation for cross-host
 admission. It does not start a listener, change HTTP defaults, fence remote
-workloads, reserve GPU memory or establish an inference SLO. The authenticated
-network authority/client integration is a separate gate.
+workloads, reserve GPU memory or establish an inference SLO. The [authenticated transport](remote-quota-transport.md) and
+[HTTP adapter](remote-quota-admission.md) build on this storage contract.
 
 Bootstrap a new absolute private local SQLite path explicitly with `create=True`.
 Normal construction requires existing storage; it never silently recreates a

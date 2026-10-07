@@ -112,7 +112,7 @@ class RemoteQuotaClient:
         self.timeout=float(timeout)
 
     def request(self,method,**options):
-        fields={'execute':{'sequence','command'},'status':set(),'list':{'after','limit'}}
+        fields={'execute':{'sequence','command'},'status':set(),'policy':set(),'list':{'after','limit'}}
         if not isinstance(method,str) or method not in fields or set(options)!=fields[method]:raise ValueError('invalid quota request')
         if method=='execute':options=dict(options,operation_id=secrets.token_hex(16))
         return QuotaRequest(_json(dict(version=1,ledger=self.ledger,owner=self.owner,credential=self._credential.hex(),method=method,**options),MAX_REQUEST))
@@ -174,6 +174,17 @@ class RemoteQuotaClient:
             else:
                 self._receipt(result['receipt'],result['sequence'])
                 if result['retired']!=(result['receipt']['code']=='retired'):raise RemoteQuotaUnavailable()
+        elif request.get('method')=='policy':
+            if set(result)!={'clients'} or not isinstance(result['clients'],list) or not 1<=len(result['clients'])<=128:raise RemoteQuotaUnavailable()
+            names=[]
+            for row in result['clients']:
+                if (not isinstance(row,dict) or set(row)!={'name','max_inflight','max_reserved_output_tokens'}
+                        or not isinstance(row['name'],str) or re.fullmatch(r'[A-Za-z0-9_.-]{1,64}',row['name']) is None
+                        or type(row['max_inflight']) is not int or not 1<=row['max_inflight']<=128
+                        or (row['max_reserved_output_tokens'] is not None and (type(row['max_reserved_output_tokens']) is not int
+                            or not 1<=row['max_reserved_output_tokens']<=2**31-1))):raise RemoteQuotaUnavailable()
+                names.append(row['name'])
+            if names!=sorted(set(names)):raise RemoteQuotaUnavailable()
         elif request.get('method')=='list':
             limit=request.get('limit')
             if (set(result)!={'claims','after'} or type(limit) is not int or not 1<=limit<=128
@@ -232,7 +243,7 @@ class RemoteQuotaServer:
 
     def _dispatch(self,body):
         if not isinstance(body,dict) or type(body.get('version')) is not int or body['version']!=1:raise ValueError('invalid quota request')
-        method=body.get('method');fields={'execute':{'sequence','command','operation_id'},'status':set(),'list':{'after','limit'}}
+        method=body.get('method');fields={'execute':{'sequence','command','operation_id'},'status':set(),'policy':set(),'list':{'after','limit'}}
         common={'version','ledger','owner','credential','method'}
         if not isinstance(method,str) or method not in fields or set(body)!=common|fields[method]:raise ValueError('invalid quota request')
         if body['ledger']!=self.ledger.identity:return dict(error='identity_mismatch')
@@ -241,6 +252,7 @@ class RemoteQuotaServer:
         if method=='execute' and not _hex(body['operation_id'],32):raise ValueError('invalid operation identity')
         if method=='execute':result=self.ledger.execute(owner,credential,body['sequence'],body['command'],operation_id=body['operation_id'])
         elif method=='status':result=self.ledger.status(owner,credential)
+        elif method=='policy':result=self.ledger.policy(owner,credential)
         else:result=self.ledger.list_claims(owner,credential,after=body['after'],limit=body['limit'])
         return dict(result=result)
 

@@ -865,8 +865,8 @@ advance expiry; this is local accounting, not a trusted billing clock.
 Rejected rate charges are not added; admitted validation failures, cancellation,
 disconnection or model failure are not refunded. Output above the entire allowance
 still fails request validation. Shared/admin keys retain their unlimited rate
-policy. Outstanding-request/output reservations and cache limits remain
-process-local; this option does not create persistent inflight leases or a
+policy. Without the separate shared-reservation option, outstanding-request/output
+reservations and cache limits remain process-local; this option does not create persistent inflight leases or a
 cluster quota service.
 
 Lock waiting is bounded to one second per SQLite connection. Missing/replaced,
@@ -886,3 +886,8 @@ process-local. Owner locks permit crash reclamation without unsafe lease expiry;
 uncertain release remains charged and requires cleanup retry or a controlled
 restart. See [storage bounds, shutdown and recovery](shared-client-reservations.md).
 This does not coordinate different machines or reserve GPU memory.
+
+Explicit embedders can also pass a [remote quota admission adapter](remote-quota-admission.md)
+to the handler. It verifies authority policy and retains uncertain operations
+through the same HTTP cleanup path. Network-backed admission is not enabled by
+default, and prior unresolved remote claims block owner startup.

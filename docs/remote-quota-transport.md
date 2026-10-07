@@ -23,7 +23,7 @@ incorrect ledger cannot be silently accepted merely because its certificate
 matches. Peer and ledger identity failures never trigger plaintext fallback or
 identity re-enrollment.
 
-An authority exposes only `execute`, `status` and bounded `list` operations for
+An authority exposes only `execute`, `status`, owner-scoped `policy` and bounded `list` operations for
 already registered owners. There is no registration, credential rotation,
 forced release or administrative reclamation RPC. Owner registration and
 allowlists remain privileged local operations. Each request carries its owner
@@ -61,5 +61,5 @@ disconnect releases any remote claim; authority restart preserves charges.
 Local TLS fixtures cover exact retries after lost committed replies, restart,
 wrong pins/credentials/ledger/protocol, certificate rejection, malformed frames,
 connection saturation, deadlines, bounded response validation and retryable
-shutdown. HTTP admission adaptation and standalone authority operation are
-following gates.
+shutdown. The [HTTP admission adapter](remote-quota-admission.md) uses these operations;
+standalone authority configuration is a following gate.

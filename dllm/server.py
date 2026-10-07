@@ -14,12 +14,12 @@ from .stopping import stop_sequences
 from .prompts import validate_raw
 
 
-def handler_for(runtime, auth=None):
+def handler_for(runtime, auth=None, *, reservation_store=None):
     from .http_auth import AuthPolicy
     auth = AuthPolicy.from_env() if auth is None else auth
     from .client_admission import ClientAdmission, ClientLimitError, ClientOutputLimitError, ClientRateLimitError, ClientOutputRateLimitError, SharedRateUnavailable, SharedReservationUnavailable
     from .http_auth import INFERENCE_ROUTES
-    admission = ClientAdmission(auth)
+    admission = ClientAdmission(auth,reservation_store=reservation_store)
     from .request_scope import CacheScope, cache_scope
     shared_scope = object()
     client_scopes = {client.name: CacheScope(client.max_prefix_cache_tokens,client.decode_weight,client.prefill_weight) for client in auth.clients}
