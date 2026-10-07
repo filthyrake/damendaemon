@@ -1769,3 +1769,12 @@ workspace/output limits are checked before input scans or arithmetic. Independen
 Python scalar controls cover one and twenty normalization iterations, plus
 noncontiguous state, asymmetric restoration, malformed inputs and budget failures.
 These are synthetic primitive checks, not complete Flash text execution.
+
+`glm_flash_kda.recurrent_attention` adds the functional CPU FP32 KDA recurrence
+with per-key-dimension log decay, normalized query/key vectors and delta updates.
+It returns independently owned final state and leaves all inputs unchanged.
+Temporary/output budgets are admitted before scans or allocations; nonfinite
+inputs, overflow, invalid gate ranges and malformed geometry fail explicitly.
+Independent scalar controls and exact full/chunk/single-token continuation checks
+pass on synthetic fixtures. Convolution/projection integration and owned layer
+state are separate remaining gates.
