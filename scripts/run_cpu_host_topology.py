@@ -55,7 +55,9 @@ def prepare(args,*,family='qwen'):
     address,config,text,inputs,limits,session,context,pin,verified=(prepare_pair(local) if family=='qwen' else prepare_pair(local,family=family))
     plan=HostTopology(config,ranges,bytes.fromhex(args.model_id),quantization=args.quantization,
         context=args.context,context_limit=args.context_limit,slots=args.slots,chunk_size=args.prefill_chunk,
-        frame_bytes=args.frame_mib*2**20,mapped_vocab_size=text.vocab_size,excluded_ids=text.excluded_ids,session_identity=session)
+        frame_bytes=args.frame_mib*2**20,
+        mapped_vocab_size=text.tokenizer_size if getattr(args,'native_chat',False) else text.vocab_size,
+        excluded_ids=() if getattr(args,'native_chat',False) else text.excluded_ids,session_identity=session)
     if verified is not None:verified.verify_unchanged()
     args.snapshot=local.snapshot
     return address,plan,text,inputs,limits,context,pin,verified,peers
@@ -105,11 +107,21 @@ def run(args,*,family='qwen'):
             emit(dict(scope=scope,event='ready',role=args.role,stage=args.index,
                 stage_layers=[list(pair) for pair in plan.ranges],topology_identity=plan.identity.hex(),
                 model_identity_verified=worker.model_identity_verified,source_model_id=plan.source_identity.hex(),
-                official_model_qualified=False))
+                official_model_qualified=False,**({'native_chat':args.native_chat} if family=='glm' else {})))
         if args.role=='worker':
             while not worker.closed:worker.step()
             emit(dict(event='stopped',stage=args.index))
         elif args.role=='serve':serve_worker_pair(worker,text,args,auth,pair_type=HostServingTopology)
+        elif family=='glm' and args.native_chat:
+            from dllm.glm_host_generation import HostGlmGenerator
+            runner=HostGlmGenerator(worker,text,chunk_size=args.prefill_chunk)
+            finals=[]
+            with closing(inputs.generate(runner)) as stream:
+                for event in stream:
+                    if 'finish_reason' in event:finals.append(event)
+                    else:emit(event)
+            worker.stop()
+            for event in finals:emit(event)
         else:
             runner=HostCompletion(worker,eos_ids=text.eos_ids)
             generated=[[] for _ in inputs] if args.batch_inputs is not None else [[]]

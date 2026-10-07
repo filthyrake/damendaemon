@@ -63,6 +63,14 @@ def parser_for_command(*,topology=False,family='qwen'):
     source.add_argument('--prompt')
     source.add_argument('--tokens')
     source.add_argument('--batch-inputs')
+    if family=='glm':
+        parser.add_argument('--native-chat',action='store_true',help='all stages: bind pinned native GLM chat/tool policy')
+        source.add_argument('--messages',help='native GLM JSON message history')
+        source.add_argument('--batch-messages',help='native GLM JSON list of conversations')
+        parser.add_argument('--tools',help='native GLM JSON function declarations; never executed')
+        parser.add_argument('--ragged-batch',action='store_true')
+        parser.add_argument('--reasoning-effort',choices=('low','high','max'))
+        parser.add_argument('--clear-history-reasoning',action='store_true')
     parser.add_argument('--max-new-tokens',type=_positive,default=128)
     parser.add_argument('--prefill-chunk',type=_positive,default=128)
     for name,default in (('weight-mib',256),('cache-mib',256),('workspace-mib',64),
@@ -76,7 +84,11 @@ def prepare(args,*,family='qwen'):
     if family not in ('qwen','glm'):raise ValueError('unsupported CPU host family')
     if family=='glm' and (args.role not in ('worker','complete') or args.chat_template is not None
             or args.quantization!='fp8_reference' or args.loader_workspace_mib!=64):
-        raise ValueError('GLM topology supports raw completion with fp8_reference; no serve/template/loader override')
+        raise ValueError('GLM topology supports completion with fp8_reference; no serve/template/loader override')
+    native=False
+    if family=='glm':
+        from scripts.glm_host_native import validate_mode
+        native=validate_mode(args)
     if '%' in args.address:raise ValueError('scoped IP addresses are unsupported')
     address=ipaddress.ip_address(args.address)
     if args.stop_after_drain and args.role!='serve':raise ValueError('stop after drain requires the serve role')
@@ -130,30 +142,43 @@ def prepare(args,*,family='qwen'):
     limit=c.get('max_position_embeddings',2**20)
     if type(limit) is not int or not 1<=limit<=2**31 or not 1<=args.split<c['num_hidden_layers'] or args.context>limit:
         raise ValueError('invalid CPU host split/context')
-    if args.chat_template is None:text=CpuReferenceText(args.snapshot,config)
+    if native:
+        from dllm.glm_tool_text import GlmToolText
+        from dllm.glm_generation import validate_text_config
+        text=GlmToolText(args.snapshot,vocab_size=c['vocab_size'])
+        validate_text_config(c,text,args.context)
+    elif args.chat_template is None:text=CpuReferenceText(args.snapshot,config)
     else:
         from dllm.cpu_reference_chat import CpuReferenceChat
         text=CpuReferenceChat(args.snapshot,config,args.chat_template)
     inputs=limits=None
     if args.role=='complete':
-        inputs,limits=completion_inputs(text,prompt=args.prompt,tokens_file=args.tokens,batch_file=args.batch_inputs,
-            max_context=args.context,max_new_tokens=args.max_new_tokens,chunk_size=args.prefill_chunk)
-        rows=inputs if args.batch_inputs is not None else [inputs]
+        if native:
+            from scripts.glm_host_native import prepare_request
+            inputs=prepare_request(args,text);limits=args.max_new_tokens;rows=inputs.prompts
+        else:
+            inputs,limits=completion_inputs(text,prompt=args.prompt,tokens_file=args.tokens,batch_file=args.batch_inputs,
+                max_context=args.context,max_new_tokens=args.max_new_tokens,chunk_size=args.prefill_chunk)
+            rows=inputs if args.batch_inputs is not None else [inputs]
         if (len(rows)>args.slots or max(len(rows),min(args.prefill_chunk,max(map(len,rows))))*c['hidden_size']*4>args.frame_mib*1024**2):
             raise ValueError('request exceeds host slots or activation frame capacity')
     if args.role=='serve' and max(args.slots,min(args.prefill_chunk,args.context))*c['hidden_size']*4>args.frame_mib*1024**2:
         raise ValueError('serving chunks exceed activation frame capacity')
     # Bind tokenizer semantics and EOS in addition to the caller's model identity.
-    digest=hashlib.sha256(bytes.fromhex(args.model_id))
-    digest.update(hashlib.sha256(text.tokenizer.to_str().encode()).digest())
-    digest.update(json.dumps(sorted(text.eos_ids)).encode())
-    if hasattr(text,'chat_identity'):digest.update(b'cpu-chat-template-v1'+text.chat_identity)
-    if verified is not None:
-        verified.verify_unchanged()
-        digest.update(b'verified-cpu-source-v1')
+    if native:
+        from dllm.glm_host_generation import native_session_identity
+        identity=native_session_identity(text,verified=verified is not None)
+    else:
+        digest=hashlib.sha256(bytes.fromhex(args.model_id))
+        digest.update(hashlib.sha256(text.tokenizer.to_str().encode()).digest())
+        digest.update(json.dumps(sorted(text.eos_ids)).encode())
+        if hasattr(text,'chat_identity'):digest.update(b'cpu-chat-template-v1'+text.chat_identity)
+        if verified is not None:digest.update(b'verified-cpu-source-v1')
+        identity=digest.digest()
+    if verified is not None:verified.verify_unchanged()
     context=(server_context if args.role=='worker' else client_context)(ca_file=args.ca,cert_file=args.cert,key_file=args.key)
     pin=certificate_pin(args.peer_cert)
-    return address,c,text,inputs,limits,digest.digest(),context,pin,verified
+    return address,c,text,inputs,limits,identity,context,pin,verified
 
 
 def emit(event):print(json.dumps(event,ensure_ascii=False),flush=True)

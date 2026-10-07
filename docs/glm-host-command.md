@@ -22,11 +22,24 @@ assigned stage weights are decoded and retained; optional verification still
 reads the whole selected snapshot. Worker weight/cache/workspace allowances are
 per process, not a global cluster budget.
 
-Completion accepts raw `--prompt`, a `--tokens` file or a bounded `--batch-inputs`
-file. This is raw-token inference: arbitrary chat templates, native chat/tool
-requests and the `serve` role are not admitted by this command. Use the existing
-local GLM reference commands for native chat/tools until a dedicated host adapter
-is available. GLM projections retain the supported packed FP8 source values with
+By default, completion accepts raw `--prompt`, a `--tokens` file or a bounded
+`--batch-inputs` file. Opt into `--native-chat` on **every** process for the pinned
+GLM native text/reasoning/tool format. The coordinator then accepts `--prompt`,
+`--messages history.json`, or `--batch-messages conversations.json`. A batch file
+is a JSON list of conversations, each an ordinary native message list. Use
+`--ragged-batch` for unequal encoded prompt lengths, `--tools tools.json` for
+function declarations, `--reasoning-effort low|high|max`, and optionally
+`--clear-history-reasoning`. Workers receive only `--native-chat`, not request
+options. Tools are returned as calls and never executed.
+
+Native mode validates the entire request against the negotiated slots, context,
+output and activation frame budget before connecting or loading payloads. Input
+JSON files are bounded to 1 MiB. Native and raw session policies cannot mix;
+all stages bind the pinned renderer, canonical tokenizer/stops and verification
+mode. Native mode emits semantic content/reasoning/tool events and per-row usage,
+not raw token events. Its success finals still wait for every STOP acknowledgement.
+The `ready` event identifies `native_chat`. Arbitrary templates and the `serve`
+role remain unsupported. GLM projections retain the supported packed FP8 source values with
 CPU FP32 reference arithmetic; there is no alternative quantization mode here.
 
 Events identify `glm_cpu_host_topology_reference`, all ranges and whether this
@@ -37,5 +50,10 @@ hard deadline for interrupted CPU kernels. Tests run three/four local processes
 with ephemeral mutual TLS credentials and compare raw tokens, text and usage with
 independent floating controls; they cover source/verification/EOS disagreement,
 signalled listeners, partial connection failure and pre-network rejection.
+Native subprocess tests also compare single/ragged text and tools with independent
+whole-model controls, and reject malformed inputs, raw/native disagreement and
+failed STOP without success finals. Tool-wire competence is covered separately
+with controlled selection after actual stage execution; random fixture outputs
+are not evidence of trained-model tool quality.
 Physical networks, official model behavior, practical context and performance
 remain unqualified.
