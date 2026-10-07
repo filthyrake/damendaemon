@@ -1909,3 +1909,17 @@ come from the pinned v5.17.0 processor; scalar patch checks cover normalization,
 padding and merge-block order. Fixture images also execute through the prepared
 Flash vision encoder. Encoded files, network image retrieval, video and language
 feature insertion remain outside this gate.
+
+The Flash reference language model also exposes checked `forward_embeddings`
+and owned `prefill_embeddings` methods. They share the token path's cache
+ownership, capacity checks, cursor commit and partial-failure cleanup.
+`glm_flash_image_embeddings.image_embeddings` creates owned input rows by
+replacing each row's image placeholders with exactly its supplied CPU FP32 vision
+features in prompt order. Feature counts, widths, storage and finite values are
+validated before allocating embeddings. Text-only rows use empty feature matrices.
+
+CPU fixtures now exercise RGB -> patches -> vision -> image insertion -> mixed
+language logits, chunked image prefixes and ordinary token decode. This explicit
+prepared-feature API does not render media chat, establish image identity or
+semantic correctness, load official visual weights, or change the ordinary text
+adapter's media rejection.

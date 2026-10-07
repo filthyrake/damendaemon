@@ -107,8 +107,11 @@ class FlashModel:
                 or tokens.dtype!=torch.int64 or tokens.device.type!='cpu'
                 or bool(((tokens<0)|(tokens>=self.embedding.shape[0])).any()) or type(all_logits) is not bool):
             raise ValueError('Flash tokens require nonempty CPU int64 vocabulary IDs')
-        rows=tokens.numel() if all_logits else tokens.shape[0]
-        if max(4*tokens.numel()*self.embedding.shape[1]*self.streams,4*rows*self.embedding.shape[0])>self.max_output_bytes:
+        self._input_budget(tokens.shape,all_logits)
+
+    def _input_budget(self,shape,all_logits):
+        batch,length=shape;rows=batch*length if all_logits else batch
+        if max(4*batch*length*self.embedding.shape[1]*self.streams,4*rows*self.embedding.shape[0])>self.max_output_bytes:
             raise ValueError('Flash embedding/logit output exceeds configured tensor storage budget')
 
     def _cache_per_slot(self,capacity):
@@ -148,17 +151,35 @@ class FlashModel:
         if not torch.isfinite(result).all():raise ValueError('nonfinite Flash model logits')
         return result
 
+    def _embeddings(self,values,all_logits):
+        if (not isinstance(values,torch.Tensor) or values.ndim!=3 or min(values.shape)<1
+                or values.device.type!='cpu' or values.dtype!=torch.float32
+                or values.shape[-1]!=self.embedding.shape[1] or type(all_logits) is not bool):
+            raise ValueError('Flash input embeddings require nonempty CPU FP32 batch/token/width storage')
+        self._input_budget(values.shape[:2],all_logits)
+        if not torch.isfinite(values).all():raise ValueError('nonfinite Flash input embeddings')
+
     @torch.no_grad()
     def forward(self,tokens,state,*,position,all_logits=False):
         self._tokens(tokens,all_logits)
+        return self._run(tokens,state,position,all_logits,False)
+
+    @torch.no_grad()
+    def forward_embeddings(self,values,state,*,position,all_logits=False):
+        """Explicit prepared CPU features; ordinary tokenizer/media admission is unchanged."""
+        self._embeddings(values,all_logits)
+        return self._run(values,state,position,all_logits,True)
+
+    def _run(self,values,state,position,all_logits,embedded):
         if not isinstance(state,FlashModelState):raise ValueError('invalid Flash model cache')
         with state.lock:
             state._usable()
             if (state.owner is not self or type(position) is not int or position!=state.position
-                    or tokens.shape[0]!=_batch(state.layers[0].attention)
-                    or position+tokens.shape[1]>state.capacity):
+                    or values.shape[0]!=_batch(state.layers[0].attention)
+                    or position+values.shape[1]>state.capacity):
                 raise ValueError('Flash model cache owner/position/shape mismatch')
-            hidden=F.embedding(tokens,self.embedding).unsqueeze(-2).expand(-1,-1,self.streams,-1)
+            hidden=values if embedded else F.embedding(values,self.embedding)
+            hidden=hidden.unsqueeze(-2).expand(-1,-1,self.streams,-1)
             try:
                 for block,layer in zip(self.blocks,state.layers):
                     hidden=block.forward(hidden,layer,position=position)
@@ -167,7 +188,7 @@ class FlashModel:
                 if any(layer.poisoned or layer.position!=position
                        or layer.attention.position!=position for layer in state.layers):state._poison()
                 raise
-            state.position=position+tokens.shape[1]
+            state.position=position+values.shape[1]
             return logits
 
     def prefill(self,tokens,*,capacity,max_cache_bytes=256*1024**2,all_logits=False):
@@ -175,6 +196,15 @@ class FlashModel:
         if type(capacity) is not int or tokens.shape[1]>capacity:raise ValueError('Flash prefill exceeds capacity')
         state=self.new_state(tokens.shape[0],capacity,max_cache_bytes=max_cache_bytes)
         try:return self.forward(tokens,state,position=0,all_logits=all_logits),state
+        except BaseException as error:
+            self._release_failed(state,error)
+            raise
+
+    def prefill_embeddings(self,values,*,capacity,max_cache_bytes=256*1024**2,all_logits=False):
+        self._embeddings(values,all_logits)
+        if type(capacity) is not int or values.shape[1]>capacity:raise ValueError('Flash prefill exceeds capacity')
+        state=self.new_state(values.shape[0],capacity,max_cache_bytes=max_cache_bytes)
+        try:return self.forward_embeddings(values,state,position=0,all_logits=all_logits),state
         except BaseException as error:
             self._release_failed(state,error)
             raise
