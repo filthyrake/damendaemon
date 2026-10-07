@@ -19,9 +19,11 @@ from dllm.host_tls import client_context,server_context,certificate_pin
 from scripts.run_cpu_pipeline_reference import _positive
 
 
-def parser_for_command(*,topology=False):
+def parser_for_command(*,topology=False,family='qwen'):
+    if family not in ('qwen','glm') or (family=='glm' and not topology):
+        raise ValueError('unsupported CPU host command family/topology')
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('role',choices=('worker','complete','serve'))
+    parser.add_argument('role',choices=('worker','complete') if family=='glm' else ('worker','complete','serve'))
     parser.add_argument('snapshot')
     parser.add_argument('--address',required=not topology,help='literal bind IP for worker, peer IP for complete')
     parser.add_argument('--port',type=int,required=not topology,help='explicit port; worker may use 0 for an ephemeral port')
@@ -43,7 +45,8 @@ def parser_for_command(*,topology=False):
     parser.add_argument('--context',type=_positive,default=512)
     parser.add_argument('--context-limit',type=_positive,default=512)
     parser.add_argument('--slots',type=_positive,default=4)
-    parser.add_argument('--quantization',choices=('none','q4_0','q8_0'),default='none')
+    parser.add_argument('--quantization',choices=('fp8_reference',) if family=='glm' else ('none','q4_0','q8_0'),
+                        default='fp8_reference' if family=='glm' else 'none')
     parser.add_argument('--timeout',type=float,default=10.,help='seconds per connection or transport operation, at most 30')
     parser.add_argument('--http-port',type=int,default=8088,help='serve role: loopback HTTP port, 0 chooses an available port')
     parser.add_argument('--alias',default='model')
@@ -68,8 +71,12 @@ def parser_for_command(*,topology=False):
     return parser
 
 
-def prepare(args):
+def prepare(args,*,family='qwen'):
     """All request and endpoint metadata is checked before network/payload work."""
+    if family not in ('qwen','glm'):raise ValueError('unsupported CPU host family')
+    if family=='glm' and (args.role not in ('worker','complete') or args.chat_template is not None
+            or args.quantization!='fp8_reference' or args.loader_workspace_mib!=64):
+        raise ValueError('GLM topology supports raw completion with fp8_reference; no serve/template/loader override')
     if '%' in args.address:raise ValueError('scoped IP addresses are unsupported')
     address=ipaddress.ip_address(args.address)
     if args.stop_after_drain and args.role!='serve':raise ValueError('stop after drain requires the serve role')
@@ -107,11 +114,21 @@ def prepare(args):
         if verified.model_id!=args.model_id.lower():raise ValueError('local snapshot does not match model identity')
         args.snapshot=str(verified.root)
     config=read_json(Path(args.snapshot)/'config.json',1024**2)
-    if (not isinstance(config,dict) or config.get('model_type')!='qwen3_5_text'
-            or 'text_config' in config or 'vision_config' in config):
-        raise ValueError('CPU host command requires a text-only Qwen3.5 config')
-    c=hybrid_config(config);cpu_hybrid_shapes(c,0,c['num_hidden_layers'])
-    if not 1<=args.split<c['num_hidden_layers'] or args.context>c['max_position_embeddings']:
+    if family=='glm':
+        from dllm.glm_checkpoint import tensor_specs
+        from dllm.glm_reference_loader import _options
+        from dllm.glm_layer_stage import validate_range
+        if not isinstance(config,dict) or config.get('model_type')!='glm_moe_dsa':
+            raise ValueError('GLM host command requires an explicit sparse-attention GLM config')
+        tensor_specs(config);_options(config);c=config
+        validate_range(0,args.split,c['num_hidden_layers'],c['indexer_types'])
+    else:
+        if (not isinstance(config,dict) or config.get('model_type')!='qwen3_5_text'
+                or 'text_config' in config or 'vision_config' in config):
+            raise ValueError('CPU host command requires a text-only Qwen3.5 config')
+        c=hybrid_config(config);cpu_hybrid_shapes(c,0,c['num_hidden_layers'])
+    limit=c.get('max_position_embeddings',2**20)
+    if type(limit) is not int or not 1<=limit<=2**31 or not 1<=args.split<c['num_hidden_layers'] or args.context>limit:
         raise ValueError('invalid CPU host split/context')
     if args.chat_template is None:text=CpuReferenceText(args.snapshot,config)
     else:

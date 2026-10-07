@@ -17,7 +17,7 @@ from dllm.host_topology import HostTopology
 from scripts.run_cpu_host_reference import parser_for_command,prepare as prepare_pair,emit,serve_worker_pair
 
 
-def prepare(args):
+def prepare(args,*,family='qwen'):
     manifest=read_json(args.plan,2**20)
     if not isinstance(manifest,dict) or set(manifest)!= {'ranges'}:
         raise ValueError('CPU topology plan must contain exactly the ranges field')
@@ -52,7 +52,7 @@ def prepare(args):
             peers.append(dict(peer,address=address,peer_cert=str(cert),pin=certificate_pin(cert)))
         first=peers[0]
         local.address,local.port,local.server_name,local.peer_cert=first['address'],first['port'],first['server_name'],first['peer_cert']
-    address,config,text,inputs,limits,session,context,pin,verified=prepare_pair(local)
+    address,config,text,inputs,limits,session,context,pin,verified=(prepare_pair(local) if family=='qwen' else prepare_pair(local,family=family))
     plan=HostTopology(config,ranges,bytes.fromhex(args.model_id),quantization=args.quantization,
         context=args.context,context_limit=args.context_limit,slots=args.slots,chunk_size=args.prefill_chunk,
         frame_bytes=args.frame_mib*2**20,mapped_vocab_size=text.vocab_size,excluded_ids=text.excluded_ids,session_identity=session)
@@ -61,17 +61,18 @@ def prepare(args):
     return address,plan,text,inputs,limits,context,pin,verified,peers
 
 
-def run(args):
+def run(args,*,family='qwen'):
     from dllm.http_auth import AuthPolicy
     auth=AuthPolicy.from_env() if args.role=='serve' else None
-    address,plan,text,inputs,limits,context,pin,verified,peers=prepare(args)
+    address,plan,text,inputs,limits,context,pin,verified,peers=(prepare(args) if family=='qwen' else prepare(args,family=family))
+    scope='glm_cpu_host_topology_reference' if family=='glm' else 'cpu_host_topology_reference'
     connections=[];transports=[];listener=worker=runner=None;primary=None
     try:
         if args.role=='worker':
             connection=socket.socket(socket.AF_INET if address.version==4 else socket.AF_INET6,socket.SOCK_STREAM)
             connections.append(connection);connection.bind((str(address),args.port))
             listener=HostPeerListener(connection,context,peer_pin=pin);connections.pop()
-            emit(dict(scope='cpu_host_topology_reference',event='listening',stage=args.index,
+            emit(dict(scope=scope,event='listening',stage=args.index,
                 address=str(address),port=listener.listener.getsockname()[1],official_model_qualified=False))
             connection=listener.accept(timeout=args.timeout);connections.append(connection)
             listener.close();listener=None
@@ -85,10 +86,15 @@ def run(args):
                 transport=HostTensorChannel(connection,plan.stage_identity(peer['stage']),0,max_frame_bytes=plan.frame_bytes,timeout=args.timeout)
                 transports.append(transport);connections.pop()
         try:
-            worker=build_cpu_host_pipeline_worker(args.snapshot,plan,args.index,transports,epoch=args.epoch,
-                max_weight_bytes=args.weight_mib*2**20,loader_workspace_bytes=args.loader_workspace_mib*2**20,
+            options=dict(epoch=args.epoch,max_weight_bytes=args.weight_mib*2**20,
                 max_cache_bytes=args.cache_mib*2**20,max_workspace_bytes=args.workspace_mib*2**20,
                 projection_workspace_bytes=args.projection_workspace_mib*2**20,max_output_bytes=args.output_mib*2**20)
+            if family=='glm':
+                from dllm.glm_host_pipeline_build import build_glm_host_pipeline_worker
+                worker=build_glm_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options)
+            else:
+                worker=build_cpu_host_pipeline_worker(args.snapshot,plan,args.index,transports,
+                    loader_workspace_bytes=args.loader_workspace_mib*2**20,**options)
         except CpuHostPipelineBuildError as error:worker=error;raise
         # Hashing is performed before connecting; the builder loads the pinned
         # root, then this receipt rechecks every selected file before handshake.
@@ -96,7 +102,7 @@ def run(args):
         worker.model_identity_verified=verified is not None
         worker.handshake()
         if args.role!='serve':
-            emit(dict(scope='cpu_host_topology_reference',event='ready',role=args.role,stage=args.index,
+            emit(dict(scope=scope,event='ready',role=args.role,stage=args.index,
                 stage_layers=[list(pair) for pair in plan.ranges],topology_identity=plan.identity.hex(),
                 model_identity_verified=worker.model_identity_verified,source_model_id=plan.source_identity.hex(),
                 official_model_qualified=False))
@@ -128,12 +134,14 @@ def run(args):
             else:raise failures[0]
 
 
-def main(argv=None):
-    parser=parser_for_command(topology=True);parser.description=__doc__;args=parser.parse_args(argv)
+def main(argv=None,*,family='qwen'):
+    parser=parser_for_command(topology=True,family=family);parser.description=__doc__;args=parser.parse_args(argv)
     def interrupt(*_):raise KeyboardInterrupt
     previous=signal.signal(signal.SIGTERM,interrupt)
     try:
-        try:run(args)
+        try:
+            if family=='qwen':run(args)
+            else:run(args,family=family)
         except BrokenPipeError:return 0
         except KeyboardInterrupt:return 130
         except (ValueError,TypeError,OSError,RuntimeError,MemoryError,EOFError) as error:
