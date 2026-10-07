@@ -91,8 +91,15 @@ class FlashLayerStage:
         self._embeddings(values,all_logits)
         return self._forward(values,state,position=position,all_logits=all_logits,embedded=True)
 
+    def forward_activations(self,hidden,state,*,position):
+        """Run only this range, preserving all streams even at the final stage."""
+        if (not _float(hidden,4) or tuple(hidden.shape[2:])!=(self.streams,self.dim)
+                or hidden.numel()*4>self.max_output_bytes or not torch.isfinite(hidden).all()):
+            raise ValueError('Flash activations require bounded finite CPU FP32 residual streams')
+        return self._forward(hidden,state,position=position,all_logits=False,embedded=False,activations=True)
+
     @torch.no_grad()
-    def _forward(self,inputs,state,*,position,all_logits,embedded):
+    def _forward(self,inputs,state,*,position,all_logits,embedded,activations=False):
         if not isinstance(state,FlashModelState):raise ValueError('invalid Flash stage cache')
         with state.lock:
             state._usable()
@@ -100,11 +107,11 @@ class FlashLayerStage:
                     or inputs.shape[0]!=_batch(state.layers[0].attention)
                     or position+inputs.shape[1]>state.capacity):
                 raise ValueError('Flash stage cache owner/position/shape mismatch')
-            hidden=inputs if embedded or not self.first else F.embedding(inputs,self.embedding)
-            if self.first:hidden=hidden.unsqueeze(-2).expand(-1,-1,self.streams,-1)
+            hidden=inputs if activations or embedded or not self.first else F.embedding(inputs,self.embedding)
+            if self.first and not activations:hidden=hidden.unsqueeze(-2).expand(-1,-1,self.streams,-1)
             try:
                 for block,layer in zip(self.blocks,state.layers):hidden=block.forward(hidden,layer,position=position)
-                result=self._logits(hidden,all_logits) if self.last else hidden
+                result=self._logits(hidden,all_logits) if self.last and not activations else hidden
             except BaseException:
                 if any(layer.poisoned or layer.position!=position
                        or layer.attention.position!=position for layer in state.layers):state._poison()

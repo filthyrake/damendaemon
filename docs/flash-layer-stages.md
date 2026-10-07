@@ -117,3 +117,26 @@ vision/text fixtures exercise native commands, tools, concurrent queued HTTP,
 JSON/SSE, drain and shutdown. Cancellation and retained cleanup block reuse until
 release succeeds. Controlled tool tokens prove parser plumbing, not trained image
 or tool quality; this remains local CPU evidence only.
+
+## Independent request slots
+
+`FlashStageSlots` reserves the complete mixed-cache cost for 1..4 independent
+requests before any cache allocation. Linear state contributes fixed bytes per
+slot; sparse state scales with the configured context. Each occupied slot owns
+its own cache and cursor, allowing unequal prompt lengths and reordered decode.
+Release closes only selected occupied slots and permits fresh reuse.
+
+First-stage embeddings expand into full residual streams. `forward_layers`
+accepts `[batch, tokens, streams, width]`, and even the last stage returns that
+shape: only explicit `output_logits` reduces streams and applies the head.
+`FlashLayerStage.forward_activations` exposes the same layers-only boundary.
+Malformed inputs, positions, slot lists and boundary budgets fail before mutation.
+A partial row/allocation, head or release failure retires the slot owner, attempts
+every cleanup, and retains failed state for close retry.
+
+GLM and Flash share lifecycle mechanics in `CpuStageSlots`, with separate explicit
+stage type, configuration, activation shape, embedding and cache-cost hooks.
+The internal base is not directly constructible. Host transports still admit
+only their previously supported families; Flash transport integration is a
+separate gate. Packed two/three-stage controls cover chunks, unequal cursors,
+reordered decode, exact mixed-cache reservation, release/reuse and failures.
