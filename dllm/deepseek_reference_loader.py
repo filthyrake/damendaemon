@@ -61,7 +61,7 @@ def load_reference_stage(path,start,end,*,max_weight_bytes=256*1024**2,workspace
 
 
 def _load_reference(path,start,end,*,max_weight_bytes=256*1024**2,dtype=torch.float32,
-                    workspace_bytes=8*1024**2,max_output_bytes=64*1024**2):
+                    workspace_bytes=8*1024**2,max_output_bytes=64*1024**2,inspect_only=False):
     """Load main-model parameters into the explicit packed CPU reference stack.
 
     Admit retained raw/converted parameter bytes plus one largest source tensor
@@ -139,6 +139,9 @@ def _load_reference(path,start,end,*,max_weight_bytes=256*1024**2,dtype=torch.fl
             largest=max(largest,source_bytes)
         if retained+largest > max_weight_bytes:
             raise ValueError('reference model parameter bytes exceed aggregate weight budget')
+        if inspect_only:
+            if any(file_stamp(reader)!=stamp for reader,stamp in opened):raise ValueError('DeepSeek checkpoint changed during inspection')
+            return dict(config),retained,largest
         for name,spec in specs.items():
             reader,base,entry=selected[name]
             count=entry['data_offsets'][1]-entry['data_offsets'][0]

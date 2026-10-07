@@ -80,13 +80,15 @@ class CpuLayerPipeline:
                 or stages[0].start != 0 or stages[-1].end != stages[0].total
                 or any(left.end != right.start for left, right in zip(stages, stages[1:]))
                 or any(stage.total != stages[0].total or stage.dim != stages[0].dim for stage in stages)
-                or stages[0].embedding.shape != stages[-1].head.shape):
+                or stages[0].embedding.shape != self._head_shape(stages[-1])):
             raise ValueError('CPU layer pipeline needs complete contiguous compatible stage coverage')
         configs = [getattr(stage, 'config', None) for stage in stages]
         if any(config != configs[0] for config in configs): raise ValueError('CPU layer pipeline checkpoint configurations disagree')
         self.stages = tuple(stages)
         self.failed_cleanups = []
         self.lock = threading.RLock()
+
+    def _head_shape(self,stage):return stage.head.shape
 
     @property
     def cleanup_pending(self):
@@ -160,7 +162,7 @@ class CpuLayerPipeline:
         hidden_bytes = 4 * batch * length * self.boundary_width
         if any(hidden_bytes > stage.max_output_bytes for stage in self.stages):
             raise ValueError('CPU layer pipeline hidden boundary exceeds output budget')
-        final_bytes = 4 * batch * (length if all_logits else 1) * self.stages[-1].head.shape[0]
+        final_bytes = 4 * batch * (length if all_logits else 1) * self._head_shape(self.stages[-1])[0]
         if final_bytes > self.stages[-1].max_output_bytes:
             raise ValueError('CPU layer pipeline logits exceed output budget')
 

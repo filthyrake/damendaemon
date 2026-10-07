@@ -23,6 +23,8 @@ def _positive(value):
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('snapshot')
+    parser.add_argument('--layer-splits',type=_positive,nargs='+',help='explicit local CPU FP32 pipeline layer cuts')
+    parser.add_argument('--output-mib',type=_positive,help='pipeline-only residual boundary and logits limit; default 64 MiB')
     source=parser.add_mutually_exclusive_group(required=True)
     source.add_argument('--prompt',help='one ordinary user text turn')
     source.add_argument('--messages',help='local JSON file containing ordinary text messages')
@@ -39,6 +41,8 @@ def main(argv=None):
     parser.add_argument('--dtype',choices=('float32','bfloat16','float16'),default='float32')
     args=parser.parse_args(argv)
     try:
+        if args.layer_splits is not None and args.dtype!='float32':raise ValueError('DeepSeek pipeline requires CPU FP32')
+        if args.layer_splits is None and args.output_mib is not None:raise ValueError('output-mib requires layer-splits')
         if args.ragged_batch and not args.batch_messages:
             raise ValueError('ragged batches require batch messages')
         from pathlib import Path
@@ -62,11 +66,20 @@ def main(argv=None):
             tokens=text.chat_tokens(messages,**options)
             if len(tokens)+args.max_new_tokens > args.context:
                 raise ValueError('prompt and requested output exceed context before weight loading')
-        model=load_reference_model(args.snapshot,max_weight_bytes=args.weight_mib*1024**2,
-                                   workspace_bytes=args.workspace_mib*1024**2,dtype=getattr(torch,args.dtype))
-        runner_type=BatchReferenceGenerator if args.batch_messages else ReferenceGenerator
+        if args.layer_splits is not None:
+            from dllm.deepseek_checkpoint_pipeline import load_reference_pipeline
+            from dllm.deepseek_pipeline_generation import DeepSeekPipelineReferenceGenerator
+            model=load_reference_pipeline(args.snapshot,args.layer_splits,max_weight_bytes=args.weight_mib*1024**2,
+                workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=(args.output_mib or 64)*1024**2)
+            runner_type=DeepSeekPipelineReferenceGenerator
+        else:
+            model=load_reference_model(args.snapshot,max_weight_bytes=args.weight_mib*1024**2,
+                                       workspace_bytes=args.workspace_mib*1024**2,dtype=getattr(torch,args.dtype))
+            runner_type=BatchReferenceGenerator if args.batch_messages else ReferenceGenerator
         runner=runner_type(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
-        print(json.dumps({'scope':'cpu_reference','official_model_qualified':False,'dtype':args.dtype}),flush=True)
+        scope=dict(scope='cpu_reference',official_model_qualified=False,dtype=args.dtype)
+        if args.layer_splits is not None:scope.update(execution='local_cpu_pipeline',stage_layers=[[stage.start,stage.end] for stage in model.stages])
+        print(json.dumps(scope),flush=True)
         if args.batch_messages:options['ragged']=args.ragged_batch
         primary=None
         try:

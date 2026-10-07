@@ -25,7 +25,7 @@ def parser_for_command():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('family',choices=('glm','flash','deepseek'))
     parser.add_argument('snapshot',help='existing local snapshot directory; never downloaded')
-    parser.add_argument('--layer-splits',type=bounded_integer(1,127),nargs='+',help='explicit GLM/Flash CPU pipeline cuts; GLM cuts preserve indexer groups')
+    parser.add_argument('--layer-splits',type=bounded_integer(1,127),nargs='+',help='explicit CPU pipeline cuts; GLM cuts preserve indexer groups')
     parser.add_argument('--alias',default='model')
     parser.add_argument('--port',type=bounded_integer(0,65535),default=8088)
     parser.add_argument('--connections',type=bounded_integer(1,64),default=16)
@@ -36,7 +36,7 @@ def parser_for_command():
     parser.add_argument('--cache-mib',type=bounded_integer(1,2048),default=256)
     parser.add_argument('--projection-workspace-mib',type=bounded_integer(1,2048),default=8)
     parser.add_argument('--workspace-mib',type=bounded_integer(1,2048),help='GLM/Flash attention scratch; default 64 MiB')
-    parser.add_argument('--output-mib',type=bounded_integer(1,2048),help='GLM/Flash output scratch; default 64 MiB')
+    parser.add_argument('--output-mib',type=bounded_integer(1,2048),help='GLM/Flash or DeepSeek pipeline output scratch; default 64 MiB')
     parser.add_argument('--flash-images',action='store_true',help='explicit Flash still-image/tool HTTP owner')
     for name,maximum in (('vision-weight-mib',2048),('image-workspace-mib',2048),('image-output-mib',2048),('max-patches',65536)):
         parser.add_argument('--'+name,type=bounded_integer(1,maximum),help='requires --flash-images')
@@ -62,14 +62,12 @@ def prepare(args):
     if not 0<args.queue_timeout<=300 or (not args.queue_size and args.queue_timeout!=120):
         raise ValueError('queue timeout requires an enabled queue and a bound within 300 seconds')
     if not isinstance(args.alias,str) or not 1<=len(args.alias)<=128:raise ValueError('invalid model alias')
-    if args.layer_splits is not None and (args.family not in ('glm','flash')):
-        raise ValueError('layer splits require explicit GLM or Flash family')
     if args.flash_images and args.family!='flash':raise ValueError('still-image HTTP requires explicit flash family')
     if not args.flash_images and any(getattr(args,key) is not None for key in
             ('vision_weight_mib','image_workspace_mib','image_output_mib','max_patches')):
         raise ValueError('image budgets require --flash-images')
-    if args.family=='deepseek' and (args.workspace_mib is not None or args.output_mib is not None):
-        raise ValueError('workspace-mib and output-mib are GLM/Flash-only budgets')
+    if args.family=='deepseek' and (args.workspace_mib is not None or (args.output_mib is not None and args.layer_splits is None)):
+        raise ValueError('DeepSeek uses projection-workspace-mib; output-mib requires a pipeline')
     config=json.loads(_read(Path(args.snapshot)/'config.json',1024**2),object_pairs_hook=_unique_fields)
     expected={'glm':'glm_moe_dsa','flash':'glm5_next','deepseek':'deepseek_v4'}[args.family]
     if not isinstance(config,dict) or config.get('model_type')!=expected:raise ValueError('snapshot does not match explicit family')
@@ -79,6 +77,7 @@ def prepare(args):
         from dllm.deepseek_reference_loader import load_reference_model
         text_config=config
         options=dict(workspace_bytes=args.projection_workspace_mib*1024**2)
+        if args.layer_splits is not None:options['max_output_bytes']=(args.output_mib or 64)*1024**2
     else:
         from dllm.glm_generation import validate_text_config
         if args.family=='glm':
@@ -103,7 +102,10 @@ def prepare(args):
     if args.flash_images and config.get('image_token_id')!=text.image_token_id:
         raise ValueError('Flash image token disagrees with tokenizer')
     if args.layer_splits is not None:
-        if args.family=='glm':
+        if args.family=='deepseek':
+            from dllm.deepseek_checkpoint_pipeline import load_reference_pipeline
+            from dllm.deepseek_pipeline_generation import DeepSeekPipelineReferenceGenerator as Runner
+        elif args.family=='glm':
             from dllm.glm_checkpoint_pipeline import load_reference_pipeline
             from dllm.glm_pipeline_generation import PipelineToolReferenceGenerator as Runner
         else:

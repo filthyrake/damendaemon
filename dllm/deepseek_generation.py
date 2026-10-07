@@ -71,8 +71,10 @@ class ReferenceGenerator:
     the final completion event, including EOS and length limits. Failed cleanup
     remains owned by this runner and must succeed before another prefill.
     """
+    model_type=FloatingModel
+
     def __init__(self,model,text,*,max_context=4096,max_cache_bytes=256*1024*1024):
-        if (not isinstance(model,FloatingModel) or not isinstance(text,DeepSeekText)
+        if (not isinstance(model,self.model_type) or not isinstance(text,DeepSeekText)
                 or model.embedding.device.type != 'cpu' or model.embedding.shape[0] != text.vocab_size
                 or not isinstance(text.tokenizer.decoder,decoders.ByteLevel)):
             raise ValueError('reference generator needs matching CPU model and ByteLevel tokenizer')
