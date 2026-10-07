@@ -36,10 +36,16 @@ def expert_feed_forward(hidden, gate_weight, up_weight, down_weight, *,
         raise ValueError('route weights must be one FP32 coefficient per row on the expert device')
     gate = F.linear(hidden, gate_weight).float()
     up = F.linear(hidden, up_weight).float()
+    activated = activate_expert(gate, up, route_weights, activation_limit)
+    return F.linear(activated.to(hidden.dtype), down_weight)
+
+
+def activate_expert(gate, up, route_weights, activation_limit):
+    """Internal FP32 activation order shared by individual and batched experts."""
     if activation_limit is not None:
         gate = gate.clamp(max=activation_limit)
         up = up.clamp(min=-activation_limit, max=activation_limit)
     activated = F.silu(gate) * up
     if route_weights is not None:
         activated = activated * route_weights
-    return F.linear(activated.to(hidden.dtype), down_weight)
+    return activated

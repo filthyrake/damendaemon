@@ -251,6 +251,16 @@ context. CPU integration tests compare ring attention against full-prefill
 attention while uninitialized cache entries contain NaNs. The caller still owns
 cache writes, compression and position commit/recovery.
 
+`dllm.floating_moe.floating_moe` composes selected floating expert banks and an
+optional independent shared expert. Route chunks bound projection gathers and
+activation intermediates under an explicit workspace budget; resident weights,
+output tensors and backend matmul scratch are separate. Weights retain their
+FP16/BF16/FP32 storage. Routes stay as device tensors; no routing counts are copied
+to Python. Routed activation weighting precedes the down-projection cast, while
+the shared contribution stays unscaled. CPU fixtures cover token-table routing,
+reordering, empty input, low-precision composition and chunk budgets. This is not
+packed execution, distributed expert placement or full-model qualification.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
