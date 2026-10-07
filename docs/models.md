@@ -343,6 +343,16 @@ Prepared weights/frequencies must stay immutable for the cache lifetime. Packed
 projection arithmetic, full-model scheduling, GPU synchronization/lifecycle and
 performance qualification remain separate; this path is not serving admission.
 
+`dllm.floating_block.FloatingBlock` prepares immutable floating parameters and
+composes hyper-connections around attention and shared/routed MoE. Hash tables
+are validated once during preparation; token lookups occur before cache mutation.
+Prefill/decode tests cover both hash and corrected-score routing, low-precision
+storage, reordered slots and independent composition. Cache states retain their
+block owner. A downstream FFN failure after attention advancement poisons the
+block cache; failed prefill closes its newly created attention state. Parameter
+banks are already resident floating tensors, not a packed-checkpoint loader.
+Full model/serving and GPU qualification remain open.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with

@@ -51,6 +51,26 @@ def floating_moe(hidden, gate, up, down, selected, coefficients, *, shared=None,
     No full weight promotion or tensor-to-host route extraction occurs. Callers
     retain ownership and must not mutate parameters during execution.
     """
+    chunk = validate_moe_inputs(hidden, gate, up, down, selected, coefficients, shared=shared,
+                                activation_limit=activation_limit, workspace_bytes=workspace_bytes)
+    output = torch.zeros_like(hidden, dtype=torch.float32)
+    for start in range(0, selected.numel(), chunk):
+        tokens, contribution = _route_chunk(hidden, gate, up, down, selected, coefficients,
+                                             start, min(start+chunk, selected.numel()), selected.shape[1], activation_limit)
+        output.index_add_(0, tokens, contribution)
+        # Release returned chunk buffers before allocating the following chunk.
+        del tokens, contribution
+    if shared is not None:
+        for start in range(0, hidden.shape[0], chunk):
+            stop = min(start+chunk, hidden.shape[0])
+            output[start:stop].add_(expert_feed_forward(hidden[start:stop], *shared,
+                                                       activation_limit=activation_limit).float())
+    return output.to(hidden.dtype)
+
+
+def validate_moe_inputs(hidden, gate, up, down, selected, coefficients, *, shared=None,
+                        activation_limit=None, workspace_bytes=64*1024*1024):
+    """Validate metadata and return route chunk size without executing projections."""
     if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 2 or hidden.shape[1] < 1
             or hidden.dtype not in (torch.float16, torch.bfloat16, torch.float32)):
         raise ValueError('MoE hidden state must be a FP16/BF16/FP32 matrix')
@@ -78,16 +98,4 @@ def floating_moe(hidden, gate, up, down, selected, coefficients, *, shared=None,
     chunk = workspace_bytes//per_route
     if chunk < 1:
         raise ValueError('expert workspace budget cannot fit one route')
-    output = torch.zeros_like(hidden, dtype=torch.float32)
-    for start in range(0, selected.numel(), chunk):
-        tokens, contribution = _route_chunk(hidden, gate, up, down, selected, coefficients,
-                                             start, min(start+chunk, selected.numel()), selected.shape[1], activation_limit)
-        output.index_add_(0, tokens, contribution)
-        # Release returned chunk buffers before allocating the following chunk.
-        del tokens, contribution
-    if shared is not None:
-        for start in range(0, hidden.shape[0], chunk):
-            stop = min(start+chunk, hidden.shape[0])
-            output[start:stop].add_(expert_feed_forward(hidden[start:stop], *shared,
-                                                       activation_limit=activation_limit).float())
-    return output.to(hidden.dtype)
+    return chunk
