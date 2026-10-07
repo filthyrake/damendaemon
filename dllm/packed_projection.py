@@ -25,7 +25,8 @@ def packed_linear(hidden, weight, scales, *, format, row_chunk=64, column_chunk=
     """Project CPU [tokens,features] to FP32 without a full weight expansion.
 
     E2M1/E4M3FN weights and E8M0 scales stay in raw uint8 storage; explicit
-    e4m3fn_f32 instead retains FP32 block scales. Inputs may be
+    e4m3fn_f32 instead retains FP32 block scales. Canonical q4_0_f16/q8_0_f16
+    retain unsigned packed nibbles/signed bytes and FP16 row/32-column scales. Inputs may be
     strided FP16/BF16/FP32. Multiplication and accumulation use FP32; this does
     not emulate accelerator activation quantization or accumulation rounding.
 

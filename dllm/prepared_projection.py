@@ -10,7 +10,7 @@ from .packed_projection import packed_linear, projection_plan, validate_row_rang
 class PackedProjection:
     """Borrow immutable raw weights/scales with an explicit result storage dtype.
 
-    Row views retain original matrix coordinates, including E8M0 or explicit FP32 block scales.
+    Row views retain original matrix coordinates, including E8M0/FP32 block scales or canonical Q4/Q8 FP16 row scales.
     This is a CPU reference adapter; output casting does not emulate activation
     quantization or accelerator accumulation. No dense weight is retained.
     """

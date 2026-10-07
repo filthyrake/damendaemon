@@ -404,3 +404,18 @@ GGUF tokenization follows llama.cpp's Qwen2 behavior, including preserving
 combining marks; some HF tokenizers normalize those inputs to NFC and produce
 different token IDs. Import acceptance is not broad model qualification. See
 [GGUF validation and limitations](evidence/gguf/README.md).
+
+### Bounded CPU Q4/Q8 reference projections
+
+The explicit `q4_0_f16` and `q8_0_f16` formats in `packed_tiles`,
+`packed_projection` and `PackedProjection` retain canonical packed storage and
+FP16 scales per row and 32 input columns. Q4 uses paired low/high half-block
+nibbles minus eight; Q8 uses signed int8 values. Decoding admits at most 65,536
+elements per tile, including unaligned ranges and strided source storage. The
+projection visits bounded tiles rather than expanding a whole weight matrix;
+row views retain original scale coordinates and borrow the same packed storage.
+Diagnostic special scales propagate, so execution consumers must reject nonfinite
+results. Scratch bounds exclude resident inputs/output and allocator/BLAS overhead.
+Independent scalar and dense controls cover both formats. This adds CPU reference
+math only: existing hybrid/GPU quantized-stage admission remains unchanged, and
+quantized distributed execution/performance are not yet qualified.

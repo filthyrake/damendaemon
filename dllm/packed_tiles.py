@@ -2,15 +2,12 @@
 
 Independent byte decoding follows OCP MX v1.0 E2M1/E4M3/E8M0 semantics.
 Tile scale layouts follow DeepSeek-V4-Flash inference/model.py (MIT), revision
-60d8d70770c6776ff598c94bb586a859a38244f1. Callers provide raw uint8 storage views.
+60d8d70770c6776ff598c94bb586a859a38244f1. Canonical Q4_0/Q8_0 integer
+formats use FP16 per-row/32-column scales; Q8 storage is signed int8.
 """
 import torch
 
 MAX_TILE_ELEMENTS = 65536
-
-
-def _bytes(tensor):
-    return isinstance(tensor, torch.Tensor) and tensor.dtype == torch.uint8 and tensor.device.type == 'cpu'
 
 
 def _scale(raw):
@@ -40,15 +37,19 @@ def _e4m3(raw):
 
 def validate_layout(weight, scales, *, format):
     """Validate raw CPU storage metadata without decoding or reading values."""
-    floating_scales = format == 'e4m3fn_f32'
-    valid_scales = (isinstance(scales,torch.Tensor) and scales.dtype == torch.float32 and scales.device.type == 'cpu') if floating_scales else _bytes(scales)
-    if (format not in ('e2m1', 'e4m3fn', 'e4m3fn_f32') or not _bytes(weight) or not valid_scales
-            or weight.ndim != 2 or scales.ndim != 2 or min(weight.shape) < 1):
-        raise ValueError('packed tile inputs require raw CPU byte weights and matching typed scales')
-    rows, packed_columns = weight.shape
-    columns = packed_columns*2 if format == 'e2m1' else packed_columns
-    expected = (rows, columns//32) if format == 'e2m1' else ((rows+127)//128, (columns+127)//128)
-    if (format == 'e2m1' and columns % 32) or scales.shape != expected:
+    formats=('e2m1','e4m3fn','e4m3fn_f32','q4_0_f16','q8_0_f16')
+    if format not in formats:raise ValueError('unsupported packed tile format')
+    scale_dtype={'e4m3fn_f32':torch.float32,'q4_0_f16':torch.float16,'q8_0_f16':torch.float16}.get(format,torch.uint8)
+    weight_dtype=torch.int8 if format=='q8_0_f16' else torch.uint8
+    if (not isinstance(weight,torch.Tensor) or weight.dtype!=weight_dtype or weight.device.type!='cpu'
+            or not isinstance(scales,torch.Tensor) or scales.dtype!=scale_dtype or scales.device.type!='cpu'
+            or weight.ndim!=2 or scales.ndim!=2 or min(weight.shape)<1):
+        raise ValueError('packed tile inputs require matching typed CPU weights and scales')
+    rows,packed_columns=weight.shape
+    columns=packed_columns*2 if format in ('e2m1','q4_0_f16') else packed_columns
+    row_groups=format in ('e2m1','q4_0_f16','q8_0_f16')
+    expected=(rows,columns//32) if row_groups else ((rows+127)//128,(columns+127)//128)
+    if (row_groups and columns%32) or scales.shape!=expected:
         raise ValueError('packed weight shape and scale layout do not agree')
     return rows, columns
 
@@ -60,6 +61,8 @@ def decode_tile(weight, scales, *, format, row_start, row_stop, column_start, co
     'e4m3fn' has byte elements and 128x128-block E8M0 scales. Both inputs must
     remain raw uint8 CPU matrices for those formats. Explicit e4m3fn_f32 uses
     FP32 128x128 block scales instead. Ranges are nonempty, half-open logical axes.
+    q4_0_f16 uses canonical low/high half-block nibbles minus eight, while
+    q8_0_f16 uses signed bytes; both use FP16 row/32-column scales.
     No full-input cast, scan or copy occurs; only the requested tile is expanded.
     NaN scale bytes propagate; finite products may overflow FP32.
     """
@@ -78,6 +81,12 @@ def decode_tile(weight, scales, *, format, row_start, row_stop, column_start, co
         codes = (packed >> ((column_ids % 2)*4)) & 15
         values = _e2m1(codes)
         scale_bytes = scales[row_start:row_stop, column_ids//32]
+    elif format in ('q4_0_f16','q8_0_f16'):
+        if format=='q4_0_f16':
+            packed=weight[row_start:row_stop,(column_ids//32)*16+column_ids%16]
+            values=((packed >> ((column_ids%32)//16*4)) & 15).float()-8
+        else:values=weight[row_start:row_stop,column_start:column_stop].float()
+        return values*scales[row_start:row_stop,column_ids//32].float()
     else:
         values = _e4m3(weight[row_start:row_stop, column_start:column_stop])
         scale_bytes = scales[row_ids[:, None]//128, column_ids[None, :]//128]
