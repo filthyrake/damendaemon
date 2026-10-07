@@ -2,7 +2,7 @@
 import torch
 
 
-def prepare_batch(text, conversations, max_new_tokens, max_context, **options):
+def prepare_batch(text, conversations, max_new_tokens, max_context, *, tokenize=None, **options):
     """Validate the entire batch before any model payload/state work."""
     if not isinstance(conversations, list) or not 1 <= len(conversations) <= 16:
         raise ValueError('reference batch requires 1..16 conversations')
@@ -11,7 +11,8 @@ def prepare_batch(text, conversations, max_new_tokens, max_context, **options):
     if (not isinstance(limits, list) or len(limits) != len(conversations)
             or any(type(n) is not int or not 1 <= n <= 4096 for n in limits)):
         raise ValueError('reference batch output limits require 1..4096 tokens per row')
-    prompts = [text.chat_tokens(messages, **options) for messages in conversations]
+    encode = text.chat_tokens if tokenize is None else tokenize
+    prompts = [encode(messages, **options) for messages in conversations]
     if not prompts[0] or any(len(row) != len(prompts[0]) for row in prompts):
         raise ValueError('reference batch requires equal encoded prompt lengths')
     if len(prompts[0]) + max(limits) > max_context:

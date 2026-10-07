@@ -12,8 +12,10 @@ python -m scripts.run_glm_flash_reference /path/to/local/snapshot \
 Both JSON files are local and bounded to 1 MiB. Declarations/history/context are
 validated before checkpoint payload loading. Existing weight, cache, workspace
 and output budgets remain explicit; defaults do not admit the full official
-checkpoint. Tool batches and tool-plus-image generation are outside this gate.
-Ordinary text, ordinary batch and still-image commands retain their admission.
+checkpoint. `--batch-messages conversations.json --tools functions.json` also
+accepts 1–16 equal-token-length tool histories with a shared declaration snapshot.
+Tool-plus-image generation remains outside this gate. Ordinary text, ordinary
+batch and still-image commands retain their admission.
 
 Reasoning and ordinary content stream incrementally. Tool blocks are buffered
 until complete, terminated by a supported model stop marker, and validated as a
@@ -36,3 +38,13 @@ output, context admission and cleanup failure. A tiny loaded snapshot exercises
 the CPU command, and scripted logits control the tool replies. These tests do not
 establish official-model tool quality, hardware serving or performance. GitHub
 #57 retains those broader qualification gates.
+
+
+`generate_batch_tools` accepts one output limit or one per row. Each event keeps
+its original `row`; parsers, argument types and call buffers remain independent
+as finished rows are compacted. Mixed tool/text rows use `tool_calls`, `stop` or
+`length` separately. Call IDs are local to each row and must be paired with that
+row's history when supplying results. Cancellation applies to the whole batch;
+any parser/decode/reorder failure closes all output buffers and the shared cache.
+Final metadata is emitted only after cleanup. The CLI rejects ragged/context or
+history failures before checkpoint payload loading.

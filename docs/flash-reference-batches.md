@@ -35,3 +35,6 @@ finished-row compaction, parser isolation and lifecycle failures. This path is
 not continuous batching, HTTP serving, multimodal batching, official-model
 semantic qualification or a GPU performance result. Those remain open in GitHub
 #57/#59. The ordinary single-request command retains its existing behavior.
+
+The explicit [tool batch path](flash-tool-generation.md) accepts the same bounded
+batch shape with shared schema declarations and independent row call buffers.

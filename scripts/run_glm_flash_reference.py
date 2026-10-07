@@ -28,7 +28,7 @@ def main(argv=None):
     source.add_argument('--prompt',help='one ordinary user text turn')
     source.add_argument('--messages',help='local JSON file containing ordinary text messages')
     source.add_argument('--batch-messages',help='local JSON list of 1..16 equal-prompt-length text conversations')
-    parser.add_argument('--tools',help='local JSON function declarations for a single text conversation; never executed')
+    parser.add_argument('--tools',help='local JSON function declarations for text or equal-length batches; never executed')
     parser.add_argument('--reasoning-effort',choices=('low','high','max'),default='max')
     parser.add_argument('--clear-history-reasoning',action='store_true')
     parser.add_argument('--max-new-tokens',type=_positive,default=128)
@@ -40,7 +40,6 @@ def main(argv=None):
     parser.add_argument('--output-mib',type=_positive,default=64)
     args=parser.parse_args(argv)
     try:
-        if args.tools and args.batch_messages:raise ValueError('Flash batch tools are not yet supported')
         tools=(json.loads(_read(args.tools,1024**2),object_pairs_hook=_unique_fields) if args.tools else None)
         if args.tools and tools is None:raise ValueError('tools file must contain function declarations')
         config=json.loads(_read(Path(args.snapshot)/'config.json',1024**2),object_pairs_hook=_unique_fields)
@@ -57,7 +56,8 @@ def main(argv=None):
                   else json.loads(_read(args.batch_messages or args.messages,1024**2),object_pairs_hook=_unique_fields))
         options=dict(reasoning_effort=args.reasoning_effort,clear_thinking=args.clear_history_reasoning)
         if args.batch_messages:
-            prepare_batch(text,messages,args.max_new_tokens,args.context,**options)
+            tokenize=(lambda row,**opts:text.tool_chat_tokens(row,tools,**opts)) if args.tools else None
+            prepare_batch(text,messages,args.max_new_tokens,args.context,tokenize=tokenize,**options)
         else:
             tokens=(text.tool_chat_tokens(messages,tools,**options) if args.tools else text.chat_tokens(messages,**options))
             if len(tokens)+args.max_new_tokens>args.context:
@@ -70,9 +70,12 @@ def main(argv=None):
         print(json.dumps(dict(scope='cpu_reference',official_model_qualified=False,dtype='float32')),flush=True)
         primary=None
         try:
-            generate=runner.generate_batch if args.batch_messages else runner.generate
-            iterator=(runner.generate_tools(messages,tools,max_new_tokens=args.max_new_tokens,**options)
-                      if args.tools else generate(messages,max_new_tokens=args.max_new_tokens,**options))
+            if args.tools:
+                generate=runner.generate_batch_tools if args.batch_messages else runner.generate_tools
+                iterator=generate(messages,tools,max_new_tokens=args.max_new_tokens,**options)
+            else:
+                generate=runner.generate_batch if args.batch_messages else runner.generate
+                iterator=generate(messages,max_new_tokens=args.max_new_tokens,**options)
             with closing(iterator) as generation:
                 for event in generation:print(json.dumps(event,ensure_ascii=False),flush=True)
         except BaseException as error:primary=error;raise
