@@ -43,6 +43,8 @@ def expert_feed_forward(hidden, gate_weight, up_weight, down_weight, *,
 def activate_expert(gate, up, route_weights, activation_limit):
     """Internal FP32 activation order shared by individual and batched experts."""
     if activation_limit is not None:
+        if not torch.isfinite(gate).all() or not torch.isfinite(up).all():
+            raise ValueError('nonfinite expert projection before clipping')
         gate = gate.clamp(max=activation_limit)
         up = up.clamp(min=-activation_limit, max=activation_limit)
     activated = F.silu(gate) * up

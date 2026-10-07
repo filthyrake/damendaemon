@@ -75,3 +75,10 @@ class FlashFfnTests(unittest.TestCase):
         with self.assertRaises(ValueError):small(torch.ones(1,1,6))
         c=FlashFeedForward(w,kind='dense');c.weights['gate_proj.weight'].fill_(float('inf'))
         with self.assertRaisesRegex(ValueError,'projection'):c(torch.ones(1,1,6))
+
+    def test_clipping_cannot_hide_infinite_packed_projection(self):
+        packed,_=packed_ffn(ffn_weights(False),False,1.)
+        packed.experts[0].gate.weight.fill_(0x38)
+        packed.experts[0].gate.scales.fill_(float('inf'))
+        with self.assertRaisesRegex(ValueError,'nonfinite expert projection'):
+            packed(torch.ones(1,1,6))

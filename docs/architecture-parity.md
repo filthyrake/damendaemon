@@ -1828,3 +1828,14 @@ coefficients multiply after down projection, and the shared expert is added
 without a route coefficient. Independent controls exercise clamp boundaries and
 packed-versus-decoded outputs. Packed expert activation policies must match the
 requested Flash limit. These CPU fixtures do not qualify official model weights.
+
+`glm_flash_block.FlashBlock` composes either attention kind, two mHC mappings,
+RMS norms and clipped FFN into a complete multi-stream residual block. Independent
+composed equations cover both attention kinds; chunk/decode/reorder fixtures
+exercise state continuity. A failure before attention commits remains retryable.
+A failure after attention advances poisons the block, whose cursor remains at
+the last complete block call; release is still available. Residual workspace is
+additional to each component's declared scratch. Full-model composition remains
+separate. Clipped expert activation now rejects nonfinite projections before
+clamping, preventing a positive-infinite packed projection from becoming an
+apparently finite result.
