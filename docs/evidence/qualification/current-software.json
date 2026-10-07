@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "cells": [
+    {
+      "id": "flash-still-image-cpu-foundation",
+      "issue": "https://github.com/filthyrake/dllm/issues/57",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": "zai-org/GLM-5.3-Flash",
+        "model_revision": "eb9eb208eb0d988989d07a6a12d0fdeb5f52574a",
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "FP32 CPU reference; packed text projections",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "bede4767d493eb6258949c74d47b94e9fb7977bd",
+      "reason": "Tiny fixtures and pinned metadata pass; official checkpoint, semantic image quality and hardware remain unqualified.",
+      "comparators": []
+    },
+    {
+      "id": "deepseek-v4-flash-cpu-foundation",
+      "issue": "https://github.com/filthyrake/dllm/issues/58",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": "deepseek-ai/DeepSeek-V4-Flash",
+        "model_revision": "60d8d70770c6776ff598c94bb586a859a38244f1",
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "CPU reference with packed FP4/FP8 weights",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "d8b54e2c39ba12b7c990d452abf7829f6aabfa34",
+      "reason": "Packed snapshot, ordinary/tool prompting and owned generation fixtures pass; official model/hardware qualification remains open.",
+      "comparators": []
+    },
+    {
+      "id": "prepared-quantized-cpu-pipeline",
+      "issue": "https://github.com/filthyrake/dllm/issues/51",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": null,
+        "model_revision": null,
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "Canonical Q4_0/Q8_0 with CPU FP32 arithmetic",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "bf19af1797250e78440c1b5be8ca79bef090522e",
+      "reason": "Prepared fixture pipelines, placement and ownership are implemented; no target checkpoint/hardware performance qualified.",
+      "comparators": []
+    }
+  ]
+}
