@@ -80,7 +80,7 @@ class HostDistributedRuntime(DistributedRuntime):
             distributed=True,stage_layers=[[0,stage.layer_end],[stage.layer_end,stage.c['num_hidden_layers']]],
             max_batch_size=self.max_batch,packed_prefill=False,active=self.active,queued=self.requests.qsize(),
             completed=self.completed,heartbeats=self.heartbeats,
-            stream_buffer_events=STREAM_BUFFER_EVENTS,
+            stream_buffer_events=STREAM_BUFFER_EVENTS,client_admission_turns=True,
             failed=self.failure is not None,closed=self.closed.is_set())
 
     def generate(self,alias,messages,max_tokens,**options):

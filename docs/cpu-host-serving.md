@@ -66,3 +66,16 @@ a total process-memory cap. Slow consumers can still occupy their admitted slots
 until cancellation or the HTTP socket timeout; no prefill fairness or SLO claim
 follows from this change. The scheduling fix is shared with the existing
 experimental distributed GPU runtime, whose throughput has not been remeasured.
+
+Distributed admission now captures the HTTP handler's opaque client scope before
+handoff and applies the same least-recent client turns as ordinary generation.
+Each client's queued requests keep FIFO order; an anonymous caller shares one
+FIFO lane. Selection happens under the bounded queue's mutex, so fairness does
+not create an extra pending pool or bypass the queue limit. Already cancelled or
+expired entries are returned to the existing rejection path without charging a
+client turn. Scope objects, never bearer strings or request-body identifiers, are
+used as keys. Status reports `client_admission_turns: true`.
+
+This prevents a queued burst from taking every next admission ahead of another
+waiting client. It does not reserve active slots, preempt a long prefill, provide
+weighted token service or coordinate quotas across separate server processes.

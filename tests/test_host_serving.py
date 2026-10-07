@@ -53,8 +53,8 @@ class HostServingTests(unittest.TestCase):
             except BaseException as error:self.errors.append(error)
         self.owner=threading.Thread(target=run,daemon=True);self.owner.start()
 
-    def serve(self):
-        server=BoundedHTTPServer(('127.0.0.1',0),handler_for_host(self.runtime,AuthPolicy()))
+    def serve(self,auth=None):
+        server=BoundedHTTPServer(('127.0.0.1',0),handler_for_host(self.runtime,AuthPolicy() if auth is None else auth))
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         def close():server.shutdown();server.server_close();thread.join(3)
         self.addCleanup(close)
@@ -180,3 +180,30 @@ class HostServingTests(unittest.TestCase):
         expected_text=self.text.decode([e['token_id'] for e in expected if 'token_id' in e])
         self.assertEqual(''.join(e.get('text','') for e in result),expected_text)
         self.assertFalse(any(self.pair.state.lengths));self.assertFalse(self.errors)
+
+    def test_authenticated_http_clients_get_admission_turns_on_real_peers(self):
+        import secrets
+        from dllm.http_auth import ClientKey
+        a,b=secrets.token_urlsafe(32),secrets.token_urlsafe(32)
+        base=self.serve(AuthPolicy(clients=(ClientKey('alice',a,8),ClientKey('bob',b,8))))
+        order=[];original=self.pair.prefill
+        def prefill(tokens,slot):order.append(tokens[0]);return original(tokens,slot)
+        def call(key,token):
+            body=json.dumps(dict(model='model',prompt=[token],max_tokens=1)).encode()
+            with urlopen(HttpRequest(base+'/v1/completions',body,{'Authorization':'Bearer '+key,'Content-Type':'application/json'}),timeout=5) as response:
+                return json.load(response)
+        with patch.object(self.pair,'prefill',side_effect=prefill),ThreadPoolExecutor(5) as pool:
+            futures=[]
+            for key,token in ((a,1),(a,3),(a,4),(a,5),(b,2)):
+                futures.append(pool.submit(call,key,token));deadline=time.monotonic()+2
+                while self.runtime.requests.qsize()<len(futures) and time.monotonic()<deadline:time.sleep(.002)
+                self.assertEqual(self.runtime.requests.qsize(),len(futures))
+            with self.runtime.requests.mutex:
+                scopes=[r.cache_scope for r in self.runtime.requests.queue]
+                self.assertTrue(all(s is scopes[0] for s in scopes[:4]));self.assertIsNot(scopes[0],scopes[4])
+                self.assertTrue(all(not isinstance(s,str) for s in scopes))
+            self.start();results=[f.result(5) for f in futures]
+        self.assertEqual(order,[1,2,3,4,5])
+        self.assertTrue(all(r['usage']['completion_tokens']==1 for r in results))
+        self.assertTrue(self.runtime.manage('status')['client_admission_turns'])
+        self.assertFalse(self.runtime.requests.fair.recent);self.assertFalse(any(self.pair.state.lengths));self.assertFalse(self.errors)

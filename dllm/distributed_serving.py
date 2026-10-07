@@ -13,6 +13,8 @@ from .prefill import groups
 from .runtime import BusyError
 from .sampling import Sampling
 from .stopping import text_delta
+from .request_scope import cache_scope
+from .distributed_admission import DistributedAdmission
 
 STREAM_BUFFER_EVENTS=8
 
@@ -25,6 +27,7 @@ class Request:
     events: queue.Queue
     cancelled: threading.Event = field(default_factory=threading.Event)
     started: threading.Event = field(default_factory=threading.Event)
+    cache_scope: object = field(default_factory=cache_scope.get,repr=False)
 
 
 @dataclass
@@ -53,7 +56,7 @@ class DistributedRuntime:
         if type(queue_size) is not int or not 1 <= queue_size <= 64:raise ValueError('queue size must be 1..64')
         if not 0 < queue_timeout <= 300:raise ValueError('queue timeout must be within 300 seconds')
         self.pair,self.alias,self.queue_timeout=pair,alias,queue_timeout
-        self.requests=queue.Queue(queue_size)
+        self.requests=DistributedAdmission(queue_size,queue_timeout)
         self.closed=threading.Event()
         self.prepare_lock=threading.Lock()
         self.failure=None
@@ -73,7 +76,7 @@ class DistributedRuntime:
             weight_layout='q4-adjacent-body' if getattr(self.pair,'q4_stage_adjacent',False) else 'canonical',
             distributed=True,stage_layers=[[0,12],[12,24]],max_batch_size=self.max_batch,packed_prefill=self.packed_prefill,
             active=self.active,queued=self.requests.qsize(),completed=self.completed,
-            heartbeats=self.heartbeats,stream_buffer_events=STREAM_BUFFER_EVENTS,
+            heartbeats=self.heartbeats,stream_buffer_events=STREAM_BUFFER_EVENTS,client_admission_turns=True,
             failed=self.failure is not None,closed=self.closed.is_set())
 
     def embed(self,*args,**kwargs):raise ValueError('distributed embeddings are unsupported')
