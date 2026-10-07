@@ -280,6 +280,16 @@ entries. CPU scalar tests cover scores, IDs, block boundaries, chunk invariance,
 reordered inputs and empty caches. FP32 scoring is a component reference;
 projection/Hadamard/QAT integration and accelerator rounding remain unqualified.
 
+`dllm.floating_compressor.compress_hidden` connects explicit FP32 projection
+weights to pooling, storage-dtype rounding, learned RMS normalization and
+adjacent-pair RoPE at completed blocks' start positions. The DeepSeek frequency
+schedule is independent of other architectures' YaRN magnitude scaling. Scalar
+frequency/rotation tests and full-vs-chunked compressor tests cover the equations;
+low-precision controls distinguish the required cast order from late casting.
+A downstream rotation failure leaves prior state unchanged. The result is before
+QAT/Hadamard processing and must not be treated as checkpoint-compatible cached
+KV until those required transformations are integrated and qualified.
+
 ## GPT-OSS (CUDA)
 
 The pinned 20B checkpoint supports text Harmony chat, auto function calls, and raw completions, with
