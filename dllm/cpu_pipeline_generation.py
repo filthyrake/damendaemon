@@ -60,6 +60,7 @@ class CpuPipelineReferenceGenerator:
         finally:self.lock.release()
 
     def generate(self,tokens,*,max_new_tokens=128,chunk_size=128,cancelled=None):
+        if type(max_new_tokens) is not int:raise ValueError('single CPU completion requires an integer output limit')
         # Explicit closing propagates early consumer close to the owned batch.
         with closing(self.generate_batch([tokens],max_new_tokens=max_new_tokens,chunk_size=chunk_size,cancelled=cancelled)) as stream:
             for event in stream:yield {k:v for k,v in event.items() if k!='row'}

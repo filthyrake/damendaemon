@@ -70,7 +70,7 @@ class CpuCompletionTests(unittest.TestCase):
         runner=self.runner()
         with patch('dllm.cpu_pipeline_generation.build_cpu_pipeline',side_effect=AssertionError('built')):
             for tokens,options in (([60],{}),([True],{}),([],{}),([1],dict(max_new_tokens=16)),
-                                   ([1],dict(chunk_size=0)),([1],dict(max_new_tokens=4097))):
+                                   ([1],dict(chunk_size=0)),([1],dict(max_new_tokens=[2])),([1],dict(max_new_tokens=4097))):
                 with self.assertRaises(ValueError):list(runner.generate(tokens,**(dict(max_new_tokens=2)|options)))
             with self.assertRaises(PipelineCancelled):list(runner.generate([1],max_new_tokens=2,cancelled=lambda:True))
         self.assertIsNone(runner.pipeline)
