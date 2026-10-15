@@ -2081,3 +2081,15 @@ guard for bounded qualification. CPU commands still select CPU builders.
 Flash image mode uses bounded CPU vision and an explicit collapsed CUDA embedding
 row transfer before CPU image-feature insertion. Status reports `vision_device=cpu`
 separately from the coordinator language device. No CUDA vision claim follows.
+
+`scripts.audit_cuda_host_storage FAMILY SNAPSHOT --plan ranges.json
+--host-budget-mib ... --device-budget-mib ...` audits an existing ordered CUDA
+range plan from bounded headers only. It includes unique prepared device payload,
+DeepSeek frequency sharing, host conversion overlap, aggregate slot cache and
+separate workspace/output/transfer allowances. `--input-kind flash_embeddings`
+includes the whole admitted prompt's collapsed embedding transfer before chunked
+dispatch. It never reads weight payloads, probes hardware, rewrites cuts or reduces
+context/slots. Exit 0 means declared limits fit, 1 means they do not, and 2 means
+invalid metadata/controls. This is not execution admission or a measured memory
+peak; driver/allocator overhead, unmeasured temporaries, other workloads and
+coordinator vision/full image feature storage still need separate admission.
