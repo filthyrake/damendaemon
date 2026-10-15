@@ -266,3 +266,13 @@ Intermediate overflow and pre-projection budgets fail closed.15 local tests pass
 Guard completed4.091s,22MiB reserved under128MiB cap,4251MiB free before/after,
 incumbent healthy. Integrated attention/model and practical performance remain
 unqualified.
+
+## DeepSeek selected-KV attention (#247)
+
+Implementation `30d448f`. Explicit CUDA FP32 attention bounds output/workspace
+and rejects positive out-of-range IDs before gathering. It validates selected
+vectors/scores while preserving negative padding and unselected poisoned cache
+slots. Three CUDA chunk cases match independent scalar sink softmax within2.4e-7;
+duplicates, large scores, sink-only/all-padding, overflow and input nonmutation
+pass.16 local tests pass. Guard completed3.232s,22MiB reserved under128MiB cap,
+4251MiB free before/after, incumbent healthy. Full cached attention follows.
