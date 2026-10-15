@@ -362,3 +362,15 @@ quality, practical resolution/context and performance remain separate gates.
 
 DeepSeek-specific CPU regression after the command integration:124 tests pass
 in130.880s at `47b32a2` (before subsequent vision work).
+
+## Flash joint image placement/generation (#255)
+
+Implementation `7d3d30e`. Joint language/vision metadata and unique payload
+admission precede CUDA copies; CPU RGB patches pass vision budget checks before
+transfer. Same-device ordered feature insertion shares CPU ownership/generation.
+A tiny58,572-byte placed model matches independent vision features within5.6e-17
+and CPU image-conditioned logits within6e-8, exact greedy IDs and zero-head image
+generation events. Abandoned generation closes its owned cache.21 focused image/
+tool/vision tests pass. Guard13.481s,22MiB reserved under128MiB cap,4251MiB free
+before/after, cleanup confirmed. Official image quality and practical/performance
+qualification remain open; HTTP opt-in follows separately.
