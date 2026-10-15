@@ -1,18 +1,17 @@
 """Independent single-group Mamba-2 FP32 loading and GPU execution."""
-import json
 import math
 from pathlib import Path
 import torch
 from torch.nn import functional as F
 from safetensors import safe_open
 from tokenizers import Tokenizer
-from .config import eos_ids
+from .config import eos_ids, read_config
 from .mamba import MambaWeights,MambaExecutor,packable
 from .device import selected_device
 
 
 def config(path):
-    c=json.loads((Path(path)/'config.json').read_text())
+    c=read_config(Path(path)/'config.json')
     if (c.get('model_type')!='mamba2' or c.get('architectures')!=['Mamba2ForCausalLM']
             or c.get('quantization_config') or type(c.get('n_groups')) is not int or c.get('n_groups')!=1
             or c.get('hidden_act')!='silu' or c.get('rms_norm') is not True

@@ -1,5 +1,5 @@
 """Shared architecture dispatch for residency and registration."""
-import json
+from .config import read_config
 from pathlib import Path
 
 
@@ -18,7 +18,7 @@ def config(path):
     if is_gguf(path):
         from .gguf_model import plan
         return dict(plan(path).config)
-    value = json.loads((Path(path)/'config.json').read_text())
+    value = read_config(Path(path)/'config.json')
     quantization = value.get('quantization_config')
     if isinstance(quantization, dict) and quantization.get('quant_method') == 'awq':
         from .awq_model import config as awq_config

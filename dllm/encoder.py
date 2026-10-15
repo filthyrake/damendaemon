@@ -1,4 +1,5 @@
 """Independent BERT embeddings and BERT/XLM-RoBERTa relevance scores."""
+from .config import read_config
 from collections import OrderedDict
 import json
 import math
@@ -12,7 +13,7 @@ from .device import selected_device, available_memory, empty_cache
 
 def config(path):
     path = Path(path)
-    c = json.loads((path/'config.json').read_text())
+    c = read_config(path/'config.json')
     family=c.get('model_type')
     architectures={'bert':(['BertModel'],['BertForSequenceClassification']),
         'xlm-roberta':(['XLMRobertaForSequenceClassification'],)}
@@ -49,13 +50,13 @@ def config(path):
     pooling_path = Path(modules[1].get('path',''))
     if pooling_path.is_absolute() or '..' in pooling_path.parts or not pooling_path.parts:
         raise ValueError('invalid pooling module path')
-    pooling = json.loads((path/pooling_path/'config.json').read_text())
+    pooling = read_config(path/pooling_path/'config.json')
     expected = {'word_embedding_dimension': c['hidden_size'], 'pooling_mode_cls_token': False,
                 'pooling_mode_mean_tokens': True, 'pooling_mode_max_tokens': False,
                 'pooling_mode_mean_sqrt_len_tokens': False}
     if pooling != expected or any(type(pooling[k]) is not type(v) for k,v in expected.items()):
         raise ValueError('only declared masked mean pooling is supported')
-    length = json.loads((path/'sentence_bert_config.json').read_text()).get('max_seq_length')
+    length = read_config(path/'sentence_bert_config.json').get('max_seq_length')
     if type(length) is not int or not 1 <= length <= c['max_position_embeddings']:
         raise ValueError('invalid sentence encoder length')
     return {**c, 'task':'embedding', 'layer_norm_eps':eps, 'embedding_max_length':length}

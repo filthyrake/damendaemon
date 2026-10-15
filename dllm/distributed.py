@@ -5,7 +5,6 @@ receives only bounded control records and activations. This is a single-model,
 bounded batched command path; the HTTP scheduler lives in distributed_serving.
 """
 from datetime import timedelta
-import json
 import hashlib
 import os
 import struct
@@ -13,7 +12,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import torch
 import torch.distributed as dist
-from .config import decoder_config
+from .config import decoder_config, read_config
 from .layer_stage import LayerStage
 from .partition_policy import validate, packed_prefill_enabled
 from .qwen2 import ModelWeights
@@ -57,7 +56,7 @@ class StagePair:
             setup.check_peer()
             path = Path(path).expanduser().resolve()
             if not path.is_dir():raise ValueError('distributed-run requires a local safetensors snapshot; use dllm pull first')
-            config = decoder_config(json.loads((path/'config.json').read_text()))
+            config = decoder_config(read_config(path/'config.json'))
             validate(SimpleNamespace(config=config, max_context=context, quantization=quantization), 12, max_batch)
             self.model = ModelWeights(path, context, quantization=quantization)
             validate(self.model, 12, max_batch)

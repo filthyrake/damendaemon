@@ -21,7 +21,7 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 from .chat_template import compile_template
 
-from .config import decoder_config, eos_ids
+from .config import decoder_config, eos_ids, read_config
 from .rotary import inverse_frequencies, attention_factor
 
 
@@ -35,7 +35,7 @@ def weight_bytes(path,quantization=None):
     from .quantization import mode
     quantization=mode(quantization)
     quantized = quantization != 'none'
-    config = decoder_config(json.loads((Path(path) / 'config.json').read_text()))
+    config = decoder_config(read_config(Path(path) / 'config.json'))
     from .vision_policy import enabled as vision_enabled,eligible as vision_eligible
     include_vision=vision_eligible(config) and vision_enabled()
     if quantization == 'q4_0' and config['model_type'] == 'qwen3_5_text':
@@ -90,7 +90,7 @@ class ModelWeights:
         from .quantization import mode
         self.quantization = mode(quantization)
         self.path = Path(path).resolve()
-        self.config = decoder_config(json.loads((self.path / "config.json").read_text()))
+        self.config = decoder_config(read_config(self.path / "config.json"))
         c = self.config
         if selected_device() == 'xpu':
             from .xpu_policy import validate_model

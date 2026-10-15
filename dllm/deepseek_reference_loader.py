@@ -1,6 +1,6 @@
 """Explicit budgeted CPU reference snapshot loading; no serving admission."""
+from .config import read_config
 from contextlib import ExitStack
-import json
 import math
 from pathlib import Path
 
@@ -77,9 +77,7 @@ def _load_reference(path,start,end,*,max_weight_bytes=256*1024**2,dtype=torch.fl
         raise ValueError('invalid reference loader byte budget or compute dtype')
     path=Path(path)
     config_path=path/'config.json'
-    if config_path.stat().st_size > 1024*1024:
-        raise ValueError('reference model configuration exceeds size limit')
-    config=json.loads(config_path.read_text(),object_pairs_hook=_unique_fields)
+    config=read_config(config_path)
     specs=tensor_specs(config)
     freqs=_options(config)
     whole=start is None and end is None

@@ -5,7 +5,7 @@ CUDA projections reuse dllm's compensated Tensor Core products. The published
 encoder equations and checkpoint layout are validated against Transformers,
 which is never imported here.
 """
-import json
+from .config import read_config
 from math import isqrt
 from pathlib import Path
 
@@ -22,7 +22,7 @@ class VisionWeights:
             raise ValueError('unsupported vision projection storage')
         self.projection_dtype=projection_dtype
         self.path = Path(path)
-        config = json.loads((self.path/'config.json').read_text())
+        config = read_config(self.path/'config.json')
         self.config = c = config.get('vision_config',{})
         expected = dict(depth=12,hidden_size=768,intermediate_size=3072,num_heads=12,
                         out_hidden_size=1024,patch_size=16,spatial_merge_size=2,

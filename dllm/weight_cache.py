@@ -4,6 +4,7 @@ Source identity uses local file metadata, not a checkpoint content digest.
 The cache directory and checkpoint directory must both be trusted local data.
 Bump VERSION whenever preparation or packing semantics change.
 """
+from .config import read_config
 import hashlib
 import json
 import os
@@ -128,7 +129,7 @@ def configured_cache(model_path, config, quantization, files):
     # edit between the caller's parse and fingerprint cannot seed the wrong key.
     from .config import decoder_config
     cache = PreparedCache(root, model_path, config, quantization, files)
-    if decoder_config(json.loads((Path(model_path) / 'config.json').read_text())) != config:
+    if decoder_config(read_config(Path(model_path) / 'config.json')) != config:
         raise RuntimeError('checkpoint configuration changed while loading')
     from .qwen2 import weight_files
     if weight_files(model_path) != files:

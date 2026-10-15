@@ -9,14 +9,14 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 
 from .awq import Matrix, fuse, group_size
-from .config import decoder_config, eos_ids
+from .config import decoder_config, eos_ids, read_config
 from .device import selected_device
 from .qwen2 import ModelWeights, weight_files
 from .quantization import mode
 
 
 def config(path):
-    raw = json.loads((Path(path)/'config.json').read_text())
+    raw = read_config(Path(path)/'config.json')
     group = group_size(raw.get('quantization_config'))
     architectures = {'qwen2': ['Qwen2ForCausalLM'], 'qwen3': ['Qwen3ForCausalLM']}
     if raw.get('model_type') not in architectures or raw.get('architectures') != architectures[raw['model_type']]:

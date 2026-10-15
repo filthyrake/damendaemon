@@ -1,6 +1,37 @@
 """Validate supported dense decoder variants before loading weight tensors."""
+import json
 import math
+from pathlib import Path
 import sys
+
+MAX_CONFIG_BYTES = 1024 * 1024
+
+
+def read_config(path):
+    """Read one bounded UTF-8 configuration object before tensor loading."""
+    with Path(path).open('rb') as reader:
+        raw = reader.read(MAX_CONFIG_BYTES + 1)
+    if len(raw) > MAX_CONFIG_BYTES:
+        raise ValueError('model configuration exceeds 1 MiB')
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:raise ValueError('duplicate model configuration field')
+            result[key] = value
+        return result
+    def number(value):
+        parsed = float(value)
+        if not math.isfinite(parsed):raise ValueError('nonfinite model configuration number')
+        return parsed
+    def constant(value):
+        raise ValueError('nonfinite model configuration number')
+    try:
+        result = json.loads(raw.decode('utf-8'), object_pairs_hook=unique,
+                            parse_float=number, parse_constant=constant)
+    except RecursionError as error:
+        raise ValueError('model configuration nesting is too deep') from error
+    if not isinstance(result, dict):raise ValueError('model configuration must be an object')
+    return result
 
 
 def rotary_scaling(value):

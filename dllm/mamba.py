@@ -1,18 +1,17 @@
 """Independent FP32 Mamba-1 loader and slot-owned state-space executor."""
-import json
 import math
 from pathlib import Path
 import torch
 from torch.nn import functional as F
 from safetensors import safe_open
 from tokenizers import Tokenizer
-from .config import eos_ids
+from .config import eos_ids, read_config
 from .device import selected_device,available_memory,empty_cache
 from .batch import BatchExecutor
 
 
 def config(path):
-    c=json.loads((Path(path)/'config.json').read_text())
+    c=read_config(Path(path)/'config.json')
     if (c.get('model_type')!='mamba' or c.get('architectures')!=['MambaForCausalLM']
             or c.get('quantization_config') or c.get('hidden_act','silu')!='silu'
             or c.get('rms_norm',True) is not True or c.get('residual_in_fp32',True) is not True

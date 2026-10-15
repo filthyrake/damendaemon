@@ -1,16 +1,15 @@
 """Independent T5 text encoder-decoder weights and relative-position geometry."""
-import json
 import math
 from collections import OrderedDict
 from pathlib import Path
 import torch
 from safetensors import safe_open
 from tokenizers import Tokenizer
-from .config import eos_ids
+from .config import eos_ids, read_config
 
 
 def config(path):
-    c=json.loads((Path(path)/'config.json').read_text())
+    c=read_config(Path(path)/'config.json')
     if (c.get('model_type')!='t5' or c.get('architectures')!=['T5ForConditionalGeneration']
             or c.get('is_encoder_decoder') is not True or c.get('quantization_config')
             or c.get('feed_forward_proj','relu') not in ('relu','gated-gelu')):

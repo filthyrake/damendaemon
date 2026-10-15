@@ -1,5 +1,5 @@
 """Header-only hybrid storage planning; not execution admission or qualification."""
-import json
+from .config import read_config
 from pathlib import Path
 
 
@@ -131,7 +131,7 @@ def plan_local(path, contexts, batches, cache_dtype, layer_splits=None, stage_we
     from .checkpoint import inspect_snapshot
     from .config import decoder_config
     path = Path(path).expanduser().resolve()
-    original = json.loads((path/'config.json').read_text())
+    original = read_config(path/'config.json')
     if decoder_config(original)['model_type'] != 'qwen3_5_text':
         raise ValueError('capacity planner requires a supported hybrid text configuration')
     _, files = inspect_snapshot(path)

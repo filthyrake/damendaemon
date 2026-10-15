@@ -4,6 +4,11 @@
 
 Consult the [support matrix](support.md) and [architecture qualification](architecture-parity.md) for exact tested revisions and remaining gaps. These notes describe architecture-specific usage.
 
+Model configuration preflight reads at most 1 MiB of UTF-8 JSON per object
+configuration file. Duplicate fields, nonfinite numbers and non-object roots
+are rejected before architecture dispatch or weight planning. Tokenizer vocabulary
+files use their separate loading contracts.
+
 ## Sentence embeddings
 
 Sentence embeddings are available through `POST /v1/embeddings`. Register the
