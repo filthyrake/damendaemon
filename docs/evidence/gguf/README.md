@@ -2685,3 +2685,15 @@ output throughput was 41.13/40.94 and 57.80/57.65 tokens/sec respectively.
 The isolated synchronized-prefill gain did not translate to this real request
 schedule. The experimental budget is not promoted; the normal aggregate limit
 remains one configured context. This closes the grouping optimization pass.
+
+## Real split-checkpoint correctness on shared A2 (2026-10-15)
+
+[#218 evidence](shared-a2-split/README.md) qualifies the pinned official
+Qwen2.5-0.5B-Instruct Q8_0 single-file checkpoint against a two-shard copy with
+exact packed bytes across291 tensors. Under bounded busy-service admission,
+sequential fresh processes produce identical four-step logits/tokens and pass
+ordinary HTTP completion/stream/unload/disk-reload equality at configured
+context128. Existing GLM readiness and GPU allocations persist; experimental
+memory returns after cleanup. The initial cold-load HTTP timeout and corrective
+runner change are retained. This narrow correctness result does not establish
+performance, longer context or arbitrary split-model support.

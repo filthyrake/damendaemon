@@ -32,3 +32,23 @@ The runner now explicitly loads the model under the existing120-second outer
 deadline before HTTP generation. The10-second HTTP response timeout, allocator
 cap and all resource guards remain unchanged. A loopback regression requires
 explicit load before the first generation request.
+
+## Passing retry
+
+Runner revision d119ec9 passes all four phases in117.224 seconds; the outer
+busy-service guard completes in117.608 seconds. `passed-result.json` and
+`passed-guard.json` must be read together. Single and split traces match all
+four normalized-logit hashes and greedy tokens exactly. Both HTTP reports pass
+nonstream output, complete SSE stream, host/GPU unload and disk reload with
+identical text and usage. Preparation source/shard hashes are retained in
+`preparation-summary.json`; successful worker results are the four single/split
+trace/HTTP JSON files.
+
+After the run the guard reports4289 MiB free and54 C. An independent readiness
+check again returned status ok, with incumbent PID1362245 still using22088 MiB
+on A30 and10668 MiB on A2. No reset, incumbent restart or service modification
+was performed. These checks establish continuity/readiness, not unchanged
+request latency. This result qualifies this exact checkpoint, short raw prompt,
+four generated tokens, graphs disabled, and the recorded HTTP lifecycle on A2.
+It does not qualify broader model families, contexts, chat, cancellation,
+concurrency, cross-model swaps or performance. Parent #43 remains open.
