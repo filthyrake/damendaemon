@@ -1,0 +1,98 @@
+{
+  "allocator_mib_per_process": 128,
+  "chat": true,
+  "family": "flash",
+  "images": true,
+  "max_cuda_processes": 2,
+  "passed": true,
+  "performance_qualified": false,
+  "physical_multi_gpu_qualified": false,
+  "ready": {
+    "distributed": true,
+    "dtype": "float32",
+    "epoch_terminal": false,
+    "event": "http_ready",
+    "execution": "host_topology",
+    "local_device": "cuda:0",
+    "local_stage_index": 0,
+    "modality": "still_image",
+    "model": "model",
+    "model_identity_verified": true,
+    "model_type": "glm5_next",
+    "native_chat": true,
+    "official_model_qualified": false,
+    "peer_devices_verified": false,
+    "queue_capacity": 0,
+    "queue_enabled": false,
+    "scope": "host_reference",
+    "source_model_id": "10a47ae94360b00e08da977904a6a9393070eb50bc7222fc4588352d42243755",
+    "stage_layers": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        3
+      ]
+    ],
+    "topology_identity": "6fa3b497a1675ac624072030760b79a5a62d572ed29dcbb032f54fa026585f67",
+    "url": "http://127.0.0.1:32895",
+    "vision_device": "cpu",
+    "vision_identity_verified": true
+  },
+  "sigterm_exit_code": 0,
+  "sse": true,
+  "stopped": {
+    "distributed": true,
+    "epoch_terminal": true,
+    "event": "stopped",
+    "execution": "host_topology",
+    "graceful_stop": true,
+    "local_device": "cuda:0",
+    "local_stage_index": 0,
+    "model_identity_verified": true,
+    "peer_devices_verified": false,
+    "scope": "host_reference",
+    "source_model_id": "10a47ae94360b00e08da977904a6a9393070eb50bc7222fc4588352d42243755",
+    "stage_layers": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        3
+      ]
+    ],
+    "topology_identity": "6fa3b497a1675ac624072030760b79a5a62d572ed29dcbb032f54fa026585f67",
+    "vision_device": "cpu",
+    "vision_identity_verified": true
+  },
+  "worker_exit_code": 0,
+  "worker_ready": {
+    "event": "ready",
+    "local_device": "cuda:0",
+    "modality": "still_image",
+    "model_identity_verified": true,
+    "native_chat": true,
+    "official_model_qualified": false,
+    "peer_devices_verified": false,
+    "role": "worker",
+    "scope": "flash_cuda_host_topology_reference",
+    "source_model_id": "10a47ae94360b00e08da977904a6a9393070eb50bc7222fc4588352d42243755",
+    "stage": 1,
+    "stage_layers": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        3
+      ]
+    ],
+    "topology_identity": "6fa3b497a1675ac624072030760b79a5a62d572ed29dcbb032f54fa026585f67"
+  },
+  "zero_head_fixture": true
+}

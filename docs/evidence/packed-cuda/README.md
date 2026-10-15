@@ -478,3 +478,20 @@ and12.943s respectively. Both processes exited0 in each case;4251MiB free
 before/after and cleanup confirmed. All three tiny zero-head command gates
 are complete; generated tool semantics, official quality, practical contexts,
 physical multi-GPU and performance remain unqualified.
+
+## CPU vision with CUDA host language stages (#265)
+
+Implementation `6766238`. Flash-only collapsed embedding rows cross the bounded
+host adapter for CPU image insertion. Pre-dispatch copy failure retires the host
+epoch; ordinary admission rejection preserves it. Twenty-six local image/tool/
+HTTP/command tests pass, plus eight HTTP checks after vision-device assertions.
+Actual CUDA row replay checks exact CPU embedding equality and rejection before
+copy at a one-byte transfer cap (guard8.670s,22MiB reserved). Two CUDA processes
+with128MiB allocator caps pass inline-image HTTP/SSE, verified source, explicit
+CPU vision/CUDA language status and acknowledged SIGTERM/STOP with exits0
+(guard16.992s). Both guards confirm cleanup and4251MiB free before/after.
+Zero-head command evidence does not qualify image semantics, CUDA vision,
+practical context/resolution/performance or physical multi-GPU execution.
+
+Full CPU/loopback regression pinned at `34374cb`:1,814 tests pass in498.751s,
+covering native CUDA host text commands before this image increment.
