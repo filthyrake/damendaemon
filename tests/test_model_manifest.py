@@ -13,6 +13,21 @@ from dllm.model_manifest import load, save
 
 
 class ManifestTests(unittest.TestCase):
+    def test_manifest_growth_cannot_bypass_read_limit_or_start_downloads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'models.json'
+            content = json.dumps({'version': 1, 'models': {'chat': {
+                'repository': 'Qwen/model', 'revision': 'a'*40, 'quantization': 'none'}}})
+            path.write_text(content)
+            before = path.stat()
+            path.write_text(content + ' ' * (1024 * 1024))
+            resolve = Mock()
+            # The previous stat observed the old file, before replacement/growth.
+            with patch.object(Path, 'stat', return_value=before):
+                with self.assertRaisesRegex(ValueError, 'exceeds 1 MiB'):
+                    load(path, resolve)
+            resolve.assert_not_called()
+
     def test_http_registration_export_cli_save_and_reload(self):
         from dllm.cli import main
         from dllm.runtime import Runtime

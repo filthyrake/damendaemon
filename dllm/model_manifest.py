@@ -62,9 +62,11 @@ def unique_object(pairs):
 
 def load(path, resolve):
     path = Path(path).expanduser().resolve()
-    if path.stat().st_size > 1024 * 1024:
+    with path.open('rb') as reader:
+        raw = reader.read(1024 * 1024 + 1)
+    if len(raw) > 1024 * 1024:
         raise ValueError('model manifest exceeds 1 MiB')
-    data = json.loads(path.read_text(), object_pairs_hook=unique_object)
+    data = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_object)
     if (not isinstance(data, dict) or set(data) != {'version', 'models'}
             or type(data['version']) is not int or data['version'] != 1
             or not isinstance(data['models'], dict) or not data['models']):
