@@ -23,6 +23,9 @@ def main():
     report=dict(passed=False,model_qualified=False,performance_qualified=False,device=torch.cuda.get_device_name(),
                 torch=torch.__version__,cases=[])
     save(args.output,report)
+    def strided_cuda(value):
+        storage=torch.empty((value.shape[0],value.shape[1]*2),dtype=value.dtype,device='cuda')
+        view=storage[:,::2];view.copy_(value);return view
     try:
         for format in ('e2m1','e4m3fn','e4m3fn_f32','q4_0_f16','q8_0_f16'):
             if format in ('e2m1','e4m3fn'):
@@ -41,7 +44,7 @@ def main():
                     scales=torch.full((9,2),.125,dtype=torch.float16)
                 dense=None
             for dtype in (torch.float32,torch.float16,torch.bfloat16):
-                source=hidden.to(dtype); x=source.cuda();w=weight.cuda();s=scales.cuda()
+                source=hidden.to(dtype); x=strided_cuda(source);w=strided_cuda(weight);s=strided_cuda(scales)
                 expected=(source.float()@dense.T if dense is not None else
                           packed_linear(source,weight,scales,format=format,row_chunk=3,column_chunk=17))
                 original=w.clone()
