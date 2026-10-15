@@ -8,7 +8,7 @@ from dllm.glm_text import _read
 from dllm.glm_generation import validate_text_config
 from dllm.glm_tool_text import GlmToolText
 from dllm.http_auth import AuthPolicy
-from scripts.serve_cpu_reference import bounded_integer,serve
+from scripts.serve_cpu_reference import bounded_integer,serve,image_metadata
 
 
 def parser_for_command():
@@ -27,6 +27,9 @@ def parser_for_command():
     parser.add_argument('--workspace-mib',type=bounded_integer(1,2048),default=64)
     parser.add_argument('--output-mib',type=bounded_integer(1,2048),default=64)
     parser.add_argument('--cpu-threads',type=bounded_integer(1,16),default=1)
+    parser.add_argument('--flash-images',action='store_true',help='explicit CUDA Flash still-image/tool HTTP owner')
+    for name,maximum in (('vision-weight-mib',2048),('image-workspace-mib',2048),('image-output-mib',2048),('max-patches',65536)):
+        parser.add_argument('--'+name,type=bounded_integer(1,maximum),help='requires --flash-images')
     parser.set_defaults(queue_size=0)
     return parser
 
@@ -36,9 +39,14 @@ def prepare(args):
     if not re.fullmatch(r'cuda:[0-9]+',args.device):raise ValueError('choose an explicit indexed CUDA device')
     if not isinstance(args.alias,str) or not 1<=len(args.alias)<=128:raise ValueError('invalid model alias')
     if args.device_weight_mib>=args.allocator_mib:raise ValueError('allocator cap must leave space beyond packed weight payload')
+    if not args.flash_images and any(getattr(args,key) is not None for key in
+            ('vision_weight_mib','image_workspace_mib','image_output_mib','max_patches')):
+        raise ValueError('image budgets require --flash-images')
     path=Path(args.snapshot)
     config=json.loads(_read(path/'config.json',1024**2),object_pairs_hook=_unique_fields)
     if not isinstance(config,dict):raise ValueError('CUDA reference command requires a GLM, Flash or DeepSeek snapshot')
+    if args.flash_images and config.get('model_type')!='glm5_next':
+        raise ValueError('CUDA still-image HTTP requires a Flash snapshot')
     import torch
     if config.get('model_type')=='glm_moe_dsa':
         from dllm.glm_reference_loader import load_reference_model
@@ -55,7 +63,14 @@ def prepare(args):
         from dllm.cuda_glm_flash_generation import CudaFlashToolGenerator as generator_type
         from dllm.cuda_reference_serving import CudaFlashReferenceRuntime as runtime_type
         text_config=flash_text_config(config)
-        text=FlashToolText(path,vocab_size=text_config.get('vocab_size'))
+        if args.flash_images:
+            image_metadata(config,args)
+            from dllm.glm_flash_image_tool_text import FlashImageToolText
+            from dllm.cuda_glm_flash_image_generation import CudaFlashImageToolGenerator as generator_type
+            from dllm.cuda_reference_serving import CudaFlashImageReferenceRuntime as runtime_type
+            text=FlashImageToolText(path,vocab_size=text_config.get('vocab_size'))
+            if config.get('image_token_id')!=text.image_token_id:raise ValueError('Flash image token disagrees with tokenizer')
+        else:text=FlashToolText(path,vocab_size=text_config.get('vocab_size'))
     elif config.get('model_type')=='deepseek_v4':
         from dllm.deepseek_reference_loader import load_reference_model
         from dllm.deepseek_text import DeepSeekText
@@ -88,10 +103,19 @@ def prepare(args):
         cpu=load_reference_model(path,max_weight_bytes=args.weight_mib*1024**2,
             projection_workspace_bytes=args.projection_workspace_mib*1024**2,
             max_workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
-        placed=place(cpu,device=device,max_bytes=args.device_weight_mib*1024**2)
+        if args.flash_images:
+            from dllm.glm_flash_vision_loader import load_reference_vision
+            from dllm.cuda_glm_flash_image_placement import place_cuda_flash_image
+            vision=load_reference_vision(path,max_weight_bytes=(args.vision_weight_mib or 256)*1024**2,
+                max_tokens=args.max_patches or 4096,max_workspace_bytes=args.workspace_mib*1024**2,
+                max_output_bytes=args.output_mib*1024**2)
+            placed=place_cuda_flash_image(cpu,vision,device=device,max_bytes=args.device_weight_mib*1024**2)
+        else:placed=place(cpu,device=device,max_bytes=args.device_weight_mib*1024**2)
     model=placed.model
     try:
-        runner=generator_type(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
+        image_options={} if not args.flash_images else dict(vision=placed.vision,
+            image_workspace_bytes=(args.image_workspace_mib or 64)*1024**2,image_output_bytes=(args.image_output_mib or 64)*1024**2)
+        runner=generator_type(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2,**image_options)
         runtime=runtime_type(runner,args.alias)
     except BaseException:
         if config.get('model_type')=='deepseek_v4':model.cleanup_failed_prefills()

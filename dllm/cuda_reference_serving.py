@@ -44,3 +44,15 @@ class CudaDeepSeekReferenceRuntime(CudaGlmReferenceRuntime):
     runner_types=(CudaDeepSeekGenerator,)
     family_name='deepseek_v4'
     execution_name='prepared_cuda_deepseek'
+
+
+from .cuda_glm_flash_image_generation import CudaFlashImageToolGenerator
+
+
+class CudaFlashImageReferenceRuntime(CudaFlashReferenceRuntime):
+    runner_types=(CudaFlashImageToolGenerator,)
+    execution_name='prepared_cuda_flash_images'
+
+    def __init__(self,runner,alias='model'):
+        super().__init__(runner,alias)
+        self.images=True

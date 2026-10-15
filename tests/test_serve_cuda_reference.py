@@ -49,3 +49,14 @@ class DeepSeekCudaCommandTests(unittest.TestCase):
             (path/'config.json').write_text(json.dumps(config|dict(max_position_embeddings=1)))
             with patch('dllm.deepseek_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')):
                 with self.assertRaises(ValueError):prepare(parser_for_command().parse_args([str(path),'--device','cuda:0']))
+
+class FlashImageCudaCommandTests(unittest.TestCase):
+    def test_explicit_image_optin_and_processor_before_payload(self):
+        from tests.test_glm_flash_inline_images import snapshot
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp);snapshot(path)
+            parser=parser_for_command()
+            with patch('dllm.glm_flash_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')):
+                with self.assertRaises(ValueError):prepare(parser.parse_args([str(path),'--device','cuda:0','--max-patches','64']))
+                (path/'processor_config.json').write_text('{}')
+                with self.assertRaises(ValueError):prepare(parser.parse_args([str(path),'--device','cuda:0','--flash-images']))

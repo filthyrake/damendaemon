@@ -16,9 +16,14 @@ def main():
     family_options=parser.add_mutually_exclusive_group()
     family_options.add_argument('--flash',action='store_true')
     family_options.add_argument('--deepseek',action='store_true')
+    family_options.add_argument('--images',action='store_true')
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
-    if args.deepseek:
+    if args.images:
+        from tests.test_glm_flash_inline_images import snapshot,messages as image_messages
+        from tests.test_glm_flash_image_generation import text_fixture
+        def fixture(path,*,vocab_size):snapshot(path)
+    elif args.deepseek:
         from tests.test_deepseek_generation import text_fixture
         from tests.test_deepseek_reference_loader import fixture
     elif args.flash:
@@ -28,7 +33,7 @@ def main():
         from tests.test_glm_generation import text_fixture
         from tests.test_glm_reference_loader import fixture
     from tests.test_glm_flash_host_generation import zero_fixture_head
-    family='deepseek_v4' if args.deepseek else 'glm5_next' if args.flash else 'glm_moe_dsa'
+    family='deepseek_v4' if args.deepseek else 'glm5_next' if args.flash or args.images else 'glm_moe_dsa'
     report=dict(passed=False,family=family,zero_head_fixture=True,allocator_limit_mib=128,
                 official_model_qualified=False,performance_qualified=False)
     save(args.output,report);process=None
@@ -45,7 +50,7 @@ def main():
             with tempfile.TemporaryFile(mode='w+') as errors:
                 process=subprocess.Popen([sys.executable,'-m','scripts.serve_cuda_reference',str(path),
                     '--device','cuda:0','--port','0','--context','128','--weight-mib','1','--device-weight-mib','1',
-                    '--allocator-mib','128','--cache-mib','1','--projection-workspace-mib','8' if args.deepseek else '1','--workspace-mib','256' if args.deepseek else '2','--output-mib','1'],
+                    '--allocator-mib','128','--cache-mib','1','--projection-workspace-mib','8' if args.deepseek else '1','--workspace-mib','256' if args.deepseek else '16' if args.images else '2','--output-mib','1']+(['--flash-images','--vision-weight-mib','1','--image-workspace-mib','16','--image-output-mib','1','--max-patches','64'] if args.images else []),
                     stdout=subprocess.PIPE,stderr=errors,text=True)
                 with selectors.DefaultSelector() as selector:
                     selector.register(process.stdout,selectors.EVENT_READ)
@@ -56,9 +61,10 @@ def main():
                 ready=json.loads(line)
                 if ready.get('event')!='http_ready' or ready.get('scope')!='cuda_prepared_reference' or ready.get('device')!='cuda:0':
                     raise AssertionError('untruthful CUDA command readiness')
+                if args.images and ready.get('modality')!='still_image':raise AssertionError('wrong image readiness modality')
                 base=ready['url'];reasoning=[];field='content' if args.deepseek else 'reasoning_content'
                 for stream in (False,True):
-                    body=dict(model='model',messages=[dict(role='user',content='Hi')],max_tokens=2,stream=stream)
+                    body=dict(model='model',messages=image_messages() if args.images else [dict(role='user',content='Hi')],max_tokens=2,stream=stream)
                     if stream:body['stream_options']={'include_usage':True}
                     with urlopen(Request(base+'/v1/chat/completions',data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=15) as response:
                         wire=response.read().decode()
