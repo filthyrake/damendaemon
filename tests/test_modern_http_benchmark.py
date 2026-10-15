@@ -125,6 +125,35 @@ class BenchmarkIntegrity(unittest.TestCase):
                     self.assertIn('request failed', report['error'])
                 self.assertEqual(list(root.glob('phase.json.*.tmp')), [])
 
+    def test_output_capture_is_bounded_before_retention(self):
+        cases = [(['é', 'é'], 4, 2, True, 'éé'),
+                 (['é', 'é'], 3, 2, False, 'é'),
+                 (['a', 'b', 'c'], 10, 2, False, 'ab'),
+                 (['', 'abcd'], 4, 1, True, 'abcd'),
+                 (['abcde'], 4, 2, False, '')]
+        for fragments, byte_limit, count_limit, passed, expected in cases:
+            with self.subTest(fragments=fragments, bytes=byte_limit, count=count_limit):
+                chunks = [dict(choices=[dict(text=value)]) for value in fragments]
+                chunks.append(dict(usage=dict(prompt_tokens=2, completion_tokens=128)))
+                stream = ''.join('data: ' + json.dumps(c) + '\n\n' for c in chunks) + 'data: [DONE]\n\n'
+                response = Response(stream.encode())
+                first = threading.Event()
+                with patch.object(benchmark, 'MAX_CAPTURE_BYTES', byte_limit), \
+                        patch.object(benchmark, 'MAX_CAPTURE_FRAGMENTS', count_limit), \
+                        patch.object(benchmark, 'urlopen', return_value=response):
+                    result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3],
+                                               threading.Barrier(1), first_output_event=first)
+                self.assertEqual(result['passed'], passed)
+                self.assertEqual(result['text'], expected)
+                self.assertEqual(result['captured_utf8_bytes'], len(expected.encode()))
+                self.assertLessEqual(len(result['chunks']), count_limit)
+                self.assertEqual(result['capture_limits'], dict(utf8_bytes=byte_limit, fragments=count_limit))
+                self.assertTrue(response.closed)
+                self.assertTrue(first.is_set())
+                if not passed:
+                    self.assertIn('capture limit', result['error'])
+                    self.assertNotIn('post_first_output_tokens_per_second_proxy', result)
+
     def test_broken_start_barrier_retains_failure_and_releases_waiter(self):
         barrier = threading.Barrier(2)
         barrier.abort()

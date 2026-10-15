@@ -18,6 +18,10 @@ from dllm.bench import distribution, events, llama_context
 from dllm.report_io import save_report
 
 
+MAX_CAPTURE_BYTES = 16 * 1024 * 1024
+MAX_CAPTURE_FRAGMENTS = 100_000
+
+
 def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128, timeout=180,
             first_output_event=None):
     body = dict(model=model, prompt=tokens, temperature=0, max_tokens=output_tokens,
@@ -27,8 +31,10 @@ def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128,
         body.update(cache_prompt=False)
     start = time.perf_counter()
     result = dict(prompt_tokens=len(tokens), passed=False, chunks=[], started_monotonic=start,
-                  start_barrier_passed=False)
+                  start_barrier_passed=False,
+                  capture_limits=dict(utf8_bytes=MAX_CAPTURE_BYTES, fragments=MAX_CAPTURE_FRAGMENTS))
     text = []
+    captured_bytes = 0
     try:
         barrier.wait(timeout=30)
         start = time.perf_counter()
@@ -49,7 +55,13 @@ def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128,
                     raise ValueError(str(item['error']))
                 for choice in item.get('choices', []):
                     fragment = choice.get('text', '')
+                    if not isinstance(fragment, str):
+                        raise ValueError('output fragment must be text')
                     if fragment:
+                        size = len(fragment.encode('utf-8'))
+                        if captured_bytes + size > MAX_CAPTURE_BYTES or len(text) >= MAX_CAPTURE_FRAGMENTS:
+                            raise ValueError('benchmark output capture limit exceeded')
+                        captured_bytes += size
                         text.append(fragment)
                         result['chunks'].append(dict(seconds=elapsed, text=fragment))
                         if first_output_event is not None:
@@ -75,6 +87,7 @@ def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128,
             first_output_event.set()
     result['seconds'] = time.perf_counter() - start
     result['text'] = ''.join(text)
+    result['captured_utf8_bytes'] = captured_bytes
     result['first_output_seconds'] = result['chunks'][0]['seconds'] if result['chunks'] else None
     # SSE can coalesce tokens; this is explicitly a client-visible proxy, not
     # the engine's internal decode-only throughput or a competitive pass gate.

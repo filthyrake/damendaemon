@@ -161,3 +161,10 @@ shared atomic JSON writer. A failed write preserves the previous complete file;
 unique temporary files permit a nested signal checkpoint without reusing the
 interrupted writer's file. This is atomic replacement, not a guarantee against
 power loss. Report validation and hardware qualification remain separate gates.
+
+The fixed-workload collector additionally limits retained output to 16 MiB of
+UTF-8 text and 100,000 nonempty fragments per request. It records these capture
+limits and retained byte count. Exceeding either bound fails before retaining
+the offending fragment; earlier output stays available as failed evidence, the
+response is closed and the deadline waiter is released. This is a capture bound,
+not a token estimate or total stream deadline; SSE fragments may coalesce tokens.
