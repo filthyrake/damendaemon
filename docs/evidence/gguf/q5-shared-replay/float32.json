@@ -1,0 +1,152 @@
+{
+  "checkpoint_sha256": "e593d886d3cbdfed7a7c3c650866a7506d29f2e7d16218409316773f47c91db7",
+  "comparisons": {
+    "float16": {
+      "errors": [
+        {
+          "candidate_token": 19,
+          "max_absolute": 0.02757740020751953,
+          "oracle_token": 19,
+          "relative_rms": 0.002784712834341049,
+          "step": 0,
+          "teacher_token": 19
+        },
+        {
+          "candidate_token": 128009,
+          "max_absolute": 0.022015094757080078,
+          "oracle_token": 128009,
+          "relative_rms": 0.001546263669026072,
+          "step": 1,
+          "teacher_token": 128009
+        },
+        {
+          "candidate_token": 128006,
+          "max_absolute": 0.03005659580230713,
+          "oracle_token": 128006,
+          "relative_rms": 0.0017581045661145848,
+          "step": 2,
+          "teacher_token": 128006
+        },
+        {
+          "candidate_token": 78191,
+          "max_absolute": 0.04649925231933594,
+          "oracle_token": 78191,
+          "relative_rms": 0.0015956461917241611,
+          "step": 3,
+          "teacher_token": 78191
+        },
+        {
+          "candidate_token": 128007,
+          "max_absolute": 0.027306079864501953,
+          "oracle_token": 128007,
+          "relative_rms": 0.0010198991000973795,
+          "step": 4,
+          "teacher_token": 128007
+        },
+        {
+          "candidate_token": 271,
+          "max_absolute": 0.04922962188720703,
+          "oracle_token": 271,
+          "relative_rms": 0.005791047587760605,
+          "step": 5,
+          "teacher_token": 271
+        },
+        {
+          "candidate_token": 3947,
+          "max_absolute": 0.04282188415527344,
+          "oracle_token": 3947,
+          "relative_rms": 0.0036927341845111802,
+          "step": 6,
+          "teacher_token": 3947
+        },
+        {
+          "candidate_token": 374,
+          "max_absolute": 0.036080360412597656,
+          "oracle_token": 374,
+          "relative_rms": 0.001367537072637558,
+          "step": 7,
+          "teacher_token": 374
+        }
+      ],
+      "passed": true
+    },
+    "float32": {
+      "errors": [
+        {
+          "candidate_token": 19,
+          "max_absolute": 0.009508639574050903,
+          "oracle_token": 19,
+          "relative_rms": 0.0008129955325519079,
+          "step": 0,
+          "teacher_token": 19
+        },
+        {
+          "candidate_token": 128009,
+          "max_absolute": 0.007179737091064453,
+          "oracle_token": 128009,
+          "relative_rms": 0.000479919947197687,
+          "step": 1,
+          "teacher_token": 128009
+        },
+        {
+          "candidate_token": 128006,
+          "max_absolute": 0.018707275390625,
+          "oracle_token": 128006,
+          "relative_rms": 0.001745603431788268,
+          "step": 2,
+          "teacher_token": 128006
+        },
+        {
+          "candidate_token": 78191,
+          "max_absolute": 0.011284351348876953,
+          "oracle_token": 78191,
+          "relative_rms": 0.00046946840054258566,
+          "step": 3,
+          "teacher_token": 78191
+        },
+        {
+          "candidate_token": 128007,
+          "max_absolute": 0.010137557983398438,
+          "oracle_token": 128007,
+          "relative_rms": 0.00042790457651424677,
+          "step": 4,
+          "teacher_token": 128007
+        },
+        {
+          "candidate_token": 271,
+          "max_absolute": 0.016675949096679688,
+          "oracle_token": 271,
+          "relative_rms": 0.0014648182040719044,
+          "step": 5,
+          "teacher_token": 271
+        },
+        {
+          "candidate_token": 3947,
+          "max_absolute": 0.018729686737060547,
+          "oracle_token": 3947,
+          "relative_rms": 0.0014867130866487656,
+          "step": 6,
+          "teacher_token": 3947
+        },
+        {
+          "candidate_token": 374,
+          "max_absolute": 0.011367321014404297,
+          "oracle_token": 374,
+          "relative_rms": 0.0004613072452409911,
+          "step": 7,
+          "teacher_token": 374
+        }
+      ],
+      "passed": true
+    }
+  },
+  "completed": true,
+  "context": 64,
+  "device": "NVIDIA A2",
+  "historical_gpu_gate_replaced": false,
+  "kernel_backend": "triton+mixed",
+  "peak_reserved_bytes": 1115684864,
+  "precision": "float32",
+  "steps": 8,
+  "torch": "2.6.0+cu124"
+}

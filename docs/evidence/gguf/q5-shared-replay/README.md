@@ -22,3 +22,21 @@ confirmed the long-running incumbent test suite changes model configurations
 through load/unload transitions. Its next model must become healthy and its
 new PID/headroom be admitted afresh; released transition memory is not treated
 as permanently available. No incumbent restart or configuration change occurred.
+
+The explicit FP32 candidate subsequently completed under the replacement suite
+PID2973750 in36.257 seconds, peak reserved1115684864 bytes. Its maximum RMS is
+0.5791% versus CPU FP16 and0.1746% versus CPU FP32; both comparisons pass. The
+backend's generic label remains `triton+mixed`; the report's precision field
+records the explicitly selected `DLLM_LLAMA_PRECISION=float32` policy. No native
+residual library is injected by this isolated diagnostic. Full candidate reports
+and successful guards are retained. Final free GPU memory returned to4255MiB
+and the incumbent remained healthy.
+
+Conclusion: neither bounded candidate fails these CPU-oracle controls. FP32
+reduces this diagnostic's error, consistent with the prior precision evidence,
+but the historical CUDA-HF-FP16 failed cell is not a CPU-oracle result and remains
+unresolved. No threshold, default precision, supported-model claim or residual
+admission was changed. #219's bounded tooling/diagnosis is complete; #45 remains
+open for its original same-device oracle boundary. A full expanded GPU oracle
+would require a separately admitted larger allocation, not silently borrowing
+more VRAM from the running suite.
