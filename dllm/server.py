@@ -124,10 +124,19 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
             try:
                 if self.headers.get_content_type() != "application/json":
                     raise ValueError("Content-Type must be application/json")
-                length = int(self.headers.get("Content-Length", "0"))
+                lengths = self.headers.get_all("Content-Length", [])
+                if self.headers.get_all("Transfer-Encoding", []):
+                    raise ValueError("Transfer-Encoding is not supported")
+                if (len(lengths) != 1 or not lengths[0].isascii()
+                        or not lengths[0].isdecimal()):
+                    raise ValueError("one decimal Content-Length is required")
+                length = int(lengths[0])
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
-                body = json.loads(self.rfile.read(length))
+                encoded_body = self.rfile.read(length)
+                if len(encoded_body) != length:
+                    raise ValueError("incomplete request body")
+                body = json.loads(encoded_body)
                 if self.path in INFERENCE_ROUTES and isinstance(body, dict) and isinstance(body.get('model'), str):
                     client = auth.client(self.headers.get_all('Authorization', []))
                     if client is not None and not client.allows_model(body['model']):
