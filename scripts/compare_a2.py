@@ -3,6 +3,7 @@
 Run from the lab workspace containing model-a.json and baselines/vllm-venv.
 Never starts both engines at once. Only terminates process groups it creates.
 """
+from dllm.evidence_environment import report_environment
 import argparse
 import json
 import os
@@ -96,7 +97,7 @@ def main():
                        TORCHINDUCTOR_COMPILE_THREADS='2', MAX_JOBS='2')
         (root / f'compare-{engine}-{args.label}-command.json').write_text(json.dumps({
             'command': command, 'model': model, 'gpu_uuid': uuid,
-            'runtime_environment': {key:value for key,value in env.items() if key.startswith('DLLM_')}}, indent=2))
+            'runtime_environment': report_environment(env)}, indent=2))
         with (root / f'compare-{engine}-{args.label}.log').open('w') as log:
             process = subprocess.Popen(command, env=env, stdout=log, stderr=log, start_new_session=True)
             try:

@@ -1,4 +1,5 @@
 """Live prefix hit/miss, model-switch isolation and warmed HTTP latency proof."""
+from dllm.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -101,7 +102,7 @@ def main():
     assert rows[0]['divergent_choices']==rows[1]['divergent_choices']
     assert [r['choices'] for r in rows[0]['partial_trials']]==[r['choices'] for r in rows[1]['partial_trials']]
     print(json.dumps({'passed':True,'model':args.model,'device':args.device,
-        'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')},
+        'runtime_environment':report_environment(os.environ),
         'prefill_chunk_size':args.chunk_size,'host_gib':args.host_gib,'prompt_tokens':len(prompt),'max_output_tokens':8,'results':rows},indent=2))
 
 

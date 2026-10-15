@@ -1,4 +1,5 @@
 """Real HTTP qualification for raw T5/Mamba scheduling and residency."""
+from dllm.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -67,7 +68,7 @@ def main():
         assert restored['choices'][0]['text']==expected['choices'][0]['text']
         assert restored['dllm_timing']['source_tier']=='host',restored
         report={'passed':True,'device':args.device,'model':args.model,'other_model':args.other_model,
-            'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')},
+            'runtime_environment':report_environment(os.environ),
             'text_and_token_prompts_equal':True,'stream_and_nonstream_equal':True,'concurrent_isolation':True,
             'context_boundary_with_output':True,'encoder_decoder':encoder_decoder,
             'oversized_requests_rejected':True,'chat_rejected':True,

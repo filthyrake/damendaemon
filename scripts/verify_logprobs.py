@@ -1,4 +1,5 @@
 """Independent model-score reference plus real streaming/concurrent API proof."""
+from dllm.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -92,7 +93,7 @@ def main():
         if hasattr(executor,'pool'):assert executor.pool.used_tokens==0
         assert post()['choices'][0]['message']==expected['message']
         print(json.dumps({'passed':True,'model':args.model,'device':args.device,
-            'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')},
+            'runtime_environment':report_environment(os.environ),
             'reference_quantization':args.reference_quantization,'reference_dtype':'float32','reference_attention':'eager',
             'checks':checks,'stream_and_nonstream_scores_equal':True,'scoring_preserves_output':True,
             'concurrent_request_isolation':True,'prefix_hits_and_chunking':True,'cancellation_recovery':True},indent=2))

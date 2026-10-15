@@ -1,4 +1,5 @@
 """Measure active-stream stalls when a long prompt joins the same model group."""
+from dllm.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -86,7 +87,7 @@ def main():
                     try:process.wait(30)
                     except subprocess.TimeoutExpired:process.kill();process.wait()
     print(json.dumps({'device':args.device,'model':args.model,'long_prompt_tokens':len(long_prompt),
-        'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')},
+        'runtime_environment':report_environment(os.environ),
         'short_prompt_tokens':len(short_prompt),'short_output':short_expected,'long_output':long_expected,
         'same_greedy_outputs':True,'results':measurements},indent=2))
 

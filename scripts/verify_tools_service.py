@@ -1,4 +1,5 @@
 """Real GPU function-call generation, history, streaming and isolation proof."""
+from dllm.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -152,7 +153,7 @@ def main():
             assert item['chat_template']==override_metadata(templates.get(item['id']))
         print(json.dumps({'passed':True,'device':args.device,'reports':reports,'concurrent_calls':4,
             'qwen3_thinking':args.thinking,
-            'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')},
+            'runtime_environment':report_environment(os.environ),
             'max_batch_seen':max_batch,'request_local_ids':True,'host_restore':True,
             'disconnect_recovery':True,'disk_reload':True,'template_identity':True,'invalid_registration_atomic':True,'tools_executed':False},indent=2))
     finally:

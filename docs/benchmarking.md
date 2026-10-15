@@ -214,3 +214,7 @@ all four prompts at each 128/512/2048 length must be available at their original
 17-token offsets, and selected IDs must be nonnegative integers. This check is
 active under optimized Python; short or malformed corpora do not launch a
 measurement or produce a mislabeled workload report.
+
+Runtime environment metadata uses an explicit allowlist of execution modes and
+budgets. Credentials, private paths, and unrecognized environment variables are
+omitted; report filtering does not change the environment used by subprocesses.

@@ -1,4 +1,5 @@
 """Counterbalanced fixed/paged HTTP comparison using the existing A2 runner."""
+from dllm.evidence_environment import report_environment
 import argparse
 import json
 import os
@@ -32,7 +33,7 @@ def main():
                 'median_tokens_per_second':statistics.median(r['aggregate_output_tokens_per_second'] for r in data['rounds'] if not r['warmup']),
                 'median_ttft_ms':statistics.median(r['first_output_seconds']*1000 for r in data['trials'] if not r['warmup'])})
     print(json.dumps({'context':args.context,'pool_tokens':args.pool_tokens,'order':['fixed','paged','paged','fixed'],
-        'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')},'measurements':rows},indent=2))
+        'runtime_environment':report_environment(os.environ),'measurements':rows},indent=2))
 
 
 if __name__=='__main__':main()

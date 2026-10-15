@@ -1,4 +1,5 @@
 """Profile fixed/paged prompt and decode work; not a throughput benchmark."""
+from dllm.evidence_environment import report_environment
 import argparse
 from collections import defaultdict
 import json
@@ -43,7 +44,7 @@ def main():
             'kernels':sorted([{'name':name,**value} for name,value in groups.items()],key=lambda x:x['total_us'],reverse=True)}
     print(json.dumps({'layout':'paged' if hasattr(executor,'pool') else 'fixed','reports':reports,
         'model':args.path,'prompt_length':args.prompt_length,'batch':args.batch,
-        'runtime_environment':{k:v for k,v in os.environ.items() if k.startswith('DLLM_')}},indent=2))
+        'runtime_environment':report_environment(os.environ)},indent=2))
 
 
 if __name__=='__main__':main()
