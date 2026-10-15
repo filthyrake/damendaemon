@@ -8,11 +8,12 @@ from scripts.experiments.split_gguf import save
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--host-boundaries',action='store_true')
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report required')
     import torch
     from dllm.cuda_stage_placement import place_cuda_stage
+    from dllm.cuda_host_stage import CudaHostStageSlots
     from dllm.cuda_stage_slots import CudaGlmStageSlots,CudaFlashStageSlots,CudaDeepSeekStageSlots
     from dllm.glm_stage_slots import GlmStageSlots
     from dllm.glm_flash_stage_slots import FlashStageSlots
@@ -22,13 +23,13 @@ def main():
     if torch.version.hip or torch.cuda.device_count()!=1:raise ValueError('one NVIDIA GPU required')
     torch.set_num_threads(1);torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=False
     torch.cuda.set_per_process_memory_fraction(128*1024**2/torch.cuda.get_device_properties(0).total_memory)
-    report=dict(passed=False,device=torch.cuda.get_device_name(),torch=torch.__version__,cases=[],physical_multi_gpu_qualified=False)
+    report=dict(passed=False,device=torch.cuda.get_device_name(),torch=torch.__version__,cases=[],physical_multi_gpu_qualified=False,host_boundaries=args.host_boundaries)
     save(args.output,report);owned=[]
     def run(owners,tokens,starts,ids,prefill):
-        tokens=tokens.to(owners[0].actual_device);hidden=owners[0].embedding(tokens)
+        tokens=tokens.to(getattr(owners[0],'boundary_device',owners[0].actual_device));hidden=owners[0].embedding(tokens)
         positions=torch.stack([torch.arange(start,start+tokens.shape[1]) for start in starts])
         for owner in owners:
-            options=dict(token_ids=tokens) if isinstance(owner,DeepSeekStageSlots) else {}
+            options=dict(token_ids=tokens) if isinstance(getattr(owner,'slots',owner),DeepSeekStageSlots) else {}
             hidden=owner.forward_layers(hidden,positions,torch.tensor(ids),prefill,starts[0] if prefill else 0,**options)
         return owners[-1].output_logits(hidden[:,-1])
     try:
@@ -41,7 +42,21 @@ def main():
                 sources=[loader.load_reference_stage(path,start,end) for start,end in ranges]
                 stages=[place_cuda_stage(source,device='cuda:0',max_bytes=4*1024**2).stage for source in sources]
                 controls=[cpu_kind(source,8,3) for source in sources];owned.extend(controls)
-                candidates=[cuda_kind(stage,8,3) for stage in stages];owned.extend(candidates)
+                candidates=[cuda_kind(stage,8,3) for stage in stages]
+                if args.host_boundaries:candidates=[CudaHostStageSlots(o,max_transfer_bytes=1024**2) for o in candidates]
+                owned.extend(candidates)
+                if args.host_boundaries:
+                    first=candidates[0]
+                    try:CudaHostStageSlots(first.slots,max_transfer_bytes=1024**2)
+                    except ValueError:pass
+                    else:raise AssertionError('duplicate host owner admitted')
+                    first.max_transfer_bytes=1
+                    with patch.object(first,'_to_device',side_effect=AssertionError('copy before budget')):
+                        try:first.embedding(torch.tensor([[1]]))
+                        except ValueError:pass
+                        else:raise AssertionError('transfer budget admitted')
+                    first.max_transfer_bytes=1024**2
+                    assert not first.failed and first.states==[None]*3
                 for stage,owner in zip(stages,candidates):
                     try:cpu_kind(stage,8,3)
                     except ValueError:pass
@@ -60,7 +75,7 @@ def main():
                     torch.testing.assert_close(actual.argmax(-1),expected.argmax(-1),rtol=0,atol=0)
                     error=max(error,float((actual-expected).abs().max()))
                 assert all(o.lengths==[5,0,4] for o in candidates)
-                first=candidates[0];tokens=torch.tensor([[2]],device='cuda');hidden=first.embedding(tokens)
+                first=candidates[0];tokens=torch.tensor([[2]],device='cpu' if args.host_boundaries else 'cuda');hidden=first.embedding(tokens)
                 options=dict(token_ids=tokens) if family=='deepseek' else {}
                 for positions,slots in ((torch.tensor([[0]]),torch.tensor([0])),(torch.tensor([[5]],device='cuda'),torch.tensor([0]))):
                     try:first.forward_layers(hidden,positions,slots,False,**options)
@@ -72,7 +87,7 @@ def main():
                 actual=run(candidates,torch.tensor([[1,2]]),[0],[0],True).cpu()
                 torch.testing.assert_close(actual,expected,rtol=8e-5,atol=4e-6)
                 # Fail the second selected row after the first row has advanced.
-                tokens=torch.tensor([[3],[4]],device='cuda');hidden=first.embedding(tokens)
+                tokens=torch.tensor([[3],[4]],device='cpu' if args.host_boundaries else 'cuda');hidden=first.embedding(tokens)
                 method='decode_activations' if family=='deepseek' else 'forward_activations'
                 original=getattr(first.stage,method);calls=0
                 def fail_second(*args,**kwargs):
@@ -90,8 +105,20 @@ def main():
                 assert first.failed and first.closed and first.states==[None]*3 and first.lengths==[0]*3
                 for owner in owned:owner.close()
                 owned=[]
+                if args.host_boundaries:
+                    # D2H failure occurs after the range cache has advanced.
+                    fresh=CudaHostStageSlots(cuda_kind(stages[0],8,3),max_transfer_bytes=1024**2);owned.append(fresh)
+                    ids=torch.tensor([[1]]);hidden=fresh.embedding(ids)
+                    options=dict(token_ids=ids) if family=='deepseek' else {}
+                    with patch.object(fresh,'_to_host',side_effect=RuntimeError('injected output copy failure')):
+                        try:fresh.forward_layers(hidden,torch.tensor([[0]]),torch.tensor([0]),True,**options)
+                        except RuntimeError as exc:
+                            if str(exc)!='injected output copy failure':raise
+                        else:raise AssertionError('output transfer failure absent')
+                    assert fresh.failed and fresh.closed and fresh.states==[None]*3
+                    fresh.close();owned=[]
                 report['cases'].append(dict(family=family,max_absolute=error,greedy_exact=True,unequal_cursors=True,
-                    reordered_selection=True,chunked_continuation=True,release_reuse=True,invalid_metadata_nonmutation=True,partial_failure_closed=True))
+                    reordered_selection=True,chunked_continuation=True,release_reuse=True,invalid_metadata_nonmutation=True,partial_failure_closed=True,output_transfer_failure_closed=args.host_boundaries))
         report.update(passed=True,peak_reserved_bytes=torch.cuda.max_memory_reserved())
     except BaseException as error:report['error']=str(error);raise
     finally:
