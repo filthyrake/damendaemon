@@ -348,3 +348,17 @@ practical context/concurrency and performance remain unqualified.
 
 The full pinned local CPU/loopback suite at `21f2073` passed1,785 tests in468.450s,
 before placement/command additions; their focused results are above.
+
+## Flash CUDA vision encoder (#254)
+
+Implementation `65ed649`. Explicit FP32 CUDA encoder shares bounded patch/axial
+rotary/frame-attention/spatial-merger equations with the CPU reference and forces
+math attention. Three grids/multiframe cases match independent CPU convolution
+and scalar-attention controls within1.5e-8. Frame isolation, admission before
+projection, input/weight nonmutation and stateless failure recovery pass.13 local
+vision/image regressions pass. Guard3.745s,22MiB reserved under128MiB cap,4251MiB
+free before/after, cleanup confirmed. Image/text integration, official vision
+quality, practical resolution/context and performance remain separate gates.
+
+DeepSeek-specific CPU regression after the command integration:124 tests pass
+in130.880s at `47b32a2` (before subsequent vision work).
