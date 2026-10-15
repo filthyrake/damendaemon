@@ -136,3 +136,14 @@ Ten local command/CPU-command/device tests pass. Later generation compatibility
 checks cover34 image/pipeline/queue/cancellation tests and38 native text/tool/
 HTTP tests; the full model-core suite passed1,736 tests before these later
 placement/generation/command additions.
+
+## Flash recurrence and residual-stream primitives (#234)
+
+Implementation `10f3eb2`. `flash-primitives.json` compares actual CUDA FP32
+recurrence and hyper-connection reduction against independent CPU scalar
+controls. Five cases cover recurrence, chunk continuation, and one/twenty
+Sinkhorn iterations; maximum absolute error is1.2e-7. Restoration orientation,
+mean head, device admission, budgets, invalid values and input nonmutation also
+pass. Peak reserved22MiB under128MiB allocator cap; guard completed in3.876s,
+4251MiB free before/after, incumbent healthy.24 local tests pass. These are
+primitive checks, not Flash model, context, multimodal or performance proof.
