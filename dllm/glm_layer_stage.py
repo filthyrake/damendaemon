@@ -15,7 +15,7 @@ def validate_range(start, end, total, indexer_types):
         raise ValueError('GLM stage range must preserve full/shared indexer groups')
 
 
-class GlmLayerStage:
+class _GlmLayerStage:
     """One prepared CPU range; callers own the surrounding pipeline/transport.
 
     Reuses model state budgets, reorder, poisoning and retryable cleanup. Inputs
@@ -32,9 +32,10 @@ class GlmLayerStage:
     prefill = GlmModel.prefill
 
     def __init__(self, blocks, *, start, total, embedding=None, norm=None, head=None,
-                 epsilon=1e-5, max_output_bytes=64*1024**2):
+                 epsilon=1e-5, max_output_bytes=64*1024**2,device='cpu',block_type=GlmBlock):
+        self.device=torch.device(device)
         if (not isinstance(blocks, (tuple, list)) or not blocks
-                or any(not isinstance(block, GlmBlock) for block in blocks)
+                or any(not isinstance(block, block_type) for block in blocks)
                 or type(start) is not int or type(total) is not int
                 or not 0 <= start < start + len(blocks) <= total <= 128
                 or blocks[0].attention.indexer is None
@@ -45,15 +46,15 @@ class GlmLayerStage:
         self.dim = blocks[0].dim
         top = None
         for block in blocks:
-            if block.dim != self.dim: raise ValueError('GLM stage block dimensions disagree')
+            if block.dim != self.dim or block.device != self.device: raise ValueError('GLM stage block dimensions disagree')
             if block.attention.indexer is not None: top = block.attention.index_top_k
             elif block.attention.index_top_k != top: raise ValueError('GLM shared indexer top-k disagrees')
         if self.first:
-            if not _float(embedding, 2) or embedding.shape[1] != self.dim:
+            if not _float(embedding,2,self.device) or embedding.shape[1] != self.dim:
                 raise ValueError('first GLM stage requires its embedding')
         elif embedding is not None: raise ValueError('non-first GLM stage cannot own embedding')
         if self.last:
-            if (not _float(norm, 1) or norm.shape != (self.dim,) or not _float(head, 2)
+            if (not _float(norm,1,self.device) or norm.shape != (self.dim,) or not _float(head,2,self.device)
                     or head.shape[1] != self.dim or (self.first and head.shape != embedding.shape)):
                 raise ValueError('final GLM stage requires norm and vocabulary head')
         elif norm is not None or head is not None: raise ValueError('non-final GLM stage cannot own norm/head')
@@ -71,10 +72,10 @@ class GlmLayerStage:
             raise ValueError('only the final GLM stage produces all-token logits')
         if self.first:
             if (not isinstance(inputs, torch.Tensor) or inputs.ndim != 2 or min(inputs.shape) < 1
-                    or inputs.dtype != torch.int64 or inputs.device.type != 'cpu'
+                    or inputs.dtype != torch.int64 or inputs.device != self.device
                     or bool(((inputs < 0) | (inputs >= self.embedding.shape[0])).any())):
                 raise ValueError('first GLM stage requires CPU vocabulary IDs')
-        elif (not _float(inputs, 3) or min(inputs.shape) < 1 or inputs.shape[2] != self.dim
+        elif (not _float(inputs,3,self.device) or min(inputs.shape) < 1 or inputs.shape[2] != self.dim
               or not torch.isfinite(inputs).all()):
             raise ValueError('GLM stage requires finite CPU FP32 hidden chunks')
         batch, length = inputs.shape[:2]
@@ -93,7 +94,7 @@ class GlmLayerStage:
     @torch.no_grad()
     def _forward(self, inputs, state, *, position, all_logits, activations):
         if activations:
-            if (not _float(inputs, 3) or inputs.shape[2] != self.dim
+            if (not _float(inputs,3,self.device) or inputs.shape[2] != self.dim
                     or inputs.numel()*4 > self.max_output_bytes or not torch.isfinite(inputs).all()):
                 raise ValueError('GLM activation boundary requires bounded finite CPU FP32 hidden chunks')
         else: self._tokens(inputs, all_logits)
@@ -117,3 +118,9 @@ class GlmLayerStage:
                 raise
             state.position = position + inputs.shape[1]
             return result
+
+
+class GlmLayerStage(_GlmLayerStage):
+    """Explicit CPU layer range; CUDA remains a separate entrypoint."""
+    def __init__(self,blocks,**options):
+        super().__init__(blocks,device='cpu',block_type=GlmBlock,**options)
