@@ -4,11 +4,15 @@ import io
 from pathlib import Path
 import tempfile
 import threading
+import signal
+import subprocess
+import sys
+import select
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 
-from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow
+from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow, stop_owned_server, expire_owned_request
 
 
 class ContextDeadlineTests(unittest.TestCase):
@@ -96,6 +100,45 @@ class ContextDeadlineTests(unittest.TestCase):
         result = collect_with_deadlines(lambda: original, threading.Event(), 1, 2, lambda _: expired.set())
         self.assertIs(result, original)
         self.assertFalse(expired.is_set())
+
+    def test_hard_deadline_stops_only_owned_child_ignoring_term(self):
+        children = []
+        try:
+            for _ in range(2):
+                child = subprocess.Popen([sys.executable, '-c',
+                    "import signal,time; signal.signal(signal.SIGTERM, signal.SIG_IGN); print('ready',flush=True); time.sleep(60)"],
+                    start_new_session=True, stdout=subprocess.PIPE)
+                children.append(child)
+                self.assertTrue(select.select([child.stdout], [], [], 2)[0])
+                self.assertEqual(child.stdout.readline(), b'ready\n')
+            owned, unrelated = children
+            stop_owned_server(owned, signal.SIGTERM)
+            with self.assertRaises(subprocess.TimeoutExpired):
+                owned.wait(timeout=.05)
+            report = {}
+            expire_owned_request(owned, report, 'total request')
+            self.assertEqual(owned.wait(timeout=2), -signal.SIGKILL)
+            self.assertIsNone(unrelated.poll())
+            self.assertEqual(report['deadline_exceeded'], 'total request')
+            expire_owned_request(owned, report, 'first output')
+            self.assertEqual(report['deadline_exceeded'], 'total request')
+        finally:
+            for child in children:
+                if child.poll() is None:
+                    child.kill()
+                child.wait(timeout=2)
+                child.stdout.close()
+
+    def test_owned_stop_handles_missing_or_already_exited_child(self):
+        exited = Mock(pid=123, poll=Mock(return_value=0))
+        with patch('scripts.verify_long_context_http.os.killpg') as kill:
+            stop_owned_server(None, signal.SIGKILL)
+            stop_owned_server(exited, signal.SIGKILL)
+            kill.assert_not_called()
+        running = Mock(pid=123, poll=Mock(return_value=None))
+        with patch('scripts.verify_long_context_http.os.killpg', side_effect=ProcessLookupError) as kill:
+            stop_owned_server(running, signal.SIGKILL)
+            kill.assert_called_once_with(123, signal.SIGKILL)
 
     def test_checkpoint_remains_readable_and_replacement_leaves_no_temp(self):
         with tempfile.TemporaryDirectory() as directory:

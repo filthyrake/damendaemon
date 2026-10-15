@@ -68,6 +68,21 @@ def collect_with_deadlines(collect, first_output, first_seconds, total_seconds, 
     return result
 
 
+def stop_owned_server(process, signum):
+    """Signal only the start_new_session server group owned by this runner."""
+    if process is not None and process.poll() is None:
+        try:
+            os.killpg(process.pid, signum)
+        except ProcessLookupError:
+            pass
+
+
+def expire_owned_request(process, report, reason):
+    report.setdefault('deadline_exceeded', reason)
+    # Graceful shutdown can wait for the same HTTP request we must interrupt.
+    stop_owned_server(process, signal.SIGKILL)
+
+
 def check_overflow(base, tokens):
     """Reject one extra reserved output token after the same prompt succeeded."""
     body = dict(model='a', prompt=tokens, max_tokens=513, temperature=0)
@@ -161,11 +176,7 @@ def main():
     watchdog = None
     cuda_guard = None
     def stop_server(signum):
-        if process is not None and process.poll() is None:
-            try:
-                os.killpg(process.pid, signum)
-            except ProcessLookupError:
-                pass
+        stop_owned_server(process, signum)
     def terminate(signum, frame):
         # Stop the owned server before unwinding ThreadPoolExecutor, whose
         # active HTTP readers would otherwise delay cleanup until timeout.
@@ -212,8 +223,7 @@ def main():
             def run(tokens, first=None):
                 visible = first if first is not None else threading.Event()
                 def expire(phase):
-                    report.setdefault('deadline_exceeded', phase)
-                    stop_server(signal.SIGTERM)
+                    expire_owned_request(process, report, phase)
                 return collect_with_deadlines(
                     lambda: request(base, 'a', tokens, 'dllm', eos, threading.Barrier(1),
                                     output_tokens=512, timeout=args.request_timeout, first_output_event=visible),

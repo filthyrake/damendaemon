@@ -174,3 +174,10 @@ callbacks are joined before the request verdict is accepted; a response that
 finishes during shutdown remains failed if a deadline already fired. Its partial
 or complete response evidence and the first expiry reason are retained, without
 a successful throughput proxy. Timely responses retain their original verdict.
+
+A long-context request deadline now sends SIGKILL to the runner's owned server
+process group, so a stuck graceful shutdown cannot keep the request reader
+waiting. This deliberately skips application cleanup after a hard deadline;
+normal successful-run cleanup retains its graceful path. Reports retain the
+expiry reason and failed evidence. The runner must own the server session; this
+mechanism is not for pointing at or stopping an existing shared service.
