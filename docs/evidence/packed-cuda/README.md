@@ -222,3 +222,13 @@ including overlap/tails, with failure nonmutation and preallocation rejection.
 Eight local tests pass. Guard completed3.375s,2MiB reserved under128MiB cap,
 4251MiB free before/after and incumbent healthy. Projection, QAT, indexer,
 attention/model and performance qualification are separate remaining gates.
+
+## DeepSeek residual mixing and learned head (#243)
+
+Implementation `5fb30b4`. Explicit CUDA FP32 wrappers admit geometry/static
+parameters and conservative workspace/output before payload scans. DeepSeek's
+projection-then-normalization and learned final-head equations remain distinct
+from Flash. Actual CUDA scalar reduction/head error2.4e-7 at1/20 Sinkhorn
+iterations; restoration orientation, nonmutation and budget/device rejection
+pass.11 local tests pass. Guard completed3.285s,22MiB reserved under128MiB
+cap,4251MiB free before/after and incumbent healthy. No model/performance claim.
