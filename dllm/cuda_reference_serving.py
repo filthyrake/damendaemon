@@ -35,3 +35,12 @@ class CudaFlashReferenceRuntime(CudaGlmReferenceRuntime):
     runner_types=(CudaFlashToolGenerator,)
     family_name='glm5_next'
     execution_name='prepared_cuda_flash'
+
+
+from .cuda_deepseek_generation import CudaDeepSeekGenerator
+
+
+class CudaDeepSeekReferenceRuntime(CudaGlmReferenceRuntime):
+    runner_types=(CudaDeepSeekGenerator,)
+    family_name='deepseek_v4'
+    execution_name='prepared_cuda_deepseek'

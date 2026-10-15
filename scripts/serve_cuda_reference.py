@@ -1,4 +1,4 @@
-"""Serve an explicitly admitted local GLM/Flash CUDA reference snapshot on loopback."""
+"""Serve an explicitly admitted local GLM/Flash/DeepSeek CUDA reference snapshot on loopback."""
 import argparse
 import json
 from pathlib import Path
@@ -13,7 +13,7 @@ from scripts.serve_cpu_reference import bounded_integer,serve
 
 def parser_for_command():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('snapshot',help='local GLM or Flash snapshot only; never downloaded')
+    parser.add_argument('snapshot',help='local GLM, Flash or DeepSeek snapshot only; never downloaded')
     parser.add_argument('--device',required=True,help='explicit indexed NVIDIA CUDA device, e.g. cuda:0')
     parser.add_argument('--alias',default='model')
     parser.add_argument('--port',type=bounded_integer(0,65535),default=8089)
@@ -38,7 +38,7 @@ def prepare(args):
     if args.device_weight_mib>=args.allocator_mib:raise ValueError('allocator cap must leave space beyond packed weight payload')
     path=Path(args.snapshot)
     config=json.loads(_read(path/'config.json',1024**2),object_pairs_hook=_unique_fields)
-    if not isinstance(config,dict):raise ValueError('CUDA reference command requires a GLM or Flash snapshot')
+    if not isinstance(config,dict):raise ValueError('CUDA reference command requires a GLM, Flash or DeepSeek snapshot')
     import torch
     if config.get('model_type')=='glm_moe_dsa':
         from dllm.glm_reference_loader import load_reference_model
@@ -56,8 +56,18 @@ def prepare(args):
         from dllm.cuda_reference_serving import CudaFlashReferenceRuntime as runtime_type
         text_config=flash_text_config(config)
         text=FlashToolText(path,vocab_size=text_config.get('vocab_size'))
-    else:raise ValueError('CUDA reference command requires a GLM or Flash snapshot')
-    validate_text_config(text_config,text,args.context)
+    elif config.get('model_type')=='deepseek_v4':
+        from dllm.deepseek_reference_loader import load_reference_model
+        from dllm.deepseek_text import DeepSeekText
+        from dllm.deepseek_generation import validate_text_config as validate_deepseek_text
+        from dllm.cuda_deepseek_placement import place_cuda_deepseek as place
+        from dllm.cuda_deepseek_generation import CudaDeepSeekGenerator as generator_type
+        from dllm.cuda_reference_serving import CudaDeepSeekReferenceRuntime as runtime_type
+        text=DeepSeekText(path,vocab_size=config.get('vocab_size'))
+        text_config=config
+        validate_deepseek_text(config,text,args.context)
+    else:raise ValueError('CUDA reference command requires a GLM, Flash or DeepSeek snapshot')
+    if config.get('model_type')!='deepseek_v4':validate_text_config(text_config,text,args.context)
     device=torch.device(args.device)
     if torch.version.hip or not torch.cuda.is_available() or device.index>=torch.cuda.device_count():
         raise ValueError('selected NVIDIA CUDA device is unavailable')
@@ -69,16 +79,23 @@ def prepare(args):
     torch.backends.cuda.matmul.allow_tf32=False
     torch.backends.cudnn.allow_tf32=False
     torch.cuda.set_per_process_memory_fraction(allocator/total,device)
-    cpu=load_reference_model(path,max_weight_bytes=args.weight_mib*1024**2,
-        projection_workspace_bytes=args.projection_workspace_mib*1024**2,
-        max_workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
-    placed=place(cpu,device=device,max_bytes=args.device_weight_mib*1024**2)
+    if config.get('model_type')=='deepseek_v4':
+        cpu=load_reference_model(path,max_weight_bytes=args.weight_mib*1024**2,
+            workspace_bytes=args.projection_workspace_mib*1024**2)
+        placed=place(cpu,device=device,max_bytes=args.device_weight_mib*1024**2,
+            workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
+    else:
+        cpu=load_reference_model(path,max_weight_bytes=args.weight_mib*1024**2,
+            projection_workspace_bytes=args.projection_workspace_mib*1024**2,
+            max_workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
+        placed=place(cpu,device=device,max_bytes=args.device_weight_mib*1024**2)
     model=placed.model
     try:
         runner=generator_type(model,text,max_context=args.context,max_cache_bytes=args.cache_mib*1024**2)
         runtime=runtime_type(runner,args.alias)
     except BaseException:
-        model.cleanup()
+        if config.get('model_type')=='deepseek_v4':model.cleanup_failed_prefills()
+        else:model.cleanup()
         raise
     return runtime,auth
 

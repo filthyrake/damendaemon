@@ -39,3 +39,13 @@ class ServeCudaTests(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+class DeepSeekCudaCommandTests(unittest.TestCase):
+    def test_context_metadata_fails_before_payload(self):
+        from tests.test_deepseek_generation import text_fixture as deepseek_text
+        from tests.test_deepseek_reference_loader import fixture as deepseek_fixture
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp);text=deepseek_text(path);config,_=deepseek_fixture(path,vocab_size=text.vocab_size)
+            (path/'config.json').write_text(json.dumps(config|dict(max_position_embeddings=1)))
+            with patch('dllm.deepseek_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')):
+                with self.assertRaises(ValueError):prepare(parser_for_command().parse_args([str(path),'--device','cuda:0']))

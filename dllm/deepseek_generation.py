@@ -72,16 +72,18 @@ class ReferenceGenerator:
     remains owned by this runner and must succeed before another prefill.
     """
     model_type=FloatingModel
+    device_type='cpu'
 
     def __init__(self,model,text,*,max_context=4096,max_cache_bytes=256*1024*1024):
         if (not isinstance(model,self.model_type) or not isinstance(text,DeepSeekText)
-                or model.embedding.device.type != 'cpu' or model.embedding.shape[0] != text.vocab_size
+                or model.embedding.device.type != self.device_type or model.embedding.shape[0] != text.vocab_size
                 or not isinstance(text.tokenizer.decoder,decoders.ByteLevel)):
-            raise ValueError('reference generator needs matching CPU model and ByteLevel tokenizer')
+            raise ValueError(f'reference generator needs matching {self.device_type} model and ByteLevel tokenizer')
         if type(max_context) is not int or not 1 <= max_context <= 2**20 or type(max_cache_bytes) is not int or max_cache_bytes < 1:
             raise ValueError('invalid reference context/cache bounds')
         validate_text_config(getattr(model,'config',{}),text,max_context)
         self.model,self.text=model,text
+        self.device=model.embedding.device
         self.max_context,self.max_cache_bytes=max_context,max_cache_bytes
         self.failed_cleanups=[]
         self.lock=threading.RLock()
@@ -114,13 +116,13 @@ class ReferenceGenerator:
             check_cancelled()
             with self.lock:
                 self.cleanup()
-                logits,state=self.model.prefill(torch.tensor([tokens],dtype=torch.int64),
+                logits,state=self.model.prefill(torch.tensor([tokens],dtype=torch.int64,device=self.device),
                                                  max_tokens=len(tokens)+max_new_tokens,max_cache_bytes=self.max_cache_bytes)
             reason='length'
             for index in range(max_new_tokens):
                 check_cancelled()
                 if (not isinstance(logits,torch.Tensor) or logits.shape != (1,self.text.vocab_size)
-                        or logits.device.type != 'cpu' or logits.dtype != torch.float32):
+                        or logits.device != self.device or logits.dtype != torch.float32):
                     raise ValueError('invalid V4 generation logits')
                 if not torch.isfinite(logits).all():
                     raise ValueError('nonfinite V4 generation logits')
@@ -132,7 +134,7 @@ class ReferenceGenerator:
                     break
                 if index+1 < max_new_tokens:
                     check_cancelled()
-                    logits=self.model.decode(torch.tensor([[token]],dtype=torch.int64),state,position=len(tokens)+index)
+                    logits=self.model.decode(torch.tensor([[token]],dtype=torch.int64,device=self.device),state,position=len(tokens)+index)
             check_cancelled()
             for event in stream.finish(truncated=reason == 'length'):
                 if event.get('tool_calls'):

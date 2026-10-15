@@ -13,27 +13,39 @@ from scripts.experiments.split_gguf import save
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
-    parser.add_argument('--flash',action='store_true')
+    family_options=parser.add_mutually_exclusive_group()
+    family_options.add_argument('--flash',action='store_true')
+    family_options.add_argument('--deepseek',action='store_true')
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
-    if args.flash:
+    if args.deepseek:
+        from tests.test_deepseek_generation import text_fixture
+        from tests.test_deepseek_reference_loader import fixture
+    elif args.flash:
         from tests.test_glm_flash_generation import text_fixture,snapshot
         def fixture(path,*,vocab_size):snapshot(path,text_fixture(path))
     else:
         from tests.test_glm_generation import text_fixture
         from tests.test_glm_reference_loader import fixture
     from tests.test_glm_flash_host_generation import zero_fixture_head
-    family='glm5_next' if args.flash else 'glm_moe_dsa'
+    family='deepseek_v4' if args.deepseek else 'glm5_next' if args.flash else 'glm_moe_dsa'
     report=dict(passed=False,family=family,zero_head_fixture=True,allocator_limit_mib=128,
                 official_model_qualified=False,performance_qualified=False)
     save(args.output,report);process=None
     try:
         with tempfile.TemporaryDirectory(prefix='dllm-cuda-command-') as temp:
-            path=Path(temp);text=text_fixture(path);fixture(path,vocab_size=text.vocab_size);zero_fixture_head(path)
+            path=Path(temp);text=text_fixture(path);fixture(path,vocab_size=text.vocab_size)
+            if args.deepseek:
+                import struct
+                shard=path/'model.safetensors';data=bytearray(shard.read_bytes())
+                length=struct.unpack('<Q',data[:8])[0];header=json.loads(data[8:8+length])
+                start,end=header['head.weight']['data_offsets'];data[8+length+start:8+length+end]=bytes(end-start)
+                shard.write_bytes(data)
+            else:zero_fixture_head(path)
             with tempfile.TemporaryFile(mode='w+') as errors:
                 process=subprocess.Popen([sys.executable,'-m','scripts.serve_cuda_reference',str(path),
                     '--device','cuda:0','--port','0','--context','128','--weight-mib','1','--device-weight-mib','1',
-                    '--allocator-mib','128','--cache-mib','1','--projection-workspace-mib','1','--workspace-mib','2','--output-mib','1'],
+                    '--allocator-mib','128','--cache-mib','1','--projection-workspace-mib','1','--workspace-mib','256' if args.deepseek else '2','--output-mib','1'],
                     stdout=subprocess.PIPE,stderr=errors,text=True)
                 with selectors.DefaultSelector() as selector:
                     selector.register(process.stdout,selectors.EVENT_READ)
@@ -44,7 +56,7 @@ def main():
                 ready=json.loads(line)
                 if ready.get('event')!='http_ready' or ready.get('scope')!='cuda_prepared_reference' or ready.get('device')!='cuda:0':
                     raise AssertionError('untruthful CUDA command readiness')
-                base=ready['url'];reasoning=[]
+                base=ready['url'];reasoning=[];field='content' if args.deepseek else 'reasoning_content'
                 for stream in (False,True):
                     body=dict(model='model',messages=[dict(role='user',content='Hi')],max_tokens=2,stream=stream)
                     if stream:body['stream_options']={'include_usage':True}
@@ -52,11 +64,11 @@ def main():
                         wire=response.read().decode()
                     if stream:
                         events=[json.loads(line[6:]) for line in wire.splitlines() if line.startswith('data: {')]
-                        reasoning.append(''.join(c.get('delta',{}).get('reasoning_content','') for e in events for c in e['choices']))
+                        reasoning.append(''.join(c.get('delta',{}).get(field,'') for e in events for c in e['choices']))
                         if 'data: [DONE]' not in wire:raise AssertionError('missing SSE completion')
                         timing=events[-1]['dllm_timing']
                     else:
-                        result=json.loads(wire);reasoning.append(result['choices'][0]['message'].get('reasoning_content',''))
+                        result=json.loads(wire);reasoning.append(result['choices'][0]['message'].get(field,''))
                         timing=result['dllm_timing']
                     if timing['source_tier']!='cuda_prepared_reference' or timing['kernel_backend']!=family+'-cuda-prepared-reference':
                         raise AssertionError('CPU timing label leaked into CUDA command')
