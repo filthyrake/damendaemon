@@ -15,16 +15,27 @@ from tokenizers import Tokenizer
 from dllm.bench import events
 
 
+
+def check_usage(usage, prompt_tokens, completion_tokens):
+    if (not isinstance(usage, dict)
+            or type(usage.get('prompt_tokens')) is not int
+            or type(usage.get('completion_tokens')) is not int
+            or usage['prompt_tokens'] != prompt_tokens
+            or usage['completion_tokens'] != completion_tokens):
+        raise ValueError('benchmark requires exact integer prompt and completion usage')
+
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument('model')
     p.add_argument('--device',choices=('cuda','mps'),default='cuda')
     p.add_argument('--rounds',type=int,default=3)
     args=p.parse_args()
+    if args.rounds < 1:p.error('rounds must be positive')
     tokenizer=Tokenizer.from_file(str(Path(args.model)/'tokenizer.json'))
     tokenizer.no_padding();tokenizer.no_truncation()
     long_prompt=tokenizer.encode('The blue bird flies over the green field. '*200,add_special_tokens=True).ids[:1536]
-    assert len(long_prompt)==1536
+    if len(long_prompt)!=1536:raise ValueError('benchmark requires a 1536-token long prompt')
     short_prompt=tokenizer.encode('Explain matrix multiplication in detail.',add_special_tokens=True).ids
     measurements=[]
     short_expected=long_expected=None
@@ -44,34 +55,48 @@ def main():
                     else:raise RuntimeError(logpath.read_text())
                     def request(prompt,count,stream=False):
                         body={'model':'a','prompt':prompt,'max_tokens':count,'stream':stream,'temperature':0}
+                        if stream:body['stream_options']={'include_usage':True}
                         return urlopen(Request(base+'/v1/completions',data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=180)
                     def complete(prompt,count):
                         start=time.perf_counter()
                         with request(prompt,count) as response:result=json.load(response)
+                        check_usage(result.get('usage'),len(prompt),count)
                         return result,time.perf_counter()-start
                     complete(long_prompt,8);complete(short_prompt,64)
                     trials=[]
                     for trial in range(args.rounds):
-                        arrivals=[];text='';future=None
+                        arrivals=[];text='';future=None;done=False;usage=None
                         start=time.perf_counter()
                         with ThreadPoolExecutor(1) as pool:
                             with request(short_prompt,64,True) as response:
                                 for event in events(response, require_terminated=True):
-                                    if event=='[DONE]':break
+                                    if event=='[DONE]':
+                                        done=True;break
                                     data=json.loads(event)
                                     if 'error' in data:raise RuntimeError(data)
-                                    delta=data['choices'][0].get('text','')
+                                    if data.get('usage') is not None:
+                                        check_usage(data['usage'],len(short_prompt),64)
+                                        usage=data['usage']
+                                    choices=data.get('choices',[])
+                                    if (not isinstance(choices,list) or len(choices)>1
+                                            or any(not isinstance(choice,dict) for choice in choices)):
+                                        raise ValueError('benchmark requires one completion choice')
+                                    delta=choices[0].get('text','') if choices else ''
+                                    if not isinstance(delta,str):raise ValueError('benchmark output must be text')
                                     if delta:
                                         arrivals.append(time.perf_counter()-start)
                                         text+=delta
                                         if len(arrivals)==4:future=pool.submit(complete,long_prompt,8)
                             short_seconds=time.perf_counter()-start
-                            assert future is not None
+                            if not done:raise ValueError('benchmark stream missing DONE')
+                            check_usage(usage,len(short_prompt),64)
+                            if future is None or len(arrivals)<5:
+                                raise ValueError('benchmark requires overlap and a subsequent output sample')
                             long_result,long_seconds=future.result()
                         long_text=long_result['choices'][0]['text']
-                        assert long_result['usage']['prompt_tokens']==1536
                         if short_expected is None:short_expected,long_expected=text,long_text
-                        assert text==short_expected and long_text==long_expected,'chunking changed benchmark greedy output'
+                        if text!=short_expected or long_text!=long_expected:
+                            raise ValueError('chunking changed benchmark greedy output')
                         gaps=[b-a for a,b in zip(arrivals[3:],arrivals[4:])]
                         trials.append({'short_total_seconds':short_seconds,'long_total_seconds':long_seconds,
                             'max_active_stream_gap_ms':max(gaps)*1000,'short_content_chunks':len(arrivals),
