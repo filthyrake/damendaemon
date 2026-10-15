@@ -45,7 +45,7 @@ def main():
             with tempfile.TemporaryFile(mode='w+') as errors:
                 process=subprocess.Popen([sys.executable,'-m','scripts.serve_cuda_reference',str(path),
                     '--device','cuda:0','--port','0','--context','128','--weight-mib','1','--device-weight-mib','1',
-                    '--allocator-mib','128','--cache-mib','1','--projection-workspace-mib','1','--workspace-mib','256' if args.deepseek else '2','--output-mib','1'],
+                    '--allocator-mib','128','--cache-mib','1','--projection-workspace-mib','8' if args.deepseek else '1','--workspace-mib','256' if args.deepseek else '2','--output-mib','1'],
                     stdout=subprocess.PIPE,stderr=errors,text=True)
                 with selectors.DefaultSelector() as selector:
                     selector.register(process.stdout,selectors.EVENT_READ)
