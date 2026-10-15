@@ -8,6 +8,7 @@ from scripts.experiments.split_gguf import save
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--placement',action='store_true')
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
@@ -36,19 +37,27 @@ def main():
         def hyper(h):return CudaFlashHyperConnection(h.projection.cuda(),h.base.cuda(),h.scale.cuda(),streams=h.streams)
         for i,block in enumerate(cpu.blocks):
             a=block.attention
-            if i==1:
-                idx=CudaFlashIndexer({n:v.cuda() for n,v in a.indexer.weights.items()},heads=2,pool_size=2,top_k=2)
-                attention=CudaFlashSparseAttention({n:move(v) for n,v in a.weights.items()},idx,heads=2,head_dim=3,value_dim=2)
-            else:attention=CudaFlashLinearAttention({n:v.cuda() for n,v in a.weights.items()},heads=2,head_dim=3,kernel_size=4)
+            if not args.placement:
+                if i==1:
+                    idx=CudaFlashIndexer({n:v.cuda() for n,v in a.indexer.weights.items()},heads=2,pool_size=2,top_k=2)
+                    attention=CudaFlashSparseAttention({n:move(v) for n,v in a.weights.items()},idx,heads=2,head_dim=3,value_dim=2)
+                else:attention=CudaFlashLinearAttention({n:v.cuda() for n,v in a.weights.items()},heads=2,head_dim=3,kernel_size=4)
             weights=block.feed_forward.weights if i==0 else ffn_weights(True)
             if i:
                 weights={n:(v[...,:4,:] if n.endswith('down_proj.weight') else v if n.endswith('correction_bias') else v[...,:4]) for n,v in weights.items()}
             packed,decoded=ffn_test.packed_ffn(weights,i>0,.5);decoded_ffns.append(decoded)
-            bank=place_cuda_experts(packed.experts,shared=packed.shared,device='cuda:0',max_bytes=1024*1024)
-            options={} if i==0 else dict(router=packed.router.cuda(),correction_bias=packed.correction_bias.cuda(),shared=bank.shared,top_k=2)
-            feed=CudaPackedFlashFeedForward(bank.experts[0] if i==0 else bank.experts,activation_limit=.5,**options)
-            blocks.append(CudaFlashBlock(attention,feed,hyper(block.attention_hyper),hyper(block.ffn_hyper),block.input_norm.cuda(),block.post_norm.cuda()))
-        model=CudaFlashModel(cpu.embedding.cuda(),blocks,cpu.norm.cuda(),cpu.head.cuda())
+            block.feed_forward=packed
+            if not args.placement:
+                bank=place_cuda_experts(packed.experts,shared=packed.shared,device='cuda:0',max_bytes=1024*1024)
+                options={} if i==0 else dict(router=packed.router.cuda(),correction_bias=packed.correction_bias.cuda(),shared=bank.shared,top_k=2)
+                feed=CudaPackedFlashFeedForward(bank.experts[0] if i==0 else bank.experts,activation_limit=.5,**options)
+                blocks.append(CudaFlashBlock(attention,feed,hyper(block.attention_hyper),hyper(block.ffn_hyper),block.input_norm.cuda(),block.post_norm.cuda()))
+        if args.placement:
+            from dllm.cuda_glm_flash_placement import place_cuda_flash
+            placed=place_cuda_flash(cpu,device='cuda:0',max_bytes=1024*1024)
+            model=placed.model;report['placement_raw_bytes']=placed.raw_bytes
+        else:
+            model=CudaFlashModel(cpu.embedding.cuda(),blocks,cpu.norm.cuda(),cpu.head.cuda())
         tokens=torch.tensor([[1,3,2,5,4],[2,4,3,6,5]])
         hidden=cpu.embedding[tokens].unsqueeze(-2).expand(-1,-1,2,-1)
         # Independent CPU scalar hyper/convolution/recurrence and expanded sparse
