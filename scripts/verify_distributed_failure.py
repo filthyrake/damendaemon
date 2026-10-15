@@ -14,6 +14,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -22,6 +23,7 @@ class InjectedStageFailure(RuntimeError):pass
 
 
 def worker(args):
+    if not args.run_id:raise ValueError('worker requires a parent invocation ID')
     from dllm.distributed_server_cli import main as serve
     options=[args.model,'--quantization',args.quantization,'--batch-size','4','--alias','a','--port','0']
     output=Path(args.output)
@@ -33,7 +35,7 @@ def worker(args):
             def fail_batch(stage,inputs,*arguments):
                 if args.operation=='prefill' or inputs.shape[0]==4:
                     output.with_name(output.stem+'-worker.json').write_text(json.dumps(dict(
-                        injected=True,operation=args.operation,method=method,rows=inputs.shape[0],rank=1,
+                        run_id=args.run_id,injected=True,operation=args.operation,method=method,rows=inputs.shape[0],rank=1,
                         stage_layers=list(stage.layer_range)),indent=2)+'\n')
                     raise InjectedStageFailure('injected output-stage batch failure')
                 return originals[method](stage,inputs,*arguments)
@@ -48,7 +50,7 @@ def worker(args):
     from dllm.server import BoundedHTTPServer
     original_init=BoundedHTTPServer.__init__;original_run=DistributedRuntime.run
     base=None
-    report=dict(passed=False,quantization=args.quantization,streaming=args.stream,scope='Real output-stage execution failure; no recovery/performance claim',
+    report=dict(run_id=args.run_id,passed=False,quantization=args.quantization,streaming=args.stream,scope='Real output-stage execution failure; no recovery/performance claim',
         sources={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in
                  ('dllm/distributed.py','dllm/distributed_serving.py','dllm/distributed_server_cli.py')})
     def capture(server,*positional,**keywords):
@@ -123,21 +125,29 @@ def worker(args):
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--output',required=True)
     p.add_argument('--worker',action='store_true')
+    p.add_argument('--run-id',help=argparse.SUPPRESS)
     p.add_argument('--quantization',choices=('none','q8_0','q4_0'),default='q8_0')
     p.add_argument('--stream',action='store_true')
     p.add_argument('--operation',choices=('prefill','decode'),default='decode');args=p.parse_args()
     if args.worker:return worker(args)
     from distributed_job import run_job
     output=Path(args.output)
+    run_id=uuid.uuid4().hex
     command=[sys.executable,'-m','torch.distributed.run','--standalone','--nproc-per-node','2',
-        '--run-path',str(Path(__file__).resolve()),args.model,'--output',str(output),'--operation',args.operation,'--quantization',args.quantization,'--worker']
+        '--run-path',str(Path(__file__).resolve()),args.model,'--output',str(output),'--operation',args.operation,'--quantization',args.quantization,'--run-id',run_id,'--worker']
     if args.stream:command.append('--stream')
     try:result=run_job(command,timeout=180)
     except subprocess.CalledProcessError as error:
         print(error.stdout,file=sys.stderr);print(error.stderr,file=sys.stderr);raise
     coordinator=json.loads(output.with_name(output.stem+'-coordinator.json').read_text())
     peer=json.loads(output.with_name(output.stem+'-worker.json').read_text())
-    assert coordinator['passed'] and peer['injected'] and (peer['operation']=='prefill' or peer['rows']>1)
+    if (coordinator.get('run_id') != run_id or peer.get('run_id') != run_id):
+        raise ValueError('distributed failure reports do not belong to the current invocation')
+    if (coordinator.get('passed') is not True or peer.get('injected') is not True
+            or peer.get('operation') != args.operation
+            or type(peer.get('rows')) is not int or peer['rows'] < 1
+            or (args.operation == 'decode' and peer['rows'] != 4)):
+        raise ValueError('current distributed failure evidence did not pass its acceptance gates')
     output.write_text(json.dumps(dict(passed=True,coordinator=coordinator,worker=peer,
                                      owned_job_exit_code=result.returncode),indent=2)+'\n')
     print(json.dumps(dict(passed=True,failed_http_requests=len(coordinator['requests']),
