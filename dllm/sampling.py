@@ -5,6 +5,15 @@ import math
 import random
 
 
+def _finite_number(value):
+    if type(value) not in (float, int):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False  # JSON integers can exceed the host float range.
+
+
 @dataclass(frozen=True)
 class Sampling:
     temperature: float = 0
@@ -19,7 +28,7 @@ class Sampling:
     def __post_init__(self):
         for name in ('temperature', 'top_p'):
             value = getattr(self, name)
-            if type(value) not in (float, int) or not math.isfinite(value):
+            if not _finite_number(value):
                 raise ValueError(f'{name} must be a finite number')
         if self.temperature < 0 or not 0 < self.top_p <= 1:
             raise ValueError('temperature must be nonnegative and top_p must be in (0, 1]')
@@ -30,7 +39,7 @@ class Sampling:
 
         for name in ('presence_penalty', 'frequency_penalty', 'repetition_penalty'):
             value = getattr(self, name)
-            if type(value) not in (float,int) or not math.isfinite(value):
+            if not _finite_number(value):
                 raise ValueError(f'{name} must be finite')
             if (name == 'repetition_penalty' and value <= 0) or (name != 'repetition_penalty' and not -2 <= value <= 2):
                 raise ValueError('invalid token penalty')
@@ -43,7 +52,7 @@ class Sampling:
                 if isinstance(key,str) and key.isascii() and key.isdecimal() and str(int(key)) == key:
                     key = int(key)
                 if (type(key) is not int or key < 0 or key in normalized
-                        or type(value) not in (float,int) or not math.isfinite(value) or not -100 <= value <= 100):
+                        or not _finite_number(value) or not -100 <= value <= 100):
                     raise ValueError('invalid logit bias token or value')
                 normalized[key] = value
             object.__setattr__(self,'logit_bias',normalized)

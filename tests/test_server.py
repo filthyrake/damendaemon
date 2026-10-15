@@ -117,6 +117,17 @@ class ServerTests(unittest.TestCase):
                                data=json.dumps(data).encode(),
                                headers={"Content-Type": "application/json"}), timeout=5)
 
+    def test_oversized_sampling_integers_return_400_before_dispatch(self):
+        with patch.object(self.runtime, 'generate') as generate:
+            for name in ('temperature', 'top_p', 'presence_penalty',
+                         'frequency_penalty', 'repetition_penalty', 'logit_bias'):
+                options = {name: {'0': 10**400} if name == 'logit_bias' else 10**400}
+                with self.subTest(name=name), self.assertRaises(HTTPError) as raised:
+                    self.post(**options)
+                self.assertEqual(raised.exception.code, 400)
+                raised.exception.close()
+            generate.assert_not_called()
+
     def test_nonstream_completion(self):
         with self.post() as response:
             data = json.load(response)

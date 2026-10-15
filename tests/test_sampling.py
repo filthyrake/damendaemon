@@ -31,6 +31,14 @@ class SamplingTests(unittest.TestCase):
             with self.subTest(options=options), self.assertRaises(ValueError):
                 Sampling(**options)
 
+    def test_oversized_integer_options_are_validation_errors(self):
+        for value in (10**400, -(10**400)):
+            for name in ('temperature', 'top_p', 'presence_penalty',
+                         'frequency_penalty', 'repetition_penalty', 'logit_bias'):
+                options = {name: {'0': value} if name == 'logit_bias' else value}
+                with self.subTest(name=name, sign=value > 0), self.assertRaises(ValueError):
+                    Sampling(**options)
+
     def test_greedy_and_top_one(self):
         logits = torch.tensor([-.1, 2., .7])
         for options in (Sampling(), Sampling(1, top_k=1), Sampling(1, top_p=.01)):
