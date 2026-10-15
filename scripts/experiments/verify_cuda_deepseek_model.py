@@ -8,6 +8,7 @@ from scripts.experiments.split_gguf import save
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--placement',action='store_true')
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
     import torch
@@ -21,13 +22,27 @@ def main():
     save(args.output,report)
     state=reference=None
     try:
-        prepared=[prepare_block(ratio,hashed) for ratio,hashed in ((0,False),(4,True),(128,False))]
-        rng=torch.Generator().manual_seed(251)
-        embedding=torch.randn(4,8,generator=rng)*.1
-        specs={'head.weight':(4,8),'norm.weight':(8,),'hc_head_fn':(2,16),'hc_head_scale':(1,),'hc_head_base':(2,)}
-        head={name:torch.randn(shape,generator=rng)*.2 for name,shape in specs.items()}
-        cpu=FloatingModel(embedding,[p[1] for p in prepared],head)
-        gpu=CudaDeepSeekModel(embedding.cuda(),[p[0] for p in prepared],{k:v.cuda() for k,v in head.items()})
+        if args.placement:
+            from tests.test_packed_model import fixture
+            from tests.test_packed_attention import prepare
+            from dllm.cuda_deepseek_placement import place_cuda_deepseek
+            source,cpu,_=fixture()
+            for original,control in zip(source.blocks,cpu.blocks):
+                original.attention_weights,control.attention_weights=prepare(original.attention_weights)
+            source.config={'test':{'immutable':True}}
+            placed=place_cuda_deepseek(source,device='cuda:0',max_bytes=4*1024**2)
+            gpu=placed.model
+            assert gpu.blocks[0].packed_experts[0] is gpu.blocks[1].packed_experts[0]
+            assert gpu.config==source.config and gpu.config is not source.config
+            report['placement_raw_bytes']=placed.raw_bytes
+        else:
+            prepared=[prepare_block(ratio,hashed) for ratio,hashed in ((0,False),(4,True),(128,False))]
+            rng=torch.Generator().manual_seed(251)
+            embedding=torch.randn(4,8,generator=rng)*.1
+            specs={'head.weight':(4,8),'norm.weight':(8,),'hc_head_fn':(2,16),'hc_head_scale':(1,),'hc_head_base':(2,)}
+            head={name:torch.randn(shape,generator=rng)*.2 for name,shape in specs.items()}
+            cpu=FloatingModel(embedding,[p[1] for p in prepared],head)
+            gpu=CudaDeepSeekModel(embedding.cuda(),[p[0] for p in prepared],{k:v.cuda() for k,v in head.items()})
         ids=torch.tensor([[0,1,2,3,1,2,3,0,1]]);tokens=ids.cuda()
         with patch.object(gpu,'_embed',side_effect=AssertionError('embedding before admission')):
             try:gpu.prefill(tokens[:,:3],max_tokens=10,max_cache_bytes=1)
