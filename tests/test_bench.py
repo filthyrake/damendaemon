@@ -189,7 +189,7 @@ class BenchTests(unittest.TestCase):
         ], capture_output=True, text=True, timeout=10)
         self.assertEqual(process.returncode, 0, process.stderr)
         report = json.loads(process.stdout)
-        self.assertEqual(report['schema_version'], 2)
+        self.assertEqual(report['schema_version'], 3)
         self.assertEqual(report['workload']['arrival_mode'], 'fixed_rate')
         self.assertEqual(report['workload']['offered_requests_per_second'], 10)
         self.assertEqual(report['summary']['successful_output_tokens'], 21)
@@ -223,6 +223,43 @@ class BenchTests(unittest.TestCase):
         self.assertFalse(profile_summary([], 0, profile)['all_requests_passed'])
         self.assertIsNone(profile_summary(rows, 0, profile)['qualifying_requests_per_second'])
 
+    def test_fixed_arrival_profile_includes_dispatch_delay(self):
+        profile = dict(max_first_output_seconds=.5, max_output_event_gap_seconds=.1,
+                       min_request_output_tokens_per_second=8)
+        row = Result(0, 'a', 2, .25, 20, output_event_gaps_seconds=[.1])
+        self.assertEqual(evaluate_profile(row, profile)['status'], 'passed')
+        row.scheduled_offset_seconds = 100
+        row.dispatch_delay_seconds = .25
+        boundary = evaluate_profile(row, profile)
+        self.assertEqual(boundary['status'], 'passed')
+        self.assertEqual(boundary['first_output_seconds'], .5)
+        self.assertEqual(boundary['request_seconds'], 2.25)
+        self.assertEqual(boundary['timing_origin'], 'scheduled_arrival')
+        row.dispatch_delay_seconds = 1
+        result = evaluate_profile(row, profile)
+        self.assertEqual(result['status'], 'failed')
+        self.assertEqual(result['reasons'], ['first output budget exceeded',
+                                           'request-average token rate below budget'])
+        self.assertEqual(result['maximum_output_event_gap_seconds'], .1)
+        self.assertEqual(row.seconds, 2)  # Raw post-dispatch timing is preserved.
+        self.assertEqual(row.first_output_seconds, .25)
+        report = profile_summary([row, Result(1, 'a', 0, error='client capacity',
+                                             scheduled_offset_seconds=101)], 4, profile)
+        self.assertEqual(report['qualifying_output_tokens'], 0)
+        self.assertEqual(report['counts'], dict(passed=0, failed=1, unmeasurable=0, error=1))
+
+    def test_fixed_arrival_missing_or_invalid_dispatch_is_unmeasurable(self):
+        profile = dict(max_first_output_seconds=1, max_output_event_gap_seconds=1,
+                       min_request_output_tokens_per_second=1)
+        row = Result(0, 'a', 2, .25, 20, output_event_gaps_seconds=[.1], scheduled_offset_seconds=0)
+        for delay in (None, -1, float('nan'), float('inf'), True):
+            row.dispatch_delay_seconds = delay
+            self.assertEqual(evaluate_profile(row, profile)['status'], 'unmeasurable')
+        row.dispatch_delay_seconds = 0
+        self.assertEqual(evaluate_profile(row, profile)['status'], 'passed')
+        row.scheduled_offset_seconds = -1
+        self.assertEqual(evaluate_profile(row, profile)['status'], 'unmeasurable')
+
     def test_cli_profile_validation_and_failure_reporting(self):
         base = [sys.executable, '-S', '-m', 'dllm', 'bench', '--base-url', self.url,
                 '--models', 'normal', '--requests', '1']
@@ -233,7 +270,17 @@ class BenchTests(unittest.TestCase):
         options = ['--slo-first-output', '5', '--slo-output-gap', '5', '--slo-request-rate', '.001']
         result = subprocess.run(base+options, capture_output=True, text=True, timeout=5)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertTrue(json.loads(result.stdout)['client_profile']['all_requests_passed'])
+        report = json.loads(result.stdout)
+        self.assertTrue(report['client_profile']['all_requests_passed'])
+        self.assertEqual(report['workload']['profile_timing_origin'], 'request_start')
+        fixed = subprocess.run(base+options+['--arrival-rate', '10'], capture_output=True, text=True, timeout=5)
+        self.assertEqual(fixed.returncode, 0, fixed.stderr)
+        report = json.loads(fixed.stdout)
+        self.assertEqual(report['workload']['profile_timing_origin'], 'scheduled_arrival')
+        raw = report['results'][0]
+        evaluated = report['client_profile']['results'][0]
+        self.assertAlmostEqual(evaluated['first_output_seconds'],
+                               raw['first_output_seconds'] + raw['dispatch_delay_seconds'])
         result = subprocess.run(base+options+['--models', 'no-usage'], capture_output=True, text=True, timeout=5)
         self.assertEqual(result.returncode, 1)
         report = json.loads(result.stdout)

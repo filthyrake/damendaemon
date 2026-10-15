@@ -63,8 +63,12 @@ chunks are **not** counted as tokens. Missing usage means token throughput is
 unknown. First visible output can lag actual first-token computation, especially
 with reasoning models or server buffering. Full details: `python3 -m dllm --help`.
 
-This is a closed-loop load test: at most `--concurrency` requests are in flight.
-It does not measure open-loop arrival-rate capacity, GPU utilization, or internal
+By default this is a closed-loop load test: at most `--concurrency` requests are
+in flight. `--arrival-rate` instead offers fixed scheduled arrivals, reporting
+client-capacity drops without queuing them. Optional client SLO profiles include
+fixed-arrival dispatch delay in latency and request-rate budgets; ordinary raw
+latencies remain request-relative. See [timing and profile semantics](performance.md)
+before comparing reports. Neither mode measures GPU utilization or internal
 weight-transfer timing. Switching timings include everything the server does
 before responding; resident versus RAM versus disk state must be controlled and
 recorded externally. No warmup or eviction is performed automatically.

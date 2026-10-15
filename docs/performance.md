@@ -180,6 +180,17 @@ running: `--slo-first-output SECONDS`, `--slo-output-gap SECONDS`, and
 `--slo-request-rate TOKENS_PER_SECOND`. They bound first visible output, the
 largest SSE output-event gap, and the minimum **whole-request average** output
 token rate (usage tokens divided by total duration, including prefill).
+Schema version 3 evaluates fixed-rate requests from their **scheduled arrival**:
+observed dispatch delay is added to both first-output time and total duration.
+For example, 1 second of dispatch delay plus 0.25 seconds to first output is
+1.25 seconds against the first-output budget. SSE gaps remain unchanged.
+Missing or invalid dispatch timing makes a scheduled request unmeasurable.
+Closed-loop profiles retain request-start timing. Each measured profile result
+names its `timing_origin` and adjusted first-output/request durations; raw result
+fields and ordinary latency summaries remain request-relative. Workload metadata
+identifies both origins. Version 2 profiles excluded dispatch delay, so their
+fixed-arrival verdicts must not be compared as if they used the same timing policy.
+
 They do not implement the separate post-prefill per-user speed target in #59.
 
 The report retains ordinary throughput and adds `client_profile`: per-request

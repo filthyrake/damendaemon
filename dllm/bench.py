@@ -177,7 +177,16 @@ def evaluate_profile(result, profile):
     """Judge measured client behavior; never infer tokens from SSE events."""
     if result.error is not None:
         return {"status": "error", "reasons": [result.error]}
+    origin = ('scheduled_arrival' if result.scheduled_offset_seconds is not None else 'request_start')
+    timing = {"timing_origin": origin}
     missing = []
+    delay = 0
+    if origin == 'scheduled_arrival':
+        scheduled = result.scheduled_offset_seconds
+        delay = result.dispatch_delay_seconds
+        if (type(scheduled) not in (int, float) or not math.isfinite(scheduled) or scheduled < 0
+                or type(delay) not in (int, float) or not math.isfinite(delay) or delay < 0):
+            missing.append("valid scheduled-arrival dispatch timing unavailable")
     if result.first_output_seconds is None:
         missing.append("first output unavailable")
     if not result.output_event_gaps_seconds:
@@ -185,11 +194,14 @@ def evaluate_profile(result, profile):
     if result.output_tokens is None or result.seconds <= 0:
         missing.append("request-average token rate unavailable")
     if missing:
-        return {"status": "unmeasurable", "reasons": missing}
-    rate = result.output_tokens/result.seconds
+        return {"status": "unmeasurable", "reasons": missing, **timing}
+    duration = result.seconds + delay
+    first_output = result.first_output_seconds + delay
+    timing.update(first_output_seconds=first_output, request_seconds=duration)
+    rate = result.output_tokens/duration
     maximum_gap = max(result.output_event_gaps_seconds)
     reasons = []
-    if result.first_output_seconds > profile['max_first_output_seconds']:
+    if first_output > profile['max_first_output_seconds']:
         reasons.append('first output budget exceeded')
     if maximum_gap > profile['max_output_event_gap_seconds']:
         reasons.append('output event gap budget exceeded')
@@ -197,7 +209,7 @@ def evaluate_profile(result, profile):
         reasons.append('request-average token rate below budget')
     return {"status": "failed" if reasons else "passed", "reasons": reasons,
             "request_output_tokens_per_second": rate,
-            "maximum_output_event_gap_seconds": maximum_gap}
+            "maximum_output_event_gap_seconds": maximum_gap, **timing}
 
 
 def profile_summary(results, elapsed, profile):
@@ -206,6 +218,7 @@ def profile_summary(results, elapsed, profile):
     tokens = sum(result.output_tokens for result in passed)
     return {
         "measurement_scope": "client SSE gaps and whole-request average token rate; not GPU per-token SLO",
+        "timing_policy": "scheduled arrival for fixed-rate requests; request start for closed-loop requests",
         "budgets": profile,
         "all_requests_passed": bool(results) and len(passed) == len(results),
         "counts": {state: sum(evaluation['status'] == state for _, evaluation in evaluations)
@@ -279,11 +292,11 @@ def main():
     bench.add_argument("--timeout", type=positive_float, default=120,
                        help="socket inactivity timeout in seconds, not a total request deadline")
     bench.add_argument("--slo-first-output", type=positive_float,
-                       help="maximum client first-output seconds; requires both other --slo options")
+                       help="maximum first-output seconds from scheduled arrival (fixed rate) or request start; requires both other --slo options")
     bench.add_argument("--slo-output-gap", type=positive_float,
                        help="maximum client SSE output-event gap seconds, not per-token latency")
     bench.add_argument("--slo-request-rate", type=positive_float,
-                       help="minimum reported output tokens / whole request seconds, including prefill")
+                       help="minimum output tokens / request seconds, including prefill and fixed-arrival dispatch delay")
     bench.add_argument("--prompt-file", type=Path)
     bench.add_argument("--label", default="unlabeled")
     args = parser.parse_args()
@@ -330,13 +343,15 @@ def main():
                 results.append(future.result())
     elapsed = time.perf_counter() - start
     report = {
-        "schema_version": 2,
+        "schema_version": 3,
         "label": args.label,
         "workload": {
             "base_url": args.base_url, "models": args.models,
             "arrival_mode": "fixed_rate" if args.arrival_rate is not None else "closed_loop",
             "offered_requests_per_second": args.arrival_rate,
             "output_timing_unit": "SSE output event, not token",
+            "raw_request_timing_origin": "request_start",
+            "profile_timing_origin": "scheduled_arrival" if args.arrival_rate is not None else "request_start",
             "max_output_events_per_request": MAX_OUTPUT_EVENTS,
             "concurrency": args.concurrency, "max_tokens": args.max_tokens,
             "temperature": 0, "socket_timeout_seconds": args.timeout,
