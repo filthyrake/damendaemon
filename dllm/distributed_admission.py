@@ -16,6 +16,21 @@ class DistributedAdmission(queue.Queue):
         super().__init__(maxsize)
         self.timeout=timeout;self.fair=FairAdmission()
 
+    def discard_cancelled(self,request):
+        """Withdraw by identity only while still queued, never after worker get."""
+        with self.mutex:
+            if not request.cancelled.is_set():
+                raise ValueError('only cancelled requests may be withdrawn')
+            for index,waiting in enumerate(self.queue):
+                if waiting is request:
+                    del self.queue[index]
+                    self.unfinished_tasks-=1
+                    if self.unfinished_tasks==0:self.all_tasks_done.notify_all()
+                    if not self.queue:self.fair.reset()
+                    self.not_full.notify()
+                    return True
+            return False
+
     def _get(self):
         now=time.monotonic()
         stale=next((request for request in self.queue if request.cancelled.is_set()

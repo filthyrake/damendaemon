@@ -110,6 +110,25 @@ class DistributedServingTests(RuntimeHelpers, unittest.TestCase):
             pair.step_gate.set()
             self.assertEqual(result.result(2)[-1]['usage']['completion_tokens'],2)
 
+    def test_expired_waiter_releases_queue_capacity_before_active_step_finishes(self):
+        pair=Pair();pair.pause_step=1;runtime=DistributedRuntime(pair,queue_size=1,queue_timeout=.1)
+        self.start(runtime)
+        with ThreadPoolExecutor(2) as pool:
+            first=pool.submit(lambda:list(runtime.generate('model',None,2,raw_prompt=[1])))
+            try:
+                self.assertTrue(pair.step_entered.wait(2))
+                expired=pool.submit(lambda:list(runtime.generate('model',None,2,raw_prompt=[2])))
+                with self.assertRaisesRegex(BusyError,'deadline'):expired.result(2)
+                self.assertEqual(runtime.requests.qsize(),0)
+                self.assertEqual(len(runtime.accepted),1)
+                replacement=pool.submit(lambda:list(runtime.generate('model',None,2,raw_prompt=[3])))
+                self.queued(runtime)
+                self.assertFalse(first.done())
+                pair.step_gate.set()
+                first.result(2);replacement.result(2)
+            finally:pair.step_gate.set()
+        self.assertEqual(pair.releases,2)
+
     def test_expired_queue_never_touches_pair(self):
         pair=Pair();runtime=DistributedRuntime(pair,queue_timeout=1)
         with ThreadPoolExecutor(1) as pool:

@@ -75,6 +75,32 @@ class QueuedReferenceTests(unittest.TestCase):
         wait_for(lambda:runtime.scheduler_status()['drained'])
         self.assertTrue(all(state.closed for state in model.states))
 
+    def test_expired_waiter_reclaims_capacity_while_owner_is_busy(self):
+        runtime,model=self.runtime(queue_size=1,queue_timeout=.1)
+        entered=threading.Event();resume=threading.Event();original=model.prefill;seen=[]
+        def prefill(tokens,**options):
+            seen.append(tokens.tolist())
+            if len(seen)==1:
+                entered.set();self.assertTrue(resume.wait(3))
+            return original(tokens,**options)
+        with patch.object(model,'prefill',side_effect=prefill),ThreadPoolExecutor(2) as pool:
+            first=pool.submit(lambda:list(self.generate(runtime)))
+            try:
+                self.assertTrue(entered.wait(3))
+                expired=pool.submit(lambda:list(self.generate(runtime)))
+                with self.assertRaisesRegex(BusyError,'deadline'):expired.result(3)
+                self.assertEqual(runtime.requests.qsize(),0)
+                self.assertEqual(len(runtime.accepted),1)
+                replacement=pool.submit(lambda:list(self.generate(runtime)))
+                wait_for(lambda:runtime.requests.qsize()==1)
+                self.assertFalse(first.done())
+                resume.set()
+                first.result(5);replacement.result(5)
+            finally:resume.set()
+        wait_for(lambda:not runtime.accepted)
+        self.assertEqual(len(seen),2)
+        runtime.close()
+
     def test_queue_expiry_never_prefills_and_mutation_does_not_change_admitted_input(self):
         runtime,model=self.runtime(queue_timeout=.1)
         entered=threading.Event();resume=threading.Event();original=model.prefill;seen=[]

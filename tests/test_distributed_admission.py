@@ -51,3 +51,30 @@ class DistributedAdmissionTests(unittest.TestCase):
         try:captured=Request([1],1,time.monotonic(),queue.Queue(9))
         finally:cache_scope.reset(token)
         self.assertIs(captured.cache_scope,a);self.assertNotIn('cache_scope',repr(captured))
+
+    def test_cancelled_withdrawal_releases_capacity_and_never_removes_owned_work(self):
+        pending=DistributedAdmission(1,60);scope=CacheScope()
+        first,second=request(scope,1),request(scope,2)
+        pending.put(first)
+        with self.assertRaises(ValueError):pending.discard_cancelled(first)
+        entered=threading.Event()
+        def produce():entered.set();pending.put(second,timeout=2)
+        with ThreadPoolExecutor(1) as pool:
+            producer=pool.submit(produce);self.assertTrue(entered.wait(1));self.assertFalse(producer.done())
+            first.cancelled.set();self.assertTrue(pending.discard_cancelled(first))
+            self.assertFalse(pending.discard_cancelled(first));producer.result(2)
+        self.assertEqual(pending.unfinished_tasks,1)
+        self.assertIs(pending.get_nowait(),second)
+        second.cancelled.set();self.assertFalse(pending.discard_cancelled(second))
+        pending.task_done();pending.join()
+        self.assertEqual(pending.unfinished_tasks,0)
+
+    def test_withdrawal_uses_identity_and_preserves_other_lanes(self):
+        pending=DistributedAdmission(4,60);a,b=CacheScope(),CacheScope()
+        first,second=request(a,1),request(b,2)
+        pending.put(first);pending.put(second)
+        other=request(a,1);other.cancelled.set()
+        self.assertFalse(pending.discard_cancelled(other))
+        first.cancelled.set();self.assertTrue(pending.discard_cancelled(first))
+        self.assertIs(pending.get_nowait(),second)
+        self.assertFalse(pending.fair.recent)

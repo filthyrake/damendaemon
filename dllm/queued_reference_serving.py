@@ -88,7 +88,11 @@ class QueuedReferenceRuntime(ReferenceRuntime):
                 if isinstance(event,BaseException):raise event
                 yield event
                 if 'finish_reason' in event:return
-        finally:request.cancelled.set()
+        finally:
+            request.cancelled.set()
+            with self.admission_lock:
+                if self.requests.discard_cancelled(request):
+                    self.accepted.pop(id(request),None)
 
     def _publish(self,request,event,*,terminal=False):
         # Reserve a ninth entry for a final/error; at most eight data events wait.

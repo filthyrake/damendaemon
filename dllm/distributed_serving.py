@@ -179,7 +179,11 @@ class DistributedRuntime:
                 received=True
                 yield event
                 if 'finish_reason' in event:return
-        finally:request.cancelled.set()
+        finally:
+            request.cancelled.set()
+            with self.admission_lock:
+                if self.requests.discard_cancelled(request):
+                    self.accepted.pop(id(request),None)
 
     @staticmethod
     def _publish(request,event):

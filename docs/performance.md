@@ -222,3 +222,11 @@ engines may omit it; absent values remain unknown. Nonfinite, negative, boolean
 or malformed reported timings fail validation rather than contaminating the
 measurement. Queue delay is not subtracted from latency or used to relax a
 client profile.
+
+Queued reference and distributed serving withdraw a cancelled or expired request
+immediately if it is still in the admission queue. Its capacity and accepted
+bookkeeping are released even while another request owns execution. Withdrawal
+uses object identity under the queue mutex, wakes waiting producers, and does
+not charge a fairness turn. A request already removed by the worker keeps its
+existing active cancellation and cleanup path; withdrawing a waiter does not
+interrupt the active request or retire a host epoch.
