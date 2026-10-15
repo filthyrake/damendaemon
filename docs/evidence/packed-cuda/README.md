@@ -23,3 +23,17 @@ routing and placement are unchanged. No throughput or practical-model claim.
 Local regression: 71 affected packed-format, expert, checkpoint, stage and
 model tests passed. These fixtures establish device arithmetic only. Parent
 #14 retains routing, placement, official-weight model and practical qualification.
+
+## Routed composition (#225)
+
+Implementation `b780d97`: explicit prepared-bank routing with one range-check
+synchronization and one host count vector; IDs, coefficients and row gathers
+stay on CUDA. Duplicate routes add, with an optional unweighted shared expert.
+One gathered row/result at a time; output and route-sort buffers are separately
+admitted. This is host-scheduled device arithmetic, not a fused routing kernel.
+`routed.json` passes six FP32/FP16/BF16 cases with/without shared contribution
+against independent scalar-decoded dense CPU experts. Includes duplicate IDs,
+zero coefficients, empty batches and invalid route rejection. Maximum absolute
+difference 7.62939453125e-06; peak reserved22MiB. Guard completed successfully.
+Twelve relevant local controls passed. Practical checkpoint/model qualification
+and automatic dispatch remain open under #14.
