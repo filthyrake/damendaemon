@@ -77,3 +77,14 @@ attention comparisons against decoded CPU weights, with exact selected IDs,
 duplicate-slot reorder, cursor checks, injected post-write poisoning and close.
 Largest absolute error1.12e-8;22MiB peak reserved.35 focused regressions pass.
 This qualifies the tiny prepared attention boundary, not official model quality.
+
+## Prepared CUDA GLM model (#230)
+
+Implementation `668b74d`. `glm-model.json` passes a three-block prepared packed
+model's prefill and two incremental decode positions against independently
+decoded CPU weights, including duplicate-slot reorder and exact decode argmax.
+Maximum absolute logit error9.54e-7. Injected final-block failure poisons the
+whole state without publishing a cursor; close releases all owned layers.
+Peak reserved22MiB; successful shared guard retained.40 focused local tests
+cover model/block/pipeline compatibility. This is a tiny fixture model, not
+an official checkpoint, end-to-end serving or practical performance result.
