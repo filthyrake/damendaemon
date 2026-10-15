@@ -125,16 +125,25 @@ class QueuedReferenceRuntime(ReferenceRuntime):
                     if time.monotonic()-request.submitted>=self.queue_timeout:
                         self._publish(request,BusyError('CPU reference request queue deadline exceeded'),terminal=True)
                         continue
-                    request.started.set();started=time.monotonic()
+                    request.started.set();started=time.monotonic();final=None
                     with cancellation_scope(request.cancelled.is_set),closing(self._generate_owned(request)) as generation:
                         for event in generation:
                             if request.cancelled.is_set() or self.stopping.is_set():break
-                            final='finish_reason' in event
-                            if final:
-                                timing=dict(event['timing']);timing['queue_seconds']=started-request.submitted
-                                timing['total_seconds']=time.monotonic()-request.submitted
-                                event=dict(event,timing=timing)
-                            if not self._publish(request,event,terminal=final):break
+                            if not isinstance(event,dict) or final is not None:
+                                raise RuntimeError('invalid queued generation event ordering')
+                            if 'finish_reason' in event:
+                                if (not isinstance(event['finish_reason'],str) or not event['finish_reason']
+                                        or not isinstance(event.get('usage'),dict)
+                                        or not isinstance(event.get('timing'),dict)):
+                                    raise RuntimeError('invalid queued generation terminal event')
+                                final=dict(event)
+                            elif not self._publish(request,event):break
+                    if not request.cancelled.is_set() and not self.stopping.is_set():
+                        if final is None:raise RuntimeError('queued generation ended without a terminal event')
+                        if self.cleanup_pending():raise RuntimeError('queued generation cleanup remains pending')
+                        timing=dict(final['timing']);timing['queue_seconds']=started-request.submitted
+                        timing['total_seconds']=time.monotonic()-request.submitted
+                        self._publish(request,dict(final,timing=timing),terminal=True)
                 except Exception as error:
                     self._publish(request,error,terminal=True)
                     if self.cleanup_pending():

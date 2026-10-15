@@ -31,6 +31,50 @@ class QueuedReferenceTests(unittest.TestCase):
     def generate(self,runtime,**options):
         return runtime.generate('model',self.fixture.messages,512,tools=fixtures.TOOLS,**options)
 
+    def test_invalid_owned_streams_fail_without_hanging_or_publishing_success(self):
+        for case in ('empty', 'missing', 'duplicate', 'late', 'cleanup', 'invalid-final'):
+            with self.subTest(case=case):
+                runtime, _ = self.runtime()
+                observed = []
+                def owned(request):
+                    try:
+                        if case == 'empty': return
+                        yield {'text': 'partial'}
+                        if case == 'missing': return
+                        final = dict(finish_reason='stop', usage={}, timing={})
+                        yield dict(final, finish_reason=None) if case == 'invalid-final' else final
+                        if case == 'duplicate': yield final
+                        if case == 'late': yield {'text': 'late'}
+                    finally:
+                        if case == 'cleanup': raise RuntimeError('injected iterator cleanup failure')
+                def consume():
+                    for event in self.generate(runtime): observed.append(event)
+                with patch.object(runtime, '_generate_owned', side_effect=owned), ThreadPoolExecutor(1) as pool:
+                    future = pool.submit(consume)
+                    try:
+                        with self.assertRaises(RuntimeError): future.result(1)
+                        self.assertFalse(any('finish_reason' in event for event in observed))
+                    finally: runtime.close()
+
+    def test_terminal_publication_waits_for_owned_iterator_cleanup(self):
+        runtime, _ = self.runtime()
+        entered, release = threading.Event(), threading.Event()
+        def owned(request):
+            try:
+                yield dict(finish_reason='stop', usage={}, timing={})
+            finally:
+                entered.set()
+                if not release.wait(3): raise RuntimeError('test did not release cleanup')
+        with patch.object(runtime, '_generate_owned', side_effect=owned), ThreadPoolExecutor(1) as pool:
+            future = pool.submit(lambda: list(self.generate(runtime)))
+            try:
+                self.assertTrue(entered.wait(2))
+                from concurrent.futures import TimeoutError as FutureTimeout
+                with self.assertRaises(FutureTimeout): future.result(.05)
+            finally: release.set()
+            self.assertEqual(future.result(2)[-1]['finish_reason'], 'stop')
+        runtime.close()
+
     def test_concurrent_http_preserves_family_tools_and_reasoning(self):
         for family in ('glm','flash','deepseek'):
             runtime,model=self.runtime(family);base=self.fixture.serve(runtime)
