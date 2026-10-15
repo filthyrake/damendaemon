@@ -433,3 +433,15 @@ errors7.8e-7/1.6e-6/2.3e-8; greedy IDs exact. Guard7.879s,22MiB peak reserved
 under128MiB allocator cap,4251MiB free before/after; cleanup confirmed. Cursor
 metadata remains CPU, payloads explicit CUDA. No host transfer/transport,
 physical multi-GPU or practical model/context/performance qualification.
+
+## Explicit host/CUDA slot boundaries (#261)
+
+Implementation `38810b5`. CPU payloads cross an explicit synchronous adapter;
+combined logical input/output bytes are admitted before copying. Eighteen
+local admission/slot tests pass. All three loaded families preserve prior slot
+parity (max1.6e-6,exact greedy IDs), chunking, independent cursors and reuse.
+Over-budget transfer and duplicate owner reject; injected device-to-host failure
+after cache advance closes all owned slots. Guard8.598s,22MiB reserved under
+128MiB cap,4251MiB free before/after; cleanup confirmed. This bounds logical
+transfer payloads, not allocator overhead. Host-worker integration and physical
+multi-GPU/practical context/performance qualification remain separate gates.
