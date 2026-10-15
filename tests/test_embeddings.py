@@ -2,8 +2,58 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from contextlib import contextmanager
+from types import SimpleNamespace
+import base64
+import struct
+import torch
 from dllm.embeddings import options
 from dllm.encoder import config
+from dllm.runtime import Runtime
+
+
+class EmbeddingOutputTests(unittest.TestCase):
+    def runtime(self, values):
+        runtime = Runtime.__new__(Runtime)
+        self.released = False
+        model = SimpleNamespace(task='embedding', config={'hidden_size': 2},
+                                encode=lambda inputs: [[1] for _ in inputs])
+        executor = SimpleNamespace(model=model, embed=lambda _: values,
+                                   kernel_backend='test-cpu', compute_dtype=torch.float32)
+        @contextmanager
+        def session(alias):
+            try:
+                yield executor, 'host', 0
+            finally:
+                self.released = True
+        runtime.session = session
+        return runtime
+
+    def test_invalid_output_never_publishes_and_releases_session(self):
+        for values in (torch.tensor([[float('nan'), 0.]]),
+                       torch.tensor([[float('inf'), 0.]]),
+                       torch.tensor([[-float('inf'), 0.]]),
+                       torch.empty((0, 2)), torch.ones((2, 2)),
+                       torch.ones((1, 3)), torch.ones(2), torch.ones((1, 1, 2))):
+            for encoding in ('float', 'base64'):
+                with self.subTest(shape=values.shape, encoding=encoding):
+                    runtime = self.runtime(values)
+                    with self.assertRaisesRegex(RuntimeError, 'invalid embedding output'):
+                        runtime.embed('model', 'hello', encoding)
+                    self.assertTrue(self.released)
+
+    def test_valid_float_and_base64_preserve_order_width_and_usage(self):
+        values = torch.tensor([[.25, -.5], [0., 1.]])
+        for encoding in ('float', 'base64'):
+            with self.subTest(encoding=encoding):
+                result = self.runtime(values).embed('model', ['first', 'second'], encoding)
+                actual = [item['embedding'] for item in result['data']]
+                if encoding == 'base64':
+                    actual = [list(struct.unpack('<2f', base64.b64decode(row))) for row in actual]
+                self.assertEqual(actual, values.tolist())
+                self.assertEqual([item['index'] for item in result['data']], [0, 1])
+                self.assertEqual(result['usage'], {'prompt_tokens': 2, 'total_tokens': 2})
+                self.assertTrue(self.released)
 
 
 class EmbeddingInputTests(unittest.TestCase):

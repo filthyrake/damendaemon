@@ -3,6 +3,7 @@
 from collections import OrderedDict
 from contextlib import contextmanager
 import gc
+import math
 import os
 import threading
 import time
@@ -416,6 +417,11 @@ class Runtime:
                 raise ValueError('this encoder does not support dimension reduction')
             tokens = model.encode(inputs)
             values = executor.embed(tokens).float().cpu().tolist()
+            if (not isinstance(values, list) or len(values) != len(inputs)
+                    or any(not isinstance(row, list) or len(row) != width
+                           or any(type(value) not in (int, float) or not math.isfinite(value)
+                                  for value in row) for row in values)):
+                raise RuntimeError('invalid embedding output')
             if encoding_format == 'base64':
                 import base64
                 import struct
