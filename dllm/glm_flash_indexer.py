@@ -1,4 +1,4 @@
-"""Bounded CPU FP32 Flash learned-pool indexer, independently transcribed.
+"""Bounded FP32 Flash learned-pool core with a CPU-only public indexer.
 
 Reference: Transformers v5.17.0 glm5_next. Contiguous valid-token intervals only;
 left/right padding supported, internal holes rejected. Ties choose earlier pools.
@@ -11,9 +11,10 @@ from torch.nn import functional as F
 from .glm_flash_kda import _tensor,_finite
 
 
-class FlashIndexer:
+class _FlashIndexer:
     def __init__(self,weights,*,heads,pool_size=4,top_k=2048,
-                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
+                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2,device='cpu'):
+        self.device=torch.device(device)
         if (not isinstance(weights,dict) or not isinstance(weights.get('wk.weight'),torch.Tensor)
                 or weights['wk.weight'].ndim!=2
                 or any(type(v) is not int or not 1<=v<=4096 for v in (heads,pool_size,top_k))
@@ -28,7 +29,7 @@ class FlashIndexer:
                 'weights_proj.weight':(heads,dim),'k_norm.weight':(width,),'k_norm.bias':(width,),
                 'index_kpool_compress_ape':(pool_size,width),'index_kpool_compress_gate':(width,dim)}
         if (not 1<=width<=4096 or not 1<=dim<=2**21 or not 1<=rank<=2**21
-                or set(weights)!=set(shapes) or any(not _tensor(weights[n],s) for n,s in shapes.items())):
+                or set(weights)!=set(shapes) or any(not _tensor(weights[n],s,self.device) for n,s in shapes.items())):
             raise ValueError('invalid Flash indexer weight shapes/storage')
         _finite(*weights.values())
         self.weights=dict(weights);self.dim,self.rank,self.width,self.heads=dim,rank,width,heads
@@ -42,7 +43,7 @@ class FlashIndexer:
     @torch.no_grad()
     def project_keys(self,hidden):
         if (not isinstance(hidden,torch.Tensor) or hidden.ndim!=3 or min(hidden.shape[:2])<1
-                or not _tensor(hidden,(*hidden.shape[:2],self.dim))):
+                or not _tensor(hidden,(*hidden.shape[:2],self.dim),self.device)):
             raise ValueError('invalid Flash indexer hidden states')
         rows=hidden.shape[0]*hidden.shape[1]
         self._budget(64*rows*(self.dim+self.width),8*rows*self.width)
@@ -56,27 +57,27 @@ class FlashIndexer:
     @torch.no_grad()
     def select(self,hidden,low_rank,keys,gates,positions,*,valid_keys=None):
         if (not isinstance(hidden,torch.Tensor) or hidden.ndim!=3 or min(hidden.shape[:2])<1
-                or not _tensor(hidden,(*hidden.shape[:2],self.dim))):
+                or not _tensor(hidden,(*hidden.shape[:2],self.dim),self.device)):
             raise ValueError('invalid Flash indexer query states')
         b,t,_=hidden.shape;d=self.width;p=self.pool_size
-        if (not _tensor(low_rank,(b,t,self.rank)) or not isinstance(keys,torch.Tensor) or keys.ndim!=3
-                or not keys.shape[1] or not _tensor(keys,(b,keys.shape[1],d)) or not _tensor(gates,keys.shape)
-                or not isinstance(positions,torch.Tensor) or positions.device.type!='cpu' or positions.dtype!=torch.int64
+        if (not _tensor(low_rank,(b,t,self.rank),self.device) or not isinstance(keys,torch.Tensor) or keys.ndim!=3
+                or not keys.shape[1] or not _tensor(keys,(b,keys.shape[1],d),self.device) or not _tensor(gates,keys.shape,self.device)
+                or not isinstance(positions,torch.Tensor) or positions.device!=self.device or positions.dtype!=torch.int64
                 or positions.shape!=(b,t)):
             raise ValueError('invalid Flash indexer cache/query geometry')
         length=keys.shape[1];pools=(length+p-1)//p
         self._budget(64*(b*length*d+b*t*(self.dim+self.rank+self.heads*d)+b*pools*d+self.heads*pools+pools*p),
                      8*b*t*(self.top_k+p-1))
         if (positions<0).any() or (positions>=length).any():raise ValueError('invalid Flash indexer positions')
-        if valid_keys is None:valid_keys=torch.ones((b,length),dtype=torch.bool,device='cpu')
-        if (not isinstance(valid_keys,torch.Tensor) or valid_keys.device.type!='cpu'
+        if valid_keys is None:valid_keys=torch.ones((b,length),dtype=torch.bool,device=self.device)
+        if (not isinstance(valid_keys,torch.Tensor) or valid_keys.device!=self.device
                 or valid_keys.dtype!=torch.bool or valid_keys.shape!=(b,length)):
             raise ValueError('invalid Flash indexer padding mask')
         _finite(hidden,low_rank,keys,gates,*self.weights.values())
         q=F.linear(low_rank,self.weights['wq_b.weight']).reshape(b,t,self.heads,d)
         head_weights=F.linear(hidden,self.weights['weights_proj.weight'])/(self.heads**.5)
         _finite(q,head_weights)
-        result=torch.full((b,t,self.top_k+p-1),-1,dtype=torch.int64,device='cpu')
+        result=torch.full((b,t,self.top_k+p-1),-1,dtype=torch.int64,device=self.device)
         for batch in range(b):
             real=valid_keys[batch].nonzero().flatten()
             if not real.numel():continue
@@ -84,7 +85,7 @@ class FlashIndexer:
             if last-first+1!=real.numel():raise ValueError('Flash indexer does not support internal padding holes')
             count=real.numel()//p
             if count:
-                indices=torch.arange(first,first+count*p,dtype=torch.int64,device='cpu').reshape(count,p)
+                indices=torch.arange(first,first+count*p,dtype=torch.int64,device=self.device).reshape(count,p)
                 grouped=keys[batch,indices];logits=gates[batch,indices]+self.weights['index_kpool_compress_ape']
                 _finite(logits)
                 pooled=(logits.softmax(1)*grouped).sum(1);_finite(pooled)
@@ -100,5 +101,11 @@ class FlashIndexer:
                     selected=torch.argsort(scores,descending=True,stable=True)[:self.top_k//p]
                     raw=indices[selected].flatten();result[batch,token,:raw.numel()]=raw
                 tail=visible%p
-                if tail:result[batch,token,self.top_k:self.top_k+tail]=torch.arange(pos-tail+1,pos+1,dtype=torch.int64,device='cpu')
+                if tail:result[batch,token,self.top_k:self.top_k+tail]=torch.arange(pos-tail+1,pos+1,dtype=torch.int64,device=self.device)
         return result
+
+
+class FlashIndexer(_FlashIndexer):
+    """CPU-only prepared learned pooled indexer."""
+    def __init__(self,weights,**options):
+        super().__init__(weights,device='cpu',**options)
