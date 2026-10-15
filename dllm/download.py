@@ -1,9 +1,20 @@
 """Select the HF checkpoint consumed by dllm, excluding alternate weight copies."""
-from pathlib import PurePosixPath
+import json
+from pathlib import Path, PurePosixPath
 import re
 
 
 INDEX = 'model.safetensors.index.json'
+
+
+def read_index(path):
+    """Use the same bounded metadata contract before download and local load."""
+    from .safetensor_header import _unique_fields
+    with Path(path).open('rb') as reader:
+        raw = reader.read(16 * 1024 * 1024 + 1)
+    if len(raw) > 16 * 1024 * 1024:
+        raise ValueError('checkpoint index exceeds 16 MiB metadata limit')
+    return json.loads(raw, object_pairs_hook=_unique_fields)
 
 
 def snapshot_files(filenames, index=None):

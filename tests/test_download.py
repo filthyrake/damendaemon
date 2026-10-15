@@ -52,6 +52,27 @@ class DownloadTests(unittest.TestCase):
                 with self.assertRaises(ValueError):download('owner/model')
                 snapshot.assert_not_called()
 
+    def test_duplicate_and_oversized_indexes_stop_before_shard_download(self):
+        info = SimpleNamespace(sha='sha', siblings=[SimpleNamespace(rfilename=name)
+            for name in (INDEX, 'part.safetensors')])
+        valid = '{"weight_map":{"a":"part.safetensors"}}'
+        invalid = (
+            '{"weight_map":{},"weight_map":{"a":"part.safetensors"}}',
+            '{"weight_map":{"a":"part.safetensors","a":"part.safetensors"}}',
+            valid + ' ' * (16 * 1024 * 1024),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/INDEX
+            for content in invalid:
+                with self.subTest(size=len(content)), patch('huggingface_hub.HfApi') as api, \
+                        patch('huggingface_hub.hf_hub_download', return_value=str(path)), \
+                        patch('huggingface_hub.snapshot_download') as snapshot:
+                    path.write_text(content)
+                    api.return_value.model_info.return_value = info
+                    with self.assertRaises(ValueError):
+                        download('owner/model')
+                    snapshot.assert_not_called()
+
 
 class GgufDownloadTests(unittest.TestCase):
     def test_pins_and_fetches_only_the_selected_gguf(self):

@@ -8,7 +8,7 @@ import sys
 
 def download(repository, revision="main", filename=None):
     from huggingface_hub import HfApi, hf_hub_download, snapshot_download
-    from .download import INDEX, snapshot_files, gguf_files
+    from .download import INDEX, snapshot_files, gguf_files, read_index
     info = HfApi().model_info(repository, revision=revision)
     revision = info.sha
     if not revision:raise ValueError("repository revision could not be resolved")
@@ -22,7 +22,7 @@ def download(repository, revision="main", filename=None):
         return result
     index = None
     if INDEX in filenames:
-        index = json.loads(Path(hf_hub_download(repository, INDEX, revision=revision)).read_text())
+        index = read_index(hf_hub_download(repository, INDEX, revision=revision))
     path = snapshot_download(repository, revision=revision,
         allow_patterns=snapshot_files(filenames, index))
     return {"repository": repository, "revision": revision, "path": path}

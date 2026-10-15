@@ -1,11 +1,10 @@
 """Shared safetensors header inventory; no tensor values or device allocation."""
-import json
 from pathlib import Path
 
 from safetensors import safe_open, SafetensorError
 
-from .download import INDEX, snapshot_files
-from .safetensor_header import _unique_fields, read_header
+from .download import INDEX, snapshot_files, read_index
+from .safetensor_header import read_header
 
 
 
@@ -14,12 +13,7 @@ def snapshot_shards(path):
     path = Path(path)
     index = None
     if (path/INDEX).exists():
-        # Bound the read itself: a preceding stat can race with file growth.
-        with (path/INDEX).open('rb') as reader:
-            raw = reader.read(16*1024*1024+1)
-        if len(raw) > 16*1024*1024:
-            raise ValueError('checkpoint index exceeds 16 MiB metadata limit')
-        index = json.loads(raw, object_pairs_hook=_unique_fields)
+        index = read_index(path/INDEX)
     names = [entry.name for entry in path.iterdir() if entry.is_file()]
     # Validate indexed paths before examining them, including nested shards.
     if isinstance(index, dict) and isinstance(index.get('weight_map'), dict):
