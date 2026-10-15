@@ -9,7 +9,7 @@ from http.client import HTTPResponse
 from http.server import ThreadingHTTPServer
 from unittest.mock import Mock, patch
 
-from dllm.http_auth import AuthPolicy
+from dllm.http_auth import AuthPolicy, ClientKey
 from dllm.server import handler_for
 
 
@@ -29,12 +29,25 @@ class HttpFramingTests(unittest.TestCase):
                 self.assertEqual(connection.settimeout.call_args.args, (7,))
 
     def test_continuing_body_progress_cannot_extend_total_deadline(self):
+        from tests.test_http_auth import API_KEY, ADMIN_KEY
+        client = ClientKey('slow-body', API_KEY, max_inflight=1)
+        self.server.RequestHandlerClass = handler_for(self.runtime, AuthPolicy(
+            admin_key=ADMIN_KEY, clients=(client,)))
+        admission = self.server.RequestHandlerClass.client_admission
+        reserved = threading.Event()
+        reserve = admission._reserve
+        def observe_reserve(*args, **kwargs):
+            claim = reserve(*args, **kwargs)
+            reserved.set()
+            return claim
+        admission._reserve = observe_reserve
         stop = threading.Event()
         with patch('dllm.server.BODY_READ_SECONDS', .15, create=True), \
                 socket.create_connection(self.server.server_address, timeout=.8) as connection:
-            connection.sendall(b'POST /v1/scheduler/drain HTTP/1.1\r\n'
+            connection.sendall(b'POST /v1/embeddings HTTP/1.1\r\n'
                 b'Host: localhost\r\nContent-Type: application/json\r\n'
-                b'Content-Length: 100\r\n\r\n{}')
+                + f'Authorization: Bearer {API_KEY}\r\n'.encode()
+                + b'Content-Length: 100\r\n\r\n{}')
             def trickle():
                 try:
                     for _ in range(98):
@@ -46,6 +59,7 @@ class HttpFramingTests(unittest.TestCase):
             sender = threading.Thread(target=trickle)
             sender.start()
             try:
+                self.assertTrue(reserved.wait(.8))
                 started = time.monotonic()
                 try:
                     received = connection.recv(1)
@@ -53,7 +67,10 @@ class HttpFramingTests(unittest.TestCase):
                     received = b''
                 self.assertEqual(received, b'')
                 self.assertLess(time.monotonic() - started, .8)
-                self.runtime.drain.assert_not_called()
+                self.runtime.embed.assert_not_called()
+                self.assertEqual(admission.active, {})
+                with admission.lease(['Bearer ' + API_KEY]):
+                    self.assertEqual(admission.active, {'slow-body': 1})
             finally:
                 stop.set()
                 sender.join(1)
