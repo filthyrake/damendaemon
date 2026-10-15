@@ -2031,3 +2031,22 @@ shared-A2 scalar/model/command gates are recorded in
 [CUDA evidence](evidence/packed-cuda/README.md). The text-only serialized command
 keeps explicit device and separate weight/allocator/cache/workspace/output caps;
 this does not qualify official weights, vision, practical context or throughput.
+
+## Explicit prepared CUDA DeepSeek path
+
+Issues #242–#253 compose bounded FP32 CUDA residual streams, compressed pooling,
+learned selection, sink attention, owned cached decode, packed FP4/FP8 experts,
+DeepSeek pre-down route weighting, full models and unique-payload placement.
+The existing local DeepSeek loader now feeds `scripts.serve_cuda_reference` via
+explicit placement and native ByteLevel/DSML single-sequence generation. For a
+bounded setup, choose an indexed device and separate weight/allocator/cache
+limits; `--projection-workspace-mib 8 --workspace-mib 256` supplies the loader's
+existing tile allowance and the model's conservative transient allowance.
+Workspace is an admission ceiling, not a claim about physical peak allocation.
+
+Tiny shared-A2 decoded/scalar controls and loaded zero-head HTTP/SSE/SIGTERM gates
+are retained in [CUDA evidence](evidence/packed-cuda/README.md). CPU default and
+batch entrypoints remain separate. Status/timing report `cuda_prepared_reference`
+with official-model and performance qualification false. This does not qualify
+an official checkpoint, practical long context, generated tool accuracy or
+concurrent-serving performance; #58 remains open.

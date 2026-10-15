@@ -332,3 +332,19 @@ poisoning. Guard7.847s,22MiB reserved,4251MiB free before/after, cleanup confirm
 14 local tests cover placement and model contracts, including loader expert
 scratch plus routing overhead. Raw payload is separate from cache/scratch and
 allocator budgets. No official-model, practical-context or performance claim.
+
+## DeepSeek CUDA native command (#253)
+
+Implementation `722f73b`, fixture workspace correction `47b32a2`. Explicit local
+DeepSeek snapshots load/validate on CPU, place onto indexed CUDA, then use native
+ByteLevel/DSML generation and serialized owned HTTP.25 focused generation/tool/
+command regressions pass. A real loaded tiny packed zero-head snapshot passes
+chat/SSE consistency, CUDA readiness/timing and SIGTERM exit0. Guard8.616s with
+128MiB allocator cap;4251MiB free before/after and cleanup confirmed. Initial1MiB
+CPU tile-workspace rejection is retained; retry uses the existing8MiB loader
+default, unchanged allocator/guard limits. Zero-head output proves protocol and
+lifecycle, not trained quality or generated tool-call accuracy. Official model,
+practical context/concurrency and performance remain unqualified.
+
+The full pinned local CPU/loopback suite at `21f2073` passed1,785 tests in468.450s,
+before placement/command additions; their focused results are above.
