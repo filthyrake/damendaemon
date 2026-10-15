@@ -41,6 +41,7 @@ def main():
                 base=ready['url'];reasoning=[]
                 for stream in (False,True):
                     body=dict(model='model',messages=[dict(role='user',content='Hi')],max_tokens=2,stream=stream)
+                    if stream:body['stream_options']={'include_usage':True}
                     with urlopen(Request(base+'/v1/chat/completions',data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=15) as response:
                         wire=response.read().decode()
                     if stream:
