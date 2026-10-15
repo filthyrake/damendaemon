@@ -270,6 +270,8 @@ class ModelWeights:
                                         tools=tools, **options, **self.special_tokens)
         if tool_json:rendered+='<tool_call>\n'
         ids = self.tokenizer.encode(rendered, add_special_tokens=False).ids
+        if not ids or any(token >= self.config['vocab_size'] for token in ids):
+            raise ValueError('chat prompt must contain valid vocabulary token IDs')
         if set(ids) & set(self.config.get("multimodal_token_ids", [])):
             raise ValueError("multimodal input is not supported by the text executor")
         return ids

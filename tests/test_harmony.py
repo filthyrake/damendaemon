@@ -111,7 +111,7 @@ class HarmonyTests(unittest.TestCase):
         from dllm.tool_calls import validate_messages
         class Template:
             def render(self,**kwargs):self.arguments=kwargs;return 'rendered'
-        template=Template();model=SimpleNamespace(template=template,config={'model_type':'gpt_oss'},
+        template=Template();model=SimpleNamespace(template=template,config={'model_type':'gpt_oss','vocab_size':2},
             supports_tool_calls=True,special_tokens={},tokenizer=SimpleNamespace(encode=lambda *a,**k:SimpleNamespace(ids=[1])))
         call={'id':'call_a','type':'function','function':{'name':'weather','arguments':'{"city":"Paris"}'}}
         history=[{'role':'assistant','content':None,'reasoning_content':'Need weather.','tool_calls':[call]},
