@@ -123,6 +123,11 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                     raise ValueError("expected a single completion choice")
                 if any(not isinstance(choice.get("delta", {}), dict) for choice in choices):
                     raise ValueError("invalid completion delta")
+                for choice in choices:
+                    delta = choice.get("delta", {})
+                    if any(delta.get(key) is not None and not isinstance(delta[key], str)
+                           for key in ("content", "reasoning_content", "reasoning")):
+                        raise ValueError("invalid completion text delta")
                 has_output = any(
                     any(choice.get("delta", {}).get(key) for key in
                         ("content", "reasoning_content", "reasoning", "tool_calls"))

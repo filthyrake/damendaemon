@@ -43,6 +43,9 @@ class Handler(BaseHTTPRequestHandler):
         ]
         if model != "no-usage":
             chunks.append({"choices": [], "usage": {"completion_tokens": 7}})
+        if model.startswith('text-field:'):
+            _, field, encoded = model.split(':', 2)
+            chunks[1]['choices'][0]['delta'] = {field: json.loads(encoded)}
         if model == 'missing-finish':
             del chunks[3]
         elif model == 'invalid-finish':
@@ -72,10 +75,13 @@ class Handler(BaseHTTPRequestHandler):
             values = {'queue-known': .125, 'queue-negative': -1, 'queue-nan': float('nan'),
                       'queue-inf': float('inf'), 'queue-bool': True}
             chunks.append({'choices': [], 'dllm_timing': {'queue_seconds': values[model]}})
-        for chunk in chunks:
-            self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
-        if model != "truncated":
-            self.wfile.write(b"data: [DONE]\n\n")
+        try:
+            for chunk in chunks:
+                self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
+            if model != "truncated":
+                self.wfile.write(b"data: [DONE]\n\n")
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # Invalid-stream tests deliberately close before the final event.
 
 
 class BenchTests(unittest.TestCase):
@@ -140,6 +146,25 @@ class BenchTests(unittest.TestCase):
                 result = self.request(model)
                 self.assertIsNone(result.error)
                 self.assertEqual(result.output_tokens, 7)
+
+    def test_malformed_text_deltas_cannot_count_as_output_or_goodput(self):
+        profile = dict(max_first_output_seconds=5, max_output_event_gap_seconds=5,
+                       min_request_output_tokens_per_second=.001)
+        for field in ('content', 'reasoning_content', 'reasoning'):
+            for value in (True, False, 1, 0, ['text'], [], {'text': 'hello'}, {}):
+                with self.subTest(field=field, value=value):
+                    result = self.request('text-field:' + field + ':' + json.dumps(value))
+                    self.assertEqual(result.error, 'ValueError')
+                    self.assertEqual(result.output_events, 0)
+                    self.assertIsNone(result.first_output_seconds)
+                    self.assertEqual(summarize([result], 1)['succeeded'], 0)
+                    self.assertEqual(profile_summary([result], 1, profile)['qualifying_output_tokens'], 0)
+        for field in ('content', 'reasoning_content', 'reasoning'):
+            for value, count in ((None, 1), ('', 1), ('text', 2)):
+                with self.subTest(field=field, value=value):
+                    result = self.request('text-field:' + field + ':' + json.dumps(value))
+                    self.assertIsNone(result.error)
+                    self.assertEqual(result.output_events, count)
 
     def test_unknown_tokens_are_not_invented(self):
         result = self.request("no-usage")
