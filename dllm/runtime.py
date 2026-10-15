@@ -70,15 +70,23 @@ class Runtime:
     def __init__(self, models, context=1024, gpu_models=1, host_models=2,
                  host_gib=8, use_graph=True, queue_size=8, queue_timeout=120, batch_size=None, chat_templates=None,
                  quantizations=None):
+        if (any(type(value) is not int or value <= 0
+                for value in (context, gpu_models, host_models))
+                or host_models < gpu_models
+                or type(host_gib) not in (int, float) or host_gib <= 0):
+            raise ValueError("invalid model, residency, context, or host memory limits")
+        try:
+            host_bytes = int(host_gib * 1024**3)
+        except (ValueError, OverflowError) as error:
+            raise ValueError("host memory budget must be finite") from error
+        if host_bytes < 1:
+            raise ValueError("host memory budget must contain at least one byte")
         if selected_device() == 'xpu':
             from .xpu_policy import validate_environment, validate_limits
             validate_environment()
             validate_limits(context, 1 if batch_size is None else batch_size)
         from .admission import validate_queue_limits
         validate_queue_limits(queue_size, queue_timeout)
-        if (min(context, gpu_models, host_models, queue_size) <= 0
-                or host_models < gpu_models or host_gib <= 0 or queue_timeout <= 0):
-            raise ValueError("invalid model, residency, context, or queue limits")
         from .chat_template import validate_override
         overrides = dict(chat_templates or {})
         if overrides.keys() - models.keys():
@@ -112,7 +120,7 @@ class Runtime:
         self.registry_lock = threading.RLock()
         self.context = context
         self.gpu_limit, self.host_limit = gpu_models, host_models
-        self.host_bytes = int(host_gib * 1024**3)
+        self.host_bytes = host_bytes
         self.use_graph = use_graph
         self.batch_size = batch_size
         self.queue_timeout = queue_timeout

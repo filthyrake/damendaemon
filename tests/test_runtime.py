@@ -19,6 +19,19 @@ class Executor:
 
 
 class RuntimeTests(unittest.TestCase):
+    def test_invalid_residency_limits_fail_before_gpu_initialization(self):
+        invalid = [dict(host_gib=value) for value in
+                   (float('nan'), float('inf'), -float('inf'), True, '8', None, 1e-15)]
+        invalid += [{name: value} for name in ('context', 'gpu_models', 'host_models')
+                    for value in (True, 1.5, 0, -1, None, '2')]
+        with patch('dllm.runtime.require_gpu') as initialize:
+            for options in invalid:
+                with self.subTest(options=options):
+                    initialize.reset_mock()
+                    with self.assertRaises(ValueError):
+                        Runtime({}, **options)
+                    initialize.assert_not_called()
+
     def setUp(self):
         self.gpu = patch("dllm.runtime.require_gpu")
         self.gpu.start()
