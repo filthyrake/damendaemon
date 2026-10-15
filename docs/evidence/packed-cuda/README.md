@@ -410,3 +410,14 @@ transfer/transport or practical model/context/performance qualification.
 
 Pinned CPU/loopback regression through image HTTP at `8f344d5`:1,797 tests pass
 in467.531s, before subsequent CUDA stage changes.
+
+## Range-loaded CUDA placement (#259)
+
+Implementation `e6818ff`. Existing CPU loaders independently load each owned
+range; explicit placement admits unique raw payload and full metadata before
+copying. GLM/Flash/DeepSeek two-stage replay matches whole CPU controls within
+7.2e-7/8.4e-7/5.3e-8 respectively, with exact greedy IDs and duplicate reorder.
+Only the first range owns embeddings and only the last owns its head. Eleven
+local placement tests pass. Guard5.887s,22MiB reserved under128MiB allocator cap,
+4251MiB free before/after and cleanup confirmed. Physical multi-GPU, host
+transfer/transport and practical model/context/performance gates remain open.
