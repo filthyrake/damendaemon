@@ -31,7 +31,11 @@ def _terminate(process, grace):
 
 def run_job(command, *, timeout=180, check=True, termination_grace=5):
     if os.name != 'posix':raise RuntimeError('distributed test jobs require POSIX process groups')
-    if timeout <= 0 or termination_grace <= 0:raise ValueError('positive job and cleanup deadlines required')
+    # This is a bounded experiment harness. A one-day ceiling also keeps
+    # subprocess/selector timeout conversion within supported OS ranges.
+    for name, value in (('timeout', timeout), ('termination_grace', termination_grace)):
+        if type(value) not in (int, float) or not 0 < value <= 86400:
+            raise ValueError(f'{name} must be a finite number in (0, 86400] seconds')
     process = None
     terminating = False
     termination_requested = False

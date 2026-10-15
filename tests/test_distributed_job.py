@@ -14,6 +14,28 @@ from scripts.distributed_job import run_job
 
 @unittest.skipUnless(os.name == 'posix', 'POSIX job ownership')
 class DistributedJobTests(unittest.TestCase):
+    def test_invalid_deadlines_do_not_acquire_process_or_signal_ownership(self):
+        for field in ('timeout', 'termination_grace'):
+            for value in (None, '1', True, False, 0, -1, float('nan'),
+                          float('inf'), -float('inf'), 86401, 10**400):
+                with self.subTest(field=field, value=value):
+                    with patch('scripts.distributed_job.subprocess.Popen') as popen, \
+                            patch('scripts.distributed_job.signal.signal') as handler:
+                        with self.assertRaises(ValueError):
+                            run_job(['unused'], **{field: value})
+                        popen.assert_not_called()
+                        handler.assert_not_called()
+
+    def test_supported_deadline_boundaries(self):
+        for deadline in (.01, 86400):
+            with self.subTest(deadline=deadline):
+                with patch('scripts.distributed_job.subprocess.Popen') as popen:
+                    popen.return_value.communicate.return_value = ('ok', '')
+                    popen.return_value.returncode = 0
+                    result = run_job(['unused'], timeout=deadline, termination_grace=deadline)
+                    self.assertEqual(result.stdout, 'ok')
+                    popen.return_value.communicate.assert_called_once_with(timeout=deadline)
+
     def test_outer_termination_cleans_owned_job_before_harness_exit(self):
         child = ('import fcntl, json, os, signal, sys, time; '
                  'signal.signal(signal.SIGTERM, signal.SIG_IGN); '
