@@ -76,6 +76,25 @@ class HybridConfigTests(unittest.TestCase):
         self.assertTrue(c['tie_word_embeddings'])
         self.assertEqual(c['multimodal_token_ids'], [99])
 
+    def test_numerical_hybrid_metadata_is_validated_before_arithmetic(self):
+        for name in ('rope_theta', 'rms_norm_eps', 'partial_rotary_factor'):
+            for value in (float('nan'), float('inf'), -float('inf'), True, False,
+                          None, '1', [], 0, -1, 10**400):
+                config = self.config()
+                target = config['text_config']
+                if name != 'rms_norm_eps':
+                    target = target['rope_parameters']
+                target[name] = value
+                with self.subTest(name=name, kind=type(value).__name__, value=str(value)[:30]), \
+                        self.assertRaises(ValueError):
+                    decoder_config(config)
+        config = self.config()
+        del config['text_config']['rope_parameters']['rope_theta']
+        self.assertEqual(decoder_config(config)['rope_theta'], 10000.)
+        config['text_config']['rope_parameters']['partial_rotary_factor'] = 1
+        config['text_config']['rms_norm_eps'] = 1
+        self.assertEqual(decoder_config(config)['rotary_dim'], 256)
+
     def test_unsupported_hybrid_variants_fail(self):
         for change in ({'num_experts': 4}, {'layer_types': ['linear_attention']},
                        {'linear_num_value_heads': 17}, {'linear_conv_kernel_dim': 0},

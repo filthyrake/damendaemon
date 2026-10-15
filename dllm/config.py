@@ -1,5 +1,6 @@
 """Validate supported dense decoder variants before loading weight tensors."""
 import math
+import sys
 
 
 def rotary_scaling(value):
@@ -170,13 +171,18 @@ def hybrid_config(config):
             or c['linear_num_value_heads'] % c['linear_num_key_heads']):
         raise ValueError('query/value heads must divide into key heads')
     fraction = rope.get('partial_rotary_factor', 1.)
+    if type(fraction) not in (int, float) or not 0 < fraction <= 1:
+        raise ValueError('invalid partial rotary fraction')
     dim = c['head_dim'] * fraction
-    if not 0 < fraction <= 1 or int(dim) != dim or int(dim) % 2:
+    if int(dim) != dim or int(dim) % 2:
         raise ValueError('invalid partial rotary dimension')
     c['rotary_dim'] = int(dim)
     c['rope_theta'] = rope.get('rope_theta', 10000.)
-    if c['rope_theta'] <= 0 or c.get('rms_norm_eps', 0) <= 0:
-        raise ValueError('invalid rotary base or normalization epsilon')
+    for name in ('rope_theta', 'rms_norm_eps'):
+        number = c.get(name)
+        # Compare before conversion: JSON integers can exceed the float range.
+        if type(number) not in (int, float) or not 0 < number <= sys.float_info.max:
+            raise ValueError(f'{name} must be finite and positive')
     c['tie_word_embeddings'] = config.get('tie_word_embeddings', c.get('tie_word_embeddings', False))
     c['multimodal_token_ids'] = [config[k] for k in ('image_token_id', 'video_token_id', 'vision_start_token_id',
                                                    'vision_end_token_id') if k in config]
