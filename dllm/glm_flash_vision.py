@@ -66,7 +66,7 @@ def audit_vision(config,names,headers=None):
     return dict(vision_tensors=len(specs),weight_values_read=False,vision_execution_qualified=False)
 
 
-class FlashVision:
+class _FlashVision:
     """Borrow immutable CPU FP32 parameters and consume already ordered patch rows.
 
     Input rows flatten [channels, temporal patch, patch height, patch width].
@@ -75,7 +75,8 @@ class FlashVision:
     Budgets exclude caller-owned input storage and allocator/BLAS overhead.
     """
     def __init__(self,config,weights,*,max_weight_bytes=256*1024**2,max_tokens=4096,
-                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
+                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2,device=None):
+        self.device=torch.device('cpu') if device is None else torch.device(device)
         specs=vision_specs(config)
         if (type(max_tokens) is not int or not 1<=max_tokens<=65536
                 or any(type(v) is not int or not 1<=v<=2**31 for v in (max_weight_bytes,max_workspace_bytes,max_output_bytes))
@@ -83,8 +84,8 @@ class FlashVision:
             raise ValueError('invalid Flash vision parameters or budgets')
         for name,shape in specs.items():
             value=weights[name]
-            if (not isinstance(value,torch.Tensor) or value.device.type!='cpu' or value.dtype!=torch.float32
-                    or tuple(value.shape)!=shape):raise ValueError('Flash vision requires exact CPU FP32 prepared tensors')
+            if (not isinstance(value,torch.Tensor) or value.device!=self.device or value.dtype!=torch.float32
+                    or tuple(value.shape)!=shape):raise ValueError('Flash vision requires exact same-device FP32 prepared tensors')
         if sum(v.numel()*4 for v in {id(v):v for v in weights.values()}.values())>max_weight_bytes:
             raise ValueError('Flash vision parameter budget exceeded')
         self.c=dict(config);self.c['rope_parameters']=dict(config.get('rope_parameters') or {})
@@ -113,7 +114,7 @@ class FlashVision:
                        or g[1]%m or g[2]%m for g in grids)):
             raise ValueError('invalid Flash vision frame/patch grids')
         tokens=sum(t*h*w for t,h,w in grids);largest=max(h*w for _,h,w in grids);outputs=tokens//(m*m)
-        if (tokens>self.max_tokens or not isinstance(patches,torch.Tensor) or patches.device.type!='cpu' or patches.dtype!=torch.float32
+        if (tokens>self.max_tokens or not isinstance(patches,torch.Tensor) or patches.device!=self.device or patches.dtype!=torch.float32
                 or patches.shape!=(tokens,width)):
             raise ValueError('Flash vision patch input/token budget mismatch')
         scratch=32*tokens*(width+d+c['intermediate_size']+c['out_hidden_size']+c['projection_intermediate_size'])+16*heads*largest**2
@@ -124,9 +125,9 @@ class FlashVision:
         for t,h,w in grids:
             frame=[(r+i,s+j) for r in range(0,h,m) for s in range(0,w,m) for i in range(m) for j in range(m)]
             positions.extend(frame*t);lengths.extend([h*w]*t)
-        coords=torch.tensor(positions,dtype=torch.float32,device='cpu')
+        coords=torch.tensor(positions,dtype=torch.float32,device=self.device)
         theta=c['rope_parameters'].get('rope_theta',10000.)
-        inverse=theta**(-torch.arange(0,hd//2,2,dtype=torch.float32,device='cpu')/(hd//2))
+        inverse=theta**(-torch.arange(0,hd//2,2,dtype=torch.float32,device=self.device)/(hd//2))
         angles=(coords[:,:,None]*inverse).reshape(tokens,hd//2);angles=torch.cat((angles,angles),-1)
         cos,sin=angles.cos()[:,None,:],angles.sin()[:,None,:]
         hidden=F.linear(patches,self.w['patch_embed.proj.weight'].reshape(d,width),self.w['patch_embed.proj.bias'])
@@ -154,3 +155,9 @@ class FlashVision:
         result=self._ffn(F.gelu(merged),'merger.')
         if not torch.isfinite(result).all():raise ValueError('nonfinite Flash vision result')
         return result
+
+
+class FlashVision(_FlashVision):
+    """Explicit CPU reference; CUDA remains a separate opt-in entrypoint."""
+    def __init__(self,config,weights,**options):
+        super().__init__(config,weights,device=torch.device('cpu'),**options)
