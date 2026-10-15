@@ -15,6 +15,7 @@ from urllib.request import Request, urlopen
 
 from tokenizers import Tokenizer
 from dllm.bench import distribution, events, llama_context
+from dllm.report_io import save_report
 
 
 def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128, timeout=180,
@@ -119,7 +120,7 @@ def main():
     output = Path(args.output)
 
     def save():
-        output.write_text(json.dumps(report, indent=2) + '\n')
+        save_report(output, report)
 
     try:
         if args.engine == 'llama.cpp':

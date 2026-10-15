@@ -155,3 +155,9 @@ than the enclosing round. Throughput uses the common declared output length,
 which is included in the summary. Historical reports missing required usage
 cannot establish a measured comparison; regenerate evidence rather than filling
 missing values by assumption. These checks still produce no competitive verdict.
+
+Modern HTTP phase reports, ABBA summaries and long-context checkpoints use a
+shared atomic JSON writer. A failed write preserves the previous complete file;
+unique temporary files permit a nested signal checkpoint without reusing the
+interrupted writer's file. This is atomic replacement, not a guarantee against
+power loss. Report validation and hardware qualification remain separate gates.

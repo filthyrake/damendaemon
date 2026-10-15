@@ -6,6 +6,7 @@ import math
 from pathlib import Path
 
 from dllm.bench import distribution
+from dllm.report_io import save_report
 
 
 def _positive_seconds(value):
@@ -111,7 +112,7 @@ def main():
     p.add_argument('directory', type=Path)
     p.add_argument('--output', required=True, type=Path)
     args = p.parse_args()
-    args.output.write_text(json.dumps(summarize(args.directory), indent=2)+'\n')
+    save_report(args.output, summarize(args.directory))
 
 
 if __name__ == '__main__':

@@ -16,7 +16,6 @@ import signal
 import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 from urllib.request import Request, urlopen
@@ -27,6 +26,7 @@ if __package__:
 else:
     from benchmark_modern_http import request
 from dllm.bench import distribution
+from dllm.report_io import save_report
 
 
 @contextmanager
@@ -47,22 +47,6 @@ def request_deadlines(first_output, first_seconds, total_seconds, expire):
             timer.cancel()
         for timer in timers:
             timer.join()
-
-
-def save_report(path, report):
-    temporary = None
-    try:
-        # A signal handler can checkpoint while the main thread is writing.
-        # Unique temporaries prevent its report from sharing an open inode.
-        with tempfile.NamedTemporaryFile('w', dir=path.parent, prefix=path.name+'.',
-                                         suffix='.tmp', delete=False) as output:
-            temporary = Path(output.name)
-            json.dump(report, output, indent=2)
-            output.write('\n')
-        temporary.replace(path)
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
 
 
 def check_overflow(base, tokens):

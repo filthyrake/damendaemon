@@ -92,6 +92,39 @@ class BenchmarkIntegrity(unittest.TestCase):
         self.assertTrue(result['passed'])
         self.assertTrue(result['start_barrier_passed'])
 
+    def test_failed_phase_checkpoint_preserves_previous_on_write_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root/'phase.json'
+            output.write_text('{"previous": true}\n')
+            tokenizer_path = root/'tokenizer.json'
+            tokenizer_path.write_text('{}')
+            manifest = root/'manifest.json'
+            manifest.write_text(json.dumps(dict(model_revision='fixture', engine_revision='fixture',
+                                               precision='fixture', hardware='fixture', eos_ids=[3])))
+            args = ['benchmark', '--base-url', 'http://127.0.0.1:1', '--engine', 'dllm',
+                    '--tokenizer', str(tokenizer_path), '--manifest', str(manifest),
+                    '--phase', 'A1', '--output', str(output)]
+            def interrupted(report, stream, **kwargs):
+                stream.write('partial')
+                raise OSError('injected write failure')
+            for fail_write in (True, False):
+                dump = summary.json.dump
+                with patch('sys.argv', args), patch.object(benchmark.Tokenizer, 'from_file') as tokenizer, \
+                        patch.object(benchmark, 'urlopen', return_value=Response(b'{"context":4096}')), \
+                        patch.object(benchmark, 'request', side_effect=RuntimeError('request failed')), \
+                        patch('dllm.report_io.json.dump', side_effect=interrupted if fail_write else dump):
+                    tokenizer.return_value.encode.return_value.ids = list(range(3000))
+                    with self.assertRaises(OSError if fail_write else RuntimeError):
+                        benchmark.main()
+                report = json.loads(output.read_text())
+                if fail_write:
+                    self.assertEqual(report, {'previous': True})
+                else:
+                    self.assertFalse(report['passed'])
+                    self.assertIn('request failed', report['error'])
+                self.assertEqual(list(root.glob('phase.json.*.tmp')), [])
+
     def test_broken_start_barrier_retains_failure_and_releases_waiter(self):
         barrier = threading.Barrier(2)
         barrier.abort()
@@ -190,6 +223,22 @@ class SummaryIntegrity(unittest.TestCase):
         self.mutate('B1', shift)
         with self.assertRaisesRegex(ValueError, 'each measured round'):
             summary.summarize(self.directory)
+
+    def test_summary_failed_serialization_preserves_previous_file(self):
+        output = self.directory/'summary.json'
+        output.write_text('{"previous": true}\n')
+        def interrupted(report, stream, **kwargs):
+            stream.write('{"partial":')
+            raise OSError('injected write failure')
+        with patch('sys.argv', ['summary', str(self.directory), '--output', str(output)]), \
+                patch('dllm.report_io.json.dump', side_effect=interrupted):
+            with self.assertRaises(OSError):
+                summary.main()
+        self.assertEqual(json.loads(output.read_text()), {'previous': True})
+        self.assertEqual(list(self.directory.glob('summary.json.*.tmp')), [])
+        with patch('sys.argv', ['summary', str(self.directory), '--output', str(output)]):
+            summary.main()
+        self.assertTrue(json.loads(output.read_text())['workload_passed'])
 
     def test_candidate_comparison(self):
         self.candidate_reports()
