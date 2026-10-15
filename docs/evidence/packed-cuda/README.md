@@ -288,3 +288,14 @@ rejection, late-failure poisoning and idempotent close pass.24 focused local tes
 pass. Guard completed8.111s with22MiB peak reserved under128MiB cap;4251MiB free
 before/after and cleanup confirmed. This is a tiny numerical/lifecycle gate,
 not a full model, practical context, isolation or performance qualification.
+
+## DeepSeek packed routing/shared FFN (#249)
+
+Implementation `10b161c`, corrected fixture `b40d5ef`. Four E4M3/E8M0 and E2M1
+biased/hash-routed CUDA cases match independent decoded CPU controls: exact route
+IDs and outputs within1.68e-8. Selection-only bias, normalized sqrtsoftplus,
+clipping and pre-down route weighting are preserved. Input bounds and invalid
+hash IDs reject before gathers.19 focused local tests pass. Guard4.851s,22MiB
+reserved under128MiB cap,4251MiB free before/after, cleanup confirmed. Initial
+FP4 fixture used invalid sub-32-column groups and was correctly rejected; its
+failed report is retained. No model, context, isolation or performance claim.
