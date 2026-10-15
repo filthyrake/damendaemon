@@ -74,8 +74,12 @@ def main():
                 if chunk.get("usage"):
                     usage = chunk["usage"]
         elapsed = time.perf_counter() - start
-        assert done and first and usage and usage["completion_tokens"] == args.max_tokens
-        if args.top_logprobs is not None:assert scored_tokens>0
+        if (not done or first is None or not isinstance(usage, dict)
+                or type(usage.get("completion_tokens")) is not int
+                or usage["completion_tokens"] != args.max_tokens):
+            raise ValueError('comparison requires complete output and exact integer token usage')
+        if args.top_logprobs is not None and scored_tokens <= 0:
+            raise ValueError('comparison requires requested logprob evidence')
         return {"warmup": trial == 0, "total_seconds": elapsed,
                        "first_output_seconds": first - start,
                        "post_first_output_tokens_per_second": (args.max_tokens-1) / (elapsed - (first - start)),
