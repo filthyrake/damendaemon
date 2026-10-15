@@ -8,6 +8,7 @@ from scripts.experiments.split_gguf import save
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--placement',action='store_true',help='Admit and copy the CPU bank through explicit placement')
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new output path required')
     import torch
@@ -22,11 +23,27 @@ def main():
     save(args.output,report)
     try:
         controls=[expert('e2m1'),expert('e4m3fn')]
-        bank=[]
-        for original,_ in controls:
-            matrices=[CudaPackedMatrix(m.weight.cuda(),m.scales.cuda(),m.format)
-                      for m in (original.gate,original.up,original.down)]
-            bank.append(CudaPackedExpert(*matrices,row_chunk=13,column_chunk=17,activation_limit=2))
+        if args.placement:
+            from dllm.cuda_packed_placement import place_cuda_experts
+            cpu_bank=[item[0] for item in controls]
+            admitted=place_cuda_experts(cpu_bank,device='cuda:0',max_bytes=1024*1024,shared=cpu_bank[0])
+            bank=admitted.experts
+            if admitted.shared is not bank[0]:raise AssertionError('shared alias lost')
+            for original,resident in zip(cpu_bank,bank):
+                for name in ('gate','up','down'):
+                    left,right=getattr(original,name),getattr(resident,name)
+                    torch.testing.assert_close(left.weight,right.weight.cpu(),rtol=0,atol=0)
+                    torch.testing.assert_close(left.scales,right.scales.cpu(),rtol=0,atol=0)
+            try:place_cuda_experts(cpu_bank,device='cuda:0',max_bytes=admitted.raw_bytes-1,shared=cpu_bank[0])
+            except ValueError:pass
+            else:raise AssertionError('over-budget bank admitted')
+            report['placement_raw_bytes']=admitted.raw_bytes
+        else:
+            bank=[]
+            for original,_ in controls:
+                matrices=[CudaPackedMatrix(m.weight.cuda(),m.scales.cuda(),m.format)
+                          for m in (original.gate,original.up,original.down)]
+                bank.append(CudaPackedExpert(*matrices,row_chunk=13,column_chunk=17,activation_limit=2))
         source=torch.randn(3,32,generator=torch.Generator().manual_seed(225))*.2
         ids=torch.tensor([[1,1],[1,0],[0,1]],dtype=torch.int64)
         weights=torch.tensor([[.25,.5],[0.,.75],[1.,.125]],dtype=torch.float32)
