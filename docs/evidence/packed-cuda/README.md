@@ -310,3 +310,13 @@ and cleanup code is shared.21 focused CPU tests pass. Guard6.903s,22MiB reserved
 under128MiB cap,4251MiB free before/after, cleanup confirmed. Full-model and official
 qualification remain open. The broader CPU/loopback regression at `6bd00ea`
 passed1,777 tests in464.683s before the subsequent FFN/block additions.
+
+## DeepSeek prepared model (#251)
+
+Implementation `21f2073`. Tiny three-block ratio0/4/128 CUDA model matches decoded
+CPU composition across six prefill/decode/reorder checks within1.2e-7, with exact
+greedy IDs. Invalid vocabulary/cache admission precedes allocation; late learned
+head failure poisons every owned layer, and close releases ownership.18 focused
+local tests pass. Guard6.685s,22MiB reserved under128MiB cap,4251MiB free before/after,
+cleanup confirmed. This tiny prepared-model gate does not qualify official weights,
+practical context, concurrency, throughput or latency.
