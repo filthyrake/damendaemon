@@ -381,6 +381,45 @@ class SchedulerTests(unittest.TestCase):
         with self.assertRaises(BusyError):
             list(self.generate())
 
+    def check_close_owned_command(self, fail=False):
+        entered, release = threading.Event(), threading.Event()
+        completed = []
+        def command(**options):
+            entered.set()
+            if not release.wait(3):
+                raise TimeoutError('test command not released')
+            completed.append(options['action'])
+            if fail:
+                raise ValueError('owned command failed')
+            return {'done': options['action']}
+        with patch.object(self.runtime.runtime, 'manage', side_effect=command), ThreadPoolExecutor(3) as pool:
+            owned = pool.submit(self.runtime.manage, 'load', 'a')
+            try:
+                self.assertTrue(entered.wait(1))
+                queued = pool.submit(self.runtime.manage, 'unload', 'b')
+                self.wait_pending(1)
+                closing = pool.submit(self.runtime.close)
+                with self.assertRaises(BusyError):
+                    queued.result(1)
+                self.assertFalse(owned.done(), 'shutdown reported an outcome before the owned command finished')
+                self.assertFalse(closing.done())
+            finally:
+                release.set()
+            if fail:
+                with self.assertRaisesRegex(ValueError, 'owned command failed'):
+                    owned.result(2)
+            else:
+                self.assertEqual(owned.result(2), {'done': 'load'})
+            closing.result(2)
+        self.assertEqual(completed, ['load'])
+        self.assertFalse(self.runtime.worker.is_alive())
+
+    def test_close_preserves_owned_command_success(self):
+        self.check_close_owned_command()
+
+    def test_close_preserves_owned_command_error(self):
+        self.check_close_owned_command(fail=True)
+
     def test_admission_limit_and_queue_timeout_recover(self):
         self.runtime.queue_timeout = .05
         with ThreadPoolExecutor(4) as pool:

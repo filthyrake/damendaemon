@@ -853,6 +853,11 @@ class BatchedRuntime:
         with self.condition:
             self.closed = True
             for request in tuple(self.requests):
+                # A command removed from pending is owned by the worker and
+                # may already be mutating residency. Let it report its actual
+                # outcome; close still waits for the worker before cleanup.
+                if request.command is not None and request not in self.pending:
+                    continue
                 request.cancelled.set()
                 self._finish(request, BusyError("runtime closed"))
             self.condition.notify_all()
