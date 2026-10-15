@@ -135,6 +135,20 @@ class SchedulerTests(unittest.TestCase):
             last.result(3)
         self.assertEqual(self.runtime.runtime.groups,['a','control:status','a'])
 
+    def test_short_backend_selection_fails_without_stranding_request(self):
+        self.executor.release.set()
+        with ThreadPoolExecutor(1) as pool:
+            try:
+                with patch.object(self.executor, 'prefill_batch', return_value=Tensor([])):
+                    future = pool.submit(lambda: list(self.generate(count=1)))
+                    with self.assertRaisesRegex(RuntimeError, 'token batch'):
+                        future.result(1)
+            finally:
+                # Unblocks the caller on the old implementation, which drops
+                # its request without marking it done.
+                if not future.done(): self.runtime.close()
+        self.assertEqual(list(self.generate(count=1))[-1]['finish_reason'], 'length')
+
     def test_json_decodable_nested_messages_do_not_leak_queue_slots(self):
         import json
         # JSON decoding supports this depth, but deepcopy consumes more stack

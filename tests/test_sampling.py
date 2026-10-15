@@ -24,6 +24,18 @@ class SamplingTests(unittest.TestCase):
             self.assertEqual(sampler.select(logits).item(), 2)
 
 
+    def test_malformed_selected_batches_are_runtime_failures(self):
+        logits = torch.zeros(2, 4)
+        samplers = [Sampler(Sampling()), Sampler(Sampling())]
+        for selected in (torch.tensor([]), torch.tensor([1]), torch.tensor([1,2,3]),
+                         torch.tensor([[1],[2]]), torch.tensor([1.,2.]),
+                         torch.tensor([True,False]), torch.tensor([-1,2])):
+            with self.subTest(selected=selected), self.assertRaises(RuntimeError):
+                sample_rows(logits, samplers, selected)
+        for sampler in samplers: sampler.logprobs_top = 0
+        with patch('dllm.logprobs.score_rows', return_value=[{'token_id': 1}]):
+            with self.assertRaises(RuntimeError): sample_rows(logits, samplers)
+
     def test_validation(self):
         for options in ({'temperature':True}, {'temperature':float('inf')},
                         {'temperature':-1}, {'top_p':0}, {'top_p':float('nan')},

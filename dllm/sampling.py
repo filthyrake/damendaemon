@@ -153,6 +153,15 @@ class Sampler:
         return selected if indices is None else indices[selected]
 
 
+def _token_batch(tokens, count):
+    # Validate the existing host readback before scheduler zip loops can drop
+    # unmatched requests. Do not introduce another device synchronization.
+    if (not isinstance(tokens, list) or len(tokens) != count
+            or any(type(token) is not int or token < 0 for token in tokens)):
+        raise RuntimeError('invalid selected token batch')
+    return tokens
+
+
 def sample_rows(logits, samplers, greedy=None):
     """Retain the existing batched argmax/readback for all-greedy traffic."""
     if all(not sampler.options.temperature and sampler.constraint is None and not sampler.has_adjustments for sampler in samplers):
@@ -167,5 +176,5 @@ def sample_rows(logits, samplers, greedy=None):
         packets=score_rows(logits if all_rows else logits[scored],selected if all_rows else selected[scored],
                            [samplers[i].logprobs_top for i in scored])
         for index,packet in zip(scored,packets):samplers[index].last_logprobs=packet
-        if all_rows:return [packet['token_id'] for packet in packets]
-    return selected.tolist()
+        if all_rows:return _token_batch([packet['token_id'] for packet in packets], len(samplers))
+    return _token_batch(selected.tolist(), len(samplers))
