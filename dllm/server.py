@@ -413,8 +413,11 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
 class BoundedHTTPServer(ThreadingHTTPServer):
     """Cap connection threads as well as the runtime's inference queue."""
     def __init__(self, address, handler, max_connections=16):
-        self.connections = threading.BoundedSemaphore(max_connections)
-        try:super().__init__(address, handler)
+        try:
+            if type(max_connections) is not int or max_connections <= 0:
+                raise ValueError('HTTP connection capacity must be a positive integer')
+            self.connections = threading.BoundedSemaphore(max_connections)
+            super().__init__(address, handler)
         except BaseException:
             admission=getattr(handler,'client_admission',None)
             if admission is not None and admission.reservation_store is not None:admission.close()
