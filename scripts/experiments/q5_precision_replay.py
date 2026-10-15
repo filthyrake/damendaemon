@@ -106,6 +106,16 @@ def export_cpu(model_path, config_path, teacher_path, folder):
         save(folder/'oracle.json', report)
 
 
+def oracle_kinds(oracle):
+    if oracle.get('reference_device') == 'cpu' and set(oracle.get('oracles', {})) == {'float16', 'float32'}:
+        return ('float16', 'float32')
+    if (oracle.get('reference_device') == 'cuda' and oracle.get('completed') is True
+            and oracle.get('offload') == 'accelerate.cpu_offload'
+            and set(oracle.get('oracles', {})) == {'cuda_float16'}):
+        return ('cuda_float16',)
+    raise ValueError('unsupported or incomplete oracle')
+
+
 def replay(model_path, folder, precision, output):
     import numpy as np
     import torch
@@ -120,7 +130,8 @@ def replay(model_path, folder, precision, output):
     oracle = json.loads((folder/'oracle.json').read_text())
     if oracle['checkpoint_sha256'] != CHECKPOINT_SHA256 or oracle['context'] != 64 or oracle['steps'] != 8:
         raise ValueError('oracle identity/bounds mismatch')
-    for dtype in ('float16','float32'):
+    kinds = oracle_kinds(oracle)
+    for dtype in kinds:
         if hashlib.sha256((folder/f'{dtype}.npy').read_bytes()).hexdigest() != oracle['oracles'][dtype]['sha256']:
             raise ValueError('oracle payload changed')
     if not torch.cuda.is_available() or torch.version.hip or torch.cuda.device_count() != 1:
@@ -150,7 +161,9 @@ def replay(model_path, folder, precision, output):
                     logits,_ = executor.decode(token)
         actual = np.stack(values)
         report['comparisons'] = {dtype:metrics(actual,np.load(folder/f'{dtype}.npy',allow_pickle=False),
-                                              oracle['teacher_tokens']) for dtype in ('float16','float32')}
+                                              oracle['teacher_tokens']) for dtype in kinds}
+        report['oracle_device'] = oracle['reference_device']
+        report['oracle_manifest_sha256'] = hashlib.sha256((folder/'oracle.json').read_bytes()).hexdigest()
         report['peak_reserved_bytes'] = torch.cuda.max_memory_reserved()
         report['completed'] = True
     except BaseException as error:
