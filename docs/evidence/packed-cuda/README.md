@@ -187,3 +187,13 @@ failure poisons every layer and close releases all state.31 local block/model/
 stage/pipeline/image-feature tests pass. Guard completed7.853s,22MiB reserved
 under128MiB cap,4251MiB free before/after and incumbent healthy. No official
 checkpoint, vision encoder, serving, practical context or performance claim.
+
+## Whole Flash model placement (#239)
+
+Implementation `7e83257`. The same independent mixed-model logit/state gate
+passes through whole-model pre-copy admission and placement:5,812 raw payload
+bytes, max logit error9e-8,22MiB reserved. Guard completed7.965s,4251MiB free
+before/after and incumbent healthy.12 focused local tests verify full-composition
+rejection before copying, aliases, detached config, preserved limits and source
+usability after allocation failure. Separate allocator/cache/output/workspace
+limits remain required; raw bytes are not total memory demand.
