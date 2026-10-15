@@ -322,6 +322,8 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
                 with admission.output_lease(self.headers.get_all('Authorization', []), max_tokens), \
                         closing(runtime.generate(alias, messages, max_tokens, **template_options, **sampling)) as generation:
                     for event in generation:
+                        if final is not None:
+                            raise RuntimeError('generation emitted an event after its terminal event')
                         if event.get("tool_call_format")=="harmony":tool_parser=None
                         if stream and not started:
                             self.send_response(200)
@@ -334,6 +336,10 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
                             if not raw:
                                 send_event(chunk({"role": "assistant"}))
                         if "finish_reason" in event:
+                            if (not isinstance(event['finish_reason'], str) or not event['finish_reason']
+                                    or not isinstance(event.get('usage'), dict)
+                                    or not isinstance(event.get('timing'), dict)):
+                                raise RuntimeError('invalid generation terminal event')
                             final = dict(event)
                             if tool_parser:
                                 for delta in tool_parser.finish(final['finish_reason']):
@@ -341,12 +347,6 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
                                     if stream:send_event(chunk(delta))
                                 if tool_parser.calls and final['finish_reason']=='stop':
                                     final['finish_reason']='tool_calls'
-                            if stream:
-                                send_event(chunk({}, final["finish_reason"]))
-                                if include_usage:
-                                    send_event({"id": request_id, "object": stream_object,
-                                                "created": created, "model": alias, "choices": [],
-                                                "usage": event["usage"], "dllm_timing": event["timing"]})
                         else:
                             score=event.get('logprobs')
                             if score is not None and not stream:
@@ -362,7 +362,16 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
                                 text+=delta.get('content','')
                                 if stream and (delta.get('content') or delta.get('tool_calls') or score is not None):
                                     send_event(chunk(delta,score=score))
+                if final is None:
+                    raise RuntimeError('generation ended without a terminal event')
                 if stream:
+                    # Generator and output-lease cleanup must succeed before
+                    # publishing completion, even when text was already sent.
+                    send_event(chunk({}, final["finish_reason"]))
+                    if include_usage:
+                        send_event({"id": request_id, "object": stream_object,
+                                    "created": created, "model": alias, "choices": [],
+                                    "usage": final["usage"], "dllm_timing": final["timing"]})
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 else:
