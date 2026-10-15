@@ -52,6 +52,9 @@ python3 -m dllm bench --base-url http://localhost:8080/v1 \
 python3 -m unittest discover -s tests -v
 ```
 
+Comparator context preflight bounds the `/props` response to 1 MiB before JSON
+parsing and requires an exact integer match for the expected context.
+
 Set `DLLM_API_KEY` if the endpoint needs authentication. The key is not saved in
 results. Use `--prompt-file` for a repeatable workload and `--label` to identify
 hardware, model revision, quantization, and server configuration. Prompts are

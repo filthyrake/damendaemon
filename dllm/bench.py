@@ -16,6 +16,7 @@ from urllib.request import Request
 from .http_auth import authenticated_urlopen as urlopen
 
 
+MAX_CONTEXT_METADATA_BYTES = 1024 * 1024
 MAX_OUTPUT_EVENTS = 100_000
 MAX_SSE_LINE_BYTES = 1024 * 1024
 MAX_SSE_EVENT_BYTES = 4 * 1024 * 1024
@@ -23,9 +24,21 @@ MAX_SSE_EVENT_LINES = 4096
 
 def llama_context(base_url, expected):
     """Fail before timing if the comparator silently capped its KV slot context."""
-    with urlopen(base_url.rstrip('/') + '/props', timeout=10) as response:
-        props = json.load(response)
-    actual = props.get('default_generation_settings', {}).get('n_ctx')
+    try:
+        with urlopen(base_url.rstrip('/') + '/props', timeout=10) as response:
+            raw = response.read(MAX_CONTEXT_METADATA_BYTES + 1)
+    except HTTPError as error:
+        error.close()
+        raise
+    if len(raw) > MAX_CONTEXT_METADATA_BYTES:
+        raise ValueError('comparator context metadata exceeds 1 MiB limit')
+    try:
+        props = json.loads(raw)
+    except RecursionError as error:
+        raise ValueError('comparator context metadata nesting is too deep') from error
+    if not isinstance(props, dict) or not isinstance(props.get('default_generation_settings'), dict):
+        raise ValueError('invalid comparator context metadata')
+    actual = props['default_generation_settings'].get('n_ctx')
     if type(actual) is not int or actual != expected:
         raise RuntimeError(f'llama.cpp slot context mismatch: requested {expected}, actual {actual}')
     return {'requested_context': expected, 'actual_context': actual,

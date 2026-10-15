@@ -107,6 +107,43 @@ class BenchTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'requested 2048, actual 1024'):
             llama_context(base, 2048)
 
+    def test_context_metadata_read_is_bounded_and_closed(self):
+        class TrackedResponse(io.BytesIO):
+            sizes = None
+            def read(self, size=-1):
+                self.sizes.append(size)
+                return super().read(size)
+        prefix = b'{"default_generation_settings":{"n_ctx":1024}}'
+        for padding, accepted in ((1024 * 1024 - len(prefix), True),
+                                  (1024 * 1024 + 1 - len(prefix), False)):
+            response = TrackedResponse(prefix + b' ' * padding)
+            response.sizes = []
+            with patch('dllm.bench.urlopen', return_value=response):
+                if accepted:
+                    self.assertEqual(llama_context('http://local', 1024)['actual_context'], 1024)
+                else:
+                    with self.assertRaisesRegex(ValueError, 'metadata.*limit'):
+                        llama_context('http://local', 1024)
+            self.assertEqual(response.sizes, [1024 * 1024 + 1])
+            self.assertTrue(response.closed)
+
+    def test_context_metadata_shapes_and_http_error_cleanup(self):
+        from urllib.error import HTTPError
+        for props in ([], None, {}, {'default_generation_settings': []},
+                      {'default_generation_settings': None}):
+            with self.subTest(props=props):
+                response = io.BytesIO(json.dumps(props).encode())
+                with patch('dllm.bench.urlopen', return_value=response):
+                    with self.assertRaises(ValueError):
+                        llama_context('http://local', 1024)
+                self.assertTrue(response.closed)
+        response = io.BytesIO(b'private error details')
+        error = HTTPError('http://local/props', 503, 'unavailable', {}, response)
+        with patch('dllm.bench.urlopen', side_effect=error):
+            with self.assertRaises(HTTPError):
+                llama_context('http://local', 1024)
+        self.assertTrue(response.closed)
+
     def test_stream_usage_is_not_chunk_count(self):
         result = self.request("normal")
         self.assertIsNone(result.error)
