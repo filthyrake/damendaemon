@@ -24,3 +24,20 @@ exclusive latency guarantees. Model activation is excluded from every sample.
 This closes the bounded CPU-setup measurement task. It does not measure GPU
 mask application, full generation overhead, throughput, or SLOs. Parent #15's
 matched runtime-overhead gate remains open.
+
+## CPU runtime component control (#221)
+
+`cpu-runtime.json` measures production `Constraint.apply` and `accept` over six
+scripted real-tokenizer tokens for `{"answer":0}` plus EOS, with full151936-entry
+FP32 logits. Ten alternating-order constrained/plain pairs use identical
+logits and token IDs. Compiler/matcher construction and model inference are
+outside the timed interval. Warmup precedes measurement. Input immutability and
+scripted-token permission are checked outside timing for every step.
+
+Observed median constrained CPU component time is1.122752 ms/token versus
+0.603555 microseconds for the identity control. Median paired added time is
+1.140277 ms/token; paired aggregates and per-step medians are different statistics.
+These are CPU component observations on a shared host. They are not CUDA mask
+cost or end-to-end constrained generation overhead. The CUDA component gate
+remains pending fresh incumbent readiness during the ongoing test-suite
+load/unload transitions.
