@@ -725,8 +725,14 @@ class BatchedRuntime:
                 self._finish(request,error)
             raise
         finally:
+            cleanup_errors = []
             for slot in owned:
-                executor.release_request(slot)
+                try:
+                    executor.release_request(slot)
+                except Exception as error:
+                    cleanup_errors.append(error)
+            if cleanup_errors:
+                raise ExceptionGroup('paged reservation cleanup failed', cleanup_errors)
 
     def _group(self, first, executor, tier, activation):
         if self.client_prefill_turns and not getattr(executor,'supports_chunked_prefill',False):
