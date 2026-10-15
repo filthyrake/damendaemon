@@ -6,6 +6,9 @@ All numbered siblings must be present in the same directory. Numbered symlinks
 to opaque cache blobs are supported: the importer preserves the logical sibling
 namespace while checking each target file identity. Single-file cache symlinks
 retain their previous resolution behavior.
+CLI selection, runtime registration, and model-manifest export/reload preserve
+the same numbered first-shard path. Exported manifests therefore retain the
+snapshot directory containing sibling links, rather than an opaque blob path.
 
 For a Hugging Face repository, select the first shard with `--filename`. The
 downloader checks that all 2–64 named siblings exist before downloading any

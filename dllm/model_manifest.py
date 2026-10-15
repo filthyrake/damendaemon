@@ -6,6 +6,7 @@ import os
 import tempfile
 
 from .management import command, quantization_mode
+from .model_path import canonical_model_path
 
 
 def encode(data):
@@ -20,7 +21,7 @@ def snapshot(models, policies, templates):
         raise ValueError('no registered models to export')
     entries = {}
     for alias, path in models.items():
-        path = str(Path(path).expanduser().resolve())
+        path = str(canonical_model_path(path))
         command('register', alias, path, quantization=policies[alias],
                 chat_template=templates[alias])
         entry = dict(path=path, quantization=policies[alias])
@@ -85,7 +86,7 @@ def load(path, resolve):
             if not isinstance(source, str) or not source or set(entry) & {'revision', 'filename'}:
                 raise ValueError('local model path cannot include repository options')
             candidate = Path(source).expanduser()
-            source = str((path.parent / candidate).resolve())
+            source = str(canonical_model_path(path.parent / candidate))
         else:
             source = entry['repository']
             if not isinstance(source, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*', source):

@@ -30,13 +30,12 @@ def download(repository, revision="main", filename=None):
 
 def resolve_model(value, revision="main", filename=None):
     from .models import is_gguf
+    from .model_path import canonical_model_path
     path = Path(value).expanduser()
     if path.is_dir() or is_gguf(path):
         if filename is not None:
             raise ValueError('--filename applies to a Hugging Face repository, not a local path')
-        if path.is_file() and re.fullmatch(r'.+-00001-of-[0-9]{5}\.gguf', path.name, re.IGNORECASE):
-            return path.parent.resolve()/path.name
-        return path.resolve()
+        return canonical_model_path(path)
     if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*", str(value)):
         result = download(str(value), revision) if filename is None else download(str(value), revision, filename=filename)
         return Path(result["path"])

@@ -29,6 +29,34 @@ def replace_integer(path, key, value):
 
 @unittest.skipUnless(HAS_GGUF, 'optional gguf dependency is not installed')
 class SplitGgufTests(unittest.TestCase):
+    def test_registry_and_manifest_preserve_opaque_shard_namespace(self):
+        from dllm.runtime import Runtime
+        from dllm.model_manifest import snapshot, save, load
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder).resolve()
+            source = root/'source'; source.mkdir()
+            cache = root/'snapshot'; cache.mkdir()
+            blobs = root/'blobs'; blobs.mkdir()
+            parts = shards(source)
+            for index, part in enumerate(parts):
+                blob = blobs/f'opaque{index}'; blob.write_bytes(part.read_bytes())
+                (cache/part.name).symlink_to(blob)
+            selected = cache/parts[0].name
+            with patch('dllm.runtime.require_gpu'), patch.object(Runtime, '_status', return_value={}):
+                runtime = Runtime({}, context=64)
+                try:
+                    runtime.manage('register', 'split', str(selected), quantization='none')
+                    runtime.manage('register', 'split', str(selected), quantization='none')
+                    self.assertEqual(runtime.models['split'], selected)
+                    exported = snapshot(runtime.models, runtime.quantizations, runtime.chat_templates)
+                    manifest = root/'models.json'; save(manifest, exported)
+                    models, _, _ = load(manifest, lambda *_: self.fail('unexpected download'))
+                    self.assertEqual(models['split'], selected)
+                    self.assertEqual(importer.plan(models['split']).config, importer.plan(parts[0]).config)
+                    self.assertGreater(importer.GgufWeights(models['split'], 64, 'none').bytes, 0)
+                finally:
+                    runtime.close()
+
     def test_exact_single_file_equivalence(self):
         for kind in (0, 1, 2, 8, 12, 13, 14):
             for tied in (False, True):

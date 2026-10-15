@@ -211,15 +211,15 @@ class Runtime:
                 self._cleanup_failed_owners()
             if action == 'register':
                 import json
-                from pathlib import Path
                 from tokenizers import Tokenizer
                 from .models import config as read_config, weight_bytes, is_gguf
-                candidate = Path(path).expanduser().resolve()
+                from .model_path import canonical_model_path
+                candidate = canonical_model_path(path)
                 policy = self.default_quantization if quantization is None else quantization
                 with self.registry_lock:
                     existing = self.models.get(model)
                     if existing is not None:
-                        if (Path(existing).expanduser().resolve() != candidate or self.quantizations[model] != policy
+                        if (canonical_model_path(existing) != candidate or self.quantizations[model] != policy
                                 or self.chat_templates[model] != chat_template):
                             raise ValueError('alias already refers to another snapshot, quantization or chat template')
                         return self._status()
