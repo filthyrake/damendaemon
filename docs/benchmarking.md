@@ -146,3 +146,12 @@ A broken start barrier produces a failed request record, marks
 HTTP. Successful participants start measurement after crossing the barrier.
 The waiter's signal can indicate failure completion as well as first output;
 only the retained output fields establish that output was observed.
+
+ABBA summaries independently validate stored measured requests rather than
+trusting phase success alone. Each round must contain exactly its declared
+concurrency, exact integer prompt/output usage, and finite positive timing with
+first output no later than request completion, and request duration no longer
+than the enclosing round. Throughput uses the common declared output length,
+which is included in the summary. Historical reports missing required usage
+cannot establish a measured comparison; regenerate evidence rather than filling
+missing values by assumption. These checks still produce no competitive verdict.

@@ -124,7 +124,8 @@ class SummaryIntegrity(unittest.TestCase):
                     for _ in range(10):
                         report['rounds'].append(dict(warmup=False, prompt_tokens=length,
                             concurrency=concurrency, seconds=2, requests=[dict(passed=True,
-                            text='same', seconds=2, first_output_seconds=1) for _ in range(concurrency)]))
+                            text='same', seconds=2, first_output_seconds=1,
+                            usage=dict(prompt_tokens=length, completion_tokens=128)) for _ in range(concurrency)]))
             (self.directory/f'{phase}.json').write_text(json.dumps(report))
 
     def mutate(self, phase, fn):
@@ -146,6 +147,49 @@ class SummaryIntegrity(unittest.TestCase):
                     precision={'projections': 'Q8_0'}, candidate_source_sha256='same-source',
                     variant='ordinary' if phase.startswith('A') else 'hip-q8-small-batch')
             self.mutate(phase, convert)
+
+    def test_throughput_uses_declared_and_verified_output_count(self):
+        for phase in ('A1', 'B1', 'B2', 'A2'):
+            def change(report):
+                report['output_tokens'] = 64
+                for row in report['rounds']:
+                    for request in row['requests']:
+                        request['usage']['completion_tokens'] = 64
+            self.mutate(phase, change)
+        result = summary.summarize(self.directory)
+        self.assertEqual(result['output_tokens'], 64)
+        for row in result['rows']:
+            for engine in row['engines'].values():
+                self.assertEqual(engine['aggregate_output_tokens_per_second']['p50'], 32 * row['concurrency'])
+
+    def test_invalid_evidence_is_rejected(self):
+        path = self.directory/'B2.json'
+        original = path.read_text()
+        mutations = [lambda r: r.update(passed=1), lambda r: r.update(output_tokens=128.0),
+                     lambda r: r['rounds'][0]['requests'][0].update(passed='yes'),
+                     lambda r: r['rounds'][0]['requests'][0].update(usage=None),
+                     lambda r: r['rounds'][0]['requests'][0]['usage'].update(completion_tokens=128.0),
+                     lambda r: r['rounds'][0]['requests'][0]['usage'].update(prompt_tokens=127),
+                     lambda r: r['rounds'][0]['requests'][0].update(first_output_seconds=3),
+                     lambda r: r['rounds'][0]['requests'][0].update(seconds=3),
+                     lambda r: r['rounds'][0]['requests'][0].update(text='')]
+        for bad in (0, -1, True, float('nan'), float('inf')):
+            mutations.extend([lambda r, bad=bad: r['rounds'][0].update(seconds=bad),
+                              lambda r, bad=bad: r['rounds'][0]['requests'][0].update(first_output_seconds=bad)])
+        for mutate in mutations:
+            path.write_text(original)
+            self.mutate('B2', mutate)
+            with self.assertRaises(ValueError):
+                summary.summarize(self.directory)
+
+    def test_each_round_occupancy_is_checked_not_only_pooled_count(self):
+        def shift(report):
+            rows = report['rounds']
+            rows[1]['requests'].extend(rows[0]['requests'])
+            rows[0]['requests'] = []
+        self.mutate('B1', shift)
+        with self.assertRaisesRegex(ValueError, 'each measured round'):
+            summary.summarize(self.directory)
 
     def test_candidate_comparison(self):
         self.candidate_reports()
