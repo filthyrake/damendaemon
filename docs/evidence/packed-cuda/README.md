@@ -60,3 +60,12 @@ retain actual A2 results. This does not qualify GLM attention, cache or a model.
 Thirty-seven affected local arithmetic/GLM regressions passed. The broader
 suite completed 1,724 tests at the earlier routed-composition boundary; later
 placement/GLM changes have their focused checks, not a claimed new full-suite run.
+
+## GLM stateless latent attention (#228)
+
+Implementation `6ebd961`. `glm-attention.json` passes two packed latent projection
+chunk sizes and three selected-KV tile sizes against independently decoded CPU
+weights and dense masked attention. Max projection error1.20e-7; attention2.24e-8.
+Causal/padding rejection and original-coordinate packed row views across a scale
+block boundary pass. Guard completed with22MiB peak reserved memory.26 local
+regressions passed. No indexer/cache/model qualification is implied by this gate.

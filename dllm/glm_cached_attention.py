@@ -1,10 +1,10 @@
-"""Owned CPU FP32 GLM attention composition; no serving or snapshot admission."""
+"""Owned FP32 GLM attention core with CPU-only public wrapper."""
 from dataclasses import dataclass,field
 import threading
 import torch
-from .prepared_projection import linear
-from .glm_attention import project_mla,sparse_latent_attention,_float,_budgets,_projection,_finite_parameter
-from .glm_indexer import GlmIndexer
+from .glm_attention import linear
+from .glm_attention import _project_mla as project_mla, _sparse_latent_attention as sparse_latent_attention,_float,_budgets,_projection,_finite_parameter
+from .glm_indexer import _GlmIndexer
 from .deepseek_position import frequencies
 
 
@@ -30,7 +30,7 @@ class GlmAttentionState:
         with self.lock:
             self._usable()
             if (not isinstance(indices,torch.Tensor) or indices.ndim!=1 or indices.dtype!=torch.int64
-                    or indices.device.type!='cpu' or not indices.numel()
+                    or indices.device!=self.latents.device or not indices.numel()
                     or bool(((indices<0)|(indices>=self.latents.shape[0])).any())
                     or indices.numel()*self.bytes_per_slot>self.max_cache_bytes):
                 raise ValueError('invalid GLM slot order or retained cache budget exceeded')
@@ -49,9 +49,10 @@ class GlmAttentionState:
             self.closed=True
 
 
-class CachedGlmAttention:
+class _CachedGlmAttention:
     def __init__(self,weights,*,heads,nope_dim,rope_dim,value_dim,index_top_k,indexer_type='full',
-                 rope_base=8000000.,epsilon=1e-5,max_output_bytes=64*1024**2,max_workspace_bytes=64*1024**2):
+                 rope_base=8000000.,epsilon=1e-5,max_output_bytes=64*1024**2,max_workspace_bytes=64*1024**2,device='cpu'):
+        self.device=torch.device(device)
         projection={'q_a_proj.weight','q_a_layernorm.weight','q_b_proj.weight',
                     'kv_a_proj_with_mqa.weight','kv_a_layernorm.weight'}
         index_names={'wq_b.weight','wk.weight','k_norm.weight','k_norm.bias','weights_proj.weight'}
@@ -61,14 +62,14 @@ class CachedGlmAttention:
             raise ValueError('invalid full/shared GLM attention parameter names')
         for name,value in weights.items():
             rank=1 if 'layernorm' in name or 'k_norm.' in name else 2
-            valid=(_float(value,rank) if rank==1 or name=='indexer.weights_proj.weight' else _projection(value))
+            valid=(_float(value,rank,self.device) if rank==1 or name=='indexer.weights_proj.weight' else _projection(value,self.device))
             if not valid or not _finite_parameter(value):
-                raise ValueError('GLM attention weights require finite CPU FP32 tensors')
+                raise ValueError('GLM attention weights require finite same-device FP32 tensors')
         if (any(type(v) is not int or not 1<=v<=4096 for v in (heads,nope_dim,rope_dim,value_dim,index_top_k))
                 or heads>256 or rope_dim<2 or rope_dim%2
                 or type(epsilon) not in (int,float) or not 0<epsilon<=1):
             raise ValueError('invalid GLM attention geometry')
-        frequencies(rope_dim,base=rope_base)
+        frequencies(rope_dim,base=rope_base,device=self.device)
         _budgets(0,0,max_output_bytes,max_workspace_bytes)
         dim=weights['q_a_proj.weight'].shape[1]
         qr=weights['q_a_layernorm.weight'].numel();kr=weights['kv_a_layernorm.weight'].numel()
@@ -82,8 +83,8 @@ class CachedGlmAttention:
         self.dim,self.rank,self.index_top_k=dim,kr,index_top_k
         self.rope_base,self.epsilon=rope_base,epsilon
         self.budgets=dict(max_output_bytes=max_output_bytes,max_workspace_bytes=max_workspace_bytes)
-        self.indexer=(GlmIndexer({name:weights['indexer.'+name] for name in index_names},rope_dim=rope_dim,
-                                rope_base=rope_base,**self.budgets) if indexer_type=='full' else None)
+        self.indexer=(_GlmIndexer({name:weights['indexer.'+name] for name in index_names},rope_dim=rope_dim,
+                                rope_base=rope_base,device=self.device,**self.budgets) if indexer_type=='full' else None)
         if self.indexer is not None and (self.indexer.dim!=dim or self.indexer.rank!=qr):
             raise ValueError('GLM indexer and latent attention geometry differs')
 
@@ -94,9 +95,9 @@ class CachedGlmAttention:
         width=self.rank+self.rope_dim+(self.indexer.width if self.indexer is not None else 0)
         per_slot=4*capacity*width
         if batch*per_slot>max_cache_bytes:raise ValueError('GLM cache reservation exceeds budget')
-        return GlmAttentionState(self,torch.empty(batch,capacity,self.rank,dtype=torch.float32,device='cpu'),
-                                 torch.empty(batch,capacity,self.rope_dim,dtype=torch.float32,device='cpu'),
-                                 None if self.indexer is None else torch.empty(batch,capacity,self.indexer.width,dtype=torch.float32,device='cpu'),
+        return GlmAttentionState(self,torch.empty(batch,capacity,self.rank,dtype=torch.float32,device=self.device),
+                                 torch.empty(batch,capacity,self.rope_dim,dtype=torch.float32,device=self.device),
+                                 None if self.indexer is None else torch.empty(batch,capacity,self.indexer.width,dtype=torch.float32,device=self.device),
                                  capacity,max_cache_bytes,per_slot)
 
     @torch.no_grad()
@@ -105,7 +106,7 @@ class CachedGlmAttention:
         with state.lock:
             state._usable()
             if state.owner is not self:raise ValueError('GLM cache belongs to another attention component')
-            if (not _float(hidden,3) or hidden.shape[0]!=state.latents.shape[0] or hidden.shape[-1]!=self.dim
+            if (not _float(hidden,3,self.device) or hidden.shape[0]!=state.latents.shape[0] or hidden.shape[-1]!=self.dim
                     or type(position) is not int or position!=state.position
                     or position+hidden.shape[1]>state.capacity):
                 raise ValueError('GLM cache position, shape or capacity mismatch')
@@ -113,13 +114,13 @@ class CachedGlmAttention:
             end=position+hidden.shape[1]
             if self.indexer is None:
                 if (not isinstance(previous_indices,torch.Tensor) or previous_indices.dtype!=torch.int64
-                        or previous_indices.device.type!='cpu'
+                        or previous_indices.device!=self.device
                         or previous_indices.shape!=(*hidden.shape[:2],min(self.index_top_k,end))):
                     raise ValueError('shared GLM attention requires matching prior full-indexer selections')
             elif previous_indices is not None:raise ValueError('full GLM indexer does not accept shared selections')
-            positions=torch.arange(position,end,dtype=torch.int64,device='cpu').expand(hidden.shape[0],-1)
+            positions=torch.arange(position,end,dtype=torch.int64,device=self.device).expand(hidden.shape[0],-1)
             projected=project_mla(hidden,positions,self.projections,heads=self.heads,nope_dim=self.nope_dim,
-                                  rope_dim=self.rope_dim,rope_base=self.rope_base,eps=self.epsilon,**self.budgets)
+                                  rope_dim=self.rope_dim,rope_base=self.rope_base,eps=self.epsilon,device=self.device,**self.budgets)
             new_index=None if self.indexer is None else self.indexer.project_keys(hidden,positions)
             try:
                 state.latents[:,position:end]=projected['latents']
@@ -131,7 +132,7 @@ class CachedGlmAttention:
                 else:selected=previous_indices
                 attended=sparse_latent_attention(projected['query'],state.latents[:,:end],state.rotary_keys[:,:end],
                                                   self.weights['kv_b_proj.weight'],selected,positions,
-                                                  nope_dim=self.nope_dim,value_dim=self.value_dim,**self.budgets)
+                                                  nope_dim=self.nope_dim,value_dim=self.value_dim,device=self.device,**self.budgets)
                 output=linear(attended.flatten(-2),self.weights['o_proj.weight'])
                 if not torch.isfinite(output).all():raise ValueError('nonfinite GLM attention output')
             except BaseException:
@@ -141,7 +142,7 @@ class CachedGlmAttention:
             return output,selected
 
     def prefill(self,hidden,*,capacity,max_cache_bytes=256*1024**2,previous_indices=None):
-        if (not _float(hidden,3) or hidden.shape[-1]!=self.dim or not torch.isfinite(hidden).all()
+        if (not _float(hidden,3,self.device) or hidden.shape[-1]!=self.dim or not torch.isfinite(hidden).all()
                 or type(capacity) is not int or hidden.shape[1]>capacity):
             raise ValueError('invalid GLM prefill input or capacity')
         state=self.new_state(hidden.shape[0],capacity,max_cache_bytes=max_cache_bytes)
@@ -151,3 +152,9 @@ class CachedGlmAttention:
         except BaseException:
             state.close()
             raise
+
+
+class CachedGlmAttention(_CachedGlmAttention):
+    """CPU-only owned full/shared reference attention."""
+    def __init__(self,weights,**options):
+        super().__init__(weights,device='cpu',**options)
