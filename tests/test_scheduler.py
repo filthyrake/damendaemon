@@ -135,6 +135,40 @@ class SchedulerTests(unittest.TestCase):
             last.result(3)
         self.assertEqual(self.runtime.runtime.groups,['a','control:status','a'])
 
+    def test_json_decodable_nested_messages_do_not_leak_queue_slots(self):
+        import json
+        # JSON decoding supports this depth, but deepcopy consumes more stack
+        # frames per container and raises before worker ownership begins.
+        messages = json.loads('[' * 600 + '0' + ']' * 600)
+        with self.assertRaises(RecursionError):
+            list(self.runtime.generate('a', messages, 1))
+        acquired = 0
+        try:
+            while self.runtime.admission.acquire(blocking=False): acquired += 1
+            self.assertEqual(acquired, self.runtime.queue_capacity)
+        finally:
+            for _ in range(acquired): self.runtime.admission.release()
+        self.executor.release.set()
+        self.assertEqual(list(self.generate(count=1))[-1]['finish_reason'], 'length')
+
+    def test_request_preparation_failures_preserve_admission_capacity(self):
+        for path in ('copy', 'generation-pending', 'command-pending'):
+            with self.subTest(path=path):
+                target = 'dllm.scheduler.copy.deepcopy' if path == 'copy' else 'dllm.scheduler.Pending'
+                with patch(target, side_effect=RuntimeError('injected preparation failure')):
+                    with self.assertRaisesRegex(RuntimeError, 'preparation failure'):
+                        if path == 'command-pending': self.runtime.manage('status')
+                        else: list(self.generate())
+                acquired = 0
+                try:
+                    while self.runtime.admission.acquire(blocking=False): acquired += 1
+                    self.assertEqual(acquired, self.runtime.queue_capacity)
+                finally:
+                    for _ in range(acquired): self.runtime.admission.release()
+        self.executor.release.set()
+        self.assertEqual(self.runtime.manage('status'), {'done': 'status'})
+        self.assertEqual(list(self.generate(count=1))[-1]['finish_reason'], 'length')
+
     def test_management_uses_bounded_admission_and_releases_it(self):
         acquired=[]
         try:

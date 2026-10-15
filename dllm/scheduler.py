@@ -181,9 +181,9 @@ class BatchedRuntime:
         return self._submit({'action':'score','model':alias,'prompt':prompt,'candidate_token_ids':candidates})
 
     def _submit(self, options):
+        request = Pending(options.get('model') or '', None, 0, command=options)
         if not self.admission.acquire(blocking=False):
             raise BusyError('request queue is full')
-        request = Pending(options.get('model') or '', None, 0, command=options)
         try:
             with self.condition:
                 if self.closed or self.draining:
@@ -248,9 +248,11 @@ class BatchedRuntime:
             if enable_thinking is True:
                 raise ValueError('forced tool calls cannot use thinking or ignore_eos')
             schema=tool_schema
+        # Copying/constructing the request can fail before it enters the queue.
+        # Acquire capacity only once cleanup can own a fully prepared request.
+        request = Pending(alias, copy.deepcopy(messages), max_tokens, enable_thinking, sampler, stops, raw_prompt, schema,tools=tools,tool_json=tool_schema is not None,reasoning_effort=reasoning_effort)
         if not self.admission.acquire(blocking=False):
             raise BusyError("request queue is full")
-        request = Pending(alias, copy.deepcopy(messages), max_tokens, enable_thinking, sampler, stops, raw_prompt, schema,tools=tools,tool_json=tool_schema is not None,reasoning_effort=reasoning_effort)
         try:
             with self.condition:
                 if self.closed or self.draining:
