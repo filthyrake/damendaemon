@@ -299,3 +299,14 @@ hash IDs reject before gathers.19 focused local tests pass. Guard4.851s,22MiB
 reserved under128MiB cap,4251MiB free before/after, cleanup confirmed. Initial
 FP4 fixture used invalid sub-32-column groups and was correctly rejected; its
 failed report is retained. No model, context, isolation or performance claim.
+
+## DeepSeek residual-stream blocks (#250)
+
+Implementation `4dd4fb6`. Three tiny packed CUDA ratio0/4 biased/hash blocks match
+CPU-decoded controls within2.4e-7 across prefill and cached decode. Duplicate
+reordering, pre-mutation hash-token rejection and late FFN failure poisoning pass.
+Whole-block scratch/output admission precedes residual reductions; CPU ownership
+and cleanup code is shared.21 focused CPU tests pass. Guard6.903s,22MiB reserved
+under128MiB cap,4251MiB free before/after, cleanup confirmed. Full-model and official
+qualification remain open. The broader CPU/loopback regression at `6bd00ea`
+passed1,777 tests in464.683s before the subsequent FFN/block additions.
