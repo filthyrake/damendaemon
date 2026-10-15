@@ -30,6 +30,7 @@ class ReferenceRuntime:
     """
     native_tool_calls=True
     scope='cpu_reference'
+    backend_suffix='cpu-reference'
     runner_types=(DeepSeekGenerator,DeepSeekPipelineReferenceGenerator,GlmToolReferenceGenerator,PipelineToolReferenceGenerator,FlashPipelineToolReferenceGenerator,FlashToolReferenceGenerator,FlashImageToolReferenceGenerator,FlashPipelineImageToolReferenceGenerator)
 
     def __init__(self,runner,alias='model'):
@@ -152,8 +153,8 @@ class ReferenceRuntime:
                     primary.add_note('CPU reference HTTP cleanup failed; retain runtime and retry close')
             finally:self.active=False;self.lock.release()
         usage=dict(final['usage']);usage['total_tokens']=usage['prompt_tokens']+usage['completion_tokens']
-        yield dict(finish_reason=final['finish_reason'],usage=usage,timing=dict(source_tier='cpu_reference',
-            kernel_backend=self.family+'-cpu-reference',official_model_qualified=False,
+        yield dict(finish_reason=final['finish_reason'],usage=usage,timing=dict(source_tier=self.scope,
+            kernel_backend=self.family+'-'+self.backend_suffix,official_model_qualified=False,
             total_seconds=time.perf_counter()-started,max_batch_size=1,**self.execution_status()))
 
 

@@ -156,7 +156,7 @@ def serve(runtime,auth,args):
         if threading.current_thread() is threading.main_thread():
             for sig in (signal.SIGTERM,signal.SIGINT):previous[sig]=signal.signal(sig,interrupt)
         print(json.dumps(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',
-            model=args.alias,model_type=runtime.family,modality='still_image' if runtime.images else 'text',scope='cpu_reference',dtype='float32',
+            model=args.alias,device=runtime.manage('status')['device'],model_type=runtime.family,modality='still_image' if runtime.images else 'text',scope=runtime.scope,dtype='float32',
             official_model_qualified=False,queue_enabled=bool(args.queue_size),queue_capacity=args.queue_size,**runtime.execution_status())),flush=True)
         while not stopping.is_set():server.handle_request()
     except BaseException as error:primary=error;raise
@@ -172,7 +172,7 @@ def serve(runtime,auth,args):
         if errors:
             if primary is not None:primary.add_note('CPU reference HTTP shutdown cleanup failed')
             else:raise errors[0]
-    print(json.dumps(dict(event='stopped',scope='cpu_reference')),flush=True)
+    print(json.dumps(dict(event='stopped',scope=runtime.scope)),flush=True)
 
 
 def main(argv=None):

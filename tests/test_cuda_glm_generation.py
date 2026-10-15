@@ -36,6 +36,10 @@ class CudaGenerationTests(unittest.TestCase):
         try:
             self.assertTrue(self.model.states[-1].closed)
             self.assertEqual(events[-1]['finish_reason'],'length')
+            with patch.object(runner,'generate',return_value=(e for e in [{'finish_reason':'length','usage':{'prompt_tokens':1,'completion_tokens':1}}])):
+                result=list(runtime.generate('model',[dict(role='user',content='Hi')],1))
+            self.assertEqual(result[-1]['timing']['source_tier'],'cuda_prepared_reference')
+            self.assertEqual(result[-1]['timing']['kernel_backend'],'glm_moe_dsa-cuda-prepared-reference')
             status=runtime.manage('status')
             self.assertEqual(status['scope'],'cuda_prepared_reference')
             self.assertEqual(status['device'],'cuda:0')

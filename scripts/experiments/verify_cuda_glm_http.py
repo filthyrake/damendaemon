@@ -55,6 +55,7 @@ def main():
             def post(value):return urlopen(Request(base+'/v1/chat/completions',data=json.dumps(value).encode(),headers={'Content-Type':'application/json'}),timeout=20)
             with post(body) as response:result=json.load(response)
             if result['choices'][0]['message'].get('reasoning_content','')!=expected_text:raise AssertionError('CUDA chat differs from CPU wire control')
+            if result['dllm_timing']['source_tier']!='cuda_prepared_reference' or result['dllm_timing']['kernel_backend']!='glm_moe_dsa-cuda-prepared-reference':raise AssertionError('HTTP timing mislabeled CUDA execution')
             with post(body|dict(stream=True)) as response:wire=response.read().decode()
             events=[json.loads(line[6:]) for line in wire.splitlines() if line.startswith('data: {')]
             streamed=''.join(choice.get('delta',{}).get('reasoning_content','') for event in events for choice in event['choices'])

@@ -100,3 +100,16 @@ aliases, preserved budgets and independent model configuration, and copy failure
 leaving the CPU model usable.9 focused tests passed before the GPU gate; the
 config-copy follow-up passes the three placement tests. GPU result scope is
 unchanged; no checkpoint size or performance extrapolation is made.
+
+## Native generation and serialized HTTP (#232)
+
+Implementation `e358cbf` plus timing-label follow-up. `glm-http.json` proves a
+local tiny checkpoint loads, is admitted/copied to CUDA and serves ordinary
+chat plus SSE through the pinned native text adapter. Both requests release
+owned caches, status/health report CUDA scope and close produces503 health.
+The fixture intentionally zeroes its output head to control protocol output;
+nonzero numerical logits are established by the separate model gate above.
+The original API run predates the completion timing-label correction; the
+standalone-command gate checks those labels explicitly. Peak reserved22MiB.
+38 generation/serving regressions and34 inherited image/pipeline/cancellation
+checks pass. No generated-tool quality or official-model claim is made.

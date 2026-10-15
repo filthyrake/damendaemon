@@ -6,6 +6,7 @@ from .cuda_glm_generation import CudaGlmToolGenerator
 class CudaGlmReferenceRuntime(ReferenceRuntime):
     runner_types=(CudaGlmToolGenerator,)
     scope='cuda_prepared_reference'
+    backend_suffix='cuda-prepared-reference'
 
     def __init__(self,runner,alias='model'):
         if type(runner) is not CudaGlmToolGenerator or runner.device.type!='cuda':
