@@ -49,7 +49,7 @@ def main():
                     else:device_weights[name]=value.cuda()
                 gpu=hidden.cuda();gpu_freq=freq.cuda()
                 expected=reference(hidden[:,:prefix],weights,freq,ratio)
-                actual,state=attention_prefill(gpu[:,:prefix],device_weights,gpu_freq,groups=2,window=4,ratio=ratio,index_top_k=2,query_chunk=8,max_tokens=length+1)
+                actual,state=attention_prefill(gpu[:,:prefix],device_weights,gpu_freq,groups=2,window=4,ratio=ratio,index_top_k=2,query_chunk=8,max_tokens=length+2)
                 try:
                     torch.testing.assert_close(actual.cpu(),expected,rtol=3e-5,atol=3e-6)
                     error=float((actual.cpu()-expected).abs().max());pointer=state.cache.data_ptr()
@@ -59,14 +59,22 @@ def main():
                         torch.testing.assert_close(actual.cpu(),expected,rtol=3e-5,atol=3e-6)
                         error=max(error,float((actual.cpu()-expected).abs().max()))
                         assert state.cache.data_ptr()==pointer
+                    before=state.cache
+                    try:state.reorder(torch.tensor([1],device='cuda'))
+                    except ValueError:pass
+                    else:raise AssertionError('out-of-range reorder admitted')
+                    assert state.cache is before and not state.poisoned
                     state.reorder(torch.tensor([0,0],device='cuda'))
                     assert state.cache.shape[0]==2
+                    actual=attention_decode(gpu[:,:1].expand(2,-1,-1),state,position=length)
+                    expected=reference(torch.cat((hidden,hidden[:,:1]),dim=1),weights,freq,ratio)[:,-1:]
+                    torch.testing.assert_close(actual.cpu(),expected.expand(2,-1,-1),rtol=3e-5,atol=3e-6)
                     state.reorder(torch.tensor([1],device='cuda'))
                     with patch.object(state.backend,'selected',side_effect=RuntimeError('injected late failure')):
-                        try:attention_decode(gpu[:,:1],state,position=length)
+                        try:attention_decode(gpu[:,:1],state,position=length+1)
                         except RuntimeError as exc:assert 'injected late failure' in str(exc)
                         else:raise AssertionError('failure not raised')
-                    assert state.poisoned and state.position==length
+                    assert state.poisoned and state.position==length+1
                     report['cases'].append(dict(packed=packed,ratio=ratio,max_absolute=error,decode_steps=length-prefix,stable_cache=True,reorder=True,late_failure_poisoned=True))
                 finally:state.close();state.close()
         report.update(passed=True,peak_reserved_bytes=torch.cuda.max_memory_reserved())
