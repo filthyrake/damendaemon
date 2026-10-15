@@ -166,3 +166,13 @@ left/right/all padding and earliest-pool ties pass, as do device, hole and budge
 rejections. Key error1.2e-7,22MiB reserved,128MiB cap; guard completed3.948s,
 4251MiB free before/after, incumbent healthy.18 local tests pass. Validation
 syncs and Python token loops remain; no practical-context performance claim.
+
+## Flash transactional sparse attention (#237)
+
+Implementation `a83f0d2`. Dense and packed CUDA NoPE layers match independent
+expanded CPU attention for full/chunk/token execution; selected IDs agree
+exactly. Maximum absolute output error1.5e-8. Late projection failure preserves
+all histories and cursor; duplicate/shrink reorder, retry, close and bounds
+pass.19 local tests pass. Guard completed5.076s,22MiB reserved under128MiB
+cap,4251MiB free before/after, incumbent healthy. This does not qualify a full
+Flash model or practical workload.
