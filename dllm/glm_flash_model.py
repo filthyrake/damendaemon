@@ -109,7 +109,7 @@ class _FlashModel:
 
     def _tokens(self,tokens,all_logits):
         if (not isinstance(tokens,torch.Tensor) or tokens.ndim!=2 or min(tokens.shape)<1
-                or tokens.dtype!=torch.int64 or tokens.device!=self.device
+                or tokens.dtype!=torch.int64 or tokens.device!=self.embedding.device
                 or bool(((tokens<0)|(tokens>=self.embedding.shape[0])).any()) or type(all_logits) is not bool):
             raise ValueError('Flash tokens require nonempty same-device int64 vocabulary IDs')
         self._input_budget(tokens.shape,all_logits)
@@ -158,7 +158,7 @@ class _FlashModel:
 
     def _embeddings(self,values,all_logits):
         if (not isinstance(values,torch.Tensor) or values.ndim!=3 or min(values.shape)<1
-                or values.device!=self.device or values.dtype!=torch.float32
+                or values.device!=self.embedding.device or values.dtype!=torch.float32
                 or values.shape[-1]!=self.embedding.shape[1] or type(all_logits) is not bool):
             raise ValueError('Flash input embeddings require nonempty same-device FP32 batch/token/width storage')
         self._input_budget(values.shape[:2],all_logits)
