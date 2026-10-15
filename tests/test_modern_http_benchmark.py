@@ -64,6 +64,49 @@ class BenchmarkIntegrity(unittest.TestCase):
         self.assertFalse(self.run_response(empty=True, first=event)['passed'])
         self.assertTrue(event.is_set())
 
+    def test_exact_usage_rejects_noninteger_and_conflicting_totals(self):
+        valid = dict(prompt_tokens=2, completion_tokens=128)
+        for changed in (dict(prompt_tokens=2.0, completion_tokens=128),
+                        dict(prompt_tokens=2, completion_tokens=128.0),
+                        dict(prompt_tokens=True, completion_tokens=128),
+                        dict(prompt_tokens=2, completion_tokens=127), {}, [], False):
+            with self.subTest(usage=changed):
+                chunks = [dict(choices=[dict(text='kept')]), dict(usage=valid), dict(usage=changed)]
+                stream = ''.join('data: ' + json.dumps(c) + '\n\n' for c in chunks) + 'data: [DONE]\n\n'
+                first = threading.Event()
+                with patch.object(benchmark, 'urlopen', return_value=Response(stream.encode())):
+                    result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3],
+                                               threading.Barrier(1), first_output_event=first)
+                self.assertFalse(result['passed'])
+                self.assertEqual(result['usage'], valid)
+                self.assertEqual(result['text'], 'kept')
+                self.assertNotIn('post_first_output_tokens_per_second_proxy', result)
+                self.assertTrue(first.is_set())
+
+    def test_identical_usage_repeats_and_null_intermediate_are_accepted(self):
+        valid = dict(prompt_tokens=2, completion_tokens=128)
+        chunks = [dict(usage=None), dict(choices=[dict(text='hello')]), dict(usage=valid), dict(usage=valid)]
+        stream = ''.join('data: ' + json.dumps(c) + '\n\n' for c in chunks) + 'data: [DONE]\n\n'
+        with patch.object(benchmark, 'urlopen', return_value=Response(stream.encode())):
+            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3], threading.Barrier(1))
+        self.assertTrue(result['passed'])
+        self.assertTrue(result['start_barrier_passed'])
+
+    def test_broken_start_barrier_retains_failure_and_releases_waiter(self):
+        barrier = threading.Barrier(2)
+        barrier.abort()
+        first = threading.Event()
+        with patch.object(benchmark, 'urlopen') as post:
+            result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3], barrier,
+                                       first_output_event=first)
+        post.assert_not_called()
+        self.assertFalse(result['passed'])
+        self.assertFalse(result['start_barrier_passed'])
+        self.assertIn('BrokenBarrierError', result['error'])
+        self.assertIsNone(result['first_output_seconds'])
+        self.assertEqual(result['chunks'], [])
+        self.assertTrue(first.is_set())
+
 
 class SummaryIntegrity(unittest.TestCase):
     def setUp(self):

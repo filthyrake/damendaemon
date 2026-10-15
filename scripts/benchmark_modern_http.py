@@ -24,11 +24,14 @@ def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128,
                 logit_bias={str(token): -100 for token in eos_ids})
     if engine == 'llama.cpp':
         body.update(cache_prompt=False)
-    barrier.wait(timeout=30)
     start = time.perf_counter()
-    result = dict(prompt_tokens=len(tokens), passed=False, chunks=[], started_monotonic=start)
+    result = dict(prompt_tokens=len(tokens), passed=False, chunks=[], started_monotonic=start,
+                  start_barrier_passed=False)
     text = []
     try:
+        barrier.wait(timeout=30)
+        start = time.perf_counter()
+        result.update(started_monotonic=start, start_barrier_passed=True)
         req = Request(base + '/v1/completions', data=json.dumps(body).encode(),
                       headers={'Content-Type': 'application/json'})
         done = False
@@ -50,8 +53,14 @@ def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128,
                         result['chunks'].append(dict(seconds=elapsed, text=fragment))
                         if first_output_event is not None:
                             first_output_event.set()
-                if item.get('usage'):
-                    result['usage'] = item['usage']
+                usage = item.get('usage')
+                if usage is not None:
+                    if not isinstance(usage, dict):
+                        raise ValueError('invalid benchmark usage object')
+                    for key, expected in (('prompt_tokens', len(tokens)), ('completion_tokens', output_tokens)):
+                        if type(usage.get(key)) is not int or usage[key] != expected:
+                            raise ValueError('benchmark requires exact integer input and output token counts')
+                    result['usage'] = usage
         if not done or not text:
             raise ValueError('incomplete or empty generation')
         usage = result.get('usage', {})

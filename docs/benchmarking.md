@@ -131,3 +131,18 @@ post-first-output throughput is a proxy, and internal decode/peak-memory
 telemetry remains a separate scorecard gate. Server-ready time also has different
 semantics: dllm loads on its first request while llama.cpp preloads. It must not
 be presented as a matched cold-model-start result.
+
+## Fixed-workload request integrity
+
+The modern HTTP benchmark and long-context runner share the fixed-workload
+request collector. Every non-null usage record must contain exact integer
+prompt and completion counts matching the requested workload. Conflicting totals,
+missing counts, booleans and floating-point substitutes fail the request.
+Earlier output and valid usage remain in failed reports; no throughput proxy is
+produced for a failure. Null intermediate usage and identical repeats are allowed.
+
+A broken start barrier produces a failed request record, marks
+`start_barrier_passed: false`, and releases the deadline waiter without sending
+HTTP. Successful participants start measurement after crossing the barrier.
+The waiter's signal can indicate failure completion as well as first output;
+only the retained output fields establish that output was observed.
