@@ -323,9 +323,10 @@ class BatchedRuntime:
             request.ready.set()
             self.requests.discard(request)
 
-    def _emit(self, request, token, executor, prompt_count):
+    def _emit(self, request, token, executor, prompt_count, *, defer_finish=False):
+        # Paged callers release their KV reservation before marking done.
         if request.cancelled.is_set():
-            self._finish(request)
+            if not defer_finish:self._finish(request)
             return True
         if request.sampler.constraint is not None:
             request.sampler.constraint.accept(token)
@@ -375,7 +376,7 @@ class BatchedRuntime:
                 "first_token_seconds": request.first_time, "total_seconds": elapsed,
                 "decode_tokens_per_second": (count-1)/(elapsed-request.first_time)
                 if count > 1 and elapsed > request.first_time else None}}
-            self._finish(request)
+            if not defer_finish:self._finish(request)
         return finished
 
     def _next(self, alias=None):
@@ -626,9 +627,10 @@ class BatchedRuntime:
                                 partial[request.slot]=(request,tokens,reused)
                             else:
                                 token=request.sampler.select(logits.squeeze(0)).item()
-                                if self._emit(request,token,executor,len(tokens)):
+                                if self._emit(request,token,executor,len(tokens),defer_finish=True):
                                     executor.release_request(request.slot)
                                     owned.remove(request.slot)
+                                    self._finish(request)
                                 else:
                                     active[request.slot]=(request,len(tokens))
                         except Exception as error:
@@ -641,9 +643,10 @@ class BatchedRuntime:
                         logits=executor.prefill_batch([tokens for _,tokens in prepared],[r.slot for r,_ in prepared])
                         selected=sample_rows(logits,[r.sampler for r,_ in prepared])
                         for (request,tokens),token in zip(prepared,selected):
-                            if self._emit(request,token,executor,len(tokens)):
+                            if self._emit(request,token,executor,len(tokens),defer_finish=True):
                                 executor.release_request(request.slot)
                                 owned.remove(request.slot)
+                                self._finish(request)
                             else:
                                 active[request.slot]=(request,len(tokens))
                     except Exception as error:
@@ -672,9 +675,10 @@ class BatchedRuntime:
                             if cache is not None:
                                 cache.remember(tokens,slot,logits,scope=request.cache_scope)
                             token=request.sampler.select(logits.squeeze(0)).item()
-                            if self._emit(request,token,executor,len(tokens)):
+                            if self._emit(request,token,executor,len(tokens),defer_finish=True):
                                 executor.release_request(slot)
                                 owned.remove(slot)
+                                self._finish(request)
                             else:
                                 active[slot]=(request,len(tokens))
                             del partial[slot]
@@ -702,9 +706,10 @@ class BatchedRuntime:
                     selected=sample_rows(logits,[r.sampler for _,r,_ in ready],next_ids)
                     for (slot,request,length),token in zip(ready,selected):
                         request.max_batch_seen=max(request.max_batch_seen,len(ready))
-                        if self._emit(request,token,executor,length):
+                        if self._emit(request,token,executor,length,defer_finish=True):
                             executor.release_request(slot)
                             owned.remove(slot)
+                            self._finish(request)
                             del active[slot]
                 with self.condition:
                     if not waiting and len(active)+len(partial)<self.batch_size:
