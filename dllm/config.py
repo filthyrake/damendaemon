@@ -34,6 +34,11 @@ def read_config(path):
     return result
 
 
+def _positive_number(value):
+    # Comparing first also handles JSON integers beyond the host float range.
+    return type(value) in (int, float) and 0 < value <= sys.float_info.max
+
+
 def rotary_scaling(value):
     if value is None:
         return None
@@ -51,7 +56,7 @@ def rotary_scaling(value):
         raise ValueError('conflicting rotary scaling types')
     for name in ('factor',) + (('low_freq_factor', 'high_freq_factor') if kind == 'llama3' else ()):
         number = value.get(name)
-        if type(number) not in (int,float) or not math.isfinite(number) or number <= 0:
+        if not _positive_number(number):
             raise ValueError(f'{name} must be finite and positive')
     if value['factor'] < 1:
         raise ValueError('rotary scaling factor must be at least one')
@@ -66,7 +71,7 @@ def rotary_scaling(value):
             raise ValueError('YaRN truncate must be boolean')
         for name in ('attention_factor', 'beta_fast', 'beta_slow'):
             number = value.get(name, 1)
-            if type(number) not in (int, float) or not math.isfinite(number) or number <= 0:
+            if not _positive_number(number):
                 raise ValueError(f'{name} must be finite and positive')
         if value.get('beta_fast', 32) < value.get('beta_slow', 1):
             raise ValueError('YaRN fast rotation bound must not be below slow bound')
@@ -85,6 +90,7 @@ def eos_ids(value):
     return set(values)
 
 def decoder_config(config):
+    if not isinstance(config, dict):raise ValueError('decoder configuration must be an object')
     if config.get('model_type') == 'gpt_oss':
         from .gpt_oss import validate_config
         return validate_config(config)
@@ -113,6 +119,7 @@ def decoder_config(config):
     if (c.get('quantization_config') or c.get('rope_parameters')
             or c.get('use_sliding_window', False) or c.get('hidden_act') != 'silu'
             or c.get('partial_rotary_factor', 1) != 1 or c.get('mlp_bias', False)
+            or not isinstance(c.get('layer_types', []), list)
             or any(layer != 'full_attention' for layer in c.get('layer_types', []))):
         raise ValueError('only dense SiLU decoders with full attention and standard full-head RoPE are supported')
     if kind != 'qwen2' and c.get('attention_bias', False):
@@ -135,7 +142,7 @@ def decoder_config(config):
     c.setdefault('rope_theta', 10000.0)
     for name in ('rope_theta', 'rms_norm_eps'):
         number = c.get(name)
-        if type(number) not in (int, float) or not math.isfinite(number) or number <= 0:
+        if not _positive_number(number):
             raise ValueError(f'{name} must be finite and positive')
     c['rope_scaling'] = rotary_scaling(c.get('rope_scaling'))
     scaling = c['rope_scaling']
@@ -153,7 +160,7 @@ def starcoder_config(config):
             or c.get('norm_type', 'layer_norm') != 'layer_norm' or c.get('mlp_type', 'default') != 'default'):
         raise ValueError('unsupported StarCoder2 activation or bias configuration')
     epsilon = c.get('norm_epsilon', 1e-5)
-    if type(epsilon) not in (int, float) or not math.isfinite(epsilon) or epsilon <= 0:
+    if not _positive_number(epsilon):
         raise ValueError('LayerNorm epsilon must be finite and positive')
     common = decoder_config({**c, 'model_type': 'mistral', 'hidden_act': 'silu', 'rms_norm_eps': epsilon})
     return {**common, **c, 'head_dim': common['head_dim'], 'rms_norm_eps': epsilon,
@@ -170,7 +177,7 @@ def olmoe_config(config):
     if c['num_experts_per_tok']>c['num_experts'] or type(c.get('norm_topk_prob',False)) is not bool:
         raise ValueError('invalid expert routing configuration')
     clip = c.get('clip_qkv')
-    if clip is not None and (type(clip) not in (int,float) or not math.isfinite(clip) or clip<=0):
+    if clip is not None and not _positive_number(clip):
         raise ValueError('QKV clip must be finite and positive')
     if common['head_dim']*c['num_attention_heads'] != c['hidden_size']:
         raise ValueError('OLMoE requires whole-projection Q/K normalization dimensions')
@@ -179,13 +186,15 @@ def olmoe_config(config):
 
 def hybrid_config(config):
     """Validate the dense, text-only Qwen3.5 backbone before allocating weights."""
-    c = dict(config.get('text_config', config))
+    text = config.get('text_config', config)
+    if not isinstance(text, dict):raise ValueError('hybrid text configuration must be an object')
+    c = dict(text)
     if c.get('model_type') != 'qwen3_5_text':
         raise ValueError('Qwen3.5 requires a text backbone configuration')
     if config.get('quantization_config') or c.get('quantization_config') or c.get('num_experts', 0):
         raise ValueError('quantized and MoE hybrid checkpoints are not supported')
     rope = c.get('rope_parameters', {})
-    if (rope.get('rope_type') != 'default' or c.get('hidden_act') != 'silu'
+    if (not isinstance(rope, dict) or rope.get('rope_type') != 'default' or c.get('hidden_act') != 'silu'
             or c.get('attention_bias', False) or c.get('mlp_bias', False)
             or not c.get('attn_output_gate', False)):
         raise ValueError('unsupported hybrid attention, activation, or rotary configuration')
@@ -196,7 +205,7 @@ def hybrid_config(config):
         if type(c.get(key)) is not int or c[key] <= 0:
             raise ValueError(f'{key} must be a positive integer')
     layers = c.get('layer_types', [])
-    if len(layers) != c['num_hidden_layers'] or any(x not in ('linear_attention', 'full_attention') for x in layers):
+    if not isinstance(layers, list) or len(layers) != c['num_hidden_layers'] or any(x not in ('linear_attention', 'full_attention') for x in layers):
         raise ValueError('invalid hybrid layer layout')
     if (c['num_attention_heads'] % c['num_key_value_heads']
             or c['linear_num_value_heads'] % c['linear_num_key_heads']):
@@ -212,7 +221,7 @@ def hybrid_config(config):
     for name in ('rope_theta', 'rms_norm_eps'):
         number = c.get(name)
         # Compare before conversion: JSON integers can exceed the float range.
-        if type(number) not in (int, float) or not 0 < number <= sys.float_info.max:
+        if not _positive_number(number):
             raise ValueError(f'{name} must be finite and positive')
     c['tie_word_embeddings'] = config.get('tie_word_embeddings', c.get('tie_word_embeddings', False))
     c['multimodal_token_ids'] = [config[k] for k in ('image_token_id', 'video_token_id', 'vision_start_token_id',
@@ -230,14 +239,14 @@ def gemma_config(config):
             or c.get('attention_bias', False) or c.get('rope_scaling') is not None):
         raise ValueError('unsupported Gemma activation, attention, softcap, or rotary scaling')
     layers = c.get('layer_types', [])
-    if (len(layers) != c.get('num_hidden_layers')
+    if (not isinstance(layers, list) or len(layers) != c.get('num_hidden_layers')
             or any(x not in ('sliding_attention', 'full_attention') for x in layers)):
         raise ValueError('Gemma requires an explicit valid layer layout')
     if type(c.get('sliding_window')) is not int or c['sliding_window'] <= 0:
         raise ValueError('Gemma sliding window must be a positive integer')
     for name in ('query_pre_attn_scalar', 'rope_local_base_freq'):
         value = c.get(name)
-        if type(value) not in (int, float) or not math.isfinite(value) or value <= 0:
+        if not _positive_number(value):
             raise ValueError(f'{name} must be finite and positive')
     # Share dimension and unsupported-weight-format checks with dense decoders.
     common = decoder_config({**c, 'model_type': 'llama', 'hidden_act': 'silu',
@@ -261,8 +270,7 @@ def gpt2_config(config):
     inter=c.get('n_inner')
     inter=4*c['n_embd'] if inter is None else inter
     epsilon=c.get('layer_norm_epsilon',1e-5)
-    if (type(inter) is not int or inter<=0 or type(epsilon) not in (int,float)
-            or not math.isfinite(epsilon) or epsilon<=0):
+    if type(inter) is not int or inter<=0 or not _positive_number(epsilon):
         raise ValueError('invalid GPT-2 MLP or normalization')
     return {**c,'hidden_size':c['n_embd'],'intermediate_size':inter,
             'num_attention_heads':c['n_head'],'num_key_value_heads':c['n_head'],
@@ -286,11 +294,11 @@ def neox_config(config):
     dim = c['hidden_size']//c['num_attention_heads']
     fraction = c.get('rotary_pct',.25)
     base, epsilon = c.get('rotary_emb_base',10000), c.get('layer_norm_eps',1e-5)
-    if (type(fraction) not in (int,float) or not math.isfinite(fraction) or not 0<fraction<=1
+    if (type(fraction) not in (int,float) or not 0<fraction<=1
             or int(dim*fraction)!=dim*fraction or int(dim*fraction)%2 or int(dim*fraction)<2):
         raise ValueError('invalid GPT-NeoX rotary dimension')
     for value in (base,epsilon):
-        if type(value) not in (int,float) or not math.isfinite(value) or value<=0:
+        if not _positive_number(value):
             raise ValueError('invalid GPT-NeoX rotary base or LayerNorm epsilon')
     return {**c,'head_dim':dim,'num_key_value_heads':c['num_attention_heads'],
             'rotary_dim':int(dim*fraction),'rope_theta':base,'rope_scaling':None,
@@ -319,7 +327,7 @@ def bloom_config(config):
     if h % heads or (h // heads) % 2 or c.get('n_inner') not in (None, 4*h):
         raise ValueError('unsupported BLOOM head or MLP geometry')
     epsilon = c.get('layer_norm_epsilon', 1e-5)
-    if type(epsilon) not in (int, float) or not math.isfinite(epsilon) or epsilon <= 0:
+    if not _positive_number(epsilon):
         raise ValueError('invalid BLOOM LayerNorm epsilon')
     return {**c, 'hidden_size': h, 'num_attention_heads': heads, 'num_key_value_heads': heads,
             'num_hidden_layers': layers, 'head_dim': h // heads, 'intermediate_size': 4*h,

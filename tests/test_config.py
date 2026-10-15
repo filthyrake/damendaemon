@@ -201,3 +201,47 @@ class YarnConfigTests(unittest.TestCase):
                 decoder_config({**config, 'rope_scaling':{**config['rope_scaling'], **change}})
         for change in ({'rope_theta':float('nan')}, {'rope_theta':True}, {'rope_theta':1}, {'max_position_embeddings':16, 'rope_scaling':{'type':'yarn', 'factor':2, 'original_max_position_embeddings':32}}):
             with self.assertRaises(ValueError):decoder_config({**config, **change})
+
+
+class MalformedConfigTests(unittest.TestCase):
+    def test_nested_containers_fail_as_configuration_errors(self):
+        for value in (None, False, 1, 'layers', [], {'full_attention': 1}):
+            for family in ('dense', 'hybrid-text', 'hybrid-rope', 'hybrid-layers', 'gemma'):
+                if family == 'dense' and value == []: continue
+                if family == 'dense': config = ConfigTests().config(layer_types=value)
+                elif family == 'gemma': config = GemmaConfigTests().config(layer_types=value)
+                else:
+                    config = HybridConfigTests().config()
+                    if family == 'hybrid-text': config['text_config'] = value
+                    else: config['text_config']['rope_parameters' if family == 'hybrid-rope' else 'layer_types'] = value
+                with self.subTest(family=family, kind=type(value).__name__), self.assertRaises(ValueError):
+                    decoder_config(config)
+        for root in (None, [], 'config', 1):
+            with self.subTest(root=root), self.assertRaises(ValueError): decoder_config(root)
+
+    def test_oversized_numeric_metadata_rejects_without_float_overflow(self):
+        from tests.test_neox import config as neox
+        from tests.test_bloom import config as bloom
+        cases = [
+            (ConfigTests().config(), ('rope_theta', 'rms_norm_eps')),
+            (ConfigTests().config(model_type='starcoder2', hidden_act='gelu_pytorch_tanh'), ('norm_epsilon',)),
+            (ConfigTests().config(model_type='olmoe', head_dim=64, num_experts=4, num_experts_per_tok=2), ('clip_qkv',)),
+            (GemmaConfigTests().config(), ('query_pre_attn_scalar', 'rope_local_base_freq')),
+            (Gpt2ConfigTests().config(), ('layer_norm_epsilon',)),
+            (neox(), ('rotary_pct', 'rotary_emb_base', 'layer_norm_eps')),
+            (bloom(), ('layer_norm_epsilon',)),
+        ]
+        for config, fields in cases:
+            decoder_config(config)
+            for field in fields:
+                with self.subTest(family=config['model_type'], field=field), self.assertRaises(ValueError):
+                    decoder_config({**config, field:10**400})
+        schedules = [({'type':'linear','factor':2}, ('factor',)),
+            ({'type':'llama3','factor':2,'low_freq_factor':1,'high_freq_factor':4,
+              'original_max_position_embeddings':128}, ('factor','low_freq_factor','high_freq_factor')),
+            ({'type':'yarn','factor':2}, ('factor','attention_factor','beta_fast','beta_slow'))]
+        for config, fields in schedules:
+            rotary_scaling(config)
+            for field in fields:
+                with self.subTest(schedule=config['type'], field=field), self.assertRaises(ValueError):
+                    rotary_scaling({**config, field:10**400})
