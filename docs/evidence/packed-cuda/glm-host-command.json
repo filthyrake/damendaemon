@@ -1,0 +1,92 @@
+{
+  "allocator_mib_per_process": 128,
+  "chat": true,
+  "family": "glm",
+  "max_cuda_processes": 2,
+  "passed": true,
+  "performance_qualified": false,
+  "physical_multi_gpu_qualified": false,
+  "ready": {
+    "distributed": true,
+    "dtype": "float32",
+    "epoch_terminal": false,
+    "event": "http_ready",
+    "execution": "host_topology",
+    "local_device": "cuda:0",
+    "local_stage_index": 0,
+    "modality": "text",
+    "model": "model",
+    "model_identity_verified": true,
+    "model_type": "glm_moe_dsa",
+    "native_chat": true,
+    "official_model_qualified": false,
+    "peer_devices_verified": false,
+    "queue_capacity": 0,
+    "queue_enabled": false,
+    "scope": "host_reference",
+    "source_model_id": "b26443a70b3c93dd24823261c044cf44cb569d5c8163f98afa4064af1a2675fe",
+    "stage_layers": [
+      [
+        0,
+        2
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "topology_identity": "b98753ed06f4ffb80797767f42e2eb36fd7619d6921ad93b588b404d14f2a301",
+    "url": "http://127.0.0.1:39037"
+  },
+  "sigterm_exit_code": 0,
+  "sse": true,
+  "stopped": {
+    "distributed": true,
+    "epoch_terminal": true,
+    "event": "stopped",
+    "execution": "host_topology",
+    "graceful_stop": true,
+    "local_device": "cuda:0",
+    "local_stage_index": 0,
+    "model_identity_verified": true,
+    "peer_devices_verified": false,
+    "scope": "host_reference",
+    "source_model_id": "b26443a70b3c93dd24823261c044cf44cb569d5c8163f98afa4064af1a2675fe",
+    "stage_layers": [
+      [
+        0,
+        2
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "topology_identity": "b98753ed06f4ffb80797767f42e2eb36fd7619d6921ad93b588b404d14f2a301"
+  },
+  "worker_exit_code": 0,
+  "worker_ready": {
+    "event": "ready",
+    "local_device": "cuda:0",
+    "model_identity_verified": true,
+    "native_chat": true,
+    "official_model_qualified": false,
+    "peer_devices_verified": false,
+    "role": "worker",
+    "scope": "glm_cuda_host_topology_reference",
+    "source_model_id": "b26443a70b3c93dd24823261c044cf44cb569d5c8163f98afa4064af1a2675fe",
+    "stage": 1,
+    "stage_layers": [
+      [
+        0,
+        2
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "topology_identity": "b98753ed06f4ffb80797767f42e2eb36fd7619d6921ad93b588b404d14f2a301"
+  },
+  "zero_head_fixture": true
+}

@@ -462,3 +462,14 @@ execution, practical models/contexts or performance.
 
 Full CPU/loopback regression pinned at `22c138d`:1,803 tests pass in470.058s,
 covering stages and slots before host-boundary/worker integration.
+
+## Explicit CUDA host command (#264, qualification in progress)
+
+Implementation `34374cb`. Thirty local native command/admission tests pass.
+Two-process GLM CUDA worker/coordinator passes verified-source HTTP/SSE/status
+and acknowledged idle SIGTERM/STOP, both exits0. Guard14.583s,128MiB allocator
+cap per process,4251MiB free before/after. Flash replay was stopped by an
+incumbent telemetry timeout at6.600s; it is incomplete, not a numerical pass or
+performance result. Guard killed only its owned process group. Subsequent
+read-only preflight passed with the same incumbent PID and4251MiB free. Failed
+evidence is retained; Flash/DeepSeek command qualification remains outstanding.
