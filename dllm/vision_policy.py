@@ -14,6 +14,11 @@ def eligible(config):
             and config.get('num_hidden_layers')==24)
 
 
+def validate_model(config, context):
+    if not eligible(config) or context > 1024:
+        raise ValueError('image execution currently requires the qualified 1024-wide Qwen3.5 text geometry and context <=1024')
+
+
 def validate_execution(model,max_batch):
     import torch
     from .device import selected_device

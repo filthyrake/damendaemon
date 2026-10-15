@@ -16,9 +16,8 @@ class VisionModelWeights:
     def __init__(self,text,vision):
         self.text=text
         self.vision_weights=vision
-        if (text.config['model_type']!='qwen3_5_text' or text.config['hidden_size']!=1024
-                or text.config['num_hidden_layers']!=24 or text.max_context>1024):
-            raise ValueError('image execution currently requires the qualified 1024-wide Qwen3.5 text geometry and context <=1024')
+        from .vision_policy import validate_model
+        validate_model(text.config, text.max_context)
         self.bytes=text.bytes+vision.bytes
 
     def __getattr__(self,name):
