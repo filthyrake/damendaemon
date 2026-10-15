@@ -40,15 +40,18 @@ class FloatingBlock:
     def __init__(self, attention_weights, weights, frequencies, *, groups, window, ratio=0,
                  hc_mult=4, top_k=6, route_scale=1.5, index_top_k=512, epsilon=1e-6,
                  connection_epsilon=1e-6, iterations=20, activation_limit=10., workspace_bytes=64*1024*1024,
-                 packed_experts=None, packed_shared=None):
+                 packed_experts=None, packed_shared=None, _backend=None):
         if not isinstance(attention_weights, dict) or not isinstance(weights, dict):
             raise ValueError('block preparation requires parameter mappings')
+        self.backend = _backend
+        projection_check = is_projection if _backend is None else _backend.attention.projection
+        packed_type = PackedProjection if _backend is None else _backend.attention.packed_type
         input_weight = attention_weights.get('wq_a.weight')
-        if not is_projection(input_weight) or min(input_weight.shape) < 1:
+        if not projection_check(input_weight) or min(input_weight.shape) < 1:
             raise ValueError('missing block input projection geometry')
         probe = (torch.empty(1,1,input_weight.shape[1],dtype=input_weight.dtype,device=input_weight.device)
-                 if isinstance(input_weight,PackedProjection) else input_weight[:1].unsqueeze(0))
-        _check(probe, attention_weights, frequencies, groups, window, ratio, index_top_k, 16, epsilon)
+                 if isinstance(input_weight,packed_type) else input_weight[:1].unsqueeze(0))
+        _check(probe, attention_weights, frequencies, groups, window, ratio, index_top_k, 16, epsilon,None if _backend is None else _backend.attention)
         if (type(hc_mult) is not int or not 1 <= hc_mult <= 16
                 or type(top_k) is not int or top_k < 1 or type(iterations) is not int or not 1 <= iterations <= 128
                 or any(type(v) not in (int, float) or not 0 < v <= torch.finfo(torch.float32).max
@@ -90,11 +93,11 @@ class FloatingBlock:
             if banks[0].shape[0] != experts:
                 raise ValueError('gate and expert-bank counts disagree')
         else:
-            if (device.type != 'cpu' or not isinstance(packed_experts,(tuple,list)) or len(packed_experts) != experts
+            if ((device.type != 'cpu' if _backend is None else device != _backend.device) or not isinstance(packed_experts,(tuple,list)) or len(packed_experts) != experts
                     or type(workspace_bytes) is not int or workspace_bytes < 1):
                 raise ValueError('packed expert mode requires a matching CPU expert bank and workspace')
             for expert in (*packed_experts,packed_shared):
-                if (not isinstance(expert,PackedExpert) or expert.width != dim
+                if (not isinstance(expert,PackedExpert if _backend is None else _backend.expert_type) or expert.width != dim
                         or expert.activation_limit != activation_limit or expert.workspace_bytes > workspace_bytes):
                     raise ValueError('packed expert width, activation or workspace differs from block contract')
             packed_experts = tuple(packed_experts)
@@ -102,7 +105,8 @@ class FloatingBlock:
         if table is not None:
             if not isinstance(table, torch.Tensor) or table.ndim != 2 or table.device != device:
                 raise ValueError('invalid token-to-expert table geometry/device')
-            validate_token_expert_table(table.cpu(), vocab_size=table.shape[0], experts=experts, top_k=top_k)
+            if _backend is None:
+                validate_token_expert_table(table.cpu(), vocab_size=table.shape[0], experts=experts, top_k=top_k)
         self.attention_weights, self.weights, self.frequencies = dict(attention_weights), dict(weights), frequencies
         self.groups, self.window, self.ratio, self.index_top_k = groups, window, ratio, index_top_k
         self.hc_mult, self.top_k, self.route_scale = hc_mult, top_k, route_scale
@@ -128,6 +132,9 @@ class FloatingBlock:
             torch.empty((),dtype=self.dtype).element_size())
 
     def _input(self, hidden, token_ids):
+        if self.backend is not None:
+            self.backend.admit(hidden,token_ids,self)
+            return token_ids
         if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 4 or min(hidden.shape[:2]) < 1
                 or hidden.shape[2:] != (self.hc_mult,self.dim) or hidden.device != self.device or hidden.dtype != self.dtype):
             raise ValueError('block hidden streams do not match prepared parameters')
@@ -141,13 +148,17 @@ class FloatingBlock:
 
     def _reduce(self, hidden, part):
         w = self.weights
-        reduced, post, matrix = reduce_streams(hidden, w[f'hc_{part}_fn'], w[f'hc_{part}_scale'], w[f'hc_{part}_base'],
+        reduce = reduce_streams if self.backend is None else self.backend.reduce
+        reduced, post, matrix = reduce(hidden, w[f'hc_{part}_fn'], w[f'hc_{part}_scale'], w[f'hc_{part}_base'],
                                                norm_epsilon=self.epsilon, connection_epsilon=self.connection_epsilon,
                                                iterations=self.iterations)
         return _norm(reduced,w[f'{part}_norm.weight'],self.epsilon), post, matrix
 
     def _ffn(self, hidden, token_routes):
         reduced, post, matrix = self._reduce(hidden,'ffn')
+        if self.backend is not None:
+            output=self.backend.ffn(reduced,token_routes)
+            return self.backend.restore(output,hidden,post,matrix)
         rows = reduced.flatten(0,1)
         logits = F.linear(rows.float(),self.weights['ffn.gate.weight'])
         coefficients, selected = select_experts(logits,self.top_k,scoring='sqrtsoftplus',renormalize=True,
@@ -165,12 +176,14 @@ class FloatingBlock:
         self.cleanup_failed_prefills()
         routes = self._input(hidden,token_ids)
         reduced, post, matrix = self._reduce(hidden,'attn')
-        output, attention = attention_prefill(reduced,self.attention_weights,self.frequencies,groups=self.groups,
+        prefill = attention_prefill if self.backend is None else self.backend.prefill
+        restore = restore_streams if self.backend is None else self.backend.restore
+        output, attention = prefill(reduced,self.attention_weights,self.frequencies,groups=self.groups,
                                               window=self.window,ratio=self.ratio,index_top_k=self.index_top_k,
                                               epsilon=self.epsilon,max_tokens=max_tokens,max_cache_bytes=max_cache_bytes,
                                               query_chunk=query_chunk)
         try:
-            result = self._ffn(restore_streams(output,hidden,post,matrix),routes)
+            result = self._ffn(restore(output,hidden,post,matrix),routes)
         except BaseException as error:
             try:attention.close()
             except BaseException:
@@ -191,11 +204,12 @@ class FloatingBlock:
             if hidden.shape[1] != 1:
                 raise ValueError('block decode requires exactly one token per slot')
             reduced, post, matrix = self._reduce(hidden,'attn')
+            restore = restore_streams if self.backend is None else self.backend.restore
             advanced = False
             try:
                 output = attention_decode(reduced,state.attention,position=position)
                 advanced = True
-                return self._ffn(restore_streams(output,hidden,post,matrix),routes)
+                return self._ffn(restore(output,hidden,post,matrix),routes)
             except BaseException:
                 if advanced:
                     state.attention.poisoned = True
