@@ -70,11 +70,16 @@ def prepare(args,*,family='qwen'):
     return address,plan,text,inputs,limits,context,pin,verified,peers
 
 
-def run(args,*,family='qwen'):
+def run(args,*,family='qwen',cuda=False):
+    if cuda:
+        from scripts.cuda_host_execution import validate,configure,build_options
+        validate(args,family=family)
     from dllm.http_auth import AuthPolicy
     auth=AuthPolicy.from_env() if args.role=='serve' else None
     address,plan,text,inputs,limits,context,pin,verified,peers=(prepare(args) if family=='qwen' else prepare(args,family=family))
-    scope=f'{family}_cpu_host_topology_reference' if family!='qwen' else 'cpu_host_topology_reference'
+    if cuda:configure(args)
+    scope=(f'{family}_cuda_host_topology_reference' if cuda else
+           f'{family}_cpu_host_topology_reference' if family!='qwen' else 'cpu_host_topology_reference')
     connections=[];transports=[];listener=worker=runner=vision=None;primary=None
     try:
         if plan.input_kind=='flash_embeddings' and args.role in ('complete','serve'):
@@ -101,7 +106,10 @@ def run(args,*,family='qwen'):
             options=dict(epoch=args.epoch,max_weight_bytes=args.weight_mib*2**20,
                 max_cache_bytes=args.cache_mib*2**20,max_workspace_bytes=args.workspace_mib*2**20,
                 projection_workspace_bytes=args.projection_workspace_mib*2**20,max_output_bytes=args.output_mib*2**20)
-            if family=='deepseek':
+            if cuda:
+                from dllm.cuda_host_pipeline_build import build_cuda_host_pipeline_worker
+                worker=build_cuda_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options,**build_options(args))
+            elif family=='deepseek':
                 from dllm.deepseek_host_pipeline_build import build_deepseek_host_pipeline_worker
                 options.pop('max_workspace_bytes');options['workspace_bytes']=options.pop('projection_workspace_bytes')
                 worker=build_deepseek_host_pipeline_worker(args.snapshot,plan,args.index,transports,**options)
@@ -122,6 +130,7 @@ def run(args,*,family='qwen'):
         worker.handshake()
         if args.role!='serve':
             emit(dict(scope=scope,event='ready',role=args.role,stage=args.index,
+                local_device=str(worker.stage.actual_device),peer_devices_verified=False,
                 stage_layers=[list(pair) for pair in plan.ranges],topology_identity=plan.identity.hex(),
                 model_identity_verified=worker.model_identity_verified,source_model_id=plan.source_identity.hex(),
                 official_model_qualified=False,**(dict(modality='still_image') if plan.input_kind=='flash_embeddings' else {}),**({'native_chat':args.native_chat} if family in ('glm','flash','deepseek') else {})))
@@ -177,18 +186,24 @@ def run(args,*,family='qwen'):
             else:raise failures[0]
 
 
-def main(argv=None,*,family='qwen'):
-    parser=parser_for_command(topology=True,family=family);parser.description=__doc__;args=parser.parse_args(argv)
+def main(argv=None,*,family='qwen',cuda=False):
+    parser=parser_for_command(topology=True,family=family)
+    parser.description='Explicit bounded CUDA host topology reference' if cuda else __doc__
+    if cuda:
+        from scripts.cuda_host_execution import add_arguments
+        add_arguments(parser)
+    args=parser.parse_args(argv)
     def interrupt(*_):raise KeyboardInterrupt
     previous=signal.signal(signal.SIGTERM,interrupt)
     try:
         try:
-            if family=='qwen':run(args)
+            if cuda:run(args,family=family,cuda=True)
+            elif family=='qwen':run(args)
             else:run(args,family=family)
         except BrokenPipeError:return 0
         except KeyboardInterrupt:return 130
         except (ValueError,TypeError,OSError,RuntimeError,MemoryError,EOFError) as error:
-            parser.exit(2,f'CPU host topology failed: {error}\n')
+            parser.exit(2,f'{"CUDA" if cuda else "CPU"} host topology failed: {error}\n')
         return 0
     finally:signal.signal(signal.SIGTERM,previous)
 

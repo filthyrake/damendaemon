@@ -2068,3 +2068,14 @@ placement; `peer_devices_verified=false` means the wire protocol has not atteste
 remote placement. This applies even to a CPU coordinator because explicit CUDA
 host adapters can be peers. Source-byte verification and topology identity do
 not prove peer hardware. Local single-device CPU/CUDA runtime labels are unchanged.
+
+`scripts.run_cuda_host_topology --family {glm,flash,deepseek}` exposes explicit
+native text/tool `worker`, `complete` and `serve` roles using the same TLS files,
+range plan, peers, source identity and `--native-chat` controls as CPU commands.
+Each process must choose `--device cuda:N`; `--allocator-mib` bounds its PyTorch
+allocator separately from `--device-weight-mib`, `--transfer-mib`,
+`--device-workspace-mib` and CPU loader/cache/output bounds. Device weights must
+leave allocator headroom. Caps exclude driver allocations and do not isolate
+compute or protect other workflows by themselves; use the shared experiment
+guard for bounded qualification. CPU commands still select CPU builders.
+Flash image mode is rejected here pending coordinator embedding admission.
