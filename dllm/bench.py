@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import statistics
+import sys
 import time
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
@@ -170,7 +171,7 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                     raise ValueError("invalid server timing metadata")
                 queued = timing.get("queue_seconds")
                 if queued is not None:
-                    if type(queued) not in (int, float) or not 0 <= queued < float('inf'):
+                    if type(queued) not in (int, float) or not 0 <= queued <= sys.float_info.max:
                         raise ValueError("invalid reported queue time")
                     result.reported_server_queue_seconds = queued
                 usage = chunk.get("usage")
@@ -201,7 +202,13 @@ def distribution(values):
     if not values:
         return None
     ordered = sorted(values)
-    return {"p50": statistics.median(ordered),
+    median = statistics.median(ordered)
+    if len(ordered) % 2 == 0 and math.isinf(median):
+        # Avoid overflow in the sum of two finite midpoint values. Keep the
+        # ordinary path for small values so subnormal midpoints do not underflow.
+        middle = len(ordered) // 2
+        median = ordered[middle - 1] / 2 + ordered[middle] / 2
+    return {"p50": median,
             "p95": ordered[max(0, math.ceil(len(ordered) * 0.95) - 1)],
             "p99": ordered[max(0, math.ceil(len(ordered) * 0.99) - 1)]}
 

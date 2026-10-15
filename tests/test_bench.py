@@ -73,7 +73,7 @@ class Handler(BaseHTTPRequestHandler):
             chunks.append({'choices': [], 'usage': value})
         if model.startswith('queue-'):
             values = {'queue-known': .125, 'queue-negative': -1, 'queue-nan': float('nan'),
-                      'queue-inf': float('inf'), 'queue-bool': True}
+                      'queue-inf': float('inf'), 'queue-bool': True, 'queue-huge': 10**400, 'queue-large': sys.float_info.max}
             chunks.append({'choices': [], 'dllm_timing': {'queue_seconds': values[model]}})
         try:
             for chunk in chunks:
@@ -166,6 +166,27 @@ class BenchTests(unittest.TestCase):
         for model in ('queue-negative', 'queue-nan', 'queue-inf', 'queue-bool'):
             with self.subTest(model=model):
                 self.assertEqual(self.request(model).error, 'ValueError')
+
+    def test_unrepresentable_server_queue_time_cannot_break_summary(self):
+        results = [self.request('queue-huge') for _ in range(2)]
+        # Two oversized integers previously overflowed statistics.median.
+        summary = summarize(results, 1)
+        self.assertEqual(summary['succeeded'], 0)
+        self.assertEqual(summary['failed'], 2)
+        self.assertIsNone(summary['reported_server_queue_seconds'])
+        for result in results:
+            self.assertEqual(result.error, 'ValueError')
+            self.assertIsNone(result.reported_server_queue_seconds)
+
+    def test_large_finite_queue_times_keep_a_finite_median(self):
+        results = [self.request('queue-large') for _ in range(2)]
+        self.assertTrue(all(result.error is None for result in results))
+        summary = summarize(results, 1)
+        self.assertEqual(summary['reported_server_queue_seconds']['p50'], sys.float_info.max)
+        self.assertEqual(distribution([-sys.float_info.max] * 2)['p50'], -sys.float_info.max)
+        self.assertEqual(distribution([-sys.float_info.max, sys.float_info.max])['p50'], 0)
+        tiny = float.fromhex('0x0.0000000000001p-1022')
+        self.assertEqual(distribution([tiny, tiny])['p50'], tiny)
 
     def test_invalid_or_conflicting_usage_cannot_inflate_goodput(self):
         profile = dict(max_first_output_seconds=5, max_output_event_gap_seconds=5,
