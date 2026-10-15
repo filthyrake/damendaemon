@@ -207,6 +207,121 @@
       "implementation_commit": "00ae64845986fb7a0f3a178d5e69a3f33ff1211e",
       "reason": "Explicit durable owner quotas, mutually authenticated bounded TLS RPC, policy-matched HTTP admission and private standalone authority/frontend configuration are implemented. Restart retains charges; immutable recovery operations, conflicting writers, lost replies, real CPU HTTP JSON/SSE and request-body shutdown cleanup have local controls. No automatic dead-host reclaim, remote workload fence, distributed rolling-rate store, GPU resource reservation or measured network/user SLO is claimed.",
       "comparators": []
+    },
+    {
+      "id": "glm-prepared-cuda-host",
+      "issue": "https://github.com/filthyrake/dllm/issues/56",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": "zai-org/GLM-5.3",
+        "model_revision": "aca966e4e02791568aa6a4ced368624b3d897f42",
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "FP32 CUDA reference with packed E4M3/F32 projections",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "34374cb95efc57daa685d42243bc9821521f7570",
+      "reason": "Explicit prepared CUDA sparse GLM model, range placement, independent slots, bounded host transfers and native two-process HTTP commands. Tiny decoded CPU/CUDA controls and zero-head protocol/cleanup checks pass on shared A2; official checkpoint quality, practical context, physical multi-GPU, concurrency and performance remain unqualified.",
+      "comparators": []
+    },
+    {
+      "id": "flash-prepared-cuda-text-host",
+      "issue": "https://github.com/filthyrake/dllm/issues/57",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": "zai-org/GLM-5.3-Flash",
+        "model_revision": "eb9eb208eb0d988989d07a6a12d0fdeb5f52574a",
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "FP32 CUDA reference with packed text projections",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "34374cb95efc57daa685d42243bc9821521f7570",
+      "reason": "Explicit CUDA Flash linear/sparse attention, packed routed/shared FFNs, model, range ownership and authenticated host commands. CPU/CUDA logical placement and zero-head native command checks are bounded fixture evidence, not official semantics, physical multi-GPU, practical-context or throughput qualification.",
+      "comparators": []
+    },
+    {
+      "id": "flash-prepared-cuda-image-host",
+      "issue": "https://github.com/filthyrake/dllm/issues/57",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": "zai-org/GLM-5.3-Flash",
+        "model_revision": "eb9eb208eb0d988989d07a6a12d0fdeb5f52574a",
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "FP32 prepared CUDA language/vision; host image mode uses CPU vision",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "676623899eab9168912f4730c9b948afd15c9c7f",
+      "reason": "Explicit local CUDA vision/image generation and joint placement, plus CPU-vision/CUDA-language host image commands with collapsed embedding transfer. Numerical component controls, output-copy failure ownership and zero-head HTTP/SSE/STOP checks pass. Official image quality, generated tools, practical resolutions/context and performance remain unqualified.",
+      "comparators": []
+    },
+    {
+      "id": "deepseek-prepared-cuda-host",
+      "issue": "https://github.com/filthyrake/dllm/issues/58",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": "deepseek-ai/DeepSeek-V4-Flash",
+        "model_revision": "60d8d70770c6776ff598c94bb586a859a38244f1",
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "FP32 CUDA reference with packed FP4/FP8 weights",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "34374cb95efc57daa685d42243bc9821521f7570",
+      "reason": "Explicit CUDA DeepSeek compressed attention, learned indexer/head, routed/shared FFN, model, stage-local placement, independent slots and authenticated native host HTTP. Tiny CPU/CUDA ratio and ownership controls pass; official weights, generated DSML quality, practical context/concurrency, physical multi-GPU and performance remain unqualified.",
+      "comparators": []
+    },
+    {
+      "id": "modern-cuda-host-declared-storage",
+      "issue": "https://github.com/filthyrake/dllm/issues/51",
+      "availability": "implemented",
+      "identity": {
+        "model_repository": null,
+        "model_revision": null,
+        "checkpoint_sha256": null,
+        "tokenizer_sha256": null,
+        "precision": "Header-only accounting for FP32 CUDA reference and packed weights",
+        "hardware": null,
+        "topology": null,
+        "context": null,
+        "prompt_tokens": null,
+        "output_tokens": null,
+        "concurrency": null,
+        "prompts_sha256": null,
+        "eos_policy": null
+      },
+      "implementation_commit": "e45301535d0f060419270c4d5873e61a64dc2f65",
+      "reason": "Audit explicit CUDA host range plans without payload reads or device probes. Separate host conversion/preparation, unique device payload including shared frequency vectors, cache and declared workspace/output/transfer allowances; full image-prompt embedding transfer is included. No execution admission, device compatibility, allocator reservation or measured peak-memory claim.",
+      "comparators": []
     }
   ]
 }

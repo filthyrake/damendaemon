@@ -14,7 +14,8 @@ workload/hardware/checkpoint pins are explicitly `null`, so every row remains
 hardware reports or a complete measured platform matrix.
 
 Current software evidence includes stage-local packed GLM/Flash/DeepSeek CPU
-pipelines, native text/tool multi-process commands and serialized HTTP queues;
+and explicit prepared CUDA paths, native text/tool multi-process commands and
+serialized HTTP queues;
 Flash image features are owned by the coordinator and carried through language
 stages. The Qwen topology owner separately interleaves bounded active slots.
 Ragged native reference cohorts remain sequential, and native HTTP queues are
@@ -22,10 +23,12 @@ not continuous batching. Header-only placement accounts for declared storage,
 not measured peak memory. Weighted scheduling and durable quota accounting
 provide software controls; they do not establish GPU capacity or a user SLO.
 
-The snapshot contains nine explicit software cells. Their pushed commit pins
+The snapshot contains fourteen explicit software cells: nine retained CPU/serving
+foundations and five explicit CUDA/model/host/storage scopes. Their pushed commit pins
 identify implementations, not experiment revisions. The source/test map below
-makes those scopes reviewable; tests are local CPU/loopback controls, not raw
-hardware benchmark reports. Unknown practical model/workload/device values stay
+makes those scopes reviewable; local tests are CPU/loopback controls. Separately retained tiny shared-A2
+reports establish only their bounded numerical/ownership/protocol gates, not
+practical model or benchmark qualification. Unknown practical model/workload/device values stay
 null. No numerical, lifecycle or performance qualification record is synthesized
 from fixture dimensions or a test count.
 
@@ -41,10 +44,21 @@ from fixture dimensions or a test count.
 | Same-host rates and outstanding leases | [Shared reservations](shared-client-reservations.md) | `tests/test_shared_client_rates.py`, `tests/test_shared_reservation_http.py` |
 | Remote owner quota authority and HTTP | [Quota commands](quota-commands.md), [admission](remote-quota-admission.md) | `tests/test_remote_quota_admission.py`, `tests/test_quota_commands.py` |
 
+Explicit CUDA scopes retain unknown practical identity fields and do not attach
+synthetic qualification records to the software cells. The shared-A2 evidence
+includes failed/interrupted attempts, guard limits and cleanup; it does not imply
+compute isolation or zero impact on incumbent latency.
+
+| CUDA software scope | Pushed implementation | Focused controls and retained evidence |
+|---|---|---|
+| GLM/Flash/DeepSeek native host text commands | `34374cb` | `tests/test_cuda_host_command.py`, `tests/test_cuda_host_pipeline_build.py`, [component and command reports](evidence/packed-cuda/README.md) |
+| Flash local CUDA vision and CPU-vision/CUDA-language hosts | `6766238` | `tests/test_cuda_host_image_preparation.py`, `tests/test_glm_flash_image_host_http.py`, [image reports](evidence/packed-cuda/README.md) |
+| Header-only CUDA declared-storage audit | `e453015` | `tests/test_cuda_host_storage.py`, [explicit limits](architecture-parity.md) |
+
 The remaining measured matrix stays under #54 and its parent model/platform
 issues. Existing bounded historical reports remain separate and retain failures.
-Production-scale arithmetic, checkpoint quality, accelerator integration, actual
-network transfer, practical contexts and concurrency/swap/soak SLOs still need
+Production-scale arithmetic, checkpoint quality, physical multi-GPU/multi-host
+transfer, practical contexts and concurrency/swap/soak SLOs still need
 their own pinned evidence. Any remaining command lifecycle bug is tracked in
 GitHub; a software snapshot is not a claim that no bugs remain.
 
