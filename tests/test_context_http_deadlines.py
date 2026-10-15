@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 
-from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow, stop_owned_server, expire_owned_request, prepare_context_prompts
+from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow, stop_owned_server, expire_owned_request, prepare_context_prompts, require_gate
 
 
 class ContextDeadlineTests(unittest.TestCase):
@@ -29,8 +29,46 @@ class ContextDeadlineTests(unittest.TestCase):
                     if accepted:
                         self.assertTrue(check_overflow('http://localhost', [1]*10)['passed'])
                     else:
-                        with self.assertRaises(AssertionError):
+                        with self.assertRaises(ValueError):
                             check_overflow('http://localhost', [1]*10)
+
+    def test_qualification_requires_explicit_true(self):
+        require_gate(True, 'valid')
+        for invalid in (False, None, 0, 1, 'passed'):
+            with self.assertRaisesRegex(ValueError, 'failed gate'):
+                require_gate(invalid, 'failed gate')
+
+    def test_failed_warmup_cannot_reach_management_or_pass(self):
+        from scripts import verify_long_context_http as runner
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root/'config.json').write_text('{"eos_token_id":3}')
+            (root/'tokenizer.json').write_text('{}')
+            output = root/'result.json'
+            process = Mock(pid=123, returncode=None)
+            process.poll.side_effect = lambda: process.returncode
+            def spawn(command, **kwargs):
+                kwargs['stdout'].write('dllm listening on http://127.0.0.1:1\n')
+                kwargs['stdout'].flush()
+                return process
+            def stop(child, signum):
+                child.returncode = 0
+            args = ['context', str(root), '--model-revision', 'fixture', '--engine-revision', 'fixture',
+                    '--output', str(output), '--capacity-only']
+            with patch('sys.argv', args), patch.dict('os.environ', {}, clear=True), \
+                    patch.object(runner.Tokenizer, 'from_file'), patch.object(runner, 'version', return_value='fixture'), \
+                    patch.object(runner, 'prepare_context_prompts', return_value=([1]*128, [1]*32256, {})), \
+                    patch.object(runner.signal, 'signal'), patch.object(runner.subprocess, 'Popen', side_effect=spawn), \
+                    patch.object(runner, 'stop_owned_server', side_effect=stop), \
+                    patch.object(runner, 'request', return_value={'passed': False, 'error': 'fixture failure'}), \
+                    patch.object(runner, 'urlopen') as management:
+                with self.assertRaisesRegex(ValueError, 'long warmup failed'):
+                    runner.main()
+            management.assert_not_called()
+            report = json.loads(output.read_text())
+            self.assertFalse(report['passed'])
+            self.assertFalse(report['warmup_long']['passed'])
+            self.assertTrue(report['cleanup_complete'])
 
     def test_missing_first_output_expires(self):
         expired, first = threading.Event(), threading.Event()

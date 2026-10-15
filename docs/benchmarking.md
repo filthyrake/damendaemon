@@ -189,3 +189,8 @@ or budget exhaustion; selected token IDs must be nonnegative integers. Reports
 record the preparation limits and corpus size. The short prompt remains 128
 tokens, and the long prompt reserves 512 output tokens. These are client fixture
 bounds, not a claim that a checkpoint or device supports those context lengths.
+
+Long-context qualification gates use explicit runtime checks, including overflow
+rejection, request success, capacity budgets and release status. They remain
+active with `python -O`; a failed warmup is retained and stops before model
+management or a passing capacity report.

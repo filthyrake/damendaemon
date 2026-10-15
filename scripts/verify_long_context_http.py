@@ -117,6 +117,12 @@ def expire_owned_request(process, report, reason):
     stop_owned_server(process, signal.SIGKILL)
 
 
+def require_gate(condition, reason):
+    """Qualification must not disappear when Python runs with -O."""
+    if condition is not True:
+        raise ValueError(reason)
+
+
 def check_overflow(base, tokens):
     """Reject one extra reserved output token after the same prompt succeeded."""
     body = dict(model='a', prompt=tokens, max_tokens=513, temperature=0)
@@ -124,11 +130,12 @@ def check_overflow(base, tokens):
                   headers={'Content-Type': 'application/json'})
     try:
         with urlopen(req, timeout=30) as response:
-            raise AssertionError(f'overflow unexpectedly returned HTTP {response.status}')
+            raise ValueError(f'overflow unexpectedly returned HTTP {response.status}')
     except HTTPError as error:
         payload = json.loads(error.read())
         message = payload.get('error', '')
-        assert error.code == 400 and message == 'invalid or unsupported request', payload
+        require_gate(error.code == 400 and message == 'invalid or unsupported request',
+                     'overflow did not return the required context rejection')
         return dict(passed=True, status=error.code, response=payload,
                     prompt_tokens=len(tokens), reserved_output_tokens=513)
 
@@ -261,29 +268,29 @@ def main():
             report['phase'] = 'long_request'
             save_report(args.output, report)
             report['warmup_long'] = run(long)
-            assert report['warmup_long']['passed'], 'long warmup failed'
+            require_gate(report['warmup_long']['passed'], 'long warmup failed')
             report['overflow'] = check_overflow(base, long)
             if args.capacity_only:
                 result = report['warmup_long']
                 report['feasibility_budget_passed'] = (
                     result['first_output_seconds'] <= args.first_output_budget
                     and result['seconds'] <= args.request_timeout)
-                assert report['feasibility_budget_passed'], 'capacity request exceeded declared feasibility budget'
+                require_gate(report['feasibility_budget_passed'], 'capacity request exceeded declared feasibility budget')
                 with urlopen(base+'/v1/models/status', timeout=30) as response:
                     report['status_loaded'] = json.load(response)
-                assert report['status_loaded']['context'] == args.context
+                require_gate(report['status_loaded']['context'] == args.context, 'loaded context differs from requested capacity')
                 body = json.dumps(dict(model='a', release_host=True)).encode()
                 with urlopen(Request(base+'/v1/models/unload', data=body,
                                      headers={'Content-Type': 'application/json'}), timeout=120) as response:
                     report['unload'] = json.load(response)
                 with urlopen(base+'/v1/models/status', timeout=30) as response:
                     report['status_released'] = json.load(response)
-                assert report['status_released']['host_cached_bytes'] == 0
-                assert all(m['residency'] != 'gpu' for m in report['status_released']['models'])
+                require_gate(report['status_released']['host_cached_bytes'] == 0, 'host weights remain after release')
+                require_gate(all(m['residency'] != 'gpu' for m in report['status_released']['models']), 'GPU residency remains after release')
                 report['passed'] = True
                 return
             report['control_short'] = run(short)
-            assert report['control_short']['passed'], 'short control failed'
+            require_gate(report['control_short']['passed'], 'short control failed')
             for index in range(args.rounds):
                 visible = threading.Event()
                 with ThreadPoolExecutor(2) as pool:
@@ -296,7 +303,7 @@ def main():
                     short_result, long_result = short_future.result(), long_future.result()
                 row = dict(index=index, short=short_result, long=long_result, passed=False)
                 report['rounds'].append(row)
-                assert short_result['passed'] and long_result['passed'], 'request failed'
+                require_gate(short_result['passed'] is True and long_result['passed'] is True, 'request failed')
                 row['short_text_matches_control'] = short_result['text'] == report['control_short']['text']
                 row['long_text_matches_control'] = long_result['text'] == report['warmup_long']['text']
                 times = [short_result['started_monotonic']+c['seconds'] for c in short_result['chunks']]
