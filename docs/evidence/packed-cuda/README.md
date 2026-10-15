@@ -147,3 +147,13 @@ mean head, device admission, budgets, invalid values and input nonmutation also
 pass. Peak reserved22MiB under128MiB allocator cap; guard completed in3.876s,
 4251MiB free before/after, incumbent healthy.24 local tests pass. These are
 primitive checks, not Flash model, context, multimodal or performance proof.
+
+## Flash stateful linear attention (#235)
+
+Implementation `6286b5c`. Actual CUDA kernel-size1/4 layers pass independent
+CPU convolution/recurrence/output equations, full/chunked/token continuation,
+duplicate/shrink slot reorder, nonaliasing duplicate slots, injected-failure
+atomicity, close and admission checks. Maximum absolute output error1.05e-7;
+22MiB reserved,128MiB allocator cap. Guard completed3.848s,4251MiB free
+before/after, incumbent healthy.19 local tests pass. Full Flash model and
+practical workload qualification remain open.
