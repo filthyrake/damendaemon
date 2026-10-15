@@ -200,3 +200,8 @@ before writing its checkpoint. This prevents checkpoint I/O or graceful server
 shutdown from delaying workload termination. Interrupted reports retain partial
 evidence and signal identity with `passed: false`; normal successful cleanup is
 unchanged. A checkpoint failure cannot skip the stop operation.
+
+Long-context control responses (status, unload and expected overflow errors) are
+limited to 64 KiB and must be JSON objects with finite numeric values. Oversized
+or malformed responses fail qualification. Overflow error responses are closed
+on success and every failure path; the exact expected rejection remains required.

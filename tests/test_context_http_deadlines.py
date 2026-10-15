@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 
-from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow, stop_owned_server, expire_owned_request, prepare_context_prompts, require_gate, interrupt_owned_run
+from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow, stop_owned_server, expire_owned_request, prepare_context_prompts, require_gate, interrupt_owned_run, read_control_json, MAX_CONTROL_BYTES
 
 
 class ContextDeadlineTests(unittest.TestCase):
@@ -69,6 +69,32 @@ class ContextDeadlineTests(unittest.TestCase):
             self.assertFalse(report['passed'])
             self.assertFalse(report['warmup_long']['passed'])
             self.assertTrue(report['cleanup_complete'])
+
+    def test_control_response_bounds_types_and_finite_values(self):
+        exact = b'{"value":"' + b'x' * (MAX_CONTROL_BYTES - 12) + b'"}'
+        self.assertEqual(len(exact), MAX_CONTROL_BYTES)
+        self.assertEqual(len(read_control_json(io.BytesIO(exact))['value']), MAX_CONTROL_BYTES - 12)
+        stream = io.BytesIO(b'x' * (MAX_CONTROL_BYTES + 100))
+        with self.assertRaisesRegex(ValueError, 'byte bound'):
+            read_control_json(stream)
+        self.assertEqual(stream.tell(), MAX_CONTROL_BYTES + 1)
+        for raw in (b'[]', b'null', b'{', b'{"x":NaN}', b'{"x":Infinity}', b'{"x":1e400}'):
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                read_control_json(io.BytesIO(raw))
+        self.assertEqual(read_control_json(io.BytesIO(b'{"x":1.25,"y":null}')), {'x': 1.25, 'y': None})
+
+    def test_overflow_error_stream_is_closed_on_every_outcome(self):
+        for body in (b'{"error":"invalid or unsupported request"}', b'{"error":"wrong"}',
+                     b'[]', b'invalid JSON', b'x' * (MAX_CONTROL_BYTES + 1)):
+            stream = io.BytesIO(body)
+            error = HTTPError('http://localhost', 400, 'error', {}, stream)
+            with patch('scripts.verify_long_context_http.urlopen', side_effect=error):
+                if body.startswith(b'{"error":"invalid'):
+                    self.assertTrue(check_overflow('http://localhost', [1])['passed'])
+                else:
+                    with self.assertRaises(ValueError):
+                        check_overflow('http://localhost', [1])
+            self.assertTrue(stream.closed)
 
     def test_missing_first_output_expires(self):
         expired, first = threading.Event(), threading.Event()

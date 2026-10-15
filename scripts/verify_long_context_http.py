@@ -31,6 +31,7 @@ from dllm.report_io import save_report
 
 MAX_CONTEXT_TOKENS = 1024 * 1024
 MAX_CORPUS_BYTES = 16 * 1024 * 1024
+MAX_CONTROL_BYTES = 64 * 1024
 
 
 def prepare_context_prompts(tokenizer, context, *, max_corpus_bytes=MAX_CORPUS_BYTES):
@@ -132,6 +133,24 @@ def require_gate(condition, reason):
         raise ValueError(reason)
 
 
+def read_control_json(response):
+    """Bound control payloads; the caller owns/ closes the response."""
+    raw = response.read(MAX_CONTROL_BYTES + 1)
+    if len(raw) > MAX_CONTROL_BYTES:
+        raise ValueError('control response exceeds byte bound')
+    def invalid_constant(value):
+        raise ValueError('nonfinite control response value')
+    def finite_float(value):
+        number = float(value)
+        if not math.isfinite(number):
+            invalid_constant(value)
+        return number
+    value = json.loads(raw, parse_constant=invalid_constant, parse_float=finite_float)
+    if not isinstance(value, dict):
+        raise ValueError('control response must be a JSON object')
+    return value
+
+
 def check_overflow(base, tokens):
     """Reject one extra reserved output token after the same prompt succeeded."""
     body = dict(model='a', prompt=tokens, max_tokens=513, temperature=0)
@@ -141,7 +160,8 @@ def check_overflow(base, tokens):
         with urlopen(req, timeout=30) as response:
             raise ValueError(f'overflow unexpectedly returned HTTP {response.status}')
     except HTTPError as error:
-        payload = json.loads(error.read())
+        with error:
+            payload = read_control_json(error)
         message = payload.get('error', '')
         require_gate(error.code == 400 and message == 'invalid or unsupported request',
                      'overflow did not return the required context rejection')
@@ -197,6 +217,7 @@ def main():
         experimental_hybrid_context=args.experimental_hybrid_context, batch_capacity=args.batch_size,
         experimental_hybrid_q4_context=args.experimental_hybrid_q4_context,
         request_timeout=args.request_timeout, first_output_budget=args.first_output_budget,
+        max_control_response_bytes=MAX_CONTROL_BYTES,
         host_gib=args.host_gib,
         model_revision=args.model_revision, engine_revision=args.engine_revision,
         context=args.context, output_tokens=512, prefill_chunk_size=args.chunk_size,
@@ -281,14 +302,14 @@ def main():
                     and result['seconds'] <= args.request_timeout)
                 require_gate(report['feasibility_budget_passed'], 'capacity request exceeded declared feasibility budget')
                 with urlopen(base+'/v1/models/status', timeout=30) as response:
-                    report['status_loaded'] = json.load(response)
+                    report['status_loaded'] = read_control_json(response)
                 require_gate(report['status_loaded']['context'] == args.context, 'loaded context differs from requested capacity')
                 body = json.dumps(dict(model='a', release_host=True)).encode()
                 with urlopen(Request(base+'/v1/models/unload', data=body,
                                      headers={'Content-Type': 'application/json'}), timeout=120) as response:
-                    report['unload'] = json.load(response)
+                    report['unload'] = read_control_json(response)
                 with urlopen(base+'/v1/models/status', timeout=30) as response:
-                    report['status_released'] = json.load(response)
+                    report['status_released'] = read_control_json(response)
                 require_gate(report['status_released']['host_cached_bytes'] == 0, 'host weights remain after release')
                 require_gate(all(m['residency'] != 'gpu' for m in report['status_released']['models']), 'GPU residency remains after release')
                 report['passed'] = True
@@ -322,7 +343,7 @@ def main():
                     and row['short_visible_chunks_during_long_prefill'] >= 2
                     and row['gap_budget_passed'])
                 with urlopen(base+'/v1/models/status', timeout=30) as response:
-                    row['status_after'] = json.load(response)
+                    row['status_after'] = read_control_json(response)
                 save_report(args.output, report)
                 print(f'round {index+1}: passed={row["passed"]} progress_chunks={row["short_visible_chunks_during_long_prefill"]}', flush=True)
             report['passed'] = all(row['passed'] for row in report['rounds'])
