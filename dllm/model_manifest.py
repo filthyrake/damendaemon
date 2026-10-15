@@ -92,8 +92,9 @@ def load(path, resolve):
                 raise ValueError('manifest repository must be owner/name')
             if not isinstance(entry.get('revision'), str) or not re.fullmatch(r'[0-9a-f]{40}', entry['revision']):
                 raise ValueError('manifest repository requires an immutable 40-character revision')
-            if 'filename' in entry and (not isinstance(entry['filename'], str) or not entry['filename']):
-                raise ValueError('manifest filename must be a nonempty string')
+            if 'filename' in entry:
+                from .download import gguf_selection
+                gguf_selection(entry['filename'])
         command('register', alias, source, quantization=policy, chat_template=template)
         entries.append((alias, source, entry, policy, template))
     # Validate the entire document before resolving anything over the network.

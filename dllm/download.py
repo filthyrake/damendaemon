@@ -48,10 +48,9 @@ def gguf_file(filenames, filename):
     return filename
 
 
-def gguf_files(filenames, filename):
-    """Select one exact file or its bounded, complete standard shard family."""
-    files = set(filenames)
-    filename = gguf_file(files, filename)
+def gguf_selection(filename):
+    """Validate a selection without repository access; return required names."""
+    filename = gguf_file((filename,), filename)
     match = re.fullmatch(r'(.+)-([0-9]{5})-of-([0-9]{5})(\.gguf)', filename, re.IGNORECASE)
     if match is None:
         return (filename,)
@@ -59,6 +58,13 @@ def gguf_files(filenames, filename):
     if index != 1 or not 2 <= count <= 64:
         raise ValueError('select the first GGUF shard in a family of 2..64 files')
     names = tuple(f'{match[1]}-{i:05d}-of-{count:05d}{match[4]}' for i in range(1, count + 1))
+    return names
+
+
+def gguf_files(filenames, filename):
+    """Select one exact file or its bounded, complete standard shard family."""
+    names = gguf_selection(filename)
+    files = set(filenames)
     for name in names:
         gguf_file(files, name)
     return names

@@ -138,6 +138,33 @@ class ManifestTests(unittest.TestCase):
                 main()
             read.assert_not_called()
 
+    def test_invalid_later_gguf_selection_prevents_all_downloads(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'models.json'
+            valid = {'repository': 'Qwen/model', 'revision': 'a'*40,
+                     'quantization': 'none'}
+            for filename in ('../model.gguf', '/model.gguf', '*.gguf',
+                             'model.safetensors', 'model-00002-of-00002.gguf',
+                             'model-00001-of-00065.gguf'):
+                with self.subTest(filename=filename):
+                    path.write_text(json.dumps({'version': 1, 'models': {
+                        'first': valid, 'second': {**valid, 'filename': filename}}}))
+                    resolve = Mock()
+                    with self.assertRaises(ValueError):
+                        load(path, resolve)
+                    resolve.assert_not_called()
+
+    def test_valid_split_selection_survives_manifest_preflight(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'models.json'
+            filename = 'Q4/model-00001-of-00002.gguf'
+            path.write_text(json.dumps({'version': 1, 'models': {'chat': {
+                'repository': 'Qwen/model', 'revision': 'a'*40,
+                'filename': filename, 'quantization': 'none'}}}))
+            resolve = Mock(return_value=Path('/cache/model.gguf'))
+            load(path, resolve)
+            resolve.assert_called_once_with('Qwen/model', 'a'*40, filename)
+
     def test_runtime_uses_explicit_policies_and_rejects_invalid_before_gpu(self):
         from dllm.runtime import Runtime
         with patch('dllm.runtime.require_gpu') as gpu, patch.dict(os.environ, DLLM_QUANTIZATION='none'):
