@@ -420,6 +420,22 @@ class ServerTests(unittest.TestCase):
             with self.subTest(body=invalid),self.assertRaises(HTTPError) as caught:post(invalid)
             self.assertEqual(caught.exception.code,400)
 
+    def test_malformed_reranker_output_is_not_a_client_error(self):
+        from dllm.reranking import ranked
+        body={'model':'a','query':'question','documents':['first','second']}
+        for scores in (1., [[1.], [2.]], [None, 2.]):
+            with self.subTest(scores=scores):
+                def rerank(*args, **kwargs):
+                    return {'results':ranked(scores, body['documents'], 2, False)}
+                with patch.object(self.runtime, 'rerank', side_effect=rerank), \
+                        patch('dllm.server.traceback.print_exc'):
+                    with self.assertRaises(HTTPError) as caught:
+                        urlopen(Request(self.url+'/v1/rerank', data=json.dumps(body).encode(),
+                            headers={'Content-Type':'application/json'}), timeout=5)
+                    with caught.exception as response:
+                        self.assertEqual(response.code, 500)
+                        self.assertEqual(json.load(response)['error'], 'model execution failed')
+
     def test_harmony_native_calls_do_not_parse_literal_qwen_envelopes(self):
         tools=[{'type':'function','function':{'name':'weather'}}]
         messages=[{'role':'user','content':'harmony tools'}]

@@ -30,8 +30,10 @@ def options(query,documents,top_n=None,return_documents=False):
 
 
 def ranked(scores,documents,top_n,return_documents):
-    import math
-    if len(scores)!=len(documents) or any(not math.isfinite(value) for value in scores):
+    import sys
+    if (not isinstance(scores, (list, tuple)) or len(scores)!=len(documents)
+            or any(type(value) not in (int, float)
+                   or not -sys.float_info.max <= value <= sys.float_info.max for value in scores)):
         raise RuntimeError('invalid reranker output')
     order=sorted(range(len(scores)),key=lambda index:(-scores[index],index))[:top_n]
     return [{'index':i,'relevance_score':scores[i],

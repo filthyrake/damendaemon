@@ -29,6 +29,12 @@ class RerankingTests(unittest.TestCase):
         for scores in ([float('nan')]*3,[float('inf')]*3,[1.]):
             with self.assertRaises(RuntimeError):ranked(scores,copy,2,False)
 
+    def test_malformed_backend_score_shapes_are_runtime_errors(self):
+        for scores in (None, 1., '12', [[1.], [2.]], [None, 2.],
+                       [True, 2.], ['1', 2.], [10**400, 2.], [1., float('nan')]):
+            with self.subTest(scores=scores), self.assertRaises(RuntimeError):
+                ranked(scores, ['first', 'second'], 2, False)
+
     def test_invalid_requests(self):
         for q,docs,n,include in [('', ['doc'],None,False),('q',[],None,False),
                 ('q',['doc']*65,None,False),('q',[''],None,False),('q',[{}],None,False),
