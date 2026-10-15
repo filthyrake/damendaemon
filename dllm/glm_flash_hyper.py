@@ -1,4 +1,4 @@
-"""Bounded CPU FP32 GLM-5.3-Flash residual-stream reference primitives.
+"""Bounded Flash residual-stream core with CPU-only public composition.
 
 Independent transcription of Transformers v5.17.0 glm5_next equations. Shared
 Sinkhorn mixing is also used by DeepSeek, but Flash normalizes before projecting
@@ -10,8 +10,8 @@ from torch.nn import functional as F
 from .hyper_connections import mixing_weights,restore_streams
 
 
-def _tensor(value,shape):
-    return (isinstance(value,torch.Tensor) and value.device.type=='cpu'
+def _tensor(value,shape,device='cpu'):
+    return (isinstance(value,torch.Tensor) and value.device==torch.device(device)
             and value.dtype==torch.float32 and tuple(value.shape)==tuple(shape))
 
 
@@ -20,15 +20,16 @@ def _finite(*values):
         raise ValueError('nonfinite Flash hyper-connection value')
 
 
-class FlashHyperConnection:
+class _FlashHyperConnection:
     def __init__(self,projection,base,scale,*,streams=4,norm_epsilon=1e-5,
                  connection_epsilon=1e-6,iterations=20,max_workspace_bytes=64*1024**2,
-                 max_output_bytes=64*1024**2):
+                 max_output_bytes=64*1024**2,device='cpu'):
+        self.device=torch.device(device)
         if (type(streams) is not int or not 1<=streams<=16
                 or not isinstance(projection,torch.Tensor) or projection.ndim!=2
                 or projection.shape[1]%streams or not 1<=projection.shape[1]//streams<=2**21
-                or not _tensor(projection,(streams*(streams+2),projection.shape[1]))
-                or not _tensor(base,(streams*(streams+2),)) or not _tensor(scale,(3,))
+                or not _tensor(projection,(streams*(streams+2),projection.shape[1]),self.device)
+                or not _tensor(base,(streams*(streams+2),),self.device) or not _tensor(scale,(3,),self.device)
                 or type(iterations) is not int or not 1<=iterations<=128
                 or any(type(v) not in (int,float) or not 0<v<=1 for v in (norm_epsilon,connection_epsilon))
                 or any(type(v) is not int or not 1<=v<=2**31 for v in (max_workspace_bytes,max_output_bytes))):
@@ -41,9 +42,9 @@ class FlashHyperConnection:
 
     def _admit(self,hidden,operation):
         if (not isinstance(hidden,torch.Tensor) or hidden.ndim!=4
-                or not _tensor(hidden,(*hidden.shape[:2],self.streams,self.width))
+                or not _tensor(hidden,(*hidden.shape[:2],self.streams,self.width),self.device)
                 or min(hidden.shape[:2])<1):
-            raise ValueError('Flash residual state requires nonempty CPU FP32 [batch, sequence, streams, width]')
+            raise ValueError('Flash residual state requires nonempty same-device FP32 [batch, sequence, streams, width]')
         rows=hidden.shape[0]*hidden.shape[1];h=self.streams;d=self.width
         # Conservative live tensor allowance, including validation masks and
         # noncontiguous input copies; excludes borrowed parameters/input storage.
@@ -71,7 +72,7 @@ class FlashHyperConnection:
     @torch.no_grad()
     def restore(self,output,residual,post,matrix):
         b,s=self._admit(residual,'restore');h=self.streams
-        if not _tensor(output,(b,s,self.width)) or not _tensor(post,(b,s,h)) or not _tensor(matrix,(b,s,h,h)):
+        if not _tensor(output,(b,s,self.width),self.device) or not _tensor(post,(b,s,h),self.device) or not _tensor(matrix,(b,s,h,h),self.device):
             raise ValueError('invalid Flash residual restoration geometry')
         _finite(output,residual,post,matrix)
         result=restore_streams(output,residual,post,matrix)
@@ -84,3 +85,9 @@ class FlashHyperConnection:
         result=hidden.mean(-2)
         _finite(result)
         return result
+
+
+class FlashHyperConnection(_FlashHyperConnection):
+    """CPU-only prepared residual-stream reference API."""
+    def __init__(self,projection,base,scale,**options):
+        super().__init__(projection,base,scale,device='cpu',**options)

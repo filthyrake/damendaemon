@@ -1,4 +1,4 @@
-"""Bounded, functional CPU FP32 Kimi delta-attention recurrence for GLM Flash.
+"""Bounded functional FP32 Flash recurrence core with CPU-only public entrypoint.
 
 Equations independently transcribed from Transformers v5.17.0 glm5_next.
 Per-key-dimension log decay acts before the delta update; query and key use
@@ -7,8 +7,8 @@ sqrt(sum(square)+1e-6) normalization. No convolution, model or GPU admission.
 import torch
 
 
-def _tensor(value,shape):
-    return (isinstance(value,torch.Tensor) and value.device.type=='cpu'
+def _tensor(value,shape,device='cpu'):
+    return (isinstance(value,torch.Tensor) and value.device==torch.device(device)
             and value.dtype==torch.float32 and tuple(value.shape)==tuple(shape))
 
 
@@ -18,8 +18,8 @@ def _finite(*values):
 
 
 @torch.no_grad()
-def recurrent_attention(query,key,value,log_decay,beta,initial_state=None,*,
-                        max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
+def _recurrent_attention(query,key,value,log_decay,beta,initial_state=None,*,
+                        max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2,device='cpu'):
     """Return output [B,T,H,V] and independently owned final state [B,H,K,V].
 
     Inputs and initial state are never modified, including on failure. Limits
@@ -32,13 +32,13 @@ def recurrent_attention(query,key,value,log_decay,beta,initial_state=None,*,
         raise ValueError('invalid Flash KDA geometry or budgets')
     b,t,h,k=query.shape
     if (not 1<=b<=65536 or not 1<=t<=2**20 or not 1<=h<=4096 or not 1<=k<=4096
-            or not _tensor(query,(b,t,h,k)) or not _tensor(key,(b,t,h,k))
-            or not _tensor(log_decay,(b,t,h,k)) or not _tensor(beta,(b,t,h))
+            or not _tensor(query,(b,t,h,k),device) or not _tensor(key,(b,t,h,k),device)
+            or not _tensor(log_decay,(b,t,h,k),device) or not _tensor(beta,(b,t,h),device)
             or not isinstance(value,torch.Tensor) or value.ndim!=4
-            or not 1<=value.shape[-1]<=4096 or not _tensor(value,(b,t,h,value.shape[-1]))):
-        raise ValueError('invalid Flash KDA CPU FP32 tensor geometry')
+            or not 1<=value.shape[-1]<=4096 or not _tensor(value,(b,t,h,value.shape[-1]),device)):
+        raise ValueError('invalid Flash KDA same-device FP32 tensor geometry')
     v=value.shape[-1];state_shape=(b,h,k,v)
-    if initial_state is not None and not _tensor(initial_state,state_shape):
+    if initial_state is not None and not _tensor(initial_state,state_shape,device):
         raise ValueError('invalid Flash KDA initial state')
     # Input validation masks plus per-token normalization, decay, prediction,
     # delta outer product and state copies. No sequence-squared allocation.
@@ -50,8 +50,8 @@ def recurrent_attention(query,key,value,log_decay,beta,initial_state=None,*,
     if (log_decay>0).any() or (log_decay < -100).any() or (beta<0).any() or (beta>1).any():
         raise ValueError('invalid Flash KDA decay or update gate range')
     if initial_state is not None:_finite(initial_state)
-    state=(torch.zeros(state_shape,dtype=torch.float32,device='cpu') if initial_state is None else initial_state.clone())
-    result=torch.empty((b,t,h,v),dtype=torch.float32,device='cpu')
+    state=(torch.zeros(state_shape,dtype=torch.float32,device=device) if initial_state is None else initial_state.clone())
+    result=torch.empty((b,t,h,v),dtype=torch.float32,device=device)
     for token in range(t):
         q=query[:,token];kk=key[:,token]
         qsum=q.square().sum(-1,keepdim=True);ksum=kk.square().sum(-1,keepdim=True)
@@ -65,3 +65,8 @@ def recurrent_attention(query,key,value,log_decay,beta,initial_state=None,*,
         _finite(state,attended)
         result[:,token]=attended
     return result,state
+
+
+def recurrent_attention(query,key,value,log_decay,beta,initial_state=None,**budgets):
+    """CPU-only reference recurrence with independent returned state."""
+    return _recurrent_attention(query,key,value,log_decay,beta,initial_state,device='cpu',**budgets)
