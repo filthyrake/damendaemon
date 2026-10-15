@@ -18,7 +18,7 @@ def save_report(path, report):
         with tempfile.NamedTemporaryFile('w', dir=path.parent, prefix=path.name+'.',
                                          suffix='.tmp', delete=False) as output:
             temporary = Path(output.name)
-            json.dump(report, output, indent=2)
+            json.dump(report, output, indent=2, allow_nan=False)
             output.write('\n')
         temporary.replace(path)
     finally:
