@@ -421,3 +421,15 @@ Only the first range owns embeddings and only the last owns its head. Eleven
 local placement tests pass. Guard5.887s,22MiB reserved under128MiB allocator cap,
 4251MiB free before/after and cleanup confirmed. Physical multi-GPU, host
 transfer/transport and practical model/context/performance gates remain open.
+
+## Independent CUDA request slots (#260)
+
+Implementation `22c138d`. Explicit CUDA GLM/Flash/DeepSeek slot owners reuse
+existing aggregate reservation, cursor, release and cleanup rules. Sixteen
+local admission/slot tests pass. Loaded CPU versus CUDA slot replay covers
+unequal cursors, reordered selection, chunked continuation, release/reuse,
+invalid metadata nonmutation and partial-row failure closing all slots. Max
+errors7.8e-7/1.6e-6/2.3e-8; greedy IDs exact. Guard7.879s,22MiB peak reserved
+under128MiB allocator cap,4251MiB free before/after; cleanup confirmed. Cursor
+metadata remains CPU, payloads explicit CUDA. No host transfer/transport,
+physical multi-GPU or practical model/context/performance qualification.
