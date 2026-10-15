@@ -2004,3 +2004,21 @@ it with different generated text. On the measured shared host, median cold
 setup is2.052402s, cached setup44.972us, changed-schema setup2.194562ms, and
 observed paired added A2 runtime cost233.939us/token. These are scoped component
 measurements, not full-model throughput or exclusive-host latency guarantees.
+
+## Explicit prepared CUDA GLM path
+
+Issues #222–#233 add bounded CUDA packed projection/expert arithmetic, routed
+composition, GLM post-down weighting, full/shared latent attention and indexer
+caches, residual blocks, model logits, whole-model placement, native generation
+and serialized loopback HTTP. `python -m scripts.serve_cuda_reference` accepts
+an existing GLM snapshot and requires an indexed CUDA device plus separate
+payload/allocator/context/cache limits. Ordinary production dispatch remains
+unchanged. Prepared parameter tensors must remain immutable.
+
+Tiny shared-A2 fixtures pass independent decoded CPU controls through
+prefill/decode/reorder and poisoning/cleanup; separate zero-head fixtures prove
+chat/SSE and owned command SIGTERM. Device status and timing identify this as
+`cuda_prepared_reference`, with official-model/performance qualification false.
+These are capability/lifecycle gates, not an official checkpoint, practical
+context, quality, throughput or concurrent-serving qualification. Parent #56
+stays open. [Exact results, stopped attempts and limits](evidence/packed-cuda/README.md).

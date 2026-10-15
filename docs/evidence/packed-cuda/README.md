@@ -113,3 +113,26 @@ The original API run predates the completion timing-label correction; the
 standalone-command gate checks those labels explicitly. Peak reserved22MiB.
 38 generation/serving regressions and34 inherited image/pipeline/cancellation
 checks pass. No generated-tool quality or official-model claim is made.
+
+## Standalone CUDA command (#233)
+
+Implementation `6349738`, harness correction `2bf7a16`. Run an explicitly
+prepared local GLM snapshot with `python -m scripts.serve_cuda_reference`.
+The indexed `--device` is required; CPU weight load, device payload, allocator,
+cache, context, output and workspace bounds are separate. It binds loopback,
+uses one CPU thread by default and retains accepted requests through cleanup
+before printing stopped. CPU commands and ordinary production dispatch remain
+unchanged. The allocator cap excludes driver/library memory and does not
+reserve resources against other workflows; shared checks still require the
+external incumbent/resource guard.
+
+`glm-command.json` retains successful actual subprocess startup, chat, SSE with
+requested usage metadata, CUDA timing labels and SIGTERM exit0/stopped scope.
+The retry guard completed in9.212s, exit0, with4251MiB free before and after.
+The child used a128MiB allocator cap and tiny zero-head checkpoint. Initial
+harness failure omitted the SSE usage request; that result and guard remain
+in `glm-command-initial*`. The correction did not weaken any bounds.
+Ten local command/CPU-command/device tests pass. Later generation compatibility
+checks cover34 image/pipeline/queue/cancellation tests and38 native text/tool/
+HTTP tests; the full model-core suite passed1,736 tests before these later
+placement/generation/command additions.
