@@ -22,6 +22,57 @@ from urllib.request import Request, urlopen
 class InjectedStageFailure(RuntimeError):pass
 
 
+def require_gate(condition, message):
+    if not condition:raise ValueError(message)
+
+
+def failure_client(runtime, args, base, report):
+    barrier=threading.Barrier(4)
+    def request(index):
+        body=dict(model='a',prompt=[840,20772,1246,18495,3553,323,17179,1995,13,13655,279,16148,2797,323,63594,13],
+                  max_tokens=32,temperature=0,stream=args.stream and index==0)
+        barrier.wait(timeout=10)
+        try:
+            with urlopen(Request(base+'/v1/completions',data=json.dumps(body).encode(),
+                         headers={'Content-Type':'application/json'}),timeout=45) as response:
+                if not body['stream']:raise AssertionError('failed batch returned success: '+response.read().decode())
+                from dllm.bench import events
+                chunks=list(events(response, require_terminated=True))
+                require_gate('[DONE]' not in chunks, 'failed stream published DONE')
+                parsed=[json.loads(chunk) for chunk in chunks]
+                require_gate(any(chunk.get('error') for chunk in parsed), 'stream did not report the injected failure')
+                require_gate(not any(choice.get('finish_reason') for chunk in parsed for choice in chunk.get('choices',[])),
+                             'failed stream published a finish reason')
+                require_gate(not any('usage' in chunk for chunk in parsed), 'failed stream published usage')
+                return dict(request=index,status=200,stream_error=True,chunks=parsed)
+        except HTTPError as error:
+            with error:payload=json.load(error)
+            require_gate(error.code in (500,503) and payload.get('error'), 'unexpected failure HTTP response')
+            require_gate('choices' not in payload and 'usage' not in payload, 'failure HTTP response published completion metadata')
+            return dict(request=index,status=error.code,payload=payload)
+    try:
+        with ThreadPoolExecutor(4) as pool:report['requests']=list(pool.map(request,range(4)))
+        if args.stream and args.operation=='decode':
+            require_gate(any(item.get('stream_error') for item in report['requests']), 'decode did not exercise a streaming error')
+        require_gate(runtime.closed.wait(2), 'runtime did not close within the cleanup deadline')
+        status=runtime.manage('status');report['status']=status
+        require_gate(status['failed'] and status['closed'] and not status['active'], 'runtime did not reach failed/closed/inactive state')
+        require_gate(status['completed']==0 and status['queued']==0 and runtime.pair.state.failed,
+                     'failed runtime retained work or a live transport')
+        for path,body in (('/health',None),('/v1/completions',dict(model='a',prompt=[1],max_tokens=2))):
+            try:
+                data=None if body is None else json.dumps(body).encode()
+                with urlopen(Request(base+path,data=data,headers={'Content-Type':'application/json'}),timeout=5):
+                    raise AssertionError('closed service accepted '+path)
+            except HTTPError as error:
+                with error:payload=json.load(error)
+                require_gate(error.code==503, 'closed service did not return HTTP 503')
+                report.setdefault('closed_http_checks',[]).append(dict(path=path,status=error.code,payload=payload))
+        report['passed']=True
+    except BaseException as error:report['error']=repr(error)
+    finally:runtime.close()
+
+
 def worker(args):
     if not args.run_id:raise ValueError('worker requires a parent invocation ID')
     from dllm.distributed_server_cli import main as serve
@@ -56,49 +107,8 @@ def worker(args):
     def capture(server,*positional,**keywords):
         nonlocal base
         original_init(server,*positional,**keywords);base=f'http://127.0.0.1:{server.server_port}'
-    def client(runtime):
-        barrier=threading.Barrier(4)
-        def request(index):
-            body=dict(model='a',prompt=[840,20772,1246,18495,3553,323,17179,1995,13,13655,279,16148,2797,323,63594,13],
-                      max_tokens=32,temperature=0,stream=args.stream and index==0)
-            barrier.wait(timeout=10)
-            try:
-                with urlopen(Request(base+'/v1/completions',data=json.dumps(body).encode(),
-                             headers={'Content-Type':'application/json'}),timeout=45) as response:
-                    if not body['stream']:raise AssertionError('failed batch returned success: '+response.read().decode())
-                    from dllm.bench import events
-                    chunks=list(events(response, require_terminated=True))
-                    assert '[DONE]' not in chunks
-                    parsed=[json.loads(chunk) for chunk in chunks]
-                    assert any(chunk.get('error') for chunk in parsed)
-                    assert not any(choice.get('finish_reason') for chunk in parsed for choice in chunk.get('choices',[]))
-                    assert not any(chunk.get('usage') for chunk in parsed)
-                    return dict(request=index,status=200,stream_error=True,chunks=parsed)
-            except HTTPError as error:
-                payload=json.load(error);error.close()
-                assert error.code in (500,503) and payload.get('error')
-                assert 'choices' not in payload and 'usage' not in payload
-                return dict(request=index,status=error.code,payload=payload)
-        try:
-            with ThreadPoolExecutor(4) as pool:report['requests']=list(pool.map(request,range(4)))
-            if args.stream and args.operation=='decode':assert any(item.get('stream_error') for item in report['requests'])
-            assert runtime.closed.wait(2)
-            status=runtime.manage('status');report['status']=status
-            assert status['failed'] and status['closed'] and not status['active']
-            assert status['completed']==0 and status['queued']==0 and runtime.pair.state.failed
-            for path,body in (('/health',None),('/v1/completions',dict(model='a',prompt=[1],max_tokens=2))):
-                try:
-                    data=None if body is None else json.dumps(body).encode()
-                    with urlopen(Request(base+path,data=data,headers={'Content-Type':'application/json'}),timeout=5):
-                        raise AssertionError('closed service accepted '+path)
-                except HTTPError as error:
-                    payload=json.load(error);error.close();assert error.code==503
-                    report.setdefault('closed_http_checks',[]).append(dict(path=path,status=error.code,payload=payload))
-            report['passed']=True
-        except BaseException as error:report['error']=repr(error)
-        finally:runtime.close()
     def checked(runtime,*positional,**keywords):
-        thread=threading.Thread(target=client,args=(runtime,),daemon=True);thread.start()
+        thread=threading.Thread(target=failure_client,args=(runtime,args,base,report),daemon=True);thread.start()
         try:
             deadline=time.monotonic()+10
             while runtime.requests.qsize()<4 and not runtime.closed.is_set() and time.monotonic()<deadline:
