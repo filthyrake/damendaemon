@@ -26,8 +26,8 @@ def main():
         raise AssertionError('invalid call admitted')
     try:
         rng=torch.Generator().manual_seed(249)
-        hidden=torch.randn(2,3,8,generator=rng)*.2
-        router=torch.randn(3,8,generator=rng)*.3
+        hidden=torch.randn(2,3,32,generator=rng)*.2
+        router=torch.randn(3,32,generator=rng)*.3
         bias=torch.tensor([.2,-.1,.3]);table=torch.tensor([[0,1],[1,2],[2,0],[0,2]])
         ids=torch.tensor([[0,1,2],[3,1,0]])
         for format in ('e4m3fn','e2m1'):
@@ -45,7 +45,7 @@ def main():
                 return CudaPackedMatrix(raw.cuda(),scales.cuda(),format),decoded
             bank=[];control=[]
             for _ in range(4):
-                matrices=[matrix(6,8),matrix(6,8),matrix(8,6)]
+                matrices=[matrix(32,32),matrix(32,32),matrix(32,32)]
                 bank.append(CudaPackedExpert(*(m[0] for m in matrices),row_chunk=16,column_chunk=16,workspace_bytes=65536,activation_limit=.1))
                 control.append([m[1] for m in matrices])
             for hashed in (False,True):
