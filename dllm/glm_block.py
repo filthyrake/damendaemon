@@ -1,4 +1,4 @@
-"""CPU FP32 GLM residual/RMS block with owned attention-state failure handling."""
+"""FP32 GLM residual block core with CPU-only public composition."""
 from dataclasses import dataclass
 import torch
 from .glm_attention import _float
@@ -24,11 +24,13 @@ class GlmBlockState:
             self.owner=None
 
 
-class GlmBlock:
-    def __init__(self,attention,feed_forward,input_norm,post_norm,*,epsilon=1e-5):
-        if (not isinstance(attention,CachedGlmAttention) or not isinstance(feed_forward,GlmFeedForward)
+class _GlmBlock:
+    def __init__(self,attention,feed_forward,input_norm,post_norm,*,epsilon=1e-5,device='cpu',attention_type=CachedGlmAttention,ffn_type=GlmFeedForward):
+        self.device=torch.device(device)
+        if (not isinstance(attention,attention_type) or not isinstance(feed_forward,ffn_type)
+                or attention.device!=self.device or getattr(feed_forward,'device',torch.device('cpu'))!=self.device
                 or attention.dim!=feed_forward.dim
-                or any(not _float(w,1) or w.shape!=(attention.dim,) or not torch.isfinite(w).all() for w in (input_norm,post_norm))
+                or any(not _float(w,1,self.device) or w.shape!=(attention.dim,) or not torch.isfinite(w).all() for w in (input_norm,post_norm))
                 or type(epsilon) not in (int,float) or not 0<epsilon<=1):
             raise ValueError('invalid GLM block composition')
         self.attention,self.feed_forward=attention,feed_forward
@@ -47,7 +49,7 @@ class GlmBlock:
             if state.position!=state.attention.position:
                 state.poisoned=state.attention.poisoned=True
                 raise RuntimeError('GLM block and attention cursors disagree')
-            if not _float(hidden,3) or hidden.shape[-1]!=self.dim or type(position) is not int or position!=state.position:
+            if not _float(hidden,3,self.device) or hidden.shape[-1]!=self.dim or type(position) is not int or position!=state.position:
                 raise ValueError('invalid GLM block input/position')
             def norm(value,weight):return value*torch.rsqrt(value.square().mean(-1,keepdim=True)+self.epsilon)*weight
             before=state.attention.position
@@ -65,7 +67,7 @@ class GlmBlock:
             return output,indices
 
     def prefill(self,hidden,*,capacity,max_cache_bytes=256*1024**2,previous_indices=None):
-        if not _float(hidden,3) or hidden.shape[-1]!=self.dim:raise ValueError('invalid GLM block prefill')
+        if not _float(hidden,3,self.device) or hidden.shape[-1]!=self.dim:raise ValueError('invalid GLM block prefill')
         state=self.new_state(hidden.shape[0],capacity,max_cache_bytes=max_cache_bytes)
         try:
             output,indices=self.forward(hidden,state,position=0,previous_indices=previous_indices)
@@ -73,3 +75,9 @@ class GlmBlock:
         except BaseException:
             state.close()
             raise
+
+
+class GlmBlock(_GlmBlock):
+    """CPU-only residual block composition."""
+    def __init__(self,attention,feed_forward,input_norm,post_norm,*,epsilon=1e-5):
+        super().__init__(attention,feed_forward,input_norm,post_norm,epsilon=epsilon,device='cpu')

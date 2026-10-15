@@ -69,3 +69,11 @@ weights and dense masked attention. Max projection error1.20e-7; attention2.24e-
 Causal/padding rejection and original-coordinate packed row views across a scale
 block boundary pass. Guard completed with22MiB peak reserved memory.26 local
 regressions passed. No indexer/cache/model qualification is implied by this gate.
+
+## GLM full/shared cache (#229)
+
+Implementation `91f816a`. `glm-cache.json` passes three chunked full/shared
+attention comparisons against decoded CPU weights, with exact selected IDs,
+duplicate-slot reorder, cursor checks, injected post-write poisoning and close.
+Largest absolute error1.12e-8;22MiB peak reserved.35 focused regressions pass.
+This qualifies the tiny prepared attention boundary, not official model quality.

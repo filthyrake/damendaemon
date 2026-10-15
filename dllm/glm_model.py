@@ -1,4 +1,4 @@
-"""Prepared CPU FP32 GLM model stack with aggregate reference cache ownership."""
+"""Prepared FP32 GLM model core with CPU-only public composition."""
 from dataclasses import dataclass,field
 import threading
 import torch
@@ -41,7 +41,7 @@ class GlmModelState:
             batch=self.layers[0].attention.latents.shape[0]
             per_slot=sum(layer.attention.bytes_per_slot for layer in self.layers)
             if (not isinstance(indices,torch.Tensor) or indices.ndim!=1 or not indices.numel()
-                    or indices.dtype!=torch.int64 or indices.device.type!='cpu'
+                    or indices.dtype!=torch.int64 or indices.device!=self.layers[0].attention.latents.device
                     or bool(((indices<0)|(indices>=batch)).any()) or indices.numel()*per_slot>self.max_cache_bytes):
                 raise ValueError('invalid GLM model slot order or aggregate cache budget exceeded')
             changed=False
@@ -66,17 +66,18 @@ class GlmModelState:
             if failure is not None:raise failure
 
 
-class GlmModel:
+class _GlmModel:
     """Caller-owned prepared FP32 parameters; no checkpoint or serving loader.
 
     Keep parameter contents immutable. Cache budget is aggregate retained tensor
     storage; temporary reorder copies and compute scratch have separate bounds.
     """
-    def __init__(self,embedding,blocks,norm,head,*,epsilon=1e-5,max_output_bytes=64*1024**2):
-        if (not _float(embedding,2) or not _float(norm,1) or not _float(head,2)
+    def __init__(self,embedding,blocks,norm,head,*,epsilon=1e-5,max_output_bytes=64*1024**2,device='cpu',block_type=GlmBlock):
+        self.device=torch.device(device)
+        if (not _float(embedding,2,self.device) or not _float(norm,1,self.device) or not _float(head,2,self.device)
                 or head.shape!=embedding.shape or norm.shape!=(embedding.shape[1],)
                 or not isinstance(blocks,(tuple,list)) or not 1<=len(blocks)<=128
-                or any(not isinstance(block,GlmBlock) or block.dim!=embedding.shape[1] for block in blocks)
+                or any(not isinstance(block,block_type) or block.device!=self.device or block.dim!=embedding.shape[1] for block in blocks)
                 or type(epsilon) not in (int,float) or not 0<epsilon<=1):
             raise ValueError('invalid prepared GLM model geometry')
         if blocks[0].attention.indexer is None:raise ValueError('GLM stack must begin with a full indexer')
@@ -100,9 +101,9 @@ class GlmModel:
 
     def _tokens(self,tokens,all_logits):
         if (not isinstance(tokens,torch.Tensor) or tokens.ndim!=2 or min(tokens.shape)<1
-                or tokens.dtype!=torch.int64 or tokens.device.type!='cpu'
+                or tokens.dtype!=torch.int64 or tokens.device!=self.device
                 or bool(((tokens<0)|(tokens>=self.embedding.shape[0])).any()) or type(all_logits) is not bool):
-            raise ValueError('GLM tokens require nonempty CPU int64 vocabulary IDs')
+            raise ValueError('GLM tokens require nonempty same-device int64 vocabulary IDs')
         rows=tokens.numel() if all_logits else tokens.shape[0]
         if max(4*tokens.numel()*self.embedding.shape[1],4*rows*self.embedding.shape[0])>self.max_output_bytes:
             raise ValueError('GLM embedding/logit output exceeds configured tensor storage budget')
@@ -169,3 +170,9 @@ class GlmModel:
         except BaseException as error:
             self._release_failed(state,error)
             raise
+
+
+class GlmModel(_GlmModel):
+    """CPU-only prepared GLM model stack."""
+    def __init__(self,embedding,blocks,norm,head,*,epsilon=1e-5,max_output_bytes=64*1024**2):
+        super().__init__(embedding,blocks,norm,head,epsilon=epsilon,max_output_bytes=max_output_bytes,device='cpu')
