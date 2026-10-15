@@ -20,6 +20,17 @@ class ServeCudaTests(unittest.TestCase):
                 with self.assertRaises(ValueError):prepare(parser.parse_args([str(path),'--device','cuda:0']))
                 load.assert_not_called()
 
+    def test_flash_nested_context_rejected_before_payload(self):
+        from tests.test_glm_flash_generation import text_fixture as flash_text,snapshot
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp);text=flash_text(path);snapshot(path,text)
+            config=json.loads((path/'config.json').read_text())
+            config['text_config']['max_position_embeddings']=1
+            (path/'config.json').write_text(json.dumps(config))
+            with patch('dllm.glm_flash_reference_loader.load_reference_model',side_effect=AssertionError('payload loaded')) as load:
+                with self.assertRaises(ValueError):prepare(parser_for_command().parse_args([str(path),'--device','cuda:0']))
+                load.assert_not_called()
+
     def test_command_defaults_keep_serial_loopback_and_bounded_resources(self):
         args=parser_for_command().parse_args(['/local/snapshot','--device','cuda:1'])
         self.assertEqual(args.cpu_threads,1);self.assertEqual(args.queue_size,0)

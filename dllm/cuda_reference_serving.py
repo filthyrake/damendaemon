@@ -1,21 +1,25 @@
 """Explicit serialized prepared CUDA GLM HTTP runtime; no default CLI admission."""
 from .reference_serving import ReferenceRuntime
 from .cuda_glm_generation import CudaGlmToolGenerator
+from .cuda_glm_flash_generation import CudaFlashToolGenerator
 
 
 class CudaGlmReferenceRuntime(ReferenceRuntime):
     runner_types=(CudaGlmToolGenerator,)
+    family_name='glm_moe_dsa'
+    execution_name='prepared_cuda_glm'
     scope='cuda_prepared_reference'
     backend_suffix='cuda-prepared-reference'
 
     def __init__(self,runner,alias='model'):
-        if type(runner) is not CudaGlmToolGenerator or runner.device.type!='cuda':
-            raise ValueError('CUDA HTTP requires an explicit prepared CUDA GLM tool runner')
+        if type(runner) not in self.runner_types or runner.device.type!='cuda':
+            raise ValueError('CUDA HTTP requires an explicit prepared CUDA family tool runner')
         self.device=str(runner.device)
         super().__init__(runner,alias)
+        self.family=self.family_name
 
     def execution_status(self):
-        return dict(execution='prepared_cuda_glm',performance_qualified=False)
+        return dict(execution=self.execution_name,performance_qualified=False)
 
     def manage(self,action,**options):
         result=super().manage(action,**options)
@@ -25,3 +29,9 @@ class CudaGlmReferenceRuntime(ReferenceRuntime):
 
     def model_manifest(self):
         raise ValueError('prepared CUDA reference cannot be exported as a qualified production manifest')
+
+
+class CudaFlashReferenceRuntime(CudaGlmReferenceRuntime):
+    runner_types=(CudaFlashToolGenerator,)
+    family_name='glm5_next'
+    execution_name='prepared_cuda_flash'

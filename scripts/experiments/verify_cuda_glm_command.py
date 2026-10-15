@@ -13,12 +13,18 @@ from scripts.experiments.split_gguf import save
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--flash',action='store_true')
     args=parser.parse_args();require_guard()
     if args.output.exists():raise ValueError('new report path required')
-    from tests.test_glm_generation import text_fixture
-    from tests.test_glm_reference_loader import fixture
+    if args.flash:
+        from tests.test_glm_flash_generation import text_fixture,snapshot
+        def fixture(path,*,vocab_size):snapshot(path,text_fixture(path))
+    else:
+        from tests.test_glm_generation import text_fixture
+        from tests.test_glm_reference_loader import fixture
     from tests.test_glm_flash_host_generation import zero_fixture_head
-    report=dict(passed=False,zero_head_fixture=True,allocator_limit_mib=128,
+    family='glm5_next' if args.flash else 'glm_moe_dsa'
+    report=dict(passed=False,family=family,zero_head_fixture=True,allocator_limit_mib=128,
                 official_model_qualified=False,performance_qualified=False)
     save(args.output,report);process=None
     try:
@@ -52,7 +58,7 @@ def main():
                     else:
                         result=json.loads(wire);reasoning.append(result['choices'][0]['message'].get('reasoning_content',''))
                         timing=result['dllm_timing']
-                    if timing['source_tier']!='cuda_prepared_reference' or timing['kernel_backend']!='glm_moe_dsa-cuda-prepared-reference':
+                    if timing['source_tier']!='cuda_prepared_reference' or timing['kernel_backend']!=family+'-cuda-prepared-reference':
                         raise AssertionError('CPU timing label leaked into CUDA command')
                 if not reasoning[0] or reasoning[0]!=reasoning[1]:raise AssertionError('chat/SSE control differs')
                 process.terminate();stdout,_=process.communicate(timeout=5)
