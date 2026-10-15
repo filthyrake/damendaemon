@@ -129,7 +129,7 @@ def main():
                 streamed=[];usage=None
                 with open_request('/v1/chat/completions',{**payloads[0],'stream':True,
                         'stream_options':{'include_usage':True}}) as response:
-                    for event in events(response):
+                    for event in events(response, require_terminated=True):
                         if event=='[DONE]':break
                         chunk=json.loads(event)
                         assert not chunk.get('error'),chunk
@@ -139,7 +139,7 @@ def main():
                 assert usage['prompt_tokens']==len(reference['cases'][0]['tokens'])
                 report['checks'].append('streaming-content-and-usage')
                 with open_request('/v1/chat/completions',{**payloads[0],'stream':True,'max_tokens':128}) as response:
-                    for event in events(response):
+                    for event in events(response, require_terminated=True):
                         if event=='[DONE]':raise AssertionError('stream ended before cancellation')
                         chunk=json.loads(event)
                         if any(c.get('delta',{}).get('content') for c in chunk.get('choices',[])):break

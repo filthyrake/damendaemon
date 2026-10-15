@@ -1,4 +1,5 @@
 import json
+import io
 import os
 from pathlib import Path
 import subprocess
@@ -169,12 +170,24 @@ class HttpRunnerTests(unittest.TestCase):
                 for event in super().generate(*args,**kwargs):
                     if 'timing' in event:event['timing']['source_tier']='disk'
                     yield event
-        for text in ('Hello world','wrong'):
+        for text in ('Hello world','wrong','truncated'):
             runtime=Runtime()
             with self.subTest(text=text):
                 # FakeRuntime's timing already identifies disk; this checks the
                 # real HTTP transport and runner assertions, not GPU correctness.
-                if text=='wrong':
+                if text == 'truncated':
+                    from scripts.experiments import split_gguf
+                    original = split_gguf.urlopen
+                    def truncated(request, **kwargs):
+                        response = original(request, **kwargs)
+                        if json.loads(request.data).get('stream'):
+                            with response:
+                                return io.BytesIO(response.read().rstrip(b'\n'))
+                        return response
+                    with patch.object(split_gguf, 'urlopen', side_effect=truncated):
+                        with self.assertRaisesRegex(ValueError, 'unterminated SSE event'):
+                            http_check(runtime, [1], 4, dict(text='Hello world', completion_tokens=2))
+                elif text=='wrong':
                     with self.assertRaisesRegex(ValueError,'trace'):
                         http_check(runtime,[1],4,dict(text=text,completion_tokens=2))
                 else:

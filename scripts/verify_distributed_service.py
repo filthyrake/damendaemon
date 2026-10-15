@@ -109,14 +109,14 @@ def worker(args):
                 for index,result in enumerate(refills):
                     check(result,index%len(cases),lengths[index],'concurrent-slot-refill:'+str(index))
             with opened('/v1/completions',{**body(),'stream':True,'stream_options':{'include_usage':True}}) as response:
-                chunks=list(events(response))
+                chunks=list(events(response, require_terminated=True))
             assert chunks[-1]=='[DONE]'
             parsed=[json.loads(chunk) for chunk in chunks[:-1]]
             assert ''.join(c['text'] for item in parsed for c in item.get('choices',[]))==tokenizer.decode(cases[0]['tokens'],skip_special_tokens=True)
             assert parsed[-1]['usage']['completion_tokens']==len(cases[0]['tokens'])
             report['checks'].append('streaming-content-and-usage')
             with opened('/v1/completions',{**body(),'stream':True,'max_tokens':128}) as response:
-                for event in events(response):
+                for event in events(response, require_terminated=True):
                     if event=='[DONE]':raise AssertionError('stream ended before cancellation')
                     if any(c.get('text') for c in json.loads(event).get('choices',[])):break
             check(request(1),1,label='cancel-and-reuse-slot')

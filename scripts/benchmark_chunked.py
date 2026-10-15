@@ -55,7 +55,7 @@ def main():
                         start=time.perf_counter()
                         with ThreadPoolExecutor(1) as pool:
                             with request(short_prompt,64,True) as response:
-                                for event in events(response):
+                                for event in events(response, require_terminated=True):
                                     if event=='[DONE]':break
                                     data=json.loads(event)
                                     if 'error' in data:raise RuntimeError(data)

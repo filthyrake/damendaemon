@@ -127,14 +127,14 @@ def main():
         other=request('/v1/chat/completions',chat('expanded'))
         expected=whole['choices'][0]['message']['content']
         assert other['choices'][0]['message']['content']==expected,(whole,other)
-        with post('/v1/chat/completions',chat(stream=True)) as response:chunks=list(events(response))
+        with post('/v1/chat/completions',chat(stream=True)) as response:chunks=list(events(response, require_terminated=True))
         assert chunks[-1]=='[DONE]'
         text=''.join(c.get('delta',{}).get('content','') for x in chunks[:-1] for c in json.loads(x)['choices'])
         assert text==expected
         with ThreadPoolExecutor(4) as pool:
             concurrent=list(pool.map(lambda _:request('/v1/chat/completions',chat()),range(4)))
         assert all(r['choices'][0]['message']['content']==expected for r in concurrent)
-        with post('/v1/chat/completions',chat(stream=True)) as response:next(events(response))
+        with post('/v1/chat/completions',chat(stream=True)) as response:next(events(response, require_terminated=True))
         assert request('/v1/chat/completions',chat())['choices'][0]['message']['content']==expected
         request('/v1/models/unload',dict(model='packed'))
         restored=request('/v1/chat/completions',chat())

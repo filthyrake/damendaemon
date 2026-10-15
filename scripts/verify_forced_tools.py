@@ -58,7 +58,7 @@ def main():
                 assert model.chat_tokens(MESSAGES,tools=tools,tool_json=True,**thinking)==tokenizer.encode(rendered,add_special_tokens=False)
                 result=request(alias,tool_choice=choice);call=check(result,choice)
                 with post(alias,tool_choice=choice,stream=True,stream_options={'include_usage':True}) as response:
-                    chunks=list(events(response))
+                    chunks=list(events(response, require_terminated=True))
                 assert chunks[-1]=='[DONE]'
                 payloads=[json.loads(c) for c in chunks[:-1]]
                 streamed=[c for p in payloads for item in p['choices'] for c in item['delta'].get('tool_calls',[])]
@@ -78,7 +78,7 @@ def main():
         with ThreadPoolExecutor(4) as pool:concurrent=list(pool.map(run,range(4)))
         assert len({call['id'] for _,call in concurrent})==4
         max_batch=max(r['dllm_timing']['max_batch_size'] for r,_ in concurrent);assert max_batch>=2
-        with post(stream=True) as response:next(events(response))
+        with post(stream=True) as response:next(events(response, require_terminated=True))
         check(request())
         auto=copy.deepcopy(TOOLS)
         for t in auto:t['function']['strict']=False

@@ -33,7 +33,7 @@ def main():
     base=f'http://127.0.0.1:{server.server_port}'
     def post(body,path='/v1/completions'):
         with urlopen(Request(base+path,data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=180) as response:
-            return list(events(response)) if body.get('stream') else json.load(response)
+            return list(events(response, require_terminated=True)) if body.get('stream') else json.load(response)
     def body(prompt=ids,**kw):return {'model':'a','prompt':prompt,'max_tokens':8,'temperature':0,**kw}
     def rejected(payload,path='/v1/completions'):
         try:post(payload,path)

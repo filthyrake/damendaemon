@@ -102,7 +102,7 @@ def main():
             expected=tokenizer.apply_chat_template(MESSAGES,tools=TOOLS,add_generation_prompt=True,return_dict=False,**thinking[alias])
             assert actual==expected,(alias,'function definition template mismatch',len(actual),len(expected))
             whole=request(alias);call=check(whole);baseline[alias]=call['function']
-            with post(alias,stream=True) as response:chunks=list(events(response))
+            with post(alias,stream=True) as response:chunks=list(events(response, require_terminated=True))
             assert chunks[-1]=='[DONE]'
             payloads=[json.loads(x) for x in chunks[:-1]];calls={};content=''
             for payload in payloads:
@@ -141,7 +141,7 @@ def main():
         ids=[check(result)['id'] for result in outputs];assert len(set(ids))==4
         assert all(check(result)['function']==baseline['a'] for result in outputs)
         max_batch=max(r['dllm_timing']['max_batch_size'] for r in outputs);assert max_batch>=2,max_batch
-        with post('a',stream=True) as response:next(events(response))
+        with post('a',stream=True) as response:next(events(response, require_terminated=True))
         runtime.manage('status');check(request('a'))
         for alias in paths:
             manage('unload',model=alias,release_host=True)

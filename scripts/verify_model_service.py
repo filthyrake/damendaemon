@@ -83,7 +83,7 @@ def main():
                     assert reasoning['choices'][0]['message']['content']
                     assert nonthinking['choices'][0]['message']['content']
                     with post('new', stream=True, max_tokens=128) as response:
-                        stream = events(response)
+                        stream = events(response, require_terminated=True)
                         next(stream)
                         next(stream)
                     assert request('llama')['choices'][0]['message']['content'] == baselines['llama']

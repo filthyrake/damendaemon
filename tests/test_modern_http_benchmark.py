@@ -84,6 +84,18 @@ class BenchmarkIntegrity(unittest.TestCase):
     def test_truncated_stream_fails(self):
         self.assertFalse(self.run_response(done=False)['passed'])
 
+    def test_unterminated_done_fails_and_retains_output(self):
+        chunks = [dict(choices=[dict(text='hello')]),
+                  dict(choices=[], usage=dict(prompt_tokens=2, completion_tokens=128))]
+        prefix = ''.join('data: ' + json.dumps(chunk) + '\n\n' for chunk in chunks)
+        for ending in ('data: [DONE]', 'data: [DONE]\n'):
+            with patch.object(benchmark, 'urlopen', return_value=Response((prefix + ending).encode())):
+                result = benchmark.request('http://127.0.0.1:1', 'a', [1, 2], 'dllm', [3],
+                                           threading.Barrier(1))
+            self.assertFalse(result['passed'])
+            self.assertEqual(result['text'], 'hello')
+            self.assertIn('unterminated SSE event', result['error'])
+
     def test_empty_output_fails(self):
         self.assertFalse(self.run_response(empty=True)['passed'])
 

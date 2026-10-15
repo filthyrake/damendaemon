@@ -63,7 +63,7 @@ def main():
                     saw_output=False
                     with urlopen(Request(base+'/v1/completions',data=json.dumps(body).encode(),
                                  headers={'Content-Type':'application/json'}),timeout=180) as response:
-                        for event in events(response):
+                        for event in events(response, require_terminated=True):
                             if event=='[DONE]':break
                             chunk=json.loads(event)
                             if chunk.get('error'):raise RuntimeError(chunk['error'])

@@ -120,7 +120,7 @@ def main():
                 for index,result in enumerate(responses):check(result,index,counts[index],'concurrent-shrinking:'+str(index))
                 assert max(r['dllm_timing']['max_batch_size'] for r in responses)>=2
                 with opened('/v1/completions',{**body(),'stream':True,'stream_options':{'include_usage':True}}) as response:
-                    chunks=list(events(response))
+                    chunks=list(events(response, require_terminated=True))
                 assert chunks[-1]=='[DONE]'
                 parsed=[json.loads(c) for c in chunks[:-1]]
                 text=''.join(c['text'] for chunk in parsed for c in chunk.get('choices',[]))
@@ -128,7 +128,7 @@ def main():
                 assert parsed[-1]['usage']['completion_tokens']==len(cases[0]['tokens'])
                 report['checks'].append('streaming-content-and-usage')
                 with opened('/v1/completions',{**body(),'stream':True,'max_tokens':128}) as response:
-                    for event in events(response):
+                    for event in events(response, require_terminated=True):
                         if event=='[DONE]':raise AssertionError('stream ended before cancellation')
                         if any(c.get('text') for c in json.loads(event).get('choices',[])):break
                 check(request(1),1,label='cancel-and-reuse-slot')

@@ -63,10 +63,12 @@ class Result:
 
 
 def events(lines, *, max_line_bytes=MAX_SSE_LINE_BYTES,
-           max_event_bytes=MAX_SSE_EVENT_BYTES, max_event_lines=MAX_SSE_EVENT_LINES):
+           max_event_bytes=MAX_SSE_EVENT_BYTES, max_event_lines=MAX_SSE_EVENT_LINES,
+           require_terminated=False):
     """Decode bounded SSE events, using bounded reads for HTTP/file responses.
 
     Iterable inputs are checked after delivery; their caller owns line allocation.
+    Strict mode rejects pending data at EOF instead of emitting a partial event.
     Limits include wire delimiters and ignored fields. They bound parser storage,
     not total stream duration or bytes across independently completed events.
     """
@@ -95,6 +97,8 @@ def events(lines, *, max_line_bytes=MAX_SSE_LINE_BYTES,
                 value = line[5:]
                 data.append(value[1:] if value.startswith(" ") else value)
     if data:
+        if require_terminated:
+            raise ValueError("unterminated SSE event")
         yield "\n".join(data)
 
 
@@ -120,7 +124,7 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
         with urlopen(req, timeout=timeout) as response:
             if response.headers.get_content_type() != "text/event-stream":
                 raise ValueError("expected text/event-stream response")
-            for data in events(response):
+            for data in events(response, require_terminated=True):
                 if data == "[DONE]":
                     if not finished:
                         raise ValueError("stream ended without a completion finish reason")

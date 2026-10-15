@@ -144,7 +144,7 @@ def http_check(runtime, ids, steps, expected):
                 first['usage']['completion_tokens'] != expected['completion_tokens']):
             raise ValueError('HTTP output differs from direct numerical trace')
         with post('/v1/completions', dict(body, stream=True)) as response:
-            chunks = list(events(response))
+            chunks = list(events(response, require_terminated=True))
         if not chunks or chunks[-1] != '[DONE]':
             raise ValueError('incomplete HTTP stream')
         streamed = ''.join(c.get('text', '') for chunk in chunks[:-1]

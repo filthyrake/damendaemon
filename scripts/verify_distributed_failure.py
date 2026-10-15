@@ -65,7 +65,7 @@ def worker(args):
                              headers={'Content-Type':'application/json'}),timeout=45) as response:
                     if not body['stream']:raise AssertionError('failed batch returned success: '+response.read().decode())
                     from dllm.bench import events
-                    chunks=list(events(response))
+                    chunks=list(events(response, require_terminated=True))
                     assert '[DONE]' not in chunks
                     parsed=[json.loads(chunk) for chunk in chunks]
                     assert any(chunk.get('error') for chunk in parsed)

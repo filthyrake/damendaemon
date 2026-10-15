@@ -57,7 +57,7 @@ def main():
         scored_tokens=0
         with urlopen(Request(args.base_url + ("/completions" if args.raw else "/chat/completions"), data=json.dumps(body).encode(),
                              headers={"Content-Type": "application/json"}), timeout=120) as response:
-            for data in events(response):
+            for data in events(response, require_terminated=True):
                 if data == "[DONE]":
                     done = True
                     break

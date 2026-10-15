@@ -172,7 +172,7 @@ def main():
                     if restored['dllm_timing']['source_tier'] != 'host':
                         raise AssertionError('alias switching did not restore host weights')
                     with post('/v1/chat/completions', chat(stream=True)) as response:
-                        chunks = list(events(response))
+                        chunks = list(events(response, require_terminated=True))
                     streamed = ''.join(c.get('delta', {}).get('content', '') for item in chunks[:-1]
                                        for c in json.loads(item)['choices'])
                     if chunks[-1] != '[DONE]' or streamed != expected:
@@ -181,7 +181,7 @@ def main():
                         for response in pool.map(lambda _: request('/v1/chat/completions', chat()), range(2)):
                             check(response)
                     with post('/v1/chat/completions', chat(stream=True)) as response:
-                        stream = events(response)
+                        stream = events(response, require_terminated=True)
                         next(stream)
                         next(stream)
                     check(request('/v1/chat/completions', chat()))

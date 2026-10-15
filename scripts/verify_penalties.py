@@ -102,7 +102,7 @@ def main():
                     route='/v1/completions' if raw else '/v1/chat/completions'
                     with urlopen(Request(base+route,data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=180) as response:
                         if stream:
-                            chunks=list(events(response));assert chunks[-1]=='[DONE]'
+                            chunks=list(events(response, require_terminated=True));assert chunks[-1]=='[DONE]'
                             choices=[json.loads(v)['choices'][0] for v in chunks[:-1]]
                             return ''.join(c.get('text','') if raw else c.get('delta',{}).get('content','') for c in choices)
                         value=json.load(response)

@@ -146,7 +146,7 @@ def main():
                 assert restored['choices'][0]['message']['content'] == expected
                 assert restored['dllm_timing']['source_tier'] == 'host'
                 with post('/v1/chat/completions', chat(stream=True)) as response:
-                    chunks = list(events(response))
+                    chunks = list(events(response, require_terminated=True))
                 assert chunks[-1] == '[DONE]'
                 text = ''.join(c.get('delta', {}).get('content', '') for item in chunks[:-1] for c in json.loads(item)['choices'])
                 assert text == expected
@@ -154,7 +154,7 @@ def main():
                     concurrent = list(pool.map(lambda _: request('/v1/chat/completions', chat()), range(2)))
                 assert all(r['choices'][0]['message']['content'] == expected for r in concurrent)
                 with post('/v1/chat/completions', chat(stream=True)) as response:
-                    stream = events(response); next(stream); next(stream)
+                    stream = events(response, require_terminated=True); next(stream); next(stream)
                 assert request('/v1/chat/completions', chat())['choices'][0]['message']['content'] == expected
                 boundary_checks = []
                 for ids in boundary_prompts:
@@ -168,7 +168,7 @@ def main():
                         assert target == other['choices'][0]['text']
                     assert first['usage'] == other['usage'] and first['usage']['completion_tokens'] > 0
                     with post('/v1/completions', dict(model='gguf', stream=True, **body)) as response:
-                        chunks = list(events(response))
+                        chunks = list(events(response, require_terminated=True))
                     assert chunks[-1] == '[DONE]'
                     streamed = ''.join(c.get('text', '') for item in chunks[:-1] for c in json.loads(item)['choices'])
                     assert streamed == target

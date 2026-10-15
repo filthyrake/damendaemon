@@ -45,7 +45,7 @@ def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128,
         with urlopen(req, timeout=timeout) as response:
             if response.headers.get_content_type() != 'text/event-stream':
                 raise ValueError('expected SSE')
-            for data in events(response):
+            for data in events(response, require_terminated=True):
                 elapsed = time.perf_counter() - start
                 if data == '[DONE]':
                     done = True

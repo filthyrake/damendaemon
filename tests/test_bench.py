@@ -78,7 +78,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             for chunk in chunks:
                 self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
-            if model != "truncated":
+            if model == 'unterminated-done':
+                self.wfile.write(b'data: [DONE]')
+            elif model == 'single-newline-done':
+                self.wfile.write(b'data: [DONE]\n')
+            elif model != "truncated":
                 self.wfile.write(b"data: [DONE]\n\n")
         except (BrokenPipeError, ConnectionResetError):
             pass  # Invalid-stream tests deliberately close before the final event.
@@ -234,6 +238,15 @@ class BenchTests(unittest.TestCase):
         self.assertIsNotNone(result.error)
         self.assertEqual(summarize([result], 1)["succeeded"], 0)
 
+    def test_unterminated_done_cannot_qualify(self):
+        for model in ('unterminated-done', 'single-newline-done'):
+            with self.subTest(model=model):
+                result = self.request(model)
+                self.assertEqual(result.error, 'ValueError')
+                self.assertEqual(result.output_tokens, 7)
+                self.assertEqual(result.output_events, 2)
+                self.assertEqual(summarize([result], 1)['succeeded'], 0)
+
     def test_done_cannot_substitute_for_valid_completion_termination(self):
         profile = dict(max_first_output_seconds=5, max_output_event_gap_seconds=5,
                        min_request_output_tokens_per_second=.001)
@@ -262,6 +275,18 @@ class BenchTests(unittest.TestCase):
             b": ping\r\n", b"event: message\r\n", b"data: first\r\n",
             b"data: second\r\n", b"\r\n", b"data: final\n",
         ])), ["first\nsecond", "final"])
+
+    def test_sse_strict_termination_preserves_complete_events_and_tolerant_mode(self):
+        wire = b'data: complete\r\n\r\ndata: partial\n'
+        strict = events(io.BytesIO(wire), require_terminated=True)
+        self.assertEqual(next(strict), 'complete')
+        with self.assertRaisesRegex(ValueError, 'unterminated'):
+            next(strict)
+        self.assertEqual(list(events(io.BytesIO(wire))), ['complete', 'partial'])
+        self.assertEqual(list(events(io.BytesIO(b'data: done\n\n'),
+                                    require_terminated=True)), ['done'])
+        self.assertEqual(list(events(io.BytesIO(b': keepalive\n'),
+                                    require_terminated=True)), [])
 
     def test_sse_bounded_reads_and_line_rejection(self):
         class Reader(io.BytesIO):

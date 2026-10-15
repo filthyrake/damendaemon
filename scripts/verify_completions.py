@@ -61,7 +61,7 @@ def main():
                 assert first['usage']['prompt_tokens']==len(ids)
                 with post({'model':'a','prompt':text,'max_tokens':24,'temperature':0,
                            'stream':True,'stream_options':{'include_usage':True}}) as response:
-                    chunks=list(events(response))
+                    chunks=list(events(response, require_terminated=True))
                 assert chunks[-1]=='[DONE]'
                 parsed=[json.loads(value) for value in chunks[:-1]]
                 assert all(item['object']=='text_completion' for item in parsed)

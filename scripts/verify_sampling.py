@@ -39,7 +39,7 @@ def main():
                     with urlopen(Request(base+'/v1/chat/completions', data=json.dumps(body).encode(),
                             headers={'Content-Type':'application/json'}), timeout=180) as response:
                         if options.get('stream'):
-                            chunks = list(events(response))
+                            chunks = list(events(response, require_terminated=True))
                             assert chunks[-1] == '[DONE]'
                             return ''.join(json.loads(x)['choices'][0]['delta'].get('content','')
                                 for x in chunks[:-1] if json.loads(x).get('choices'))

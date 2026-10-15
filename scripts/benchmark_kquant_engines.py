@@ -341,7 +341,7 @@ def main():
                         started=time.perf_counter();first=None;usage=None;text='';done=False
                         with urlopen(Request(base+'/v1/completions',data=json.dumps(body).encode(),
                                 headers={'Content-Type':'application/json'}),timeout=300) as response:
-                            for event in events(response):
+                            for event in events(response, require_terminated=True):
                                 if event=='[DONE]':done=True;break
                                 value=json.loads(event)
                                 if value.get('error'):raise RuntimeError(value['error'])
@@ -450,7 +450,7 @@ def main():
                         assert restored['dllm_timing']['source_tier']=='disk' and restored['choices'][0]['text']==expected
                         checks['disk_reload']=True
                         with post('/v1/completions',{**body,'stream':True,'max_tokens':256}) as response:
-                            next(events(response))
+                            next(events(response, require_terminated=True))
                         recovered=json_post('/v1/completions',body)
                         assert recovered['choices'][0]['text']==expected
                         checks['cancellation_recovery']=True
@@ -459,7 +459,7 @@ def main():
                         chat=json_post('/v1/chat/completions',chat_body)
                         chat_text=chat['choices'][0]['message']['content']
                         with post('/v1/chat/completions',{**chat_body,'stream':True}) as response:
-                            chunks=list(events(response))
+                            chunks=list(events(response, require_terminated=True))
                         assert chunks[-1]=='[DONE]'
                         streamed=''.join(c.get('delta',{}).get('content','') for item in chunks[:-1]
                                          for c in json.loads(item)['choices'])

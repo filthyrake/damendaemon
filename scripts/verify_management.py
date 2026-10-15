@@ -56,7 +56,7 @@ def main():
                 assert args.a.is_file() or (args.a/'config.json').is_file()
                 manage('load',model='a')
                 with post('/v1/chat/completions',{**prompt,'stream':True,'stream_options':{'include_usage':True}}) as response:
-                    stream=events(response)
+                    stream=events(response, require_terminated=True)
                     chunks=[]
                     for item in stream:
                         chunks.append(item)

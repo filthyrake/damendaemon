@@ -62,7 +62,7 @@ def main():
                                     headers={'Content-Type':'application/json'})
                     with urlopen(request,timeout=300) as response:
                         if streaming:
-                            chunks=list(events(response));assert chunks[-1]=='[DONE]'
+                            chunks=list(events(response, require_terminated=True));assert chunks[-1]=='[DONE]'
                             text=''.join(c.get('text','') for item in chunks[:-1] for c in json.loads(item)['choices'])
                         else:
                             value=json.load(response);text=value['choices'][0]['text'];case['timing']=value['dllm_timing']

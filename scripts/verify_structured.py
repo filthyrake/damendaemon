@@ -56,7 +56,7 @@ def main():
                     assert isinstance(value['values'],list) and all(type(x) is int and x in (1,2) for x in value['values']),value
                 first=request();check(first)
                 raw=request(raw=True);check(raw)
-                with post(stream=True,stream_options={'include_usage':True}) as response:chunks=list(events(response))
+                with post(stream=True,stream_options={'include_usage':True}) as response:chunks=list(events(response, require_terminated=True))
                 assert chunks[-1]=='[DONE]'
                 parsed=[json.loads(v) for v in chunks[:-1]]
                 streamed=''.join(c.get('text',c.get('delta',{}).get('content','')) for item in parsed for c in item['choices'])
@@ -82,7 +82,7 @@ def main():
                         assert error.code==400;error.close()
                 # Disconnect an active constrained stream, then prove slot reuse.
                 with post(stream=True,max_tokens=256) as response:
-                    next(events(response))
+                    next(events(response, require_terminated=True))
                 check(request())
                 print(json.dumps({'passed':True,'model_path':args.path,'device':args.device,'raw':args.raw,
                     'mixed_batch':True,'stream_and_raw':True,'unicode':True,'sampling':True,

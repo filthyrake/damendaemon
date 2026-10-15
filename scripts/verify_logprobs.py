@@ -61,7 +61,7 @@ def main():
             if scored:body.update(logprobs=True,top_logprobs=5)
             with urlopen(Request(base+'/v1/chat/completions',data=json.dumps(body).encode(),
                     headers={'Content-Type':'application/json'}),timeout=120) as response:
-                return list(events(response)) if stream else json.load(response)
+                return list(events(response, require_terminated=True)) if stream else json.load(response)
         baseline=post(scored=False)
         whole=post()
         expected=whole['choices'][0]

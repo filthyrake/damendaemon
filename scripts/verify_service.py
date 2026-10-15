@@ -115,7 +115,7 @@ def main():
                     assert trials[2]["timing"]["source_tier"] == expected_tier
                     # Streaming matches the non-streaming result and reports real usage.
                     with post(stream=True, stream_options={"include_usage": True}) as response:
-                        chunks = list(events(response))
+                        chunks = list(events(response, require_terminated=True))
                     assert chunks[-1] == "[DONE]"
                     parsed = [json.loads(value) for value in chunks[:-1]]
                     streamed = "".join(c["delta"].get("content", "") for item in parsed for c in item["choices"])
@@ -131,7 +131,7 @@ def main():
                             error.close()
                     # Close mid-generation and immediately ask for another model.
                     with post(stream=True) as response:
-                        next(events(response))
+                        next(events(response, require_terminated=True))
                     with post("b") as response:
                         assert json.load(response)["choices"][0]["message"]["content"] == texts["b"]
                     def concurrent(alias):
