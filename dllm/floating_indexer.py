@@ -8,8 +8,8 @@ from .deepseek_position import rotate_pairs
 
 
 @torch.no_grad()
-def index_hidden(hidden, low_rank, query_weight, head_weight, keys, positions, inverse_frequencies,
-                 *, top_k, offset=0, query_chunk=16, key_chunk=64):
+def _index_hidden(hidden, low_rank, query_weight, head_weight, keys, positions, inverse_frequencies,
+                 *, top_k, offset=0, query_chunk=16, key_chunk=64,projection_check=None,linear_fn=None,selector=None,validate_finite=False):
     """Select ratio-four compressed blocks using already resident floating weights.
 
     hidden [batch,sequence,model_width], low_rank [batch,sequence,query_rank],
@@ -19,6 +19,12 @@ def index_hidden(hidden, low_rank, query_weight, head_weight, keys, positions, i
     result dtype. Keys must already have the compressor's rotation/FP4 transform.
     Frequency and position contracts match rotate_pairs. Accelerator FP8 activation rounding and performance remain unqualified.
     """
+    projection_check=is_projection if projection_check is None else projection_check
+    linear_fn=linear if linear_fn is None else linear_fn
+    selector=select_compressed if selector is None else selector
+    def checked(value):
+        if validate_finite and not torch.isfinite(value).all():raise ValueError('nonfinite indexer intermediate')
+        return value
     if (not isinstance(hidden, torch.Tensor) or hidden.ndim != 3 or hidden.shape[-1] < 1
             or hidden.dtype not in (torch.float16, torch.bfloat16, torch.float32)):
         raise ValueError('indexer hidden input must be floating [batch,sequence,width]')
@@ -27,7 +33,7 @@ def index_hidden(hidden, low_rank, query_weight, head_weight, keys, positions, i
                 or tensor.dtype != hidden.dtype or tensor.device != hidden.device):
             raise ValueError('floating indexer inputs/weights must match hidden dtype and device')
     for weight in (query_weight,head_weight):
-        if not is_projection(weight) or weight.dtype != hidden.dtype or weight.device != hidden.device:
+        if not projection_check(weight) or weight.dtype != hidden.dtype or weight.device != hidden.device:
             raise ValueError('indexer projections must match hidden dtype and device')
     width, heads = keys.shape[-1], head_weight.shape[0]
     if (not 32 <= width <= 4096 or width & (width-1) or heads < 1 or low_rank.shape[-1] < 1
@@ -46,19 +52,28 @@ def index_hidden(hidden, low_rank, query_weight, head_weight, keys, positions, i
             or type(query_chunk) is not int or not 1 <= query_chunk <= 128
             or type(key_chunk) is not int or not 1 <= key_chunk <= 256):
         raise ValueError('invalid indexer selection/chunk options')
+    if validate_finite:
+        for value in (hidden,low_rank,inverse_frequencies):checked(value)
+        for value in (query_weight,head_weight):
+            if isinstance(value,torch.Tensor):checked(value)
     count = min(top_k, keys.shape[1])
     ids = torch.empty(*hidden.shape[:2], count, device=hidden.device, dtype=torch.int64)
     scores = torch.empty(*hidden.shape[:2], count, device=hidden.device, dtype=torch.float32)
     rotary_width = inverse_frequencies.numel()*2
     for start in range(0, hidden.shape[1], query_chunk):
         stop = min(start+query_chunk, hidden.shape[1])
-        queries = linear(low_rank[:, start:stop], query_weight).unflatten(-1, (heads, width))
+        queries = checked(linear_fn(low_rank[:, start:stop], query_weight)).unflatten(-1, (heads, width))
         queries[..., -rotary_width:] = rotate_pairs(queries[..., -rotary_width:], positions[:, start:stop], inverse_frequencies)
-        queries = simulate_fp4(normalized_hadamard(queries))
+        queries = checked(simulate_fp4(checked(normalized_hadamard(checked(queries)))))
         # Preserve the reference BF16/FP16 coefficient rounding before FP32 scoring.
-        weights = (linear(hidden[:, start:stop], head_weight)*(width**-.5*heads**-.5)).float()
-        selected, selected_scores = select_compressed(queries, keys, weights, positions[:, start:stop],
+        weights = checked((checked(linear_fn(hidden[:, start:stop], head_weight))*(width**-.5*heads**-.5)).float())
+        selected, selected_scores = selector(queries, keys, weights, positions[:, start:stop],
                                                      ratio=4, top_k=top_k, offset=offset, query_chunk=query_chunk,
                                                      key_chunk=key_chunk, scale_head_weights=False)
         ids[:, start:stop], scores[:, start:stop] = selected, selected_scores
     return ids, scores
+
+
+def index_hidden(hidden,low_rank,query_weight,head_weight,keys,positions,inverse_frequencies,*,top_k,offset=0,query_chunk=16,key_chunk=64):
+    return _index_hidden(hidden,low_rank,query_weight,head_weight,keys,positions,inverse_frequencies,
+                         top_k=top_k,offset=offset,query_chunk=query_chunk,key_chunk=key_chunk)
