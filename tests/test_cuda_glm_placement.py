@@ -17,10 +17,14 @@ class CudaGlmPlacementTests(unittest.TestCase):
 
     def test_alias_accounting_and_preserved_cpu_recipe(self):
         source,_=model_pair();source.head=source.embedding
+        source.config={'max_position_embeddings':64,'eos_token_id':[1,2,3]}
         tensors=_tensors(source)
         self.assertIs(tensors[id(source.head)],source.embedding)
         rebuilt=_build(source,tensors,cuda=False)
         self.assertIs(rebuilt.head,rebuilt.embedding)
+        self.assertEqual(rebuilt.config,source.config)
+        rebuilt.config['eos_token_id'].append(4)
+        self.assertEqual(source.config['eos_token_id'],[1,2,3])
         tokens=torch.tensor([[1,2,3]])
         left,a=source.prefill(tokens,capacity=3,all_logits=True)
         right,b=rebuilt.prefill(tokens,capacity=3,all_logits=True)

@@ -1,5 +1,6 @@
 """Explicit whole prepared packed GLM placement with pre-copy payload admission."""
 from dataclasses import dataclass
+from copy import deepcopy
 import torch
 from .glm_model import GlmModel
 from .glm_block import GlmBlock
@@ -78,8 +79,12 @@ def _build(source,copied,*,cuda):
         if f.kind=='sparse':options.update(router=copied[id(f.router)],correction_bias=copied[id(f.correction_bias)],shared=expert(f.shared),top_k=f.top_k,route_scale=f.route_scale)
         feed_forward=ffn_type(bank[0] if f.kind=='dense' else bank,**options)
         blocks.append(block_type(attention,feed_forward,copied[id(block.input_norm)],copied[id(block.post_norm)],epsilon=block.epsilon))
-    return model_type(copied[id(source.embedding)],blocks,copied[id(source.norm)],copied[id(source.head)],
-                      epsilon=source.epsilon,max_output_bytes=source.max_output_bytes)
+    model=model_type(copied[id(source.embedding)],blocks,copied[id(source.norm)],copied[id(source.head)],
+                     epsilon=source.epsilon,max_output_bytes=source.max_output_bytes)
+    if hasattr(source,'config'):
+        if not isinstance(source.config,dict):raise ValueError('prepared GLM config must be a mapping')
+        model.config=deepcopy(source.config)
+    return model
 
 
 @torch.no_grad()

@@ -88,3 +88,15 @@ whole state without publishing a cursor; close releases all owned layers.
 Peak reserved22MiB; successful shared guard retained.40 focused local tests
 cover model/block/pipeline compatibility. This is a tiny fixture model, not
 an official checkpoint, end-to-end serving or practical performance result.
+
+## Whole-model placement (#231)
+
+Implementation `bd65ce9` plus config-copy follow-up. `glm-placement.json` repeats
+model logits/reorder/poison/close through whole-model placement rather than
+manual copies. The fixture admits3,628 raw bytes and peaks at22MiB reserved.
+All CPU component validation and aggregate unique tensor accounting precede the
+first CUDA copy. Local controls also verify late-invalid-member rejection,
+aliases, preserved budgets and independent model configuration, and copy failure
+leaving the CPU model usable.9 focused tests passed before the GPU gate; the
+config-copy follow-up passes the three placement tests. GPU result scope is
+unchanged; no checkpoint size or performance extrapolation is made.
