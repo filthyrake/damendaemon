@@ -122,12 +122,17 @@ class NumericalTraceTests(unittest.TestCase):
 class HttpRunnerTests(unittest.TestCase):
     def test_real_loopback_lifecycle_and_mismatch_cleanup(self):
         class Runtime(FakeRuntime):
+            loaded=False
             def manage(self,action,**options):
+                if action=='load':
+                    self.loaded=True
+                    return dict(source_tier='disk')
                 self.unloaded=True
                 return dict(host_cached_bytes=0,models=[dict(residency='disk')])
             close_calls=0
             def close(self):self.close_calls+=1
             def generate(self,*args,**kwargs):
+                if not self.loaded:raise AssertionError('HTTP generation before explicit cold load')
                 for event in super().generate(*args,**kwargs):
                     if 'timing' in event:event['timing']['source_tier']='disk'
                     yield event

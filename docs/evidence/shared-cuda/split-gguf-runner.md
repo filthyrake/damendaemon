@@ -51,8 +51,9 @@ MIG, driver, fan or power configuration is changed. Each process exits before
 its successor starts. No extra worker process groups are created.
 
 Numerical acceptance requires finite, byte-identical FP32-normalized logit
-hashes and exact greedy token traces, stopping at EOS or the token bound. Real
-loopback HTTP checks use the ordinary handler and Runtime: nonstream completion
+hashes and exact greedy token traces, stopping at EOS or the token bound. The model is explicitly loaded under the outer deadline before the first HTTP
+request, so cold CPU tokenizer/weight import is not mistaken for a slow HTTP
+response. Real loopback HTTP checks use the ordinary handler and Runtime: nonstream completion
 matches the direct trace, stream matches text and terminates with DONE, unload
 releases host/GPU residency, and disk reload reproduces text/usage. This gate
 does not cover chat, cancellation, concurrent requests, graph execution,

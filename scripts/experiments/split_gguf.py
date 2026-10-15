@@ -134,6 +134,11 @@ def http_check(runtime, ids, steps, expected):
 
     body = dict(model='a', prompt=ids, max_tokens=steps, temperature=0)
     try:
+        # Cold tokenizer/weight import belongs to the outer run deadline, not
+        # the short HTTP response deadline. GPU memory remains capped.
+        loaded = runtime.manage('load', model='a')
+        if loaded.get('source_tier') != 'disk':
+            raise ValueError('initial load must start from disk')
         first = request('/v1/completions', body)
         if (first['choices'][0]['text'] != expected['text'] or
                 first['usage']['completion_tokens'] != expected['completion_tokens']):
@@ -153,7 +158,7 @@ def http_check(runtime, ids, steps, expected):
         if (restored['choices'][0]['text'] != expected['text'] or
                 restored['usage'] != first['usage'] or restored['dllm_timing']['source_tier'] != 'disk'):
             raise ValueError('disk reload mismatch')
-        return dict(text=streamed, usage=first['usage'], stream=True, unload=True, disk_reload=True)
+        return dict(text=streamed, usage=first['usage'], stream=True, unload=True, disk_reload=True, explicit_load=True)
     finally:
         server.shutdown()
         try:

@@ -1,0 +1,58 @@
+Traceback (most recent call last):
+  File "/tmp/dllm-218/scripts/experiments/split_gguf.py", line 137, in http_check
+    first = request('/v1/completions', body)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/dllm-218/scripts/experiments/split_gguf.py", line 132, in request
+    with post(route, body) as response:
+         ^^^^^^^^^^^^^^^^^
+  File "/tmp/dllm-218/scripts/experiments/split_gguf.py", line 128, in post
+    return urlopen(Request(base+route, json.dumps(body).encode(),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/urllib/request.py", line 216, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/urllib/request.py", line 519, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/urllib/request.py", line 536, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/urllib/request.py", line 496, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib64/python3.11/urllib/request.py", line 1377, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/urllib/request.py", line 1352, in do_open
+    r = h.getresponse()
+        ^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/http/client.py", line 1415, in getresponse
+    response.begin()
+  File "/usr/lib64/python3.11/http/client.py", line 330, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/http/client.py", line 291, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/socket.py", line 718, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/dllm-218/scripts/experiments/split_gguf.py", line 261, in <module>
+    main()
+  File "/tmp/dllm-218/scripts/experiments/split_gguf.py", line 257, in main
+    worker(Path(args.worker[0]), args.worker[1], args.worker[2])
+  File "/tmp/dllm-218/scripts/experiments/split_gguf.py", line 190, in worker
+    result = http_check(runtime, manifest['prompt_ids'], manifest['steps'], expected)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/dllm-218/scripts/experiments/split_gguf.py", line 160, in http_check
+    runtime.close()
+  File "/tmp/dllm-218/dllm/runtime.py", line 279, in close
+    raise BusyError('runtime shutdown is waiting for active requests')
+dllm.runtime.BusyError: runtime shutdown is waiting for active requests
