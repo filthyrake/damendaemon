@@ -4,7 +4,8 @@ from pathlib import Path
 from safetensors import safe_open, SafetensorError
 
 from .download import INDEX, snapshot_files, read_index
-from .safetensor_header import read_header
+# Existing loaders and serving commands import the JSON validator here.
+from .safetensor_header import _unique_fields, read_header
 
 
 
