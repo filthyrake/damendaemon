@@ -2050,3 +2050,14 @@ batch entrypoints remain separate. Status/timing report `cuda_prepared_reference
 with official-model and performance qualification false. This does not qualify
 an official checkpoint, practical long context, generated tool accuracy or
 concurrent-serving performance; #58 remains open.
+
+Flash CUDA still-image support is explicit through `--flash-images` (#254–#256).
+Pinned CPU RGB preprocessing feeds the bounded CUDA math-attention vision
+encoder, ordered same-device feature insertion and the owned Flash image/tool
+runner. Joint language/vision raw-payload admission precedes CUDA copies. The
+command requires valid image-token/processor metadata; image budgets require the
+flag. Separate `--vision-weight-mib`, `--max-patches`, `--image-workspace-mib` and
+`--image-output-mib` bound the CPU preparation path, while `--device-weight-mib`
+covers the combined device payload. Tiny feature/logit/stream controls and loaded
+inline-image HTTP/SSE/SIGTERM proof are in the evidence directory. Official vision
+quality, practical resolution/context and concurrent performance remain open.

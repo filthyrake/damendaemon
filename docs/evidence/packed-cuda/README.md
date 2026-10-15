@@ -374,3 +374,14 @@ generation events. Abandoned generation closes its owned cache.21 focused image/
 tool/vision tests pass. Guard13.481s,22MiB reserved under128MiB cap,4251MiB free
 before/after, cleanup confirmed. Official image quality and practical/performance
 qualification remain open; HTTP opt-in follows separately.
+
+## Flash CUDA image HTTP command (#256)
+
+Implementation `8f344d5`. Explicit `--flash-images` validates processor/image-token
+metadata before loading and jointly admits language/vision device payload before
+copying.19 focused command/image/tool/HTTP tests pass. A loaded tiny packed
+zero-head CUDA snapshot passes inline-image chat/SSE consistency, truthful
+still-image/CUDA readiness and timing, and SIGTERM exit0. Guard10.421s,128MiB
+allocator cap,4251MiB free before/after, cleanup confirmed. Inline media only;
+no remote fetch, official image quality, generated tool accuracy, practical
+resolution/context or performance qualification follows.
