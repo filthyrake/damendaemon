@@ -157,3 +157,12 @@ atomicity, close and admission checks. Maximum absolute output error1.05e-7;
 22MiB reserved,128MiB allocator cap. Guard completed3.848s,4251MiB free
 before/after, incumbent healthy.19 local tests pass. Full Flash model and
 practical workload qualification remain open.
+
+## Flash learned pooled indexer (#236)
+
+Implementation `df98677`. Actual CUDA selected IDs exactly match independent
+CPU scalar pool-score controls. Prefix causality, complete-pool/tail layout,
+left/right/all padding and earliest-pool ties pass, as do device, hole and budget
+rejections. Key error1.2e-7,22MiB reserved,128MiB cap; guard completed3.948s,
+4251MiB free before/after, incumbent healthy.18 local tests pass. Validation
+syncs and Python token loops remain; no practical-context performance claim.
