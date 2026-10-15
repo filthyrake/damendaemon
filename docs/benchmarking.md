@@ -205,3 +205,9 @@ Long-context control responses (status, unload and expected overflow errors) are
 limited to 64 KiB and must be JSON objects with finite numeric values. Oversized
 or malformed responses fail qualification. Overflow error responses are closed
 on success and every failure path; the exact expected rejection remains required.
+
+The fixed-workload benchmark validates tokenizer output before contacting HTTP:
+all four prompts at each 128/512/2048 length must be available at their original
+17-token offsets, and selected IDs must be nonnegative integers. This check is
+active under optimized Python; short or malformed corpora do not launch a
+measurement or produce a mislabeled workload report.

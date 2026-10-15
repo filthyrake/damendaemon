@@ -97,6 +97,18 @@ def request(base, model, tokens, engine, eos_ids, barrier, *, output_tokens=128,
     return result
 
 
+def prepare_fixed_prompts(tokenizer):
+    corpus = tokenizer.encode(''.join(
+        f'Record {i}: The parcel is stored in cabinet {i % 11}, drawer {i % 7}.\n'
+        for i in range(1000)), add_special_tokens=False).ids
+    required = 17 * 3 + 2048
+    if not isinstance(corpus, list) or len(corpus) < required:
+        raise ValueError('tokenizer corpus is too short for fixed workload prompts')
+    if any(type(token) is not int or token < 0 for token in corpus[:required]):
+        raise ValueError('tokenizer returned invalid fixed workload token IDs')
+    return {str(n): [corpus[17*i:17*i+n] for i in range(4)] for n in (128, 512, 2048)}
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--base-url', required=True)
@@ -120,11 +132,7 @@ def main():
         p.error('manifest requires the checkpoint EOS token IDs')
     tokenizer_path = Path(args.tokenizer)
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    corpus = tokenizer.encode(''.join(
-        f'Record {i}: The parcel is stored in cabinet {i % 11}, drawer {i % 7}.\n'
-        for i in range(1000)), add_special_tokens=False).ids
-    prompts = {str(n): [corpus[17*i:17*i+n] for i in range(4)] for n in (128, 512, 2048)}
-    assert all(len(ids) == int(n) for n, group in prompts.items() for ids in group)
+    prompts = prepare_fixed_prompts(tokenizer)
     report = dict(passed=False, competitive_pass=None, manifest=manifest, engine=args.engine,
                   phase=args.phase, context=4096, output_tokens=128, warmup_rounds=3,
                   eos_policy='identical -100 logit bias; fail any request not reaching 128 tokens',

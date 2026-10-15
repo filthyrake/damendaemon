@@ -7,7 +7,7 @@ from pathlib import Path
 import threading
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location('modern_http', Path(__file__).parents[1] / 'scripts/benchmark_modern_http.py')
 benchmark = importlib.util.module_from_spec(spec)
@@ -37,6 +37,40 @@ class BenchmarkIntegrity(unittest.TestCase):
             self.assertEqual(body['logit_bias'], {'3': -100})
             self.assertEqual(body['max_tokens'], requested)
         return result
+
+    def test_fixed_prompt_preparation_retains_exact_shapes_and_offsets(self):
+        tokenizer = Mock()
+        tokenizer.encode.return_value.ids = list(range(2099))
+        prompts = benchmark.prepare_fixed_prompts(tokenizer)
+        for length in (128, 512, 2048):
+            self.assertEqual(len(prompts[str(length)]), 4)
+            for index, ids in enumerate(prompts[str(length)]):
+                self.assertEqual(ids, list(range(index*17, index*17+length)))
+        self.assertFalse(tokenizer.encode.call_args.kwargs['add_special_tokens'])
+
+    def test_fixed_prompt_preparation_rejects_short_or_invalid_tokens(self):
+        tokenizer = Mock()
+        for ids in ([1]*2098, None, 'x'*2099, [True]*2099, [-1]*2099, [1.5]*2099):
+            tokenizer.encode.return_value.ids = ids
+            with self.assertRaises(ValueError):
+                benchmark.prepare_fixed_prompts(tokenizer)
+
+    def test_short_prompt_corpus_is_rejected_before_http(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root/'manifest.json'
+            manifest.write_text(json.dumps(dict(model_revision='fixture', engine_revision='fixture',
+                                               precision='fixture', hardware='fixture', eos_ids=[3])))
+            args = ['benchmark', '--base-url', 'http://127.0.0.1:1', '--engine', 'dllm',
+                    '--tokenizer', str(root/'tokenizer.json'), '--manifest', str(manifest),
+                    '--phase', 'A1', '--output', str(root/'result.json')]
+            with patch('sys.argv', args), patch.object(benchmark.Tokenizer, 'from_file') as tokenizer, \
+                    patch.object(benchmark, 'urlopen') as network:
+                tokenizer.return_value.encode.return_value.ids = [1]*2098
+                with self.assertRaisesRegex(ValueError, 'too short'):
+                    benchmark.main()
+            network.assert_not_called()
+            self.assertFalse((root/'result.json').exists())
 
     def test_complete_usage(self):
         self.assertTrue(self.run_response()['passed'])
