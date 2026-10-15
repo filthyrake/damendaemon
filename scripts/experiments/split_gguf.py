@@ -218,22 +218,27 @@ def execute(folder, invoke=subprocess.run):
         raise ValueError('use a fresh prepared directory for each attempt')
     report = dict(passed=False, hardware_validated=False, performance_qualified=False, completed=[])
     started = time.monotonic()
+    def remaining_budget():
+        remaining = 120 - (time.monotonic() - started)
+        if remaining <= 0:
+            raise TimeoutError('total qualification deadline')
+        return remaining
     save(folder/'result.json', report)
     try:
         for phase in ('trace', 'http'):
             for alias in ('single', 'split'):
-                remaining = 120-(time.monotonic()-started)
-                if remaining <= 0:
-                    raise TimeoutError('total qualification deadline')
+                remaining = remaining_budget()
                 with (folder/f'{alias}-{phase}.log').open('x') as log:
                     invoke([sys.executable, '-m', 'scripts.experiments.split_gguf', '--worker', str(folder), alias, phase],
                            stdout=log, stderr=log, timeout=remaining, check=True)
+                remaining_budget()
                 report['completed'].append(f'{alias}-{phase}')
                 save(folder/'result.json', report)
             a, b = [json.loads((folder/f'{alias}-{phase}.json').read_text())['result']
                     for alias in ('single', 'split')]
             if a != b:
                 raise ValueError(f'{phase} single/split mismatch')
+            remaining_budget()
         report.update(passed=True, hardware_validated=True)
     except BaseException as error:
         report['error'] = str(error)

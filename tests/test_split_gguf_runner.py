@@ -78,6 +78,39 @@ class OrchestrationTests(unittest.TestCase):
                 self.assertEqual(calls,expected if fail is None else expected[:expected.index(fail)+1])
                 with self.assertRaisesRegex(ValueError,'fresh'):execute(root,invoke)
 
+    def test_final_worker_or_comparison_cannot_outlive_total_deadline(self):
+        for stage in ('worker', 'comparison'):
+            with self.subTest(stage=stage), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.manifest(root)
+                now = [0.0]
+                calls = []
+                loads = json.loads
+                comparisons = [0]
+                def delayed_loads(raw):
+                    value = loads(raw)
+                    if value.get('result', {}).get('phase') == 'http':
+                        comparisons[0] += 1
+                        if stage == 'comparison' and comparisons[0] == 2:
+                            now[0] = 121.0
+                    return value
+                def invoke(command, **kwargs):
+                    alias, phase = command[-2:]
+                    calls.append((alias, phase))
+                    save(root/f'{alias}-{phase}.json', dict(result={'phase': phase}))
+                    if stage == 'worker' and (alias, phase) == ('split', 'http'):
+                        now[0] = 121.0
+                with patch('scripts.experiments.split_gguf.time.monotonic', side_effect=lambda: now[0]), \
+                        patch('scripts.experiments.split_gguf.json.loads', side_effect=delayed_loads):
+                    with self.assertRaisesRegex(TimeoutError, 'total qualification deadline'):
+                        execute(root, invoke)
+                report = loads((root/'result.json').read_text())
+                self.assertFalse(report['passed'])
+                self.assertFalse(report['hardware_validated'])
+                self.assertEqual(report['seconds'], 121.0)
+                self.assertIn('total qualification deadline', report['error'])
+                self.assertEqual(len(calls), 4)
+
     def test_mismatch_stops_before_http(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);self.manifest(root);calls=[]
