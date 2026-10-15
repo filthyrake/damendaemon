@@ -397,3 +397,16 @@ all stages close.25 local stage/pipeline tests pass. Guard18.752s,22MiB reserved
 under128MiB cap,4251MiB free before/after, cleanup confirmed. These are logical
 single-device stages, not physical multi-GPU, transfer, transport or practical
 performance qualification.
+
+## CUDA DeepSeek logical layer ranges (#258)
+
+Implementation `32985a6`. Explicit bounded token-carrying CUDA residual ranges
+share CPU stage ownership and use the qualified CUDA learned head. Two/three
+logical stages match whole CPU controls within4.5e-8, with exact greedy IDs,
+duplicate/shrinking reorder, invalid-token nonmutation and owned late-head
+poisoning/close.12 local stage/pipeline tests pass. Guard6.637s,22MiB reserved
+under128MiB cap,4251MiB free before/after, cleanup confirmed. No physical multi-GPU,
+transfer/transport or practical model/context/performance qualification.
+
+Pinned CPU/loopback regression through image HTTP at `8f344d5`:1,797 tests pass
+in467.531s, before subsequent CUDA stage changes.
