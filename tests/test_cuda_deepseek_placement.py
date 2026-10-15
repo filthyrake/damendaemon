@@ -39,3 +39,11 @@ class DeepSeekPlacementTests(unittest.TestCase):
         source,_,_=fixture();source.embedding=source.embedding.half()
         with patch('dllm.cuda_deepseek_placement._copy',side_effect=AssertionError('copy before admission')):
             with self.assertRaisesRegex(ValueError,'FP32'):place_cuda_deepseek(source,device='cuda:0',max_bytes=10**9)
+
+    def test_loader_sized_expert_budget_reserves_outer_routing_scratch(self):
+        from dllm.cuda_deepseek_placement import _policy,_inner_workspace
+        source,_,_=fixture()
+        for block in source.blocks:
+            block.workspace_bytes=max(e.workspace_bytes for e in (*block.packed_experts,block.packed_shared))
+            self.assertGreater(_inner_workspace(block),block.workspace_bytes)
+        _policy(source,256*1024**2,64*1024**2)

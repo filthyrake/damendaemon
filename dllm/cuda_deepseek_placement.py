@@ -41,6 +41,14 @@ def _tensors(source):
     return tensors
 
 
+def _inner_workspace(block):
+    experts=(*block.packed_experts,block.packed_shared)
+    table=block.weights.get('ffn.gate.tid2eid')
+    validation=8*block.weights['ffn.gate.weight'].numel()+(0 if table is None else 32*table.numel())
+    scratch=max(e.workspace_bytes for e in experts)+128*(block.dim+len(block.packed_experts)+block.top_k)
+    return max(block.workspace_bytes,validation,scratch)
+
+
 def _policy(source,workspace_bytes,max_output_bytes):
     if (type(workspace_bytes) is not int or not 4<=workspace_bytes<=2**31
             or type(max_output_bytes) is not int or not 1<=max_output_bytes<=2**31
@@ -62,10 +70,9 @@ def _policy(source,workspace_bytes,max_output_bytes):
             raise ValueError('DeepSeek CUDA expert policy/workspace mismatch')
         table=block.weights.get('ffn.gate.tid2eid')
         if table is not None and not 1<=table.shape[0]<=2**21:raise ValueError('DeepSeek token table exceeds CUDA bounds')
-        validation=8*block.weights['ffn.gate.weight'].numel()+(0 if table is None else 32*table.numel())
-        scratch=max(e.workspace_bytes for e in experts)+128*(block.dim+count+block.top_k)
-        if max(validation,scratch)>block.workspace_bytes:raise ValueError('DeepSeek CUDA routing preparation exceeds workspace')
-        if any(isinstance(v,PackedProjection) and v.options['workspace_bytes']>block.workspace_bytes for v in block.attention_weights.values()):
+        inner=_inner_workspace(block)
+        if inner>workspace_bytes//4:raise ValueError('DeepSeek CUDA routing preparation exceeds workspace')
+        if any(isinstance(v,PackedProjection) and v.options['workspace_bytes']>inner for v in block.attention_weights.values()):
             raise ValueError('DeepSeek CUDA attention projection exceeds workspace')
     if any(value.dtype!=torch.float32 for value in values):
         raise ValueError('explicit DeepSeek CUDA placement requires FP32 prepared tensors/projections')
@@ -93,7 +100,7 @@ def _build(source,copied,*,cuda,workspace_bytes,max_output_bytes):
     for block in source.blocks:
         options={name:getattr(block,name) for name in ('groups','window','ratio','hc_mult','top_k','route_scale','index_top_k',
                   'epsilon','connection_epsilon','iterations','activation_limit','workspace_bytes')}
-        if cuda:options.update(workspace_bytes=block.workspace_bytes*2,max_output_bytes=workspace_bytes//2)
+        if cuda:options.update(workspace_bytes=workspace_bytes//2,max_output_bytes=workspace_bytes//2)
         blocks.append(block_type({k:projection(v) for k,v in block.attention_weights.items()},
             {k:copied[id(v)] for k,v in block.weights.items()},copied[id(block.frequencies)],
             packed_experts=tuple(expert(e) for e in block.packed_experts),packed_shared=expert(block.packed_shared),**options))
