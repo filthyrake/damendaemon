@@ -20,6 +20,15 @@ class SharedCudaGuardTests(unittest.TestCase):
             with self.subTest(health=health, slots=slots), self.assertRaises(RuntimeError):
                 check_service(health, slots)
 
+    def test_busy_mode_keeps_health_and_schema_checks(self):
+        check_service({'status': 'ok'}, [{'is_processing': True}], allow_busy=True)
+        for health, slots in [({}, [{'is_processing': True}]),
+                              ({'status': 'ok'}, [{}]),
+                              ({'status': 'ok'}, [{'is_processing': 1}]),
+                              ({'status': 'ok'}, [])]:
+            with self.assertRaises(RuntimeError):
+                check_service(health, slots, allow_busy=True)
+
     def test_busy_preflight_never_launches(self):
         report = {}
         with patch('scripts.experiments.guard_shared_cuda.subprocess.Popen') as launch:

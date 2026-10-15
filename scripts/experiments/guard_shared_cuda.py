@@ -1,4 +1,4 @@
-"""Admit short CUDA checks only while a known incumbent service is idle.
+"""Admit short CUDA checks with incumbent health and resource reserves.
 
 Polling is containment, not resource isolation or a latency guarantee. Commands
 must remain in their owned process group; do not launch daemonizing children.
@@ -24,13 +24,14 @@ def read_json(url):
     return json.loads(data)
 
 
-def check_service(health, slots):
+def check_service(health, slots, allow_busy=False):
     if not isinstance(health, dict) or health.get('status') != 'ok':
         raise RuntimeError('incumbent service unhealthy')
     if not isinstance(slots, list) or not slots:
         raise RuntimeError('missing incumbent slots')
     for slot in slots:
-        if not isinstance(slot, dict) or slot.get('is_processing') is not False:
+        if (not isinstance(slot, dict) or type(slot.get('is_processing')) is not bool
+                or (slot['is_processing'] and not allow_busy)):
             raise RuntimeError('incumbent slot busy or invalid')
 
 
@@ -41,14 +42,15 @@ def process_identity(pid):
 
 
 class Probe:
-    def __init__(self, uuid, service, incumbent):
+    def __init__(self, uuid, service, incumbent, allow_busy=False):
         self.uuid, self.service, self.incumbent = uuid, service.rstrip('/'), incumbent
         self.identity = process_identity(incumbent)
+        self.allow_busy = allow_busy
 
     def __call__(self, startup=False):
         if process_identity(self.incumbent) != self.identity:
             raise RuntimeError('incumbent process changed')
-        check_service(read_json(self.service+'/health'), read_json(self.service+'/slots'))
+        check_service(read_json(self.service+'/health'), read_json(self.service+'/slots'), self.allow_busy)
         output = subprocess.run([
             'nvidia-smi', '--id='+self.uuid,
             '--query-gpu=uuid,temperature.gpu,memory.free',
@@ -115,6 +117,8 @@ def run(command, probe, timeout, report, env=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--allow-busy', action='store_true',
+                        help='allow healthy active slots; may affect incumbent latency')
     parser.add_argument('--gpu', required=True)
     parser.add_argument('--service', required=True)
     parser.add_argument('--incumbent-pid', type=int, required=True)
@@ -130,12 +134,12 @@ def main():
     # Reserve the evidence file before admitting a child; never overwrite a run.
     with args.report.open('x') as output:
         report = dict(gpu_uuid=args.gpu, incumbent_pid=args.incumbent_pid,
-                      timeout_seconds=args.timeout, isolation=False)
+                      timeout_seconds=args.timeout, isolation=False, allow_busy=args.allow_busy)
         env = {k: v for k, v in os.environ.items() if not k.startswith('DLLM_')}
         env.update(CUDA_VISIBLE_DEVICES=args.gpu, DLLM_DEVICE='cuda',
-                   OMP_NUM_THREADS='1', MKL_NUM_THREADS='1')
+                   OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', DLLM_SHARED_CUDA_GUARD='1')
         try:
-            passed = run(command, Probe(args.gpu, args.service, args.incumbent_pid),
+            passed = run(command, Probe(args.gpu, args.service, args.incumbent_pid, args.allow_busy),
                          args.timeout, report, env)
         except Exception as error:
             passed = False

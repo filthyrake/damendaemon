@@ -7,7 +7,9 @@ prevent transient contention, allocation races, or driver-wide failures.
 
 The launcher pins one UUID, clears inherited DLLM configuration, limits CPU
 thread defaults, requires a known incumbent PID/start time, healthy `/health`,
-and a nonempty `/slots` response with every `is_processing` exactly false.
+and a nonempty `/slots` response with boolean processing states. By default all
+slots must be idle. Explicit `--allow-busy` also accepts active slots without
+relaxing health, identity, temperature or reserve checks; latency may be affected.
 It requires 4096 MiB free GPU memory initially, preserves 2560 MiB thereafter,
 rejects temperatures at 65 C, and preserves 16 GiB available host RAM. A command
 must have its own allocator cap and bounded workload. The launcher neither
@@ -32,11 +34,11 @@ the same incumbent PID with 22088 MiB on A30 and 10668 MiB on A2. These checks
 prove admission refusal and continued readiness, not latency preservation or
 successful shared inference.
 
-Five focused CPU tests cover malformed/busy service responses, initial and
+Focused CPU tests cover malformed/busy service responses, initial and
 runtime memory/temperature/identity rejection, deadline, successful cleanup,
 and new-work interruption with a separate live process left running.
 
-Real split-GGUF numerical and HTTP qualification remains open under #43. It
-requires a separate bounded runner, an allocator budget, exact checkpoint and
-shard equivalence, and successful fresh idle admission. Shared-run timings are
+Real split-GGUF numerical and HTTP qualification remains open under #43. The [bounded runner](split-gguf-runner.md) now supplies sequential workers, an
+allocator budget and exact checkpoint/shard equivalence. Actual GPU execution
+requires fresh guarded admission; busy-service mode is explicitly supported. Shared-run timings are
 not performance qualification. HOMER requires its separate fan/thermal guard.
