@@ -320,3 +320,15 @@ head failure poisons every owned layer, and close releases ownership.18 focused
 local tests pass. Guard6.685s,22MiB reserved under128MiB cap,4251MiB free before/after,
 cleanup confirmed. This tiny prepared-model gate does not qualify official weights,
 practical context, concurrency, throughput or latency.
+
+## DeepSeek complete prepared placement (#252)
+
+Implementation `104d225`; loader-sized scratch reservation fix `20bd7f6`. CPU
+composition, FP32/format/policy and unique raw-byte admission precede copying;
+shared expert objects, packed row views and independent config metadata survive.
+The actual CUDA placement gate at104d225 copied182,285 raw bytes and passed six
+FP4/FP8 model comparisons within6e-8 with exact greedy IDs, reorder and late-head
+poisoning. Guard7.847s,22MiB reserved,4251MiB free before/after, cleanup confirmed.
+14 local tests cover placement and model contracts, including loader expert
+scratch plus routing overhead. Raw payload is separate from cache/scratch and
+allocator budgets. No official-model, practical-context or performance claim.
