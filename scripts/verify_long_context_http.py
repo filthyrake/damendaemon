@@ -117,6 +117,15 @@ def expire_owned_request(process, report, reason):
     stop_owned_server(process, signal.SIGKILL)
 
 
+def interrupt_owned_run(process, output, report, signum):
+    report.update(passed=False, interrupted_signal=signum, phase='interrupted')
+    # Readers can block executor unwinding; do not wait for checkpoint I/O or
+    # graceful application cleanup before stopping the owned workload.
+    stop_owned_server(process, signal.SIGKILL)
+    save_report(output, report)
+    raise SystemExit(128 + signum)
+
+
 def require_gate(condition, reason):
     """Qualification must not disappear when Python runs with -O."""
     if condition is not True:
@@ -219,12 +228,7 @@ def main():
         # active HTTP readers would otherwise delay cleanup until timeout.
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        report.update(passed=False, interrupted_signal=signum, phase='interrupted')
-        try:
-            save_report(args.output, report)
-        finally:
-            stop_server(signal.SIGTERM)
-        raise SystemExit(128+signum)
+        interrupt_owned_run(process, args.output, report, signum)
     signal.signal(signal.SIGTERM, terminate)
     signal.signal(signal.SIGINT, terminate)
     try:

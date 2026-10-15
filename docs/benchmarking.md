@@ -194,3 +194,9 @@ Long-context qualification gates use explicit runtime checks, including overflow
 rejection, request success, capacity budgets and release status. They remain
 active with `python -O`; a failed warmup is retained and stops before model
 management or a passing capacity report.
+
+Explicit SIGINT/SIGTERM interruption also force-stops the runner-owned server
+before writing its checkpoint. This prevents checkpoint I/O or graceful server
+shutdown from delaying workload termination. Interrupted reports retain partial
+evidence and signal identity with `passed: false`; normal successful cleanup is
+unchanged. A checkpoint failure cannot skip the stop operation.

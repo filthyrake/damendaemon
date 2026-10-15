@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 
-from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow, stop_owned_server, expire_owned_request, prepare_context_prompts, require_gate
+from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow, stop_owned_server, expire_owned_request, prepare_context_prompts, require_gate, interrupt_owned_run
 
 
 class ContextDeadlineTests(unittest.TestCase):
@@ -214,6 +214,41 @@ class ContextDeadlineTests(unittest.TestCase):
             tokenizer.encode.return_value.ids = [value] * 4096
             with self.assertRaisesRegex(ValueError, 'invalid prompt token IDs'):
                 prepare_context_prompts(tokenizer, 4096)
+
+    def test_interruption_stops_before_checkpoint_and_records_signal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for signum in (signal.SIGINT, signal.SIGTERM):
+                path = Path(directory)/'interrupted.json'
+                child, order = object(), []
+                report = {'passed': True, 'partial': {'tokens': 2}}
+                def stop(process, received):
+                    self.assertIs(process, child)
+                    self.assertEqual(received, signal.SIGKILL)
+                    order.append('stop')
+                def checkpoint(output, data):
+                    self.assertEqual(order, ['stop'])
+                    order.append('save')
+                    save_report(output, data)
+                with patch('scripts.verify_long_context_http.stop_owned_server', side_effect=stop), \
+                        patch('scripts.verify_long_context_http.save_report', side_effect=checkpoint):
+                    with self.assertRaises(SystemExit) as caught:
+                        interrupt_owned_run(child, path, report, signum)
+                self.assertEqual(caught.exception.code, 128 + signum)
+                retained = json.loads(path.read_text())
+                self.assertFalse(retained['passed'])
+                self.assertEqual(retained['interrupted_signal'], signum)
+                self.assertEqual(retained['partial'], {'tokens': 2})
+                self.assertEqual(order, ['stop', 'save'])
+
+    def test_interruption_checkpoint_failure_does_not_skip_stop(self):
+        report, child = {}, object()
+        with patch('scripts.verify_long_context_http.stop_owned_server') as stop, \
+                patch('scripts.verify_long_context_http.save_report', side_effect=OSError('disk failed')):
+            with self.assertRaises(OSError):
+                interrupt_owned_run(child, Path('/unused'), report, signal.SIGTERM)
+        stop.assert_called_once_with(child, signal.SIGKILL)
+        self.assertFalse(report['passed'])
+        self.assertEqual(report['interrupted_signal'], signal.SIGTERM)
 
     def test_checkpoint_remains_readable_and_replacement_leaves_no_temp(self):
         with tempfile.TemporaryDirectory() as directory:
