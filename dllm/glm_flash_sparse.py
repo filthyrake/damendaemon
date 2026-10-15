@@ -1,11 +1,10 @@
-"""Owned CPU Flash sparse attention with transactional latent/index histories."""
+"""Owned Flash sparse attention core with a CPU-only public API with transactional latent/index histories."""
 from dataclasses import dataclass,field
 import threading
 import torch
-from .glm_attention import _float,_projection,_finite_parameter,_budgets
-from .glm_flash_attention import project_nope,attend_nope
+from .glm_attention import _float,_projection,_finite_parameter,_budgets,linear
+from .glm_flash_attention import _project_nope as project_nope,_attend_nope as attend_nope
 from .glm_flash_indexer import FlashIndexer
-from .prepared_projection import linear
 
 
 @dataclass
@@ -26,7 +25,7 @@ class FlashSparseState:
     def reorder(self,indices):
         with self.lock:
             self._usable()
-            if (not isinstance(indices,torch.Tensor) or indices.dtype!=torch.int64 or indices.device.type!='cpu'
+            if (not isinstance(indices,torch.Tensor) or indices.dtype!=torch.int64 or indices.device!=self.latents.device
                     or indices.ndim!=1 or not 1<=indices.numel()<=128
                     or (indices<0).any() or (indices>=self.latents.shape[0]).any()):
                 raise ValueError('invalid Flash sparse slot order')
@@ -42,18 +41,19 @@ class FlashSparseState:
             self.latents=self.keys=self.gates=None;self.owner=None;self.closed=True
 
 
-class FlashSparseAttention:
+class _FlashSparseAttention:
     def __init__(self,weights,indexer,*,heads,head_dim,value_dim,epsilon=1e-5,
-                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
+                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2,device='cpu',indexer_type=FlashIndexer):
+        self.device=torch.device(device)
         names={'q_a_proj.weight','q_a_layernorm.weight','q_b_proj.weight','kv_a_proj_with_mqa.weight',
                'kv_a_layernorm.weight','kv_b_proj.weight','o_proj.weight'}
-        if (not isinstance(weights,dict) or set(weights)!=names or not isinstance(indexer,FlashIndexer)
+        if (not isinstance(weights,dict) or set(weights)!=names or not isinstance(indexer,indexer_type) or indexer.device!=self.device
                 or any(type(v) is not int or not 1<=v<=4096 for v in (heads,head_dim,value_dim)) or heads>256
                 or type(epsilon) not in (int,float) or not 0<epsilon<=1
                 or indexer.top_k+indexer.pool_size-1>4096):
             raise ValueError('invalid Flash sparse composition/options')
         for name,value in weights.items():
-            valid=_float(value,1) if 'layernorm' in name else _projection(value)
+            valid=_float(value,1,self.device) if 'layernorm' in name else _projection(value,self.device)
             if not valid or not _finite_parameter(value):raise ValueError('invalid Flash sparse parameter storage')
         dim=indexer.dim;qr=indexer.rank;rank=weights['kv_a_layernorm.weight'].numel()
         shapes={'q_a_proj.weight':(qr,dim),'q_a_layernorm.weight':(qr,),'q_b_proj.weight':(heads*head_dim,qr),
@@ -73,9 +73,9 @@ class FlashSparseAttention:
             raise ValueError('invalid Flash sparse cache geometry/budget')
         # Reserve the declared capacity against the cache budget, allocating only
         # published history. Temporary replacements have separate workspace bounds.
-        return FlashSparseState(self,torch.empty(batch,0,self.rank,dtype=torch.float32,device='cpu'),
-                                torch.empty(batch,0,self.indexer.width,dtype=torch.float32,device='cpu'),
-                                torch.empty(batch,0,self.indexer.width,dtype=torch.float32,device='cpu'),capacity,max_cache_bytes)
+        return FlashSparseState(self,torch.empty(batch,0,self.rank,dtype=torch.float32,device=self.device),
+                                torch.empty(batch,0,self.indexer.width,dtype=torch.float32,device=self.device),
+                                torch.empty(batch,0,self.indexer.width,dtype=torch.float32,device=self.device),capacity,max_cache_bytes)
 
     @torch.no_grad()
     def forward(self,hidden,state,*,position):
@@ -83,7 +83,7 @@ class FlashSparseAttention:
         with state.lock:
             state._usable()
             if state.owner is not self:raise ValueError('Flash sparse cache belongs to another layer')
-            if (not _float(hidden,3) or hidden.shape[0]!=state.latents.shape[0] or hidden.shape[-1]!=self.dim
+            if (not _float(hidden,3,self.device) or hidden.shape[0]!=state.latents.shape[0] or hidden.shape[-1]!=self.dim
                     or type(position) is not int or position!=state.position or position+hidden.shape[1]>state.capacity):
                 raise ValueError('invalid Flash sparse input/cursor/capacity')
             b,t,_=hidden.shape;end=position+t;h=self.heads;d=self.head_dim;v=self.value_dim;iw=self.indexer.width
@@ -94,8 +94,8 @@ class FlashSparseAttention:
                            +b*pools*iw+self.indexer.heads*pools+pools*self.indexer.pool_size)
             _budgets(4*b*t*self.dim+8*b*t*(self.indexer.top_k+self.indexer.pool_size-1),workspace,
                      self.max_output_bytes,self.max_workspace_bytes)
-            positions=torch.arange(position,end,dtype=torch.int64,device='cpu').expand(b,-1)
-            budgets=dict(max_workspace_bytes=self.max_workspace_bytes,max_output_bytes=self.max_workspace_bytes)
+            positions=torch.arange(position,end,dtype=torch.int64,device=self.device).expand(b,-1)
+            budgets=dict(max_workspace_bytes=self.max_workspace_bytes,max_output_bytes=self.max_workspace_bytes,device=self.device)
             projected=project_nope(hidden,positions,self.projections,heads=h,head_dim=d,epsilon=self.epsilon,**budgets)
             new_keys,new_gates=self.indexer.project_keys(hidden)
             latents=torch.cat((state.latents,projected['latents']),dim=1)
@@ -107,3 +107,9 @@ class FlashSparseAttention:
             state.latents,state.keys,state.gates=latents,keys,gates
             state.position=end
             return output,indices
+
+
+class FlashSparseAttention(_FlashSparseAttention):
+    """CPU-only prepared Flash sparse layer."""
+    def __init__(self,weights,indexer,**options):
+        super().__init__(weights,indexer,device='cpu',indexer_type=FlashIndexer,**options)
