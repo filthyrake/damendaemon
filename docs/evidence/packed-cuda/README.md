@@ -445,3 +445,20 @@ after cache advance closes all owned slots. Guard8.598s,22MiB reserved under
 128MiB cap,4251MiB free before/after; cleanup confirmed. This bounds logical
 transfer payloads, not allocator overhead. Host-worker integration and physical
 multi-GPU/practical context/performance qualification remain separate gates.
+
+## Authenticated CPU/CUDA host pipelines (#262)
+
+Implementation `da0e209`, corrected harness `f632123`. Forty-one local builder,
+protocol and ownership tests pass. Nine real loopback mutual-TLS cases cover
+CPU/CUDA, CUDA/CUDA and CUDA/CPU placements for GLM, Flash and DeepSeek.
+Range-loaded identities verify, logits match whole CPU controls within1.4e-6,
+greedy IDs match, ragged prefill/decode/chunk/release/reuse pass and STOP frees
+owned weights. An injected middle output transfer failure closes all three
+Flash participants. Guard30.463s,22MiB peak reserved under128MiB cap,4251MiB
+free before/after; cleanup confirmed. Initial five-token batch with a four-row
+fixture limit was correctly refused; failed evidence is retained. One process,
+loopback TLS and one physical A2 do not qualify physical multi-GPU/multi-host
+execution, practical models/contexts or performance.
+
+Full CPU/loopback regression pinned at `22c138d`:1,803 tests pass in470.058s,
+covering stages and slots before host-boundary/worker integration.
