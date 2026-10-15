@@ -3,6 +3,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 import torch
 from .floating_model import FloatingModel
+from .deepseek_layer_stage import DeepSeekLayerStage
+from .cuda_deepseek_layer_stage import CudaDeepSeekLayerStage
 from .floating_block import FloatingBlock
 from .prepared_projection import PackedProjection
 from .packed_moe import PackedExpert,PackedMatrix
@@ -20,16 +22,16 @@ class PlacedCudaDeepSeekModel:
     device: torch.device
 
 
-def _tensors(source):
-    if not isinstance(source,FloatingModel) or isinstance(source,CudaDeepSeekModel):
+def _tensors(source,*,stage=False):
+    if not isinstance(source,DeepSeekLayerStage if stage else FloatingModel) or isinstance(source,CudaDeepSeekModel):
         raise ValueError('placement requires a prepared CPU DeepSeek model')
     tensors={}
     def add(value):
         if isinstance(value,PackedProjection):add(value.weight);add(value.scales)
         elif isinstance(value,torch.Tensor) and value.device.type=='cpu':tensors[id(value)]=value
         else:raise ValueError('DeepSeek placement requires CPU tensors or packed projections')
-    add(source.embedding)
-    for value in source.head.values():add(value)
+    if source.embedding is not None or not stage:add(source.embedding)
+    for value in (source.head or {}).values():add(value)
     for block in source.blocks:
         if (not isinstance(block,FloatingBlock) or block.backend is not None
                 or not isinstance(block.packed_experts,(list,tuple)) or not block.packed_experts):
@@ -49,12 +51,13 @@ def _inner_workspace(block):
     return max(block.workspace_bytes,validation,scratch)
 
 
-def _policy(source,workspace_bytes,max_output_bytes):
+def _policy(source,workspace_bytes,max_output_bytes,*,stage=False):
+    shape=(source.vocab_size,source.dim) if stage else source.embedding.shape
     if (type(workspace_bytes) is not int or not 4<=workspace_bytes<=2**31
             or type(max_output_bytes) is not int or not 1<=max_output_bytes<=2**31
-            or not 1<=len(source.blocks)<=1024 or any(not 1<=n<=2**21 for n in source.embedding.shape)):
+            or not 1<=len(source.blocks)<=1024 or any(not 1<=n<=2**21 for n in shape)):
         raise ValueError('invalid DeepSeek CUDA model geometry/budgets')
-    values=[source.embedding,*source.head.values()]
+    values=([source.embedding] if source.embedding is not None else [])+list((source.head or {}).values())
     for block in source.blocks:
         values.extend(v for k,v in block.weights.items() if k!='ffn.gate.tid2eid')
         values.extend(block.attention_weights.values());values.append(block.frequencies)
@@ -78,7 +81,7 @@ def _policy(source,workspace_bytes,max_output_bytes):
         raise ValueError('explicit DeepSeek CUDA placement requires FP32 prepared tensors/projections')
 
 
-def _build(source,copied,*,cuda,workspace_bytes,max_output_bytes):
+def _build(source,copied,*,cuda,workspace_bytes,max_output_bytes,stage=False):
     projection_type=CudaPackedProjection if cuda else PackedProjection
     matrix_type=CudaPackedMatrix if cuda else PackedMatrix
     expert_type=CudaPackedExpert if cuda else PackedExpert
@@ -106,7 +109,14 @@ def _build(source,copied,*,cuda,workspace_bytes,max_output_bytes):
             packed_experts=tuple(expert(e) for e in block.packed_experts),packed_shared=expert(block.packed_shared),**options))
     options=dict(epsilon=source.epsilon,connection_epsilon=source.connection_epsilon)
     if cuda:options.update(workspace_bytes=workspace_bytes,max_output_bytes=max_output_bytes)
-    result=model_type(copied[id(source.embedding)],blocks,{k:copied[id(v)] for k,v in source.head.items()},**options)
+    if stage:
+        kind=CudaDeepSeekLayerStage if cuda else DeepSeekLayerStage
+        if not cuda:options['max_output_bytes']=max_output_bytes
+        result=kind(blocks,start=source.start,total=source.total,vocab_size=source.vocab_size,
+            embedding=None if source.embedding is None else copied[id(source.embedding)],
+            head=None if source.head is None else {k:copied[id(v)] for k,v in source.head.items()},**options)
+    else:
+        result=model_type(copied[id(source.embedding)],blocks,{k:copied[id(v)] for k,v in source.head.items()},**options)
     if hasattr(source,'config'):
         if not isinstance(source.config,dict):raise ValueError('prepared DeepSeek config must be a mapping')
         result.config=deepcopy(source.config)

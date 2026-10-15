@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from copy import deepcopy
 import torch
 from .glm_model import GlmModel
+from .glm_layer_stage import GlmLayerStage
+from .cuda_layer_stages import CudaGlmLayerStage
 from .glm_block import GlmBlock
 from .glm_cached_attention import CachedGlmAttention
 from .glm_packed_ffn import PackedGlmFeedForward
@@ -23,8 +25,8 @@ class PlacedCudaGlmModel:
     device: torch.device
 
 
-def _tensors(source):
-    if not isinstance(source,GlmModel):
+def _tensors(source,*,stage=False):
+    if not isinstance(source,GlmLayerStage if stage else GlmModel):
         raise ValueError('placement requires a prepared CPU GLM model')
     tensors={}
     def add(value):
@@ -33,7 +35,8 @@ def _tensors(source):
         elif isinstance(value,torch.Tensor) and value.device.type=='cpu':
             tensors[id(value)]=value
         else:raise ValueError('GLM placement requires CPU tensors or packed projections')
-    for value in (source.embedding,source.norm,source.head):add(value)
+    for value in (source.embedding,source.norm,source.head):
+        if value is not None or not stage:add(value)
     for block in source.blocks:
         if not isinstance(block,GlmBlock) or not isinstance(block.attention,CachedGlmAttention) or not isinstance(block.feed_forward,PackedGlmFeedForward):
             raise ValueError('placement requires prepared CPU packed GLM components')
@@ -47,7 +50,7 @@ def _tensors(source):
     return tensors
 
 
-def _build(source,copied,*,cuda):
+def _build(source,copied,*,cuda,stage=False):
     """Revalidate the full CPU composition before using the same recipe on CUDA."""
     projection_type=CudaPackedProjection if cuda else PackedProjection
     matrix_type=CudaPackedMatrix if cuda else PackedMatrix
@@ -79,8 +82,15 @@ def _build(source,copied,*,cuda):
         if f.kind=='sparse':options.update(router=copied[id(f.router)],correction_bias=copied[id(f.correction_bias)],shared=expert(f.shared),top_k=f.top_k,route_scale=f.route_scale)
         feed_forward=ffn_type(bank[0] if f.kind=='dense' else bank,**options)
         blocks.append(block_type(attention,feed_forward,copied[id(block.input_norm)],copied[id(block.post_norm)],epsilon=block.epsilon))
-    model=model_type(copied[id(source.embedding)],blocks,copied[id(source.norm)],copied[id(source.head)],
-                     epsilon=source.epsilon,max_output_bytes=source.max_output_bytes)
+    if stage:
+        kind=CudaGlmLayerStage if cuda else GlmLayerStage
+        model=kind(blocks,start=source.start,total=source.total,
+            embedding=None if source.embedding is None else copied[id(source.embedding)],
+            norm=None if source.norm is None else copied[id(source.norm)],head=None if source.head is None else copied[id(source.head)],
+            epsilon=source.epsilon,max_output_bytes=source.max_output_bytes)
+    else:
+        model=model_type(copied[id(source.embedding)],blocks,copied[id(source.norm)],copied[id(source.head)],
+                         epsilon=source.epsilon,max_output_bytes=source.max_output_bytes)
     if hasattr(source,'config'):
         if not isinstance(source.config,dict):raise ValueError('prepared GLM config must be a mapping')
         model.config=deepcopy(source.config)

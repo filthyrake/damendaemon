@@ -3,6 +3,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 import torch
 from .glm_flash_model import FlashModel
+from .glm_flash_layer_stage import FlashLayerStage
+from .cuda_layer_stages import CudaFlashLayerStage
 from .glm_flash_block import FlashBlock
 from .glm_flash_linear import FlashLinearAttention
 from .glm_flash_sparse import FlashSparseAttention
@@ -28,14 +30,15 @@ class PlacedCudaFlashModel:
     device: torch.device
 
 
-def _tensors(source):
-    if not isinstance(source,FlashModel):raise ValueError('placement requires a prepared CPU Flash model')
+def _tensors(source,*,stage=False):
+    if not isinstance(source,FlashLayerStage if stage else FlashModel):raise ValueError('placement requires a prepared CPU Flash model')
     tensors={}
     def add(value):
         if isinstance(value,PackedProjection):add(value.weight);add(value.scales)
         elif isinstance(value,torch.Tensor) and value.device.type=='cpu':tensors[id(value)]=value
         else:raise ValueError('Flash placement requires CPU tensors or packed projections')
-    for value in (source.embedding,source.norm,source.head):add(value)
+    for value in (source.embedding,source.norm,source.head):
+        if value is not None or not stage:add(value)
     for block in source.blocks:
         if (not isinstance(block,FlashBlock) or not isinstance(block.attention,(FlashLinearAttention,FlashSparseAttention))
                 or not isinstance(block.feed_forward,PackedFlashFeedForward)):
@@ -57,7 +60,7 @@ def _tensors(source):
     return tensors
 
 
-def _build(source,copied,*,cuda):
+def _build(source,copied,*,cuda,stage=False):
     projection_type=CudaPackedProjection if cuda else PackedProjection
     matrix_type=CudaPackedMatrix if cuda else PackedMatrix
     expert_type=CudaPackedExpert if cuda else PackedExpert
@@ -96,7 +99,14 @@ def _build(source,copied,*,cuda):
         if f.kind=='sparse':options.update(router=copied[id(f.router)],correction_bias=copied[id(f.correction_bias)],shared=expert(f.shared),top_k=f.top_k,route_scale=f.route_scale)
         feed=ffn_type(bank[0] if f.kind=='dense' else bank,**options)
         blocks.append(block_type(attention,feed,hyper(block.attention_hyper),hyper(block.ffn_hyper),copied[id(block.input_norm)],copied[id(block.post_norm)],epsilon=block.epsilon,**limits(block)))
-    result=model_type(copied[id(source.embedding)],blocks,copied[id(source.norm)],copied[id(source.head)],epsilon=source.epsilon,max_output_bytes=source.max_output_bytes)
+    if stage:
+        kind=CudaFlashLayerStage if cuda else FlashLayerStage
+        result=kind(blocks,start=source.start,total=source.total,
+            embedding=None if source.embedding is None else copied[id(source.embedding)],
+            norm=None if source.norm is None else copied[id(source.norm)],head=None if source.head is None else copied[id(source.head)],
+            epsilon=source.epsilon,max_output_bytes=source.max_output_bytes)
+    else:
+        result=model_type(copied[id(source.embedding)],blocks,copied[id(source.norm)],copied[id(source.head)],epsilon=source.epsilon,max_output_bytes=source.max_output_bytes)
     if hasattr(source,'config'):
         if not isinstance(source.config,dict):raise ValueError('prepared Flash config must be a mapping')
         result.config=deepcopy(source.config)
