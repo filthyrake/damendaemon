@@ -4,6 +4,12 @@
 
 Use one server for registered model aliases, streaming requests, and explicit residency control.
 
+HTTP JSON request bodies are limited to 1 MiB and 30 seconds of total read time.
+Partial progress does not extend the body deadline. Expiry closes the connection
+before runtime dispatch and runs admission cleanup. This is a body-read bound,
+not a total header-read or inference deadline; the socket's previous inactivity
+timeout is restored before inference.
+
 ## Serve and switch models
 
 ```sh

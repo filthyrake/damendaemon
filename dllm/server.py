@@ -14,6 +14,8 @@ from .sampling import Sampling
 from .stopping import stop_sequences
 from .prompts import validate_raw
 
+BODY_READ_SECONDS = 30
+
 
 def handler_for(runtime, auth=None, *, reservation_store=None):
     from .http_auth import AuthPolicy
@@ -37,6 +39,29 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
 
         def log_message(self, *args):
             pass  # Do not log prompts or response content.
+
+        def read_body(self, length):
+            deadline = time.monotonic() + BODY_READ_SECONDS
+            previous_timeout = self.connection.gettimeout()
+            body = bytearray()
+            try:
+                while len(body) < length:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError('request body deadline exceeded')
+                    self.connection.settimeout(remaining if previous_timeout is None
+                                               else min(previous_timeout, remaining))
+                    # read1 performs at most one underlying read. A buffered
+                    # read(length) could keep resetting the inactivity timeout.
+                    part = self.rfile.read1(min(65536, length - len(body)))
+                    if not part:
+                        raise ValueError('incomplete request body')
+                    body.extend(part)
+                if time.monotonic() >= deadline:
+                    raise TimeoutError('request body deadline exceeded')
+                return body
+            finally:
+                self.connection.settimeout(previous_timeout)
 
         def send_json(self, status, payload, *, retry_after=1):
             body = json.dumps(payload).encode()
@@ -133,9 +158,7 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
                 length = int(lengths[0])
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
-                encoded_body = self.rfile.read(length)
-                if len(encoded_body) != length:
-                    raise ValueError("incomplete request body")
+                encoded_body = self.read_body(length)
                 body = json.loads(encoded_body)
                 if self.path in INFERENCE_ROUTES and isinstance(body, dict) and isinstance(body.get('model'), str):
                     client = auth.client(self.headers.get_all('Authorization', []))

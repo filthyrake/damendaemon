@@ -1,16 +1,63 @@
 """Request framing must be complete before a runtime operation starts."""
 import socket
+import io
+from types import SimpleNamespace
 import threading
+import time
 import unittest
 from http.client import HTTPResponse
 from http.server import ThreadingHTTPServer
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from dllm.http_auth import AuthPolicy
 from dllm.server import handler_for
 
 
 class HttpFramingTests(unittest.TestCase):
+    def test_body_reader_restores_socket_timeout_on_success_and_failure(self):
+        handler = self.server.RequestHandlerClass
+        for payload in (b'{}', b'{'):
+            with self.subTest(payload=payload):
+                connection = Mock()
+                connection.gettimeout.return_value = 7
+                request = SimpleNamespace(connection=connection, rfile=io.BytesIO(payload))
+                if len(payload) == 2:
+                    self.assertEqual(handler.read_body(request, 2), b'{}')
+                else:
+                    with self.assertRaisesRegex(ValueError, 'incomplete'):
+                        handler.read_body(request, 2)
+                self.assertEqual(connection.settimeout.call_args.args, (7,))
+
+    def test_continuing_body_progress_cannot_extend_total_deadline(self):
+        stop = threading.Event()
+        with patch('dllm.server.BODY_READ_SECONDS', .15, create=True), \
+                socket.create_connection(self.server.server_address, timeout=.8) as connection:
+            connection.sendall(b'POST /v1/scheduler/drain HTTP/1.1\r\n'
+                b'Host: localhost\r\nContent-Type: application/json\r\n'
+                b'Content-Length: 100\r\n\r\n{}')
+            def trickle():
+                try:
+                    for _ in range(98):
+                        if stop.wait(.02):
+                            return
+                        connection.sendall(b' ')
+                except OSError:
+                    pass
+            sender = threading.Thread(target=trickle)
+            sender.start()
+            try:
+                started = time.monotonic()
+                try:
+                    received = connection.recv(1)
+                except ConnectionResetError:
+                    received = b''
+                self.assertEqual(received, b'')
+                self.assertLess(time.monotonic() - started, .8)
+                self.runtime.drain.assert_not_called()
+            finally:
+                stop.set()
+                sender.join(1)
+
     def setUp(self):
         self.runtime = Mock()
         self.runtime.drain.return_value = {'draining': True}
