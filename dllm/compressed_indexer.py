@@ -8,8 +8,8 @@ import torch
 
 
 @torch.no_grad()
-def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
-                      offset=0, query_chunk=16, key_chunk=64, scale_head_weights=True, dot_scale=1.):
+def _select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
+                      offset=0, query_chunk=16, key_chunk=64, scale_head_weights=True, dot_scale=1.,validate_scores=False):
     """Return physical IDs and FP32 scores, padding unavailable blocks with -1/-inf.
 
     query [batch,sequence,heads,width], keys [batch,blocks,width], head_weights
@@ -64,6 +64,8 @@ def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
             scores = (dots.relu()*weights.unsqueeze(-1)).sum(-2)
             ids = torch.arange(key_start, key_stop, device=query.device).reshape(1, 1, -1).expand(batch, stop-start, -1)
             scores = scores.masked_fill(ids >= visible.unsqueeze(-1), -float('inf'))
+            if validate_scores and ((ids < visible.unsqueeze(-1)) & ~torch.isfinite(scores)).any():
+                raise ValueError('nonfinite visible compressed indexer score')
             candidates = torch.cat((best_scores, scores), -1)
             candidate_ids = torch.cat((best_ids, ids), -1)
             order = torch.argsort(candidates, descending=True, stable=True)[..., :top]
@@ -72,3 +74,8 @@ def select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
         selected[:, start:stop] = torch.where(best_ids < visible.unsqueeze(-1), best_ids+offset, -1)
         selected_scores[:, start:stop] = best_scores
     return selected, selected_scores
+
+
+def select_compressed(query,keys,head_weights,positions,**options):
+    """Generic reference selection; caller-owned input validation is unchanged."""
+    return _select_compressed(query,keys,head_weights,positions,**options)
