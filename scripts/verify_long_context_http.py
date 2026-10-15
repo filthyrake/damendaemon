@@ -29,6 +29,40 @@ from dllm.bench import distribution
 from dllm.report_io import save_report
 
 
+MAX_CONTEXT_TOKENS = 1024 * 1024
+MAX_CORPUS_BYTES = 16 * 1024 * 1024
+
+
+def prepare_context_prompts(tokenizer, context, *, max_corpus_bytes=MAX_CORPUS_BYTES):
+    """Bound client corpus construction; this does not qualify model context."""
+    if type(context) is not int or not 513 <= context <= MAX_CONTEXT_TOKENS:
+        raise ValueError('prompt context must be an integer in [513,1048576]')
+    if type(max_corpus_bytes) is not int or not 1 <= max_corpus_bytes <= MAX_CORPUS_BYTES:
+        raise ValueError('invalid prompt corpus byte bound')
+    size, previous = 2048, 0
+    while True:
+        lines = []
+        corpus_bytes = 0
+        for index in range(size):
+            line = f'Record {index}: The parcel is in cabinet {index%11}, drawer {index%7}.\n'
+            corpus_bytes += len(line)  # This generated corpus is ASCII.
+            if corpus_bytes > max_corpus_bytes:
+                raise ValueError('prompt corpus byte bound exhausted before requested context')
+            lines.append(line)
+        ids = tokenizer.encode(''.join(lines), add_special_tokens=False).ids
+        if not isinstance(ids, list) or len(ids) <= previous:
+            raise ValueError('tokenizer made no progress toward requested context')
+        if len(ids) >= context:
+            selected = ids[:context]
+            if any(type(token) is not int or token < 0 for token in selected):
+                raise ValueError('tokenizer returned invalid prompt token IDs')
+            return selected[:128], selected[:context-512], dict(
+                records=size, corpus_utf8_bytes=corpus_bytes, max_corpus_bytes=max_corpus_bytes,
+                max_context_tokens=MAX_CONTEXT_TOKENS)
+        previous = len(ids)
+        size *= 2
+
+
 @contextmanager
 def request_deadlines(first_output, first_seconds, total_seconds, expire):
     """Wall-clock bounds also apply when SSE keeps the socket from timing out."""
@@ -119,8 +153,8 @@ def main():
     parser.add_argument('--first-output-budget', type=float, default=600)
     parser.add_argument('--host-gib', type=float, help='explicit host-weight residency budget for practical checkpoints')
     args = parser.parse_args()
-    if args.context < 32768 or args.chunk_size <= 0 or not 1 <= args.rounds <= 10:
-        parser.error('requires context >=32768, positive chunks and 1..10 rounds')
+    if not 32768 <= args.context <= MAX_CONTEXT_TOKENS or args.chunk_size <= 0 or not 1 <= args.rounds <= 10:
+        parser.error('requires context 32768..1048576, positive chunks and 1..10 rounds')
     if not 0 < args.gap_budget_seconds <= 10:
         parser.error('declare a finite short-stream gap budget in (0,10] seconds')
     if any(not math.isfinite(value) or value <= 0 for value in (args.request_timeout, args.first_output_budget)):
@@ -139,14 +173,10 @@ def main():
     eos = eos if isinstance(eos, list) else [eos]
     tokenizer_path = model/'tokenizer.json'
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
-    size = 2048
-    while True:
-        ids = tokenizer.encode(''.join(f'Record {i}: The parcel is in cabinet {i%11}, drawer {i%7}.\n'
-                                      for i in range(size)), add_special_tokens=False).ids
-        if len(ids) >= args.context:
-            break
-        size *= 2
-    short, long = ids[:128], ids[:args.context-512]
+    try:
+        short, long, preparation = prepare_context_prompts(tokenizer, args.context)
+    except ValueError as error:
+        parser.error(str(error))
     report = dict(passed=False, qualification='context capacity only' if args.capacity_only else 'context/interference engineering fixture only',
         experimental_hybrid_context=args.experimental_hybrid_context, batch_capacity=args.batch_size,
         experimental_hybrid_q4_context=args.experimental_hybrid_q4_context,
@@ -160,7 +190,7 @@ def main():
             'DLLM_QUANTIZATION', 'DLLM_ROCM_MEMORY_GIB', 'ROCR_VISIBLE_DEVICES', 'HIP_VISIBLE_DEVICES',
             'TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL', 'DLLM_HYBRID_PRECISION',
             'DLLM_EXPERIMENTAL_HYBRID_Q4', 'CUDA_VISIBLE_DEVICES')},
-        prompts=dict(short=short, long=long), rounds=[],
+        prompts=dict(short=short, long=long), prompt_preparation=preparation, rounds=[],
         limitation='Client visible SSE chunk gaps are not internal per-token latency. Independent numerical and task quality gates are separate.')
     module = 'scripts.experiments.hybrid_context_probe' if args.experimental_hybrid_context else 'dllm'
     if args.experimental_hybrid_q4_context:

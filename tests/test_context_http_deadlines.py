@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError
 
-from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow, stop_owned_server, expire_owned_request
+from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow, stop_owned_server, expire_owned_request, prepare_context_prompts
 
 
 class ContextDeadlineTests(unittest.TestCase):
@@ -139,6 +139,43 @@ class ContextDeadlineTests(unittest.TestCase):
         with patch('scripts.verify_long_context_http.os.killpg', side_effect=ProcessLookupError) as kill:
             stop_owned_server(running, signal.SIGKILL)
             kill.assert_called_once_with(123, signal.SIGKILL)
+
+    def test_prompt_preparation_preserves_prefixes_and_output_reservation(self):
+        tokenizer = Mock()
+        def encode(text, **kwargs):
+            self.assertEqual(kwargs, {'add_special_tokens': False})
+            return Mock(ids=list(range(text.count('Record '))))
+        tokenizer.encode.side_effect = encode
+        short, long, metadata = prepare_context_prompts(tokenizer, 4096)
+        self.assertEqual(short, list(range(128)))
+        self.assertEqual(long, list(range(4096-512)))
+        self.assertEqual(tokenizer.encode.call_count, 2)
+        self.assertEqual(metadata['records'], 4096)
+        self.assertLessEqual(metadata['corpus_utf8_bytes'], metadata['max_corpus_bytes'])
+
+    def test_prompt_preparation_fails_before_encoding_oversized_corpus(self):
+        tokenizer = Mock()
+        with self.assertRaisesRegex(ValueError, 'corpus byte bound'):
+            prepare_context_prompts(tokenizer, 4096, max_corpus_bytes=64)
+        tokenizer.encode.assert_not_called()
+        for context in (True, 512, 1048577):
+            with self.assertRaisesRegex(ValueError, 'prompt context'):
+                prepare_context_prompts(tokenizer, context)
+        tokenizer.encode.assert_not_called()
+
+    def test_prompt_preparation_stops_nonprogress_and_invalid_ids(self):
+        tokenizer = Mock()
+        tokenizer.encode.return_value.ids = [1, 2]
+        with self.assertRaisesRegex(ValueError, 'no progress'):
+            prepare_context_prompts(tokenizer, 4096)
+        self.assertEqual(tokenizer.encode.call_count, 2)
+        tokenizer.encode.return_value.ids = []
+        with self.assertRaisesRegex(ValueError, 'no progress'):
+            prepare_context_prompts(tokenizer, 4096)
+        for value in (True, -1, 1.5):
+            tokenizer.encode.return_value.ids = [value] * 4096
+            with self.assertRaisesRegex(ValueError, 'invalid prompt token IDs'):
+                prepare_context_prompts(tokenizer, 4096)
 
     def test_checkpoint_remains_readable_and_replacement_leaves_no_temp(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -181,3 +181,11 @@ waiting. This deliberately skips application cleanup after a hard deadline;
 normal successful-run cleanup retains its graceful path. Reports retain the
 expiry reason and failed evidence. The runner must own the server session; this
 mechanism is not for pointing at or stopping an existing shared service.
+
+Long-context fixture preparation is bounded before any server launch: requested
+context is limited to 32,768–1,048,576 tokens, and the generated ASCII corpus to
+16 MiB per encoding attempt. Corpus growth stops on non-progressing tokenization
+or budget exhaustion; selected token IDs must be nonnegative integers. Reports
+record the preparation limits and corpus size. The short prompt remains 128
+tokens, and the long prompt reserves 512 output tokens. These are client fixture
+bounds, not a claim that a checkpoint or device supports those context lengths.
