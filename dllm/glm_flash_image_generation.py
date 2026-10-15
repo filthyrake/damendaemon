@@ -8,12 +8,14 @@ from .glm_flash_image_embeddings import image_embeddings
 
 class FlashImageReferenceGenerator(FlashReferenceGenerator):
     text_type=FlashImageText
+    vision_type=FlashVision
+    embed_images=staticmethod(image_embeddings)
 
     def __init__(self,model,text,vision,*,max_context=4096,max_cache_bytes=256*1024**2,
                  image_workspace_bytes=64*1024**2,image_output_bytes=64*1024**2):
         super().__init__(model,text,max_context=max_context,max_cache_bytes=max_cache_bytes)
-        if (not isinstance(vision,FlashVision) or vision.c['out_hidden_size']!=model.embedding.shape[1]
-                or vision.c['in_channels']!=3 or vision.c['patch_size']!=14
+        if (not isinstance(vision,self.vision_type) or vision.c['out_hidden_size']!=model.embedding.shape[1]
+                or vision.device!=model.embedding.device or vision.c['in_channels']!=3 or vision.c['patch_size']!=14
                 or vision.c['temporal_patch_size']!=2 or vision.c['spatial_merge_size']!=2
                 or any(type(v) is not int or not 1<=v<=2**31 for v in (image_workspace_bytes,image_output_bytes))):
             raise ValueError('Flash image generation requires matching prepared still-image vision and language geometry')
@@ -23,6 +25,9 @@ class FlashImageReferenceGenerator(FlashReferenceGenerator):
             raise ValueError('Flash image token disagrees with model configuration')
         self.vision=vision;self.image_workspace_bytes=image_workspace_bytes;self.image_output_bytes=image_output_bytes
         self.blocked_media=tuple(sorted({token for marker in MEDIA if (token:=text.tokenizer.token_to_id(marker)) is not None}))
+
+    def _image_features(self,patches,grids):
+        return self.vision.forward(patches,grids)
 
     def generate_images(self,messages,images,*,max_new_tokens=128,reasoning_effort=None,clear_thinking=False):
         if type(max_new_tokens) is not int or not 1<=max_new_tokens<=4096:raise ValueError('GLM output length must be 1..4096 tokens')
@@ -42,8 +47,8 @@ class FlashImageReferenceGenerator(FlashReferenceGenerator):
         self.model._input_budget((1,len(tokens)),False)
         def prefill(ids,**limits):
             nonlocal patches
-            features=self.vision.forward(patches,grids)
+            features=self._image_features(patches,grids)
             patches=None  # Release processor output before language cache allocation.
-            values=image_embeddings(self.model,ids,[features],image_token_id=self.text.image_token_id)
+            values=self.embed_images(self.model,ids,[features],image_token_id=self.text.image_token_id)
             return self.model.prefill_embeddings(values,**limits)
         yield from self._generate_tokens(tokens,max_new_tokens,prefill=prefill,blocked_token_ids=self.blocked_media,stream=stream)

@@ -105,8 +105,7 @@ class _FlashVision:
         gate=self._linear(x,prefix+'gate_proj');up=self._linear(x,prefix+'up_proj')
         return self._linear(activate_expert(gate,up,None,self.c['swiglu_limit']),prefix+'down_proj')
 
-    @torch.inference_mode()
-    def forward(self,patches,grids):
+    def _input_metadata(self,patches,grids,*,device=None):
         c=self.c;d=c['hidden_size'];m=c['spatial_merge_size'];heads=c['num_heads'];hd=d//heads
         width=c['in_channels']*c['temporal_patch_size']*c['patch_size']**2
         if (not isinstance(grids,(list,tuple)) or not 1<=len(grids)<=256
@@ -114,12 +113,19 @@ class _FlashVision:
                        or g[1]%m or g[2]%m for g in grids)):
             raise ValueError('invalid Flash vision frame/patch grids')
         tokens=sum(t*h*w for t,h,w in grids);largest=max(h*w for _,h,w in grids);outputs=tokens//(m*m)
-        if (tokens>self.max_tokens or not isinstance(patches,torch.Tensor) or patches.device!=self.device or patches.dtype!=torch.float32
+        if (tokens>self.max_tokens or not isinstance(patches,torch.Tensor) or patches.device!=(self.device if device is None else device) or patches.dtype!=torch.float32
                 or patches.shape!=(tokens,width)):
             raise ValueError('Flash vision patch input/token budget mismatch')
         scratch=32*tokens*(width+d+c['intermediate_size']+c['out_hidden_size']+c['projection_intermediate_size'])+16*heads*largest**2
         if scratch>self.max_workspace_bytes or 4*outputs*c['out_hidden_size']>self.max_output_bytes:
             raise ValueError('Flash vision workspace/output budget exceeded')
+        return tokens,outputs
+
+    @torch.inference_mode()
+    def forward(self,patches,grids):
+        tokens,outputs=self._input_metadata(patches,grids)
+        c=self.c;d=c['hidden_size'];m=c['spatial_merge_size'];heads=c['num_heads'];hd=d//heads
+        width=c['in_channels']*c['temporal_patch_size']*c['patch_size']**2
         if not torch.isfinite(patches).all():raise ValueError('nonfinite Flash vision patch input')
         positions=[];lengths=[]
         for t,h,w in grids:
