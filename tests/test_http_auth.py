@@ -99,7 +99,8 @@ class HttpAuthTests(unittest.TestCase):
                 patch('sys.argv', ['dllm', 'status', '--server', self.url]), patch('sys.stdout', output):
             main()
         self.assertEqual(json.loads(output.getvalue()), {'drained':False})
-        result = benchmark_request(self.url+'/v1', 'a', 'hello', 1, 2, 0, API_KEY)
+        # FakeRuntime emits two tokens; keep this auth control within the request budget.
+        result = benchmark_request(self.url+'/v1', 'a', 'hello', 2, 2, 0, API_KEY)
         self.assertIsNone(result.error)
         self.assertNotIn(API_KEY, repr(result))
         self.assertNotIn(ADMIN_KEY, output.getvalue())
