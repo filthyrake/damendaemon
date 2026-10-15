@@ -255,3 +255,14 @@ match independent scalar pool/norm/rotation plus CPU simulation controls within
 pass.16 local tests pass. Guard completed4.028s,22MiB reserved under128MiB cap,
 4251MiB free before/after, incumbent healthy. Integrated attention and official
 checkpoint/performance qualification remain open.
+
+## DeepSeek learned packed indexer (#246)
+
+Implementation `157009f`. Explicit CUDA FP32 admission includes packed projection
+scratch, query transforms, selection and input-validation storage. Dense and
+E4M3/E8M0 projections pass six chunk cases against CPU-decoded projection/scalar
+rotation/simulation and scalar ranking: exact IDs, score error below1e-6.
+Intermediate overflow and pre-projection budgets fail closed.15 local tests pass.
+Guard completed4.091s,22MiB reserved under128MiB cap,4251MiB free before/after,
+incumbent healthy. Integrated attention/model and practical performance remain
+unqualified.
