@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 import unittest
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 from dllm.runtime import Runtime, BusyError
@@ -19,6 +21,38 @@ class Executor:
 
 
 class RuntimeTests(unittest.TestCase):
+    def test_model_removed_while_session_waits_is_rejected_before_activation(self):
+        runtime = Runtime({'a': 'a', 'b': 'b'}, queue_size=1)
+        waiting = threading.Event()
+        lock = threading.Lock()
+        class ObservedLock:
+            def acquire(self, **kwargs):
+                waiting.set()
+                return lock.acquire(**kwargs)
+            def release(self):
+                lock.release()
+        runtime.lock = ObservedLock()
+        def request():
+            with runtime.session('a'):
+                self.fail('removed model was activated')
+        lock.acquire()
+        with patch.object(runtime, '_activate', wraps=runtime._activate) as activate, ThreadPoolExecutor(1) as pool:
+            pending = pool.submit(request)
+            try:
+                self.assertTrue(waiting.wait(1))
+                # The concurrent remover owns the lifetime and registry locks.
+                with runtime.registry_lock:
+                    del runtime.models['a']
+                    del runtime.quantizations['a']
+                    del runtime.chat_templates['a']
+            finally:
+                lock.release()
+            with self.assertRaisesRegex(ValueError, 'unknown model'):
+                pending.result(2)
+            activate.assert_not_called()
+        with runtime.session('b') as (executor, _, __):
+            self.assertEqual(executor.model.path, 'b')
+
     def test_invalid_residency_limits_fail_before_gpu_initialization(self):
         invalid = [dict(host_gib=value) for value in
                    (float('nan'), float('inf'), -float('inf'), True, '8', None, 1e-15)]

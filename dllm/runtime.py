@@ -398,6 +398,10 @@ class Runtime:
             acquired = self.lock.acquire(timeout=self.queue_timeout)
             if not acquired:
                 raise BusyError("request queue timeout")
+            # Registration/removal share this lock; an alias can disappear
+            # after the early check while this request waits for its turn.
+            if alias not in self.models:
+                raise ValueError("unknown model")
             yield self._activate(alias)
         finally:
             if acquired:
