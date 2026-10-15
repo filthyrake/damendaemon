@@ -60,8 +60,11 @@ def validate_tools(tools):
             raise ValueError('function parameters must describe an object')
         if 'strict' in function and type(function['strict']) is not bool:
             raise ValueError('strict must be boolean')
-    if len(json.dumps(tools,allow_nan=False))>256*1024:raise ValueError('tool definitions are too large')
-    return copy.deepcopy(tools)
+    try:
+        if len(json.dumps(tools,allow_nan=False))>256*1024:raise ValueError('tool definitions are too large')
+        return copy.deepcopy(tools)
+    except RecursionError as error:
+        raise ValueError('tool definition nesting is too deep') from error
 
 
 def prepare_tools(tools,choice=None):

@@ -187,6 +187,17 @@ class ServerTests(unittest.TestCase):
         history=messages+[choice['message'],{'role':'tool','tool_call_id':call['id'],'content':'Sunny'}]
         with self.post(messages=history,tools=tools) as response:self.assertEqual(response.status,200)
 
+    def test_deep_tool_schema_returns_400_before_dispatch(self):
+        nested = json.loads('[' * 600 + '0' + ']' * 600)
+        tools = [{'type': 'function', 'function': {'name': 'test',
+            'parameters': {'type': 'object', 'extra': nested}}}]
+        with patch.object(self.runtime, 'generate') as generate, \
+                patch('dllm.server.traceback.print_exc'):
+            with self.assertRaises(HTTPError) as caught: self.post(tools=tools)
+            with caught.exception as response:
+                self.assertEqual(response.code, 400)
+            generate.assert_not_called()
+
     def test_tool_choice_none_and_invalid_combinations(self):
         tools=[{'type':'function','function':{'name':'weather','parameters':{'type':'object'}}}]
         with self.post(messages=[{'role':'user','content':'tools'}],tools=tools,tool_choice='none') as response:

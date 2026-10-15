@@ -20,6 +20,15 @@ def parse(parts):
 
 
 class ToolCallTests(unittest.TestCase):
+    def test_deep_and_cyclic_definitions_are_validation_errors(self):
+        nested = json.loads('[' * 600 + '0' + ']' * 600)
+        cyclic = {}; cyclic['self'] = cyclic
+        for value in (nested, cyclic):
+            tools = [{'type': 'function', 'function': {'name': 'test',
+                'parameters': {'type': 'object', 'extra': value}}}]
+            with self.subTest(cyclic=value is cyclic), self.assertRaises(ValueError):
+                validate_tools(tools)
+
     def test_unqualified_model_template_rejected_before_rendering(self):
         from dllm.qwen2 import ModelWeights
         model=SimpleNamespace(template=object(),supports_tool_calls=False)
