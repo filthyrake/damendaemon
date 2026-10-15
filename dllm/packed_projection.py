@@ -4,9 +4,9 @@ import torch
 from .packed_tiles import MAX_TILE_ELEMENTS, decode_tile, validate_layout
 
 
-def projection_plan(weight, scales, *, format, row_chunk, column_chunk, workspace_bytes):
+def projection_plan(weight, scales, *, format, row_chunk, column_chunk, workspace_bytes, device_type="cpu"):
     """Validate projection metadata and return rows, columns and token chunk."""
-    rows, columns = validate_layout(weight, scales, format=format)
+    rows, columns = validate_layout(weight, scales, format=format, device_type=device_type)
     if (any(type(v) is not int or v < 1 for v in (row_chunk, column_chunk, workspace_bytes))
             or row_chunk*column_chunk > MAX_TILE_ELEMENTS):
         raise ValueError('invalid packed projection tile dimensions or workspace allowance')

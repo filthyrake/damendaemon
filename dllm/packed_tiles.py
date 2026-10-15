@@ -35,16 +35,18 @@ def _e4m3(raw):
     return torch.where((code & 128) != 0, -magnitude, magnitude)
 
 
-def validate_layout(weight, scales, *, format):
+def validate_layout(weight, scales, *, format, device_type="cpu"):
     """Validate raw CPU storage metadata without decoding or reading values."""
+    if device_type not in ("cpu", "cuda"):
+        raise ValueError("packed tile device must be CPU or CUDA")
     formats=('e2m1','e4m3fn','e4m3fn_f32','q4_0_f16','q8_0_f16')
     if format not in formats:raise ValueError('unsupported packed tile format')
     scale_dtype={'e4m3fn_f32':torch.float32,'q4_0_f16':torch.float16,'q8_0_f16':torch.float16}.get(format,torch.uint8)
     weight_dtype=torch.int8 if format=='q8_0_f16' else torch.uint8
-    if (not isinstance(weight,torch.Tensor) or weight.dtype!=weight_dtype or weight.device.type!='cpu'
-            or not isinstance(scales,torch.Tensor) or scales.dtype!=scale_dtype or scales.device.type!='cpu'
+    if (not isinstance(weight,torch.Tensor) or weight.dtype!=weight_dtype or weight.device.type!=device_type
+            or not isinstance(scales,torch.Tensor) or scales.dtype!=scale_dtype or scales.device!=weight.device
             or weight.ndim!=2 or scales.ndim!=2 or min(weight.shape)<1):
-        raise ValueError('packed tile inputs require matching typed CPU weights and scales')
+        raise ValueError(f'packed tile inputs require matching typed {device_type.upper()} weights and scales')
     rows,packed_columns=weight.shape
     columns=packed_columns*2 if format in ('e2m1','q4_0_f16') else packed_columns
     row_groups=format in ('e2m1','q4_0_f16','q8_0_f16')
@@ -74,8 +76,14 @@ def decode_tile(weight, scales, *, format, row_start, row_stop, column_start, co
         raise ValueError('tile bounds must be nonempty integer ranges within logical weight axes')
     if (row_stop-row_start)*(column_stop-column_start) > MAX_TILE_ELEMENTS:
         raise ValueError('packed checkpoint tile exceeds 65536 decoded elements')
-    column_ids = torch.arange(column_start, column_stop, device='cpu')
-    row_ids = torch.arange(row_start, row_stop, device='cpu')
+    return _decode_tile(weight, scales, format=format, row_start=row_start, row_stop=row_stop,
+                        column_start=column_start, column_stop=column_stop)
+
+
+def _decode_tile(weight, scales, *, format, row_start, row_stop, column_start, column_stop):
+    """Shared byte arithmetic; caller must validate layout, device and tile bounds."""
+    column_ids = torch.arange(column_start, column_stop, device=weight.device)
+    row_ids = torch.arange(row_start, row_stop, device=weight.device)
     if format == 'e2m1':
         packed = weight[row_start:row_stop, column_ids//2]
         codes = (packed >> ((column_ids % 2)*4)) & 15
