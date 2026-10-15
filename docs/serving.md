@@ -163,6 +163,58 @@ policy. Image tool calls, video/audio, remote image URLs, prefix snapshots,
 and chunked image prefill are unsupported. Other model families keep their
 existing text execution. See [image qualification](vision-qualification.md)
 for independent output checks, lifecycle proof, and intermediate encoder limits.
+
+For a complete local request, first start the opted-in server above with the
+registered name `vision`. Build the JSON offline from a small still PNG or JPEG
+(for example 256×256). This checks the encoded request size; the server still
+validates decoded pixels, image tokens, prompt plus output context, and model
+support. Renaming a file does not change its format.
+
+```sh
+python - photo.png > /tmp/dllm-image-request.json <<'PYIMAGE'
+import base64
+import json
+import sys
+
+with open(sys.argv[1], 'rb') as image:
+    data = image.read(1024 * 1024 + 1)
+if len(data) > 1024 * 1024:
+    raise SystemExit('Image exceeds the request byte budget; use a smaller image.')
+if data.startswith(b'\x89PNG\r\n\x1a\n'):
+    mime = 'image/png'
+elif data.startswith(b'\xff\xd8\xff'):
+    mime = 'image/jpeg'
+else:
+    raise SystemExit('Expected a still PNG or JPEG image.')
+request = {
+    'model': 'vision', 'max_tokens': 32, 'temperature': 0, 'stream': False,
+    'messages': [{'role': 'user', 'content': [
+        {'type': 'text', 'text': 'Describe this image briefly.'},
+        {'type': 'image_url', 'image_url': {
+            'url': 'data:' + mime + ';base64,' + base64.b64encode(data).decode('ascii'),
+            'detail': 'auto'}},
+    ]}],
+}
+body = json.dumps(request, separators=(',', ':')).encode('utf-8')
+if len(body) > 1024 * 1024:
+    raise SystemExit('Encoded JSON exceeds 1 MiB; use a smaller image.')
+sys.stdout.buffer.write(body)
+PYIMAGE
+```
+
+After that command succeeds, submit the request to your local server:
+
+```sh
+curl --fail-with-body --max-time 120 http://127.0.0.1:8088/v1/chat/completions \
+  -H 'Content-Type: application/json' --data-binary @/tmp/dllm-image-request.json
+```
+
+The body contains the image itself; remove the temporary file when finished.
+Change `stream` to `True` and add `curl -N` for SSE. A client timeout does not
+prove successful server cleanup or model qualification. This example applies to
+the qualified small Qwen image scope above; it does not extend it to practical
+32K contexts or clear the recorded intermediate encoder error.
+
 Gemma 3 text has a separate full-precision correctness path with alternating
 sliding/full attention, GELU gating and its own normalization; the pinned 270M
 checkpoint passes CUDA and Metal reference replay, including 511/512/513-token
