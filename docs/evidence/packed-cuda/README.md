@@ -243,3 +243,15 @@ overflow rejection, empty caches/queries and bounds pass.15 local selection and
 attention regressions pass. Guard completed3.407s,22MiB reserved under128MiB cap,
 4251MiB free before/after and incumbent healthy. QAT and integrated attention/model
 qualification remain separate.
+
+## DeepSeek complete compressor (#245)
+
+Implementation `9282a5c`. Explicit CUDA composition admits full projection/pool/
+normalization/rotation/simulation storage before scans and rejects intermediate
+nonfinite values, including finite pooled values whose variance overflows.
+Six actual CUDA ratio4/8 cases with no transform, KV FP8 and index FP4 simulations
+match independent scalar pool/norm/rotation plus CPU simulation controls within
+4.8e-7. Chunk continuation, injected downstream failure nonmutation and bounds
+pass.16 local tests pass. Guard completed4.028s,22MiB reserved under128MiB cap,
+4251MiB free before/after, incumbent healthy. Integrated attention and official
+checkpoint/performance qualification remain open.
