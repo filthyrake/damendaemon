@@ -46,7 +46,7 @@ def serve(worker,text,args,auth,*,family='glm',vision=None):
         if threading.current_thread() is threading.main_thread():
             for sig in (signal.SIGTERM,signal.SIGINT):previous[sig]=signal.signal(sig,interrupt)
         emit(dict(event='http_ready',url=f'http://127.0.0.1:{server.server_port}',model=args.alias,
-            model_type=runtime.family,scope='cpu_reference',native_chat=True,dtype='float32',modality='still_image' if images else 'text',
+            model_type=runtime.family,scope=runtime.scope,native_chat=True,dtype='float32',modality='still_image' if images else 'text',
             official_model_qualified=False,queue_enabled=bool(args.queue_size),queue_capacity=args.queue_size,**runtime.execution_status()))
         next_ping=time.monotonic()+args.heartbeat_interval
         while not stopping.is_set():
@@ -93,4 +93,4 @@ def serve(worker,text,args,auth,*,family='glm',vision=None):
         if failures:
             if primary is not None:primary.add_note('native host HTTP cleanup failed; retain owners for retry')
             else:raise failures[0]
-    emit(dict(event='stopped',scope='cpu_reference',execution='cpu_host_topology',graceful_stop=True))
+    emit(dict(event='stopped',scope=runtime.scope,graceful_stop=True,**runtime.execution_status()))

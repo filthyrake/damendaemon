@@ -2061,3 +2061,10 @@ flag. Separate `--vision-weight-mib`, `--max-patches`, `--image-workspace-mib` a
 covers the combined device payload. Tiny feature/logit/stream controls and loaded
 inline-image HTTP/SSE/SIGTERM proof are in the evidence directory. Official vision
 quality, practical resolution/context and concurrent performance remain open.
+
+Native host HTTP reports `execution=host_topology`, `device=distributed` and
+`scope=host_reference`. `local_device` identifies only the observed coordinator
+placement; `peer_devices_verified=false` means the wire protocol has not attested
+remote placement. This applies even to a CPU coordinator because explicit CUDA
+host adapters can be peers. Source-byte verification and topology identity do
+not prove peer hardware. Local single-device CPU/CUDA runtime labels are unchanged.

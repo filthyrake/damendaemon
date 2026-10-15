@@ -34,7 +34,7 @@ class DeepSeekHostHttpCommandTests(unittest.TestCase):
         self.assertEqual(ready['event'],'http_ready')
         self.assertTrue(ready['native_chat']);self.assertTrue(ready['model_identity_verified'])
         self.assertFalse(ready['queue_enabled']);self.assertFalse(ready['official_model_qualified'])
-        self.assertEqual(ready['execution'],'cpu_host_topology')
+        self.assertEqual(ready['execution'],'host_topology')
         self.base=ready['url'];self.headers={'Content-Type':'application/json','Authorization':'Bearer '+key}
         self.admin=self.headers|{'Authorization':'Bearer '+admin}
         return workers,coordinator,(key,admin)
@@ -51,7 +51,7 @@ class DeepSeekHostHttpCommandTests(unittest.TestCase):
         with self.post() as response:second=json.load(response)
         self.assertEqual(first['choices'],second['choices']);self.assertEqual(first['usage'],second['usage'])
         with self.post(stream=True,stream_options={'include_usage':True}) as response:wire=response.read().decode()
-        self.assertIn('data: [DONE]',wire);self.assertIn('cpu_host_topology',wire)
+        self.assertIn('data: [DONE]',wire);self.assertIn('host_topology',wire)
         with urlopen(Request(self.base+'/v1/models/status',headers=self.admin),timeout=3) as response:status=json.load(response)
         self.assertFalse(status['epoch_terminal']);self.assertTrue(status['model_identity_verified'])
         # Several authenticated requests allow the short idle heartbeat interval

@@ -53,10 +53,13 @@ class GlmHostServingTests(unittest.TestCase):
         for key in ('content','reasoning_content'):
             self.assertEqual(message.get(key) or '', ''.join(e.get(key,'') for e in expected))
         self.assertEqual(actual['usage']['completion_tokens'],expected[-1]['usage']['completion_tokens'])
-        self.assertEqual(actual['dllm_timing']['execution'],'cpu_host_topology')
+        self.assertEqual(actual['dllm_timing']['execution'],'host_topology')
         with self.post(stream=True,stream_options={'include_usage':True}) as response:wire=response.read().decode()
-        self.assertIn('data: [DONE]',wire);self.assertIn('cpu_host_topology',wire)
+        self.assertIn('data: [DONE]',wire);self.assertIn('host_topology',wire)
         with urlopen(Request(base+'/v1/models/status',headers=self.admin),timeout=3) as response:status=json.load(response)
+        self.assertEqual(status['device'],'distributed');self.assertEqual(status['local_device'],'cpu')
+        self.assertFalse(status['peer_devices_verified']);self.assertEqual(status['scope'],'host_reference')
+        self.assertEqual(actual['dllm_timing']['source_tier'],'host_reference')
         self.assertEqual(status['stage_layers'],[[0,2],[2,3]]);self.assertFalse(status['model_identity_verified'])
         self.assertFalse(status['official_model_qualified']);self.assertFalse(status['epoch_terminal'])
         self.assertEqual(status['source_model_id'],workers[0].topology.source_identity.hex())
@@ -150,3 +153,17 @@ class GlmHostServingTests(unittest.TestCase):
         self.assertFalse(runtime.is_healthy());self.assertTrue(runtime.closed)
         with self.assertRaises(HTTPError) as error:urlopen(Request(base+'/health',headers=self.headers),timeout=3)
         self.assertEqual(error.exception.code,503);error.exception.close()
+
+    def test_local_device_metadata_survives_weight_release_without_peer_inference(self):
+        import torch
+        text,workers,_=self.session();runner=HostGlmGenerator(workers[0],text,chunk_size=2048)
+        # Metadata seam only; this remains a CPU execution fixture.
+        with patch.object(workers[0].stage,'actual_device',torch.device('cuda:1')):
+            runtime=HostGlmReferenceRuntime(runner)
+        self.addCleanup(runtime.close)
+        status=runtime.manage('status')
+        self.assertEqual(status['local_device'],'cuda:1');self.assertEqual(status['local_stage_index'],0)
+        self.assertEqual(status['device'],'distributed');self.assertFalse(status['peer_devices_verified'])
+        runtime.close();status=runtime.manage('status')
+        self.assertEqual(status['local_device'],'cuda:1');self.assertTrue(status['epoch_terminal'])
+        self.assertEqual(status['models'][0]['residency'],'closed')

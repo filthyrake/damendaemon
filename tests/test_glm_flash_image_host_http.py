@@ -51,7 +51,7 @@ class FlashImageHostHttpTests(unittest.TestCase):
         self.assertEqual(actual['usage']['prompt_tokens'],expected[-1]['usage']['prompt_tokens'])
         self.assertTrue(actual['dllm_timing']['vision_identity_verified'])
         with self.post(stream=True,stream_options={'include_usage':True}) as response:wire=response.read().decode()
-        self.assertIn('data: [DONE]',wire);self.assertIn('cpu_host_topology',wire)
+        self.assertIn('data: [DONE]',wire);self.assertIn('host_topology',wire)
         with urlopen(Request(base+'/v1/models/status',headers=self.admin),timeout=3) as response:status=json.load(response)
         self.assertEqual(status['modality'],'still_image');self.assertEqual(status['stage_layers'],[[0,2],[2,3]])
         self.assertTrue(status['model_identity_verified']);self.assertTrue(status['vision_identity_verified'])

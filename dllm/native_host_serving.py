@@ -1,4 +1,4 @@
-"""Explicit single-owner native reference HTTP over a prepared CPU host session."""
+"""Explicit single-owner native reference HTTP over a prepared host session."""
 from contextlib import closing
 import threading
 from .reference_serving import ReferenceRuntime
@@ -12,6 +12,8 @@ class NativeHostReferenceRuntime(ReferenceRuntime):
     state, not a fresh network probe. Use close() to interrupt host I/O; retain
     and retry this owner when cleanup fails or an iterator is still active.
     """
+    scope='host_reference'
+    backend_suffix='host-reference'
     runner_type=None
     model_type=None
     supports_images=False
@@ -31,6 +33,8 @@ class NativeHostReferenceRuntime(ReferenceRuntime):
             self.lock=threading.Lock();self.stopping=threading.Event()
             self.images=self.supports_images;self.family=self.model_type;self.context=runner.max_context
             self.active=self.closed=False;self.owner=object()
+            self.local_device=str(worker.stage.actual_device)
+            self.local_stage_index=worker.stage_index
             self.stage_layers=tuple(worker.topology.ranges)
             self.source_model_id=worker.topology.source_identity.hex()
             self.topology_identity=worker.topology.identity.hex()
@@ -46,10 +50,17 @@ class NativeHostReferenceRuntime(ReferenceRuntime):
                 or any(channel.transport.closed or channel.transport.failed for channel in worker.channels))
 
     def execution_status(self):
-        return dict(execution='cpu_host_topology',distributed=True,stage_layers=[list(pair) for pair in self.stage_layers],
+        return dict(execution='host_topology',distributed=True,local_device=self.local_device,
+                    local_stage_index=self.local_stage_index,peer_devices_verified=False,stage_layers=[list(pair) for pair in self.stage_layers],
                     source_model_id=self.source_model_id,topology_identity=self.topology_identity,
                     model_identity_verified=self.model_identity_verified,epoch_terminal=self._terminal(),
                     **(dict(vision_identity_verified=self.model_identity_verified) if self.images else {}))
+
+    def manage(self,action,**options):
+        status=super().manage(action,**options)
+        status.update(device='distributed',scope=self.scope,
+            models=[dict(id=self.alias,residency='closed' if self.closed else 'distributed')])
+        return status
 
     def cleanup_pending(self):
         runner=self.runner

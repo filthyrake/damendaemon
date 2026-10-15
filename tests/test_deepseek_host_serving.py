@@ -56,9 +56,9 @@ class DeepSeekHostServingTests(unittest.TestCase):
         for key in ('content','reasoning_content'):
             self.assertEqual(message.get(key) or '', ''.join(e.get(key,'') for e in expected))
         self.assertEqual(actual['usage']['completion_tokens'],expected[-1]['usage']['completion_tokens'])
-        self.assertEqual(actual['dllm_timing']['execution'],'cpu_host_topology')
+        self.assertEqual(actual['dllm_timing']['execution'],'host_topology')
         with self.post(stream=True,stream_options={'include_usage':True}) as response:wire=response.read().decode()
-        self.assertIn('data: [DONE]',wire);self.assertIn('cpu_host_topology',wire)
+        self.assertIn('data: [DONE]',wire);self.assertIn('host_topology',wire)
         with urlopen(Request(base+'/v1/models/status',headers=self.admin),timeout=3) as response:status=json.load(response)
         self.assertEqual(status['model_type'],'deepseek_v4');self.assertEqual(status['stage_layers'],[[0,1],[1,3]]);self.assertFalse(status['model_identity_verified'])
         self.assertFalse(status['official_model_qualified']);self.assertFalse(status['epoch_terminal'])
