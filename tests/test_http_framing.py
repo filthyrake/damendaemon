@@ -89,9 +89,9 @@ class HttpFramingTests(unittest.TestCase):
         self.thread.join()
         self.server.server_close()
 
-    def request(self, headers, body=b'{}'):
+    def request(self, headers, body=b'{}', path='/v1/scheduler/drain'):
         with socket.create_connection(self.server.server_address, timeout=2) as connection:
-            connection.sendall(b'POST /v1/scheduler/drain HTTP/1.1\r\n'
+            connection.sendall(f'POST {path} HTTP/1.1\r\n'.encode() +
                 b'Host: localhost\r\nContent-Type: application/json\r\n' +
                 headers + b'\r\n' + body)
             connection.shutdown(socket.SHUT_WR)
@@ -120,3 +120,31 @@ class HttpFramingTests(unittest.TestCase):
     def test_valid_body_dispatches_once(self):
         self.assertEqual(self.request(b'Content-Length: 2\r\n')[0], 200)
         self.runtime.drain.assert_called_once_with()
+
+    def test_invalid_json_never_dispatches_management(self):
+        self.runtime.manage.return_value = {}
+        bodies = [
+            b'{"model":"first","model":"second"}',
+            b'{"model":"a","chat_template":{"x":1,"x":2}}',
+            b'{"model":"a","chat_template":{"x":1,"\\u0078":2}}',
+        ]
+        for number in (b'NaN', b'Infinity', b'-Infinity', b'1e999', b'-1e999'):
+            bodies.append(b'{"model":"a","chat_template":{"value":' + number + b'}}')
+        bodies.append(b'{"model":"a","chat_template":' + b'[' * 10000 + b'0' + b']' * 10000 + b'}')
+        for body in bodies:
+            with self.subTest(body=body[:100]):
+                status, _ = self.request(f'Content-Length: {len(body)}\r\n'.encode(),
+                    body, '/v1/models/register')
+                self.assertEqual(status, 400)
+                self.runtime.manage.assert_not_called()
+
+    def test_valid_nested_json_dispatches_and_model_recursion_remains_500(self):
+        body = b'{"model":"a","chat_template":{"value":1.25,"text":"NaN"}}'
+        headers = f'Content-Length: {len(body)}\r\n'.encode()
+        self.runtime.manage.return_value = {}
+        self.assertEqual(self.request(headers, body, '/v1/models/register')[0], 200)
+        self.runtime.manage.assert_called_once_with('register', model='a',
+            chat_template={'value': 1.25, 'text': 'NaN'})
+        self.runtime.manage.side_effect = RecursionError('runtime failure')
+        with patch('dllm.server.traceback.print_exc'):
+            self.assertEqual(self.request(headers, body, '/v1/models/register')[0], 500)

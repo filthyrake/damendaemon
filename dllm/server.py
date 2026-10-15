@@ -3,6 +3,7 @@
 from contextlib import closing
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import math
 import signal
 import threading
 import traceback
@@ -15,6 +16,30 @@ from .stopping import stop_sequences
 from .prompts import validate_raw
 
 BODY_READ_SECONDS = 30
+
+
+
+def request_json(encoded):
+    """Decode unambiguous, finite JSON before dispatching a client request."""
+    def unique_fields(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError('duplicate request JSON field')
+            result[key] = value
+        return result
+
+    def finite_float(value):
+        number = float(value)
+        if not math.isfinite(number):
+            raise ValueError('non-finite request JSON number')
+        return number
+
+    try:
+        return json.loads(encoded, object_pairs_hook=unique_fields,
+                          parse_float=finite_float, parse_constant=finite_float)
+    except RecursionError as error:
+        raise ValueError('request JSON nesting is too deep') from error
 
 
 def handler_for(runtime, auth=None, *, reservation_store=None):
@@ -159,7 +184,7 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
                 if not 0 < length <= 1024 * 1024:
                     raise ValueError("body must be between 1 byte and 1 MiB")
                 encoded_body = self.read_body(length)
-                body = json.loads(encoded_body)
+                body = request_json(encoded_body)
                 if self.path in INFERENCE_ROUTES and isinstance(body, dict) and isinstance(body.get('model'), str):
                     client = auth.client(self.headers.get_all('Authorization', []))
                     if client is not None and not client.allows_model(body['model']):

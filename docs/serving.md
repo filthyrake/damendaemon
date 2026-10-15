@@ -4,6 +4,9 @@
 
 Use one server for registered model aliases, streaming requests, and explicit residency control.
 
+Request JSON rejects duplicate object fields and nonfinite numbers before dispatch.
+Excessive decoder nesting returns an invalid-request response.
+
 HTTP JSON request bodies are limited to 1 MiB and 30 seconds of total read time.
 Partial progress does not extend the body deadline. Expiry closes the connection
 before runtime dispatch and runs admission cleanup. This is a body-read bound,
