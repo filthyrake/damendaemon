@@ -1,9 +1,9 @@
-"""Owned CPU FP32 GLM Flash KDA layer; synthetic reference scope only."""
+"""Owned FP32 GLM Flash KDA core with a CPU-only public layer."""
 from dataclasses import dataclass,field
 import threading
 import torch
 from torch.nn import functional as F
-from .glm_flash_kda import recurrent_attention,_tensor,_finite
+from .glm_flash_kda import _recurrent_attention as recurrent_attention,_tensor,_finite
 
 
 @dataclass
@@ -23,7 +23,7 @@ class FlashLinearState:
     def reorder(self,indices):
         with self.lock:
             self._usable()
-            if (not isinstance(indices,torch.Tensor) or indices.dtype!=torch.int64 or indices.device.type!='cpu'
+            if (not isinstance(indices,torch.Tensor) or indices.dtype!=torch.int64 or indices.device!=self.recurrent.device
                     or indices.ndim!=1 or not 1<=indices.numel()<=128
                     or (indices<0).any() or (indices>=self.recurrent.shape[0]).any()):
                 raise ValueError('invalid Flash KDA slot order')
@@ -40,9 +40,10 @@ class FlashLinearState:
             self.owner=None;self.closed=True
 
 
-class FlashLinearAttention:
+class _FlashLinearAttention:
     def __init__(self,weights,*,heads,head_dim,kernel_size=4,lower_bound=-5.,epsilon=1e-5,
-                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
+                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2,device='cpu'):
+        self.device=torch.device(device)
         if (any(type(v) is not int or not 1<=v<=4096 for v in (heads,head_dim,kernel_size))
                 or type(lower_bound) not in (int,float) or not -100<=lower_bound<0
                 or type(epsilon) not in (int,float) or not 0<epsilon<=1
@@ -58,7 +59,7 @@ class FlashLinearAttention:
         shapes.update({f'{n}_b_proj.weight':(width,head_dim) for n in ('f','g')})
         shapes.update({'b_proj.weight':(heads,dim),'o_proj.weight':(dim,width),'o_norm.weight':(head_dim,),
                        'A_log':(heads,),'dt_bias':(width,)})
-        if set(weights)!=set(shapes) or any(not _tensor(weights[n],shape) for n,shape in shapes.items()):
+        if set(weights)!=set(shapes) or any(not _tensor(weights[n],shape,self.device) for n,shape in shapes.items()):
             raise ValueError('invalid Flash KDA weight shapes/storage')
         _finite(*weights.values())
         self.weights=dict(weights);self.dim,self.heads,self.head_dim,self.kernel_size=dim,heads,head_dim,kernel_size
@@ -71,8 +72,8 @@ class FlashLinearAttention:
                 or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**31
                 or batch*self.bytes_per_slot>max_cache_bytes):
             raise ValueError('invalid Flash KDA cache geometry/budget')
-        return FlashLinearState(self,torch.zeros(batch,3,self.heads*self.head_dim,self.kernel_size-1,dtype=torch.float32,device='cpu'),
-                                torch.zeros(batch,self.heads,self.head_dim,self.head_dim,dtype=torch.float32,device='cpu'),
+        return FlashLinearState(self,torch.zeros(batch,3,self.heads*self.head_dim,self.kernel_size-1,dtype=torch.float32,device=self.device),
+                                torch.zeros(batch,self.heads,self.head_dim,self.head_dim,dtype=torch.float32,device=self.device),
                                 capacity,max_cache_bytes)
 
     @torch.no_grad()
@@ -82,7 +83,7 @@ class FlashLinearAttention:
             state._usable()
             if state.owner is not self:raise ValueError('Flash KDA state belongs to another layer')
             if (not isinstance(hidden,torch.Tensor) or hidden.ndim!=3
-                    or not _tensor(hidden,(state.recurrent.shape[0],hidden.shape[1],self.dim))
+                    or not _tensor(hidden,(state.recurrent.shape[0],hidden.shape[1],self.dim),self.device)
                     or not hidden.shape[1] or type(position) is not int or position!=state.position
                     or position+hidden.shape[1]>state.capacity):
                 raise ValueError('invalid Flash KDA input/cursor/capacity')
@@ -110,7 +111,7 @@ class FlashLinearAttention:
             beta=beta_logits.sigmoid()
             core,recurrent=recurrent_attention(*convolved,log_decay,beta,state.recurrent,
                                                max_workspace_bytes=self.max_workspace_bytes,
-                                               max_output_bytes=self.max_workspace_bytes)
+                                               max_output_bytes=self.max_workspace_bytes,device=self.device)
             gate=project(project(hidden,'g_a_proj'),'g_b_proj').reshape(b,t,h,d)
             variance=core.square().mean(-1,keepdim=True);_finite(gate,variance)
             normalized=core*torch.rsqrt(variance+self.epsilon)*weights['o_norm.weight']*gate.sigmoid()
@@ -122,3 +123,9 @@ class FlashLinearAttention:
             state.convolution,state.recurrent=convolution,recurrent
             state.position+=t
             return output
+
+
+class FlashLinearAttention(_FlashLinearAttention):
+    """CPU-only prepared Flash linear-attention layer."""
+    def __init__(self,weights,**options):
+        super().__init__(weights,device='cpu',**options)
