@@ -1,4 +1,4 @@
-"""Owned bounded greedy GLM CPU reference generation, separate from serving."""
+"""Owned bounded greedy GLM generation; CPU default with explicit device subclasses."""
 import threading
 from .reference_cancellation import check_cancelled
 import torch
@@ -46,6 +46,7 @@ def validate_text_config(config,text,max_context):
 class ReferenceGenerator:
     """Close abandoned iterators; failed releases stay owned until cleanup succeeds."""
     model_type=GlmModel
+    device_type='cpu'
     text_type=GlmText
 
     def _configuration(self,model):
@@ -53,13 +54,14 @@ class ReferenceGenerator:
 
     def __init__(self,model,text,*,max_context=4096,max_cache_bytes=256*1024**2):
         if (not isinstance(model,self.model_type) or not isinstance(text,self.text_type)
-                or model.embedding.device.type!='cpu' or model.embedding.shape[0]!=text.vocab_size
+                or model.embedding.device.type!=self.device_type or model.embedding.shape[0]!=text.vocab_size
                 or not isinstance(text.tokenizer.decoder,decoders.ByteLevel)):
-            raise ValueError('GLM generation requires matching CPU model and ByteLevel tokenizer')
+            raise ValueError('GLM generation requires matching explicit-device model and ByteLevel tokenizer')
         if (type(max_context) is not int or not 1<=max_context<=2**20
                 or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**31):
             raise ValueError('invalid GLM generation context/cache budget')
         validate_text_config(self._configuration(model),text,max_context)
+        self.device=model.embedding.device
         self.model,self.text=model,text;self.max_context,self.max_cache_bytes=max_context,max_cache_bytes
         self.failed_cleanups=[];self.lock=threading.RLock()
 
@@ -95,13 +97,13 @@ class ReferenceGenerator:
             with self.lock:
                 self.cleanup()
                 prepare=self.model.prefill if prefill is None else prefill
-                logits,state=prepare(torch.tensor([tokens],dtype=torch.int64,device='cpu'),
+                logits,state=prepare(torch.tensor([tokens],dtype=torch.int64,device=self.device),
                                      capacity=len(tokens)+max_new_tokens,max_cache_bytes=self.max_cache_bytes)
             reason='length'
             for index in range(max_new_tokens):
                 check_cancelled()
                 if (not isinstance(logits,torch.Tensor) or logits.shape!=(1,self.text.vocab_size)
-                        or logits.device.type!='cpu' or logits.dtype!=torch.float32):
+                        or logits.device!=self.device or logits.dtype!=torch.float32):
                     raise ValueError('invalid GLM generation logits')
                 # Unmapped padded rows are excluded without mutating model logits.
                 mapped=logits[0,:self.text.tokenizer_size]
@@ -114,7 +116,7 @@ class ReferenceGenerator:
                 if token in self.text.eos:reason='stop';break
                 if index+1<max_new_tokens:
                     check_cancelled()
-                    logits=self.model.forward(torch.tensor([[token]],dtype=torch.int64,device='cpu'),state,position=len(tokens)+index)
+                    logits=self.model.forward(torch.tensor([[token]],dtype=torch.int64,device=self.device),state,position=len(tokens)+index)
             check_cancelled()
             for event in stream.finish(truncated=reason=='length'):
                 if event.get('tool_calls'):reason='tool_calls'

@@ -29,9 +29,11 @@ class ReferenceRuntime:
     Failed cleanup keeps the runner reachable and blocks new prefill.
     """
     native_tool_calls=True
+    scope='cpu_reference'
+    runner_types=(DeepSeekGenerator,DeepSeekPipelineReferenceGenerator,GlmToolReferenceGenerator,PipelineToolReferenceGenerator,FlashPipelineToolReferenceGenerator,FlashToolReferenceGenerator,FlashImageToolReferenceGenerator,FlashPipelineImageToolReferenceGenerator)
 
     def __init__(self,runner,alias='model'):
-        if type(runner) not in (DeepSeekGenerator,DeepSeekPipelineReferenceGenerator,GlmToolReferenceGenerator,PipelineToolReferenceGenerator,FlashPipelineToolReferenceGenerator,FlashToolReferenceGenerator,FlashImageToolReferenceGenerator,FlashPipelineImageToolReferenceGenerator):
+        if type(runner) not in self.runner_types:
             raise ValueError('CPU HTTP needs an explicit prepared text/tool reference runner')
         if not isinstance(alias,str) or not 1<=len(alias)<=128:raise ValueError('invalid CPU reference alias')
         self.runner=runner;self.alias=alias;self.lock=threading.Lock();self.stopping=threading.Event()
@@ -166,5 +168,5 @@ def handler_for_reference(runtime,auth=None):
             if not self.authorize():return
             healthy=runtime.is_healthy()
             self.send_json(200 if healthy else 503,dict(status='ok' if healthy else 'closed',
-                scope='cpu_reference',official_model_qualified=False))
+                scope=runtime.scope,official_model_qualified=False))
     return Handler
