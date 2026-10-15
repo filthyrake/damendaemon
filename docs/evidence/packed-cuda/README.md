@@ -276,3 +276,15 @@ slots. Three CUDA chunk cases match independent scalar sink softmax within2.4e-7
 duplicates, large scores, sink-only/all-padding, overflow and input nonmutation
 pass.16 local tests pass. Guard completed3.232s,22MiB reserved under128MiB cap,
 4251MiB free before/after, incumbent healthy. Full cached attention follows.
+
+## DeepSeek owned cached attention (#248)
+
+Implementation `6bd00ea`, strengthened reorder check `b5bc0f7`. Explicit bounded
+CUDA FP32 attention composes dense/E4M3-E8M0 projections with compressed pooling,
+learned selection and sink attention. Six ratio0/4/128 cases match CPU controls
+with independently expanded selected attention within1.35e-7. Compression-boundary
+decode preserves cache storage; duplicate-slot decode, shrink, invalid-index
+rejection, late-failure poisoning and idempotent close pass.24 focused local tests
+pass. Guard completed8.111s with22MiB peak reserved under128MiB cap;4251MiB free
+before/after and cleanup confirmed. This is a tiny numerical/lifecycle gate,
+not a full model, practical context, isolation or performance qualification.
