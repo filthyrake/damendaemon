@@ -813,6 +813,23 @@ class BatchedRuntime:
             raise
 
     def _work(self):
+        try:
+            self._run_work()
+        except BaseException as error:
+            # A dead owner cannot service either taken or queued requests.
+            # Keep device cleanup on the external close path, and do not retain
+            # the fatal exception or its frames in request state.
+            failure = RuntimeError(f'scheduler worker stopped unexpectedly ({type(error).__name__})')
+            with self.condition:
+                self.closed = True
+                for request in tuple(self.requests):
+                    request.cancelled.set()
+                    self._finish(request, failure)
+                self.pending.clear()
+                self.worker_busy = False
+                self.condition.notify_all()
+
+    def _run_work(self):
         while True:
             with self.condition:
                 first = self._next()
