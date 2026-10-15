@@ -1,16 +1,20 @@
-"""Prepared CPU FP32 Flash mixed stack with aggregate cache ownership."""
+"""Prepared FP32 Flash mixed core with a CPU-only public stack with aggregate cache ownership."""
 from dataclasses import dataclass,field
 import threading
 import torch
 import torch.nn.functional as F
 from .glm_attention import _float,_budgets
 from .glm_flash_block import FlashBlock
-from .glm_flash_linear import FlashLinearAttention
+from .glm_flash_linear import FlashLinearAttention,_FlashLinearAttention
 from .glm_flash_sparse import FlashSparseState
 
 
+def _storage(state):
+    return state.latents if isinstance(state,FlashSparseState) else state.recurrent
+
+
 def _batch(state):
-    return (state.latents if isinstance(state,FlashSparseState) else state.recurrent).shape[0]
+    return _storage(state).shape[0]
 
 
 @dataclass
@@ -47,7 +51,7 @@ class FlashModelState:
             batch=_batch(self.layers[0].attention)
             per_slot=self.owner._cache_per_slot(self.capacity)
             if (not isinstance(indices,torch.Tensor) or indices.ndim!=1 or not 1<=indices.numel()<=128
-                    or indices.dtype!=torch.int64 or indices.device.type!='cpu'
+                    or indices.dtype!=torch.int64 or indices.device!=_storage(self.layers[0].attention).device
                     or bool(((indices<0)|(indices>=batch)).any()) or indices.numel()*per_slot>self.max_cache_bytes):
                 raise ValueError('invalid Flash model slot order or aggregate cache budget exceeded')
             changed=False
@@ -72,17 +76,18 @@ class FlashModelState:
             if failure is not None:raise failure
 
 
-class FlashModel:
+class _FlashModel:
     """Caller-owned prepared FP32 parameters; no checkpoint or serving loader.
 
     Keep parameter contents immutable. Cache budget is aggregate retained tensor
     storage; temporary reorder copies and compute scratch have separate bounds.
     """
-    def __init__(self,embedding,blocks,norm,head,*,epsilon=1e-5,max_output_bytes=64*1024**2):
-        if (not _float(embedding,2) or not _float(norm,1) or not _float(head,2)
+    def __init__(self,embedding,blocks,norm,head,*,epsilon=1e-5,max_output_bytes=64*1024**2,device='cpu',block_type=FlashBlock):
+        self.device=torch.device(device)
+        if (not _float(embedding,2,self.device) or not _float(norm,1,self.device) or not _float(head,2,self.device)
                 or head.shape!=embedding.shape or norm.shape!=(embedding.shape[1],)
                 or not isinstance(blocks,(tuple,list)) or not 1<=len(blocks)<=128
-                or any(not isinstance(block,FlashBlock) or block.dim!=embedding.shape[1] for block in blocks)
+                or any(not isinstance(block,block_type) or block.device!=self.device or block.dim!=embedding.shape[1] for block in blocks)
                 or type(epsilon) not in (int,float) or not 0<epsilon<=1):
             raise ValueError('invalid prepared Flash model geometry')
         if any(block.streams!=blocks[0].streams for block in blocks):
@@ -104,9 +109,9 @@ class FlashModel:
 
     def _tokens(self,tokens,all_logits):
         if (not isinstance(tokens,torch.Tensor) or tokens.ndim!=2 or min(tokens.shape)<1
-                or tokens.dtype!=torch.int64 or tokens.device.type!='cpu'
+                or tokens.dtype!=torch.int64 or tokens.device!=self.device
                 or bool(((tokens<0)|(tokens>=self.embedding.shape[0])).any()) or type(all_logits) is not bool):
-            raise ValueError('Flash tokens require nonempty CPU int64 vocabulary IDs')
+            raise ValueError('Flash tokens require nonempty same-device int64 vocabulary IDs')
         self._input_budget(tokens.shape,all_logits)
 
     def _input_budget(self,shape,all_logits):
@@ -115,7 +120,7 @@ class FlashModel:
             raise ValueError('Flash embedding/logit output exceeds configured tensor storage budget')
 
     def _cache_per_slot(self,capacity):
-        return sum(block.attention.bytes_per_slot if isinstance(block.attention,FlashLinearAttention)
+        return sum(block.attention.bytes_per_slot if isinstance(block.attention,_FlashLinearAttention)
                    else capacity*block.attention.bytes_per_token for block in self.blocks)
 
     def new_state(self,batch,capacity,*,max_cache_bytes=256*1024**2):
@@ -153,9 +158,9 @@ class FlashModel:
 
     def _embeddings(self,values,all_logits):
         if (not isinstance(values,torch.Tensor) or values.ndim!=3 or min(values.shape)<1
-                or values.device.type!='cpu' or values.dtype!=torch.float32
+                or values.device!=self.device or values.dtype!=torch.float32
                 or values.shape[-1]!=self.embedding.shape[1] or type(all_logits) is not bool):
-            raise ValueError('Flash input embeddings require nonempty CPU FP32 batch/token/width storage')
+            raise ValueError('Flash input embeddings require nonempty same-device FP32 batch/token/width storage')
         self._input_budget(values.shape[:2],all_logits)
         if not torch.isfinite(values).all():raise ValueError('nonfinite Flash input embeddings')
 
@@ -166,7 +171,7 @@ class FlashModel:
 
     @torch.no_grad()
     def forward_embeddings(self,values,state,*,position,all_logits=False):
-        """Explicit prepared CPU features; ordinary tokenizer/media admission is unchanged."""
+        """Explicit prepared same-device features; ordinary tokenizer/media admission is unchanged."""
         self._embeddings(values,all_logits)
         return self._run(values,state,position,all_logits,True)
 
@@ -208,3 +213,9 @@ class FlashModel:
         except BaseException as error:
             self._release_failed(state,error)
             raise
+
+
+class FlashModel(_FlashModel):
+    """CPU-only prepared Flash mixed stack."""
+    def __init__(self,embedding,blocks,norm,head,**options):
+        super().__init__(embedding,blocks,norm,head,device='cpu',block_type=FlashBlock,**options)

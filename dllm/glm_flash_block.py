@@ -1,4 +1,4 @@
-"""CPU FP32 Flash multi-stream residual blocks with partial-failure ownership."""
+"""FP32 Flash multi-stream core with CPU-only public blocks with partial-failure ownership."""
 from dataclasses import dataclass
 import torch
 from .glm_attention import _float,_budgets
@@ -31,15 +31,19 @@ class FlashBlockState:
             self.attention.close();self.owner=None
 
 
-class FlashBlock:
+class _FlashBlock:
     def __init__(self,attention,feed_forward,attention_hyper,ffn_hyper,input_norm,post_norm,*,epsilon=1e-5,
-                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2):
-        if (not isinstance(attention,(FlashLinearAttention,FlashSparseAttention))
-                or not isinstance(feed_forward,(FlashFeedForward,PackedFlashFeedForward))
+                 max_workspace_bytes=64*1024**2,max_output_bytes=64*1024**2,device='cpu',
+                 attention_types=(FlashLinearAttention,FlashSparseAttention),
+                 ffn_types=(FlashFeedForward,PackedFlashFeedForward),hyper_type=FlashHyperConnection,
+                 sparse_type=FlashSparseAttention):
+        self.device=torch.device(device);self.sparse_type=sparse_type
+        if (not isinstance(attention,attention_types) or attention.device!=self.device
+                or not isinstance(feed_forward,ffn_types)
                 or attention.dim!=feed_forward.dim
-                or any(not isinstance(h,FlashHyperConnection) or h.width!=attention.dim for h in (attention_hyper,ffn_hyper))
+                or any(not isinstance(h,hyper_type) or h.device!=self.device or h.width!=attention.dim for h in (attention_hyper,ffn_hyper))
                 or attention_hyper.streams!=ffn_hyper.streams
-                or any(not _float(w,1) or w.shape!=(attention.dim,) or not torch.isfinite(w).all() for w in (input_norm,post_norm))
+                or any(not _float(w,1,self.device) or w.shape!=(attention.dim,) or not torch.isfinite(w).all() for w in (input_norm,post_norm))
                 or type(epsilon) not in (int,float) or not 0<epsilon<=1):
             raise ValueError('invalid Flash residual block composition')
         _budgets(0,0,max_output_bytes,max_workspace_bytes)
@@ -58,7 +62,7 @@ class FlashBlock:
             raise ValueError('Flash block state belongs to another component')
         with state.attention.lock:
             state._usable()
-            if (not _float(hidden,4) or hidden.shape[-2:]!=(self.streams,self.dim)
+            if (not _float(hidden,4,self.device) or hidden.shape[-2:]!=(self.streams,self.dim)
                     or type(position) is not int or position!=state.position):
                 raise ValueError('invalid Flash block input/cursor')
             # Residual temporaries are additional to component scratch budgets.
@@ -72,7 +76,7 @@ class FlashBlock:
             try:
                 collapsed,post,matrix=self.attention_hyper.reduce(hidden)
                 attended=self.attention.forward(norm(collapsed,self.input_norm),state.attention,position=position)
-                if isinstance(self.attention,FlashSparseAttention):attended=attended[0]
+                if isinstance(self.attention,self.sparse_type):attended=attended[0]
                 residual=self.attention_hyper.restore(attended,hidden,post,matrix)
                 collapsed,post,matrix=self.ffn_hyper.reduce(residual)
                 fed=self.feed_forward(norm(collapsed,self.post_norm))
@@ -82,3 +86,9 @@ class FlashBlock:
                 raise
             state.position=state.attention.position
             return output
+
+
+class FlashBlock(_FlashBlock):
+    """CPU-only Flash residual block composition."""
+    def __init__(self,attention,feed_forward,attention_hyper,ffn_hyper,input_norm,post_norm,**options):
+        super().__init__(attention,feed_forward,attention_hyper,ffn_hyper,input_norm,post_norm,device='cpu',**options)
