@@ -1993,3 +1993,14 @@ CPU regressions cover these reproduced cases, FP16 cast overflow, prefill
 release, partially advanced decode poisoning and generation cleanup. This is a
 bounded correction under #119/#58, not official-weight or hardware qualification
 or a claim that every arithmetic operation has a finite-intermediate guard.
+
+### Isolated structured-output overhead (2026-10-15)
+
+The remaining #15 overhead gate is now recorded in
+[CPU setup and paired CUDA runtime evidence](evidence/structured/overhead/README.md).
+Real-tokenizer production Constraint setup is separated from model activation;
+matched fixed-logit/token controls isolate mask/matcher cost without conflating
+it with different generated text. On the measured shared host, median cold
+setup is2.052402s, cached setup44.972us, changed-schema setup2.194562ms, and
+observed paired added A2 runtime cost233.939us/token. These are scoped component
+measurements, not full-model throughput or exclusive-host latency guarantees.
