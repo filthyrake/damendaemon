@@ -1,0 +1,62 @@
+{
+  "cases": [
+    {
+      "dot_scale": 1.0,
+      "ids_exact": true,
+      "key_chunk": 1,
+      "max_absolute": 1.1920928955078125e-07,
+      "query_chunk": 1,
+      "scale_head_weights": true
+    },
+    {
+      "dot_scale": 1.0,
+      "ids_exact": true,
+      "key_chunk": 3,
+      "max_absolute": 5.960464477539063e-08,
+      "query_chunk": 2,
+      "scale_head_weights": true
+    },
+    {
+      "dot_scale": 1.0,
+      "ids_exact": true,
+      "key_chunk": 64,
+      "max_absolute": 5.960464477539063e-08,
+      "query_chunk": 16,
+      "scale_head_weights": true
+    },
+    {
+      "dot_scale": 0.5,
+      "ids_exact": true,
+      "key_chunk": 1,
+      "max_absolute": 1.1920928955078125e-07,
+      "query_chunk": 1,
+      "scale_head_weights": false
+    },
+    {
+      "dot_scale": 0.5,
+      "ids_exact": true,
+      "key_chunk": 3,
+      "max_absolute": 1.1920928955078125e-07,
+      "query_chunk": 2,
+      "scale_head_weights": false
+    },
+    {
+      "dot_scale": 0.5,
+      "ids_exact": true,
+      "key_chunk": 64,
+      "max_absolute": 1.1920928955078125e-07,
+      "query_chunk": 16,
+      "scale_head_weights": false
+    }
+  ],
+  "device": "NVIDIA A2",
+  "future_poison_masked": true,
+  "inputs_unchanged": true,
+  "model_qualified": false,
+  "passed": true,
+  "peak_reserved_bytes": 23068672,
+  "preallocation_bounds": true,
+  "ties_exact": true,
+  "torch": "2.6.0+cu124",
+  "visible_nonfinite_rejected": true
+}

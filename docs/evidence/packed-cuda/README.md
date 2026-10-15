@@ -232,3 +232,14 @@ from Flash. Actual CUDA scalar reduction/head error2.4e-7 at1/20 Sinkhorn
 iterations; restoration orientation, nonmutation and budget/device rejection
 pass.11 local tests pass. Guard completed3.285s,22MiB reserved under128MiB
 cap,4251MiB free before/after and incumbent healthy. No model/performance claim.
+
+## DeepSeek compressed-key selection (#244)
+
+Implementation `e83f56a`. Explicit CUDA FP32 selection admits storage before
+scans, validates only causally visible keys and rejects nonfinite visible scores
+before ranking. Six actual CUDA chunk/scaling cases match independent scalar IDs
+exactly and scores within1.2e-7. Lower-ID ties, future NaN masking, visible poison/
+overflow rejection, empty caches/queries and bounds pass.15 local selection and
+attention regressions pass. Guard completed3.407s,22MiB reserved under128MiB cap,
+4251MiB free before/after and incumbent healthy. QAT and integrated attention/model
+qualification remain separate.
