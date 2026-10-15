@@ -176,3 +176,14 @@ all histories and cursor; duplicate/shrink reorder, retry, close and bounds
 pass.19 local tests pass. Guard completed5.076s,22MiB reserved under128MiB
 cap,4251MiB free before/after, incumbent healthy. This does not qualify a full
 Flash model or practical workload.
+
+## Flash mixed prepared model (#238)
+
+Implementation `5d3ead2`. A three-block linear/sparse/linear CUDA stack uses
+packed dense and routed/shared clipped FFNs plus packed sparse projections.
+Final logits match independent CPU scalar component equations, max error9e-8;
+reordered decode greedy IDs agree, prepared feature input agrees, late head
+failure poisons every layer and close releases all state.31 local block/model/
+stage/pipeline/image-feature tests pass. Guard completed7.853s,22MiB reserved
+under128MiB cap,4251MiB free before/after and incumbent healthy. No official
+checkpoint, vision encoder, serving, practical context or performance claim.
