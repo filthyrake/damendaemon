@@ -20,24 +20,26 @@ class DeepSeekStageState(ModelState):
             self._poison();raise RuntimeError('DeepSeek stage cache capacity or batch ownership differs')
 
     def reorder(self,indices):
-        if (not isinstance(indices,torch.Tensor) or indices.dtype!=torch.int64 or indices.device.type!='cpu'
+        if (not isinstance(indices,torch.Tensor) or indices.dtype!=torch.int64
                 or indices.ndim!=1 or not 1<=indices.numel()<=128):
             raise ValueError('DeepSeek stage reorder requires 1..128 CPU integer indices')
         with self.lock:
             self._usable();batch=self.layers[0].attention.cache.shape[0]
+            if indices.device!=self.layers[0].attention.cache.device:raise ValueError('DeepSeek reorder requires matching cache device')
             if bool(((indices<0)|(indices>=batch)).any()):raise ValueError('DeepSeek stage reorder index out of bounds')
             return super().reorder(indices)
 
 
-class DeepSeekLayerStage:
+class _DeepSeekLayerStage:
     """Separate from whole-model admission; callers own immutable prepared weights."""
     cleanup_failed_prefills=FloatingModel.cleanup_failed_prefills
     prefill_cleanup_pending=FloatingModel.prefill_cleanup_pending
     _logits=FloatingModel._logits
 
     def __init__(self,blocks,*,start,total,vocab_size,embedding=None,head=None,
-                 epsilon=1e-6,connection_epsilon=1e-6,max_output_bytes=64*1024**2):
-        if (not isinstance(blocks,(tuple,list)) or not blocks or any(not isinstance(b,FloatingBlock) for b in blocks)
+                 epsilon=1e-6,connection_epsilon=1e-6,max_output_bytes=64*1024**2,device='cpu',block_type=FloatingBlock):
+        self.device=torch.device(device)
+        if (not isinstance(blocks,(tuple,list)) or not blocks or any(not isinstance(b,block_type) for b in blocks)
                 or type(vocab_size) is not int or not 1<=vocab_size<=2**21
                 or type(max_output_bytes) is not int or not 1<=max_output_bytes<=2**31
                 or any(type(v) not in (int,float) or not 0<v<=torch.finfo(torch.float32).max for v in (epsilon,connection_epsilon))):
@@ -46,11 +48,11 @@ class DeepSeekLayerStage:
         self.start,self.end,self.total=start,start+len(blocks),total
         self.first,self.last=start==0,self.end==total
         self.dim,self.streams=blocks[0].dim,blocks[0].hc_mult
-        if any(b.device.type!='cpu' or b.dtype!=torch.float32 or b.dim!=self.dim or b.hc_mult!=self.streams
+        if any(b.device!=self.device or b.dtype!=torch.float32 or b.dim!=self.dim or b.hc_mult!=self.streams
                or (b.table is not None and b.table.shape[0]!=vocab_size) for b in blocks):
             raise ValueError('DeepSeek stage block placement/stream/hash geometry disagrees')
         if self.first:
-            if not _float(embedding,2) or embedding.shape!=(vocab_size,self.dim) or not torch.isfinite(embedding).all():
+            if not _float(embedding,2,self.device) or embedding.shape!=(vocab_size,self.dim) or not torch.isfinite(embedding).all():
                 raise ValueError('first DeepSeek stage needs a finite CPU FP32 embedding')
         elif embedding is not None:raise ValueError('only the first DeepSeek stage owns embeddings')
         if self.last:
@@ -59,7 +61,7 @@ class DeepSeekLayerStage:
             if not isinstance(head,dict) or set(head)!=set(specs):raise ValueError('final DeepSeek stage needs its complete head')
             for name,shape in specs.items():
                 value=head[name]
-                if not _float(value,len(shape)) or tuple(value.shape)!=shape or not torch.isfinite(value).all():
+                if not _float(value,len(shape),self.device) or tuple(value.shape)!=shape or not torch.isfinite(value).all():
                     raise ValueError('invalid DeepSeek stage head geometry or values')
             head=dict(head)
         elif head is not None:raise ValueError('only the final DeepSeek stage owns the head')
@@ -73,7 +75,7 @@ class DeepSeekLayerStage:
     def cache_bytes_per_slot(self,capacity):return sum(block.cache_bytes_per_slot(capacity) for block in self.blocks)
 
     def _input(self,token_ids,hidden,activations):
-        if (not isinstance(token_ids,torch.Tensor) or token_ids.dtype!=torch.int64 or token_ids.device.type!='cpu'
+        if (not isinstance(token_ids,torch.Tensor) or token_ids.dtype!=torch.int64 or token_ids.device!=self.device
                 or token_ids.ndim!=2 or not 1<=token_ids.shape[0]<=128 or token_ids.shape[1]<1
                 or bool(((token_ids<0)|(token_ids>=self.vocab_size)).any())):
             raise ValueError('DeepSeek stage requires checked CPU vocabulary IDs')
@@ -83,7 +85,7 @@ class DeepSeekLayerStage:
         if required>self.max_output_bytes:raise ValueError('DeepSeek stage boundary exceeds output budget')
         if self.first and not activations:
             if hidden is not None:raise ValueError('first DeepSeek stage embeds its original tokens')
-        elif (not _float(hidden,4) or tuple(hidden.shape)!=(batch,length,self.streams,self.dim)
+        elif (not _float(hidden,4,self.device) or tuple(hidden.shape)!=(batch,length,self.streams,self.dim)
                 or not torch.isfinite(hidden).all()):
             raise ValueError('DeepSeek stage requires finite CPU FP32 full residual streams matching token IDs')
 
@@ -141,3 +143,9 @@ class DeepSeekLayerStage:
                 raise
             state.position=position+1
             return result
+
+
+class DeepSeekLayerStage(_DeepSeekLayerStage):
+    """Explicit CPU layer range; CUDA remains a separate entrypoint."""
+    def __init__(self,blocks,**options):
+        super().__init__(blocks,device='cpu',block_type=FloatingBlock,**options)
