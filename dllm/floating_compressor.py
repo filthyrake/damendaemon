@@ -9,8 +9,8 @@ from .deepseek_position import rotate_pairs
 
 
 @torch.no_grad()
-def compress_hidden(hidden, value_weight, gate_weight, offsets, norm_weight, inverse_frequencies,
-                    *, state=None, epsilon=1e-6, cache_transform=None):
+def _compress_hidden(hidden, value_weight, gate_weight, offsets, norm_weight, inverse_frequencies,
+                    *, state=None, epsilon=1e-6, cache_transform=None,pool_fn=None,validate_finite=False):
     """Return storage-dtype compressed vectors, replacement state and positions.
 
     Projection/norm parameters are explicitly resident FP32 tensors, matching the
@@ -50,17 +50,31 @@ def compress_hidden(hidden, value_weight, gate_weight, offsets, norm_weight, inv
         raise ValueError('KV FP8 simulation requires complete non-rotary blocks of 64')
     if cache_transform == 'index_fp4' and (width % 32 or width & (width-1) or width > 4096):
         raise ValueError('indexer transform requires a power-of-two width in 32..4096')
+    def checked(value):
+        if validate_finite and not torch.isfinite(value).all():raise ValueError('nonfinite compressor intermediate')
+        return value
+    if validate_finite:
+        for value in (hidden,value_weight,gate_weight,offsets,norm_weight,inverse_frequencies):checked(value)
     source = hidden.float()
-    pooled, replacement, starts = pool_projected(F.linear(source, value_weight), F.linear(source, gate_weight), offsets, state=state)
+    pooling=pool_projected if pool_fn is None else pool_fn
+    pooled, replacement, starts = pooling(checked(F.linear(source, value_weight)),checked(F.linear(source, gate_weight)),offsets,state=state)
+    checked(pooled)
     rounded = pooled.to(hidden.dtype).float()
-    normalized = (norm_weight*(rounded*(rounded.square().mean(-1, keepdim=True)+epsilon).rsqrt())).to(hidden.dtype)
+    variance=checked(rounded.square().mean(-1,keepdim=True)+epsilon)
+    normalized=checked((norm_weight*(rounded*variance.rsqrt())).to(hidden.dtype))
     rotary_width = inverse_frequencies.numel()*2
     result = normalized.clone()
     result[..., -rotary_width:] = rotate_pairs(normalized[..., -rotary_width:], starts, inverse_frequencies)
+    checked(result)
     if cache_transform == 'kv_fp8' and rotary_width < width:
         from .activation_simulation import simulate_fp8
         result[..., :-rotary_width] = simulate_fp8(result[..., :-rotary_width])
     elif cache_transform == 'index_fp4':
         from .activation_simulation import normalized_hadamard, simulate_fp4
         result = simulate_fp4(normalized_hadamard(result))
-    return result, replacement, starts
+    return checked(result), replacement, starts
+
+
+def compress_hidden(hidden,value_weight,gate_weight,offsets,norm_weight,inverse_frequencies,*,state=None,epsilon=1e-6,cache_transform=None):
+    return _compress_hidden(hidden,value_weight,gate_weight,offsets,norm_weight,inverse_frequencies,
+                            state=state,epsilon=epsilon,cache_transform=cache_transform)
