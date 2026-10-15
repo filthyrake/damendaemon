@@ -113,11 +113,17 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                     if type(queued) not in (int, float) or not 0 <= queued < float('inf'):
                         raise ValueError("invalid reported queue time")
                     result.reported_server_queue_seconds = queued
-                usage = chunk.get("usage") or {}
+                usage = chunk.get("usage")
+                if usage is None:
+                    usage = {}
+                if not isinstance(usage, dict):
+                    raise ValueError("invalid usage metadata")
                 tokens = usage.get("completion_tokens")
                 if tokens is not None:
-                    if type(tokens) is not int or tokens < 0:
+                    if type(tokens) is not int or not 0 <= tokens <= max_tokens:
                         raise ValueError("invalid completion_tokens usage")
+                    if result.output_tokens is not None and tokens != result.output_tokens:
+                        raise ValueError("conflicting completion_tokens usage")
                     result.output_tokens = tokens
         if not done:
             raise ValueError("stream ended without [DONE]")

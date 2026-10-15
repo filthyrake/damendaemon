@@ -168,7 +168,11 @@ client-observed SSE output events. Role-only, finish and usage events do not
 count as output. Content, reasoning and tool-call events do. A single event may
 contain several tokens, so these gaps are **not per-token GPU timings**. Token
 throughput still uses reported completion-token usage; missing usage stays
-unknown. Successful-request summaries include pooled gap percentiles and the
+unknown. Completion-token totals must be integers between zero and the requested
+`max_tokens`. Conflicting repeated totals or malformed usage objects fail the
+request; identical repeats are accepted. Failed streams retain partial evidence
+but never contribute successful throughput or qualifying goodput.
+Successful-request summaries include pooled gap percentiles and the
 distribution of each request's largest gap; raw per-request gaps retain stalls
 and failed partial streams. Requests with fewer than two output events have no
 gap measurement, not an invented zero. Gap collection fails the request after

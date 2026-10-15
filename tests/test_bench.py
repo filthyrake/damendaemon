@@ -39,6 +39,16 @@ class Handler(BaseHTTPRequestHandler):
         ]
         if model != "no-usage":
             chunks.append({"choices": [], "usage": {"completion_tokens": 7}})
+        if model.startswith('usage-'):
+            value = {'usage-over': {'completion_tokens': 9},
+                     'usage-conflict': {'completion_tokens': 6},
+                     'usage-repeat': {'completion_tokens': 7},
+                     'usage-bool': {'completion_tokens': True},
+                     'usage-negative': {'completion_tokens': -1},
+                     'usage-float': {'completion_tokens': 7.0},
+                     'usage-list': [], 'usage-false': False,
+                     'usage-null': None, 'usage-empty': {}}[model]
+            chunks.append({'choices': [], 'usage': value})
         if model.startswith('queue-'):
             values = {'queue-known': .125, 'queue-negative': -1, 'queue-nan': float('nan'),
                       'queue-inf': float('inf'), 'queue-bool': True}
@@ -94,6 +104,23 @@ class BenchTests(unittest.TestCase):
         for model in ('queue-negative', 'queue-nan', 'queue-inf', 'queue-bool'):
             with self.subTest(model=model):
                 self.assertEqual(self.request(model).error, 'ValueError')
+
+    def test_invalid_or_conflicting_usage_cannot_inflate_goodput(self):
+        profile = dict(max_first_output_seconds=5, max_output_event_gap_seconds=5,
+                       min_request_output_tokens_per_second=.001)
+        for model in ('usage-over', 'usage-conflict', 'usage-bool', 'usage-negative',
+                      'usage-float', 'usage-list', 'usage-false'):
+            with self.subTest(model=model):
+                result = self.request(model)
+                self.assertEqual(result.error, 'ValueError')
+                self.assertEqual(result.output_tokens, 7)  # Retain earlier partial evidence.
+                self.assertEqual(summarize([result], 1)['succeeded'], 0)
+                self.assertEqual(profile_summary([result], 1, profile)['qualifying_output_tokens'], 0)
+        for model in ('usage-repeat', 'usage-null', 'usage-empty'):
+            with self.subTest(model=model):
+                result = self.request(model)
+                self.assertIsNone(result.error)
+                self.assertEqual(result.output_tokens, 7)
 
     def test_unknown_tokens_are_not_invented(self):
         result = self.request("no-usage")
