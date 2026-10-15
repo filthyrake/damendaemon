@@ -1,4 +1,4 @@
-"""Shared bounded CPU stage-slot ownership with explicit family hooks."""
+"""Shared bounded stage-slot ownership with explicit family/device hooks."""
 import threading
 import torch
 from .glm_attention import _float
@@ -98,7 +98,7 @@ class CpuStageSlots:
     def forward_layers(self, hidden, positions, slots, prefill, prefill_start=0, *, token_ids=None):
         with self.lock:
             self._ready()
-            if (not _float(hidden, 2+len(self._hidden_shape)) or tuple(hidden.shape[2:]) != self._hidden_shape
+            if (not _float(hidden, 2+len(self._hidden_shape), self.actual_device) or tuple(hidden.shape[2:]) != self._hidden_shape
                     or not 1 <= hidden.shape[0] <= self.max_batch or hidden.shape[1] < 1
                     or hidden.numel()*4 > self.stage.max_output_bytes
                     or not torch.isfinite(hidden).all()
@@ -135,7 +135,7 @@ class CpuStageSlots:
     def output_logits(self, hidden):
         with self.lock:
             self._ready()
-            if (not self.stage.last or not _float(hidden, 1+len(self._hidden_shape)) or tuple(hidden.shape[1:]) != self._hidden_shape
+            if (not self.stage.last or not _float(hidden, 1+len(self._hidden_shape), self.actual_device) or tuple(hidden.shape[1:]) != self._hidden_shape
                     or not 1 <= hidden.shape[0] <= self.max_batch or not torch.isfinite(hidden).all()
                     or hidden.shape[0]*self._vocab_size*4 > self.stage.max_output_bytes):
                 raise ValueError('invalid CPU slot final hidden/logit extent')
