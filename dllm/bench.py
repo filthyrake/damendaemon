@@ -101,12 +101,15 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
     start = time.perf_counter()
     result = Result(index=index, model=model, seconds=0)
     done = False
+    finished = False
     try:
         with urlopen(req, timeout=timeout) as response:
             if response.headers.get_content_type() != "text/event-stream":
                 raise ValueError("expected text/event-stream response")
             for data in events(response):
                 if data == "[DONE]":
+                    if not finished:
+                        raise ValueError("stream ended without a completion finish reason")
                     done = True
                     break
                 chunk = json.loads(data)
@@ -114,10 +117,26 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                     raise ValueError("stream event must be an object")
                 if chunk.get("error"):
                     raise ValueError("server returned an error event")
+                choices = chunk.get("choices", [])
+                if (not isinstance(choices, list) or len(choices) > 1
+                        or any(not isinstance(choice, dict) for choice in choices)):
+                    raise ValueError("expected a single completion choice")
+                if any(not isinstance(choice.get("delta", {}), dict) for choice in choices):
+                    raise ValueError("invalid completion delta")
                 has_output = any(
                     any(choice.get("delta", {}).get(key) for key in
                         ("content", "reasoning_content", "reasoning", "tool_calls"))
-                    for choice in chunk.get("choices", []))
+                    for choice in choices)
+                if finished and has_output:
+                    raise ValueError("output received after completion finish")
+                for choice in choices:
+                    reason = choice.get("finish_reason")
+                    if reason is not None:
+                        if not isinstance(reason, str) or not reason:
+                            raise ValueError("invalid completion finish reason")
+                        if finished:
+                            raise ValueError("duplicate completion finish")
+                        finished = True
                 if has_output:
                     if result.output_events >= MAX_OUTPUT_EVENTS:
                         raise ValueError("output event sample limit exceeded")

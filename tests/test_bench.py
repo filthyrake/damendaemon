@@ -43,6 +43,21 @@ class Handler(BaseHTTPRequestHandler):
         ]
         if model != "no-usage":
             chunks.append({"choices": [], "usage": {"completion_tokens": 7}})
+        if model == 'missing-finish':
+            del chunks[3]
+        elif model == 'invalid-finish':
+            chunks[3]['choices'][0]['finish_reason'] = True
+        elif model == 'late-output':
+            chunks.append({'choices': [{'delta': {'content': 'too late'}}]})
+        elif model == 'duplicate-finish':
+            chunks.append(chunks[3])
+        elif model == 'multiple-choices':
+            chunks[3]['choices'].append({'delta': {}, 'finish_reason': 'stop'})
+        elif model == 'invalid-delta':
+            chunks[3]['choices'][0]['delta'] = []
+        elif model.startswith('finish-'):
+            chunks[3]['choices'][0]['finish_reason'] = model.removeprefix('finish-')
+            chunks[3]['choices'][0]['delta'] = {'content': 'final output'}
         if model.startswith('usage-'):
             value = {'usage-over': {'completion_tokens': 9},
                      'usage-conflict': {'completion_tokens': 6},
@@ -135,6 +150,26 @@ class BenchTests(unittest.TestCase):
         result = self.request("truncated")
         self.assertIsNotNone(result.error)
         self.assertEqual(summarize([result], 1)["succeeded"], 0)
+
+    def test_done_cannot_substitute_for_valid_completion_termination(self):
+        profile = dict(max_first_output_seconds=5, max_output_event_gap_seconds=5,
+                       min_request_output_tokens_per_second=.001)
+        for model in ('missing-finish', 'invalid-finish', 'late-output',
+                      'duplicate-finish', 'multiple-choices', 'invalid-delta'):
+            with self.subTest(model=model):
+                result = self.request(model)
+                self.assertEqual(result.error, 'ValueError')
+                self.assertGreater(result.output_events, 0)
+                self.assertEqual(summarize([result], 1)['succeeded'], 0)
+                self.assertEqual(profile_summary([result], 1, profile)['qualifying_output_tokens'], 0)
+
+    def test_terminal_chunk_can_include_last_output_before_usage(self):
+        for reason in ('stop', 'length', 'tool_calls'):
+            with self.subTest(reason=reason):
+                result = self.request('finish-' + reason)
+                self.assertIsNone(result.error)
+                self.assertEqual(result.output_events, 3)
+                self.assertEqual(result.output_tokens, 7)
 
     def test_http_error(self):
         self.assertEqual(self.request("http-error").error, "HTTP 503")
