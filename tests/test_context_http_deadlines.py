@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
 
-from scripts.verify_long_context_http import request_deadlines, save_report, check_overflow
+from scripts.verify_long_context_http import request_deadlines, collect_with_deadlines, save_report, check_overflow
 
 
 class ContextDeadlineTests(unittest.TestCase):
@@ -54,6 +54,48 @@ class ContextDeadlineTests(unittest.TestCase):
         with request_deadlines(threading.Event(), .05, .05, lambda _: expired.set()):
             pass
         self.assertFalse(expired.wait(.08))
+
+    def test_expiry_overrides_successful_response_and_retains_evidence(self):
+        for reason in ('first output', 'total request'):
+            expired, first = threading.Event(), threading.Event()
+            if reason == 'total request':
+                first.set()
+            original = dict(passed=True, text='retained', usage={'completion_tokens': 512},
+                            post_first_output_tokens_per_second_proxy=50)
+            def collect():
+                self.assertTrue(expired.wait(1))
+                return original
+            result = collect_with_deadlines(collect, first, .01, .03, lambda _: expired.set())
+            self.assertFalse(result['passed'])
+            self.assertEqual(result['deadline_exceeded'], reason)
+            self.assertEqual(result['text'], 'retained')
+            self.assertEqual(result['usage'], original['usage'])
+            self.assertNotIn('post_first_output_tokens_per_second_proxy', result)
+            self.assertTrue(original['passed'])
+
+    def test_first_expiry_is_recorded_once_and_callback_is_joined(self):
+        class Timer:
+            def __init__(self, seconds, callback):
+                self.callback = callback
+            def start(self):
+                pass
+            def cancel(self):
+                pass
+            def join(self):
+                self.callback()  # Already-started callbacks can finish during join.
+        reasons = []
+        with patch('scripts.verify_long_context_http.threading.Timer', Timer):
+            result = collect_with_deadlines(lambda: {'passed': True}, threading.Event(), 1, 2, reasons.append)
+        self.assertEqual(reasons, ['first output'])
+        self.assertEqual(result['deadline_exceeded'], 'first output')
+        self.assertFalse(result['passed'])
+
+    def test_in_budget_collection_is_unchanged(self):
+        original = {'passed': True, 'text': 'normal'}
+        expired = threading.Event()
+        result = collect_with_deadlines(lambda: original, threading.Event(), 1, 2, lambda _: expired.set())
+        self.assertIs(result, original)
+        self.assertFalse(expired.is_set())
 
     def test_checkpoint_remains_readable_and_replacement_leaves_no_temp(self):
         with tempfile.TemporaryDirectory() as directory:

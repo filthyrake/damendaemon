@@ -32,21 +32,40 @@ from dllm.report_io import save_report
 @contextmanager
 def request_deadlines(first_output, first_seconds, total_seconds, expire):
     """Wall-clock bounds also apply when SSE keeps the socket from timing out."""
+    state = {'expired': False, 'reason': None}
+    lock = threading.Lock()
+    def expired(reason):
+        with lock:
+            if state['expired']:
+                return
+            state.update(expired=True, reason=reason)
+        expire(reason)
     def first_expired():
         if not first_output.is_set():
-            expire('first output')
+            expired('first output')
     timers = [threading.Timer(first_seconds, first_expired),
-              threading.Timer(total_seconds, lambda: expire('total request'))]
+              threading.Timer(total_seconds, lambda: expired('total request'))]
     for timer in timers:
         timer.daemon = True
         timer.start()
     try:
-        yield
+        yield state
     finally:
         for timer in timers:
             timer.cancel()
         for timer in timers:
             timer.join()
+
+
+def collect_with_deadlines(collect, first_output, first_seconds, total_seconds, expire):
+    """Expiry wins even if graceful server shutdown delivers a complete response."""
+    with request_deadlines(first_output, first_seconds, total_seconds, expire) as deadline:
+        result = collect()
+    # Timer cancellation/join above closes the race with the final verdict.
+    if deadline['expired']:
+        result = {**result, 'passed': False, 'deadline_exceeded': deadline['reason']}
+        result.pop('post_first_output_tokens_per_second_proxy', None)
+    return result
 
 
 def check_overflow(base, tokens):
@@ -195,9 +214,10 @@ def main():
                 def expire(phase):
                     report.setdefault('deadline_exceeded', phase)
                     stop_server(signal.SIGTERM)
-                with request_deadlines(visible, args.first_output_budget, args.request_timeout, expire):
-                    return request(base, 'a', tokens, 'dllm', eos, threading.Barrier(1),
-                                   output_tokens=512, timeout=args.request_timeout, first_output_event=visible)
+                return collect_with_deadlines(
+                    lambda: request(base, 'a', tokens, 'dllm', eos, threading.Barrier(1),
+                                    output_tokens=512, timeout=args.request_timeout, first_output_event=visible),
+                    visible, args.first_output_budget, args.request_timeout, expire)
             report['phase'] = 'long_request'
             save_report(args.output, report)
             report['warmup_long'] = run(long)
@@ -260,6 +280,8 @@ def main():
         report['phase'] = 'failed'
         raise
     finally:
+        if 'deadline_exceeded' in report:
+            report['passed'] = False
         report['phase'] = 'completed' if report['passed'] else report.get('phase', 'failed')
         # Keep a report even if the outer scope kills us during child cleanup.
         try:

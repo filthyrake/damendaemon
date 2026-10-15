@@ -168,3 +168,9 @@ limits and retained byte count. Exceeding either bound fails before retaining
 the offending fragment; earlier output stays available as failed evidence, the
 response is closed and the deadline waiter is released. This is a capture bound,
 not a token estimate or total stream deadline; SSE fragments may coalesce tokens.
+
+Long-context request deadlines are irreversible qualification failures. Timer
+callbacks are joined before the request verdict is accepted; a response that
+finishes during shutdown remains failed if a deadline already fired. Its partial
+or complete response evidence and the first expiry reason are retained, without
+a successful throughput proxy. Timely responses retain their original verdict.
