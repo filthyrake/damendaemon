@@ -210,3 +210,15 @@ nonzero equation proof is the separate mixed-model gate above.19 local tests
 pass. Guard completed10.644s with128MiB child allocator cap,4251MiB free
 before/after and healthy incumbent. No official model, tool quality, vision,
 practical context or performance qualification is claimed.
+
+## DeepSeek projected compression pooling (#242)
+
+Implementation `4afc647`, test-discovery correction `611295c`. Explicit CUDA
+FP32 wrapper admits conservative workspace/output storage before payload scans
+or allocation; returned state and block starts count toward the output budget.
+Bounded reorder preserves independent slots. Actual CUDA ratios1/2/4/8/128
+match independent scalar pooling within1.2e-7; chunk continuation is exact,
+including overlap/tails, with failure nonmutation and preallocation rejection.
+Eight local tests pass. Guard completed3.375s,2MiB reserved under128MiB cap,
+4251MiB free before/after and incumbent healthy. Projection, QAT, indexer,
+attention/model and performance qualification are separate remaining gates.
