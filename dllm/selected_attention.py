@@ -9,7 +9,7 @@ import torch
 
 
 @torch.no_grad()
-def selected_attention(query, kv, indices, sink, *, scale=None, query_chunk=16, key_chunk=64):
+def _selected_attention(query, kv, indices, sink, *, scale=None, query_chunk=16, key_chunk=64,validate_finite=False):
     """Attend to per-query selected shared key/value vectors plus a zero-value sink.
 
     query: [batch, sequence, heads, width]; kv: [batch, cache, width]; indices:
@@ -54,8 +54,10 @@ def selected_attention(query, kv, indices, sink, *, scale=None, query_chunk=16, 
             vectors = kv[batch_ids, selected.clamp_min(0)].float()
             # Padding must not read poisoned/uninitialized slot zero into a matmul.
             vectors = torch.where(valid.unsqueeze(-1), vectors, 0.)
+            if validate_finite and not torch.isfinite(vectors).all():raise ValueError('nonfinite selected KV vectors')
             scores = torch.matmul(q, vectors.transpose(-1, -2))*scale
             scores = scores.masked_fill(~valid.unsqueeze(-2), -float('inf'))
+            if validate_finite and (valid.unsqueeze(-2) & ~torch.isfinite(scores)).any():raise ValueError('nonfinite selected attention scores')
             new_maximum = torch.maximum(maximum, scores.amax(-1))
             old_factor = (maximum-new_maximum).exp()
             probabilities = (scores-new_maximum.unsqueeze(-1)).exp()
@@ -63,4 +65,9 @@ def selected_attention(query, kv, indices, sink, *, scale=None, query_chunk=16, 
             denominator = denominator*old_factor + probabilities.sum(-1)
             maximum = new_maximum
         output[:, start:stop] = (accumulator/denominator.unsqueeze(-1)).to(query.dtype)
+    if validate_finite and not torch.isfinite(output).all():raise ValueError('nonfinite selected attention output')
     return output
+
+
+def selected_attention(query,kv,indices,sink,*,scale=None,query_chunk=16,key_chunk=64):
+    return _selected_attention(query,kv,indices,sink,scale=scale,query_chunk=query_chunk,key_chunk=key_chunk)
