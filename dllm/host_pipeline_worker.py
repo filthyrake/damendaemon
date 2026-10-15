@@ -1,8 +1,9 @@
-"""Explicit prepared CPU stages behind a synchronous authenticated star topology."""
+"""Explicit prepared host-boundary stages behind an authenticated star topology."""
 import threading
 import torch
 
 from .cpu_hybrid_stage import CpuHybridStage
+from .cuda_host_stage import CudaHostStageSlots
 from .glm_stage_slots import GlmStageSlots
 from .glm_flash_stage_slots import FlashStageSlots
 from .deepseek_stage_slots import DeepSeekStageSlots
@@ -12,6 +13,15 @@ from .planned_host_stage_channel import PlannedHostStageChannel
 from .stage_protocol import DECODE,RELEASE,PING,STOP,PREFILL_BATCH,PREFILL_CHUNK
 
 _claim_lock=threading.Lock()
+
+
+def _slots(stage):
+    return stage.slots if isinstance(stage,CudaHostStageSlots) else stage
+
+
+def _host_boundary(stage):
+    return stage.boundary_device if isinstance(stage,CudaHostStageSlots) else stage.actual_device
+
 
 
 class _PlannedWorker(HostHybridWorker):
@@ -35,9 +45,9 @@ class _PlannedWorker(HostHybridWorker):
             deepseek=topology.routing_tokens
             reference=glm or flash or deepseek
             expected_stage=DeepSeekStageSlots if deepseek else FlashStageSlots if flash else GlmStageSlots if glm else CpuHybridStage
-            if (not isinstance(stage,expected_stage) or stage.closed or getattr(stage,'failed',False)
+            if (not isinstance(_slots(stage),expected_stage) or stage.closed or getattr(stage,'failed',False)
                     or getattr(stage,'_pipeline_owner',None) is not None or any(stage.lengths)
-                    or stage.actual_device.type!='cpu' or stage.compute_dtype!=torch.float32
+                    or _host_boundary(stage).type!='cpu' or stage.compute_dtype!=torch.float32
                     or (stage.layer_start,stage.layer_end)!=topology.ranges[index]
                     or stage.context!=topology.context or stage.max_batch!=topology.slots
                     or stage.c!=topology.config
@@ -86,8 +96,8 @@ class _PlannedWorker(HostHybridWorker):
         return super()._command(operation,rows,entries)
 
     def _run(self,command,values,routing=None):
-        deepseek=isinstance(self.stage,DeepSeekStageSlots)
-        if not isinstance(self.stage,(FlashStageSlots,DeepSeekStageSlots)):return super()._run(command,values)
+        deepseek=isinstance(_slots(self.stage),DeepSeekStageSlots)
+        if not isinstance(_slots(self.stage),(FlashStageSlots,DeepSeekStageSlots)):return super()._run(command,values)
         if deepseek:routing=self._routing(values if self.rank==0 else routing,command.rows)
         stage=self.stage;streams,dim=stage.stage.streams,stage.stage.dim
         if command.operation==DECODE:
@@ -108,7 +118,7 @@ class _PlannedWorker(HostHybridWorker):
         return torch.cat(chunks),torch.stack(last)
 
     def _clear_slots(self,command):
-        if isinstance(self.stage,(GlmStageSlots,FlashStageSlots,DeepSeekStageSlots)):
+        if isinstance(_slots(self.stage),(GlmStageSlots,FlashStageSlots,DeepSeekStageSlots)):
             self.stage.release([slot for slot,_,_ in command.entries])
         else:super()._clear_slots(command)
 
@@ -142,7 +152,7 @@ class HostPipelineCoordinator(_PlannedWorker):
         """
         with self.lock:
             self._ready(True);self._slots([slot])
-            if self.topology.input_kind!='flash_embeddings' or not isinstance(self.stage,FlashStageSlots):
+            if self.topology.input_kind!='flash_embeddings' or not isinstance(_slots(self.stage),FlashStageSlots):
                 raise ValueError('prepared embeddings require explicit Flash input mode')
             stage=self.stage.stage
             if (not isinstance(values,torch.Tensor) or values.device.type!='cpu' or values.dtype!=torch.float32
