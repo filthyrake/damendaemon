@@ -37,3 +37,15 @@ zero coefficients, empty batches and invalid route rejection. Maximum absolute
 difference 7.62939453125e-06; peak reserved22MiB. Guard completed successfully.
 Twelve relevant local controls passed. Practical checkpoint/model qualification
 and automatic dispatch remain open under #14.
+
+## Explicit placement (#226)
+
+Implementation `ba06823`: preflight the entire CPU-prepared bank and a unique
+raw-tensor byte budget before any CUDA copy; retain aliases and compact owned
+storage. Thirteen relevant local tests pass. The actual tiny fixture admits
+9,411 raw bytes, preserves each packed tensor exactly and passes the six routed
+CPU-oracle comparisons after placement. `placement.json` and its successful
+guard retain the result. Allocator overhead remains separately bounded.
+The first attempt stopped after an incumbent health probe timed out, after four
+cases; its partial result and failed guard are retained as `placement-stopped*`.
+A fresh guarded retry completed without changing limits or the incumbent.
