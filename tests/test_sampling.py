@@ -1,10 +1,29 @@
 import math
 import unittest
+from unittest.mock import patch
 import torch
 from dllm.sampling import Sampling, Sampler, sample_rows
 
 
 class SamplingTests(unittest.TestCase):
+    def test_upper_endpoint_draw_never_selects_filtered_tokens(self):
+        for options, logits in (
+                (Sampling(1, top_p=.5), torch.tensor([0., -10., -20.])),
+                (Sampling(1), torch.tensor([0., -1000., -1000.])),
+                (Sampling(1, top_k=2, top_p=.5), torch.tensor([0., -10., -20.]))):
+            with self.subTest(options=options):
+                sampler = Sampler(options)
+                with patch.object(sampler.random, 'random', return_value=1 - 2**-30):
+                    self.assertEqual(sampler.select(logits).item(), 0)
+                    self.assertEqual(sample_rows(logits.unsqueeze(0), [sampler]), [0])
+
+    def test_cdf_roundoff_does_not_assign_mass_to_zero_probability_tail(self):
+        sampler = Sampler(Sampling(1))
+        logits = torch.tensor([3., 2., 1., -1000.])
+        with patch.object(sampler.random, 'random', return_value=1 - 2**-24):
+            self.assertEqual(sampler.select(logits).item(), 2)
+
+
     def test_validation(self):
         for options in ({'temperature':True}, {'temperature':float('inf')},
                         {'temperature':-1}, {'top_p':0}, {'top_p':float('nan')},

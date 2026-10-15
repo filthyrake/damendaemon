@@ -133,8 +133,13 @@ class Sampler:
         if not torch.isfinite(probabilities).all().item():
             raise ValueError('cannot sample non-finite model probabilities')
         cumulative = probabilities.cumsum(-1)
+        # Renormalize the entire CDF: assigning only its last entry to one
+        # would give a zero-probability tail any FP32 rounding shortfall.
+        cumulative = cumulative / cumulative[-1]
         cumulative[-1] = 1
-        draw = torch.tensor(self.random.random(), device=logits.device, dtype=torch.float32)
+        # A Python draw below one can round to exactly one in FP32.
+        draw = torch.tensor(self.random.random(), device=logits.device, dtype=torch.float32).clamp_max(
+            1 - torch.finfo(torch.float32).eps / 2)
         selected = torch.searchsorted(cumulative, draw, right=True).clamp_max(values.numel()-1)
         return selected if indices is None else indices[selected]
 
