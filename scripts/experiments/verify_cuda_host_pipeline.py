@@ -38,7 +38,7 @@ def main():
                 control=loader.load_reference_model(path)
                 identity=bytes.fromhex(fingerprint(path).model_id)
                 def build(modes,cuts=ranges):
-                    plan=HostTopology(control.config,cuts,identity,quantization=quantization,context=8,slots=2,chunk_size=4,frame_bytes=4096)
+                    plan=HostTopology(control.config,cuts,identity,quantization=quantization,context=8,slots=2,chunk_size=8,frame_bytes=4096)
                     links=helper.links(plan);owners=[]
                     for index,(mode,group) in enumerate(zip(modes,links)):
                         options=dict(device='cuda:0',max_device_bytes=4*1024**2,max_transfer_bytes=1024**2) if mode=='cuda' else {}
