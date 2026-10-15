@@ -14,9 +14,16 @@ from scripts.experiments.split_gguf import save
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--family',choices=('glm','flash','deepseek'),required=True)
+    parser.add_argument('--images',action='store_true')
     args=parser.parse_args();require_guard()
+    if args.images and args.family!='flash':raise ValueError('images require Flash')
     if args.output.exists():raise ValueError('new report required')
-    if args.family=='glm':
+    if args.images:
+        from tests.test_glm_flash_inline_images import snapshot,messages as image_messages
+        from tests.test_glm_flash_image_generation import text_fixture
+        def fixture(path,*,vocab_size):snapshot(path)
+        ranges=[[0,1],[1,3]]
+    elif args.family=='glm':
         from tests.test_glm_generation import text_fixture
         from tests.test_glm_reference_loader import fixture
         ranges=[[0,2],[2,3]]
@@ -32,7 +39,7 @@ def main():
     from tests.tls_credentials import credentials
     from dllm.cpu_snapshot_identity import fingerprint
     report=dict(passed=False,family=args.family,zero_head_fixture=True,allocator_mib_per_process=128,
-                max_cuda_processes=2,physical_multi_gpu_qualified=False,performance_qualified=False)
+                max_cuda_processes=2,images=args.images,physical_multi_gpu_qualified=False,performance_qualified=False)
     save(args.output,report);processes=[]
     try:
         with tempfile.TemporaryDirectory(prefix='dllm-cuda-host-command-') as temp,tempfile.TemporaryFile(mode='w+') as errors:
@@ -49,7 +56,7 @@ def main():
                 '--device-weight-mib','1','--transfer-mib','1','--device-workspace-mib','256','--weight-mib','1',
                 '--cache-mib','1','--output-mib','1','--plan',str(plan),'--model-id',identity,'--verify-model-id',
                 '--ca',str(cert/'ca.pem'),'--context','128','--context-limit','128','--slots','2','--prefill-chunk','16',
-                '--max-new-tokens','2','--timeout','10','--heartbeat-interval','1']
+                '--max-new-tokens','2','--timeout','10','--heartbeat-interval','1']+(['--flash-images'] if args.images else [])
             def launch(role,extra):
                 process=subprocess.Popen([sys.executable,'-m','scripts.run_cuda_host_topology',role,*common,*extra],
                     stdout=subprocess.PIPE,stderr=errors,text=True);processes.append(process);return process
@@ -66,14 +73,16 @@ def main():
             listening=event(worker)
             if listening.get('event')!='listening':raise AssertionError('worker did not listen')
             peers.write_text(json.dumps([dict(stage=1,address='127.0.0.1',port=listening['port'],server_name='localhost',peer_cert=str(cert/'server.pem'))]))
-            coordinator=launch('serve',['--peers',str(peers),'--http-port','0','--cert',str(cert/'client.pem'),'--key',str(cert/'client.key')])
+            coordinator=launch('serve',['--peers',str(peers),'--http-port','0','--cert',str(cert/'client.pem'),'--key',str(cert/'client.key')]+(['--vision-weight-mib','1','--image-workspace-mib','16','--image-output-mib','1','--max-patches','64'] if args.images else []))
             ready=event(coordinator);worker_ready=event(worker)
             if (ready.get('event')!='http_ready' or ready.get('execution')!='host_topology' or ready.get('local_device')!='cuda:0'
                     or ready.get('peer_devices_verified') is not False or worker_ready.get('local_device')!='cuda:0'):
                 raise AssertionError('CUDA host placement readiness differs')
+            if args.images and (ready.get('vision_device')!='cpu' or ready.get('modality')!='still_image'):
+                raise AssertionError('incorrect CPU vision/CUDA language readiness')
             reasoning=[];field='content' if args.family=='deepseek' else 'reasoning_content'
             for stream in (False,True):
-                body=dict(model='model',messages=[dict(role='user',content='Hi')],max_tokens=2,stream=stream)
+                body=dict(model='model',messages=image_messages() if args.images else [dict(role='user',content='Hi')],max_tokens=2,stream=stream)
                 if stream:body['stream_options']={'include_usage':True}
                 with urlopen(Request(ready['url']+'/v1/chat/completions',json.dumps(body).encode(),{'Content-Type':'application/json'}),timeout=15) as response:
                     wire=response.read().decode()

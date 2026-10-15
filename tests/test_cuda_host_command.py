@@ -38,8 +38,10 @@ class CudaHostCommandTests(unittest.TestCase):
         with patch.object(shared,'run',side_effect=AssertionError('run')),redirect_stderr(io.StringIO()):
             with self.assertRaises(SystemExit):main(args)
 
-    def test_flash_image_mode_rejects_before_metadata(self):
-        args=self.args();args[1]='flash';args+=['--flash-images']
-        with patch.object(shared,'prepare',side_effect=AssertionError('metadata')),redirect_stderr(io.StringIO()):
-            with self.assertRaises(SystemExit) as caught:cli.main(args)
-            self.assertEqual(caught.exception.code,2)
+    def test_flash_image_mode_is_explicit_with_cpu_vision(self):
+        from scripts.run_cpu_host_reference import parser_for_command
+        from scripts.cuda_host_execution import add_arguments,validate
+        args=self.args()[2:]+['--flash-images']
+        parser=parser_for_command(topology=True,family='flash');add_arguments(parser)
+        parsed=parser.parse_args(args);validate(parsed,family='flash')
+        self.assertTrue(parsed.flash_images);self.assertEqual(parsed.device,'cuda:0')

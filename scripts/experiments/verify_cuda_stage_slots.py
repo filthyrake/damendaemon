@@ -64,6 +64,20 @@ def main():
                     try:cuda_kind(stage,8,3,max_cache_bytes=owner.reserved_cache_bytes-1)
                     except ValueError:pass
                     else:raise AssertionError('aggregate reservation admitted')
+                if args.host_boundaries:
+                    first=candidates[0];ids=torch.tensor([[1,2]])
+                    if family=='flash':
+                        torch.testing.assert_close(first.text_embeddings(ids),controls[0].embedding(ids)[:,:,0],rtol=0,atol=0)
+                        first.max_transfer_bytes=1
+                        with patch.object(first,'_to_device',side_effect=AssertionError('copy before row budget')):
+                            try:first.text_embeddings(ids)
+                            except ValueError:pass
+                            else:raise AssertionError('collapsed row budget admitted')
+                        first.max_transfer_bytes=1024**2
+                    else:
+                        try:first.text_embeddings(ids)
+                        except ValueError:pass
+                        else:raise AssertionError('non-Flash collapsed rows admitted')
                 error=0.
                 operations=[(torch.tensor([[1]]),[0],[2],True),
                             (torch.tensor([[2,3]]),[1],[2],True),

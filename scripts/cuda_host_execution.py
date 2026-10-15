@@ -11,8 +11,7 @@ def add_arguments(parser):
 
 
 def validate(args,*,family):
-    if (family not in ('glm','flash','deepseek') or not getattr(args,'native_chat',False)
-            or getattr(args,'flash_images',False)):
+    if family not in ('glm','flash','deepseek') or not getattr(args,'native_chat',False):
         raise ValueError('CUDA host command requires explicit native GLM/Flash/DeepSeek text/tool mode')
     if not isinstance(args.device,str) or re.fullmatch(r'cuda:[0-9]+',args.device) is None:
         raise ValueError('CUDA host command requires an indexed device')

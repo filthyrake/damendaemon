@@ -32,6 +32,7 @@ class NativeHostReferenceRuntime(ReferenceRuntime):
             self.runner,self.alias=runner,alias
             self.lock=threading.Lock();self.stopping=threading.Event()
             self.images=self.supports_images;self.family=self.model_type;self.context=runner.max_context
+            self.vision_device=str(runner.vision.device) if self.images else None
             self.active=self.closed=False;self.owner=object()
             self.local_device=str(worker.stage.actual_device)
             self.local_stage_index=worker.stage_index
@@ -54,7 +55,7 @@ class NativeHostReferenceRuntime(ReferenceRuntime):
                     local_stage_index=self.local_stage_index,peer_devices_verified=False,stage_layers=[list(pair) for pair in self.stage_layers],
                     source_model_id=self.source_model_id,topology_identity=self.topology_identity,
                     model_identity_verified=self.model_identity_verified,epoch_terminal=self._terminal(),
-                    **(dict(vision_identity_verified=self.model_identity_verified) if self.images else {}))
+                    **(dict(vision_identity_verified=self.model_identity_verified,vision_device=self.vision_device) if self.images else {}))
 
     def manage(self,action,**options):
         status=super().manage(action,**options)

@@ -2078,4 +2078,6 @@ allocator separately from `--device-weight-mib`, `--transfer-mib`,
 leave allocator headroom. Caps exclude driver allocations and do not isolate
 compute or protect other workflows by themselves; use the shared experiment
 guard for bounded qualification. CPU commands still select CPU builders.
-Flash image mode is rejected here pending coordinator embedding admission.
+Flash image mode uses bounded CPU vision and an explicit collapsed CUDA embedding
+row transfer before CPU image-feature insertion. Status reports `vision_device=cpu`
+separately from the coordinator language device. No CUDA vision claim follows.

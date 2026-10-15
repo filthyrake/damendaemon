@@ -103,6 +103,21 @@ class CudaHostStageSlots:
             return self._copy(self.slots.embedding(self._copy(tokens)),out=True)
 
     @torch.no_grad()
+    def text_embeddings(self,tokens):
+        """Collapsed Flash rows for CPU image insertion; no residual frame copy."""
+        with self.lock:
+            self.slots._ready()
+            if not isinstance(self.slots,CudaFlashStageSlots) or not self.stage.first:
+                raise ValueError('collapsed embedding rows require the first CUDA Flash stage')
+            size=self._tokens(tokens);output=tokens.numel()*self.stage.dim*4
+            _budget(size+output,self.max_transfer_bytes)
+            if output>self.stage.max_output_bytes:raise ValueError('host Flash embedding row budget exceeded')
+            # Flash embedding expands identical residual streams as a view. Copy
+            # one stream only, preserving the original single embedding lookup.
+            values=self.slots.embedding(self._copy(tokens))[:,:,0]
+            return self._copy(values,out=True)
+
+    @torch.no_grad()
     def forward_layers(self,hidden,positions,slots,prefill,prefill_start=0,*,token_ids=None):
         with self.lock:
             self.slots._ready();size=self._hidden(hidden)

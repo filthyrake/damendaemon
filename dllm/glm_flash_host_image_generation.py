@@ -1,4 +1,4 @@
-"""Explicit native still-image/tool policy over owned prepared Flash CPU hosts."""
+"""Explicit native still-image/tool policy over owned prepared Flash host stages."""
 from contextlib import closing
 import hashlib
 import json
@@ -10,6 +10,7 @@ from .glm_flash_image_text import BEGIN_IMAGE,IMAGE,END_IMAGE,_render
 from .glm_flash_images import CONTRACT,plan_images,prepare_images
 from .glm_flash_tools import FlashTools,_json,_dump
 from .glm_flash_vision import FlashVision
+from .cuda_host_stage import CudaHostStageSlots
 from .native_host_generation import snapshot_text
 from .reference_cancellation import check_cancelled
 
@@ -91,6 +92,9 @@ class HostFlashImageGenerator(HostFlashGenerator):
         if (getattr(worker,'model_identity_verified',False)
                 and getattr(vision,'_host_source_identity',None)!=worker.topology.source_identity):
             raise ValueError('verified native images require vision loaded from the same verified snapshot')
+        if (not isinstance(worker.stage,CudaHostStageSlots)
+                and worker.stage.stage.embedding.device.type!='cpu'):
+            raise ValueError('host image embedding requires CPU weights or an explicit CUDA boundary')
         # Claim the ready coordinator only after all image-specific checks.
         super().__init__(worker,text,chunk_size=chunk_size)
         self.vision=vision;self.image_workspace_bytes=image_workspace_bytes;self.image_output_bytes=image_output_bytes
@@ -99,6 +103,17 @@ class HostFlashImageGenerator(HostFlashGenerator):
     def close(self):
         super().close()
         self.vision=None
+
+    def _text_embeddings(self,ids):
+        if isinstance(self.worker.stage,CudaHostStageSlots):
+            try:return self.worker.stage.text_embeddings(ids[None])[0]
+            except BaseException as error:
+                # This preparation precedes protocol dispatch. A failed copy
+                # retires its CUDA owner, so retire the host epoch too; ordinary
+                # admission rejection leaves the untouched epoch reusable.
+                if self.worker.stage.failed or self.worker.stage.closed:self.worker._fail(error)
+                raise
+        return F.embedding(ids,self.worker.stage.stage.embedding)
 
     def _prepare_images(self,messages,images,maximum,tools,options):
         if type(maximum) is not int or not 1<=maximum<=4096:raise ValueError('native image output length must be 1..4096')
@@ -132,7 +147,7 @@ class HostFlashImageGenerator(HostFlashGenerator):
                     or tuple(features.shape)!=(int((ids==self.text.image_token_id).sum()),self.worker.topology.text_config['hidden_size'])
                     or not torch.isfinite(features).all()):raise ValueError('invalid native host image feature projection')
             with torch.inference_mode():
-                values=F.embedding(ids,self.worker.stage.stage.embedding)
+                values=self._text_embeddings(ids)
                 values[ids==self.text.image_token_id]=features
             return [values]
         return [tokens],[maximum],codec,prepare
