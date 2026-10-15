@@ -385,3 +385,15 @@ still-image/CUDA readiness and timing, and SIGTERM exit0. Guard10.421s,128MiB
 allocator cap,4251MiB free before/after, cleanup confirmed. Inline media only;
 no remote fetch, official image quality, generated tool accuracy, practical
 resolution/context or performance qualification follows.
+
+## CUDA GLM/Flash logical layer ranges (#257)
+
+Implementation `f7ae97b`. Explicit prepared CUDA ranges share CPU lifecycle and
+boundary equations, preserving GLM indexer groups and Flash residual streams.
+Two/three logical stages on one A2 match whole CPU controls across prefill,
+decode/reorder: GLM error1.44e-6,Flash9e-8, exact greedy IDs. Invalid CPU boundaries
+reject without advancing; late-head failure poisons the owned final range and
+all stages close.25 local stage/pipeline tests pass. Guard18.752s,22MiB reserved
+under128MiB cap,4251MiB free before/after, cleanup confirmed. These are logical
+single-device stages, not physical multi-GPU, transfer, transport or practical
+performance qualification.
