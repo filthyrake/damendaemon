@@ -176,7 +176,12 @@ Successful-request summaries include pooled gap percentiles and the
 distribution of each request's largest gap; raw per-request gaps retain stalls
 and failed partial streams. Requests with fewer than two output events have no
 gap measurement, not an invented zero. Gap collection fails the request after
-100,000 output events to bound additional sample memory. These measurements do
+100,000 output events to bound additional sample memory. The shared SSE parser
+also caps each wire line at 1 MiB and each event at 4 MiB and 4,096 nonblank
+lines, including ignored fields/comments. HTTP responses use bounded line reads;
+oversized input fails the request while retaining earlier observations. The
+report records these limits. Separate completed events reset the event bounds;
+these storage caps do not impose a total stream deadline. These measurements do
 not automatically certify a sustained-user SLO or calculate SLO goodput.
 
 To evaluate a declared client-observed profile, supply all three options before

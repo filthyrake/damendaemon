@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import io
 import subprocess
 import sys
 import threading
@@ -31,6 +32,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()
+        if model == 'sse-large':
+            self.wfile.write(b'data: ' + b'x' * (1024 * 1024) + b'\n\n')
+            return
         chunks = [
             {"choices": [{"delta": {"role": "assistant"}}]},
             {"choices": [{"delta": {"content": "several tokens in one chunk"}}]},
@@ -140,6 +144,36 @@ class BenchTests(unittest.TestCase):
             b": ping\r\n", b"event: message\r\n", b"data: first\r\n",
             b"data: second\r\n", b"\r\n", b"data: final\n",
         ])), ["first\nsecond", "final"])
+
+    def test_sse_bounded_reads_and_line_rejection(self):
+        class Reader(io.BytesIO):
+            def readline(self, limit=-1):
+                self.assert_limit = limit
+                return super().readline(limit)
+        reader = Reader(b'data: ' + b'x' * 1000)
+        with self.assertRaisesRegex(ValueError, 'line byte limit'):
+            list(events(reader, max_line_bytes=16))
+        self.assertEqual(reader.assert_limit, 17)
+        self.assertEqual(reader.tell(), 17)
+        self.assertEqual(list(events(io.BytesIO(b'data: a\n\n'), max_line_bytes=8)), ['a'])
+        result = self.request('sse-large')
+        self.assertEqual(result.error, 'ValueError')
+        self.assertEqual(result.output_events, 0)
+
+    def test_sse_event_bounds_include_ignored_fields_and_reset(self):
+        line = b'data: a\n'
+        self.assertEqual(list(events([line, line, b'\n', line], max_event_bytes=16,
+                                     max_event_lines=2)), ['a\na', 'a'])
+        for kwargs in ({'max_event_bytes': 15}, {'max_event_lines': 1}):
+            with self.assertRaisesRegex(ValueError, 'event limit'):
+                list(events([line, line], **kwargs))
+        with self.assertRaisesRegex(ValueError, 'event limit'):
+            list(events([b': ignored\n'] * 3, max_event_lines=2))
+        with self.assertRaisesRegex(ValueError, 'event limit'):
+            list(events([b'event: ignored\n'], max_event_bytes=8))
+        for value in (0, -1, True):
+            with self.assertRaisesRegex(ValueError, 'invalid SSE'):
+                list(events([], max_line_bytes=value))
 
     def test_throughput_uses_wall_time_and_successful_tokens(self):
         report = summarize([

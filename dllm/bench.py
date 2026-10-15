@@ -17,6 +17,9 @@ from .http_auth import authenticated_urlopen as urlopen
 
 
 MAX_OUTPUT_EVENTS = 100_000
+MAX_SSE_LINE_BYTES = 1024 * 1024
+MAX_SSE_EVENT_BYTES = 4 * 1024 * 1024
+MAX_SSE_EVENT_LINES = 4096
 
 def llama_context(base_url, expected):
     """Fail before timing if the comparator silently capped its KV slot context."""
@@ -45,18 +48,38 @@ class Result:
     reported_server_queue_seconds: float | None = None
 
 
-def events(lines):
-    """Decode SSE data fields; comments and non-data fields aren't payloads."""
+def events(lines, *, max_line_bytes=MAX_SSE_LINE_BYTES,
+           max_event_bytes=MAX_SSE_EVENT_BYTES, max_event_lines=MAX_SSE_EVENT_LINES):
+    """Decode bounded SSE events, using bounded reads for HTTP/file responses.
+
+    Iterable inputs are checked after delivery; their caller owns line allocation.
+    Limits include wire delimiters and ignored fields. They bound parser storage,
+    not total stream duration or bytes across independently completed events.
+    """
+    if any(type(limit) is not int or limit < 1 for limit in
+           (max_line_bytes, max_event_bytes, max_event_lines)):
+        raise ValueError("invalid SSE parser bounds")
+    reader = getattr(lines, 'readline', None)
+    source = iter(lambda: reader(max_line_bytes + 1), b'') if callable(reader) else iter(lines)
     data = []
-    for raw in lines:
+    event_bytes = event_lines = 0
+    for raw in source:
+        if len(raw) > max_line_bytes:
+            raise ValueError("SSE line byte limit exceeded")
         line = raw.decode("utf-8").rstrip("\r\n")
         if not line:
             if data:
                 yield "\n".join(data)
                 data.clear()
-        elif line.startswith("data:"):
-            value = line[5:]
-            data.append(value[1:] if value.startswith(" ") else value)
+            event_bytes = event_lines = 0
+        else:
+            event_bytes += len(raw)
+            event_lines += 1
+            if event_bytes > max_event_bytes or event_lines > max_event_lines:
+                raise ValueError("SSE event limit exceeded")
+            if line.startswith("data:"):
+                value = line[5:]
+                data.append(value[1:] if value.startswith(" ") else value)
     if data:
         yield "\n".join(data)
 
@@ -359,6 +382,9 @@ def main():
             "raw_request_timing_origin": "request_start",
             "profile_timing_origin": "scheduled_arrival" if args.arrival_rate is not None else "request_start",
             "max_output_events_per_request": MAX_OUTPUT_EVENTS,
+            "max_sse_line_bytes": MAX_SSE_LINE_BYTES,
+            "max_sse_event_bytes": MAX_SSE_EVENT_BYTES,
+            "max_sse_event_lines": MAX_SSE_EVENT_LINES,
             "concurrency": args.concurrency, "max_tokens": args.max_tokens,
             "temperature": 0, "socket_timeout_seconds": args.timeout,
             "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
