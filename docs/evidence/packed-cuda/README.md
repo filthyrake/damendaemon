@@ -49,3 +49,14 @@ guard retain the result. Allocator overhead remains separately bounded.
 The first attempt stopped after an incumbent health probe timed out, after four
 cases; its partial result and failed guard are retained as `placement-stopped*`.
 A fresh guarded retry completed without changing limits or the incumbent.
+
+## GLM feed-forward boundary (#227)
+
+Implementation `b5ff3f2`: explicit CUDA FP32 GLM FFN with sigmoid/correction
+bias/additive-epsilon selection and coefficients applied after down projection.
+Five dense/sparse/clipped/underflow cases pass independent decoded CPU control;
+routing underflow/tie IDs are checked separately. `glm-ffn.json` and its guard
+retain actual A2 results. This does not qualify GLM attention, cache or a model.
+Thirty-seven affected local arithmetic/GLM regressions passed. The broader
+suite completed 1,724 tests at the earlier routed-composition boundary; later
+placement/GLM changes have their focused checks, not a claimed new full-suite run.
