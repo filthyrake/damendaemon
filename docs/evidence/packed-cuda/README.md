@@ -197,3 +197,16 @@ before/after and incumbent healthy.12 focused local tests verify full-compositio
 rejection before copying, aliases, detached config, preserved limits and source
 usability after allocation failure. Separate allocator/cache/output/workspace
 limits remain required; raw bytes are not total memory demand.
+
+## Explicit Flash text/HTTP command (#240)
+
+Implementation `f4db834`. `scripts.serve_cuda_reference` admits local GLM or
+Flash snapshots explicitly, preserving separate bounds and serialized loopback
+serving. Flash uses nested text configuration and its native text/tool bindings;
+CPU batching and image admission are not inherited. Actual tiny on-disk Flash
+snapshot startup, chat, usage-bearing SSE and SIGTERM exit0 pass; readiness and
+timing identify CUDA Flash correctly. The zero head controls wire output;
+nonzero equation proof is the separate mixed-model gate above.19 local tests
+pass. Guard completed10.644s with128MiB child allocator cap,4251MiB free
+before/after and healthy incumbent. No official model, tool quality, vision,
+practical context or performance qualification is claimed.

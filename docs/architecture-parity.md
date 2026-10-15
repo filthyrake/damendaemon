@@ -2022,3 +2022,12 @@ chat/SSE and owned command SIGTERM. Device status and timing identify this as
 These are capability/lifecycle gates, not an official checkpoint, practical
 context, quality, throughput or concurrent-serving qualification. Parent #56
 stays open. [Exact results, stopped attempts and limits](evidence/packed-cuda/README.md).
+
+The explicit CUDA reference path also accepts prepared Flash mixed linear/sparse
+models and local Flash snapshots through `scripts.serve_cuda_reference`.
+Whole-model placement validates raw payload and all CPU component metadata before
+copying, retaining clipped FFNs, stream mixing and owned cache semantics. Tiny
+shared-A2 scalar/model/command gates are recorded in
+[CUDA evidence](evidence/packed-cuda/README.md). The text-only serialized command
+keeps explicit device and separate weight/allocator/cache/workspace/output caps;
+this does not qualify official weights, vision, practical context or throughput.
