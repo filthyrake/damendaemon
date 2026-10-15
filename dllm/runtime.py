@@ -463,6 +463,8 @@ class Runtime:
                 raise ValueError('prompt is empty or exceeds context')
             with request_kv(executor,len(tokens)):
                 logits=executor.score_candidates(tokens,candidates).reshape(-1)
+                if logits.numel() != len(candidates):
+                    raise RuntimeError('candidate score count does not match requested candidates')
                 if not torch.isfinite(logits).all().item():raise RuntimeError('non-finite candidate scores')
                 probabilities=logits.softmax(-1).cpu().tolist()
                 values=logits.cpu().tolist()
