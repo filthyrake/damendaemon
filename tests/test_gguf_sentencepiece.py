@@ -236,7 +236,7 @@ class SentencePieceGgufTests(unittest.TestCase):
                             tokenizer(source)
 
     def test_unambiguous_special_length_ties_and_self_overlap_remain_supported(self):
-        for pieces, kind in ((['aaaa', 'bbbb'], 4), (['éa', 'abx'], 5), (['éa', 'ab'], 4)):
+        for pieces, kind in ((['aaaa', 'bbbb'], 4), (['éa', 'abx'], 5), (['éa', 'ax'], 4)):
             source = metadata()
             source['tokenizer.ggml.tokens'] += pieces
             source['tokenizer.ggml.token_type'] += [kind] * len(pieces)
