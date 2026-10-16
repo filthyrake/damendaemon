@@ -10,6 +10,10 @@ convention is accepted; other nonfinite numbers, duplicate fields and non-object
 are rejected before architecture dispatch or weight planning. Tokenizer vocabulary
 files use their separate loading contracts.
 
+Explicit independent GGUF benchmark overrides require 1..64 nonempty token
+prompts and 1..256 output tokens within the requested context. Empty or malformed
+reports are rejected before loading the source model, without substituting defaults.
+
 Independent GGUF token-trace reports include `workload_sha256`, binding the
 ordered prompt token IDs and output budget. Generated-HTTP qualification requires
 that digest to match the requested benchmark workload before starting its server.

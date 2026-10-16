@@ -162,6 +162,19 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = False
     teacher = json.loads(Path(args.teacher_trace).read_text()) if args.teacher_trace else None
     if args.teacher_trace and not isinstance(teacher,dict):raise ValueError('teacher trace must be an object')
+    benchmark=None
+    if args.benchmark_report:
+        benchmark=json.loads(Path(args.benchmark_report).read_text())
+        if not isinstance(benchmark,dict):raise ValueError('benchmark report must be an object')
+        benchmark_prompts=benchmark.get('prompts');benchmark_steps=benchmark.get('output_tokens')
+        if (not isinstance(benchmark_prompts,dict) or not 1<=len(benchmark_prompts)<=64
+                or type(benchmark_steps) is not int or not 1<=benchmark_steps<=256):
+            raise ValueError('benchmark requires 1..64 prompts and 1..256 output tokens')
+        for key,ids in benchmark_prompts.items():
+            if (not isinstance(key,str) or not 1<=len(key)<=64 or not key.isascii() or not key.isdecimal()
+                    or not isinstance(ids,list) or not ids or len(ids)+benchmark_steps-1>args.context
+                    or any(type(token) is not int or token<0 for token in ids)):
+                raise ValueError('invalid benchmark prompt tokens or context budget')
     source = GgufWeights(args.gguf, args.context, 'none')
     if args.expanded_control:
         from verify_kquant_runtime import expanded
@@ -194,16 +207,13 @@ def main():
     for length in dict.fromkeys(args.extra_prompt_tokens):
         if length not in [len(ids) for ids in prompts]:
             prompts.append((base * ((length+len(base)-1)//len(base)))[:length])
-    benchmark=json.loads(Path(args.benchmark_report).read_text()) if args.benchmark_report else None
     steps=8
-    if benchmark:
+    if benchmark is not None:
         if args.extended:p.error('--benchmark-report cannot be combined with --extended')
         prompts=[benchmark['prompts'][key] for key in sorted(benchmark['prompts'],key=int)]
         steps=benchmark['output_tokens']
-        if type(steps) is not int or not 1<=steps<=256:
-            raise ValueError('invalid benchmark output length')
-        if any(not ids or len(ids)+steps-1>args.context or any(type(t) is not int or not 0<=t<source.config['vocab_size'] for t in ids) for ids in prompts):
-            raise ValueError('invalid benchmark prompt tokens or context budget')
+        if any(token>=source.config['vocab_size'] for ids in prompts for token in ids):
+            raise ValueError('benchmark prompt token exceeds vocabulary')
     workload_sha256 = token_workload_digest(prompts, steps)
     teacher_tokens = teacher_token_lookup(teacher, prompts, steps, source.config['vocab_size'])
     config = AutoConfig.from_pretrained(args.hf_config, local_files_only=True, trust_remote_code=False)
