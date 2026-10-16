@@ -99,7 +99,7 @@ Quantization, prompt-prefix reuse and interleaved prefill are not yet supported
 for BLOOM. Acceptance of another BLOOM configuration does not qualify its
 checkpoint or an extended context. See [architecture evidence](architecture-parity.md).
 
-Ordinary Qwen2/Qwen3/Llama/Mistral/Phi3 and StarCoder2 checkpoints must match
+Ordinary Qwen2/Qwen3/Llama/Mistral/Phi3, StarCoder2, Gemma and OLMoE checkpoints must match
 their declared tensor names and shapes. Explicit tied output weights must agree
 with input embeddings. Unknown tensors fail loading; the existing dense-loader
 visual and MTP exclusions remain unchanged. Dense prepared caches from before

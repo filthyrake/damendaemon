@@ -1,4 +1,4 @@
-"""Validate source tensors before dense decoder packing or cache publication."""
+"""Validate source tensors before decoder packing or cache publication."""
 
 
 def validate(state, config):
@@ -14,7 +14,13 @@ def validate(state, config):
         shapes[prefix+'input_layernorm.weight']=(h,)
         shapes[prefix+'post_attention_layernorm.weight']=(h,)
         shapes[prefix+'self_attn.o_proj.weight']=(h,q)
-        shapes[prefix+'mlp.down_proj.weight']=(h,inter)
+        if kind=='olmoe':
+            shapes[prefix+'mlp.gate.weight']=(config['num_experts'],h)
+            for expert in range(config['num_experts']):
+                root=prefix+f'mlp.experts.{expert}.'
+                for projection in ('gate','up'):shapes[root+projection+'_proj.weight']=(inter,h)
+                shapes[root+'down_proj.weight']=(h,inter)
+        else:shapes[prefix+'mlp.down_proj.weight']=(h,inter)
         if kind=='phi3':
             shapes[prefix+'self_attn.qkv_proj.weight']=(q+2*kv,h)
             shapes[prefix+'mlp.gate_up_proj.weight']=(2*inter,h)
@@ -22,9 +28,16 @@ def validate(state, config):
             for projection,width in (('q',q),('k',kv),('v',kv)):
                 shapes[prefix+f'self_attn.{projection}_proj.weight']=(width,h)
                 if kind=='qwen2':shapes[prefix+f'self_attn.{projection}_proj.bias']=(width,)
-            for projection in ('gate','up'):shapes[prefix+f'mlp.{projection}_proj.weight']=(inter,h)
-        if kind=='qwen3':
+            if kind!='olmoe':
+                for projection in ('gate','up'):shapes[prefix+f'mlp.{projection}_proj.weight']=(inter,h)
+        if kind in ('qwen3','gemma3_text'):
             for projection in ('q','k'):shapes[prefix+f'self_attn.{projection}_norm.weight']=(d,)
+        if kind=='gemma3_text':
+            for name in ('pre_feedforward_layernorm','post_feedforward_layernorm'):
+                shapes[prefix+name+'.weight']=(h,)
+        if kind=='olmoe':
+            shapes[prefix+'self_attn.q_norm.weight']=(q,)
+            shapes[prefix+'self_attn.k_norm.weight']=(kv,)
     missing=set(shapes)-set(state)
     if missing:raise ValueError('missing dense checkpoint tensor: '+min(missing))
     extra=set(state)-set(shapes)

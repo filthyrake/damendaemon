@@ -8,6 +8,8 @@ from .device import selected_device
 
 
 def load_weights(state, config):
+    from .dense_checkpoint import validate
+    validate(state,config)
     def matrix(name):
         return state.pop(name).half()
     def norm(name):

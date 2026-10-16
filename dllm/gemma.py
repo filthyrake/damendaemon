@@ -14,6 +14,8 @@ from .rotary import inverse_frequencies
 
 
 def load_weights(state, config):
+    from .dense_checkpoint import validate
+    validate(state,config)
     def take(name):
         return state.pop(name).to(torch.bfloat16)
     def norm(name):
