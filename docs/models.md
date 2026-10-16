@@ -761,3 +761,5 @@ Dense and AWQ checkpoint metadata readers bound `tokenizer_config.json` to 16 Mi
 Checkpoint chat templates receive `bos_token` and `eos_token` as text even when tokenizer metadata stores them as structured AddedToken objects: the `content` string is used. Missing values remain `None`; malformed structured entries are rejected before registering chat-capable models.
 
 When no embedded `chat_template` is supplied, `chat_template.jinja` is read as UTF-8 with the same 16 MiB metadata envelope. An embedded template, including an empty string, takes precedence; a missing fallback preserves the raw-completion-only behavior. Explicit operator overrides retain their separate 128 KiB limit.
+
+Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects duplicate fields or excessive nesting before pooling configuration or checkpoint loading. The supported pipeline remains Transformer → mean Pooling → Normalize.

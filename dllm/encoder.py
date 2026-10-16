@@ -1,7 +1,7 @@
 """Independent BERT embeddings and BERT/XLM-RoBERTa relevance scores."""
 from .config import read_config, _positive_number
+from .safetensor_header import parse_metadata_json
 from collections import OrderedDict
-import json
 import math
 from pathlib import Path
 import torch
@@ -41,13 +41,19 @@ def config(path):
         length=c['max_position_embeddings']-(c['pad_token_id']+1 if family=='xlm-roberta' else 0)
         if length<=0:raise ValueError('invalid encoder position capacity')
         return {**c,'task':'rerank','layer_norm_eps':eps,'embedding_max_length':length}
-    modules = json.loads((path/'modules.json').read_text())
+    with (path/'modules.json').open('rb') as reader:
+        raw = reader.read(1024 * 1024 + 1)
+    if len(raw) > 1024 * 1024:
+        raise ValueError('encoder module metadata exceeds 1 MiB')
+    modules = parse_metadata_json(raw.decode('utf-8'))
     kinds = ['Transformer','Pooling','Normalize']
     if (not isinstance(modules,list) or len(modules) != 3
             or any(not isinstance(m,dict) or m.get('type') != 'sentence_transformers.models.'+kind
                    for m,kind in zip(modules,kinds)) or modules[0].get('path') != ''):
         raise ValueError('supported encoder pipeline is Transformer, mean Pooling, Normalize')
-    pooling_path = Path(modules[1].get('path',''))
+    if not isinstance(modules[1].get('path'),str):
+        raise ValueError('invalid pooling module path')
+    pooling_path = Path(modules[1]['path'])
     if pooling_path.is_absolute() or '..' in pooling_path.parts or not pooling_path.parts:
         raise ValueError('invalid pooling module path')
     pooling = read_config(path/pooling_path/'config.json')

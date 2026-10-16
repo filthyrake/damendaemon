@@ -15,7 +15,7 @@ token-workload identity, checkpoint JSON, tokenizer metadata and CLI manifest pr
 Those matrix jobs install no runtime dependencies. A separate ten-minute Ubuntu
 CPU integration job installs CPU-only PyTorch and tokenizer dependencies, verifies
 the wheel has no CUDA/HIP backend, and runs an explicit runtime, manifest, HTTP,
-chat-template, AWQ metadata and dense-EOS test list with tiny local fixtures and
+chat-template, AWQ metadata, dense-EOS, embedding and reranking test list with tiny local fixtures and
 fake executors. Hub access is offline during tests. No job accesses shared hosts
 or qualifies GPU inference or performance.
 

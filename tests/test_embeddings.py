@@ -98,6 +98,33 @@ class EncoderConfigTests(unittest.TestCase):
         self.assertEqual(parsed['task'],'embedding')
         self.assertEqual(parsed['embedding_max_length'],256)
 
+    def test_module_metadata_is_bounded_unique_and_well_typed(self):
+        valid=json.dumps(self.modules)
+        duplicate=valid.replace('"type": "sentence_transformers.models.Pooling"',
+            '"type": "unsupported", "type": "sentence_transformers.models.Pooling"')
+        for raw in (duplicate, valid+' '*(1024*1024), '['*10000+'0'+']'*10000):
+            with self.subTest(raw=raw[:60]):
+                (self.root/'modules.json').write_text(raw)
+                with self.assertRaises(ValueError):config(self.root)
+        for value in (None,True,1,[],{}):
+            with self.subTest(path=value):
+                self.modules[1]['path']=value;self.write()
+                with self.assertRaisesRegex(ValueError,'pooling module path'):config(self.root)
+
+    def test_module_read_has_an_actual_byte_bound_and_closes_source(self):
+        import io
+        from unittest.mock import Mock,patch
+        raw=json.dumps(self.modules).encode()
+        stream=io.BytesIO(raw+b' '*(1024*1024-len(raw)))
+        stream.read=Mock(wraps=stream.read)
+        original=Path.open
+        def open_file(path,*args,**kwargs):
+            return stream if path==self.root/'modules.json' else original(path,*args,**kwargs)
+        with patch.object(Path,'open',new=open_file):
+            self.assertEqual(config(self.root)['task'],'embedding')
+        stream.read.assert_called_once_with(1024*1024+1)
+        self.assertTrue(stream.closed)
+
     def test_unsupported_architecture_and_pooling(self):
         for change in ({'layer_norm_eps':10**400},{'is_decoder':True},{'position_embedding_type':'relative_key'},
                        {'num_attention_heads':3},{'hidden_act':'relu'},{'layer_norm_eps':float('nan')},
