@@ -32,11 +32,16 @@ class VisionHybridExecutor(HybridExecutor):
         cos,sin=(table.unsqueeze(-2) for table in self.rotary)
         return torch.cat((rotated*cos+torch.cat((-right,left),-1)*sin,rest),-1).half()
 
+    def _image_positions(self,tokens,grids,slot):
+        if (not tokens or len(tokens)>self.context or type(slot) is not int
+                or not 0<=slot<self.max_batch):
+            raise ValueError('invalid image prompt or cache slot')
+        return image_positions(tokens,grids)
+
     def prefill(self,tokens,slot=0):
         from .vision_model import ImagePrompt
         if isinstance(tokens,ImagePrompt):
-            if not tokens or len(tokens)>self.context or type(slot) is not int or not 0<=slot<self.max_batch:
-                raise ValueError('invalid image prompt or cache slot')
+            self._image_positions(tokens,tokens.grids,slot)
             if self.vision is None:raise ValueError('image weights are not loaded')
             features=self.vision.encode(tokens.pixels,tokens.grids)
             return self.prefill_images(tokens,features,tokens.grids,slot)
@@ -49,13 +54,17 @@ class VisionHybridExecutor(HybridExecutor):
                 or any(not p or len(p)>self.context for p in prompts)
                 or any(type(slot) is not int or not 0<=slot<self.max_batch for slot in slots)):
             raise ValueError('invalid image/text prefill batch')
+        from .vision_model import ImagePrompt
+        # Check every image before the first request can run its encoder or
+        # mutate a cache slot. The public single-request entrypoint also checks.
+        for prompt,slot in zip(prompts,slots):
+            if isinstance(prompt,ImagePrompt):
+                self._image_positions(prompt,prompt.grids,slot)
         return torch.cat([self.prefill(prompt,slot) for prompt,slot in zip(prompts,slots)])
 
     @torch.inference_mode()
     def prefill_images(self,tokens,features,grids,slot=0):
-        if not tokens or len(tokens)>self.context or not 0<=slot<self.max_batch:
-            raise ValueError('invalid image prompt or cache slot')
-        positions,offset=image_positions(tokens,grids)
+        positions,offset=self._image_positions(tokens,grids,slot)
         if features.shape!=(tokens.count(248056),self.c['hidden_size']):
             raise ValueError('image feature shape does not match placeholders')
         if not bool(torch.isfinite(features).all()):raise ValueError('nonfinite image features')

@@ -783,3 +783,5 @@ Structured output uses explicit generated-byte vocabularies for GGUF tokenizers 
 Experimental Qwen3.5 image loading validates vision config/rotary containers and exact integer geometry before either text or vision weight materialization. Malformed checkpoint metadata fails with a configuration error; CPU preflight tests do not qualify image inference on GPUs.
 
 Image prompt expansion is checked against model context using planned grids before resize, normalization or FP32 patch construction. Inline decoding remains separately byte/pixel bounded; runtime admission still checks the requested output-token reservation.
+
+Direct image executor admission validates placeholder/grid geometry before calling the vision encoder. Mixed batches preflight all image metadata before dispatching their first prompt; direct feature-prefill retains the same checks and exact integer slot bounds. CPU sentinel tests establish this call ordering, not accelerator execution correctness.
