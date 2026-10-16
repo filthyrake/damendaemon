@@ -13,11 +13,12 @@ from dllm.runtime import Runtime
 
 
 class EmbeddingOutputTests(unittest.TestCase):
-    def runtime(self, values):
+    def runtime(self, values, embedding_dimension=None):
         runtime = Runtime.__new__(Runtime)
         self.released = False
         model = SimpleNamespace(task='embedding', config={'hidden_size': 2},
                                 encode=lambda inputs: [[1] for _ in inputs])
+        if embedding_dimension is not None:model.config['embedding_dimension']=embedding_dimension
         executor = SimpleNamespace(model=model, embed=lambda _: values,
                                    kernel_backend='test-cpu', compute_dtype=torch.float32)
         @contextmanager
@@ -28,6 +29,15 @@ class EmbeddingOutputTests(unittest.TestCase):
                 self.released = True
         runtime.session = session
         return runtime
+
+    def test_saved_width_float_and_base64_contract(self):
+        values=torch.tensor([[.25],[-.5]])
+        for encoding in ('float','base64'):
+            result=self.runtime(values,1).embed('model',['first','second'],encoding,dimensions=1)
+            actual=[row['embedding'] for row in result['data']]
+            if encoding=='base64':actual=[list(struct.unpack('<f',base64.b64decode(row))) for row in actual]
+            self.assertEqual(actual,values.tolist())
+            with self.assertRaises(ValueError):self.runtime(values,1).embed('model',['first','second'],encoding,dimensions=2)
 
     def test_invalid_output_never_publishes_and_releases_session(self):
         for values in (torch.tensor([[float('nan'), 0.]]),
@@ -169,7 +179,7 @@ class EncoderConfigTests(unittest.TestCase):
             path.write_text(json.dumps(settings))
             model.config = config(self.root)
             self.assertEqual(model.encode('HELLO'), [[2]])
-        for settings in ({'truncate_dim':4}, {'truncate_dim':False},
+        for settings in ({'truncate_dim':0}, {'truncate_dim':-1}, {'truncate_dim':4.0}, {'truncate_dim':False},
                          {'default_prompt_name':'missing'}, {'default_prompt_name':1},
                          {'prompts':[], 'default_prompt_name':'query'},
                          {'prompts':{'query':True}, 'default_prompt_name':'query'},

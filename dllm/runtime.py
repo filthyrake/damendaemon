@@ -429,9 +429,9 @@ class Runtime:
             model = executor.model
             if getattr(model, 'task', None) != 'embedding':
                 raise ValueError('model does not support embeddings')
-            width = model.config['hidden_size']
+            width = model.config.get('embedding_dimension',model.config['hidden_size'])
             if dimensions is not None and dimensions != width:
-                raise ValueError('this encoder does not support dimension reduction')
+                raise ValueError('dimensions must match the saved encoder output width')
             tokens = model.encode(inputs)
             values = executor.embed(tokens).float().cpu().tolist()
             if (not isinstance(values, list) or len(values) != len(inputs)

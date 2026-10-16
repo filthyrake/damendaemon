@@ -870,6 +870,15 @@ Saved `config_sentence_transformers.json` metadata is read through the bounded
 JSON parser. A declared default prompt is prepended to embedding string inputs
 before stripping/lowercasing, following the
 [pinned Sentence Transformers policy](https://github.com/huggingface/sentence-transformers/blob/v5.4.0/sentence_transformers/base/model.py).
-Explicit token IDs bypass text preprocessing. Missing referenced prompts, malformed prompt policies
-and saved non-null `truncate_dim` are rejected; native dimension reduction
-remains unsupported. Named prompts without a selected default are not applied.
+Explicit token IDs bypass text preprocessing. Missing referenced prompts and
+malformed prompt policies are rejected. Named prompts without a selected default
+are not applied.
+
+A saved positive integer `truncate_dim` is supported: the Normalize module runs
+at full width, then output is sliced to `min(hidden_size, truncate_dim)`, matching
+[Sentence Transformers encode ordering](https://github.com/huggingface/sentence-transformers/blob/v5.4.0/sentence_transformers/sentence_transformer/model.py).
+The sliced vectors are not renormalized and may have norm below one. Float and
+base64 responses use that saved output width; an explicit API `dimensions` must
+match it. Arbitrary request-time reduction remains unsupported. CPU oracles
+cover mixed-length batches and full-width/no-op controls; GPU and retrieval
+quality qualification are separate gates.

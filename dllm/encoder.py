@@ -12,11 +12,13 @@ from tokenizers import Tokenizer
 from .device import selected_device, available_memory, empty_cache
 
 
-def _saved_prompt(path):
+def _saved_settings(path,hidden_size):
     settings_path = path/'config_sentence_transformers.json'
     settings = read_config(settings_path) if settings_path.exists() else {}
-    if settings.get('truncate_dim') is not None:
-        raise ValueError('saved sentence embedding truncation is unsupported')
+    truncate=settings.get('truncate_dim')
+    if truncate is not None and (type(truncate) is not int or truncate<=0):
+        raise ValueError('saved sentence embedding truncation must be a positive integer')
+    width=hidden_size if truncate is None else min(hidden_size,truncate)
     prompts = settings.get('prompts', {})
     name = settings.get('default_prompt_name')
     if (not isinstance(prompts, dict)
@@ -31,7 +33,7 @@ def _saved_prompt(path):
                 value.encode('utf-8')
     except UnicodeError as error:
         raise ValueError('saved sentence embedding prompts must be valid UTF-8') from error
-    return (prompts[name] or '') if name is not None else ''
+    return ((prompts[name] or '') if name is not None else ''),width
 
 
 def config(path):
@@ -106,8 +108,9 @@ def config(path):
     length = sentence.get('max_seq_length')
     if type(length) is not int or not 1 <= length <= c['max_position_embeddings']:
         raise ValueError('invalid sentence encoder length')
+    prompt,width=_saved_settings(path,c['hidden_size'])
     return {**c, 'task':'embedding', 'layer_norm_eps':eps, 'embedding_max_length':length,
-            'do_lower_case':lowercase, 'embedding_prompt':_saved_prompt(path)}
+            'do_lower_case':lowercase, 'embedding_prompt':prompt,'embedding_dimension':width}
 
 
 def used_tensor(name,task='embedding'):
@@ -232,7 +235,8 @@ class EncoderExecutor:
     @torch.inference_mode()
     def embed(self,tokens):
         if self.model.task!='embedding':raise ValueError('model does not support embeddings')
-        return self._run(tokens)
+        values=self._run(tokens)
+        return values[:,:self.model.config.get('embedding_dimension',self.model.config['hidden_size'])]
 
     @torch.inference_mode()
     def rerank(self,tokens,token_types):
