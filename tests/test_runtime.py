@@ -352,6 +352,30 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.host,{})
             self.assertEqual(runtime.gpu,{})
 
+    def test_registration_rejects_non_object_tokenizer_configuration_atomically(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from tokenizers import Tokenizer,models
+        runtime=Runtime({})
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'config.json').write_text('{}')
+            Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
+            for value in (None,[],['chat_template'],'text',1,True):
+                with self.subTest(value=value):
+                    (root/'tokenizer_config.json').write_text(json.dumps(value))
+                    with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
+                        runtime.manage('register','bad',str(root))
+                    self.assertEqual(runtime.model_ids(),[])
+                    self.assertEqual(runtime.quantizations,{})
+                    self.assertEqual(runtime.chat_templates,{})
+                    self.assertEqual(runtime.host,{})
+                    self.assertEqual(runtime.gpu,{})
+            (root/'tokenizer_config.json').write_text('{}')
+            runtime.manage('register','good',str(root))
+            self.assertEqual(runtime.model_ids(),['good'])
+
     def test_model_quantization_is_stable_and_used_for_reload(self):
         import tempfile
         from pathlib import Path

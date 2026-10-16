@@ -237,7 +237,9 @@ class Runtime:
                         validate_override(chat_template, config)
                     if not is_gguf(candidate):
                         Tokenizer.from_file(str(candidate/'tokenizer.json'))
-                        json.loads((candidate/'tokenizer_config.json').read_text())
+                        tokenizer_config = json.loads((candidate/'tokenizer_config.json').read_text())
+                        if not isinstance(tokenizer_config, dict):
+                            raise ValueError('tokenizer configuration must be an object')
                     estimated = weight_bytes(candidate,quantization=policy)
                 except Exception as error:
                     raise ValueError('invalid local model snapshot') from error
