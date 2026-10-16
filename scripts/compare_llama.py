@@ -139,8 +139,17 @@ def main():
                         if first is None:
                             first = time.perf_counter()
                         text += content
-                if chunk.get("usage"):
-                    usage = chunk["usage"]
+                reported_usage = chunk.get("usage")
+                if reported_usage is not None:
+                    if not isinstance(reported_usage, dict):
+                        raise ValueError('invalid comparison usage metadata')
+                    tokens = reported_usage.get('completion_tokens')
+                    if tokens is not None:
+                        if type(tokens) is not int or not 0 <= tokens <= args.max_tokens:
+                            raise ValueError('invalid comparison completion token usage')
+                        if usage is not None and tokens != usage['completion_tokens']:
+                            raise ValueError('conflicting comparison completion token usage')
+                        usage = reported_usage
         elapsed = time.perf_counter() - start
         if (not done or first is None or not isinstance(usage, dict)
                 or type(usage.get("completion_tokens")) is not int

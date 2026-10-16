@@ -56,6 +56,15 @@ if case == 'late-tool': chunks.append({'choices':[{'delta':{'tool_calls':[{'inde
 if case != 'no-usage':
     tokens = {'short': 1, 'float': 2.0, 'bool': True}.get(case, 2)
     chunks.append({'choices': [], 'usage': {'completion_tokens': tokens}})
+if case.startswith('usage-'):
+    extra = {'conflict':{'completion_tokens':1}, 'over-budget':{'completion_tokens':999}, 'float':{'completion_tokens':2.0},
+             'bool':{'completion_tokens':True}, 'negative':{'completion_tokens':-1},
+             'list':[], 'false':False, 'zero':0, 'text':'',
+             'same':{'completion_tokens':2}, 'null':None, 'empty':{},
+             'missing-count':{'prompt_tokens':4}, 'null-count':{'completion_tokens':None}}[case[6:]]
+    chunks.insert(0, {'choices':[], 'usage':extra})
+    if case in ('usage-same','usage-null','usage-empty','usage-missing-count','usage-null-count'):
+        chunks.append({'choices':[], 'usage':extra})
 stream = ''.join('data: ' + json.dumps(chunk) + '\n\n' for chunk in chunks)
 if case == 'duplicate-json': stream = 'data: {"choices":[],"choices":[{"delta":{"content":"hello"}}]}\n\n' + stream
 if case != 'no-done': stream += 'data: [DONE]\n\n'
@@ -78,7 +87,9 @@ class ComparatorGatesTests(unittest.TestCase):
             for case in ('no-done', 'no-output', 'no-usage', 'short', 'float', 'bool', 'no-scores',
                          'error-empty','error-false','error-zero','error-list','error-text',
                          'no-finish','raw-no-finish','invalid-finish','duplicate-finish','late-output',
-                         'bad-text','bad-delta','multiple-choices','duplicate-json','late-reasoning','late-tool'):
+                         'bad-text','bad-delta','multiple-choices','duplicate-json','late-reasoning','late-tool',
+                         'usage-conflict','usage-over-budget','usage-float','usage-bool','usage-negative','usage-list',
+                         'usage-false','usage-zero','usage-text'):
                 with self.subTest(optimized=optimized, case=case):
                     result = self.run_case(case, optimized)
                     self.assertNotEqual(result.returncode, 0)
@@ -99,7 +110,8 @@ class ComparatorGatesTests(unittest.TestCase):
     def test_complete_evidence_is_accepted_in_both_modes(self):
         for optimized in (False, True):
             for case in ('valid', 'scored', 'error-null', 'terminal-output', 'raw-valid',
-                         'score-top-valid', 'score-optional-bytes'):
+                         'score-top-valid', 'score-optional-bytes', 'usage-same','usage-null','usage-empty',
+                         'usage-missing-count','usage-null-count'):
                 with self.subTest(optimized=optimized, case=case):
                     result = self.run_case(case, optimized)
                     self.assertEqual(result.returncode, 0, result.stderr)

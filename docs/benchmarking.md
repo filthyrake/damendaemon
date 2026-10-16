@@ -256,3 +256,5 @@ Non-null SSE error envelopes fail both benchmark and comparator requests even wh
 The warm comparator also requires an explicit completion finish before `[DONE]`, rejects duplicate finishes and post-finish text, and rejects ambiguous choice envelopes and duplicate JSON fields. Terminal chunks may carry their final text; trailing usage-only chunks remain supported in raw and chat modes.
 
 Comparator logprob evidence requires typed token records with finite nonpositive probabilities, valid optional raw bytes, and bounded requested top-score records. Score counts cannot exceed the completion budget; fewer records remain allowed because EOS may have no score packet. These checks establish response structure, not numerical agreement with an independent model.
+
+The warm comparator validates every non-null usage envelope and rejects conflicting completion counts. Counts must be exact integers within the requested output budget. Null or empty intermediate usage and identical repeated counts are accepted; later metadata without a completion count cannot erase earlier validated usage.
