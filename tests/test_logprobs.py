@@ -141,3 +141,28 @@ class LogprobTests(unittest.TestCase):
         for selected in (-1,3,2**40):
             with self.subTest(selected=selected),self.assertRaisesRegex(ValueError,'non-finite'):
                 score_rows(torch.tensor([[1.,2.,3.]]),torch.tensor([selected]),[1])
+
+    def test_nested_decoder_sequences_preserve_byte_fragments(self):
+        cases=(
+            ({'<0xC3>':0,'<0xA9>':1,'▁word':2},
+             [decoders.Replace('▁',' '),decoders.ByteFallback(),decoders.Fuse()],[[0,1],[2]]),
+            ({'Ã':0,'©':1,'Ġword':2},[decoders.ByteLevel()],[[0,1],[2]]),
+            ({'a':0,'▁word':1},[decoders.Metaspace()],[[0,1]]))
+        for vocab,steps,sequences in cases:
+            flat=Tokenizer(models.WordLevel(vocab));flat.decoder=decoders.Sequence(steps)
+            nested=Tokenizer(models.WordLevel(vocab))
+            nested.decoder=decoders.Sequence([decoders.Sequence([
+                decoders.Sequence([step]) for step in steps])])
+            # Exercise ordinary added pieces too; the decoder still owns bytes.
+            for tokenizer in (flat,nested):
+                tokenizer.add_tokens([AddedToken(piece,special=False) for piece in vocab])
+            expected,actual=TokenText(flat),TokenText(nested)
+            for ids in sequences:
+                with self.subTest(vocab=vocab,ids=ids):
+                    self.assertEqual(nested.decode(ids),flat.decode(ids))
+                    pieces=[actual.token(token) for token in ids]
+                    self.assertEqual(pieces,[expected.token(token) for token in ids])
+                    raw=b''.join(bytes(piece[1]) for piece in pieces)
+                    self.assertEqual(raw.decode(),nested.decode(ids))
+                    packet={'token_id':ids[0],'logprob':-.5,'top':[(ids[-1],-1.)]}
+                    self.assertEqual(actual.format(packet),expected.format(packet))

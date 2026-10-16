@@ -43,3 +43,19 @@ class ByteLevelStreamTests(unittest.TestCase):
             events=stream.feed(text.tokenizer.token_to_id('custom aé🙂'))
             events+=stream.feed(text.tokenizer.token_to_id(EOS))+stream.finish()
             self.assertEqual(''.join(event.get('content','') for event in events),'custom aé🙂')
+
+    def test_transparent_nested_bytelevel_decoder(self):
+        tokenizer=Tokenizer(models.BPE(vocab={char:i for i,char in enumerate(BYTE_VALUES)},merges=[]))
+        tokenizer.add_tokens([AddedToken('Ġcustom',special=False)])
+        for depth in (1,4):
+            decoder=decoders.ByteLevel()
+            for _ in range(depth):decoder=decoders.Sequence([decoder])
+            tokenizer.decoder=decoder
+            ids=[tokenizer.token_to_id(piece) for piece in ('Ã','©','Ġcustom','Ã')]
+            stream=ByteLevelStream(tokenizer,())
+            actual=''.join(stream.feed(token) for token in ids)+stream.finish()
+            self.assertEqual(actual,tokenizer.decode(ids,skip_special_tokens=False))
+        for decoder in (decoders.Sequence([]),decoders.Sequence([decoders.ByteLevel(),decoders.Replace('a','b')]),
+                        decoders.Sequence([decoders.Sequence([decoders.ByteFallback()])])):
+            tokenizer.decoder=decoder
+            with self.assertRaisesRegex(ValueError,'ByteLevel'):ByteLevelStream(tokenizer,())

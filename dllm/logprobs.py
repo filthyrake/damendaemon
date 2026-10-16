@@ -1,6 +1,5 @@
 """Opt-in raw model log probabilities and tokenizer-aware token presentation."""
 from collections import OrderedDict
-import json
 import math
 import os
 import re
@@ -52,9 +51,8 @@ class TokenText:
     def __init__(self,tokenizer):
         self.tokenizer=tokenizer
         self.cache=OrderedDict()
-        decoder=tokenizer.decoder
-        state=json.loads(decoder.__getstate__()) if decoder is not None else {}
-        steps=state.get('decoders',[state])
+        from .tokenizer_decoders import decoder_steps
+        steps=decoder_steps(tokenizer.decoder)
         self.byte_level=any(step.get('type')=='ByteLevel' for step in steps)
         self.byte_fallback=any(step.get('type')=='ByteFallback' for step in steps)
         self.metaspace=next((step.get('replacement','▁') for step in steps if step.get('type')=='Metaspace'),None)
