@@ -1,4 +1,7 @@
 """Pinned HF prompt rendering and official Rust Harmony stream comparisons."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import importlib.metadata
 import json

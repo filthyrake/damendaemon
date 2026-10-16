@@ -1,4 +1,7 @@
 """Live raw-completion API proof, including a checkpoint without chat metadata."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 from concurrent.futures import ThreadPoolExecutor
 import argparse
 import json

@@ -1,4 +1,7 @@
 """Independent routed-kernel and synthetic MoE architecture gates on CUDA."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 from pathlib import Path
 import tempfile

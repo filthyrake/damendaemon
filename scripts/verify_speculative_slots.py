@@ -1,4 +1,7 @@
 """Native verifier widths, nonzero slots, forced rejection and graph lifetime."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import json

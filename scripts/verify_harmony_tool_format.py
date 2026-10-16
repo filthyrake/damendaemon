@@ -1,4 +1,7 @@
 """CPU-only tool prompt and handoff comparison against pinned HF and Rust Harmony."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import copy
 import importlib.metadata

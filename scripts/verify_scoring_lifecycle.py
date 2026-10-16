@@ -1,4 +1,7 @@
 """Scoring failure recovery and interleaving with ordinary captured generation."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 import os

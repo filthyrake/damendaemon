@@ -1,4 +1,7 @@
 """Actual HTTP proof across Qwen2, Qwen3 reasoning modes, and a Llama decoder."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 from concurrent.futures import ThreadPoolExecutor
 import argparse
 import json

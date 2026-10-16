@@ -1,4 +1,7 @@
 """Real torchrun process-group deadline proof; deliberately no GPU inference."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import fcntl
 import json

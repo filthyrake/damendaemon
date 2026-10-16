@@ -1,4 +1,7 @@
 """A2 prefill graph correctness, bounded lifetime and complete prefill timings."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import json

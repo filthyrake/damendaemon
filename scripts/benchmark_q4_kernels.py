@@ -1,4 +1,7 @@
 """Compare native packed Q4 kernels against a preserved pre-change module."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import importlib.util
 import json

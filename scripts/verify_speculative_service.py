@@ -1,4 +1,7 @@
 """Real A2 HTTP A/B, fallback, streaming and residency proof for speculation."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager

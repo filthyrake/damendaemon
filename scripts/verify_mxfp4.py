@@ -1,4 +1,7 @@
 """A2 MXFP4 byte semantics, routed projections and graph replay proof."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import os
 

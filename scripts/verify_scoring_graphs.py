@@ -1,4 +1,7 @@
 """Candidate-head graph isolation, eviction, and matched eager/replay timing."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import json

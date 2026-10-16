@@ -3,6 +3,9 @@
 Run with CUDA_VISIBLE_DEVICES=<one GPU UUID> python scripts/verify_qwen2.py PATH.
 Transformers is a validation-only dependency, not the dllm inference runtime.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import json

@@ -1,4 +1,7 @@
 """Live JSON/schema proof through the real HTTP scheduler and tokenizer."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 from concurrent.futures import ThreadPoolExecutor
 import argparse
 import json

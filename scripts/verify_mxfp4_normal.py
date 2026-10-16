@@ -1,4 +1,7 @@
 """Independent exact value-bit and routed-graph proof for validated normal scales."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import os
 import torch

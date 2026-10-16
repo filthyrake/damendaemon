@@ -4,6 +4,9 @@ Requires docs/evidence/gguf/experimental-qwen2-mixed.patch in an isolated
 checkout. The policy regressed an additional numerical case and is NOT a
 production runtime option. Retained only to reproduce the measured tradeoff.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json

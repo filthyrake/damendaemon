@@ -1,4 +1,7 @@
 """Replay an independent trace and prove both GPU stages used packed prefill."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from contextlib import redirect_stdout
 import hashlib

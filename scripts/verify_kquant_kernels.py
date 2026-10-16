@@ -1,4 +1,7 @@
 """Qualify native packed blocks against upstream gguf-py before model dispatch."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 import importlib.metadata

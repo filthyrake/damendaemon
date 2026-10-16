@@ -1,5 +1,10 @@
 # Benchmarking and evidence
 
+Run qualification and benchmark commands without Python optimization (`-O`,
+`-OO`, or `PYTHONOPTIMIZE`). Root `verify_*`, `benchmark_*`, and `compare_*` scripts with assertion-based
+acceptance checks reject optimized execution before imports or setup, so disabled checks cannot produce
+a passing qualification report.
+
 [Documentation](README.md) · [Project](../README.md) · [Support matrix](support.md)
 
 Compare identical revisions, precision, context, output lengths, and hardware. CPU tests establish behavior, not GPU performance.

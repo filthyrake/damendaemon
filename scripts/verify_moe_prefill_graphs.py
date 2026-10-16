@@ -1,4 +1,7 @@
 """OLMoE short-prefill graph isolation, changed routes, lifetime and timing gate."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import json

@@ -3,6 +3,9 @@
 This complements independent model-reference replays; the full-prompt control
 here uses dllm itself and is not independent model correctness or speed proof.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 from pathlib import Path

@@ -1,4 +1,7 @@
 """Independent coefficient probes for the optional CUDA C++ K-quant decoder."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import hashlib
 import json
 import os

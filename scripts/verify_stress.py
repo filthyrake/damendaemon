@@ -1,4 +1,7 @@
 """Long-prefix, split-boundary and rolling-slot checks against an independent decoder."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 import sys

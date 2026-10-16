@@ -1,4 +1,7 @@
 """Independent CPU recurrence and untouched-slot proof for the Metal delta scan."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

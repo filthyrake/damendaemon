@@ -1,4 +1,7 @@
 """Real GPU proof of single schema-constrained required/named tool calls."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import copy
 import json

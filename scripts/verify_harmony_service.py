@@ -1,4 +1,7 @@
 """Native GPT-OSS text Harmony HTTP channels and request lifecycle on A2."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import gc

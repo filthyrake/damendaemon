@@ -1,4 +1,7 @@
 """Live empty-server registration, residency commands and active-stream fairness."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 from concurrent.futures import ThreadPoolExecutor
 import argparse
 import json

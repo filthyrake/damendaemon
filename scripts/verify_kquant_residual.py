@@ -1,4 +1,7 @@
 """Independent matrix/graph gates for the isolated residual-int8 experiment."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 import os

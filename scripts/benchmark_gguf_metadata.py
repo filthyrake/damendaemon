@@ -6,6 +6,9 @@ For the original baseline:
 This measures an empty dllm metadata cache, not a cold operating-system cache.
 It does not measure weight loading, CUDA execution, or complete model activation.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import importlib.util
 import json

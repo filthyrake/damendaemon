@@ -1,4 +1,7 @@
 """Synthetic architecture gate for bias/tied-head/window variants; not a checkpoint qualification."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 from pathlib import Path
 import tempfile

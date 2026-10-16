@@ -1,4 +1,7 @@
 """Live HTTP A/B proof of mixed-length batching, including concurrent isolation."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json

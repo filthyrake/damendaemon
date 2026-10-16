@@ -1,4 +1,7 @@
 """Matched HTTP A/B for stable expert grouping, with unchanged matrix arithmetic."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json

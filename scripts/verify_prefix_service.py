@@ -1,4 +1,7 @@
 """Live prefix hit/miss, model-switch isolation and warmed HTTP latency proof."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 from dllm.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor

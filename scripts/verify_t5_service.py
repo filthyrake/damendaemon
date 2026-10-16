@@ -1,4 +1,7 @@
 """Real HTTP qualification for raw T5/Mamba scheduling and residency."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 from dllm.evidence_environment import report_environment
 import argparse
 from concurrent.futures import ThreadPoolExecutor

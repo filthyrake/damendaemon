@@ -1,4 +1,7 @@
 """A2 proof of recurrence, convolution, graph replay, and inactive-slot isolation."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import torch
 from dllm.runtime import require_gpu

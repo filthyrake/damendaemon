@@ -1,4 +1,7 @@
 """Independent xgrammar acceptance tests for correlated function/argument unions."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import xgrammar as xgr
 from transformers import AutoTokenizer

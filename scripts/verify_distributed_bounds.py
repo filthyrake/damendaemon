@@ -3,6 +3,9 @@
 Each mismatch owns a bounded torchrun job. Both ranks must reject before the
 command channel opens, then exit successfully from the expected failure path.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

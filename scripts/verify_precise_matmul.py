@@ -1,4 +1,7 @@
 """Numerical gate for compensated products, including scaled activation ranges."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import torch
 from dllm.precise_matmul import linear

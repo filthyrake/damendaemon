@@ -1,4 +1,7 @@
 """Matched old scalar launch path versus captured one-row decode on one GPU model."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 import os

@@ -1,4 +1,7 @@
 """A2 prefill attention memory bound, exact partition equivalence and FP64 checks."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 from pathlib import Path

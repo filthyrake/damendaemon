@@ -1,4 +1,7 @@
 """Real-device Q4 Marlin pre-transfer admission and executor release gate."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import hashlib

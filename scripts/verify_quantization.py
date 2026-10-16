@@ -1,4 +1,7 @@
 """CPU Q8_0/Q4_0 format comparison and optional native CUDA matrix gate."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 import sys

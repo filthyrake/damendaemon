@@ -1,4 +1,7 @@
 """Force a full two-block stream buffer and prove other requests still progress."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json

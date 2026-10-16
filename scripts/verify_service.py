@@ -1,4 +1,7 @@
 """Exercise the real CLI/server, model transitions, streaming, and recovery."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 from concurrent.futures import ThreadPoolExecutor
 import argparse
 import json

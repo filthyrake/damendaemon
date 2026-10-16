@@ -1,4 +1,7 @@
 """Real A2 FP32 GQA accuracy, kernel selection, latency and peak allocation."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import os
 import statistics

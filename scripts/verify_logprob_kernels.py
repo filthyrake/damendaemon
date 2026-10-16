@@ -1,4 +1,7 @@
 """CUDA fused scores against FP64 log-softmax, including ties and masked blocks."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import torch
 from dllm.logprob_kernels import score_rows

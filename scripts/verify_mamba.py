@@ -1,4 +1,7 @@
 """Independent FP32 Mamba logits/recurrent state and reused-slot proof."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 import os

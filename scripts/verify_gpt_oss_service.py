@@ -1,4 +1,7 @@
 """Raw GPT-OSS HTTP, streaming, batching and hot-swap proof on A2."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import gc

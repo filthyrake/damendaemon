@@ -1,4 +1,7 @@
 """Real HTTP qualification of same-host two-GPU residency and request lifetime."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib

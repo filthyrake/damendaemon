@@ -1,4 +1,7 @@
 """Profile experimental CUDA C++ Q4 GEMV against independently dequantized math."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import ctypes
 import json

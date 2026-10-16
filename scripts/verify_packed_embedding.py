@@ -1,4 +1,7 @@
 """Actual CUDA bitwise lookup, graph replay and complete-model storage parity."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import copy
 import gc

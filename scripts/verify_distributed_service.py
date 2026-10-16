@@ -4,6 +4,9 @@ Default mode owns a bounded same-host torchrun process group. For cross-host
 proof, launch this file with torchrun --run-path and --worker on each host;
 only rank zero reads the reference and writes the report. Use an outer deadline.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib

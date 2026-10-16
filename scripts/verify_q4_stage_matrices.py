@@ -1,4 +1,7 @@
 """Real CUDA matrix gates across stage dispatch boundaries, without timing claims."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

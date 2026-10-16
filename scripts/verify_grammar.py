@@ -1,4 +1,7 @@
 """Check real tokenizer grammar masks, including padded vocabulary and Unicode."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 from pathlib import Path

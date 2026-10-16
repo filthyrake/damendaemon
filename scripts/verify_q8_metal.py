@@ -1,4 +1,7 @@
 """Native Metal Q8 projection against independently dequantized CPU FP64."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import torch
 from torch.nn import functional as F

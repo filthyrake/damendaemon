@@ -1,4 +1,7 @@
 """Real image-chat HTTP, streaming, state isolation, and residency proof."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import base64
 from concurrent.futures import ThreadPoolExecutor

@@ -1,4 +1,7 @@
 """Independent CUDA matrix-vector gate, including values outside FP16 range."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import torch
 from dllm.runtime import require_gpu
