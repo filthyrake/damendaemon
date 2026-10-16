@@ -34,3 +34,44 @@ class ReportIOTests(unittest.TestCase):
             save_report(path, report)
             def reject(value): raise AssertionError('nonstandard number: '+value)
             self.assertEqual(json.loads(path.read_text(), parse_constant=reject), report)
+
+
+class ReportReadTests(unittest.TestCase):
+    def test_duplicate_fields_and_invalid_roots_are_rejected(self):
+        from dllm.report_io import load_report
+        values=('null','[]','{"passed":false,"passed":true}',
+                '{"case":{"tokens":[1],"tokens":[2]}}','['*10000+']'*10000)
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'report.json'
+            for raw in values:
+                with self.subTest(raw=raw[:70]):
+                    path.write_text(raw)
+                    with self.assertRaises(ValueError):load_report(path)
+
+    def test_reader_bounds_actual_bytes_and_closes_on_failure(self):
+        import io
+        from unittest.mock import patch
+        from dllm.report_io import load_report
+        class Reader(io.BytesIO):
+            def read(self,size=-1):
+                self.requested=size
+                return super().read(size)
+        for size in (64,65):
+            reader=Reader(b'{}'+b' '*(size-2))
+            with patch('pathlib.Path.open',return_value=reader):
+                if size==64:self.assertEqual(load_report('unused',max_bytes=64),{})
+                else:
+                    with self.assertRaises(ValueError):load_report('unused',max_bytes=64)
+            self.assertEqual(reader.requested,65)
+            self.assertTrue(reader.closed)
+
+    def test_failed_numerical_diagnostics_remain_schema_owned(self):
+        import math
+        from dllm.report_io import load_report
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'report.json'
+            path.write_text('{"passed":false,"error":NaN,"tokens":[1,2]}')
+            report=load_report(path)
+            self.assertFalse(report['passed'])
+            self.assertTrue(math.isnan(report['error']))
+            self.assertEqual(report['tokens'],[1,2])

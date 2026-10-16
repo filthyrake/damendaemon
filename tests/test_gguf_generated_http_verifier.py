@@ -72,7 +72,10 @@ with tempfile.TemporaryDirectory() as tmp:
     if case=='bool-token':benchmark['prompts']={'1':[True]}
     if case=='many-prompts':benchmark['prompts']={str(i):[1] for i in range(65)}
     for name,value in [('benchmark',benchmark),('reference',reference)]:
-        (root/f'{name}.json').write_text(json.dumps(value))
+        raw=json.dumps(value)
+        if case=='duplicate-pass' and name=='reference':raw='{"passed":false,'+raw[1:]
+        if case=='duplicate-prompts' and name=='benchmark':raw='{"prompts":{},'+raw[1:]
+        (root/f'{name}.json').write_text(raw)
     output=root/'result.json'
     args=['verify',str(model),'--benchmark',str(root/'benchmark.json'),'--reference',str(root/'reference.json'),'--output',str(output)]
     try:
@@ -92,7 +95,7 @@ class GgufGeneratedHttpVerifierTests(unittest.TestCase):
             cwd=Path(__file__).resolve().parents[1],capture_output=True,text=True,timeout=10)
 
     def test_invalid_inputs_refuse_launch_and_bad_outputs_fail(self):
-        before=('trace-missing','trace-duplicate','trace-bool-index','trace-bool-graph','trace-short','trace-bool-token','trace-vocab','trace-mismatch','trace-null-mismatch','comparator-missing','comparator-text','changed-token','changed-output','missing-identity','prompt-order','empty','bad-reference','zero-output','bool-output','context','bool-token','many-prompts')
+        before=('duplicate-pass','duplicate-prompts','trace-missing','trace-duplicate','trace-bool-index','trace-bool-graph','trace-short','trace-bool-token','trace-vocab','trace-mismatch','trace-null-mismatch','comparator-missing','comparator-text','changed-token','changed-output','missing-identity','prompt-order','empty','bad-reference','zero-output','bool-output','context','bool-token','many-prompts')
         for optimized in (False,True):
             for case in (*before,'text','stream-text','no-done'):
                 with self.subTest(case=case,optimized=optimized):

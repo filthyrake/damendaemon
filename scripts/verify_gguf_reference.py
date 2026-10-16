@@ -21,6 +21,7 @@ from transformers.modeling_utils import no_init_weights
 
 from dllm.gguf_model import GgufWeights
 from dllm.runtime import make_executor
+from dllm.report_io import load_report
 from dllm.token_workload import token_workload_digest, teacher_token_lookup
 from dllm.device import empty_cache, device_name
 
@@ -160,11 +161,11 @@ def main():
         from experiments.kquant_prefill_f32 import install_validation_dispatch
         experiment=install_validation_dispatch()
     torch.backends.cuda.matmul.allow_tf32 = False
-    teacher = json.loads(Path(args.teacher_trace).read_text()) if args.teacher_trace else None
+    teacher = load_report(args.teacher_trace) if args.teacher_trace else None
     if args.teacher_trace and not isinstance(teacher,dict):raise ValueError('teacher trace must be an object')
     benchmark=None
     if args.benchmark_report:
-        benchmark=json.loads(Path(args.benchmark_report).read_text())
+        benchmark=load_report(args.benchmark_report)
         if not isinstance(benchmark,dict):raise ValueError('benchmark report must be an object')
         benchmark_prompts=benchmark.get('prompts');benchmark_steps=benchmark.get('output_tokens')
         if (not isinstance(benchmark_prompts,dict) or not 1<=len(benchmark_prompts)<=64

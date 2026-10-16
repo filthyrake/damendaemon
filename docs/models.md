@@ -14,6 +14,10 @@ Explicit independent GGUF benchmark overrides require 1..64 nonempty token
 prompts and 1..256 output tokens within the requested context. Empty or malformed
 reports are rejected before loading the source model, without substituting defaults.
 
+GGUF benchmark/reference/teacher evidence reads are limited to 64 MiB of UTF-8
+JSON and reject duplicate fields at every depth. Numerical field policies remain
+schema-specific, including diagnostic use of failed teacher traces.
+
 Independent GGUF token-trace reports include `workload_sha256`, binding the
 ordered prompt token IDs and output budget. Generated-HTTP qualification requires
 that digest to match the requested benchmark workload before starting its server.

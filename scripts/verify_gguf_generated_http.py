@@ -18,13 +18,14 @@ from urllib.request import Request, urlopen
 from dllm.gguf_sentencepiece import restore_tokenizer
 from dllm.bench import events
 from dllm.gguf_model import plan
+from dllm.report_io import load_report
 from dllm.token_workload import token_workload_digest, teacher_token_lookup
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--benchmark',required=True)
     p.add_argument('--reference',required=True);p.add_argument('--output',required=True);args=p.parse_args()
-    benchmark=json.loads(Path(args.benchmark).read_text());reference=json.loads(Path(args.reference).read_text())
+    benchmark=load_report(args.benchmark);reference=load_report(args.reference)
     if not isinstance(benchmark,dict) or not isinstance(reference,dict):
         raise ValueError('benchmark and reference must be objects')
     prompts=benchmark.get('prompts');maximum=benchmark.get('output_tokens')
