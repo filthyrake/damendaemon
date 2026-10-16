@@ -23,6 +23,29 @@ class BpeSpecialTests(unittest.TestCase):
                             self.assertEqual(decoded, sample['expected']['decode_' + suffix])
                             self.assertEqual(decoded, sample['expected']['generated_' + suffix])
 
+    def test_literal_special_reference_full_batch_and_stream(self):
+        from dllm.bytelevel_stream import ByteLevelStream
+        from dllm.logprobs import TokenText
+        from tests.reference.generate_gguf_bpe_literals import metadata as literal_metadata
+        fixture = json.loads((Path(__file__).parent / 'fixtures/gguf-bpe-literals.json').read_text())
+        for case in fixture['cases']:
+            original, _, _ = tokenizer(literal_metadata(case['pre'], case['kind'], case['literal']))
+            for candidate in (original, restore_tokenizer(original.to_str())):
+                self.assertEqual(TokenText(candidate).token(257)[0], case['literal'])
+                for sample in case['samples']:
+                    with self.subTest(pre=case['pre'], kind=case['kind'], literal=case['literal'], sample=sample):
+                        encoded = candidate.encode(sample['text'], add_special_tokens=False).ids
+                        self.assertEqual(encoded, sample['expected']['ids'])
+                        ids = encoded if sample['explicit'] is None else sample['explicit']
+                        for skip, suffix in ((True, 'skip'), (False, 'all')):
+                            # The C API emits raw bytes; public text decoding replaces incomplete UTF-8.
+                            expected = bytes.fromhex(sample['expected']['decode_' + suffix]).decode(errors='replace')
+                            self.assertEqual(candidate.decode(ids, skip_special_tokens=skip), expected)
+                            self.assertEqual(candidate.decode_batch([ids], skip_special_tokens=skip), [expected])
+                            stream = ByteLevelStream(candidate, ('<|endoftext|>', '<s>', 'bcx', case['literal']))
+                            hidden = {i for i,t in candidate.get_added_tokens_decoder().items() if skip and t.special}
+                            self.assertEqual(''.join(stream.feed(i) for i in ids if i not in hidden) + stream.finish(), expected)
+
     def test_unused_independent_reference_and_stream(self):
         from types import SimpleNamespace
         from dllm.bytelevel_stream import ByteLevelStream

@@ -1,0 +1,2645 @@
+{
+  "reference": "llama.cpp 836d57176dc699a726c55418e4f96b8ca628e1bf",
+  "cases": [
+    {
+      "pre": "qwen2",
+      "kind": 3,
+      "literal": "<é>",
+      "samples": [
+        {
+          "text": "<é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc3a93e",
+            "generated_all": "3cc3a93e"
+          }
+        },
+        {
+          "text": "<é><é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc3a93e3cc3a93e",
+            "generated_all": "3cc3a93e3cc3a93e"
+          }
+        },
+        {
+          "text": " <é> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "20207879",
+            "generated_skip": "20207879",
+            "decode_all": "203cc3a93e207879",
+            "generated_all": "203cc3a93e207879"
+          }
+        },
+        {
+          "text": "café<é>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a9f09f9880",
+            "generated_skip": "636166c3a9f09f9880",
+            "decode_all": "636166c3a93cc3a93ef09f9880",
+            "generated_all": "636166c3a93cc3a93ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "613c7c656e646f66746578747c3e3cc3a93e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc3a93e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33cc3a93ea9",
+            "generated_all": "c33cc3a93ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "3cc3a93e613cc3a93e",
+            "generated_all": "3cc3a93e613cc3a93e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "qwen2",
+      "kind": 3,
+      "literal": "<Ġ>",
+      "samples": [
+        {
+          "text": "<Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc4a03e",
+            "generated_all": "3cc4a03e"
+          }
+        },
+        {
+          "text": "<Ġ><Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc4a03e3cc4a03e",
+            "generated_all": "3cc4a03e3cc4a03e"
+          }
+        },
+        {
+          "text": " <Ġ> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "20207879",
+            "generated_skip": "20207879",
+            "decode_all": "203cc4a03e207879",
+            "generated_all": "203cc4a03e207879"
+          }
+        },
+        {
+          "text": "café<Ġ>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a9f09f9880",
+            "generated_skip": "636166c3a9f09f9880",
+            "decode_all": "636166c3a93cc4a03ef09f9880",
+            "generated_all": "636166c3a93cc4a03ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "613c7c656e646f66746578747c3e3cc4a03e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc4a03e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33cc4a03ea9",
+            "generated_all": "c33cc4a03ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "3cc4a03e613cc4a03e",
+            "generated_all": "3cc4a03e613cc4a03e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "qwen2",
+      "kind": 3,
+      "literal": "<😀>",
+      "samples": [
+        {
+          "text": "<😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cf09f98803e",
+            "generated_all": "3cf09f98803e"
+          }
+        },
+        {
+          "text": "<😀><😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cf09f98803e3cf09f98803e",
+            "generated_all": "3cf09f98803e3cf09f98803e"
+          }
+        },
+        {
+          "text": " <😀> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "20207879",
+            "generated_skip": "20207879",
+            "decode_all": "203cf09f98803e207879",
+            "generated_all": "203cf09f98803e207879"
+          }
+        },
+        {
+          "text": "café<😀>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a9f09f9880",
+            "generated_skip": "636166c3a9f09f9880",
+            "decode_all": "636166c3a93cf09f98803ef09f9880",
+            "generated_all": "636166c3a93cf09f98803ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "613c7c656e646f66746578747c3e3cf09f98803e",
+            "generated_all": "613c7c656e646f66746578747c3e3cf09f98803e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33cf09f98803ea9",
+            "generated_all": "c33cf09f98803ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "3cf09f98803e613cf09f98803e",
+            "generated_all": "3cf09f98803e613cf09f98803e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "qwen2",
+      "kind": 3,
+      "literal": "<é Ġ>",
+      "samples": [
+        {
+          "text": "<é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": "<é Ġ><é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc3a920c4a03e3cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": " <é Ġ> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "20207879",
+            "generated_skip": "20207879",
+            "decode_all": "203cc3a920c4a03e207879",
+            "generated_all": "203cc3a920c4a03e207879"
+          }
+        },
+        {
+          "text": "café<é Ġ>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a9f09f9880",
+            "generated_skip": "636166c3a9f09f9880",
+            "decode_all": "636166c3a93cc3a920c4a03ef09f9880",
+            "generated_all": "636166c3a93cc3a920c4a03ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "613c7c656e646f66746578747c3e3cc3a920c4a03e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33cc3a920c4a03ea9",
+            "generated_all": "c33cc3a920c4a03ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "3cc3a920c4a03e613cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e613cc3a920c4a03e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "qwen2",
+      "kind": 4,
+      "literal": "<é>",
+      "samples": [
+        {
+          "text": "<é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "3cc3a93e",
+            "generated_skip": "3cc3a93e",
+            "decode_all": "3cc3a93e",
+            "generated_all": "3cc3a93e"
+          }
+        },
+        {
+          "text": "<é><é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "3cc3a93e3cc3a93e",
+            "generated_skip": "3cc3a93e3cc3a93e",
+            "decode_all": "3cc3a93e3cc3a93e",
+            "generated_all": "3cc3a93e3cc3a93e"
+          }
+        },
+        {
+          "text": " <é> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "203cc3a93e207879",
+            "generated_skip": "203cc3a93e207879",
+            "decode_all": "203cc3a93e207879",
+            "generated_all": "203cc3a93e207879"
+          }
+        },
+        {
+          "text": "café<é>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a93cc3a93ef09f9880",
+            "generated_skip": "636166c3a93cc3a93ef09f9880",
+            "decode_all": "636166c3a93cc3a93ef09f9880",
+            "generated_all": "636166c3a93cc3a93ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "613cc3a93e",
+            "generated_skip": "613cc3a93e",
+            "decode_all": "613c7c656e646f66746578747c3e3cc3a93e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc3a93e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c33cc3a93ea9",
+            "generated_skip": "c33cc3a93ea9",
+            "decode_all": "c33cc3a93ea9",
+            "generated_all": "c33cc3a93ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "3cc3a93e613cc3a93e",
+            "generated_skip": "3cc3a93e613cc3a93e",
+            "decode_all": "3cc3a93e613cc3a93e",
+            "generated_all": "3cc3a93e613cc3a93e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "qwen2",
+      "kind": 4,
+      "literal": "<Ġ>",
+      "samples": [
+        {
+          "text": "<Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "3cc4a03e",
+            "generated_skip": "3cc4a03e",
+            "decode_all": "3cc4a03e",
+            "generated_all": "3cc4a03e"
+          }
+        },
+        {
+          "text": "<Ġ><Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "3cc4a03e3cc4a03e",
+            "generated_skip": "3cc4a03e3cc4a03e",
+            "decode_all": "3cc4a03e3cc4a03e",
+            "generated_all": "3cc4a03e3cc4a03e"
+          }
+        },
+        {
+          "text": " <Ġ> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "203cc4a03e207879",
+            "generated_skip": "203cc4a03e207879",
+            "decode_all": "203cc4a03e207879",
+            "generated_all": "203cc4a03e207879"
+          }
+        },
+        {
+          "text": "café<Ġ>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a93cc4a03ef09f9880",
+            "generated_skip": "636166c3a93cc4a03ef09f9880",
+            "decode_all": "636166c3a93cc4a03ef09f9880",
+            "generated_all": "636166c3a93cc4a03ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "613cc4a03e",
+            "generated_skip": "613cc4a03e",
+            "decode_all": "613c7c656e646f66746578747c3e3cc4a03e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc4a03e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c33cc4a03ea9",
+            "generated_skip": "c33cc4a03ea9",
+            "decode_all": "c33cc4a03ea9",
+            "generated_all": "c33cc4a03ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "3cc4a03e613cc4a03e",
+            "generated_skip": "3cc4a03e613cc4a03e",
+            "decode_all": "3cc4a03e613cc4a03e",
+            "generated_all": "3cc4a03e613cc4a03e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "qwen2",
+      "kind": 4,
+      "literal": "<😀>",
+      "samples": [
+        {
+          "text": "<😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "3cf09f98803e",
+            "generated_skip": "3cf09f98803e",
+            "decode_all": "3cf09f98803e",
+            "generated_all": "3cf09f98803e"
+          }
+        },
+        {
+          "text": "<😀><😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "3cf09f98803e3cf09f98803e",
+            "generated_skip": "3cf09f98803e3cf09f98803e",
+            "decode_all": "3cf09f98803e3cf09f98803e",
+            "generated_all": "3cf09f98803e3cf09f98803e"
+          }
+        },
+        {
+          "text": " <😀> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "203cf09f98803e207879",
+            "generated_skip": "203cf09f98803e207879",
+            "decode_all": "203cf09f98803e207879",
+            "generated_all": "203cf09f98803e207879"
+          }
+        },
+        {
+          "text": "café<😀>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a93cf09f98803ef09f9880",
+            "generated_skip": "636166c3a93cf09f98803ef09f9880",
+            "decode_all": "636166c3a93cf09f98803ef09f9880",
+            "generated_all": "636166c3a93cf09f98803ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "613cf09f98803e",
+            "generated_skip": "613cf09f98803e",
+            "decode_all": "613c7c656e646f66746578747c3e3cf09f98803e",
+            "generated_all": "613c7c656e646f66746578747c3e3cf09f98803e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c33cf09f98803ea9",
+            "generated_skip": "c33cf09f98803ea9",
+            "decode_all": "c33cf09f98803ea9",
+            "generated_all": "c33cf09f98803ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "3cf09f98803e613cf09f98803e",
+            "generated_skip": "3cf09f98803e613cf09f98803e",
+            "decode_all": "3cf09f98803e613cf09f98803e",
+            "generated_all": "3cf09f98803e613cf09f98803e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "qwen2",
+      "kind": 4,
+      "literal": "<é Ġ>",
+      "samples": [
+        {
+          "text": "<é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "3cc3a920c4a03e",
+            "generated_skip": "3cc3a920c4a03e",
+            "decode_all": "3cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": "<é Ġ><é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "3cc3a920c4a03e3cc3a920c4a03e",
+            "generated_skip": "3cc3a920c4a03e3cc3a920c4a03e",
+            "decode_all": "3cc3a920c4a03e3cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": " <é Ġ> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "203cc3a920c4a03e207879",
+            "generated_skip": "203cc3a920c4a03e207879",
+            "decode_all": "203cc3a920c4a03e207879",
+            "generated_all": "203cc3a920c4a03e207879"
+          }
+        },
+        {
+          "text": "café<é Ġ>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a93cc3a920c4a03ef09f9880",
+            "generated_skip": "636166c3a93cc3a920c4a03ef09f9880",
+            "decode_all": "636166c3a93cc3a920c4a03ef09f9880",
+            "generated_all": "636166c3a93cc3a920c4a03ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "613cc3a920c4a03e",
+            "generated_skip": "613cc3a920c4a03e",
+            "decode_all": "613c7c656e646f66746578747c3e3cc3a920c4a03e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c33cc3a920c4a03ea9",
+            "generated_skip": "c33cc3a920c4a03ea9",
+            "decode_all": "c33cc3a920c4a03ea9",
+            "generated_all": "c33cc3a920c4a03ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "3cc3a920c4a03e613cc3a920c4a03e",
+            "generated_skip": "3cc3a920c4a03e613cc3a920c4a03e",
+            "decode_all": "3cc3a920c4a03e613cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e613cc3a920c4a03e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "llama-bpe",
+      "kind": 3,
+      "literal": "<é>",
+      "samples": [
+        {
+          "text": "<é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc3a93e",
+            "generated_all": "3cc3a93e"
+          }
+        },
+        {
+          "text": "<é><é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc3a93e3cc3a93e",
+            "generated_all": "3cc3a93e3cc3a93e"
+          }
+        },
+        {
+          "text": " <é> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "20207879",
+            "generated_skip": "20207879",
+            "decode_all": "203cc3a93e207879",
+            "generated_all": "203cc3a93e207879"
+          }
+        },
+        {
+          "text": "café<é>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a9f09f9880",
+            "generated_skip": "636166c3a9f09f9880",
+            "decode_all": "636166c3a93cc3a93ef09f9880",
+            "generated_all": "636166c3a93cc3a93ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "613c7c656e646f66746578747c3e3cc3a93e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc3a93e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33cc3a93ea9",
+            "generated_all": "c33cc3a93ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "3cc3a93e613cc3a93e",
+            "generated_all": "3cc3a93e613cc3a93e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "llama-bpe",
+      "kind": 3,
+      "literal": "<Ġ>",
+      "samples": [
+        {
+          "text": "<Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc4a03e",
+            "generated_all": "3cc4a03e"
+          }
+        },
+        {
+          "text": "<Ġ><Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc4a03e3cc4a03e",
+            "generated_all": "3cc4a03e3cc4a03e"
+          }
+        },
+        {
+          "text": " <Ġ> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "20207879",
+            "generated_skip": "20207879",
+            "decode_all": "203cc4a03e207879",
+            "generated_all": "203cc4a03e207879"
+          }
+        },
+        {
+          "text": "café<Ġ>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a9f09f9880",
+            "generated_skip": "636166c3a9f09f9880",
+            "decode_all": "636166c3a93cc4a03ef09f9880",
+            "generated_all": "636166c3a93cc4a03ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "613c7c656e646f66746578747c3e3cc4a03e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc4a03e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33cc4a03ea9",
+            "generated_all": "c33cc4a03ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "3cc4a03e613cc4a03e",
+            "generated_all": "3cc4a03e613cc4a03e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "llama-bpe",
+      "kind": 3,
+      "literal": "<😀>",
+      "samples": [
+        {
+          "text": "<😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cf09f98803e",
+            "generated_all": "3cf09f98803e"
+          }
+        },
+        {
+          "text": "<😀><😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cf09f98803e3cf09f98803e",
+            "generated_all": "3cf09f98803e3cf09f98803e"
+          }
+        },
+        {
+          "text": " <😀> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "20207879",
+            "generated_skip": "20207879",
+            "decode_all": "203cf09f98803e207879",
+            "generated_all": "203cf09f98803e207879"
+          }
+        },
+        {
+          "text": "café<😀>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a9f09f9880",
+            "generated_skip": "636166c3a9f09f9880",
+            "decode_all": "636166c3a93cf09f98803ef09f9880",
+            "generated_all": "636166c3a93cf09f98803ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "613c7c656e646f66746578747c3e3cf09f98803e",
+            "generated_all": "613c7c656e646f66746578747c3e3cf09f98803e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33cf09f98803ea9",
+            "generated_all": "c33cf09f98803ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "3cf09f98803e613cf09f98803e",
+            "generated_all": "3cf09f98803e613cf09f98803e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "llama-bpe",
+      "kind": 3,
+      "literal": "<é Ġ>",
+      "samples": [
+        {
+          "text": "<é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": "<é Ġ><é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3cc3a920c4a03e3cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": " <é Ġ> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "20207879",
+            "generated_skip": "20207879",
+            "decode_all": "203cc3a920c4a03e207879",
+            "generated_all": "203cc3a920c4a03e207879"
+          }
+        },
+        {
+          "text": "café<é Ġ>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a9f09f9880",
+            "generated_skip": "636166c3a9f09f9880",
+            "decode_all": "636166c3a93cc3a920c4a03ef09f9880",
+            "generated_all": "636166c3a93cc3a920c4a03ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "613c7c656e646f66746578747c3e3cc3a920c4a03e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33cc3a920c4a03ea9",
+            "generated_all": "c33cc3a920c4a03ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "61",
+            "generated_skip": "61",
+            "decode_all": "3cc3a920c4a03e613cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e613cc3a920c4a03e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "llama-bpe",
+      "kind": 4,
+      "literal": "<é>",
+      "samples": [
+        {
+          "text": "<é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "3cc3a93e",
+            "generated_skip": "3cc3a93e",
+            "decode_all": "3cc3a93e",
+            "generated_all": "3cc3a93e"
+          }
+        },
+        {
+          "text": "<é><é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "3cc3a93e3cc3a93e",
+            "generated_skip": "3cc3a93e3cc3a93e",
+            "decode_all": "3cc3a93e3cc3a93e",
+            "generated_all": "3cc3a93e3cc3a93e"
+          }
+        },
+        {
+          "text": " <é> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "203cc3a93e207879",
+            "generated_skip": "203cc3a93e207879",
+            "decode_all": "203cc3a93e207879",
+            "generated_all": "203cc3a93e207879"
+          }
+        },
+        {
+          "text": "café<é>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a93cc3a93ef09f9880",
+            "generated_skip": "636166c3a93cc3a93ef09f9880",
+            "decode_all": "636166c3a93cc3a93ef09f9880",
+            "generated_all": "636166c3a93cc3a93ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><é>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "613cc3a93e",
+            "generated_skip": "613cc3a93e",
+            "decode_all": "613c7c656e646f66746578747c3e3cc3a93e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc3a93e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c33cc3a93ea9",
+            "generated_skip": "c33cc3a93ea9",
+            "decode_all": "c33cc3a93ea9",
+            "generated_all": "c33cc3a93ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "3cc3a93e613cc3a93e",
+            "generated_skip": "3cc3a93e613cc3a93e",
+            "decode_all": "3cc3a93e613cc3a93e",
+            "generated_all": "3cc3a93e613cc3a93e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "llama-bpe",
+      "kind": 4,
+      "literal": "<Ġ>",
+      "samples": [
+        {
+          "text": "<Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "3cc4a03e",
+            "generated_skip": "3cc4a03e",
+            "decode_all": "3cc4a03e",
+            "generated_all": "3cc4a03e"
+          }
+        },
+        {
+          "text": "<Ġ><Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "3cc4a03e3cc4a03e",
+            "generated_skip": "3cc4a03e3cc4a03e",
+            "decode_all": "3cc4a03e3cc4a03e",
+            "generated_all": "3cc4a03e3cc4a03e"
+          }
+        },
+        {
+          "text": " <Ġ> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "203cc4a03e207879",
+            "generated_skip": "203cc4a03e207879",
+            "decode_all": "203cc4a03e207879",
+            "generated_all": "203cc4a03e207879"
+          }
+        },
+        {
+          "text": "café<Ġ>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a93cc4a03ef09f9880",
+            "generated_skip": "636166c3a93cc4a03ef09f9880",
+            "decode_all": "636166c3a93cc4a03ef09f9880",
+            "generated_all": "636166c3a93cc4a03ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "613cc4a03e",
+            "generated_skip": "613cc4a03e",
+            "decode_all": "613c7c656e646f66746578747c3e3cc4a03e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc4a03e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c33cc4a03ea9",
+            "generated_skip": "c33cc4a03ea9",
+            "decode_all": "c33cc4a03ea9",
+            "generated_all": "c33cc4a03ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "3cc4a03e613cc4a03e",
+            "generated_skip": "3cc4a03e613cc4a03e",
+            "decode_all": "3cc4a03e613cc4a03e",
+            "generated_all": "3cc4a03e613cc4a03e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "llama-bpe",
+      "kind": 4,
+      "literal": "<😀>",
+      "samples": [
+        {
+          "text": "<😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "3cf09f98803e",
+            "generated_skip": "3cf09f98803e",
+            "decode_all": "3cf09f98803e",
+            "generated_all": "3cf09f98803e"
+          }
+        },
+        {
+          "text": "<😀><😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "3cf09f98803e3cf09f98803e",
+            "generated_skip": "3cf09f98803e3cf09f98803e",
+            "decode_all": "3cf09f98803e3cf09f98803e",
+            "generated_all": "3cf09f98803e3cf09f98803e"
+          }
+        },
+        {
+          "text": " <😀> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "203cf09f98803e207879",
+            "generated_skip": "203cf09f98803e207879",
+            "decode_all": "203cf09f98803e207879",
+            "generated_all": "203cf09f98803e207879"
+          }
+        },
+        {
+          "text": "café<😀>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a93cf09f98803ef09f9880",
+            "generated_skip": "636166c3a93cf09f98803ef09f9880",
+            "decode_all": "636166c3a93cf09f98803ef09f9880",
+            "generated_all": "636166c3a93cf09f98803ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><😀>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "613cf09f98803e",
+            "generated_skip": "613cf09f98803e",
+            "decode_all": "613c7c656e646f66746578747c3e3cf09f98803e",
+            "generated_all": "613c7c656e646f66746578747c3e3cf09f98803e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c33cf09f98803ea9",
+            "generated_skip": "c33cf09f98803ea9",
+            "decode_all": "c33cf09f98803ea9",
+            "generated_all": "c33cf09f98803ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "3cf09f98803e613cf09f98803e",
+            "generated_skip": "3cf09f98803e613cf09f98803e",
+            "decode_all": "3cf09f98803e613cf09f98803e",
+            "generated_all": "3cf09f98803e613cf09f98803e"
+          }
+        }
+      ]
+    },
+    {
+      "pre": "llama-bpe",
+      "kind": 4,
+      "literal": "<é Ġ>",
+      "samples": [
+        {
+          "text": "<é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257
+            ],
+            "decode_skip": "3cc3a920c4a03e",
+            "generated_skip": "3cc3a920c4a03e",
+            "decode_all": "3cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": "<é Ġ><é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              257,
+              257
+            ],
+            "decode_skip": "3cc3a920c4a03e3cc3a920c4a03e",
+            "generated_skip": "3cc3a920c4a03e3cc3a920c4a03e",
+            "decode_all": "3cc3a920c4a03e3cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": " <é Ġ> xy",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              220,
+              257,
+              220,
+              260
+            ],
+            "decode_skip": "203cc3a920c4a03e207879",
+            "generated_skip": "203cc3a920c4a03e207879",
+            "decode_all": "203cc3a920c4a03e207879",
+            "generated_all": "203cc3a920c4a03e207879"
+          }
+        },
+        {
+          "text": "café<é Ġ>😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              257,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a93cc3a920c4a03ef09f9880",
+            "generated_skip": "636166c3a93cc3a920c4a03ef09f9880",
+            "decode_all": "636166c3a93cc3a920c4a03ef09f9880",
+            "generated_all": "636166c3a93cc3a920c4a03ef09f9880"
+          }
+        },
+        {
+          "text": "a<|endoftext|><é Ġ>",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              64,
+              256,
+              257
+            ],
+            "decode_skip": "613cc3a920c4a03e",
+            "generated_skip": "613cc3a920c4a03e",
+            "decode_all": "613c7c656e646f66746578747c3e3cc3a920c4a03e",
+            "generated_all": "613c7c656e646f66746578747c3e3cc3a920c4a03e"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "café 😀",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              66,
+              64,
+              69,
+              127,
+              102,
+              220,
+              172,
+              253,
+              246,
+              222
+            ],
+            "decode_skip": "636166c3a920f09f9880",
+            "generated_skip": "636166c3a920f09f9880",
+            "decode_all": "636166c3a920f09f9880",
+            "generated_all": "636166c3a920f09f9880"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            257,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c33cc3a920c4a03ea9",
+            "generated_skip": "c33cc3a920c4a03ea9",
+            "decode_all": "c33cc3a920c4a03ea9",
+            "generated_all": "c33cc3a920c4a03ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            127,
+            256,
+            102
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c7c656e646f66746578747c3ea9",
+            "generated_all": "c33c7c656e646f66746578747c3ea9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            257,
+            64,
+            257
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "3cc3a920c4a03e613cc3a920c4a03e",
+            "generated_skip": "3cc3a920c4a03e613cc3a920c4a03e",
+            "decode_all": "3cc3a920c4a03e613cc3a920c4a03e",
+            "generated_all": "3cc3a920c4a03e613cc3a920c4a03e"
+          }
+        }
+      ]
+    }
+  ]
+}

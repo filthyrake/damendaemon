@@ -38,7 +38,10 @@ class SpecialTokenTokenizer:
     def __init__(self, backend, suppressed_token_ids=()):
         self.suppressed_token_ids = frozenset(suppressed_token_ids)
         self.backend_tokenizer = backend
-        self._pieces = {token.content: index for index, token in backend.get_added_tokens_decoder().items()}
+        added = backend.get_added_tokens_decoder()
+        self._pieces = {token.content: index for index, token in added.items()}
+        self._literal_tokens = {index: token for index, token in added.items()
+            if backend.decode([index], skip_special_tokens=False) != token.content}
         self._special_order = sorted(self._pieces, key=lambda text: len(text.encode('utf-8')), reverse=True)
         policy = json.loads(backend.to_str()).get('post_processor')
         self._prefix, self._suffix = [], []
@@ -94,7 +97,24 @@ class SpecialTokenTokenizer:
     def decode(self, ids, skip_special_tokens=True):
         if self.suppressed_token_ids:
             ids = [i for i in ids if i not in self.suppressed_token_ids]
-        return self.backend_tokenizer.decode(ids, skip_special_tokens=skip_special_tokens)
+        if not self._literal_tokens:
+            return self.backend_tokenizer.decode(ids, skip_special_tokens=skip_special_tokens)
+        parts, normal = [], []
+        for index in ids:
+            literal = self._literal_tokens.get(index)
+            if literal is None:
+                normal.append(index)
+                continue
+            if skip_special_tokens and literal.special:
+                # Hidden controls must not separate incomplete UTF-8 bytes.
+                continue
+            if normal:
+                parts.append(self.backend_tokenizer.decode(normal, skip_special_tokens=skip_special_tokens))
+                normal.clear()
+            parts.append(literal.content)
+        if normal:
+            parts.append(self.backend_tokenizer.decode(normal, skip_special_tokens=skip_special_tokens))
+        return ''.join(parts)
 
     def decode_batch(self, sequences, skip_special_tokens=True):
         return [self.decode(ids, skip_special_tokens=skip_special_tokens) for ids in sequences]

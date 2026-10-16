@@ -144,3 +144,20 @@ merge table, formerly user-defined pieces, simultaneous suppression and split
 UTF-8 bytes. Normal/restored full and batch decoding, exact encoding, incremental
 streaming and logprob presentation are checked. This is tokenizer compatibility
 evidence only; the model and GPU qualification gates remain open.
+
+## Literal byte-level special text (#382)
+
+For a user-defined `<é>` piece, the raw Rust ByteLevel decoder interpreted the
+literal `é` as a byte-alphabet symbol and emitted `<�>`. The reference emits
+`<é>`. The shared wrapper now identifies added spellings changed by its backend
+decoder, decodes ordinary spans normally, and emits those affected spellings
+literally. Hidden controls and UNUSED entries do not split UTF-8 sequences.
+Vocabularies without affected spellings retain the direct backend decode path.
+
+`tests/reference/generate_gguf_bpe_literals.py` freezes 160 independent CPU cases:
+both byte-level pre-tokenizers, user/control pieces, four Unicode/byte-alphabet
+special spellings, repeated and mixed prompts, and explicit partial UTF-8 spans.
+Tests compare full/batch decoding before/after serialization and incremental
+streaming. For deliberately incomplete UTF-8, reference raw bytes are converted
+to text with replacement, matching the public text-decoding contract. Logprob
+presentation already preserved literal spellings and remains covered.
