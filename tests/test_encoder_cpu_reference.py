@@ -15,6 +15,7 @@ from dllm.encoder import EncoderWeights, EncoderExecutor
 
 class EncoderCPUReferenceTests(unittest.TestCase):
     def check_family(self, family, task, *, compact=False, truncate_dim=None, normalize=True, pooling='mean'):
+        pool_modes=[pooling] if isinstance(pooling,str) else pooling
         cls = XLMRobertaConfig if family == 'xlm-roberta' else BertConfig
         c = cls(vocab_size=32, hidden_size=8, intermediate_size=16,
                 num_hidden_layers=2, num_attention_heads=2,
@@ -61,7 +62,7 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                     flags={'cls':'pooling_mode_cls_token','mean':'pooling_mode_mean_tokens',
                            'max':'pooling_mode_max_tokens','mean_sqrt_len_tokens':'pooling_mode_mean_sqrt_len_tokens',
                            'weightedmean':'pooling_mode_weightedmean_tokens','lasttoken':'pooling_mode_lasttoken'}
-                    policy.update({flag:name==pooling for name,flag in flags.items()})
+                    policy.update({flag:name in pool_modes for name,flag in flags.items()})
                 path.write_text(json.dumps(policy))
             if task=='embedding' and not normalize:
                 modules=json.loads((root/'modules.json').read_text())
@@ -92,14 +93,18 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                         vectors=[]
                         for row,tokens_row in enumerate(tokens):
                             valid=output.last_hidden_state[row,:len(tokens_row)]
-                            if pooling=='cls':vector=valid[0]
-                            elif pooling=='lasttoken':vector=valid[-1]
-                            elif pooling=='max':vector=valid.amax(0)
-                            elif pooling=='mean_sqrt_len_tokens':vector=valid.sum(0)/(len(tokens_row)**.5)
-                            elif pooling=='weightedmean':
-                                weights=torch.arange(1,len(tokens_row)+1,dtype=torch.float32)
-                                vector=(valid*weights[:,None]).sum(0)/weights.sum()
-                            else:vector=valid.mean(0)
+                            parts=[]
+                            for pool_mode in pool_modes:
+                                if pool_mode=='cls':vector=valid[0]
+                                elif pool_mode=='lasttoken':vector=valid[-1]
+                                elif pool_mode=='max':vector=valid.amax(0)
+                                elif pool_mode=='mean_sqrt_len_tokens':vector=valid.sum(0)/(len(tokens_row)**.5)
+                                elif pool_mode=='weightedmean':
+                                    weights=torch.arange(1,len(tokens_row)+1,dtype=torch.float32)
+                                    vector=(valid*weights[:,None]).sum(0)/weights.sum()
+                                else:vector=valid.mean(0)
+                                parts.append(vector)
+                            vector=torch.cat(parts)
                             vectors.append(vector)
                         expected=torch.stack(vectors)
                         if normalize:expected=F.normalize(expected,dim=-1)
@@ -111,9 +116,11 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                 torch.testing.assert_close(actual, expected, atol=1e-6, rtol=1e-5)
                 return actual
             mixed = compare(rows, types)
+            if task=='embedding':
+                self.assertEqual(mixed.shape[-1],model.config['embedding_dimension'])
             if truncate_dim is not None:
-                self.assertEqual(mixed.shape[-1],min(8,truncate_dim))
-                if normalize and truncate_dim<8:self.assertTrue(torch.all(mixed.norm(dim=-1)<.999))
+                self.assertEqual(mixed.shape[-1],min(8*len(pool_modes),truncate_dim))
+                if normalize and truncate_dim<8*len(pool_modes):self.assertTrue(torch.all(mixed.norm(dim=-1)<.999))
             singles = torch.cat([compare([row], [segments]) for row,segments in zip(rows, types)])
             torch.testing.assert_close(mixed, singles, atol=1e-6, rtol=1e-5)
             compare(list(reversed(rows)), list(reversed(types)))
@@ -157,3 +164,12 @@ class EncoderCPUReferenceTests(unittest.TestCase):
 
     def test_xlm_roberta_reranking(self):
         self.check_family('xlm-roberta', 'rerank')
+
+    def test_combined_pooling(self):
+        for compact, modes in ((False,['cls','max','mean','mean_sqrt_len_tokens','weightedmean','lasttoken']),
+                               (True,['lasttoken','mean','cls']), (True,['mean','mean'])):
+            for normalize in (False,True):
+                for width in (None,11,100):
+                    with self.subTest(compact=compact,modes=modes,normalize=normalize,width=width):
+                        self.check_family('bert','embedding',compact=compact,pooling=modes,
+                                          normalize=normalize,truncate_dim=width)

@@ -36,10 +36,10 @@ def main():
     modules=json.loads((Path(args.path)/'modules.json').read_text())
     normalize=any(module['type'].endswith('.Normalize') for module in modules)
     pooling_config=json.loads((Path(args.path)/modules[1]['path']/'config.json').read_text())
-    legacy_modes={'pooling_mode_cls_token':'cls','pooling_mode_mean_tokens':'mean',
-                  'pooling_mode_max_tokens':'max','pooling_mode_mean_sqrt_len_tokens':'mean_sqrt_len_tokens',
+    legacy_modes={'pooling_mode_cls_token':'cls','pooling_mode_max_tokens':'max',
+                  'pooling_mode_mean_tokens':'mean','pooling_mode_mean_sqrt_len_tokens':'mean_sqrt_len_tokens',
                   'pooling_mode_weightedmean_tokens':'weightedmean','pooling_mode_lasttoken':'lasttoken'}
-    pooling=pooling_config.get('pooling_mode') or next(mode for flag,mode in legacy_modes.items() if pooling_config.get(flag))
+    pooling=pooling_config.get('pooling_mode') or [mode for flag,mode in legacy_modes.items() if pooling_config.get(flag)]
     default_name=settings.get('default_prompt_name')
     prefix=(settings.get('prompts',{}).get(default_name) or '') if default_name is not None else ''
     texts=['A dog is playing in the park.','A puppy chases a ball.','Financial markets fell today.',
@@ -53,7 +53,7 @@ def main():
         cosine=F.cosine_similarity(actual,expected)
         absolute=delta.abs().amax(-1)
         assert torch.isfinite(actual).all()
-        if normalize and (truncate_dim is None or truncate_dim>=model.config['hidden_size']):
+        if normalize and (truncate_dim is None or truncate_dim>=model.config['hidden_size']*(1 if isinstance(pooling,str) else len(pooling))):
             assert torch.allclose(actual.norm(dim=-1),torch.ones(actual.shape[0]),atol=1e-5)
         assert (relative<.002).all() and (absolute<.001).all() and (cosine>.99999).all(),(relative,absolute,cosine)
         return {'relative_rms':relative.tolist(),'max_absolute':absolute.tolist(),'cosine_similarity':cosine.tolist()}
@@ -73,14 +73,18 @@ def main():
         vectors=[]
         for row,sequence in enumerate(tokens):
             valid=hidden[row,:len(sequence)]
-            if pooling=='cls':vector=valid[0]
-            elif pooling=='lasttoken':vector=valid[-1]
-            elif pooling=='max':vector=valid.amax(0)
-            elif pooling=='mean_sqrt_len_tokens':vector=valid.sum(0)/(len(sequence)**.5)
-            elif pooling=='weightedmean':
-                weights=torch.arange(1,len(sequence)+1,dtype=torch.float32)
-                vector=(valid*weights[:,None]).sum(0)/weights.sum()
-            else:vector=valid.mean(0)
+            parts=[]
+            for mode in ([pooling] if isinstance(pooling,str) else pooling):
+                if mode=='cls':vector=valid[0]
+                elif mode=='lasttoken':vector=valid[-1]
+                elif mode=='max':vector=valid.amax(0)
+                elif mode=='mean_sqrt_len_tokens':vector=valid.sum(0)/(len(sequence)**.5)
+                elif mode=='weightedmean':
+                    weights=torch.arange(1,len(sequence)+1,dtype=torch.float32)
+                    vector=(valid*weights[:,None]).sum(0)/weights.sum()
+                else:vector=valid.mean(0)
+                parts.append(vector)
+            vector=torch.cat(parts)
             vectors.append(vector)
         expected=torch.stack(vectors)
         if normalize:expected=F.normalize(expected,p=2,dim=-1)

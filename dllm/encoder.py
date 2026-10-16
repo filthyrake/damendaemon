@@ -79,26 +79,28 @@ def config(path):
     if (not isinstance(modules,list) or len(modules) not in (2,3)
             or any(not isinstance(m,dict) or m.get('type') not in kind
                    for m,kind in zip(modules,kinds)) or modules[0].get('path') != ''):
-        raise ValueError('supported encoder pipeline is Transformer, single-mode Pooling, optional Normalize')
+        raise ValueError('supported encoder pipeline is Transformer, Pooling, optional Normalize')
     if not isinstance(modules[1].get('path'),str):
         raise ValueError('invalid pooling module path')
     pooling_path = Path(modules[1]['path'])
     if pooling_path.is_absolute() or '..' in pooling_path.parts or not pooling_path.parts:
         raise ValueError('invalid pooling module path')
     pooling = read_config(path/pooling_path/'config.json')
-    modes={'pooling_mode_cls_token':'cls','pooling_mode_mean_tokens':'mean',
-           'pooling_mode_max_tokens':'max','pooling_mode_mean_sqrt_len_tokens':'mean_sqrt_len_tokens',
+    modes={'pooling_mode_cls_token':'cls','pooling_mode_max_tokens':'max',
+           'pooling_mode_mean_tokens':'mean','pooling_mode_mean_sqrt_len_tokens':'mean_sqrt_len_tokens',
            'pooling_mode_weightedmean_tokens':'weightedmean','pooling_mode_lasttoken':'lasttoken'}
     if 'embedding_dimension' in pooling or 'pooling_mode' in pooling:
         mode=pooling.get('pooling_mode')
-        if mode not in modes.values():raise ValueError('exactly one supported pooling mode is required')
+        active=[mode] if isinstance(mode,str) else mode
+        if (not isinstance(active,list) or not active or len(active)>6
+                or any(not isinstance(value,str) or value not in modes.values() for value in active)):
+            raise ValueError('one to six supported pooling modes are required')
         expected = {'embedding_dimension':c['hidden_size'], 'pooling_mode':mode, 'include_prompt':True}
         pooling = {'include_prompt':True, **pooling}
     else:
         active=[value for key,value in modes.items() if pooling.get(key) is True]
-        if len(active)!=1:raise ValueError('exactly one supported pooling mode is required')
-        mode=active[0]
-        expected = {'word_embedding_dimension':c['hidden_size'],**{key:value==mode for key,value in modes.items()},
+        if not active:raise ValueError('at least one supported pooling mode is required')
+        expected = {'word_embedding_dimension':c['hidden_size'],**{key:value in active for key,value in modes.items()},
                     'include_prompt':True}
         # Newer legacy serializers write these equivalent defaults explicitly.
         # Omitted optional modes are disabled; prompt exclusion is unsupported.
@@ -106,7 +108,7 @@ def config(path):
                     'pooling_mode_lasttoken':False, 'include_prompt':True}
         pooling = {**defaults, **pooling}
     if pooling != expected or any(type(pooling[k]) is not type(v) for k,v in expected.items()):
-        raise ValueError('exactly one supported pooling mode is required')
+        raise ValueError('invalid pooling configuration')
     sentence = read_config(path/'sentence_bert_config.json')
     lowercase = sentence.get('do_lower_case', False)
     if type(lowercase) is not bool:
@@ -114,7 +116,8 @@ def config(path):
     length = sentence.get('max_seq_length')
     if type(length) is not int or not 1 <= length <= c['max_position_embeddings']:
         raise ValueError('invalid sentence encoder length')
-    prompt,width=_saved_settings(path,c['hidden_size'])
+    mode=active[0] if len(active)==1 else active
+    prompt,width=_saved_settings(path,c['hidden_size']*len(active))
     return {**c, 'task':'embedding', 'layer_norm_eps':eps, 'embedding_max_length':length,
             'do_lower_case':lowercase, 'embedding_prompt':prompt,'embedding_dimension':width,
             'embedding_normalize':len(modules)==3,'embedding_pooling':mode}
@@ -318,14 +321,19 @@ class EncoderExecutor:
             x = norm(x+linear(F.gelu(linear(x,f'{i}.fc').float()),f'{i}.down'),f'{i}.norm2')
         if self.model.task=='rerank':
             return linear(torch.tanh(linear(x[:,0],'pooler.dense')),'classifier')
-        mode=c.get('embedding_pooling','mean');hidden=x.float()
-        if mode=='cls':pooled=hidden[:,0]
-        elif mode=='max':pooled=hidden.masked_fill(~mask[:,:,None],-float('inf')).max(dim=1).values
-        elif mode=='lasttoken':pooled=hidden[torch.arange(batch,device=hidden.device),mask.sum(1)-1]
-        elif mode=='weightedmean':
-            weights=mask*torch.arange(1,length+1,device=hidden.device,dtype=torch.float32)[None,:]
-            pooled=(hidden*weights[:,:,None]).sum(1)/weights.sum(1,keepdim=True)
-        else:
-            count=mask.sum(1,keepdim=True)
-            pooled=(hidden*mask[:,:,None]).sum(1)/(count.sqrt() if mode=='mean_sqrt_len_tokens' else count)
+        modes=c.get('embedding_pooling','mean');hidden=x.float()
+        modes=[modes] if isinstance(modes,str) else modes
+        vectors=[]
+        for mode in modes:
+            if mode=='cls':pooled=hidden[:,0]
+            elif mode=='max':pooled=hidden.masked_fill(~mask[:,:,None],-float('inf')).max(dim=1).values
+            elif mode=='lasttoken':pooled=hidden[torch.arange(batch,device=hidden.device),mask.sum(1)-1]
+            elif mode=='weightedmean':
+                weights=mask*torch.arange(1,length+1,device=hidden.device,dtype=torch.float32)[None,:]
+                pooled=(hidden*weights[:,:,None]).sum(1)/weights.sum(1,keepdim=True)
+            else:
+                count=mask.sum(1,keepdim=True)
+                pooled=(hidden*mask[:,:,None]).sum(1)/(count.sqrt() if mode=='mean_sqrt_len_tokens' else count)
+            vectors.append(pooled)
+        pooled=torch.cat(vectors,dim=-1) if len(vectors)>1 else vectors[0]
         return F.normalize(pooled,p=2,dim=-1) if c.get('embedding_normalize',True) else pooled

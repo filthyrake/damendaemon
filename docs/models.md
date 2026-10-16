@@ -794,7 +794,7 @@ Checkpoint chat templates receive `bos_token` and `eos_token` as text even when 
 
 When no embedded `chat_template` is supplied, `chat_template.jinja` is read as UTF-8 with the same 16 MiB metadata envelope. An embedded template, including an empty string, takes precedence; a missing fallback preserves the raw-completion-only behavior. Explicit operator overrides retain their separate 128 KiB limit.
 
-Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects duplicate fields or excessive nesting before pooling configuration or checkpoint loading. The supported pipeline is Transformer → one declared Pooling mode, optionally followed by Normalize.
+Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects duplicate fields or excessive nesting before pooling configuration or checkpoint loading. The supported pipeline is Transformer → declared Pooling modes, optionally followed by Normalize.
 
 Native chat tokenization consumes template output incrementally and rejects more than 16 MiB of rendered UTF-8 text, including a forced tool-call prefix, before tokenization. The template generator closes on success or failure. This bounds accumulated prompt output. Rendering also caps explicit Jinja for-loop work at 1,000,000 iterations per render, shared across nested/recursive loops and nested renders; explicit loop-filter candidates count even when rejected. Independent requests have independent budgets. These limits do not bound intermediate expression/filter allocations or establish a general execution deadline.
 
@@ -822,7 +822,7 @@ Safetensors inventory preflights every header as bounded, duplicate-free UTF-8 J
 
 Checkpoint chat templates may be plain text, a mapping of names to text, or Hugging Face name/template entries. Named collections must have a unique explicit `default`, which is selected for ordinary chat independent of entry order. Collections are limited to 64 entries and 16 MiB of template text; malformed entries and missing defaults fail rather than falling back to another variant or file. When a named `tool_use` variant exists, supported tool requests and tool history use it; otherwise they use the default. Both selected variants are compiled during registration. Existing model/marker checks still gate tool support, and explicit template overrides replace both variants. This tokenizer compatibility does not qualify model-generated tool accuracy.
 
-The BERT sentence-encoder path accepts the equivalent optional pooling fields emitted by [Sentence Transformers v3.4.1](https://github.com/UKPLab/sentence-transformers/blob/v3.4.1/sentence_transformers/models/Pooling.py): disabled weighted-mean/last-token pooling and `include_prompt: true`. Legacy mode flags remain required except the optional weighted-mean/last-token defaults. Exactly one supported mode must be enabled. Prompt exclusion, unknown fields and integer substitutes for booleans remain unsupported; this is not support for every Sentence Transformers checkpoint format.
+The BERT sentence-encoder path accepts the equivalent optional pooling fields emitted by [Sentence Transformers v3.4.1](https://github.com/UKPLab/sentence-transformers/blob/v3.4.1/sentence_transformers/models/Pooling.py): disabled weighted-mean/last-token pooling and `include_prompt: true`. Legacy mode flags remain required except the optional weighted-mean/last-token defaults. At least one supported mode must be enabled. Prompt exclusion, unknown fields and integer substitutes for booleans remain unsupported; this is not support for every Sentence Transformers checkpoint format.
 
 GGUF Qwen2, Qwen3 and Llama imports accept explicit `rope.scaling.type=linear`
 with a finite numeric `rope.scaling.factor >= 1`. The native static schedule
@@ -862,7 +862,7 @@ are supported: the published Transformer/Pooling/Normalize module aliases and
 compact `embedding_dimension`, `pooling_mode="mean"`, `include_prompt=true`
 configuration map to the same native pipeline. See the
 [pinned pooling schema](https://github.com/huggingface/sentence-transformers/blob/v5.4.0/sentence_transformers/sentence_transformer/modules/pooling.py).
-Alternate/combined pooling, prompt exclusion, mixed schemas and custom module
+Prompt exclusion, mixed schemas and custom module
 classes remain rejected. The CPU oracle covers compact-format loading and
 execution; this does not broaden the supported BERT architecture or GPU gates.
 
@@ -902,5 +902,13 @@ or compact string metadata. Padding is excluded; weighted mean uses positions
 1 through the actual input length, and last-token selects the final input token.
 The independent CPU oracle covers every mode with both metadata layouts,
 normalization on/off, saved truncation and ragged batch order. The verifier
-records the selected pooling mode. Combined modes and prompt exclusion still
+records the selected pooling mode. Prompt exclusion still
 fail closed; GPU and retrieval-quality gates remain separate.
+
+Combined BERT pooling is supported: legacy flags concatenate in CLS, max, mean,
+mean-sqrt-length, weighted-mean, last-token order; compact mode lists preserve
+the declared order (including repeats), with one to six entries. Normalize runs
+on the concatenated vector; saved truncation runs afterward. The output width
+is the combined width capped by saved truncation. CPU reference tests cover
+ordering, padding, normalization and truncation; GPU/retrieval qualification
+remains separate.
