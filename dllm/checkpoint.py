@@ -5,7 +5,7 @@ from safetensors import safe_open, SafetensorError
 
 from .download import INDEX, snapshot_files, read_index
 # Existing loaders and serving commands import the JSON validator here.
-from .safetensor_header import _unique_fields, read_header
+from .safetensor_header import _unique_fields, read_header, read_header_json
 
 
 
@@ -33,6 +33,13 @@ def inspect_snapshot(path):
     for file in files:
         filename = str(file.relative_to(path))
         tensors = {}
+        # Native safetensors parsing permits duplicate JSON fields and a larger
+        # header budget. Apply our metadata contract before handing it the file.
+        try:
+            with file.open('rb') as raw_reader:
+                read_header_json(raw_reader)
+        except ValueError as error:
+            raise ValueError('invalid safetensors header') from error
         try:
             with safe_open(str(path/filename), framework='pt', device='cpu') as reader:
                 for name in reader.keys():

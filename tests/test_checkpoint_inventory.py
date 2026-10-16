@@ -1,4 +1,5 @@
 import json
+import struct
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -70,6 +71,36 @@ class CheckpointInventoryTests(unittest.TestCase):
             (path/'model.safetensors').write_bytes(b'broken header')
             with self.assertRaisesRegex(ValueError, 'safetensors header'):
                 weight_files(path)
+
+    def test_native_headers_reject_ambiguous_json_before_native_open(self):
+        from dllm.checkpoint import inspect_snapshot
+        tensor='{"dtype":"U8","shape":[1],"data_offsets":[0,1]}'
+        headers=(f'{{"a":{tensor},"a":{tensor}}}',
+                 '{"a":{"dtype":"I8","dtype":"U8","shape":[1],"data_offsets":[0,1]}}',
+                 f'{{"a":{tensor},"__metadata__":{{"source":"old","source":"new"}}}}')
+        with TemporaryDirectory() as directory:
+            path=Path(directory)
+            for header in headers:
+                raw=header.encode();raw+=b' '*((-len(raw))%8)
+                (path/'model.safetensors').write_bytes(struct.pack('<Q',len(raw))+raw+b'x')
+                with self.subTest(header=header), patch('dllm.checkpoint.safe_open') as native:
+                    with self.assertRaisesRegex(ValueError,'safetensors header'):
+                        inspect_snapshot(path)
+                    native.assert_not_called()
+
+    def test_native_header_budget_rejects_before_native_open(self):
+        from dllm.checkpoint import inspect_snapshot
+        from dllm.safetensor_header import MAX_HEADER_BYTES
+        with TemporaryDirectory() as directory:
+            path=Path(directory)
+            # Sparse fixture makes declared size plausible without allocating a large header.
+            with (path/'model.safetensors').open('wb') as output:
+                output.write(struct.pack('<Q',MAX_HEADER_BYTES+8))
+                output.truncate(MAX_HEADER_BYTES+16)
+            with patch('dllm.checkpoint.safe_open') as native:
+                with self.assertRaisesRegex(ValueError,'safetensors header'):
+                    inspect_snapshot(path)
+                native.assert_not_called()
 
     def test_shared_inventory_never_reads_tensor_values(self):
         from dllm.checkpoint import inspect_snapshot

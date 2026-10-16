@@ -32,7 +32,8 @@ def file_stamp(reader):
     return state.st_size,state.st_mtime_ns,state.st_ctime_ns
 
 
-def read_header(reader, *, max_header_bytes=MAX_HEADER_BYTES):
+def read_header_json(reader, *, max_header_bytes=MAX_HEADER_BYTES):
+    """Bound and disambiguate metadata without imposing a tensor dtype policy."""
     if type(max_header_bytes) is not int or not 2 <= max_header_bytes <= MAX_HEADER_BYTES:
         raise ValueError('invalid remaining checkpoint header budget')
     before=file_stamp(reader)
@@ -49,7 +50,14 @@ def read_header(reader, *, max_header_bytes=MAX_HEADER_BYTES):
         raise ValueError('invalid packed checkpoint JSON header') from error
     if not isinstance(header,dict) or len(header) > 100001:
         raise ValueError('invalid packed checkpoint tensor inventory')
-    data_bytes=before[0]-8-length
+    if file_stamp(reader) != before:
+        raise ValueError('checkpoint changed while reading header')
+    return header,8+length,before
+
+
+def read_header(reader, *, max_header_bytes=MAX_HEADER_BYTES):
+    header,offset,before=read_header_json(reader,max_header_bytes=max_header_bytes)
+    data_bytes=before[0]-offset
     ranges=[]
     tensors={}
     for name,entry in header.items():
@@ -77,4 +85,4 @@ def read_header(reader, *, max_header_bytes=MAX_HEADER_BYTES):
         cursor=stop
     if cursor != data_bytes or file_stamp(reader) != before:
         raise ValueError('packed checkpoint payload is incomplete or changed')
-    return tensors,8+length,before
+    return tensors,offset,before

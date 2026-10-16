@@ -793,3 +793,5 @@ Experimental Qwen3.5 image loading validates vision config/rotary containers and
 Image prompt expansion is checked against model context using planned grids before resize, normalization or FP32 patch construction. Inline decoding remains separately byte/pixel bounded; runtime admission still checks the requested output-token reservation.
 
 Direct image executor admission validates placeholder/grid geometry before calling the vision encoder. Mixed batches preflight all image metadata before dispatching their first prompt; direct feature-prefill retains the same checks and exact integer slot bounds. CPU sentinel tests establish this call ordering, not accelerator execution correctness.
+
+Safetensors inventory preflights every header as bounded, duplicate-free UTF-8 JSON (16 MiB maximum) before native parsing. Duplicate tensor names, descriptor fields and metadata keys are rejected in ordinary and E8M0 checkpoints. This preflight reads metadata only; native dtype interpretation remains with safetensors, with the existing explicit E8M0 compatibility fallback.
