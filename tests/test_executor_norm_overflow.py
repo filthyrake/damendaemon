@@ -44,6 +44,23 @@ class ExecutorNormOverflowTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'nonfinite QK'):
             Qwen2Executor.normalize_qk(fake, q, q, '0')
 
+    def test_norm_preserves_activation_dtype_for_half_precision(self):
+        # The FP32 variance check must not promote FP16/BF16 activations to FP32:
+        # the executors declare a residual dtype and downstream linear calls
+        # require matching dtypes. T5/Mamba currently pin FP32, so this pins the
+        # contract for when half precision is enabled.
+        half = torch.tensor([[3.0, 4.0]], dtype=torch.float16)
+        weight = torch.ones(2, dtype=torch.float16)
+        for name, fake in (('t5', SimpleNamespace(kernels=None, eps=1e-6)),
+                           ('mamba', SimpleNamespace(kernels=None, c={'layer_norm_epsilon': 1e-5}))):
+            norm = {'t5': T5Executor.norm, 'mamba': MambaExecutor.norm}[name]
+            out = norm(fake, half, weight)
+            self.assertEqual(out.dtype, torch.float16, name)
+            self.assertTrue(torch.isfinite(out).all(), name)
+        with self.assertRaisesRegex(RuntimeError, 'nonfinite'):
+            T5Executor.norm(SimpleNamespace(kernels=None, eps=1e-6),
+                            overflowing().half(), weight)
+
     def test_ordinary_inputs_are_unchanged(self):
         value = torch.tensor([[3.0, 4.0]])
         ones = torch.ones(2)

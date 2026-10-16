@@ -225,7 +225,10 @@ class T5Executor:
         variance=x.float().square().mean(-1,keepdim=True)
         # Finite inputs can overflow here and otherwise silently normalize to zero.
         if not torch.isfinite(variance).all():raise RuntimeError('nonfinite T5 normalization variance')
-        result=x*torch.rsqrt(variance+self.eps)*weight
+        result=(x*torch.rsqrt(variance+self.eps))*weight
+        # Preserve the caller's dtype contract: the FP32 variance check must not
+        # silently promote FP16/BF16 activations (and their residual stream) to FP32.
+        if result.dtype!=x.dtype:result=result.to(x.dtype)
         if not torch.isfinite(result).all():raise RuntimeError('nonfinite T5 normalization output')
         return result
 
