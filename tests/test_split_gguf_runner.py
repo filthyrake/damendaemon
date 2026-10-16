@@ -67,7 +67,7 @@ class OrchestrationTests(unittest.TestCase):
                     self.assertGreater(kwargs['timeout'],0)
                     self.assertLessEqual(kwargs['timeout'],120)
                     if label==fail:raise subprocess.TimeoutExpired(command,kwargs['timeout'])
-                    save(root/f'{label}.json',dict(result={'phase':phase}))
+                    save(root/f'{label}.json',dict(result={'phase':phase},run_id=command[command.index('--run-id')+1],alias=alias,phase=phase))
                 if fail:
                     with self.assertRaises(subprocess.TimeoutExpired):execute(root,invoke)
                 else:execute(root,invoke)
@@ -78,6 +78,37 @@ class OrchestrationTests(unittest.TestCase):
                 expected=['single-trace','split-trace','single-http','split-http']
                 self.assertEqual(calls,expected if fail is None else expected[:expected.index(fail)+1])
                 with self.assertRaisesRegex(ValueError,'fresh'):execute(root,invoke)
+
+    def test_stale_worker_reports_cannot_qualify_a_new_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);self.manifest(root)
+            for phase in ('trace','http'):
+                for alias in ('single','split'):
+                    save(root/f'{alias}-{phase}.json',dict(result={'phase':phase},
+                         run_id='previous-run',alias=alias,phase=phase))
+            with self.assertRaisesRegex(ValueError,'identity'):
+                execute(root,lambda *args,**kwargs: None)
+            report=json.loads((root/'result.json').read_text())
+            self.assertFalse(report['passed'])
+            self.assertFalse(report['hardware_validated'])
+            self.assertEqual(report['completed'],[])
+
+    def test_missing_or_crosswired_worker_identity_fails_before_next_launch(self):
+        for field,value in [('run_id',None),('run_id','old'),('alias','split'),('phase','http')]:
+            with self.subTest(field=field,value=value), tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp);self.manifest(root);calls=[]
+                def invoke(command,**kwargs):
+                    alias,phase=command[-2:];calls.append((alias,phase))
+                    evidence=dict(result={'phase':phase},run_id=command[command.index('--run-id')+1],
+                                  alias=alias,phase=phase)
+                    if value is None:evidence.pop(field)
+                    else:evidence[field]=value
+                    save(root/f'{alias}-{phase}.json',evidence)
+                with self.assertRaisesRegex(ValueError,'identity'):execute(root,invoke)
+                self.assertEqual(calls,[('single','trace')])
+                report=json.loads((root/'result.json').read_text())
+                self.assertFalse(report['hardware_validated'])
+                self.assertEqual(report['completed'],[])
 
     def test_final_worker_or_comparison_cannot_outlive_total_deadline(self):
         for stage in ('worker', 'comparison'):
@@ -98,7 +129,7 @@ class OrchestrationTests(unittest.TestCase):
                 def invoke(command, **kwargs):
                     alias, phase = command[-2:]
                     calls.append((alias, phase))
-                    save(root/f'{alias}-{phase}.json', dict(result={'phase': phase}))
+                    save(root/f'{alias}-{phase}.json', dict(result={'phase': phase},run_id=command[command.index('--run-id')+1],alias=alias,phase=phase))
                     if stage == 'worker' and (alias, phase) == ('split', 'http'):
                         now[0] = 121.0
                 with patch('scripts.experiments.split_gguf.time.monotonic', side_effect=lambda: now[0]), \
@@ -117,7 +148,7 @@ class OrchestrationTests(unittest.TestCase):
             root=Path(tmp);self.manifest(root);calls=[]
             def invoke(command,**kwargs):
                 alias,phase=command[-2:];calls.append(phase)
-                save(root/f'{alias}-{phase}.json',dict(result=alias))
+                save(root/f'{alias}-{phase}.json',dict(result=alias,run_id=command[command.index('--run-id')+1],alias=alias,phase=phase))
             with self.assertRaisesRegex(ValueError,'mismatch'):execute(root,invoke)
             self.assertEqual(calls,['trace','trace'])
             self.assertFalse(json.loads((root/'result.json').read_text())['passed'])

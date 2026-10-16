@@ -9,6 +9,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from urllib.request import Request, urlopen
 
 
@@ -168,9 +169,10 @@ def http_check(runtime, ids, steps, expected):
             thread.join()
 
 
-def worker(folder, alias, phase):
+def worker(folder, alias, phase, run_id):
     import torch
     manifest = json.loads((folder/'manifest.json').read_text())
+    if not run_id:raise ValueError('worker requires a run identity')
     source = manifest['sources'][alias]
     verify_files(source)
     if not torch.cuda.is_available() or torch.version.hip or torch.cuda.device_count() != 1:
@@ -202,7 +204,7 @@ def worker(folder, alias, phase):
     if peak > cap or torch.cuda.memory_allocated() != 0:
         raise ValueError('allocator budget or cleanup failed')
     verify_files(source)
-    save(folder/f'{alias}-{phase}.json', dict(result=result, peak_reserved_bytes=peak,
+    save(folder/f'{alias}-{phase}.json', dict(run_id=run_id, alias=alias, phase=phase, result=result, peak_reserved_bytes=peak,
                                             device=torch.cuda.get_device_name(), torch=torch.__version__))
 
 
@@ -216,7 +218,8 @@ def execute(folder, invoke=subprocess.run):
         raise ValueError('invalid prompt bounds')
     if (folder/'result.json').exists():
         raise ValueError('use a fresh prepared directory for each attempt')
-    report = dict(passed=False, hardware_validated=False, performance_qualified=False, completed=[])
+    run_id = uuid.uuid4().hex
+    report = dict(run_id=run_id, passed=False, hardware_validated=False, performance_qualified=False, completed=[])
     started = time.monotonic()
     def remaining_budget():
         remaining = 120 - (time.monotonic() - started)
@@ -226,16 +229,22 @@ def execute(folder, invoke=subprocess.run):
     save(folder/'result.json', report)
     try:
         for phase in ('trace', 'http'):
+            results = []
             for alias in ('single', 'split'):
                 remaining = remaining_budget()
                 with (folder/f'{alias}-{phase}.log').open('x') as log:
-                    invoke([sys.executable, '-m', 'scripts.experiments.split_gguf', '--worker', str(folder), alias, phase],
+                    invoke([sys.executable, '-m', 'scripts.experiments.split_gguf', '--run-id', run_id, '--worker', str(folder), alias, phase],
                            stdout=log, stderr=log, timeout=remaining, check=True)
+                remaining_budget()
+                evidence = json.loads((folder/f'{alias}-{phase}.json').read_text())
+                if (not isinstance(evidence, dict) or evidence.get('run_id') != run_id
+                        or evidence.get('alias') != alias or evidence.get('phase') != phase):
+                    raise ValueError('worker report identity does not match this run')
+                results.append(evidence['result'])
                 remaining_budget()
                 report['completed'].append(f'{alias}-{phase}')
                 save(folder/'result.json', report)
-            a, b = [json.loads((folder/f'{alias}-{phase}.json').read_text())['result']
-                    for alias in ('single', 'split')]
+            a, b = results
             if a != b:
                 raise ValueError(f'{phase} single/split mismatch')
             remaining_budget()
@@ -254,6 +263,7 @@ def main():
     mode.add_argument('--prepare', nargs=3, metavar=('SINGLE', 'FIRST_SHARD', 'OUTPUT'))
     mode.add_argument('--run', type=Path)
     mode.add_argument('--worker', nargs=3, help=argparse.SUPPRESS)
+    parser.add_argument('--run-id', help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.prepare:
         prepare(Path(args.prepare[0]), Path(args.prepare[1]), Path(args.prepare[2]))
@@ -264,7 +274,7 @@ def main():
     if args.run:
         execute(args.run)
     else:
-        worker(Path(args.worker[0]), args.worker[1], args.worker[2])
+        worker(Path(args.worker[0]), args.worker[1], args.worker[2], args.run_id)
 
 
 if __name__ == '__main__':
