@@ -381,7 +381,7 @@ class RuntimeTests(unittest.TestCase):
         import tempfile
         from pathlib import Path
         from tokenizers import Tokenizer,models
-        cases=[(False,value) for value in ([],{},True,1,'{{','{% if %}')]
+        cases=[(False,value) for value in ([],{},True,1,'{{','{% if %}','\ud800','x\udfff')]
         cases += [(True,value) for value in ('{{','{% if %}')]
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'config.json').write_text('{}')
@@ -436,7 +436,7 @@ class RuntimeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'config.json').write_text('{}')
             Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
-            for value in ({}, {'content':None}, {'content':[]}, [], True, 4):
+            for value in ({}, {'content':None}, {'content':[]}, [], True, 4, '\ud800', {'content':'\udfff'}):
                 with self.subTest(value=value):
                     runtime=Runtime({})
                     (root/'tokenizer_config.json').write_text(json.dumps({'eos_token':value}))

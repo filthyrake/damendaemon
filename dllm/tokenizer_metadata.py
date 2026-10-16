@@ -37,6 +37,10 @@ def special_token_text(metadata):
                 raise ValueError(f'{name} metadata requires text content')
         elif value is not None and not isinstance(value, str):
             raise ValueError(f'{name} must be text or structured token metadata')
+        if value is not None:
+            try:value.encode('utf-8')
+            except UnicodeError as error:
+                raise ValueError(f'{name} must be valid UTF-8') from error
         result[name] = value
     return result
 
@@ -90,4 +94,10 @@ def checkpoint_template(path, metadata, *, tools=False):
             template = raw.decode('utf-8')
     if template is not None and not isinstance(template, str):
         raise ValueError('model needs one text chat template')
+    if template is not None:
+        try:size=len(template.encode('utf-8'))
+        except UnicodeError as error:
+            raise ValueError('checkpoint chat template must be valid UTF-8') from error
+        if size>MAX_CHECKPOINT_TEMPLATE_BYTES:
+            raise ValueError('checkpoint chat template exceeds metadata byte limit')
     return template

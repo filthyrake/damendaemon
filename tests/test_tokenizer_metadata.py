@@ -44,9 +44,23 @@ class TokenizerMetadataTests(unittest.TestCase):
         self.assertEqual(special_token_text({'bos_token':'','eos_token':{'content':'EOS','special':True}}),
                          {'bos_token':'','eos_token':'EOS'})
         for name in ('bos_token','eos_token'):
-            for value in ({}, {'content':None}, {'content':[]}, [], True, 4):
+            for value in ({}, {'content':None}, {'content':[]}, [], True, 4, '\ud800', {'content':'\udfff'}):
                 with self.subTest(name=name,value=value),self.assertRaises(ValueError):
                     special_token_text({name:value})
+        self.assertEqual(special_token_text({'bos_token':'世界','eos_token':{'content':'é😀'}}),
+                         {'bos_token':'世界','eos_token':'é😀'})
+
+    def test_scalar_template_unicode_and_byte_limit(self):
+        from dllm.tokenizer_metadata import checkpoint_template
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            for text in ('\ud800','prefix\udfff'):
+                with self.subTest(text=ascii(text)),self.assertRaisesRegex(ValueError,'UTF-8'):
+                    checkpoint_template(directory,{'chat_template':text})
+            with patch('dllm.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',4):
+                self.assertEqual(checkpoint_template(directory,{'chat_template':'éé'}),'éé')
+                with self.assertRaisesRegex(ValueError,'byte limit'):
+                    checkpoint_template(directory,{'chat_template':'ééx'})
 
     def test_checkpoint_template_precedence_and_bounds(self):
         from dllm.tokenizer_metadata import checkpoint_template
