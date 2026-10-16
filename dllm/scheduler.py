@@ -26,6 +26,10 @@ from .client_prefill_turns import ClientPrefillTurns
 from .token_observation import TokenObservation
 
 
+class PagedCleanupError(ExceptionGroup):
+    """Reservations remain owned; this executor cannot safely serve more work."""
+
+
 @dataclass(eq=False)
 class Pending:
     alias: str
@@ -732,7 +736,7 @@ class BatchedRuntime:
                 except Exception as error:
                     cleanup_errors.append(error)
             if cleanup_errors:
-                raise ExceptionGroup('paged reservation cleanup failed', cleanup_errors)
+                raise PagedCleanupError('paged reservation cleanup failed', cleanup_errors)
 
     def _group(self, first, executor, tier, activation):
         if self.client_prefill_turns and not getattr(executor,'supports_chunked_prefill',False):
@@ -867,6 +871,11 @@ class BatchedRuntime:
                     wait_for_batch(self,first,self.batch_wait_seconds)
                     self.decode_turns.reset();self.prefill_turns.reset()
                     self._group(first, executor, tier, activation)
+            except PagedCleanupError:
+                # The group already tried every reservation. Let the fatal-owner
+                # path close admission and wake queued callers; close() owns
+                # final runtime cleanup outside this worker.
+                raise
             except Exception as error:
                 if not first.done.is_set():
                     self._finish(first, error)

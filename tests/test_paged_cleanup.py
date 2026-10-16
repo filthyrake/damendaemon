@@ -39,3 +39,41 @@ class PagedCleanupTests(unittest.TestCase):
                         self.assertEqual(bool(executor.pool.pages[slot]), slot in failing)
                 finally:
                     runtime.close()
+
+    def test_unrecovered_release_stops_owner_and_queued_requests(self):
+        import threading
+        from concurrent.futures import ThreadPoolExecutor
+        from dllm.runtime import BusyError
+        entered, proceed = threading.Event(), threading.Event()
+        executor = FakePagedExecutor()
+        def fail_prefill(*args, **kwargs):
+            entered.set()
+            if not proceed.wait(3):raise RuntimeError('test did not release prefill')
+            raise RuntimeError('injected prefill failure')
+        executor.prefill_batch = Mock(side_effect=fail_prefill)
+        executor.release_request = Mock(side_effect=RuntimeError('injected reservation release failure'))
+        with patch('dllm.scheduler.Runtime',FakeRuntime):
+            runtime=BatchedRuntime({'a':'a'},batch_size=1,queue_size=3)
+        runtime.runtime.executor=executor
+        runtime.runtime.close=Mock()
+        def generate():return list(runtime.generate('a',[{'content':'ok'}],2))
+        with ThreadPoolExecutor(2) as pool:
+            try:
+                first=pool.submit(generate)
+                self.assertTrue(entered.wait(2))
+                second=pool.submit(generate)
+                with runtime.condition:
+                    self.assertTrue(runtime.condition.wait_for(lambda:len(runtime.pending)==1,timeout=2))
+                proceed.set()
+                with self.assertRaisesRegex(RuntimeError,'injected prefill failure'):first.result(timeout=3)
+                with self.assertRaisesRegex(RuntimeError,'scheduler worker stopped'):second.result(timeout=3)
+                runtime.worker.join(timeout=2)
+                self.assertFalse(runtime.worker.is_alive())
+                self.assertTrue(runtime.closed)
+                executor.prefill_batch.assert_called_once()
+                runtime.runtime.close.assert_not_called()
+                with self.assertRaises(BusyError):generate()
+            finally:
+                proceed.set()
+                runtime.close()
+        runtime.runtime.close.assert_called_once()
