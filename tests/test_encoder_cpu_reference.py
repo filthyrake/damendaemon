@@ -9,7 +9,7 @@ import torch
 from torch.nn import functional as F
 from tokenizers import Tokenizer, models
 from transformers import (BertConfig, BertModel, BertForSequenceClassification,
-                          XLMRobertaConfig, XLMRobertaForSequenceClassification)
+                          XLMRobertaConfig, XLMRobertaModel, XLMRobertaForSequenceClassification)
 from dllm.encoder import EncoderWeights, EncoderExecutor
 
 
@@ -24,7 +24,7 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                 num_labels=1, problem_type='regression', hidden_dropout_prob=0,
                 attention_probs_dropout_prob=0)
         c._attn_implementation = 'eager'
-        model_class = (BertModel if task == 'embedding' else
+        model_class = ((XLMRobertaModel if family=='xlm-roberta' else BertModel) if task == 'embedding' else
                        XLMRobertaForSequenceClassification if family == 'xlm-roberta' else
                        BertForSequenceClassification)
         with torch.random.fork_rng(devices=[]):
@@ -43,7 +43,7 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                     'word_embedding_dimension':8, 'pooling_mode_cls_token':False,
                     'pooling_mode_mean_tokens':True, 'pooling_mode_max_tokens':False,
                     'pooling_mode_mean_sqrt_len_tokens':False}))
-                (root/'sentence_bert_config.json').write_text('{"max_seq_length":32}')
+                (root/'sentence_bert_config.json').write_text(json.dumps({'max_seq_length':30 if family=='xlm-roberta' else 32}))
                 if compact:
                     aliases = ['sentence_transformers.base.modules.transformer.Transformer',
                                'sentence_transformers.sentence_transformer.modules.pooling.Pooling',
@@ -78,6 +78,10 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                 native = EncoderExecutor(model, use_graph=False)
             self.assertEqual(native.compute_dtype, torch.float32)
             rows = [[2, 5, 6, 7, 3], [2, 8, 3], [2, 9, 10, 11, 12, 3]]
+            if family=='xlm-roberta' and task=='embedding':
+                rows.extend([[2]*30,[2,1,5]])
+                self.assertEqual(model.encode([[2]*30]),[[2]*30])
+                with self.assertRaisesRegex(ValueError,'context'):model.encode([[2]*31])
             types = ([[0]*len(row) for row in rows] if family == 'xlm-roberta' else
                      [[0, 0, 1, 1, 1], [0, 0, 1], [0, 0, 0, 1, 1, 1]])
             if task == 'embedding':
@@ -173,3 +177,12 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                     with self.subTest(compact=compact,modes=modes,normalize=normalize,width=width):
                         self.check_family('bert','embedding',compact=compact,pooling=modes,
                                           normalize=normalize,truncate_dim=width)
+
+    def test_xlmr_embeddings(self):
+        for compact in (False,True):
+            for pooling in ('mean','cls','max','mean_sqrt_len_tokens','weightedmean','lasttoken',
+                            ['cls','max','mean']):
+                for normalize in (False,True):
+                    with self.subTest(compact=compact,pooling=pooling,normalize=normalize):
+                        self.check_family('xlm-roberta','embedding',compact=compact,
+                                          pooling=pooling,normalize=normalize,truncate_dim=5)

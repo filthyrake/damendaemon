@@ -296,3 +296,15 @@ class EncoderConfigTests(unittest.TestCase):
         with self.assertRaises(ValueError):config(self.root)
         self.modules[1]['path']='1_Pooling';self.modules[2]['type']='sentence_transformers.models.Dense';self.write()
         with self.assertRaises(ValueError):config(self.root)
+
+    def test_xlmr_position_capacity(self):
+        self.c.update(model_type='xlm-roberta',architectures=['XLMRobertaModel'],
+                      pad_token_id=1,max_position_embeddings=258)
+        self.write()
+        self.assertEqual(config(self.root)['embedding_max_length'],256)
+        self.c['max_position_embeddings']=257
+        self.write()
+        with self.assertRaisesRegex(ValueError,'length'):config(self.root)
+        self.c['max_position_embeddings']=2
+        self.write()
+        with self.assertRaisesRegex(ValueError,'capacity'):config(self.root)

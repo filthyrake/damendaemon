@@ -912,3 +912,11 @@ on the concatenated vector; saved truncation runs afterward. The output width
 is the combined width capped by saved truncation. CPU reference tests cover
 ordering, padding, normalization and truncation; GPU/retrieval qualification
 remains separate.
+
+XLM-RoBERTa sentence embedding checkpoints using the same supported
+Transformer/Pooling/optional Normalize pipeline are accepted alongside BERT.
+XLM-R position IDs retain their padding offset, and saved maximum sequence
+length cannot exceed `max_position_embeddings - pad_token_id - 1`.
+Independent CPU tests compare actual XLM-R checkpoints against Transformers
+across all pooling modes and mixed lengths. GPU performance and retrieval
+quality remain unqualified.

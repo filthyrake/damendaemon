@@ -66,6 +66,6 @@ class RerankingTests(unittest.TestCase):
             self.assertEqual(dispatch(root)['embedding_max_length'],8192)
             self.assertEqual(dispatch(root)['task'],'rerank')
             for change in ({'architectures':['BertForSequenceClassification']},
-                    {'architectures':['XLMRobertaModel']},{'max_position_embeddings':2}):
+                    {'architectures':['XLMRobertaForMaskedLM']},{'max_position_embeddings':2}):
                 path.write_text(json.dumps({**c,**change}))
                 with self.assertRaises(ValueError):dispatch(root)

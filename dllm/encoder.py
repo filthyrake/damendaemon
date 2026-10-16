@@ -1,4 +1,4 @@
-"""Independent BERT embeddings and BERT/XLM-RoBERTa relevance scores."""
+"""Independent BERT/XLM-RoBERTa embeddings and BERT/XLM-RoBERTa relevance scores."""
 from .config import read_config, _positive_number
 from .floating_parameter import require_floating
 from .safetensor_header import parse_metadata_json
@@ -41,7 +41,7 @@ def config(path):
     c = read_config(path/'config.json')
     family=c.get('model_type')
     architectures={'bert':(['BertModel'],['BertForSequenceClassification']),
-        'xlm-roberta':(['XLMRobertaForSequenceClassification'],)}
+        'xlm-roberta':(['XLMRobertaModel'],['XLMRobertaForSequenceClassification'])}
     if (not isinstance(family,str) or family not in architectures or c.get('architectures') not in architectures[family]
             or c.get('is_decoder', False) or c.get('add_cross_attention', False)
             or c.get('position_embedding_type', 'absolute') != 'absolute'
@@ -58,14 +58,14 @@ def config(path):
         raise ValueError('invalid encoder normalization epsilon')
     if type(c.get('pad_token_id')) is not int or not 0 <= c['pad_token_id'] < c['vocab_size']:
         raise ValueError('encoder requires a valid padding token')
-    if c['architectures']!=['BertModel']:
+    capacity=c['max_position_embeddings']-(c['pad_token_id']+1 if family=='xlm-roberta' else 0)
+    if capacity<=0:raise ValueError('invalid encoder position capacity')
+    if c['architectures'] not in (['BertModel'],['XLMRobertaModel']):
         labels=c.get('num_labels',len(c.get('id2label',{})))
         if (type(labels) is not int or labels!=1 or c.get('problem_type') not in (None,'regression')
                 or c.get('sbert_ce_default_activation_function','torch.nn.modules.linear.Identity')!='torch.nn.modules.linear.Identity'):
             raise ValueError('reranking requires one raw relevance output')
-        length=c['max_position_embeddings']-(c['pad_token_id']+1 if family=='xlm-roberta' else 0)
-        if length<=0:raise ValueError('invalid encoder position capacity')
-        return {**c,'task':'rerank','layer_norm_eps':eps,'embedding_max_length':length}
+        return {**c,'task':'rerank','layer_norm_eps':eps,'embedding_max_length':capacity}
     with (path/'modules.json').open('rb') as reader:
         raw = reader.read(1024 * 1024 + 1)
     if len(raw) > 1024 * 1024:
@@ -114,7 +114,7 @@ def config(path):
     if type(lowercase) is not bool:
         raise ValueError('sentence encoder lowercase policy must be boolean')
     length = sentence.get('max_seq_length')
-    if type(length) is not int or not 1 <= length <= c['max_position_embeddings']:
+    if type(length) is not int or not 1 <= length <= capacity:
         raise ValueError('invalid sentence encoder length')
     mode=active[0] if len(active)==1 else active
     prompt,width=_saved_settings(path,c['hidden_size']*len(active))
