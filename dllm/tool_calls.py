@@ -63,6 +63,8 @@ def validate_tools(tools):
             raise ValueError('strict must be boolean')
     try:
         if len(json.dumps(tools,allow_nan=False))>256*1024:raise ValueError('tool definitions are too large')
+        # Validate decoded text as well as the ASCII-escaped size envelope.
+        json.dumps(tools,ensure_ascii=False,allow_nan=False).encode('utf-8')
         return copy.deepcopy(tools)
     except RecursionError as error:
         raise ValueError('tool definition nesting is too deep') from error

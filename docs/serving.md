@@ -972,3 +972,5 @@ Integer literals in schema `const` and `enum` constraints must fit signed 64-bit
 Native ByteLevel, byte-fallback and metaspace logprob token text and bytes follow the supported decoder mapping for ordinary added tokens, including leading-space glyphs and partial UTF-8 pieces. GGUF user-defined literal pieces retain their separate literal-byte contract; special controls remain hidden.
 
 Generic function-call arguments must decode to valid UTF-8 JSON, including nested keys and values. Escaped lone surrogates are not published as calls or accepted in tool history. Automatic malformed envelopes remain plain text; constrained calls retain their existing invalid-output and length-termination behavior. Valid Unicode and escaped surrogate pairs remain supported.
+
+Tool definitions also require valid UTF-8 in descriptions and nested schema keys/values before generation dispatch. The existing 256 KiB ASCII-serialized definition limit is unchanged; escaped invalid Unicode does not bypass validation.

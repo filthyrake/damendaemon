@@ -213,6 +213,21 @@ class ServerTests(unittest.TestCase):
         history=messages+[choice['message'],{'role':'tool','tool_call_id':call['id'],'content':'Sunny'}]
         with self.post(messages=history,tools=tools) as response:self.assertEqual(response.status,200)
 
+    def test_invalid_tool_unicode_returns_400_before_dispatch(self):
+        definitions = [
+            {'name':'test','description':'\ud800'},
+            {'name':'test','parameters':{'type':'object','description':'\udfff'}},
+            {'name':'test','parameters':{'type':'object','properties':{'\ud800':{'type':'string'}}}},
+            {'name':'test','parameters':{'type':'object','extra':[{'value':'\udc00'}]}},
+        ]
+        for function in definitions:
+            for stream in (False,True):
+                with self.subTest(function=function,stream=stream), patch.object(self.runtime,'generate') as generate:
+                    with self.assertRaises(HTTPError) as caught:
+                        self.post(tools=[{'type':'function','function':function}],stream=stream)
+                    with caught.exception as response:self.assertEqual(response.code,400)
+                    generate.assert_not_called()
+
     def test_deep_tool_schema_returns_400_before_dispatch(self):
         nested = json.loads('[' * 600 + '0' + ']' * 600)
         tools = [{'type': 'function', 'function': {'name': 'test',

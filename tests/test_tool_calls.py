@@ -20,6 +20,15 @@ def parse(parts):
 
 
 class ToolCallTests(unittest.TestCase):
+    def test_tool_definitions_preserve_valid_unicode_and_size_limit(self):
+        tools = [{'type':'function','function':{'name':'test','description':'Zürich 🦙',
+            'parameters':{'type':'object','properties':{'é':{'type':'string','enum':['🦙']}}}}}]
+        result = validate_tools(tools)
+        self.assertEqual(result,tools)
+        self.assertIsNot(result,tools)
+        tools[0]['function']['description'] = 'x' * (256*1024)
+        with self.assertRaisesRegex(ValueError,'too large'):validate_tools(tools)
+
     def test_deep_and_cyclic_definitions_are_validation_errors(self):
         nested = json.loads('[' * 600 + '0' + ']' * 600)
         cyclic = {}; cyclic['self'] = cyclic
