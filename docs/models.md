@@ -543,7 +543,9 @@ values, up to 64 calls, 256 parameters per call and 1 MiB per block. Names are
 1–128 characters without quotes, angle brackets or control characters; reserved
 model/DSML markers in values are rejected because the wire format has no escape
 for them. Duplicate parameters/JSON keys, nonfinite numbers, malformed syntax,
-truncated blocks and trailing text fail closed. IDs are application metadata and
+truncated blocks and trailing text fail closed. Normalized argument JSON must
+also fit the 1 MiB UTF-8 limit before a parsed call is published; escaped lone
+surrogates and JSON escaping that exceeds this limit are rejected. IDs are application metadata and
 are not encoded in this wire format. The codec does not execute tools or validate argument schemas. Reference prompting
 is described below; HTTP and model qualification gates remain open.
 

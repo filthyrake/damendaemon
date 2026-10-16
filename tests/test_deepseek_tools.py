@@ -37,6 +37,31 @@ class DeepSeekToolsTests(unittest.TestCase):
                       text.replace('</｜DSML｜invoke>','<｜DSML｜parameter name="x" string="false">2</｜DSML｜parameter>\n</｜DSML｜invoke>')):
             with self.subTest(value=value),self.assertRaises(ValueError):parse_tool_calls(value)
 
+    def test_parsed_argument_json_is_bounded_utf8_before_publication(self):
+        from dllm.deepseek_tools import DSML,INVOKE_END,PARAM_END
+        def wire(raw,string):
+            return (START + f'<{DSML}invoke name="f">\n<{DSML}parameter name="x" string="{string}">'
+                    + raw + PARAM_END + '\n' + INVOKE_END + '\n' + END)
+        invalid = [wire(json.dumps({'nested':'\ud800'}),'false'),
+                   wire(json.dumps({'\udfff':'value'}),'false'), wire('\0'*300,'true')]
+        from dllm.deepseek_output import DeepSeekOutput
+        from dllm.deepseek_text import EOS
+        for source in invalid:
+            with self.subTest(source=repr(source)[:80]),patch('dllm.deepseek_tools.MAX_TEXT_BYTES',1024):
+                self.assertLess(len(source.encode()),1024)
+                with self.assertRaises(ValueError):parse_tool_calls(source)
+                parser=DeepSeekOutput(allow_tool_calls=True)
+                events=parser.feed('\n\n'+source+EOS)
+                self.assertFalse(any('tool_calls' in event for event in events))
+                with self.assertRaises(ValueError):parser.finish()
+                self.assertTrue(parser.failed)
+                self.assertTrue(parser.tool_buffer.closed)
+        for source in (wire('\0'*10,'true'),wire(json.dumps({'nested':'é🙂'}),'false')):
+            with self.subTest(source=source),patch('dllm.deepseek_tools.MAX_TEXT_BYTES',1024):
+                calls=parse_tool_calls(source)
+                self.assertEqual(parse_tool_calls(render_tool_calls(calls)),calls)
+                self.assertLess(len(calls[0]['function']['arguments'].encode()),1024)
+
     def test_input_validation_and_resource_bounds(self):
         for arguments in ('[]','null','{"a":1,"a":2}','{"x":NaN}','{"x":1e999}'):
             with self.assertRaises(ValueError):render_tool_calls([{'type':'function','function':{'name':'f','arguments':arguments}}])
