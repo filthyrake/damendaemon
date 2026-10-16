@@ -35,8 +35,9 @@ def _json_object(value):
     try:result=json.loads(value,object_pairs_hook=_pairs,parse_constant=_invalid_constant)
     except RecursionError as error:raise ValueError('tool JSON nesting is too deep') from error
     if not isinstance(result,dict):raise ValueError('tool arguments must be a JSON object')
-    # Also reject finite JSON literals that overflow the host float parser.
-    json.dumps(result,allow_nan=False)
+    # Reject overflowed numbers and decoded lone surrogates before publishing
+    # arguments or replaying history. ASCII escaping would hide invalid Unicode.
+    json.dumps(result,ensure_ascii=False,allow_nan=False).encode('utf-8')
     return result
 
 

@@ -169,3 +169,45 @@ class ForcedToolTests(unittest.TestCase):
             with self.subTest(choice=choice),self.assertRaises(ValueError):prepare_tools(self.tools,choice)
         self.tools[0]['function']['parameters']['properties']['value']['pattern']='x'
         with self.assertRaises(ValueError):prepare_tools(self.tools,'required')
+
+
+class ToolUnicodeTests(unittest.TestCase):
+    def test_invalid_decoded_unicode_never_becomes_a_call_or_history(self):
+        _, schema = prepare_tools(TOOLS, 'required')
+        for arguments in (r'{"city":"\ud800"}', r'{"city":"\udfff"}',
+                          r'{"nested":[{"\ud800":"value"}]}',
+                          r'{"nested":[{"key":"\udc00"}]}'):
+            raw = '{"name":"weather","arguments":' + arguments + '}'
+            envelope = '<tool_call>' + raw + '</tool_call>'
+            with self.subTest(arguments=arguments):
+                for pieces in ([envelope], list(envelope)):
+                    content,calls,_ = parse(pieces)
+                    self.assertEqual(content,envelope)
+                    self.assertEqual(calls,[])
+                for reason in ('stop','length'):
+                    parser = JsonToolCallStream(schema);parser.feed(raw)
+                    if reason == 'length':
+                        self.assertEqual(parser.finish(reason),[{'content':raw}])
+                    else:
+                        with self.assertRaises(RuntimeError):parser.finish(reason)
+                    self.assertEqual(parser.calls,[])
+                history = [{'role':'assistant','content':None,'tool_calls':[
+                    {'id':'call_a','type':'function','function':{'name':'weather','arguments':arguments}}]},
+                    {'role':'tool','tool_call_id':'call_a','content':'result'}]
+                with self.assertRaises(ValueError):validate_messages(history)
+
+    def test_valid_unicode_and_escaped_pairs_remain_replayable(self):
+        _,schema = prepare_tools(TOOLS,'required')
+        for arguments in (r'{"city":"\ud83e\udd99"}', '{"city":"Zürich 🦙"}'):
+            raw = '{"name":"weather","arguments":' + arguments + '}'
+            automatic = ToolCallStream(TOOLS)
+            automatic.feed('<tool_call>'+raw+'</tool_call>')
+            forced = JsonToolCallStream(schema);forced.feed(raw);forced.finish('stop')
+            for parser in (automatic,forced):
+                self.assertEqual(len(parser.calls),1)
+                function = parser.calls[0]['function']
+                function['arguments'].encode('utf-8')
+                self.assertEqual(json.loads(function['arguments']),json.loads(arguments))
+                history = [{'role':'assistant','content':None,'tool_calls':parser.calls},
+                    {'role':'tool','tool_call_id':parser.calls[0]['id'],'content':'result'}]
+                self.assertEqual(template_messages(history)[0]['tool_calls'][0]['function']['arguments'],json.loads(arguments))
