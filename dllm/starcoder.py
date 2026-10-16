@@ -5,21 +5,36 @@ from .batch import BatchExecutor
 
 
 def load_weights(state, config):
-    def take(name):
-        return state.pop(name).float()
-    w = {'embed': take('model.embed_tokens.weight')}
-    w['head'] = w['embed'] if config.get('tie_word_embeddings') else take('lm_head.weight')
+    h=config['hidden_size'];inter=config['intermediate_size']
+    query=config['num_attention_heads']*config['head_dim']
+    kv=config['num_key_value_heads']*config['head_dim']
+    def take(name,shape):
+        if name not in state:raise ValueError('missing StarCoder2 checkpoint tensor: '+name)
+        value=state.pop(name)
+        if tuple(value.shape)!=shape:
+            raise ValueError('StarCoder2 checkpoint shape mismatch: '+name)
+        return value.float()
+    w = {'embed': take('model.embed_tokens.weight',(config['vocab_size'],h))}
+    if config.get('tie_word_embeddings'):
+        w['head']=w['embed']
+        if 'lm_head.weight' in state and not torch.equal(take('lm_head.weight',(config['vocab_size'],h)),w['head']):
+            raise ValueError('StarCoder2 checkpoint declares unequal tied output weights')
+    else:w['head']=take('lm_head.weight',(config['vocab_size'],h))
     for suffix in ('weight', 'bias'):
-        w['norm' if suffix == 'weight' else 'norm.bias'] = state.pop('model.norm.'+suffix).float()
+        w['norm' if suffix == 'weight' else 'norm.bias'] = take('model.norm.'+suffix,(h,))
     for i in range(config['num_hidden_layers']):
         prefix = f'model.layers.{i}.'
         for name, source in (('norm1','input_layernorm'), ('norm2','post_attention_layernorm')):
-            w[f'{i}.{name}'] = state.pop(prefix+source+'.weight').float()
-            w[f'{i}.{name}.bias'] = state.pop(prefix+source+'.bias').float()
+            w[f'{i}.{name}'] = take(prefix+source+'.weight',(h,))
+            w[f'{i}.{name}.bias'] = take(prefix+source+'.bias',(h,))
         for suffix in (('weight','bias') if config['use_bias'] else ('weight',)):
-            w[f'{i}.qkv.{suffix}'] = torch.cat([take(prefix+f'self_attn.{p}_proj.{suffix}') for p in ('q','k','v')])
-            for name, source in (('out','self_attn.o_proj'),('fc','mlp.c_fc'),('down','mlp.c_proj')):
-                w[f'{i}.{name}' + ('.bias' if suffix == 'bias' else '')] = take(prefix+source+'.'+suffix)
+            w[f'{i}.qkv.{suffix}'] = torch.cat([take(prefix+f'self_attn.{p}_proj.{suffix}',
+                (width,h) if suffix=='weight' else (width,)) for p,width in (('q',query),('k',kv),('v',kv))])
+            for name, source, shape in (('out','self_attn.o_proj',(h,query)),
+                                        ('fc','mlp.c_fc',(inter,h)),('down','mlp.c_proj',(h,inter))):
+                w[f'{i}.{name}' + ('.bias' if suffix == 'bias' else '')] = take(prefix+source+'.'+suffix,
+                    shape if suffix=='weight' else (shape[0],))
+    if state:raise ValueError('unexpected StarCoder2 checkpoint tensors')
     return w
 
 
