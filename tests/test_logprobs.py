@@ -142,6 +142,46 @@ class LogprobTests(unittest.TestCase):
             with self.subTest(selected=selected),self.assertRaisesRegex(RuntimeError,'non-finite'):
                 score_rows(torch.tensor([[1.,2.,3.]]),torch.tensor([selected]),[1])
 
+    def test_extra_decoder_transforms_use_backend_text_without_inventing_bytes(self):
+        for steps in ([decoders.ByteLevel(), decoders.Replace('a','b')],
+                      [decoders.ByteFallback(), decoders.Replace('a','b')],
+                      [decoders.Replace('a','b'), decoders.ByteLevel()],
+                      [decoders.ByteFallback(), decoders.Strip('a',1,0)],
+                      [decoders.Metaspace(), decoders.Replace('a','b')]):
+            for nested in (False,True):
+                tokenizer=Tokenizer(models.WordLevel({'a':0}))
+                tokenizer.add_tokens([AddedToken('a',special=False)])
+                decoder=decoders.Sequence(steps)
+                tokenizer.decoder=decoders.Sequence([decoder]) if nested else decoder
+                with self.subTest(steps=steps,nested=nested):
+                    text=TokenText(tokenizer)
+                    self.assertEqual(text.token(0),(tokenizer.decode([0]),None))
+                    packet=text.format({'token_id':0,'logprob':-.5,'top':[(0,-.5)]})
+                    self.assertEqual(packet['token'],tokenizer.decode([0]))
+                    self.assertIsNone(packet['bytes'])
+                    self.assertIsNone(packet['top_logprobs'][0]['bytes'])
+
+    def test_sentencepiece_dummy_prefix_preserves_continuation_fragment(self):
+        tokenizer=Tokenizer(models.WordLevel({'▁hello':0,'<0xC3>':1,'<0xA9>':2}))
+        tokenizer.decoder=decoders.Sequence([decoders.Replace('▁',' '),
+            decoders.ByteFallback(),decoders.Fuse(),decoders.Strip(' ',1,0)])
+        text=TokenText(tokenizer)
+        self.assertEqual(text.token(0),(' hello',tuple(b' hello')))
+        self.assertEqual(b''.join(bytes(text.token(i)[1]) for i in (1,2)), 'é'.encode())
+        self.assertEqual(tokenizer.decode([0,1,2]),'helloé')
+
+    def test_literal_replacements_precede_byte_fallback_interpretation(self):
+        tokenizer=Tokenizer(models.WordLevel({'<0x41>':0,'alias':1,'<0xC3>':2,'<0xA9>':3}))
+        tokenizer.decoder=decoders.Sequence([
+            decoders.Replace('<0x41>','changed'),
+            decoders.Replace('alias','<0x42>'),decoders.ByteFallback(),decoders.Fuse()])
+        text=TokenText(tokenizer)
+        self.assertEqual(text.token(0),('changed',tuple(b'changed')))
+        self.assertEqual(text.token(1),('B',(66,)))
+        for ids in ([0],[1],[2,3]):
+            raw=b''.join(bytes(text.token(token)[1]) for token in ids)
+            self.assertEqual(raw.decode(),tokenizer.decode(ids))
+
     def test_nested_decoder_sequences_preserve_byte_fragments(self):
         cases=(
             ({'<0xC3>':0,'<0xA9>':1,'▁word':2},

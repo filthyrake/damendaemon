@@ -53,11 +53,23 @@ class TokenText:
         self.cache=OrderedDict()
         from .tokenizer_decoders import decoder_steps
         steps=decoder_steps(tokenizer.decoder)
-        self.byte_level=any(step.get('type')=='ByteLevel' for step in steps)
-        self.byte_fallback=any(step.get('type')=='ByteFallback' for step in steps)
-        self.metaspace=next((step.get('replacement','▁') for step in steps if step.get('type')=='Metaspace'),None)
-        self.replacements=[(step['pattern']['String'],step['content']) for step in steps
-                           if step.get('type')=='Replace' and 'String' in step.get('pattern',{})]
+        self.byte_level=len(steps)==1 and steps[0].get('type')=='ByteLevel'
+        self.metaspace=(steps[0].get('replacement','▁')
+                        if len(steps)==1 and steps[0].get('type')=='Metaspace' else None)
+        self.replacements=[]
+        remaining=list(steps)
+        while (remaining and remaining[0].get('type')=='Replace'
+               and 'String' in remaining[0].get('pattern',{})):
+            step=remaining.pop(0)
+            self.replacements.append((step['pattern']['String'],step['content']))
+        suffix=remaining[1:]
+        # SentencePiece strips its leading dummy space at sequence start.
+        # Raw per-token fragments retain that space, just as Metaspace does.
+        if suffix==[{'type':'Fuse'},{'type':'Strip','content':' ','start':1,'stop':0}]:
+            suffix=suffix[:-1]
+        self.byte_fallback=bool(remaining and remaining[0].get('type')=='ByteFallback'
+                                and suffix in ([],[{'type':'Fuse'}]))
+        self.has_decoder=bool(steps)
         self.added=tokenizer.get_added_tokens_decoder()
         # ByteLevel maps printable bytes directly and the rest above U+0100.
         printable=list(range(33,127))+list(range(161,173))+list(range(174,256))
@@ -84,18 +96,17 @@ class TokenText:
             if added.special:return piece,None
             # GGUF user pieces deliberately bypass the backend decoder.
             # Native added pieces follow their supported byte decoder instead.
-            mapped=self.byte_level or self.byte_fallback or self.metaspace is not None
-            if not mapped or token_id in getattr(self.tokenizer,'_literal_tokens',{}):
+            if (not self.has_decoder or token_id in getattr(self.tokenizer,'_literal_tokens',{})):
                 return piece,tuple(piece.encode('utf-8'))
         raw=None
         if self.byte_level:
             raw=(bytes(self.byte_values[char] for char in piece)
                  if all(char in self.byte_values for char in piece) else piece.encode('utf-8'))
         elif self.byte_fallback or self.metaspace is not None:
+            for old,new in self.replacements:piece=piece.replace(old,new)
             if self.byte_fallback and re.fullmatch(r'<0x[0-9A-Fa-f]{2}>',piece):
                 raw=bytes([int(piece[3:5],16)])
             else:
-                for old,new in self.replacements:piece=piece.replace(old,new)
                 if self.metaspace is not None:piece=piece.replace(self.metaspace,' ')
                 raw=piece.encode('utf-8')
         if raw is None:
