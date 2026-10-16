@@ -24,7 +24,18 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--benchmark',required=True)
     p.add_argument('--reference',required=True);p.add_argument('--output',required=True);args=p.parse_args()
     benchmark=json.loads(Path(args.benchmark).read_text());reference=json.loads(Path(args.reference).read_text())
-    if not reference['passed'] or reference['sha256']!=benchmark['model_sha256']:
+    if not isinstance(benchmark,dict) or not isinstance(reference,dict):
+        raise ValueError('benchmark and reference must be objects')
+    prompts=benchmark.get('prompts');maximum=benchmark.get('output_tokens')
+    if (not isinstance(prompts,dict) or not 1<=len(prompts)<=64
+            or type(maximum) is not int or not 1<=maximum<=511):
+        raise ValueError('qualification requires 1..64 prompts and a positive bounded output limit')
+    for key,ids in prompts.items():
+        if (not isinstance(key,str) or not 1<=len(key)<=64 or not key.isascii() or not key.isdecimal()
+                or not isinstance(ids,list) or not ids or len(ids)+maximum>512
+                or any(type(token) is not int or token<0 for token in ids)):
+            raise ValueError('qualification prompts must contain token IDs and fit context 512')
+    if reference.get('passed') is not True or reference['sha256']!=benchmark['model_sha256']:
         raise ValueError('requires passing same-checkpoint independent token trace')
     with Path(args.model).open('rb') as stream:checksum=hashlib.file_digest(stream,'sha256').hexdigest()
     if checksum!=reference['sha256']:raise ValueError('model differs from reference')
@@ -62,12 +73,13 @@ def main():
                                     headers={'Content-Type':'application/json'})
                     with urlopen(request,timeout=300) as response:
                         if streaming:
-                            chunks=list(events(response, require_terminated=True));assert chunks[-1]=='[DONE]'
+                            chunks=list(events(response, require_terminated=True))
+                            if not chunks or chunks[-1]!='[DONE]':raise ValueError('incomplete HTTP stream')
                             text=''.join(c.get('text','') for item in chunks[:-1] for c in json.loads(item)['choices'])
                         else:
                             value=json.load(response);text=value['choices'][0]['text'];case['timing']=value['dllm_timing']
                     case['stream' if streaming else 'nonstream']=dict(text=text,equal=text==expected)
-                    assert text==expected,case
+                    if text!=expected:raise ValueError('HTTP continuation differs from independent token trace')
                 native=next(c for run in benchmark['runs'] if run['engine']=='llama.cpp'
                             for c in run['cases'] if c['prompt_tokens']==len(ids) and c['concurrency']==1)
                 case['llama_reference_equal']=expected==native['rounds'][3]['requests'][0]['text']
