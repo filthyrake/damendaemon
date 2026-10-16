@@ -92,6 +92,10 @@ class Mamba2Weights(MambaWeights):
             w[target+'conv']=take(prefix+'conv1d.weight',(cd,1,c['conv_kernel'])).squeeze(1)
             w[target+'conv_bias']=take(prefix+'conv1d.bias',(cd,)) if c['use_conv_bias'] else torch.zeros(cd)
             w[target+'A']=-take(prefix+'A_log',(n,)).exp()
+            # A_log above exp's overflow threshold yields an infinite decay rate;
+            # exp(step*A) would then silently zero the recurrent state every token.
+            if not torch.isfinite(w[target+'A']).all():
+                raise ValueError('nonfinite Mamba-2 decay rates: A_log overflows')
             w[target+'D']=take(prefix+'D',(n,));w[target+'dt_bias']=take(prefix+'dt_bias',(n,))
             if c['use_bias']:
                 w[target+'in_bias']=take(prefix+'in_proj.bias',(i+cd+n,))

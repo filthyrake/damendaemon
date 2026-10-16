@@ -17,6 +17,19 @@ from .device import selected_device, selected_accelerator, synchronize, empty_ca
 from .batch import BatchExecutor
 
 
+def _l2_normalize(value):
+    """FP32 L2 normalization that rejects overflow instead of silently zeroing.
+
+    A finite head whose square-sum overflows yields an infinite norm and an
+    all-zero normalized vector, corrupting linear-attention geometry.
+    """
+    fp32 = value.float()
+    norm = fp32.square().sum(-1, keepdim=True)
+    if not torch.isfinite(norm).all():
+        raise RuntimeError('nonfinite hybrid linear-attention q/k norm')
+    return fp32 * torch.rsqrt(norm + 1.e-6)
+
+
 def load_weights(state, config):
     # Multimodal checkpoints wrap the text backbone in language_model.
     prefix = 'model.language_model.' if 'model.language_model.embed_tokens.weight' in state else 'model.'
@@ -63,6 +76,11 @@ def load_weights(state, config):
                 w[f'{i}.{dest}'] = take(layer+'linear_attn.'+name)
             for dest, name in (('dt', 'dt_bias'), ('A', 'A_log'), ('gated_norm', 'norm.weight')):
                 w[f'{i}.{dest}'] = take(layer+'linear_attn.'+name, torch.float32)
+            # The runtime exponentiates A_log per token; a value above exp's
+            # overflow threshold yields an infinite decay that silently zeroes
+            # the linear-attention state every step.
+            if not torch.isfinite(w[f'{i}.A'].exp()).all():
+                raise ValueError('nonfinite hybrid decay rates: A_log overflows')
     return w
 
 
@@ -352,7 +370,7 @@ class HybridExecutor:
             out = self.fused.scan(q, k, v, decay, beta, self.state[i], slots,
                                   reset=prefill and not prefix_length)
         else:
-            q, k = [a.float()*torch.rsqrt(a.float().square().sum(-1, keepdim=True)+1.e-6) for a in (q, k)]
+            q, k = [_l2_normalize(a) for a in (q, k)]
             q, k = [a.repeat_interleave(self.lv//self.lk, dim=2) for a in (q, k)]
             q = q * (self.dk**-.5)
             if self.metal_scan is not None:
