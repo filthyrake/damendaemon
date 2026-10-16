@@ -51,3 +51,23 @@ class CpuReferenceChatTests(unittest.TestCase):
         for source in ('{%','x'*(128*1024+1),''):
             self.template.write_text(source)
             with self.assertRaises(ValueError):self.text()
+
+    def test_empty_render_chunks_do_not_accumulate_objects(self):
+        import weakref
+        from types import SimpleNamespace
+        class Chunk(str):pass
+        refs=[];closed=[]
+        def generate(**options):
+            try:
+                for index in range(20):
+                    if index>=2:
+                        self.assertIsNone(refs[index-2](),'renderer retains earlier empty chunks')
+                    chunk=Chunk('')
+                    refs.append(weakref.ref(chunk))
+                    yield chunk
+                yield 'hello'
+            finally:closed.append(True)
+        text=self.text();text.template=SimpleNamespace(generate=generate)
+        self.assertEqual(text.chat_tokens([{'role':'user','content':'hello'}]),[1])
+        self.assertTrue(all(ref() is None for ref in refs))
+        self.assertEqual(closed,[True])

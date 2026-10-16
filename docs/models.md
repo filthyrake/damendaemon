@@ -765,3 +765,5 @@ When no embedded `chat_template` is supplied, `chat_template.jinja` is read as U
 Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects duplicate fields or excessive nesting before pooling configuration or checkpoint loading. The supported pipeline remains Transformer → mean Pooling → Normalize.
 
 Native chat tokenization consumes template output incrementally and rejects more than 16 MiB of rendered UTF-8 text, including a forced tool-call prefix, before tokenization. The template generator closes on success or failure. This bounds accumulated prompt output, not intermediate expression allocations or template execution time.
+
+The CPU reference chat path retains its 1 MiB rendered-output limit and uses the same text-buffer approach so empty template chunks do not accumulate retained objects. Both paths close their template generators on overflow.

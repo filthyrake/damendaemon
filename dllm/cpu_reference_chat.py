@@ -1,4 +1,6 @@
 """Explicit operator-configured text chat for the bounded CPU reference path."""
+from contextlib import closing
+from io import StringIO
 import hashlib
 import json
 from pathlib import Path
@@ -43,12 +45,14 @@ class CpuReferenceChat(CpuReferenceText):
             if total>1024**2:raise ValueError('CPU chat messages exceed 1 MiB')
             prepared.append(dict(message))
         options={} if enable_thinking is None else dict(enable_thinking=enable_thinking)
-        chunks=[];total=0
+        total=0
         try:
-            for chunk in self.template.generate(messages=prepared,add_generation_prompt=True,tools=None,
-                                                 **options,**self.special_tokens):
-                total+=len(chunk.encode('utf-8'))
-                if total>1024**2:raise ValueError('CPU chat rendered prompt exceeds 1 MiB')
-                chunks.append(chunk)
+            with StringIO() as output, closing(self.template.generate(messages=prepared,
+                    add_generation_prompt=True,tools=None,**options,**self.special_tokens)) as stream:
+                for chunk in stream:
+                    total+=len(chunk.encode('utf-8'))
+                    if total>1024**2:raise ValueError('CPU chat rendered prompt exceeds 1 MiB')
+                    output.write(chunk)
+                rendered=output.getvalue()
         except (TemplateError,RecursionError) as error:raise ValueError('CPU chat template rendering failed') from error
-        return self.tokenizer.encode(''.join(chunks),add_special_tokens=False).ids
+        return self.tokenizer.encode(rendered,add_special_tokens=False).ids
