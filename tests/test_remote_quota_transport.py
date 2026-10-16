@@ -69,6 +69,23 @@ class RemoteQuotaTransportTests(unittest.TestCase):
         client.call(client.request('execute',sequence=2,command=dict(op='release',claim=result['claim'])))
         self.assertTrue(other.call(other.request('execute',sequence=2,command=ledger_fixture.reserve(10)))['ok'])
 
+    def test_late_receipt_validation_is_unknown_and_exact_retry_keeps_one_charge(self):
+        server=self.serve();client=self.client(server,timeout=1)
+        request=client.request('execute',sequence=1,command=ledger_fixture.reserve(8))
+        monotonic=time.monotonic;offset=[0.0];validate=client._result
+        def delayed(*args):
+            validate(*args)
+            offset[0]=2.0
+        with patch('dllm.remote_quota_transport.time.monotonic',side_effect=lambda:monotonic()+offset[0]), \
+                patch.object(client,'_result',side_effect=delayed):
+            with self.assertRaises(RemoteQuotaUnavailable):client.call(request)
+        self.assertEqual(self.ledger.status(self.owner,self.key)['claims'],1)
+        result=client.call(request)
+        self.assertTrue(result['ok'])
+        self.assertEqual(result['sequence'],1)
+        self.assertEqual(client.call(request),result)
+        self.assertEqual(self.ledger.status(self.owner,self.key)['claims'],1)
+
     def test_wrong_pin_protocol_credentials_and_ledger_never_execute(self):
         server=self.serve()
         with patch.object(self.ledger,'execute',side_effect=AssertionError('must not execute')) as execute:

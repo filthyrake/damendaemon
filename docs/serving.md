@@ -974,3 +974,5 @@ Native ByteLevel, byte-fallback and metaspace logprob token text and bytes follo
 Generic function-call arguments must decode to valid UTF-8 JSON, including nested keys and values. Escaped lone surrogates are not published as calls or accepted in tool history. Automatic malformed envelopes remain plain text; constrained calls retain their existing invalid-output and length-termination behavior. Valid Unicode and escaped surrogate pairs remain supported.
 
 Tool definitions also require valid UTF-8 in descriptions and nested schema keys/values before generation dispatch. The existing 256 KiB ASCII-serialized definition limit is unchanged; escaped invalid Unicode does not bypass validation.
+
+Remote quota RPC deadlines include response decoding and receipt validation. A response that finishes late is an unknown outcome even if the authority committed it. The reservation remains charged; recovery must retry the identical immutable request to obtain its durable receipt without a duplicate charge.
