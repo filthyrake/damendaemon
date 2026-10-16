@@ -21,7 +21,7 @@ from transformers.modeling_utils import no_init_weights
 
 from dllm.gguf_model import GgufWeights
 from dllm.runtime import make_executor
-from dllm.token_workload import token_workload_digest
+from dllm.token_workload import token_workload_digest, teacher_token_lookup
 from dllm.device import empty_cache, device_name
 
 
@@ -161,17 +161,11 @@ def main():
         experiment=install_validation_dispatch()
     torch.backends.cuda.matmul.allow_tf32 = False
     teacher = json.loads(Path(args.teacher_trace).read_text()) if args.teacher_trace else None
+    if args.teacher_trace and not isinstance(teacher,dict):raise ValueError('teacher trace must be an object')
     source = GgufWeights(args.gguf, args.context, 'none')
     if args.expanded_control:
         from verify_kquant_runtime import expanded
         source=expanded(source)
-    config = AutoConfig.from_pretrained(args.hf_config, local_files_only=True, trust_remote_code=False)
-    config.tie_word_embeddings = False
-    with no_init_weights():
-        reference = AutoModelForCausalLM.from_config(config, torch_dtype=torch.float16, attn_implementation='eager')
-    state, formats, embedding_type = reference_weights(args.gguf,args.weight_rounding)
-    reference.load_state_dict(state, strict=True, assign=True); del state
-    reference.eval().to(device="cuda", dtype=getattr(torch, args.reference_dtype))
     cases = []
     prompts = [source.chat_tokens([{'role':'user','content':text}]) for text in
                ('What is 2 + 2? Answer with one number.', 'Reply in French: Hello, how are you?')]
@@ -211,6 +205,14 @@ def main():
         if any(not ids or len(ids)+steps-1>args.context or any(type(t) is not int or not 0<=t<source.config['vocab_size'] for t in ids) for ids in prompts):
             raise ValueError('invalid benchmark prompt tokens or context budget')
     workload_sha256 = token_workload_digest(prompts, steps)
+    teacher_tokens = teacher_token_lookup(teacher, prompts, steps, source.config['vocab_size'])
+    config = AutoConfig.from_pretrained(args.hf_config, local_files_only=True, trust_remote_code=False)
+    config.tie_word_embeddings = False
+    with no_init_weights():
+        reference = AutoModelForCausalLM.from_config(config, torch_dtype=torch.float16, attn_implementation='eager')
+    state, formats, embedding_type = reference_weights(args.gguf,args.weight_rounding)
+    reference.load_state_dict(state, strict=True, assign=True); del state
+    reference.eval().to(device="cuda", dtype=getattr(torch, args.reference_dtype))
     reference_cache = {}
     if args.serial_reference:
         # Large checkpoints need not hold HF's expanded weights and dllm's
@@ -218,15 +220,13 @@ def main():
         with torch.inference_mode():
             for graph in (False, True):
                 for index, ids in enumerate(prompts):
-                    previous = next(c for c in teacher["cases"] if c["graph"] == graph and c["case"] == index) if teacher else None
-                    if previous and previous['prompt_tokens'] != len(ids):
-                        raise ValueError('teacher trace uses a different prompt/context length')
+                    previous = teacher_tokens.get((graph,index))
                     expected = reference_prefill(reference, torch.tensor([ids], device='cuda'), args.reference_prefill_chunk_size)
                     trace = []
                     for step in range(steps):
                         target = expected.logits[:, -1, :].cpu()
                         trace.append(target)
-                        token = previous["reference_tokens"][step] if previous else target.argmax(-1).item()
+                        token = previous[step] if previous else target.argmax(-1).item()
                         if step < steps-1:
                             expected = reference(torch.tensor([[token]], device='cuda'), past_key_values=expected.past_key_values, use_cache=True)
                     reference_cache[graph, index] = trace
@@ -276,9 +276,7 @@ def main():
                 expected = None if args.serial_reference else reference_prefill(reference, torch.tensor([ids], device='cuda'), args.reference_prefill_chunk_size)
                 actual = executor.prefill(ids)
                 errors = []; output = []; actual_tokens = []; margins = []; mismatches = []; forced = []; eos_step = None
-                previous = next(c for c in teacher["cases"] if c["graph"] == graph and c["case"] == index) if teacher else None
-                if previous and previous['prompt_tokens'] != len(ids):
-                    raise ValueError('teacher trace uses a different prompt/context length')
+                previous = teacher_tokens.get((graph,index))
                 for step in range(steps):
                     target = reference_cache[graph, index][step].to('cuda') if args.serial_reference else expected.logits[:, -1, :]
                     error = actual.float()-target.float()
@@ -290,7 +288,7 @@ def main():
                     best=target.float().topk(2,dim=-1).values
                     margins.append((best[0,0]-best[0,1]).item())
                     if eos_step is None and token in source.eos: eos_step = step
-                    next_input = previous["reference_tokens"][step] if previous else token
+                    next_input = previous[step] if previous else token
                     forced.append(next_input)
                     if token != actual.argmax(-1).item(): mismatches.append(step)
                     if step < steps-1:
