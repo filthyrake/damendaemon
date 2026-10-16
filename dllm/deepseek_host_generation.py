@@ -2,7 +2,8 @@
 from contextlib import closing
 import hashlib
 import json
-from tokenizers import Tokenizer,decoders
+from tokenizers import Tokenizer
+from .tokenizer_decoders import is_bytelevel
 from .deepseek_text import DeepSeekText,BOS,EOS,USER,ASSISTANT,THINK,END_THINK
 from .deepseek_generation import TokenStream,validate_text_config
 from .deepseek_tool_prompt import prepare_tools,validate_tool_arguments
@@ -17,7 +18,7 @@ def _snapshot(text):
     if len(encoded.encode())>64*1024**2:raise ValueError('DeepSeek host tokenizer exceeds metadata bounds')
     tokenizer=Tokenizer.from_str(encoded);tokenizer.no_padding();tokenizer.no_truncation()
     vocab=tokenizer.get_vocab()
-    if (not isinstance(tokenizer.decoder,decoders.ByteLevel) or len(vocab)!=text.vocab_size
+    if (not is_bytelevel(tokenizer.decoder) or len(vocab)!=text.vocab_size
             or set(vocab.values())!=set(range(text.vocab_size))
             or any(tokenizer.token_to_id(marker) is None or tokenizer.encode(marker,add_special_tokens=False).ids!=[tokenizer.token_to_id(marker)]
                    for marker in (BOS,EOS,USER,ASSISTANT,THINK,END_THINK))):

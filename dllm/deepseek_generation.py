@@ -3,7 +3,7 @@ import threading
 from .reference_cancellation import check_cancelled
 
 import torch
-from tokenizers import decoders
+from .tokenizer_decoders import is_bytelevel
 
 from .deepseek_text import DeepSeekText, BOS, EOS, USER, ASSISTANT, THINK, END_THINK
 from .deepseek_output import DeepSeekOutput
@@ -17,7 +17,7 @@ from .bytelevel_stream import BYTE_VALUES,ByteLevelStream
 class TokenStream:
     """Incremental ByteLevel decoding with explicit control-token handling."""
     def __init__(self,text,*,enable_thinking=False,allow_tool_calls=False):
-        if not isinstance(text,DeepSeekText) or not isinstance(text.tokenizer.decoder,decoders.ByteLevel):
+        if not isinstance(text,DeepSeekText) or not is_bytelevel(text.tokenizer.decoder):
             raise ValueError('V4 generation requires a prepared ByteLevel tokenizer')
         self.text=text
         allowed=(BOS,EOS,USER,ASSISTANT,THINK,END_THINK)+(('｜DSML｜',) if allow_tool_calls else ())
@@ -79,7 +79,7 @@ class ReferenceGenerator:
     def __init__(self,model,text,*,max_context=4096,max_cache_bytes=256*1024*1024):
         if (not isinstance(model,self.model_type) or not isinstance(text,DeepSeekText)
                 or model.embedding.device.type != self.device_type or model.embedding.shape[0] != text.vocab_size
-                or not isinstance(text.tokenizer.decoder,decoders.ByteLevel)):
+                or not is_bytelevel(text.tokenizer.decoder)):
             raise ValueError(f'reference generator needs matching {self.device_type} model and ByteLevel tokenizer')
         if type(max_context) is not int or not 1 <= max_context <= 2**20 or type(max_cache_bytes) is not int or max_cache_bytes < 1:
             raise ValueError('invalid reference context/cache bounds')

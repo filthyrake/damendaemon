@@ -76,6 +76,35 @@ class RaggedReferenceTests(unittest.TestCase):
                 for row in range(3):
                     self.assertEqual([{k:v for k,v in e.items() if k!='row'} for e in events if e['row']==row],expected[row])
 
+    def test_nested_bytelevel_decoders_work_through_generation_and_host_admission(self):
+        from tokenizers import decoders
+        from dllm.native_host_generation import snapshot_text
+        from dllm.deepseek_host_generation import _snapshot
+        rows = [[dict(role='user', content='Hi')]]
+        for family, path, text, single, batch in self.families():
+            model = family.load_reference_model(path)
+            def output():
+                return (list(single(model, text, max_context=128).generate(
+                            rows[0], max_new_tokens=2)),
+                        list(batch(model, text, max_context=128).generate_batch(
+                            rows, max_new_tokens=2)))
+            expected = output()
+            text.tokenizer.decoder = decoders.Sequence([
+                decoders.Sequence([decoders.ByteLevel()])])
+            with self.subTest(family=family.__name__):
+                self.assertEqual(output(), expected)
+                copied = _snapshot(text) if family is deepseek else snapshot_text(text, type(text))
+                self.assertEqual(copied.tokenizer.decode([0]), text.tokenizer.decode([0]))
+                text.tokenizer.decoder = decoders.Sequence([
+                    decoders.ByteLevel(), decoders.Replace('a', 'b')])
+                with self.assertRaises(ValueError):
+                    single(model, text, max_context=128)
+                with self.assertRaises(ValueError):
+                    if family is deepseek:
+                        _snapshot(text)
+                    else:
+                        snapshot_text(text, type(text))
+
     def test_commands_opt_in_and_preflight_all_rows(self):
         rows=[[dict(role='user',content=s)] for s in ('Hi','longer input')]
         for family,path,text,_,_ in self.families():

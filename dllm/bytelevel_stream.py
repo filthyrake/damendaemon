@@ -1,6 +1,6 @@
 """Incremental CPU tokenizer ByteLevel decoding without whole-history copies."""
 import codecs
-from .tokenizer_decoders import decoder_steps
+from .tokenizer_decoders import is_bytelevel
 
 
 def _byte_alphabet():
@@ -16,8 +16,7 @@ BYTE_VALUES=_byte_alphabet()
 
 class ByteLevelStream:
     def __init__(self,tokenizer,allowed_added):
-        steps=decoder_steps(tokenizer.decoder)
-        if len(steps)!=1 or steps[0].get('type')!='ByteLevel':
+        if not is_bytelevel(tokenizer.decoder):
             raise ValueError('incremental output requires a ByteLevel tokenizer')
         self.tokenizer=tokenizer;self.added=tokenizer.get_added_tokens_decoder()
         self.allowed=frozenset(allowed_added)

@@ -11,3 +11,9 @@ def decoder_steps(decoder):
             pending.extend(reversed(step['decoders']))
         else:steps.append(step)
     return steps
+
+
+def is_bytelevel(decoder):
+    """True only for one ByteLevel step, allowing transparent Sequence wrappers."""
+    steps=decoder_steps(decoder)
+    return len(steps)==1 and steps[0].get('type')=='ByteLevel'

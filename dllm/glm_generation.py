@@ -2,7 +2,7 @@
 import threading
 from .reference_cancellation import check_cancelled
 import torch
-from tokenizers import decoders
+from .tokenizer_decoders import is_bytelevel
 from .bytelevel_stream import ByteLevelStream
 from .glm_text import GlmText,CONTROLS,EOS
 from .glm_output import GlmOutput
@@ -63,7 +63,7 @@ class ReferenceGenerator:
     def __init__(self,model,text,*,max_context=4096,max_cache_bytes=256*1024**2):
         if (not isinstance(model,self.model_type) or not isinstance(text,self.text_type)
                 or model.embedding.device.type!=self.device_type or model.embedding.shape[0]!=text.vocab_size
-                or not isinstance(text.tokenizer.decoder,decoders.ByteLevel)):
+                or not is_bytelevel(text.tokenizer.decoder)):
             raise ValueError('GLM generation requires matching explicit-device model and ByteLevel tokenizer')
         if (type(max_context) is not int or not 1<=max_context<=2**20
                 or type(max_cache_bytes) is not int or not 1<=max_cache_bytes<=2**31):

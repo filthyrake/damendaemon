@@ -1,7 +1,8 @@
 """Shared native host lifecycle with explicit tokenizer, parser and policy hooks."""
 from contextlib import closing
 import threading
-from tokenizers import Tokenizer,decoders
+from tokenizers import Tokenizer
+from .tokenizer_decoders import is_bytelevel
 from .glm_text import CONTROLS,EOS,USER,OBSERVATION
 from .glm_generation import TokenStream,validate_text_config
 from .glm_flash_tools import FlashTools,_json,_dump
@@ -19,7 +20,7 @@ def snapshot_text(text,text_type):
     if len(encoded.encode()) > 64*1024**2: raise ValueError('native host tokenizer exceeds metadata bounds')
     tokenizer=Tokenizer.from_str(encoded);tokenizer.no_padding();tokenizer.no_truncation()
     vocab=tokenizer.get_vocab();count=len(vocab)
-    if (not isinstance(tokenizer.decoder,decoders.ByteLevel) or not 1<=count<=text.vocab_size
+    if (not is_bytelevel(tokenizer.decoder) or not 1<=count<=text.vocab_size
             or set(vocab.values())!=set(range(count)) or count!=text.tokenizer_size
             or any(tokenizer.token_to_id(marker) is None or
                    tokenizer.encode(marker,add_special_tokens=False).ids!=[tokenizer.token_to_id(marker)] for marker in CONTROLS)):
