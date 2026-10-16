@@ -4,12 +4,11 @@ Reference: deepseek-ai/DeepSeek-V4-Flash, revision
 60d8d70770c6776ff598c94bb586a859a38244f1, encoding/encoding_dsv4.py.
 Tool histories use deepseek_tool_prompt; internal tasks and developer/reminder roles remain unsupported.
 """
-import json
 from pathlib import Path
 
 from tokenizers import Tokenizer
 
-from .checkpoint import _unique_fields
+from .safetensor_header import parse_metadata_json
 
 BOS='<｜begin▁of▁sentence｜>'
 EOS='<｜end▁of▁sentence｜>'
@@ -78,7 +77,7 @@ class DeepSeekText:
         if type(vocab_size) is not int or not 1 <= vocab_size <= 2**21:
             raise ValueError('invalid V4 tokenizer vocabulary size')
         path=Path(path)
-        config=json.loads(_read(path/'tokenizer_config.json',1024*1024),object_pairs_hook=_unique_fields)
+        config=parse_metadata_json(_read(path/'tokenizer_config.json',1024*1024))
         if (not isinstance(config,dict) or config.get('add_bos_token') is not False
                 or config.get('add_eos_token') is not False or config.get('clean_up_tokenization_spaces') is not False
                 or config.get('tokenizer_class') != 'PreTrainedTokenizerFast'):

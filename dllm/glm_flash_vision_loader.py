@@ -1,12 +1,11 @@
 """Bounded visual-only Flash snapshot loading for the explicit CPU reference."""
 from contextlib import ExitStack
-import json
 import math
 from pathlib import Path
 import sys
 import torch
 from .checkpoint import snapshot_shards
-from .safetensor_header import read_header,file_stamp,ITEM_BYTES,MAX_HEADER_BYTES,_unique_fields
+from .safetensor_header import read_header,file_stamp,ITEM_BYTES,MAX_HEADER_BYTES,parse_metadata_json
 from .packed_checkpoint import _payload
 from .glm_flash_vision import FlashVision,vision_specs,audit_vision,ROOT
 
@@ -28,7 +27,7 @@ def load_reference_vision(path,*,max_weight_bytes=256*1024**2,max_tokens=4096,
     path=Path(path)
     with (path/'config.json').open('rb') as reader:raw=reader.read(1024**2+1)
     if len(raw)>1024**2:raise ValueError('Flash visual configuration exceeds metadata limit')
-    config=json.loads(raw,object_pairs_hook=_unique_fields)
+    config=parse_metadata_json(raw)
     if not isinstance(config,dict):raise ValueError('expected Flash root configuration')
     specs=vision_specs(config.get('vision_config'))
     # Validate exclusions/text width before opening any checkpoint descriptor.

@@ -1,12 +1,11 @@
 """Admitted Flash main-text snapshots into the mixed packed CPU reference stack."""
 from contextlib import ExitStack
-import json
 import math
 from pathlib import Path
 import sys
 import torch
 from .checkpoint import snapshot_shards
-from .safetensor_header import read_header,file_stamp,ITEM_BYTES,MAX_HEADER_BYTES,_unique_fields
+from .safetensor_header import read_header,file_stamp,ITEM_BYTES,MAX_HEADER_BYTES,parse_metadata_json
 from .glm_flash_checkpoint import ROOT,tensor_specs,audit_headers
 from .packed_checkpoint import _payload
 from .packed_moe import PackedMatrix,PackedExpert
@@ -71,7 +70,7 @@ def _load_reference(path,start,end,*,max_weight_bytes=256*1024**2,projection_wor
     path=Path(path)
     with (path/'config.json').open('rb') as reader:raw=reader.read(1024**2+1)
     if len(raw)>1024**2:raise ValueError('Flash configuration exceeds metadata limit')
-    config=json.loads(raw,object_pairs_hook=_unique_fields)
+    config=parse_metadata_json(raw)
     specs=tensor_specs(config);root_config=config;config=root_config['text_config'];_options(config)
     whole=start is None and end is None
     if whole:start,end=0,config['num_hidden_layers']

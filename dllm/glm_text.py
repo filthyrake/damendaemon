@@ -4,10 +4,9 @@ Reference: zai-org/GLM-5.3 at aca966e4e02791568aa6a4ced368624b3d897f42,
 chat_template.jinja and tokenizer/generation metadata. See docs/licenses/glm53-LICENSE.txt.
 The pinned template always opens a reasoning channel; no non-thinking mode is invented.
 """
-import json
 from pathlib import Path
 from tokenizers import Tokenizer
-from .checkpoint import _unique_fields
+from .safetensor_header import parse_metadata_json
 
 MASK='[gMASK]'
 SOP='<sop>'
@@ -69,7 +68,7 @@ class GlmText:
         if type(vocab_size) is not int or not 1<=vocab_size<=2**21:
             raise ValueError('invalid GLM model vocabulary size')
         path=Path(path)
-        config=json.loads(_read(path/'tokenizer_config.json',1024**2),object_pairs_hook=_unique_fields)
+        config=parse_metadata_json(_read(path/'tokenizer_config.json',1024**2))
         required={'backend':'tokenizers','tokenizer_class':'TokenizersBackend','clean_up_tokenization_spaces':False,
                   'do_lower_case':False,'remove_space':False,'eos_token':EOS,'pad_token':EOS}
         if not isinstance(config,dict) or any(config.get(k)!=v or type(config.get(k)) is not type(v) for k,v in required.items()):
@@ -83,7 +82,7 @@ class GlmText:
             token=tokenizer.token_to_id(marker)
             if token is None or tokenizer.encode(marker,add_special_tokens=False).ids!=[token]:
                 raise ValueError('GLM control marker must be exactly one tokenizer token')
-        generation=json.loads(_read(path/'generation_config.json',1024**2),object_pairs_hook=_unique_fields)
+        generation=parse_metadata_json(_read(path/'generation_config.json',1024**2))
         stops={tokenizer.token_to_id(marker) for marker in (EOS,USER,OBSERVATION)}
         eos=generation.get('eos_token_id') if isinstance(generation,dict) else None
         if (not isinstance(eos,list) or any(type(v) is not int for v in eos) or len(eos)!=len(stops) or set(eos)!=stops

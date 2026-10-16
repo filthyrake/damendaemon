@@ -5,7 +5,6 @@ Source floating weights are converted one fused group at a time; all packed
 matrices retain canonical Q4_0/Q8_0 storage and FP16 scales.
 """
 from contextlib import ExitStack
-import json
 import math
 from pathlib import Path
 import sys
@@ -16,7 +15,7 @@ from .config import hybrid_config
 from .cpu_hybrid_stage import cpu_hybrid_shapes
 from .packed_checkpoint import _payload
 from .quantization import quantize,quantize_q4
-from .safetensor_header import read_header,file_stamp,MAX_HEADER_BYTES,_unique_fields
+from .safetensor_header import read_header,file_stamp,MAX_HEADER_BYTES,parse_metadata_json
 
 
 def _groups(c,prefix):
@@ -72,7 +71,7 @@ def _load_cpu_checkpoint(path,*,quantization,max_context,max_weight_bytes,max_wo
     path=Path(path)
     with (path/'config.json').open('rb') as reader:raw=reader.read(1024**2+1)
     if len(raw)>1024**2:raise ValueError('CPU checkpoint configuration exceeds metadata limit')
-    source=json.loads(raw,object_pairs_hook=_unique_fields)
+    source=parse_metadata_json(raw)
     if not isinstance(source,dict) or source.get('model_type')!='qwen3_5_text' or 'text_config' in source or 'vision_config' in source:
         raise ValueError('CPU checkpoint requires a text-only Qwen3.5 configuration')
     try:c=hybrid_config(source)

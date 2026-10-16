@@ -13,6 +13,14 @@ def _unique_fields(pairs):
     return result
 
 
+def parse_metadata_json(value):
+    """Decode duplicate-free checkpoint metadata with a stable validation error."""
+    try:
+        return json.loads(value,object_pairs_hook=_unique_fields)
+    except RecursionError as error:
+        raise ValueError('checkpoint metadata JSON nesting is too deep') from error
+
+
 MAX_HEADER_BYTES = 16*1024*1024
 ITEM_BYTES = {'BOOL':1,'U8':1,'I8':1,'F8_E4M3':1,'F8_E4M3FN':1,'F8_E5M2':1,
               'F8_E8M0':1,'F8_E8M0FNU':1,'I16':2,'U16':2,'F16':2,'BF16':2,
@@ -36,7 +44,7 @@ def read_header(reader, *, max_header_bytes=MAX_HEADER_BYTES):
         raise ValueError('packed checkpoint header exceeds bounds')
     raw=reader.read(length)
     try:
-        header=json.loads(raw.decode('utf-8'),object_pairs_hook=_unique_fields)
+        header=parse_metadata_json(raw.decode('utf-8'))
     except (ValueError,UnicodeError) as error:
         raise ValueError('invalid packed checkpoint JSON header') from error
     if not isinstance(header,dict) or len(header) > 100001:

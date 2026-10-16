@@ -1,6 +1,5 @@
 """Shared bounded metadata-only checkpoint audit plumbing."""
 from dataclasses import dataclass
-import json
 from pathlib import Path
 
 
@@ -11,13 +10,14 @@ class TensorSpec:
 
 
 def audit_snapshot(path,describe,audit_names,audit_headers,*,names_only=False):
-    from .checkpoint import _unique_fields,inspect_snapshot
+    from .checkpoint import inspect_snapshot
+    from .safetensor_header import parse_metadata_json
     from .download import INDEX,snapshot_files
     path=Path(path)
     def read(filename,limit):
         with (path/filename).open('rb') as reader:value=reader.read(limit+1)
         if len(value)>limit:raise ValueError('checkpoint metadata exceeds audit size limit')
-        return json.loads(value,object_pairs_hook=_unique_fields)
+        return parse_metadata_json(value)
     config=read('config.json',1024*1024)
     describe(config) # reject architecture/inventory bounds before touching shards
     if names_only:

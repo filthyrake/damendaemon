@@ -45,7 +45,8 @@ jobs:
             tests.test_report_io \
             tests.test_error_state \
             tests.test_token_workload \
-            tests.test_manifest_preflight
+            tests.test_manifest_preflight \
+            tests.test_checkpoint_json
       - name: Optimized dependency-free contracts
         run: |
           python -S -O -m unittest \
@@ -54,4 +55,5 @@ jobs:
             tests.test_report_io \
             tests.test_error_state \
             tests.test_token_workload \
-            tests.test_manifest_preflight
+            tests.test_manifest_preflight \
+            tests.test_checkpoint_json

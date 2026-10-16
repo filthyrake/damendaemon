@@ -1,15 +1,14 @@
 """Bounded raw tokenizer input for the explicit CPU completion command."""
-import json
 from pathlib import Path
 from tokenizers import Tokenizer
-from .safetensor_header import _unique_fields
+from .safetensor_header import parse_metadata_json
 from .cpu_pipeline_generation import validate_request
 
 
 def read_json(path,limit):
     with Path(path).open('rb') as reader:raw=reader.read(limit+1)
     if len(raw)>limit:raise ValueError('CPU completion input exceeds metadata byte limit')
-    return json.loads(raw,object_pairs_hook=_unique_fields)
+    return parse_metadata_json(raw)
 
 
 class CpuReferenceText:

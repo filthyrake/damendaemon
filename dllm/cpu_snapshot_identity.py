@@ -9,7 +9,7 @@ import stat
 import time
 
 from .download import INDEX,snapshot_files
-from .safetensor_header import _unique_fields
+from .safetensor_header import parse_metadata_json
 
 FORMAT='dllm-cpu-snapshot-v1'
 _REQUIRED=('config.json','tokenizer.json')
@@ -57,7 +57,7 @@ def _inventory(root):
     if INDEX in names:
         with _reader(root,INDEX) as reader:raw=reader.read(_METADATA_LIMITS[INDEX]+1)
         if len(raw)>_METADATA_LIMITS[INDEX]:raise ValueError('snapshot identity index exceeds byte limit')
-        index=json.loads(raw,object_pairs_hook=_unique_fields)
+        index=parse_metadata_json(raw)
         if isinstance(index,dict) and isinstance(index.get('weight_map'),dict):
             names.extend(name for name in index['weight_map'].values() if isinstance(name,str))
     shards=[name for name in snapshot_files(names,index) if name.endswith('.safetensors')]
