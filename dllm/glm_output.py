@@ -12,6 +12,10 @@ class GlmOutput:
         self.channel='reasoning_content';self.pending='';self.bytes=0
         self.ended=self.closed=self.failed=False
 
+    def close(self):
+        self.closed=True
+        self.pending=''
+
     def _usable(self):
         if self.closed or self.failed:raise RuntimeError('GLM output parser is closed or failed')
 

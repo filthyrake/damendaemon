@@ -35,6 +35,7 @@ class TokenStream:
             return self.parser.feed(decoded)
         except BaseException:
             self.failed=True
+            self.close()
             raise
 
     def close(self):self.parser.close()
@@ -46,6 +47,7 @@ class TokenStream:
             return events+self.parser.finish(truncated=truncated)
         except BaseException:
             self.failed=True
+            self.close()
             raise
 
 

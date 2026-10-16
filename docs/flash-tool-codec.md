@@ -38,5 +38,7 @@ list after construction.
 This module does not execute tools or change ordinary generation admission.
 The explicit [tool-history adapter](flash-tool-prompts.md) adds pinned prompt and
 tokenizer behavior; the [CPU tool generator](flash-tool-generation.md) composes
-incremental output and owned state. Official-model semantics and hardware
+incremental output and owned state. Token-stream failures close parser buffers
+even when an invalid token or byte-decoder error occurs before parser entry.
+Official-model semantics and hardware
 qualification remain separate gates under GitHub #57.

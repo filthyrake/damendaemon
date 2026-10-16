@@ -15,18 +15,26 @@ class TokenStream:
         self.text=text;self.decoder=ByteLevelStream(text.tokenizer,CONTROLS)
         self.parser=GlmOutput();self.failed=False
 
+    def close(self):self.parser.close()
+
     def feed(self,token):
         if self.failed:raise RuntimeError('GLM token stream failed')
         try:
             if type(token) is not int or not 0<=token<self.text.tokenizer_size:
                 raise ValueError('invalid or unmapped generated GLM token ID')
             return self.parser.feed(self.decoder.feed(token))
-        except BaseException:self.failed=True;raise
+        except BaseException:
+            self.failed=True
+            self.close()
+            raise
 
     def finish(self,*,truncated=False):
         if self.failed:raise RuntimeError('GLM token stream failed')
         try:return self.parser.feed(self.decoder.finish())+self.parser.finish(truncated=truncated)
-        except BaseException:self.failed=True;raise
+        except BaseException:
+            self.failed=True
+            self.close()
+            raise
 
 
 def validate_text_config(config,text,max_context):
