@@ -5,7 +5,7 @@ from unittest.mock import patch
 import torch
 
 from dllm.deepseek_position import frequencies, rotate_pairs
-from dllm.floating_compressor import compress_hidden
+from dllm.floating_compressor import compress_hidden,checked_compress_hidden
 from tests.test_compressed_pool import scalar_pool
 
 
@@ -17,6 +17,27 @@ class FloatingCompressorTests(unittest.TestCase):
                 torch.randn(channels, 5, generator=rng), torch.randn(channels, 5, generator=rng),
                 torch.randn(ratio, channels, generator=rng), torch.randn(4, generator=rng),
                 frequencies(2, base=160000, original_length=65536, factor=16))
+
+    def test_checked_reference_compression_preserves_valid_results_and_state_on_failure(self):
+        for ratio in (4,8):
+            for dtype in (torch.float32,torch.float16,torch.bfloat16):
+                args=self.fixture(ratio,dtype)
+                expected=compress_hidden(*args)
+                actual=checked_compress_hidden(*args)
+                torch.testing.assert_close(actual[0],expected[0])
+                torch.testing.assert_close(actual[2],expected[2])
+                torch.testing.assert_close(actual[1].values,expected[1].values)
+                torch.testing.assert_close(actual[1].scores,expected[1].scores)
+                self.assertEqual(actual[1].position,expected[1].position)
+        args=list(self.fixture())
+        _,state,_=checked_compress_hidden(args[0][:,:3],*args[1:])
+        values,scores=state.values.clone(),state.scores.clone()
+        args[0].fill_(1.);args[1].fill_(1e20);args[2].zero_();args[3].zero_();args[4].fill_(1.)
+        with self.assertRaisesRegex(ValueError,'compressor intermediate'):
+            checked_compress_hidden(*args,state=state)
+        self.assertEqual(state.position,3)
+        torch.testing.assert_close(state.values,values)
+        torch.testing.assert_close(state.scores,scores)
 
     def test_frequency_schedule_and_adjacent_rotation_scalar_reference(self):
         for original in (0, 65536):

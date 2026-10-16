@@ -13,7 +13,7 @@ from .activation_simulation import simulate_fp8
 from .cache_indices import prefill_indices, ring_decode_indices
 from .compressed_pool import PoolState
 from .deepseek_position import rotate_pairs
-from .floating_compressor import compress_hidden
+from .floating_compressor import checked_compress_hidden as compress_hidden
 from .floating_indexer import checked_index_hidden as index_hidden
 from .prepared_projection import PackedProjection, is_projection, linear
 from .selected_attention import selected_attention

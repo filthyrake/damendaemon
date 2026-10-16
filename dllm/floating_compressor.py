@@ -78,3 +78,10 @@ def _compress_hidden(hidden, value_weight, gate_weight, offsets, norm_weight, in
 def compress_hidden(hidden,value_weight,gate_weight,offsets,norm_weight,inverse_frequencies,*,state=None,epsilon=1e-6,cache_transform=None):
     return _compress_hidden(hidden,value_weight,gate_weight,offsets,norm_weight,inverse_frequencies,
                             state=state,epsilon=epsilon,cache_transform=cache_transform)
+
+
+def checked_compress_hidden(hidden,value_weight,gate_weight,offsets,norm_weight,inverse_frequencies,
+                            *,state=None,epsilon=1e-6,cache_transform=None):
+    """Reference-model boundary: validate arithmetic before cache publication."""
+    return _compress_hidden(hidden,value_weight,gate_weight,offsets,norm_weight,inverse_frequencies,
+                            state=state,epsilon=epsilon,cache_transform=cache_transform,validate_finite=True)
