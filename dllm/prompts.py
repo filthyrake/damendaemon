@@ -18,6 +18,10 @@ def decoder_prefix(executor,prompt):
 
 def validate_raw(prompt):
     if isinstance(prompt, str):
+        try:
+            prompt.encode('utf-8')
+        except UnicodeError as error:
+            raise ValueError('prompt must be valid UTF-8') from error
         return prompt
     if isinstance(prompt, list) and prompt and all(type(token) is int and token >= 0 for token in prompt):
         return list(prompt)

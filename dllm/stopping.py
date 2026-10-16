@@ -8,6 +8,11 @@ def stop_sequences(value):
     if (not isinstance(values, list) or not 1 <= len(values) <= 4
             or any(not isinstance(x, str) or not 1 <= len(x) <= 256 for x in values)):
         raise ValueError('stop must contain one to four nonempty strings of at most 256 characters')
+    try:
+        for value in values:
+            value.encode('utf-8')
+    except UnicodeError as error:
+        raise ValueError('stop strings must be valid UTF-8') from error
     return tuple(values)
 
 

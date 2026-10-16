@@ -507,6 +507,9 @@ class Runtime:
         """
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be a positive integer")
+        if raw_prompt is not None:
+            from .prompts import validate_raw
+            raw_prompt = validate_raw(raw_prompt)
         from .sampling import Sampling, Sampler
         from .stopping import stop_sequences, text_delta
         stops = stop_sequences(stop)

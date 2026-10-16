@@ -143,6 +143,12 @@ def validate_messages(messages):
             if message.get('reasoning_content') is not None and not isinstance(message['reasoning_content'],str):
                 raise ValueError('assistant reasoning history must be text or null')
         else:raise ValueError('unsupported message role')
+        try:
+            for value in (content, message.get('reasoning_content')):
+                if isinstance(value, str):
+                    value.encode('utf-8')
+        except UnicodeError as error:
+            raise ValueError('chat text must be valid UTF-8') from error
     if pending:raise ValueError('tool calls need results before generation')
     return copy.deepcopy(messages)
 

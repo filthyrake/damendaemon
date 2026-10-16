@@ -5,6 +5,35 @@ from dllm.qwen2 import ModelWeights
 
 
 class PromptTests(unittest.TestCase):
+    def test_invalid_unicode_rejected_before_raw_runtime_activation(self):
+        from unittest.mock import Mock
+        from dllm.runtime import Runtime
+        from dllm.stopping import stop_sequences
+        from dllm.tool_calls import validate_messages
+        runtime = Runtime.__new__(Runtime)
+        runtime.session = Mock(side_effect=AssertionError('must not activate model'))
+        for text in ('\ud800', '\udfff', 'prefix\ud800suffix'):
+            for call in (lambda: validate_raw(text),
+                         lambda: stop_sequences(text),
+                         lambda: validate_messages([{'role':'user', 'content':text}]),
+                         lambda: validate_messages([{'role':'assistant', 'content':'ok', 'reasoning_content':text}]),
+                         lambda: next(runtime.generate('model', None, raw_prompt=text)),
+                         lambda: runtime.score('model', text, [1, 2])):
+                with self.subTest(text=ascii(text)), self.assertRaises(ValueError):
+                    call()
+        runtime.session.assert_not_called()
+        text = 'café 世界 😀'
+        self.assertEqual(validate_raw(text), text)
+        self.assertEqual(stop_sequences(text), (text,))
+        self.assertEqual(validate_messages([{'role':'user', 'content':text}]), [{'role':'user', 'content':text}])
+        history = [{'role':'assistant', 'content':None, 'tool_calls':[{
+            'id':'call_one', 'type':'function', 'function':{'name':'weather', 'arguments':'{}'}}]},
+            {'role':'tool', 'tool_call_id':'call_one', 'content':text}]
+        self.assertEqual(validate_messages(history), history)
+        history[1]['content'] = '\ud800'
+        with self.assertRaises(ValueError):
+            validate_messages(history)
+
     def test_raw_ids_are_copied_and_checked(self):
         tokens = [1, 2]
         self.assertIsNot(validate_raw(tokens), tokens)

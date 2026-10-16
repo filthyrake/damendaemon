@@ -434,6 +434,27 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(error.exception.code,400)
         error.exception.close()
 
+    def test_generation_routes_reject_invalid_unicode_before_dispatch(self):
+        for text in ('\ud800', '\udfff'):
+            bodies = [('completions', {'prompt':text}),
+                      ('completions', {'prompt':'valid', 'stop':text}),
+                      ('chat/completions', {'messages':[{'role':'user', 'content':text}]}),
+                      ('chat/completions', {'messages':[{'role':'assistant', 'content':'ok', 'reasoning_content':text}]}),
+                      ('token-scores', {'prompt':text, 'candidate_token_ids':[1, 2]})]
+            for route, fields in bodies:
+                with self.subTest(route=route, fields=ascii(fields)), \
+                        patch.object(self.runtime, 'generate', side_effect=AssertionError('must not dispatch')) as generate, \
+                        patch.object(self.runtime, 'score', side_effect=AssertionError('must not dispatch')) as score:
+                    request = Request(self.url+'/v1/'+route,
+                        data=json.dumps({'model':'a', **fields}).encode(),
+                        headers={'Content-Type':'application/json'})
+                    with self.assertRaises(HTTPError) as caught:
+                        urlopen(request, timeout=5)
+                    self.assertEqual(caught.exception.code, 400)
+                    caught.exception.close()
+                    generate.assert_not_called()
+                    score.assert_not_called()
+
     def test_encoder_routes_reject_invalid_unicode(self):
         for value in ('\ud800', '\udfff'):
             for route, fields in (('embeddings', {'input':['valid', value]}),

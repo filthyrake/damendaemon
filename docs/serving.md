@@ -981,3 +981,9 @@ Embedding text and reranking queries/documents must be valid UTF-8. Lone
 Unicode surrogates supplied through JSON escapes return HTTP 400 before a
 model session is acquired. Valid Unicode text and explicit embedding token IDs
 retain their existing behavior.
+
+The same UTF-8 preflight applies to raw prompts, chat content/reasoning/tool
+results, and custom stops. Completion and token-score routes reject invalid
+escaped Unicode before runtime dispatch; direct raw generation and scoring
+reject it before model activation. Valid Unicode and explicit token IDs remain
+supported.
