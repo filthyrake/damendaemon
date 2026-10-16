@@ -12,6 +12,11 @@ from .device import selected_device
 
 def config(path):
     c=read_config(Path(path)/'config.json')
+    from .tokenizer_metadata import read_generation_config
+    generation=Path(path)/'generation_config.json'
+    if generation.exists():
+        saved=read_generation_config(generation)
+        if 'eos_token_id' in saved:c['eos_token_id']=saved['eos_token_id']
     if (c.get('model_type')!='mamba2' or c.get('architectures')!=['Mamba2ForCausalLM']
             or c.get('quantization_config') or type(c.get('n_groups')) is not int or c.get('n_groups')!=1
             or c.get('hidden_act')!='silu' or c.get('rms_norm') is not True

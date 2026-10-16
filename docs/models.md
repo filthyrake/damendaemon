@@ -128,6 +128,11 @@ cost, memory bounds and separate core/HTTP measurements.
 
 ## Mamba state-space models
 
+Mamba-1 and Mamba-2 honor saved `generation_config.json` EOS IDs, replacing
+the model-config stop set. An omitted EOS field retains the model default;
+explicit null, empty or out-of-vocabulary values fail before weight loading.
+Saved sampling policies are not imported.
+
 Pinned `state-spaces/mamba-130m-hf` and `mamba-370m-hf` run independently on A2 and Apple M4,
 with native GPU causal convolution and recurrent-state kernels. Use raw
 completions with context up to 2048. Both devices pass independent logits/state

@@ -52,3 +52,24 @@ class Mamba2Tests(unittest.TestCase):
                     {'quantization_config':{'bits':8}},{'layer_norm_epsilon':float('nan')}):
                 file.write_text(json.dumps({**value,**change}))
                 with self.subTest(change=change),self.assertRaises(ValueError):config(directory)
+
+    def test_saved_eos_replaces_default_before_weights(self):
+        from transformers import Mamba2Config,Mamba2ForCausalLM,GenerationConfig
+        from tokenizers import Tokenizer,models
+        from dllm.mamba2 import Mamba2Weights
+        with TemporaryDirectory() as directory:
+            reference=Mamba2ForCausalLM(Mamba2Config(hidden_size=8,state_size=4,
+                num_hidden_layers=1,expand=2,conv_kernel=4,num_heads=4,head_dim=4,
+                n_groups=1,vocab_size=16,eos_token_id=1))
+            reference.save_pretrained(directory)
+            Tokenizer(models.WordLevel({'[UNK]':0},unk_token='[UNK]')).save(str(Path(directory)/'tokenizer.json'))
+            generation=Path(directory)/'generation_config.json'
+            generation.write_text(json.dumps({'eos_token_id':[5,6]}))
+            expected=GenerationConfig.from_pretrained(directory,local_files_only=True)
+            self.assertEqual(Mamba2Weights(directory,16).eos,set(expected.eos_token_id))
+            generation.write_text('{}')
+            self.assertEqual(Mamba2Weights(directory,16).eos,{1})
+            for bad in (None,True,[],[16],-1,'5'):
+                generation.write_text(json.dumps({'eos_token_id':bad}))
+                with self.subTest(bad=bad),patch('dllm.qwen2.weight_files',side_effect=AssertionError('weights opened')):
+                    with self.assertRaises(ValueError):Mamba2Weights(directory,16)

@@ -12,6 +12,11 @@ from .batch import BatchExecutor
 
 def config(path):
     c=read_config(Path(path)/'config.json')
+    from .tokenizer_metadata import read_generation_config
+    generation=Path(path)/'generation_config.json'
+    if generation.exists():
+        saved=read_generation_config(generation)
+        if 'eos_token_id' in saved:c['eos_token_id']=saved['eos_token_id']
     if (c.get('model_type')!='mamba' or c.get('architectures')!=['MambaForCausalLM']
             or c.get('quantization_config') or c.get('hidden_act','silu')!='silu'
             or c.get('rms_norm',True) is not True or c.get('residual_in_fp32',True) is not True
