@@ -15,7 +15,13 @@ class Tensor:
         self.values = values
         self.shape = (len(values), 256)  # Logical vocabulary extent for the greedy stub.
     def argmax(self, _):
-        return self
+        import torch
+        return torch.tensor(self.values,dtype=torch.long)
+    def max(self, _):
+        return self.amax(-1),self.argmax(-1)
+    def amax(self, _):
+        import torch
+        return torch.zeros(len(self.values))
     def item(self):
         return self.values[0]
     def tolist(self):
@@ -44,7 +50,7 @@ class FakeExecutor:
     def decode_batch(self, tokens, slots):
         self.batches.append(tuple(slots))
         selected = Tensor([token + 1 for token in tokens])
-        return selected, selected
+        return selected, selected.argmax(-1)
 
 
 class FakeRuntime:

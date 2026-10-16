@@ -128,7 +128,12 @@ class Sampler:
         if self.constraint is not None:
             logits = self.constraint.apply(logits)
         if not options.temperature:
-            return logits.argmax(-1)
+            maximum, selected = logits.max(-1)
+            # max propagates NaN and preserves +inf/all-masked -inf. A finite
+            # maximum still permits ordinary -inf vocabulary/grammar masks.
+            if not torch.isfinite(maximum).item():
+                raise ValueError('cannot sample non-finite greedy logits')
+            return selected
         values = logits.float()
         indices = None
         if options.top_k:
@@ -167,9 +172,20 @@ def _token_batch(tokens, count, vocab_size):
 
 
 def sample_rows(logits, samplers, greedy=None):
-    """Retain the existing batched argmax/readback for all-greedy traffic."""
+    """Validate greedy rows on-device before the existing token readback."""
+    import torch
     if all(not sampler.options.temperature and sampler.constraint is None and not sampler.has_adjustments for sampler in samplers):
-        selected=greedy if greedy is not None else logits.argmax(-1)
+        if greedy is None:
+            maximum, selected = logits.max(-1)
+        else:
+            selected=greedy
+            maximum=logits.amax(-1)
+        if selected.shape != (len(samplers),) or selected.dtype not in (
+                torch.uint8,torch.int8,torch.int16,torch.int32,torch.int64):
+            raise RuntimeError('invalid selected token batch')
+        # Sentinel failure travels with the ordinary token readback, avoiding
+        # an extra host synchronization or per-row checks in batched serving.
+        selected=selected.to(torch.long).masked_fill(~torch.isfinite(maximum),-1)
     else:
         import torch
         selected=torch.stack([sampler._select(logits[i]) for i,sampler in enumerate(samplers)])

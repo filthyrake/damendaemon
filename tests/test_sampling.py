@@ -193,3 +193,22 @@ class SamplingTests(unittest.TestCase):
         self.assertTrue(torch.equal(sampler.adjust(logits),logits))
         sampler.observe(0)
         self.assertTrue(torch.equal(sampler.adjust(logits),torch.tensor([.5,2.,3.])))
+
+    def test_nonfinite_greedy_logits_fail_closed(self):
+        for row in ([float('nan'),1.], [1.,float('nan')], [float('inf'),1.],
+                    [-float('inf'),-float('inf')]):
+            logits=torch.tensor(row)
+            with self.subTest(row=row),self.assertRaisesRegex(ValueError,'non-finite greedy'):
+                Sampler(Sampling()).select(logits)
+            batch=torch.stack([torch.tensor([1.,0.]),logits])
+            for cached in (None,torch.tensor([0,0])):
+                samplers=[Sampler(Sampling()),Sampler(Sampling())]
+                with self.subTest(row=row,cached=cached),self.assertRaisesRegex(RuntimeError,'invalid selected token batch'):
+                    sample_rows(batch,samplers,cached)
+
+    def test_greedy_negative_infinity_masks_and_ties(self):
+        logits=torch.tensor([[-float('inf'),2.,2.],[1.,-float('inf'),0.]])
+        samplers=[Sampler(Sampling()),Sampler(Sampling())]
+        for cached in (None,torch.tensor([1,0])):
+            self.assertEqual(sample_rows(logits,samplers,cached),[1,0])
+        self.assertEqual([s.select(row).item() for s,row in zip(samplers,logits)],[1,0])

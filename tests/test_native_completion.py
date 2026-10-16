@@ -51,3 +51,26 @@ class NativeCompletionTests(unittest.TestCase):
                             with self.assertRaises(StopIteration):next(stream)
                     finally:stream.close()
                 self.assertFalse(state['kv']);self.assertFalse(state['session'])
+
+    def test_nonfinite_greedy_prefill_releases_before_any_output(self):
+        for value in (float('nan'),float('inf'),-float('inf')):
+            state=dict(kv=False,session=False)
+            model=SimpleNamespace(config={'model_type':'qwen2','vocab_size':3},eos=set(),quantization='none')
+            class Executor:
+                def reserve_request(self,*args):state['kv']=True
+                def release_request(self,*args):state['kv']=False
+                def prefill(self,prompt):return torch.full((1,3),value)
+            executor=Executor();executor.model=model
+            runtime=Runtime.__new__(Runtime);runtime.context=16
+            @contextmanager
+            def session(alias):
+                state['session']=True
+                try:yield executor,'host',0
+                finally:state['session']=False
+            runtime.session=session
+            with patch('dllm.harmony.output_stream',return_value=None), \
+                    patch('dllm.prompts.encode',return_value=[1]), \
+                    patch('dllm.prompts.validate_lengths'):
+                with self.subTest(value=value),self.assertRaisesRegex(ValueError,'non-finite greedy'):
+                    next(runtime.generate('a',[],1))
+            self.assertFalse(state['kv']);self.assertFalse(state['session'])
