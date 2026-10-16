@@ -26,6 +26,28 @@ class ModelConfigReaderTests(unittest.TestCase):
                         with self.assertRaises(ValueError): models.config(directory)
                         dispatch.assert_not_called()
 
+    def test_only_supported_mamba2_time_step_infinity_is_accepted(self):
+        from dllm.config import read_config
+        cases=[{'model_type':'llama','time_step_limit':[0,float('inf')]},
+               {'model_type':'mamba2','extra':float('inf')},
+               {'model_type':'mamba2','time_step_limit':[0,float('inf')],'extra':float('inf')},
+               *[{'model_type':'mamba2','time_step_limit':limit} for limit in
+                 ([0,float('nan')],[0,-float('inf')],[False,float('inf')],
+                  [1,float('inf')],[float('inf'),0],[0,{'value':float('inf')}],
+                  [0,float('inf'),1])]]
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'config.json'
+            for value in cases:
+                with self.subTest(value=value):
+                    path.write_text(json.dumps(value))
+                    with self.assertRaises(ValueError):read_config(path)
+            for literal in ('1e999','-Infinity','NaN'):
+                path.write_text('{"model_type":"mamba2","time_step_limit":[0,'+literal+']}')
+                with self.assertRaises(ValueError):read_config(path)
+            valid={'model_type':'mamba2','time_step_limit':[0.0,float('inf')]}
+            path.write_text(json.dumps(valid))
+            self.assertEqual(read_config(path),valid)
+
     def test_actual_read_is_bounded_without_trusting_file_stat(self):
         reads = []
         class Reader(io.BytesIO):

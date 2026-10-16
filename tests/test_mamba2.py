@@ -39,6 +39,13 @@ class Mamba2Tests(unittest.TestCase):
             parsed=config(directory)
             self.assertEqual(parsed['conv_dim'],1792)
             self.assertEqual(parsed['intermediate_size'],1536)
+            from dllm.models import config as dispatched_config
+            file.write_text(json.dumps({**value,'time_step_limit':[0.0,float('inf')]}))
+            for reader in (config,dispatched_config):
+                with self.subTest(reader=reader.__module__):
+                    explicit=reader(directory)
+                    self.assertEqual(explicit['time_step_limit'],[0.0,float('inf')])
+                    self.assertEqual(explicit['intermediate_size'],1536)
             for change in ({'n_groups':2},{'n_groups':True},{'head_dim':63},{'state_size':257},
                     {'conv_kernel':17},{'time_step_limit':[.01,1]},{'hidden_act':'relu'},
                     {'residual_in_fp32':False},{'use_bias':1},{'eos_token_id':50288},

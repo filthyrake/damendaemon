@@ -23,14 +23,30 @@ def read_config(path):
         parsed = float(value)
         if not math.isfinite(parsed):raise ValueError('nonfinite model configuration number')
         return parsed
+    infinity = object()
+    infinity_count = 0
     def constant(value):
-        raise ValueError('nonfinite model configuration number')
+        nonlocal infinity_count
+        if value != 'Infinity':raise ValueError('nonfinite model configuration number')
+        infinity_count += 1
+        return infinity
     try:
         result = json.loads(raw.decode('utf-8'), object_pairs_hook=unique,
                             parse_float=number, parse_constant=constant)
     except RecursionError as error:
         raise ValueError('model configuration nesting is too deep') from error
     if not isinstance(result, dict):raise ValueError('model configuration must be an object')
+    if infinity_count:
+        # Transformers serializes Mamba-2's supported unbounded time-step
+        # interval using the nonstandard JSON Infinity literal. Permit only
+        # that exact field; a sentinel prevents accepting it anywhere else.
+        limit = result.get('time_step_limit')
+        if (infinity_count != 1 or result.get('model_type') != 'mamba2'
+                or not isinstance(limit, list) or len(limit) != 2
+                or type(limit[0]) not in (int, float) or limit[0] != 0
+                or limit[1] is not infinity):
+            raise ValueError('nonfinite model configuration number')
+        result['time_step_limit'] = [limit[0], float('inf')]
     return result
 
 
