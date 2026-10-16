@@ -65,6 +65,12 @@ if case.startswith('usage-'):
     chunks.insert(0, {'choices':[], 'usage':extra})
     if case in ('usage-same','usage-null','usage-empty','usage-missing-count','usage-null-count'):
         chunks.append({'choices':[], 'usage':extra})
+if case in ('score-late','score-terminal'):
+    scores=choice.pop('logprobs')
+    if case=='score-terminal': finish['choices'][0]['logprobs']=scores
+    else: chunks.insert(-1,{'choices':[{'delta':{},'logprobs':scores}]})
+if case in ('score-empty-trailer','score-null-trailer'):
+    chunks.append({'choices':[{'delta':{},'logprobs':{'content':[]} if case=='score-empty-trailer' else None}]})
 stream = ''.join('data: ' + json.dumps(chunk) + '\n\n' for chunk in chunks)
 if case == 'duplicate-json': stream = 'data: {"choices":[],"choices":[{"delta":{"content":"hello"}}]}\n\n' + stream
 if case != 'no-done': stream += 'data: [DONE]\n\n'
@@ -98,7 +104,7 @@ class ComparatorGatesTests(unittest.TestCase):
 
     def test_malformed_scores_never_publish_comparison(self):
         cases = ('missing','string','entry','token','bool','positive','nan','inf','huge',
-                 'bytes','byte-bool','top-type','top-missing','top-bad','top-extra','too-many')
+                 'bytes','byte-bool','top-type','top-missing','top-bad','top-extra','too-many','late')
         for optimized in (False, True):
             for case in cases:
                 with self.subTest(optimized=optimized,case=case):
@@ -110,7 +116,8 @@ class ComparatorGatesTests(unittest.TestCase):
     def test_complete_evidence_is_accepted_in_both_modes(self):
         for optimized in (False, True):
             for case in ('valid', 'scored', 'error-null', 'terminal-output', 'raw-valid',
-                         'score-top-valid', 'score-optional-bytes', 'usage-same','usage-null','usage-empty',
+                         'score-top-valid', 'score-optional-bytes', 'score-terminal','score-empty-trailer',
+                         'score-null-trailer', 'usage-same','usage-null','usage-empty',
                          'usage-missing-count','usage-null-count'):
                 with self.subTest(optimized=optimized, case=case):
                     result = self.run_case(case, optimized)

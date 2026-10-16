@@ -125,14 +125,15 @@ def main():
                         tool_output = _tool_call_output(delta.get('tool_calls'))
                         semantic_output = semantic_output or tool_output or any(
                             delta.get(key) for key in ('reasoning', 'reasoning_content'))
-                    if finished and semantic_output:
+                    scores = _score_count(choice.get('logprobs'), args.top_logprobs)
+                    if finished and (semantic_output or scores):
                         raise ValueError('comparison output received after completion finish')
                     reason = choice.get('finish_reason')
                     if reason is not None:
                         if not isinstance(reason, str) or not reason or finished:
                             raise ValueError('invalid or duplicate comparison completion finish')
                         finished = True
-                    scored_tokens += _score_count(choice.get('logprobs'), args.top_logprobs)
+                    scored_tokens += scores
                     if scored_tokens > args.max_tokens:
                         raise ValueError('comparison scores exceed completion token budget')
                     if content:
