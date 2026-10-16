@@ -11,7 +11,8 @@ it never imports or runs the experiments.
 The `CPU contracts` GitHub workflow runs an explicit dependency-free test list on
 GitHub-hosted Python 3.11 and 3.12, in normal and optimized modes. It covers
 qualification startup guards, HTTP error handling, report I/O, error snapshots,
-token-workload identity, checkpoint JSON, tokenizer metadata and CLI manifest preflight.
+token-workload identity, checkpoint JSON, tokenizer metadata, CLI manifest preflight
+and benchmark parsing with local loopback fixtures.
 Those matrix jobs install no runtime dependencies. A separate ten-minute Ubuntu
 CPU integration job installs CPU-only PyTorch and tokenizer dependencies, verifies
 the wheel has no CUDA/HIP backend, and runs an explicit runtime, manifest, HTTP,
@@ -237,3 +238,7 @@ measurement or produce a mislabeled workload report.
 Runtime environment metadata uses an explicit allowlist of execution modes and
 budgets. Credentials, private paths, and unrecognized environment variables are
 omitted; report filtering does not change the environment used by subprocesses.
+
+Benchmark comparator metadata and streaming JSON reject duplicate fields at every
+depth, so later keys cannot overwrite conflicting context, error or usage evidence.
+Existing response byte bounds and numerical acceptance checks still apply.

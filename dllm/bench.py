@@ -23,6 +23,20 @@ MAX_SSE_LINE_BYTES = 1024 * 1024
 MAX_SSE_EVENT_BYTES = 4 * 1024 * 1024
 MAX_SSE_EVENT_LINES = 4096
 
+def _response_json(raw):
+    def unique_fields(pairs):
+        result = {}
+        for name,value in pairs:
+            if name in result:
+                raise ValueError('duplicate benchmark response JSON field')
+            result[name] = value
+        return result
+    try:
+        return json.loads(raw,object_pairs_hook=unique_fields)
+    except RecursionError as error:
+        raise ValueError('benchmark response JSON nesting is too deep') from error
+
+
 def llama_context(base_url, expected):
     """Fail before timing if the comparator silently capped its KV slot context."""
     try:
@@ -33,10 +47,7 @@ def llama_context(base_url, expected):
         raise
     if len(raw) > MAX_CONTEXT_METADATA_BYTES:
         raise ValueError('comparator context metadata exceeds 1 MiB limit')
-    try:
-        props = json.loads(raw)
-    except RecursionError as error:
-        raise ValueError('comparator context metadata nesting is too deep') from error
+    props = _response_json(raw)
     if not isinstance(props, dict) or not isinstance(props.get('default_generation_settings'), dict):
         raise ValueError('invalid comparator context metadata')
     actual = props['default_generation_settings'].get('n_ctx')
@@ -130,7 +141,7 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                         raise ValueError("stream ended without a completion finish reason")
                     done = True
                     break
-                chunk = json.loads(data)
+                chunk = _response_json(data)
                 if not isinstance(chunk, dict):
                     raise ValueError("stream event must be an object")
                 if chunk.get("error"):

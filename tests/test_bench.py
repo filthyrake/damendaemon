@@ -111,6 +111,29 @@ class BenchTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'requested 2048, actual 1024'):
             llama_context(base, 2048)
 
+    def test_duplicate_context_fields_cannot_hide_mismatches(self):
+        for raw in (b'{"default_generation_settings":{"n_ctx":512,"n_ctx":1024}}',
+                    b'{"default_generation_settings":{"n_ctx":512},"default_generation_settings":{"n_ctx":1024}}'):
+            response=io.BytesIO(raw)
+            with self.subTest(raw=raw),patch('dllm.bench.urlopen',return_value=response):
+                with self.assertRaisesRegex(ValueError,'duplicate'):llama_context('http://local',1024)
+            self.assertTrue(response.closed)
+
+    def test_duplicate_stream_fields_cannot_hide_errors_or_usage(self):
+        from types import SimpleNamespace
+        for raw in ('{"error":"failed","error":null,"choices":[]}',
+                    '{"choices":[],"usage":{"completion_tokens":9,"completion_tokens":7}}'):
+            wire=('data: '+raw+'\n\n'+
+                  'data: {"choices":[{"delta":{"content":"hello"},"finish_reason":"stop"}]}\n\n'+
+                  'data: {"choices":[],"usage":{"completion_tokens":7}}\n\n'+
+                  'data: [DONE]\n\n').encode()
+            response=io.BytesIO(wire)
+            response.headers=SimpleNamespace(get_content_type=lambda:'text/event-stream')
+            with self.subTest(raw=raw),patch('dllm.bench.urlopen',return_value=response):
+                result=request_one('http://local','model','hello',8,5,0)
+                self.assertEqual(result.error,'ValueError')
+            self.assertTrue(response.closed)
+
     def test_context_metadata_read_is_bounded_and_closed(self):
         class TrackedResponse(io.BytesIO):
             sizes = None
