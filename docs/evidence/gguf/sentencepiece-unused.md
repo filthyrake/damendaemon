@@ -87,3 +87,20 @@ and repeated/adjacent/overlapping specials plus Unicode and byte fallback.
 Tests compare exact IDs, full/generated decoding and batch encoding before and
 after serialization. These fixtures exercise unequal-length overlaps; they do
 not establish portable ordering for equal-byte-length overlapping specials.
+
+## Equal-length overlap boundary (#379)
+
+The next CPU reference probe confirmed the equal-length caveat is observable,
+not hypothetical. Append user-defined specials `abx`, 32 fillers `x00` through
+`x31`, and `bxy` to the original tiny vocabulary. Prompt `abxy` without automatic
+specials produced `[266,259,124]` in dllm and `[263,299]` in the pinned reference.
+With four fillers, both returned `[266,259,124]`. The C++ reference sorts specials
+only by byte length using `std::sort`; its equal-length order is unspecified.
+
+Import now rejects distinct equal-byte-length special pieces whose proper
+suffix/prefix overlap would make partitioning depend on that order. It retains
+non-overlapping length ties, self-overlapping pieces, unequal-byte-length
+overlaps, and UNUSED pieces (which are not partitioned as specials). The check
+runs before either tokenizer construction path. Sorted prefix searches avoid
+quadratic pairwise comparisons within same-length vocabulary groups. Unicode
+length is measured in UTF-8 bytes, matching the reference comparator.

@@ -220,6 +220,32 @@ class SentencePieceGgufTests(unittest.TestCase):
         source['tokenizer.ggml.tokens'][265] = '<|eot_id|>'
         self.assertEqual(tokenizer(source)[2], frozenset({2}))
 
+    def test_equal_byte_length_special_overlaps_rejected(self):
+        for tied in (False, True):
+            for pieces in (['abx'] + [f'x{i:02d}' for i in range(32)] + ['bxy'],
+                           ['éa', 'abc'], ['abc', 'éa'], ['aaa', 'aab']):
+                for kind in (3, 4):
+                    with self.subTest(tied=tied, pieces=pieces, kind=kind):
+                        source = metadata()
+                        source['tokenizer.ggml.tokens'] += pieces
+                        source['tokenizer.ggml.token_type'] += [kind] * len(pieces)
+                        source['tokenizer.ggml.scores'] += [0.] * len(pieces)
+                        if tied:
+                            source['tokenizer.ggml.scores'][264] = -5.
+                        with self.assertRaisesRegex(ValueError, 'equal-length overlapping special'):
+                            tokenizer(source)
+
+    def test_unambiguous_special_length_ties_and_self_overlap_remain_supported(self):
+        for pieces, kind in ((['aaaa', 'bbbb'], 4), (['éa', 'abx'], 5), (['éa', 'ab'], 4)):
+            source = metadata()
+            source['tokenizer.ggml.tokens'] += pieces
+            source['tokenizer.ggml.token_type'] += [kind] * len(pieces)
+            source['tokenizer.ggml.scores'] += [0.] * len(pieces)
+            result, _, _ = tokenizer(source)
+            for index, piece in enumerate(pieces, 266):
+                if kind == 4:
+                    self.assertEqual(result.encode(piece, add_special_tokens=False).ids, [index])
+
     def test_invalid_vocab_and_unsupported_normalization_are_rejected(self):
         mutations = [
             lambda m: m.pop('tokenizer.ggml.scores'),

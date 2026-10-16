@@ -12,11 +12,41 @@ MIT-licensed llm_tokenizer_spm_session, pin 836d57176dc699a726c55418e4f96b8ca628
 This supports the Llama SPM BPE convention, not arbitrary SentencePiece models.
 """
 import base64
+from bisect import bisect_left
 import json
 import math
 from types import SimpleNamespace
 
 from tokenizers import Tokenizer, decoders, models, normalizers
+
+
+def validate_special_overlaps(tokens, types):
+    """Equal-byte-length overlapping specials have no portable reference order.
+
+    llama.cpp sorts special pieces by byte length without a tie breaker. Only
+    distinct pieces with a proper suffix/prefix overlap can depend on that tie.
+    Binary search avoids comparing every pair in large same-length groups.
+    """
+    groups = {}
+    for text, kind in zip(tokens, types):
+        if kind in (2, 3, 4):
+            raw = text.encode('utf-8')
+            groups.setdefault(len(raw), []).append(raw)
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        group.sort()
+        initials = {piece[0] for piece in group}
+        for piece in group:
+            for offset in range(1, len(piece)):
+                if piece[offset] not in initials:
+                    continue
+                suffix = piece[offset:]
+                start = bisect_left(group, suffix)
+                # The first matching piece may be itself (self-overlap is safe).
+                for other in group[start:start + 2]:
+                    if other != piece and other.startswith(suffix):
+                        raise ValueError('GGUF SentencePiece has equal-length overlapping special tokens')
 
 
 def build(metadata):
@@ -44,6 +74,7 @@ def build(metadata):
     vocab = {text: i for i, text in enumerate(tokens)}
     if len(vocab) != len(tokens):
         raise ValueError('duplicate GGUF SentencePiece tokens')
+    validate_special_overlaps(tokens, types)
     unknown = metadata.get('tokenizer.ggml.unknown_token_id', 0)
     if (type(unknown) is not int or not 0 <= unknown < len(tokens) or types[unknown] not in (2, 3)
             or any(kind == 2 and i != unknown for i, kind in enumerate(types))):
