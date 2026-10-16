@@ -16,6 +16,18 @@ from safetensors import safe_open
 from .qwen2 import weight_files
 
 
+def _eager_attention(query, key, values, dim):
+    """Bidirectional FP32 attention with explicit overflow rejection.
+
+    Finite inputs can overflow the score product; the softmax would silently
+    turn that into NaN attention output.
+    """
+    scores = (query @ key.transpose(-1, -2)) * (dim ** -.5)
+    if not torch.isfinite(scores).all():
+        raise RuntimeError('nonfinite vision attention scores')
+    return scores.softmax(-1) @ values
+
+
 def read_vision_config(path):
     """Validate pinned vision geometry before either text or vision tensors load."""
     config = read_config(Path(path)/'config.json')
@@ -167,8 +179,7 @@ class VisionEncoder:
                 chunk=slice(offset,offset+length)
                 query,key,values=(x[chunk].transpose(0,1).unsqueeze(0) for x in (q,k,v))
                 if self.attention=='eager':
-                    scores=(query@key.transpose(-1,-2))*(dim**-.5)
-                    output=scores.softmax(-1)@values
+                    output=_eager_attention(query,key,values,dim)
                 else:
                     output=F.scaled_dot_product_attention(query,key,values,is_causal=False)
                 attended.append(output.squeeze(0).transpose(0,1).reshape(length,-1))

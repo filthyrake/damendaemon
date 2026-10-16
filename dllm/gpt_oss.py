@@ -132,6 +132,9 @@ class GptOssExecutor(BatchExecutor):
         router=self.dense_linear(x,w[f'{i}.router'],w[f'{i}.router.bias'])
         # GPT-OSS normalizes only the selected logits, after top-k selection.
         logits,selected=router.topk(self.c['num_experts_per_tok'],dim=-1)
+        # Finite router outputs can overflow here and silently produce NaN
+        # expert weights through the softmax.
+        if not torch.isfinite(logits).all():raise RuntimeError('nonfinite GPT-OSS routing logits')
         probabilities=logits.softmax(-1)
         if prefill and self.grouped_prefill=='grouped' and x.shape[0]>=16:
             return self.grouped_experts(x,i,selected,probabilities)

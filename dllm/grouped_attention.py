@@ -40,10 +40,16 @@ def attention(q, k, v, *, scratch_bytes=256*1024**2):
             query = q[:, first:last, start:stop].reshape(batch, repeats*(stop-start), dim)
             scores = query @ k[:, head].transpose(-1, -2)
             scores.mul_(dim**-.5)
+            # Finite inputs can overflow the score GEMM; softmax would silently
+            # turn that into NaN attention output.
+            if not torch.isfinite(scores).all():
+                raise RuntimeError('nonfinite grouped attention scores')
             scores = scores.reshape(batch, repeats, stop-start, context)
             scores.masked_fill_(mask, -float('inf'))
             probabilities = scores.softmax(-1).reshape(batch, repeats*(stop-start), context)
             output[:, first:last, start:stop] = (probabilities @ v[:, head]).reshape(batch, repeats, stop-start, dim)
             del query, scores, probabilities
         del mask
+    if not torch.isfinite(output).all():
+        raise RuntimeError('nonfinite grouped attention output')
     return output
