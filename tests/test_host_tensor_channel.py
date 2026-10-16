@@ -120,6 +120,42 @@ class HostTensorChannelTests(unittest.TestCase):
             with self.assertRaises(TimeoutError):right.receive((1,),torch.float32)
         self.assertTrue(right.failed);self.assertEqual(right.received,0)
 
+    def test_late_final_operations_never_commit_success(self):
+        import sys
+        for operation in ('handshake','send','receive'):
+            with self.subTest(operation=operation):
+                left,right = self.pair() if operation=='handshake' else self.ready()
+                clock=[0.0]
+                target=left if operation!='receive' else right
+                if operation=='handshake':
+                    right.connection.sendall(HELLO.pack(MAGIC,1,0 if sys.byteorder=='little' else 1,VERSION,4096,b'a'*32))
+                    original=target._read
+                    def delayed(*args):
+                        result=original(*args);clock[0]=2.0;return result
+                    instrument=patch.object(target,'_read',side_effect=delayed)
+                    action=target.handshake
+                elif operation=='send':
+                    original=target._send
+                    def delayed(data,deadline):
+                        original(data,deadline)
+                        if len(data)!=FRAME.size:clock[0]=2.0
+                    instrument=patch.object(target,'_send',side_effect=delayed)
+                    action=lambda:target.send(torch.ones(1))
+                else:
+                    left.send(torch.ones(1))
+                    original=torch.frombuffer
+                    def delayed(*args,**kwargs):
+                        result=original(*args,**kwargs);clock[0]=2.0;return result
+                    instrument=patch('dllm.host_tensor_channel.torch.frombuffer',side_effect=delayed)
+                    action=lambda:target.receive((1,),torch.float32)
+                with patch('dllm.host_tensor_channel.time.monotonic',side_effect=lambda:clock[0]),instrument:
+                    with self.assertRaises(TimeoutError):action()
+                self.assertTrue(target.failed)
+                self.assertTrue(target.closed)
+                self.assertFalse(target.ready)
+                self.assertEqual((target.sent,target.received),(0,0))
+                self.assertEqual(target.connection.fileno(),-1)
+
     def test_send_interruption_closes_owned_socket(self):
         left,right=self.ready()
         with patch.object(left,'_send',side_effect=KeyboardInterrupt):

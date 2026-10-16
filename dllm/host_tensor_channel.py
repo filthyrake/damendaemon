@@ -64,11 +64,14 @@ class HostTensorChannel:
         if self.closed or self.failed or (ready and not self.ready):
             raise RuntimeError('host tensor channel is not ready')
 
-    def _timeout(self,deadline):
+    def _remaining(self,deadline):
         self._usable(ready=False)
         remaining=deadline-time.monotonic()
         if remaining<=0:raise TimeoutError('host tensor operation deadline exceeded')
-        self.connection.settimeout(min(remaining,.1))
+        return remaining
+
+    def _timeout(self,deadline):
+        self.connection.settimeout(min(self._remaining(deadline),.1))
 
     def _send(self,data,deadline):
         view=memoryview(data).cast('B')
@@ -115,6 +118,7 @@ class HostTensorChannel:
                 self.max_frame_bytes=min(self.max_frame_bytes,limit)
                 with self.close_lock:
                     self._usable(ready=False)
+                    self._remaining(deadline)
                     self.ready=True
             except BaseException:
                 self._fail()
@@ -152,6 +156,7 @@ class HostTensorChannel:
                 self._send(data,deadline)
                 with self.close_lock:
                     self._usable()
+                    self._remaining(deadline)
                     self.sent=sequence
             except BaseException:
                 self._fail()
@@ -179,6 +184,7 @@ class HostTensorChannel:
                 result=torch.frombuffer(data,dtype=dtype).reshape(shape)
                 with self.close_lock:
                     self._usable()
+                    self._remaining(deadline)
                     self.received=sequence
                 return result
             except BaseException:

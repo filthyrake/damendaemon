@@ -175,3 +175,5 @@ Inspected local revisions:
 
 Primary references: [vLLM sleep mode](https://docs.vllm.ai/en/latest/features/sleep_mode/)
 and [llama.cpp server](https://github.com/ggml-org/llama.cpp/tree/master/tools/server).
+
+Host tensor channels recheck the absolute operation deadline immediately before committing handshake readiness or sent/received sequence numbers, including after receive-side tensor construction. Expiry poisons and closes the channel. A timed-out send can already have delivered bytes, so its outcome is uncertain and callers must abandon the epoch rather than retry on the same channel. These CPU transport guarantees do not qualify physical multi-host or GPU execution.
