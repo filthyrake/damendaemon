@@ -65,8 +65,13 @@ class GemmaExecutor(BatchExecutor):
         if self.kernels:
             return self.kernels.rms(x.contiguous(), weight, self.eps, True)
         value = x.float()
-        value = value * torch.rsqrt(value.square().mean(-1, keepdim=True) + self.eps)
-        return (value * weight).to(self.compute_dtype)
+        variance = value.square().mean(-1, keepdim=True)
+        # Finite inputs can overflow here and otherwise silently normalize to zero.
+        if not torch.isfinite(variance).all():raise RuntimeError('nonfinite Gemma normalization variance')
+        value = value * torch.rsqrt(variance + self.eps)
+        result = (value * weight).to(self.compute_dtype)
+        if not torch.isfinite(result.float()).all():raise RuntimeError('nonfinite Gemma normalization output')
+        return result
 
     @torch.inference_mode()
     def forward(self, ids, positions, prefill, slot=0):

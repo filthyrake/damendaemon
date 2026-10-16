@@ -178,7 +178,12 @@ class MambaExecutor:
     def norm(self,x,weight):
         eps=self.c['layer_norm_epsilon']
         if self.kernels:return self.kernels.rms(x,weight,eps,True)
-        return x*torch.rsqrt(x.square().mean(-1,keepdim=True)+eps)*weight
+        variance=x.float().square().mean(-1,keepdim=True)
+        # Finite inputs can overflow here and otherwise silently normalize to zero.
+        if not torch.isfinite(variance).all():raise RuntimeError('nonfinite Mamba normalization variance')
+        result=x*torch.rsqrt(variance+eps)*weight
+        if not torch.isfinite(result).all():raise RuntimeError('nonfinite Mamba normalization output')
+        return result
 
     def tensor_recurrence(self,x,gate,params,dt,layer,slots,reset):
         w=self.w;p=f'{layer}.';s=self.c['state_size'];r=self.c['time_step_rank']

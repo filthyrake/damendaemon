@@ -301,7 +301,12 @@ class HybridExecutor:
         if self.fused:
             return self.fused.norm(x, weight, self.eps, dtype)
         x = x.float()
-        return (x * torch.rsqrt(x.square().mean(-1, keepdim=True)+self.eps) * weight).to(dtype)
+        variance = x.square().mean(-1, keepdim=True)
+        # Finite inputs can overflow here and otherwise silently normalize to zero.
+        if not torch.isfinite(variance).all():raise RuntimeError('nonfinite hybrid normalization variance')
+        result = (x * torch.rsqrt(variance+self.eps) * weight).to(dtype)
+        if not torch.isfinite(result.float()).all():raise RuntimeError('nonfinite hybrid normalization output')
+        return result
 
     def rotate(self, x, positions):
         dim = self.c['rotary_dim']

@@ -614,17 +614,26 @@ class Executor:
         if self.kernels:
             return self.kernels.rms(x, weight, self.eps, self.precise)
         xf = x.float()
-        normalized = xf * torch.rsqrt(xf.square().mean(-1, keepdim=True) + self.eps)
+        variance = xf.square().mean(-1, keepdim=True)
+        # Finite inputs can overflow here and otherwise silently normalize to zero.
+        if not torch.isfinite(variance).all():raise RuntimeError('nonfinite normalization variance')
+        normalized = xf * torch.rsqrt(variance + self.eps)
         if self.precise:
             return (normalized * weight.float()).to(weight.dtype)
-        return normalized.to(weight.dtype) * weight
+        result = normalized.to(weight.dtype) * weight
+        if not torch.isfinite(result.float()).all():raise RuntimeError('nonfinite normalization output')
+        return result
 
     def normalize_qk(self, q, k, layer):
         if self.c["model_type"] == "qwen3":
             def norm(x, weight):
                 heads = x.reshape(-1, self.dim).float()
-                return (heads * torch.rsqrt(heads.square().mean(-1, keepdim=True)+self.eps)
-                        * weight.float()).reshape(x.shape)
+                variance = heads.square().mean(-1, keepdim=True)
+                if not torch.isfinite(variance).all():raise RuntimeError('nonfinite QK normalization variance')
+                result = (heads * torch.rsqrt(variance+self.eps)
+                          * weight.float()).reshape(x.shape)
+                if not torch.isfinite(result.float()).all():raise RuntimeError('nonfinite QK normalization output')
+                return result
             q, k = norm(q, self.w[f"{layer}.q_norm"]), norm(k, self.w[f"{layer}.k_norm"])
         return q, k
 

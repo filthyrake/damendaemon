@@ -4,7 +4,7 @@ from unittest.mock import patch
 import torch
 
 from dllm.deepseek_position import frequencies, rotate_pairs
-from dllm.floating_attention import attention_prefill
+from dllm.floating_attention import _query_norm, attention_prefill
 
 
 def fixture(ratio=0, length=13, dtype=torch.float32, dim=8):
@@ -96,3 +96,14 @@ class FloatingAttentionTests(unittest.TestCase):
                     attention_prefill(hidden, weights, freq, **options)
             with self.assertRaises(ValueError):
                 attention_prefill(hidden, weights | {'unexpected':torch.zeros(1)}, freq, groups=2, window=4)
+
+    def test_overflowing_query_fails_instead_of_silently_normalizing_to_zero(self):
+        # A finite FP32 query whose square overflows must not be normalized to
+        # zeros through an infinite variance (matches the #470 GLM check class).
+        query = torch.zeros(1, 1, 2, 128)
+        query[..., 0] = 1e20
+        for backend in (None, object()):
+            with self.assertRaises(ValueError):
+                _query_norm(query, 1e-6, backend)
+        torch.testing.assert_close(_query_norm(torch.ones(1, 1, 2, 128), 1e-6, None),
+                                   torch.ones(1, 1, 2, 128))

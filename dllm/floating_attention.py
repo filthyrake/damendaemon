@@ -159,9 +159,11 @@ def _grouped_project(grouped, weight, groups, orank,backend=None):
 
 def _query_norm(query,epsilon,backend):
     variance=query.square().mean(-1,keepdim=True)+epsilon
-    if backend is not None:finite(query,'CUDA attention query');finite(variance,'CUDA query variance')
+    # Checked on every path: a finite-but-overflowing query would otherwise be
+    # silently normalized to zeros through an infinite variance.
+    finite(query,'attention query');finite(variance,'query variance')
     result=query*variance.rsqrt()
-    return finite(result,'CUDA normalized query') if backend is not None else result
+    return finite(result,'normalized query')
 
 
 def cache_bytes_per_slot(window,ratio,capacity,width,index_width,item_bytes):

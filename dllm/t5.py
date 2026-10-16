@@ -222,7 +222,12 @@ class T5Executor:
 
     def norm(self,x,weight):
         if self.kernels:return self.kernels.rms(x,weight,self.eps,True)
-        return x*torch.rsqrt(x.square().mean(-1,keepdim=True)+self.eps)*weight
+        variance=x.float().square().mean(-1,keepdim=True)
+        # Finite inputs can overflow here and otherwise silently normalize to zero.
+        if not torch.isfinite(variance).all():raise RuntimeError('nonfinite T5 normalization variance')
+        result=x*torch.rsqrt(variance+self.eps)*weight
+        if not torch.isfinite(result).all():raise RuntimeError('nonfinite T5 normalization output')
+        return result
 
     def linear(self,x,weight):
         if self.kernels:
