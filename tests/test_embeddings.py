@@ -222,12 +222,12 @@ class EncoderConfigTests(unittest.TestCase):
                 path.write_text(json.dumps(pooling))
                 self.assertEqual(config(self.root), expected)
         for changes in ({'embedding_dimension':8.0}, {'embedding_dimension':True},
-                        {'pooling_mode':'max'}, {'pooling_mode':['mean', 'max']},
+                        {'pooling_mode':'unknown'}, {'pooling_mode':['mean', 'max']},
                         {'include_prompt':False}, {'include_prompt':1},
                         {'pooling_mode_mean_tokens':True}, {'unknown':False}):
             with self.subTest(changes=changes):
                 path.write_text(json.dumps({**compact, **changes}))
-                with self.assertRaisesRegex(ValueError, 'mean pooling'):
+                with self.assertRaisesRegex(ValueError, 'pooling'):
                     config(self.root)
         path.write_text(json.dumps(compact))
         self.modules[1]['type'] = 'untrusted.modules.pooling.Pooling'
@@ -255,7 +255,7 @@ class EncoderConfigTests(unittest.TestCase):
                       {'include_prompt':None}, {'unknown':False}):
             with self.subTest(extra=extra):
                 path.write_text(json.dumps({**legacy,**extra}))
-                with self.assertRaisesRegex(ValueError,'mean pooling'):config(self.root)
+                with self.assertRaisesRegex(ValueError,'pooling'):config(self.root)
 
     def test_module_metadata_is_bounded_unique_and_well_typed(self):
         valid=json.dumps(self.modules)
