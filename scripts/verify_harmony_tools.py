@@ -8,12 +8,17 @@ import threading
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 import torch
+from dllm.bench import events
 from dllm.scheduler import BatchedRuntime
 from dllm.server import BoundedHTTPServer,handler_for
 
 TOOLS=[{'type':'function','function':{'name':'weather','description':'Get current weather for a city.',
     'parameters':{'type':'object','properties':{'city':{'type':'string'}},'required':['city']}}}]
 MESSAGES=[{'role':'user','content':'Use the weather tool to get the current weather in Paris.'}]
+
+
+def require_gate(condition, message):
+    if not condition:raise ValueError(message)
 
 
 def main():
@@ -40,20 +45,18 @@ def main():
     def stream(body,disconnect=False):
         result={'content':'','reasoning_content':''};calls=[];finish=None;usage=None;done=False
         with request({**body,'stream':True,'stream_options':{'include_usage':True}}) as response:
-            for raw in response:
-                if not raw.startswith(b'data: '):continue
-                line=raw[6:].strip()
-                if line==b'[DONE]':done=True;break
-                event=json.loads(line);assert 'error' not in event,event
+            for line in events(response,require_terminated=True):
+                if line=='[DONE]':done=True;break
+                event=json.loads(line);require_gate('error' not in event, 'stream returned an error')
                 if 'usage' in event:usage=event['usage']
                 for choice in event['choices']:
                     delta=choice.get('delta',{})
                     for key in result:result[key]+=delta.get(key,'')
                     for call in delta.get('tool_calls',[]):
-                        assert call.pop('index')==len(calls);calls.append(call)
+                        require_gate(call.pop('index')==len(calls), 'unexpected streamed tool-call index');calls.append(call)
                     if choice.get('finish_reason'):finish=choice['finish_reason']
                 if disconnect:break
-        if not disconnect:assert done
+        if not disconnect:require_gate(done, 'stream ended without DONE')
         return result,calls,finish,usage
     def canonical(response):
         message=response['choices'][0]['message']
@@ -62,34 +65,35 @@ def main():
     try:
         first=post(base);print(json.dumps(first),flush=True)
         choice=first['choices'][0];message=choice['message'];call=message['tool_calls'][0]
-        assert choice['finish_reason']=='tool_calls' and call['function']['name']=='weather'
-        assert json.loads(call['function']['arguments'])=={'city':'Paris'}
+        require_gate(choice['finish_reason']=='tool_calls' and call['function']['name']=='weather', 'expected a weather tool call')
+        require_gate(json.loads(call['function']['arguments'])=={'city':'Paris'}, 'unexpected weather tool arguments')
         actual,calls,finish,usage=stream(base)
-        assert (actual['content'],actual['reasoning_content'],[c['function'] for c in calls],finish,usage)==canonical(first)
+        require_gate((actual['content'],actual['reasoning_content'],[c['function'] for c in calls],finish,usage)==canonical(first), 'stream differs from ordinary response')
         rows.append({'case':'auto_stream_equivalence','response':first})
         history=messages+[message,{'role':'tool','tool_call_id':call['id'],'content':'Paris: 19 degrees Celsius, sunny.'}]
         reply=post({**base,'messages':history});print(json.dumps(reply),flush=True)
-        assert reply['choices'][0]['finish_reason']=='stop' and '19' in reply['choices'][0]['message']['content']
+        require_gate(reply['choices'][0]['finish_reason']=='stop' and '19' in reply['choices'][0]['message']['content'], 'follow-up did not incorporate the tool result')
         rows.append({'case':'tool_result_history','response':reply})
         for cap in (1,4,first['usage']['completion_tokens']-1):
             limited={**base,'max_tokens':cap};result=post(limited)
-            assert result['choices'][0]['finish_reason']=='length' and 'tool_calls' not in result['choices'][0]['message']
+            require_gate(result['choices'][0]['finish_reason']=='length' and 'tool_calls' not in result['choices'][0]['message'], 'truncated call must finish by length without a tool call')
             actual,calls,finish,usage=stream(limited)
-            assert (actual['content'],actual['reasoning_content'],[c['function'] for c in calls],finish,usage)==canonical(result)
+            require_gate((actual['content'],actual['reasoning_content'],[c['function'] for c in calls],finish,usage)==canonical(result), 'truncated stream differs from ordinary response')
             rows.append({'case':'incomplete_header_or_arguments','cap':cap,'response':result})
         none=post({**base,'tool_choice':'none','messages':[{'role':'user','content':'What is 2 + 2? Answer briefly.'}]})
-        assert none['choices'][0]['finish_reason']=='stop' and none['choices'][0]['message']['content'].strip()=='4'
+        require_gate(none['choices'][0]['finish_reason']=='stop' and none['choices'][0]['message']['content'].strip()=='4', 'tool_choice none did not produce the expected plain answer')
         rows.append({'case':'none_choice','response':none})
-        stream(base,disconnect=True);assert canonical(post(base))==canonical(first)
+        stream(base,disconnect=True);require_gate(canonical(post(base))==canonical(first), 'generation changed after disconnect')
         with ThreadPoolExecutor(2) as pool:concurrent=list(pool.map(lambda _:post(base),range(2)))
-        assert all(canonical(r)==canonical(first) for r in concurrent)
-        assert concurrent[0]['choices'][0]['message']['tool_calls'][0]['id']!=concurrent[1]['choices'][0]['message']['tool_calls'][0]['id']
+        require_gate(all(canonical(r)==canonical(first) for r in concurrent), 'concurrent response differs from baseline')
+        require_gate(concurrent[0]['choices'][0]['message']['tool_calls'][0]['id']!=concurrent[1]['choices'][0]['message']['tool_calls'][0]['id'], 'concurrent calls reused an ID')
         for invalid in ({**base,'tool_choice':'required'},
             {**base,'tool_choice':{'type':'function','function':{'name':'weather'}}},
             {**base,'tools':[{'type':'function','function':{**TOOLS[0]['function'],'strict':True}}]}):
             try:post(invalid)
-            except HTTPError as error:assert error.code==400;error.close()
-            else:raise AssertionError('unsupported choice accepted')
+            except HTTPError as error:
+                with error:require_gate(error.code==400, 'unsupported choice must return HTTP 400')
+            else:raise ValueError('unsupported choice accepted')
         captured=list(runtime.generate('oss',messages,128,tools=TOOLS,reasoning_effort='low'))
         rows.append({'case':'captured_tokens','tokens':[e['token'] for e in captured if 'token' in e],
             'content':''.join(e.get('text','') for e in captured),'reasoning_content':''.join(e.get('reasoning_content','') for e in captured),
