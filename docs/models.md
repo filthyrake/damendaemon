@@ -10,6 +10,12 @@ convention is accepted; other nonfinite numbers, duplicate fields and non-object
 are rejected before architecture dispatch or weight planning. Tokenizer vocabulary
 files use their separate loading contracts.
 
+Independent GGUF token-trace reports include `workload_sha256`, binding the
+ordered prompt token IDs and output budget. Generated-HTTP qualification requires
+that digest to match the requested benchmark workload before starting its server.
+Older reference reports without the digest must be regenerated; do not add a
+computed digest to historical evidence to imply that workload was validated.
+
 ## Sentence embeddings
 
 Sentence embeddings are available through `POST /v1/embeddings`. Register the

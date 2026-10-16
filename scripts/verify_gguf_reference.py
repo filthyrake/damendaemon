@@ -21,6 +21,7 @@ from transformers.modeling_utils import no_init_weights
 
 from dllm.gguf_model import GgufWeights
 from dllm.runtime import make_executor
+from dllm.token_workload import token_workload_digest
 from dllm.device import empty_cache, device_name
 
 
@@ -209,6 +210,7 @@ def main():
             raise ValueError('invalid benchmark output length')
         if any(not ids or len(ids)+steps-1>args.context or any(type(t) is not int or not 0<=t<source.config['vocab_size'] for t in ids) for ids in prompts):
             raise ValueError('invalid benchmark prompt tokens or context budget')
+    workload_sha256 = token_workload_digest(prompts, steps)
     reference_cache = {}
     if args.serial_reference:
         # Large checkpoints need not hold HF's expanded weights and dllm's
@@ -332,7 +334,7 @@ def main():
         tokenizer_runtime.update(sentencepiece=version('sentencepiece'),protobuf=version('protobuf'))
     report = dict(tokenizer_runtime=tokenizer_runtime, native_kquant_library=kquant_library, native_q4_residual_library=q4_residual_library, native_q4_library=q4_library, serial_reference=args.serial_reference, reference_cache_bytes=sum(t.numel()*t.element_size() for trace in reference_cache.values() for t in trace), production_prefill_kernel_sha256=prefill_kernel, passed=passed, device=device_name(), torch=torch.__version__, gguf=args.gguf, sha256=sha,
                   precision=precision, q4_prompt_policy=q4_prompt_policy, context=args.context, suite="benchmark" if benchmark else "extended" if args.extended else "initial",
-                  benchmark_report=args.benchmark_report, steps=steps,
+                  benchmark_report=args.benchmark_report, steps=steps, workload_sha256=workload_sha256,
                   reference=f'independent gguf.quants dequantization into HF eager {config.model_type} execution', reference_dtype=args.reference_dtype,
                   reference_prefill_chunk_size=args.reference_prefill_chunk_size,
                   window_boundary_validation=args.window_boundaries, sliding_window=source.config.get('sliding_window'),

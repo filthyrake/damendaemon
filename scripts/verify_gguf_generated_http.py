@@ -18,6 +18,7 @@ from urllib.request import Request, urlopen
 from dllm.gguf_sentencepiece import restore_tokenizer
 from dllm.bench import events
 from dllm.gguf_model import plan
+from dllm.token_workload import token_workload_digest
 
 
 def main():
@@ -37,11 +38,14 @@ def main():
             raise ValueError('qualification prompts must contain token IDs and fit context 512')
     if reference.get('passed') is not True or reference['sha256']!=benchmark['model_sha256']:
         raise ValueError('requires passing same-checkpoint independent token trace')
+    workload_sha256=token_workload_digest([prompts[key] for key in sorted(prompts,key=int)],maximum)
+    if reference.get('workload_sha256')!=workload_sha256:
+        raise ValueError('independent trace workload identity is missing or differs; regenerate the reference')
     with Path(args.model).open('rb') as stream:checksum=hashlib.file_digest(stream,'sha256').hexdigest()
     if checksum!=reference['sha256']:raise ValueError('model differs from reference')
     source=plan(args.model);tokenizer=restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
     decode=getattr(tokenizer,'decode_generated',tokenizer.decode)
-    output=Path(args.output);report=dict(passed=False,model_sha256=checksum,cases=[],
+    output=Path(args.output);report=dict(passed=False,model_sha256=checksum,workload_sha256=workload_sha256,cases=[],
         reference=args.reference,benchmark=args.benchmark,scope='normal HTTP continuation decoding against independently qualified token traces')
     with socket.socket() as listener:listener.bind(('127.0.0.1',0));port=listener.getsockname()[1]
     base=f'http://127.0.0.1:{port}'

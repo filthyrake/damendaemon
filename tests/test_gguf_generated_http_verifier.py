@@ -35,6 +35,14 @@ with tempfile.TemporaryDirectory() as tmp:
     benchmark={'model_sha256':checksum,'prompts':{'1':[1]},'output_tokens':1,'runs':[{'engine':'llama.cpp','cases':[
         {'prompt_tokens':1,'concurrency':1,'rounds':[{'requests':[{'text':'expected'}]}]*4}]}]}
     reference={'passed':True,'sha256':checksum,'cases':[{'graph':False,'case':0,'prompt_tokens':1,'greedy_mismatches':0,'reference_tokens':[2]}]}
+    reference['workload_sha256']=hashlib.sha256(b'{"output_tokens":1,"prompts":[[1]],"version":1}').hexdigest()
+    if case=='changed-token':benchmark['prompts']={'1':[3]}
+    if case=='changed-output':benchmark['output_tokens']=2
+    if case=='missing-identity':reference.pop('workload_sha256')
+    if case=='prompt-order':
+        reference['workload_sha256']=hashlib.sha256(b'{"output_tokens":1,"prompts":[[1],[3]],"version":1}').hexdigest()
+        reference['cases'].append(dict(reference['cases'][0],case=1))
+        benchmark['prompts']={'1':[3],'2':[1]}
     if case=='empty':benchmark['prompts']={}
     if case=='bad-reference':reference['passed']='yes'
     if case=='zero-output':benchmark['output_tokens']=0
@@ -63,7 +71,7 @@ class GgufGeneratedHttpVerifierTests(unittest.TestCase):
             cwd=Path(__file__).resolve().parents[1],capture_output=True,text=True,timeout=10)
 
     def test_invalid_inputs_refuse_launch_and_bad_outputs_fail(self):
-        before=('empty','bad-reference','zero-output','bool-output','context','bool-token','many-prompts')
+        before=('changed-token','changed-output','missing-identity','prompt-order','empty','bad-reference','zero-output','bool-output','context','bool-token','many-prompts')
         for optimized in (False,True):
             for case in (*before,'text','stream-text','no-done'):
                 with self.subTest(case=case,optimized=optimized):
