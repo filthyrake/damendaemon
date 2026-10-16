@@ -5,6 +5,7 @@ if not __debug__:
 import argparse
 import json
 import os
+from pathlib import Path
 import torch
 from torch.nn import functional as F
 from transformers import AutoModel,AutoTokenizer
@@ -26,6 +27,9 @@ def main():
     reference=AutoModel.from_pretrained(args.path,local_files_only=True,trust_remote_code=False,
         torch_dtype=torch.float32,attn_implementation='eager').eval()
     tokenizer=AutoTokenizer.from_pretrained(args.path,local_files_only=True,trust_remote_code=False)
+    # Read the reference preprocessing policy independently of native config.
+    sentence_config=json.loads((Path(args.path)/'sentence_bert_config.json').read_text())
+    lowercase=sentence_config.get('do_lower_case',False)
     texts=['A dog is playing in the park.','A puppy chases a ball.','Financial markets fell today.',
            'こんにちは — café 🦙',' ','A long sentence '+('about a blue sky. '*20)]
     checks=[]
@@ -42,7 +46,10 @@ def main():
     def check(inputs):
         tokens=model.encode(inputs)
         for value,ids in zip(inputs,tokens):
-            if isinstance(value,str):assert ids==tokenizer.encode(value,add_special_tokens=True)
+            if isinstance(value,str):
+                value=value.strip()
+                if lowercase:value=value.lower()
+                assert ids==tokenizer.encode(value,add_special_tokens=True)
         count,length=len(tokens),max(map(len,tokens))
         ids=torch.full((count,length),model.config['pad_token_id'],dtype=torch.long)
         mask=torch.zeros_like(ids)

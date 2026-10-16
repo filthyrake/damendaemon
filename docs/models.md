@@ -818,3 +818,11 @@ when requested, lowercased before tokenization, matching the
 [Sentence Transformers preprocessing policy](https://github.com/UKPLab/sentence-transformers/blob/v3.4.1/sentence_transformers/models/Transformer.py#L448).
 Explicit token-ID inputs retain their IDs. CPU tokenizer tests cover cased and
 Unicode inputs; this is not a GPU embedding-quality qualification.
+
+`tests.test_encoder_cpu_reference` generates tiny deterministic checkpoints and
+compares actual native weight loading and CPU FP32 execution with Transformers
+4.51.3 eager attention: BERT normalized mean embeddings, BERT raw relevance,
+and XLM-R raw relevance. Mixed-length and single-item batches cover padding,
+segment IDs and XLM-R position offsets. Device admission is replaced for this
+CPU harness; numerical computation is not mocked. These checks run in CPU CI
+and do not establish GPU performance or semantic quality.
