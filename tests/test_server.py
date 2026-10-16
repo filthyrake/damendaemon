@@ -434,6 +434,21 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(error.exception.code,400)
         error.exception.close()
 
+    def test_encoder_routes_reject_invalid_unicode(self):
+        for value in ('\ud800', '\udfff'):
+            for route, fields in (('embeddings', {'input':['valid', value]}),
+                                  ('rerank', {'query':value, 'documents':['valid']}),
+                                  ('rerank', {'query':'valid', 'documents':[value]})):
+                with self.subTest(route=route, fields=ascii(fields)):
+                    request = Request(self.url+'/v1/'+route,
+                        data=json.dumps({'model':'a', **fields}).encode(),
+                        headers={'Content-Type':'application/json'})
+                    with self.assertRaises(HTTPError) as caught:
+                        with urlopen(request, timeout=5):
+                            pass
+                    self.assertEqual(caught.exception.code, 400)
+                    caught.exception.close()
+
     def test_embedding_protocol_and_validation(self):
         def post(body):
             return urlopen(Request(self.url+'/v1/embeddings',data=json.dumps(body).encode(),

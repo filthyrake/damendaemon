@@ -976,3 +976,8 @@ Generic function-call arguments must decode to valid UTF-8 JSON, including neste
 Tool definitions also require valid UTF-8 in descriptions and nested schema keys/values before generation dispatch. The existing 256 KiB ASCII-serialized definition limit is unchanged; escaped invalid Unicode does not bypass validation.
 
 Remote quota RPC deadlines include response decoding and receipt validation. A response that finishes late is an unknown outcome even if the authority committed it. The reservation remains charged; recovery must retry the identical immutable request to obtain its durable receipt without a duplicate charge.
+
+Embedding text and reranking queries/documents must be valid UTF-8. Lone
+Unicode surrogates supplied through JSON escapes return HTTP 400 before a
+model session is acquired. Valid Unicode text and explicit embedding token IDs
+retain their existing behavior.

@@ -65,6 +65,23 @@ class EmbeddingInputTests(unittest.TestCase):
         self.assertEqual(actual,[[1,2]])
         self.assertEqual(options(['a','b'],'base64',384),(['a','b'],'base64',384))
 
+    def test_invalid_encoder_unicode_never_acquires_a_model_session(self):
+        from unittest.mock import Mock
+        from dllm.reranking import options as rerank_options
+        runtime = Runtime.__new__(Runtime)
+        runtime.session = Mock(side_effect=AssertionError('must not activate model'))
+        for value in ('\ud800', '\udfff', 'prefix\ud800suffix'):
+            for call in (lambda: runtime.embed('model', value),
+                         lambda: runtime.embed('model', ['valid', value]),
+                         lambda: runtime.rerank('model', value, ['valid']),
+                         lambda: runtime.rerank('model', 'valid', ['valid', value])):
+                with self.subTest(value=ascii(value)), self.assertRaises(ValueError):
+                    call()
+        runtime.session.assert_not_called()
+        text = 'café 世界 😀'
+        self.assertEqual(options(text)[0], [text])
+        self.assertEqual(rerank_options(text, [text])[:2], (text, [text]))
+
     def test_invalid_requests_fail_closed(self):
         for value in (None,'',[],[True],[1.5],[-1],[[]],['a',[1]],['x']*65):
             with self.subTest(value=value),self.assertRaises(ValueError):options(value)

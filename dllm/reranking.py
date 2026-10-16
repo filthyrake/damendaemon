@@ -23,6 +23,12 @@ def options(query,documents,top_n=None,return_documents=False):
     if (not isinstance(documents,list) or not 1<=len(documents)<=64
             or any(not isinstance(doc,str) or not doc for doc in documents)):
         raise ValueError('documents must contain 1 to 64 nonempty texts')
+    try:
+        query.encode('utf-8')
+        for document in documents:
+            document.encode('utf-8')
+    except UnicodeError as error:
+        raise ValueError('reranking text must be valid UTF-8') from error
     if top_n is None:top_n=len(documents)
     if type(top_n) is not int or not 1<=top_n<=len(documents):raise ValueError('invalid top_n')
     if type(return_documents) is not bool:raise ValueError('return_documents must be boolean')
