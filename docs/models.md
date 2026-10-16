@@ -927,3 +927,10 @@ RoBERTa shares the padding-offset context bound with XLM-R. Decoder variants,
 masked-language-model heads and multiclass classifiers remain unsupported.
 Tiny actual RoBERTa checkpoint tests cover pooled vectors and raw relevance
 scores against Transformers on CPU; this does not qualify GPU performance.
+
+Embedding requests use the same conservative length bucketing as reranking:
+large skewed batches split only when the estimated padded token work falls by
+at least half. Outputs return in original input order, and variable bucket
+shapes bypass retained graph capture. Small/homogeneous batches keep the
+existing graph path. CPU reference tests establish numerical parity and reduced
+padded work sizes, not measured GPU latency or throughput.

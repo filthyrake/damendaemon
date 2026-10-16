@@ -246,23 +246,27 @@ class EncoderExecutor:
     @torch.inference_mode()
     def embed(self,tokens):
         if self.model.task!='embedding':raise ValueError('model does not support embeddings')
-        values=self._run(tokens)
+        values=self._run_grouped(tokens)
         return values[:,:self.model.config.get('embedding_dimension',self.model.config['hidden_size'])]
 
     @torch.inference_mode()
     def rerank(self,tokens,token_types):
         if self.model.task!='rerank':raise ValueError('model does not support reranking')
+        return self._run_grouped(tokens,token_types).reshape(-1)
+
+    def _run_grouped(self,tokens,token_types=None):
         from .reranking import length_groups
         groups=length_groups(tokens)
-        if groups is None:return self._run(tokens,token_types).reshape(-1)
+        if groups is None:return self._run(tokens,token_types)
         # Length buckets reduce padded attention and projections. Variable
         # bucket shapes bypass graph capture to avoid cold-capture churn.
-        scores=[self._run([tokens[i] for i in group],[token_types[i] for i in group],
-            allow_graph=False).reshape(-1) for group in groups]
+        outputs=[self._run([tokens[i] for i in group],
+            [token_types[i] for i in group] if token_types is not None else None,
+            allow_graph=False) for group in groups]
         order=[i for group in groups for i in group]
         inverse=[0]*len(order)
         for offset,index in enumerate(order):inverse[index]=offset
-        return torch.cat(scores).index_select(0,torch.tensor(inverse,device=self.device))
+        return torch.cat(outputs).index_select(0,torch.tensor(inverse,device=self.device))
 
     def _run(self,tokens,token_types=None,allow_graph=True):
         w,c = self.w,self.model.config

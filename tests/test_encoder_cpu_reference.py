@@ -15,13 +15,13 @@ from dllm.encoder import EncoderWeights, EncoderExecutor
 
 
 class EncoderCPUReferenceTests(unittest.TestCase):
-    def check_family(self, family, task, *, compact=False, truncate_dim=None, normalize=True, pooling='mean'):
+    def check_family(self, family, task, *, compact=False, truncate_dim=None, normalize=True, pooling='mean', skewed=False):
         pool_modes=[pooling] if isinstance(pooling,str) else pooling
         cls = {'bert':BertConfig,'xlm-roberta':XLMRobertaConfig,'roberta':RobertaConfig}[family]
         offset_positions=family in ('roberta','xlm-roberta')
         c = cls(vocab_size=32, hidden_size=8, intermediate_size=16,
                 num_hidden_layers=2, num_attention_heads=2,
-                max_position_embeddings=32, type_vocab_size=1 if offset_positions else 2,
+                max_position_embeddings=130 if skewed else 32, type_vocab_size=1 if offset_positions else 2,
                 pad_token_id=1 if offset_positions else 0,
                 num_labels=1, problem_type='regression', hidden_dropout_prob=0,
                 attention_probs_dropout_prob=0)
@@ -46,7 +46,7 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                     'word_embedding_dimension':8, 'pooling_mode_cls_token':False,
                     'pooling_mode_mean_tokens':True, 'pooling_mode_max_tokens':False,
                     'pooling_mode_mean_sqrt_len_tokens':False}))
-                (root/'sentence_bert_config.json').write_text(json.dumps({'max_seq_length':30 if offset_positions else 32}))
+                (root/'sentence_bert_config.json').write_text(json.dumps({'max_seq_length':c.max_position_embeddings-(2 if offset_positions else 0)}))
                 if compact:
                     aliases = ['sentence_transformers.base.modules.transformer.Transformer',
                                'sentence_transformers.sentence_transformer.modules.pooling.Pooling',
@@ -72,7 +72,7 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                 (root/'modules.json').write_text(json.dumps(modules[:2]))
             if truncate_dim is not None:
                 (root/'config_sentence_transformers.json').write_text(json.dumps({'truncate_dim':truncate_dim}))
-            model = EncoderWeights(root, 32)
+            model = EncoderWeights(root, c.max_position_embeddings)
             from dllm.models import config as dispatch
             self.assertEqual(dispatch(root),model.config)
             # Replace device admission only. Actual loading, tensor operations,
@@ -83,11 +83,12 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                 native = EncoderExecutor(model, use_graph=False)
             self.assertEqual(native.compute_dtype, torch.float32)
             rows = [[2, 5, 6, 7, 3], [2, 8, 3], [2, 9, 10, 11, 12, 3]]
-            if offset_positions and task=='embedding':
+            if offset_positions and task=='embedding' and not skewed:
                 rows.extend([[2]*30,[2,1,5]])
                 self.assertEqual(model.encode([[2]*30]),[[2]*30])
                 with self.assertRaisesRegex(ValueError,'context'):model.encode([[2]*31])
-            types = ([[0]*len(row) for row in rows] if offset_positions else
+            if skewed:rows=[[2]*n for n in ([128,3,17,3]*16)]
+            types = ([[0]*len(row) for row in rows] if offset_positions or skewed else
                      [[0, 0, 1, 1, 1], [0, 0, 1], [0, 0, 0, 1, 1, 1]])
             if task == 'embedding':
                 types = [[0]*len(row) for row in rows]
@@ -124,7 +125,15 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                         actual = native.rerank(tokens, segments)
                 torch.testing.assert_close(actual, expected, atol=1e-6, rtol=1e-5)
                 return actual
-            mixed = compare(rows, types)
+            with patch.object(native,'_run',wraps=native._run) as run:
+                mixed = compare(rows, types)
+                if skewed:
+                    self.assertGreater(run.call_count,1)
+                    work=sum(len(call.args[0])*max(map(len,call.args[0])) for call in run.call_args_list)
+                    self.assertLessEqual(work*2,len(rows)*max(map(len,rows)))
+                    self.assertTrue(all(call.kwargs.get('allow_graph') is False for call in run.call_args_list))
+                else:
+                    self.assertEqual(run.call_count,1)
             if task=='embedding':
                 self.assertEqual(mixed.shape[-1],model.config['embedding_dimension'])
             if truncate_dim is not None:
@@ -201,3 +210,10 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                     with self.subTest(compact=compact,pooling=pooling,normalize=normalize):
                         self.check_family('roberta','embedding',compact=compact,
                                           pooling=pooling,normalize=normalize,truncate_dim=5)
+
+    def test_skewed_encoder_batches_preserve_reference_outputs(self):
+        for family in ('bert','roberta','xlm-roberta'):
+            for task in ('embedding','rerank'):
+                with self.subTest(family=family,task=task):
+                    self.check_family(family,task,compact=True,skewed=True,
+                                      pooling=['lasttoken','mean','max'],truncate_dim=11 if task=='embedding' else None)
