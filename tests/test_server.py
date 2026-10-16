@@ -139,13 +139,17 @@ class ServerTests(unittest.TestCase):
         def generate(alias,messages,*args,**options):
             ModelWeights.chat_tokens(model,messages)
             raise AssertionError('inference must not be reached')
-        with patch.object(self.runtime,'generate',side_effect=generate):
-            for stream in (False,True):
-                with self.subTest(stream=stream),self.assertRaises(HTTPError) as raised:
-                    self.post(stream=stream)
-                with raised.exception as response:
-                    self.assertEqual(response.code,400)
-                    self.assertEqual(json.load(response),{'error':'invalid or unsupported request'})
+        for source in ('{{ messages[1].content }}', '{{ messages[0].content + 1 }}',
+                       '{{ range(3) | tojson }}', '{{ 1 / (messages | length - 1) }}'):
+            model.template=compile_template(source)
+            with patch.object(self.runtime,'generate',side_effect=generate):
+                for stream in (False,True):
+                    with self.subTest(source=source,stream=stream):
+                        with self.assertRaises(HTTPError) as raised:
+                            self.post(stream=stream)
+                        with raised.exception as response:
+                            self.assertEqual(response.code,400)
+                            self.assertEqual(json.load(response),{'error':'invalid or unsupported request'})
         model.tokenizer.encode.assert_not_called()
 
     def test_nonstream_completion(self):

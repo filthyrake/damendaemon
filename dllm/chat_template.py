@@ -9,6 +9,9 @@ from jinja2 import TemplateError
 from jinja2.sandbox import ImmutableSandboxedEnvironment
 
 MAX_TEMPLATE_BYTES = 128 * 1024
+# Jinja expressions can raise Python type/arithmetic errors outside TemplateError.
+# Keep infrastructure RuntimeError/OSError outside request-error normalization.
+RENDER_ERRORS = (TemplateError, RecursionError, TypeError, ArithmeticError)
 
 
 def compile_template(text):

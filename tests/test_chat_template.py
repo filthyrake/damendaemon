@@ -75,6 +75,24 @@ class ChatTemplateTests(unittest.TestCase):
             ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}])
         self.assertIs(raised.exception,failure)
 
+    def test_actual_template_expression_failures_before_tokenization(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from dllm.qwen2 import ModelWeights
+        from dllm.cpu_reference_chat import CpuReferenceChat
+        cases = (('{{ messages[0].content + 1 }}', TypeError),
+                 ('{{ range(3) | tojson }}', TypeError),
+                 ('{{ 1 / (messages | length - 1) }}', ZeroDivisionError))
+        for source, error_type in cases:
+            for implementation in (ModelWeights.chat_tokens, CpuReferenceChat.chat_tokens):
+                with self.subTest(source=source, implementation=implementation.__qualname__):
+                    model = SimpleNamespace(config={'model_type':'qwen2','vocab_size':4},
+                        template=compile_template(source), special_tokens={}, tokenizer=Mock())
+                    with self.assertRaisesRegex(ValueError, 'template rendering failed') as raised:
+                        implementation(model, [{'role':'user','content':'hello'}])
+                    self.assertIsInstance(raised.exception.__cause__, error_type)
+                    model.tokenizer.encode.assert_not_called()
+
     def test_expanded_prompt_bytes_are_bounded_before_tokenization(self):
         from types import SimpleNamespace
         from unittest.mock import Mock,patch

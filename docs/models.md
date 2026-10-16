@@ -773,3 +773,5 @@ SentencePiece GGUF supports unique-spelling UNUSED pieces in both static-score a
 GGUF Qwen2/Llama3 byte-level and SentencePiece tokenizers share longest-special-first partitioning, including overlapping special spellings. Equal-byte-length ambiguous overlaps are rejected. The wrapper policy survives checkpoint-plan serialization; independent CPU fixtures cover both families.
 
 Qwen2/Llama3 byte-level GGUF also retains unique UNUSED pieces for encoding while suppressing their decoded output. Suppression survives serialization and applies to incremental streaming and logprob text/bytes; structured output with these pieces remains unqualified and is rejected.
+
+Chat-template evaluation failures (including expression type errors, arithmetic errors and unsupported JSON-filter values) are rejected before tokenization/inference as invalid requests. Both native and CPU-reference chat preserve the original exception cause; unrelated runtime failures are not converted into request errors.

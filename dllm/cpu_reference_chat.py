@@ -4,8 +4,7 @@ from io import StringIO
 import hashlib
 import json
 from pathlib import Path
-from jinja2 import TemplateError
-from .chat_template import compile_template,read_override
+from .chat_template import compile_template,read_override,RENDER_ERRORS
 from .cpu_reference_text import CpuReferenceText,read_json
 
 
@@ -54,5 +53,5 @@ class CpuReferenceChat(CpuReferenceText):
                     if total>1024**2:raise ValueError('CPU chat rendered prompt exceeds 1 MiB')
                     output.write(chunk)
                 rendered=output.getvalue()
-        except (TemplateError,RecursionError) as error:raise ValueError('CPU chat template rendering failed') from error
+        except RENDER_ERRORS as error:raise ValueError('CPU chat template rendering failed') from error
         return self.tokenizer.encode(rendered,add_special_tokens=False).ids

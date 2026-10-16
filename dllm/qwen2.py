@@ -20,8 +20,7 @@ from torch.nn import functional as F
 from .device import selected_device, empty_cache, available_memory, attention as scaled_attention
 from safetensors import safe_open
 from tokenizers import Tokenizer
-from jinja2 import TemplateError
-from .chat_template import compile_template
+from .chat_template import compile_template, RENDER_ERRORS
 
 from .tokenizer_metadata import read_tokenizer_config, read_generation_config, special_token_text, checkpoint_template
 from .config import decoder_config, eos_ids, read_config
@@ -285,7 +284,7 @@ class ModelWeights:
                         raise ValueError('chat rendered prompt exceeds 16 MiB')
                     output.write(chunk)
                 rendered = output.getvalue() + suffix
-        except (TemplateError, RecursionError) as error:
+        except RENDER_ERRORS as error:
             raise ValueError('chat template rendering failed') from error
         ids = self.tokenizer.encode(rendered, add_special_tokens=False).ids
         if not ids or any(token >= self.config['vocab_size'] for token in ids):
