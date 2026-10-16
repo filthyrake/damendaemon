@@ -67,7 +67,7 @@ def score_rows(logits,selected,tops):
     packets=[]
     for row,top in zip(result.cpu().tolist(),tops):
         probabilities=row[k+1:]
-        if any(not math.isfinite(value) for value in probabilities):
+        if any(not math.isfinite(value) for value in probabilities[:min(top,k)+1]):
             raise RuntimeError('cannot report non-finite model log probabilities')
         packets.append({'token_id':int(row[0]),'logprob':probabilities[0],
             'top':[(int(row[i+1]),probabilities[i+1]) for i in range(min(top,k))]})

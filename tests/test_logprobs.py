@@ -72,6 +72,30 @@ class LogprobTests(unittest.TestCase):
             packet=samplers[row].last_logprobs
             self.assertAlmostEqual(packet['logprob'],torch.log_softmax(logits[row],0)[packet['token_id']].item())
 
+    def test_heterogeneous_top_counts_ignore_unrequested_masked_alternatives(self):
+        logits=torch.tensor([[0.,-float('inf'),-float('inf')],[1.,2.,3.],[3.,2.,1.]])
+        for top in (0,1):
+            for mixed in (False,True):
+                samplers=[Sampler(Sampling()) for _ in range(3)]
+                samplers[0].logprobs_top=top
+                samplers[1].logprobs_top=2
+                if not mixed:samplers[2].logprobs_top=2
+                with self.subTest(top=top,mixed=mixed):
+                    tokens=sample_rows(logits,samplers)
+                    self.assertEqual(tokens,[0,2,0])
+                    for row,sampler in enumerate(samplers):
+                        if sampler.logprobs_top is None:
+                            self.assertIsNone(sampler.last_logprobs)
+                        else:
+                            self.assertEqual(sampler.last_logprobs,
+                                scores(logits[row],tokens[row],sampler.logprobs_top))
+
+    def test_requested_nonfinite_scores_still_fail(self):
+        logits=torch.tensor([0.,-float('inf')])
+        for selected,top in ((1,0),(0,2)):
+            with self.subTest(selected=selected,top=top),self.assertRaises(RuntimeError):
+                scores(logits,selected,top)
+
     def test_bytelevel_unicode_fragments_and_lifetime(self):
         tokenizer=Tokenizer(models.BPE({'ð':0,'Ł':1,'¦':2,'Ļ':3,'Ġ':4,'hello':5},[]))
         tokenizer.decoder=decoders.ByteLevel()
