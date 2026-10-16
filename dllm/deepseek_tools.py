@@ -63,7 +63,7 @@ def _json(value):
 def _dump(value):
     try:
         encoded=json.dumps(value,ensure_ascii=False,allow_nan=False)
-        _text(encoded)
+        _value(encoded)
         return encoded
     except (ValueError,TypeError,RecursionError):
         raise ValueError('unsupported tool argument value') from None

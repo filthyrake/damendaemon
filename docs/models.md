@@ -542,7 +542,8 @@ returns complete calls atomically. It supports Unicode strings and finite JSON
 values, up to 64 calls, 256 parameters per call and 1 MiB per block. Names are
 1–128 characters without quotes, angle brackets or control characters; reserved
 model/DSML markers in values are rejected because the wire format has no escape
-for them. Duplicate parameters/JSON keys, nonfinite numbers, malformed syntax,
+for them. This check also applies to markers hidden by JSON escapes in nested
+values or keys. Duplicate parameters/JSON keys, nonfinite numbers, malformed syntax,
 truncated blocks and trailing text fail closed. Normalized argument JSON must
 also fit the 1 MiB UTF-8 limit before a parsed call is published; escaped lone
 surrogates and JSON escaping that exceeds this limit are rejected. IDs are application metadata and

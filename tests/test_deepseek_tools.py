@@ -62,6 +62,26 @@ class DeepSeekToolsTests(unittest.TestCase):
                 self.assertEqual(parse_tool_calls(render_tool_calls(calls)),calls)
                 self.assertLess(len(calls[0]['function']['arguments'].encode()),1024)
 
+    def test_escaped_reserved_markers_are_rejected_after_json_decoding(self):
+        from dllm.deepseek_tools import DSML,INVOKE_END,PARAM_END,CONTROLS
+        from dllm.deepseek_output import DeepSeekOutput
+        from dllm.deepseek_text import EOS
+        for marker in CONTROLS:
+            escaped=''.join('\\u%04x' % ord(c) for c in marker)
+            for raw in ('"'+escaped+'"','{"nested":["'+escaped+'"]}',
+                        '{"'+escaped+'":"value"}'):
+                source=(START+f'<{DSML}invoke name="f">\n<{DSML}parameter name="x" string="false">'
+                        +raw+PARAM_END+'\n'+INVOKE_END+'\n'+END)
+                with self.subTest(marker=marker,raw=raw):
+                    with self.assertRaises(ValueError):parse_tool_calls(source)
+                    parser=DeepSeekOutput(allow_tool_calls=True)
+                    self.assertEqual(parser.feed('\n\n'+source+EOS),[])
+                    with self.assertRaises(ValueError):parser.finish()
+                    self.assertTrue(parser.failed)
+                    self.assertTrue(parser.tool_buffer.closed)
+        calls=[call('f',{'nested':['<ordinary>','é🙂'],'key':'literal'})]
+        self.assertEqual(parse_tool_calls(render_tool_calls(calls)),calls)
+
     def test_input_validation_and_resource_bounds(self):
         for arguments in ('[]','null','{"a":1,"a":2}','{"x":NaN}','{"x":1e999}'):
             with self.assertRaises(ValueError):render_tool_calls([{'type':'function','function':{'name':'f','arguments':arguments}}])
