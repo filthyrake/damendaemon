@@ -18,6 +18,7 @@ from torch.nn import functional as F
 from .device import selected_device, empty_cache, available_memory, attention as scaled_attention
 from safetensors import safe_open
 from tokenizers import Tokenizer
+from jinja2 import TemplateError
 from .chat_template import compile_template
 
 from .tokenizer_metadata import read_tokenizer_config, read_generation_config, special_token_text, checkpoint_template
@@ -266,8 +267,11 @@ class ModelWeights:
             if type(enable_thinking) is not bool or self.config["model_type"] not in ("qwen3", "qwen3_5_text"):
                 raise ValueError("enable_thinking is a boolean option for Qwen3/Qwen3.5 models only")
             options["enable_thinking"] = enable_thinking
-        rendered = self.template.render(messages=messages, add_generation_prompt=True,
-                                        tools=tools, **options, **self.special_tokens)
+        try:
+            rendered = self.template.render(messages=messages, add_generation_prompt=True,
+                                            tools=tools, **options, **self.special_tokens)
+        except (TemplateError, RecursionError) as error:
+            raise ValueError('chat template rendering failed') from error
         if tool_json:rendered+='<tool_call>\n'
         ids = self.tokenizer.encode(rendered, add_special_tokens=False).ids
         if not ids or any(token >= self.config['vocab_size'] for token in ids):

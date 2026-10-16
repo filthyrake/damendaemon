@@ -128,6 +128,26 @@ class ServerTests(unittest.TestCase):
                 raised.exception.close()
             generate.assert_not_called()
 
+    def test_template_render_failures_return_400_before_inference(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from dllm.qwen2 import ModelWeights
+        from dllm.chat_template import compile_template
+        model=SimpleNamespace(config={'model_type':'qwen2','vocab_size':4},
+            template=compile_template('{{ messages[1].content }}'),
+            special_tokens={},tokenizer=Mock())
+        def generate(alias,messages,*args,**options):
+            ModelWeights.chat_tokens(model,messages)
+            raise AssertionError('inference must not be reached')
+        with patch.object(self.runtime,'generate',side_effect=generate):
+            for stream in (False,True):
+                with self.subTest(stream=stream),self.assertRaises(HTTPError) as raised:
+                    self.post(stream=stream)
+                with raised.exception as response:
+                    self.assertEqual(response.code,400)
+                    self.assertEqual(json.load(response),{'error':'invalid or unsupported request'})
+        model.tokenizer.encode.assert_not_called()
+
     def test_nonstream_completion(self):
         with self.post() as response:
             data = json.load(response)

@@ -55,3 +55,22 @@ class ChatTemplateTests(unittest.TestCase):
                 model.configure_tokenizer(tokenizer,template,metadata)
                 self.assertEqual(model.template.render(messages=[{'content':'hello'}],**model.special_tokens),'BOS hello EOS')
                 self.assertEqual(model.chat_tokens([{'role':'user','content':'hello'}]),[1,2,3])
+
+    def test_render_error_normalization_is_narrow_and_preserves_cause(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from jinja2 import UndefinedError
+        from dllm.qwen2 import ModelWeights
+        for error in (UndefinedError('missing field'),SecurityError('blocked'),RecursionError('nested')):
+            with self.subTest(error=type(error).__name__):
+                model=SimpleNamespace(config={'model_type':'qwen2'},special_tokens={},
+                    template=SimpleNamespace(render=Mock(side_effect=error)),tokenizer=Mock())
+                with self.assertRaisesRegex(ValueError,'chat template rendering failed') as raised:
+                    ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}])
+                self.assertIs(raised.exception.__cause__,error)
+                model.tokenizer.encode.assert_not_called()
+        failure=RuntimeError('backend failure')
+        model.template.render.side_effect=failure
+        with self.assertRaises(RuntimeError) as raised:
+            ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}])
+        self.assertIs(raised.exception,failure)
