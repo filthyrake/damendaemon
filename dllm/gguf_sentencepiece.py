@@ -12,41 +12,12 @@ MIT-licensed llm_tokenizer_spm_session, pin 836d57176dc699a726c55418e4f96b8ca628
 This supports the Llama SPM BPE convention, not arbitrary SentencePiece models.
 """
 import base64
-from bisect import bisect_left
 import json
 import math
-from types import SimpleNamespace
 
 from tokenizers import Tokenizer, decoders, models, normalizers
+from .gguf_tokenizer import SpecialTokenTokenizer, validate_special_overlaps
 
-
-def validate_special_overlaps(tokens, types):
-    """Equal-byte-length overlapping specials have no portable reference order.
-
-    llama.cpp sorts special pieces by byte length without a tie breaker. Only
-    distinct pieces with a proper suffix/prefix overlap can depend on that tie.
-    Binary search avoids comparing every pair in large same-length groups.
-    """
-    groups = {}
-    for text, kind in zip(tokens, types):
-        if kind in (2, 3, 4):
-            raw = text.encode('utf-8')
-            groups.setdefault(len(raw), []).append(raw)
-    for group in groups.values():
-        if len(group) < 2:
-            continue
-        group.sort()
-        initials = {piece[0] for piece in group}
-        for piece in group:
-            for offset in range(1, len(piece)):
-                if piece[offset] not in initials:
-                    continue
-                suffix = piece[offset:]
-                start = bisect_left(group, suffix)
-                # The first matching piece may be itself (self-overlap is safe).
-                for other in group[start:start + 2]:
-                    if other != piece and other.startswith(suffix):
-                        raise ValueError('GGUF SentencePiece has equal-length overlapping special tokens')
 
 
 def build(metadata):
@@ -112,7 +83,7 @@ def build(metadata):
     return result, tokens, types, vocab, True, native
 
 
-class SentencePieceTokenizer:
+class SentencePieceTokenizer(SpecialTokenTokenizer):
     """Preserve GGUF leading-space and UNUSED-piece decoding rules.
 
     UNUSED IDs remain available to the encoder but never emit text, even when
@@ -121,66 +92,13 @@ class SentencePieceTokenizer:
     """
     def __init__(self, backend, suppressed_token_ids=()):
         self.suppressed_token_ids = frozenset(suppressed_token_ids)
-        self.backend_tokenizer = backend
+        super().__init__(backend)
         added = backend.get_added_tokens_decoder()
         self._special_ids = frozenset(i for i, token in added.items() if token.special)
         self._unstripped = Tokenizer(backend.model)
         self._unstripped.add_tokens(list(added.values()))
         self._unstripped.decoder = decoders.Sequence([
             decoders.Replace('▁', ' '), decoders.ByteFallback(), decoders.Fuse()])
-
-        self._pieces = {token.content: index for index, token in backend.get_added_tokens_decoder().items()}
-        self._special_order = sorted(self._pieces, key=lambda text: len(text.encode('utf-8')), reverse=True)
-        policy = json.loads(backend.to_str()).get('post_processor')
-        self._prefix, self._suffix = [], []
-        if policy:
-            target = self._prefix
-            for entry in policy['single']:
-                if 'Sequence' in entry:
-                    target = self._suffix
-                else:
-                    target.extend(policy['special_tokens'][entry['SpecialToken']['id']]['ids'])
-
-    def encode(self, text, add_special_tokens=True):
-        if not isinstance(text, str):
-            raise TypeError('GGUF tokenizer input must be text')
-        ids = list(self._prefix) if add_special_tokens else []
-        # Match GGUF's global longest-special-first partitioning, including a
-        # longer special beginning inside a shorter one. Leftmost regex matching
-        # would incorrectly consume the shorter special in that case.
-        fragments = [text]
-        for piece in self._special_order:
-            divided = []
-            for fragment in fragments:
-                if isinstance(fragment, int):
-                    divided.append(fragment)
-                    continue
-                parts = fragment.split(piece)
-                for index, part in enumerate(parts):
-                    if index:
-                        divided.append(self._pieces[piece])
-                    if part:
-                        divided.append(part)
-            fragments = divided
-        for fragment in fragments:
-            if isinstance(fragment, int):
-                ids.append(fragment)
-                continue
-            if not fragment:
-                continue
-            ids.extend(self._encode_fragment(fragment))
-        if add_special_tokens:
-            ids.extend(self._suffix)
-        return SimpleNamespace(ids=ids)
-
-    def encode_batch(self, sequences, add_special_tokens=True):
-        return [self.encode(text, add_special_tokens=add_special_tokens) for text in sequences]
-
-    def _encode_fragment(self, fragment):
-        return self.backend_tokenizer.encode(fragment, add_special_tokens=False).ids
-
-    def __getattr__(self, name):
-        return getattr(self.backend_tokenizer, name)
 
     def decode(self, ids, skip_special_tokens=True):
         hidden_first = bool(len(ids)) and (ids[0] in self.suppressed_token_ids
@@ -263,6 +181,8 @@ class PositionalSentencePieceTokenizer(SentencePieceTokenizer):
 def restore_tokenizer(serialized, prefix=False):
     """Restore both static-rank and native positional GGUF tokenizer state."""
     state = json.loads(serialized)
+    if state.get('dllm_gguf_special') == 1:
+        return SpecialTokenTokenizer(Tokenizer.from_str(state['backend']))
     if state.get('dllm_sentencepiece') == 1:
         return PositionalSentencePieceTokenizer(Tokenizer.from_str(state['backend']),
             base64.b64decode(state['model'], validate=True), state['prefix'], state.get('suppressed', ()))

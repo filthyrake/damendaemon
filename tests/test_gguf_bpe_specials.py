@@ -1,0 +1,46 @@
+import json
+from pathlib import Path
+import unittest
+
+from dllm.gguf_model import tokenizer
+from dllm.gguf_sentencepiece import restore_tokenizer
+from tests.reference.generate_gguf_bpe_specials import metadata
+
+
+class BpeSpecialTests(unittest.TestCase):
+    def test_independent_reference_and_serialized_batch(self):
+        fixture = json.loads((Path(__file__).parent / 'fixtures/gguf-bpe-specials.json').read_text())
+        for case in fixture['cases']:
+            original, _, _ = tokenizer(metadata(case['pre'], case['kind'], case['eos']))
+            for candidate in (original, restore_tokenizer(original.to_str())):
+                for sample in case['samples']:
+                    with self.subTest(pre=case['pre'], kind=case['kind'], eos=case['eos'], sample=sample):
+                        ids = candidate.encode(sample['text'], add_special_tokens=sample['add_special']).ids
+                        self.assertEqual(ids, sample['expected']['ids'])
+                        self.assertEqual(candidate.encode_batch([sample['text']], add_special_tokens=sample['add_special'])[0].ids, ids)
+                        for skip, suffix in ((True, 'skip'), (False, 'all')):
+                            decoded = candidate.decode(ids, skip_special_tokens=skip).encode().hex()
+                            self.assertEqual(decoded, sample['expected']['decode_' + suffix])
+                            self.assertEqual(decoded, sample['expected']['generated_' + suffix])
+
+    def test_ambiguous_equal_length_specials_rejected(self):
+        for pre in ('qwen2', 'llama-bpe'):
+            source = metadata(pre, 4, False)
+            source['tokenizer.ggml.tokens'][258] = 'bc'
+            with self.assertRaisesRegex(ValueError, 'equal-length overlapping special'):
+                tokenizer(source)
+
+    def test_bytelevel_stream_and_logprob_presentation(self):
+        from dllm.bytelevel_stream import ByteLevelStream
+        from dllm.logprobs import TokenText
+        original, _, _ = tokenizer(metadata('qwen2', 4, False))
+        for candidate in (original, restore_tokenizer(original.to_str())):
+            stream = ByteLevelStream(candidate, ('ab', 'bcx'))
+            text = 'café 😀 abcx'
+            ids = candidate.encode(text, add_special_tokens=False).ids
+            self.assertEqual(''.join(stream.feed(i) for i in ids) + stream.finish(), text)
+            self.assertEqual(TokenText(candidate).token(258), ('bcx', (98, 99, 120)))
+
+
+if __name__ == '__main__':
+    unittest.main()

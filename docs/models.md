@@ -769,3 +769,5 @@ Native chat tokenization consumes template output incrementally and rejects more
 The CPU reference chat path retains its 1 MiB rendered-output limit and uses the same text-buffer approach so empty template chunks do not accumulate retained objects. Both paths close their template generators on overflow.
 
 SentencePiece GGUF supports unique-spelling UNUSED pieces in both static-score and positional-score paths: they participate in encoding but emit no decoded text. Serialization and logprob presentation preserve this behavior. Duplicate spellings, ambiguous equal-byte-length overlapping specials, UNUSED stop IDs, and structured output with suppressed pieces are rejected. See [the independent CPU oracle coverage](evidence/gguf/sentencepiece-unused.md); this is tokenizer compatibility evidence, not GPU qualification.
+
+GGUF Qwen2/Llama3 byte-level and SentencePiece tokenizers share longest-special-first partitioning, including overlapping special spellings. Equal-byte-length ambiguous overlaps are rejected. The wrapper policy survives checkpoint-plan serialization; independent CPU fixtures cover both families.

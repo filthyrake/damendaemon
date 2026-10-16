@@ -80,6 +80,8 @@ def bpe_tokenizer(metadata):
     vocab = {t: i for i, t in enumerate(tokens) if types[i] != 5}
     if len(vocab) != sum(t != 5 for t in types):
         raise ValueError('duplicate active GGUF token strings')
+    from .gguf_tokenizer import validate_special_overlaps
+    validate_special_overlaps(tokens, types)
     if not set(pre_tokenizers.ByteLevel.alphabet()).issubset(vocab):
         raise ValueError('GGUF byte-level tokenizer is missing byte tokens')
     if metadata.get('tokenizer.ggml.add_space_prefix', False):
@@ -150,6 +152,9 @@ def tokenizer(metadata):
     elif sentencepiece:
         from .gguf_sentencepiece import SentencePieceTokenizer
         result = SentencePieceTokenizer(result, suppressed)
+    else:
+        from .gguf_tokenizer import SpecialTokenTokenizer
+        result = SpecialTokenTokenizer(result)
     return result, special, frozenset(eos)
 
 

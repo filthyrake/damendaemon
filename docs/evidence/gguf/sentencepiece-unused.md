@@ -104,3 +104,20 @@ overlaps, and UNUSED pieces (which are not partitioned as specials). The check
 runs before either tokenizer construction path. Sorted prefix searches avoid
 quadratic pairwise comparisons within same-length vocabulary groups. Unicode
 length is measured in UTF-8 bytes, matching the reference comparator.
+
+## Shared byte-level GGUF partitioning (#380)
+
+The same shorter-leftmost special bug was reproduced for both `qwen2` and
+`llama-bpe` GPT-2 pre-tokenizers: byte alphabet plus EOS, `ab` and `bcx` gave
+`[257,66,87]` for `abcx`, versus reference `[64,258]`. The shared
+`SpecialTokenTokenizer` now partitions specials before calling the original
+normal-fragment encoder. SentencePiece keeps its own whitespace/suppression
+and positional encoding methods; byte-level decoding remains unchanged.
+Equal-length ambiguity rejection applies to both GGUF tokenizer families.
+
+`tests/reference/generate_gguf_bpe_specials.py` freezes 192 additional independent
+CPU cases across the two pre-tokenizers, user/control pieces, automatic BOS/EOS
+policies, special toggles and overlapping/adjacent/Unicode/byte-fallback prompts.
+Original and restored wrappers match exact IDs, decoding and batch behavior.
+Separate tests preserve byte-level incremental streaming and logprob presentation.
+The frozen matrix runs in CPU CI without building the reference or using GPUs.
