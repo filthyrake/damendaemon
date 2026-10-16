@@ -134,6 +134,19 @@ class BenchTests(unittest.TestCase):
                 self.assertEqual(result.error,'ValueError')
             self.assertTrue(response.closed)
 
+    def test_response_nesting_is_a_closed_validation_failure(self):
+        from types import SimpleNamespace
+        raw=b'['*10000+b'0'+b']'*10000
+        response=io.BytesIO(raw)
+        with patch('dllm.bench.urlopen',return_value=response):
+            with self.assertRaisesRegex(ValueError,'nesting'):llama_context('http://local',1024)
+        self.assertTrue(response.closed)
+        response=io.BytesIO(b'data: '+raw+b'\n\n')
+        response.headers=SimpleNamespace(get_content_type=lambda:'text/event-stream')
+        with patch('dllm.bench.urlopen',return_value=response):
+            self.assertEqual(request_one('http://local','model','hello',8,5,0).error,'ValueError')
+        self.assertTrue(response.closed)
+
     def test_context_metadata_read_is_bounded_and_closed(self):
         class TrackedResponse(io.BytesIO):
             sizes = None
