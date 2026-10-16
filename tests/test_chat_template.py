@@ -161,3 +161,38 @@ class NamedTemplateCompatibilityTests(unittest.TestCase):
                 for generation in (False, True):
                     expected = reference.apply_chat_template(messages,tokenize=False,add_generation_prompt=generation)
                     self.assertEqual(model.template.render(messages=messages,add_generation_prompt=generation,**model.special_tokens),expected)
+
+    def test_named_tool_variant_routes_tools_history_and_resets_on_override(self):
+        from types import SimpleNamespace
+        from tokenizers import Tokenizer, models
+        from transformers import PreTrainedTokenizerFast
+        from dllm.tokenizer_metadata import checkpoint_template
+        from dllm.qwen2 import ModelWeights
+        default = 'DEFAULT {{ messages[-1]["content"] }}'
+        variant = '{# <tool_call> </tool_call> tool_calls tools #}TOOL {% if tools %}{{ tools[0]["function"]["name"] }}{% else %}history{% endif %}'
+        named = [{'name':'default','template':default},{'name':'tool_use','template':variant}]
+        metadata = {'chat_template':named}
+        tools = [{'type':'function','function':{'name':'weather'}}]
+        messages = [{'role':'user','content':'hello'}]
+        reference = PreTrainedTokenizerFast(tokenizer_object=Tokenizer(models.WordLevel({'[UNK]':0},unk_token='[UNK]')),chat_template=named)
+        model = ModelWeights.__new__(ModelWeights)
+        model.config = {'model_type':'qwen2','vocab_size':1}
+        seen = []
+        tokenizer = SimpleNamespace(no_truncation=lambda:None,no_padding=lambda:None,
+            encode=lambda text,**kw: (seen.append(text) or SimpleNamespace(ids=[0])))
+        model.configure_tokenizer(tokenizer,checkpoint_template('.',metadata),metadata,
+            tool_template=checkpoint_template('.',metadata,tools=True))
+        for selected in (None,tools):
+            self.assertEqual(model.chat_tokens(messages,tools=selected),[0])
+            self.assertEqual(seen[-1],reference.apply_chat_template(messages,tools=selected,tokenize=False,add_generation_prompt=True))
+        model.chat_tokens(messages,tools=tools,tool_json=True)
+        self.assertEqual(seen[-1],'TOOL weather<tool_call>\n')
+        history = [{'role':'assistant','content':None,'tool_calls':[{'id':'call_a','type':'function',
+            'function':{'name':'weather','arguments':'{}'}}]},
+            {'role':'tool','tool_call_id':'call_a','content':'result'}]
+        model.chat_tokens(history)
+        self.assertEqual(seen[-1],'TOOL history')
+        model.configure_tokenizer(tokenizer,'OVERRIDE',{})
+        model.chat_tokens(messages)
+        self.assertEqual(seen[-1],'OVERRIDE')
+        with self.assertRaisesRegex(ValueError,'qualified'):model.chat_tokens(messages,tools=tools)

@@ -45,8 +45,8 @@ def special_token_text(metadata):
 MAX_CHECKPOINT_TEMPLATE_BYTES = MAX_TOKENIZER_CONFIG_BYTES
 
 
-def _default_template(collection):
-    """Select ordinary chat from HF named templates without guessing a variant."""
+def _select_named_template(collection, *, tools=False):
+    """Select an explicit HF chat variant without guessing from collection order."""
     if not 1 <= len(collection) <= 64:
         raise ValueError('named chat templates require 1..64 entries')
     if isinstance(collection, dict):
@@ -73,13 +73,13 @@ def _default_template(collection):
         templates[name] = template
     if 'default' not in templates:
         raise ValueError('named chat templates require an explicit default')
-    return templates['default']
+    return templates.get('tool_use', templates['default']) if tools else templates['default']
 
 
-def checkpoint_template(path, metadata):
+def checkpoint_template(path, metadata, *, tools=False):
     template = metadata.get('chat_template')
     if isinstance(template, (dict, list)):
-        template = _default_template(template)
+        template = _select_named_template(template, tools=tools)
     if template is None:
         fallback = Path(path)/'chat_template.jinja'
         if fallback.exists():

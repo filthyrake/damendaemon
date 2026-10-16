@@ -132,7 +132,8 @@ class ModelWeights:
         self.tokenizer = Tokenizer.from_file(str(self.path / "tokenizer.json"))
         tokenizer_config = read_tokenizer_config(self.path / "tokenizer_config.json")
         template = checkpoint_template(self.path, tokenizer_config)
-        self.configure_tokenizer(self.tokenizer, template, tokenizer_config)
+        self.configure_tokenizer(self.tokenizer, template, tokenizer_config,
+                                 tool_template=checkpoint_template(self.path, tokenizer_config, tools=True))
         self.eos = eos_ids(c.get('eos_token_id'))
         generation = self.path / "generation_config.json"
         if generation.exists():
@@ -214,7 +215,7 @@ class ModelWeights:
         if cache is not None:
             self.weight_cache_status = 'stored' if cache.save(self.weights, self.scales) else 'write-failed'
 
-    def configure_tokenizer(self, tokenizer, template, tokenizer_config):
+    def configure_tokenizer(self, tokenizer, template, tokenizer_config, *, tool_template=None):
         """Share template behavior across HF snapshots and standalone GGUF files."""
         self.tokenizer = tokenizer
         self.tokenizer.no_truncation()
@@ -223,10 +224,15 @@ class ModelWeights:
         if template is not None and not isinstance(template, str):
             raise ValueError("model needs one text chat template")
         self.template = compile_template(template) if template is not None else None
-        self.supports_tool_calls=(c['model_type'] in ('qwen2','qwen3') and isinstance(template,str)
-            and all(marker in template for marker in ('<tool_call>','</tool_call>','tool_calls','tools')))
-        self.supports_tool_calls |= (c['model_type']=='gpt_oss' and isinstance(template,str)
-            and all(marker in template for marker in ('functions.', '<|call|>', 'tool_calls', 'tools')))
+        if tool_template is not None and not isinstance(tool_template, str):
+            raise ValueError('model needs one text tool template')
+        self.tool_template = (compile_template(tool_template)
+            if tool_template is not None and tool_template != template else self.template)
+        tool_source = template if tool_template is None else tool_template
+        self.supports_tool_calls=(c['model_type'] in ('qwen2','qwen3') and isinstance(tool_source,str)
+            and all(marker in tool_source for marker in ('<tool_call>','</tool_call>','tool_calls','tools')))
+        self.supports_tool_calls |= (c['model_type']=='gpt_oss' and isinstance(tool_source,str)
+            and all(marker in tool_source for marker in ('functions.', '<|call|>', 'tool_calls', 'tools')))
         self.special_tokens = special_token_text(tokenizer_config)
 
     def finalize_weights(self, weights, prepared_scales=None):
@@ -242,9 +248,11 @@ class ModelWeights:
         from .tool_calls import template_messages,validate_tools
         messages=template_messages(messages)
         tools=validate_tools(tools)
-        if tools or any(m['role']=='tool' or m.get('tool_calls') for m in messages):
+        tool_request = bool(tools) or any(m['role']=='tool' or m.get('tool_calls') for m in messages)
+        if tool_request:
             if not self.supports_tool_calls:
                 raise ValueError('tool chat requires a qualified function-call template')
+        template = getattr(self, 'tool_template', self.template) if tool_request else self.template
         if self.config['model_type']=='gpt_oss':
             if tool_json:raise ValueError('Harmony supports auto or none tool choice only')
             # The pinned template expects non-null content, parsed arguments and
@@ -276,7 +284,7 @@ class ModelWeights:
         if size > MAX_RENDERED_CHAT_BYTES:
             raise ValueError('chat rendered prompt exceeds 16 MiB')
         try:
-            with StringIO() as output, closing(self.template.generate(messages=messages, add_generation_prompt=True,
+            with StringIO() as output, closing(template.generate(messages=messages, add_generation_prompt=True,
                                                 tools=tools, **options, **self.special_tokens)) as stream:
                 for chunk in stream:
                     size += len(chunk.encode('utf-8'))

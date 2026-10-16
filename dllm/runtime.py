@@ -243,9 +243,10 @@ class Runtime:
                                 and config.get('model_type') not in ('mamba','mamba2','t5')):
                             special_token_text(tokenizer_config)
                             template = checkpoint_template(candidate, tokenizer_config)
-                            if template is not None:
-                                from .chat_template import compile_template
-                                compile_template(template)
+                            tool_template = checkpoint_template(candidate, tokenizer_config, tools=True)
+                            from .chat_template import compile_template
+                            for selected in {template, tool_template} - {None}:
+                                compile_template(selected)
                     estimated = weight_bytes(candidate,quantization=policy)
                 except Exception as error:
                     raise ValueError('invalid local model snapshot') from error

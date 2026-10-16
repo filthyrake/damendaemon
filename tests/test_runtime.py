@@ -465,6 +465,31 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.model_ids(),[])
             runtime.close()
 
+    def test_registration_checks_named_tool_template_before_inventory(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from tokenizers import Tokenizer,models
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'config.json').write_text('{}')
+            Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
+            for variant in ('{% invalid %}', 'TOOL {{ tools }}'):
+                runtime=Runtime({})
+                try:
+                    (root/'tokenizer_config.json').write_text(json.dumps({'chat_template':[
+                        {'name':'default','template':'DEFAULT'}, {'name':'tool_use','template':variant}]}))
+                    with patch('dllm.models.weight_bytes',return_value=100) as inventory:
+                        if variant.startswith('{%'):
+                            with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
+                                runtime.manage('register','named',str(root))
+                            inventory.assert_not_called()
+                            self.assertEqual(runtime.model_ids(),[])
+                        else:
+                            runtime.manage('register','named',str(root))
+                            inventory.assert_called_once()
+                            self.assertEqual(runtime.model_ids(),['named'])
+                finally:runtime.close()
+
     def test_registration_does_not_compile_unused_chat_templates(self):
         import json
         import tempfile

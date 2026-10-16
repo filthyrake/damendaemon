@@ -156,7 +156,8 @@ class AwqWeights(ModelWeights):
         tokenizer = Tokenizer.from_file(str(self.path/'tokenizer.json'))
         tokenizer_config = read_tokenizer_config(self.path/'tokenizer_config.json')
         template = checkpoint_template(self.path, tokenizer_config)
-        self.configure_tokenizer(tokenizer, template, tokenizer_config)
+        self.configure_tokenizer(tokenizer, template, tokenizer_config,
+                                 tool_template=checkpoint_template(self.path, tokenizer_config, tools=True))
         self.eos = eos_ids(c.get('eos_token_id'))
         if (self.path/'generation_config.json').exists():
             self.eos.update(eos_ids(read_generation_config(self.path/'generation_config.json').get('eos_token_id')))

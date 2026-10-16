@@ -86,6 +86,7 @@ class TokenizerMetadataTests(unittest.TestCase):
                           [{'name':'default','template':'ordinary'},{'name':'tool_use','template':'tool'}]):
                 with self.subTest(value=value):
                     self.assertEqual(checkpoint_template(root,{'chat_template':value}),'ordinary')
+                    self.assertEqual(checkpoint_template(root,{'chat_template':value},tools=True),'tool')
             invalid=({'tool_use':'tool'}, [{'name':'other','template':'x'}],
                      [{'name':'default','template':'a'},{'name':'default','template':'b'}],
                      [{'name':'default'}], [{'name':'default','template':'a','extra':1}],
