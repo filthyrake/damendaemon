@@ -37,8 +37,8 @@ def estimate(inventory, metadata, cache_dtype='float16', contexts=(32768, 65536,
             state[name] = torch.empty(tensor['shape'], device='meta')
     try:
         weights = load_weights(state, config)
-    except (KeyError, RuntimeError) as error:
-        raise ValueError('hybrid tensor headers do not match the text weight mapping') from error
+    except (KeyError, RuntimeError, ValueError) as error:
+        raise ValueError('hybrid tensor header geometry does not match the text weight mapping') from error
     h, inter = config['hidden_size'], config['intermediate_size']
     dim, qh, kh = config['head_dim'], config['num_attention_heads'], config['num_key_value_heads']
     lk, lv = config['linear_num_key_heads'], config['linear_num_value_heads']

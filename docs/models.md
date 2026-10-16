@@ -105,6 +105,11 @@ with input embeddings. Unknown tensors fail loading; the existing dense-loader
 visual and MTP exclusions remain unchanged. Dense prepared caches from before
 source validation are rebuilt once under cache version 2.
 
+Qwen3.5 hybrid import also validates source names, shapes and explicit tied
+heads, preserving text and multimodal text-backbone prefixes and the documented
+vision/MTP exclusions. Offline capacity planning validates geometry using meta
+tensors; it cannot verify tied-head values without loading them.
+
 ## T5 text encoder-decoder
 
 Pinned FLAN-T5-small and original T5-small run independently on CUDA and Apple Silicon, with separate

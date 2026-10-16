@@ -20,6 +20,8 @@ from .batch import BatchExecutor
 def load_weights(state, config):
     # Multimodal checkpoints wrap the text backbone in language_model.
     prefix = 'model.language_model.' if 'model.language_model.embed_tokens.weight' in state else 'model.'
+    from .hybrid_checkpoint_contract import validate
+    validate(state,config,prefix)
     w = {}
     from .layer_stream import enabled as offload_enabled
     from .host_memory import require_headroom
@@ -42,6 +44,7 @@ def load_weights(state, config):
     w['embed'] = take('embed_tokens.weight')
     w['norm'] = take('norm.weight', torch.float32) + 1
     w['head'] = w['embed'] if config['tie_word_embeddings'] else convert(state.pop('lm_head.weight'), torch.float16)
+    if config['tie_word_embeddings']:state.pop('lm_head.weight',None)
     for i, kind in enumerate(config['layer_types']):
         layer = f'layers.{i}.'
         w[f'{i}.norm1'] = take(layer+'input_layernorm.weight', torch.float32) + 1
