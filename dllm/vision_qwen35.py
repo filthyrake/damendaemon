@@ -16,24 +16,33 @@ from safetensors import safe_open
 from .qwen2 import weight_files
 
 
+def read_vision_config(path):
+    """Validate pinned vision geometry before either text or vision tensors load."""
+    config = read_config(Path(path)/'config.json')
+    c = config.get('vision_config')
+    expected = dict(depth=12,hidden_size=768,intermediate_size=3072,num_heads=12,
+                    out_hidden_size=1024,patch_size=16,spatial_merge_size=2,
+                    temporal_patch_size=2,in_channels=3,num_position_embeddings=2304,
+                    hidden_act='gelu_pytorch_tanh')
+    if (config.get('model_type')!='qwen3_5' or not isinstance(c,dict)
+            or any(type(c.get(k)) is not type(v) or c[k]!=v for k,v in expected.items())
+            or c.get('deepstack_visual_indexes')):
+        raise ValueError('unsupported Qwen3.5 vision geometry')
+    rope = c.get('rope_parameters')
+    if rope is not None and (not isinstance(rope,dict)
+            or rope.get('rope_type')!='axial'
+            or type(rope.get('rope_theta')) not in (int,float) or rope['rope_theta']!=10000):
+        raise ValueError('unsupported vision rotary configuration')
+    return c
+
+
 class VisionWeights:
     def __init__(self, path, *, projection_dtype=torch.float16):
         if projection_dtype not in (torch.float16,torch.float32):
             raise ValueError('unsupported vision projection storage')
         self.projection_dtype=projection_dtype
         self.path = Path(path)
-        config = read_config(self.path/'config.json')
-        self.config = c = config.get('vision_config',{})
-        expected = dict(depth=12,hidden_size=768,intermediate_size=3072,num_heads=12,
-                        out_hidden_size=1024,patch_size=16,spatial_merge_size=2,
-                        temporal_patch_size=2,in_channels=3,num_position_embeddings=2304,
-                        hidden_act='gelu_pytorch_tanh')
-        if (config.get('model_type')!='qwen3_5' or any(c.get(k)!=v for k,v in expected.items())
-                or c.get('deepstack_visual_indexes')):
-            raise ValueError('unsupported Qwen3.5 vision geometry')
-        rope = c.get('rope_parameters')
-        if rope is not None and (rope.get('rope_type')!='axial' or rope.get('rope_theta')!=10000):
-            raise ValueError('unsupported vision rotary configuration')
+        self.config = c = read_vision_config(self.path)
         h,inner,merged = c['hidden_size'],c['intermediate_size'],c['hidden_size']*4
         schema = {'patch_embed.proj.weight':(h,3,2,16,16),'patch_embed.proj.bias':(h,),
                   'pos_embed.weight':(c['num_position_embeddings'],h),

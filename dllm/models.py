@@ -104,6 +104,7 @@ def load(path,context,quantization=None):
     if enabled() and eligible(config(path)):
         validate_vision_model(config(path), context)
         from .vision_model import VisionModelWeights
-        from .vision_qwen35 import VisionWeights
+        from .vision_qwen35 import VisionWeights, read_vision_config
+        read_vision_config(path)
         return VisionModelWeights(ModelWeights(path,context,quantization=quantization),VisionWeights(path))
     return ModelWeights(path,context,quantization=quantization)
