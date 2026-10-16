@@ -10,6 +10,12 @@ from .config import eos_ids, read_config, _positive_number
 
 def config(path):
     c=read_config(Path(path)/'config.json')
+    from .tokenizer_metadata import read_generation_config
+    generation=Path(path)/'generation_config.json'
+    if generation.exists():
+        saved=read_generation_config(generation)
+        for key in ('decoder_start_token_id','pad_token_id','eos_token_id'):
+            if key in saved:c[key]=saved[key]
     if (c.get('model_type')!='t5' or c.get('architectures')!=['T5ForConditionalGeneration']
             or c.get('is_encoder_decoder') is not True or c.get('quantization_config')
             or c.get('feed_forward_proj','relu') not in ('relu','gated-gelu')):

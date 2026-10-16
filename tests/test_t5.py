@@ -42,3 +42,37 @@ class T5Tests(unittest.TestCase):
         for prompt,output in ((513,1),(1,513)):
             with self.assertRaises(ValueError):validate_lengths(encoder,prompt,output)
         with self.assertRaises(ValueError):validate_lengths(SimpleNamespace(context=512),511,2)
+
+    def test_saved_generation_tokens_reach_loaded_model(self):
+        from transformers import T5Config,T5ForConditionalGeneration,GenerationConfig
+        from tokenizers import Tokenizer,models
+        from dllm.t5 import T5Weights
+        from unittest.mock import patch
+        with TemporaryDirectory() as directory:
+            reference=T5ForConditionalGeneration(T5Config(d_model=8,d_ff=16,d_kv=4,
+                num_heads=2,num_layers=1,vocab_size=16,decoder_start_token_id=0,
+                pad_token_id=0,eos_token_id=1))
+            reference.save_pretrained(directory)
+            Tokenizer(models.WordLevel({'[UNK]':0},unk_token='[UNK]')).save(str(Path(directory)/'tokenizer.json'))
+            saved={'decoder_start_token_id':3,'pad_token_id':4,'eos_token_id':[5,6]}
+            generation=Path(directory)/'generation_config.json'
+            generation.write_text(json.dumps(saved))
+            expected=GenerationConfig.from_pretrained(directory,local_files_only=True)
+            loaded=T5Weights(directory,16)
+            self.assertEqual(loaded.eos,set(expected.eos_token_id))
+            self.assertNotIn(1,loaded.eos)
+            self.assertEqual(loaded.config['pad_token_id'],expected.pad_token_id)
+            executor=SimpleNamespace(is_encoder_decoder=True,model=loaded)
+            self.assertEqual(decoder_prefix(executor,[7,8,1]),[expected.decoder_start_token_id])
+            generation.write_text('{}')
+            self.assertEqual(config(directory)['decoder_start_token_id'],0)
+            self.assertEqual(config(directory)['eos_token_id'],1)
+            for bad in ({'eos_token_id':[16]}, {'eos_token_id':True},
+                        {'eos_token_id':None}, {'decoder_start_token_id':-1},
+                        {'decoder_start_token_id':[3]}, {'pad_token_id':16}):
+                generation.write_text(json.dumps(bad))
+                with self.subTest(bad=bad),patch('dllm.qwen2.weight_files',side_effect=AssertionError('weights opened')):
+                    with self.assertRaises(ValueError):T5Weights(directory,16)
+            for raw in ('[]','{"eos_token_id":5,"eos_token_id":6}','{"eos_token_id":NaN}'):
+                generation.write_text(raw)
+                with self.subTest(raw=raw),self.assertRaises(ValueError):config(directory)

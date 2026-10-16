@@ -115,6 +115,11 @@ concurrency, cancellation and model-switching proofs. Initial storage/compute is
 FP32. T5 quantization, chat templates, paged KV, prefix snapshots and chunked
 prefill are not supported. [Evidence and measured performance](evidence/t5/README.md).
 
+Saved `generation_config.json` decoder-start, padding and EOS token IDs override
+the corresponding model-config values. Omitted fields retain the model defaults;
+explicit null or invalid IDs are rejected. EOS lists replace the default stop
+set. This does not import saved sampling or beam-search policies.
+
 For repeated T5 prompt lengths on CUDA, `DLLM_T5_PREFILL_GRAPHS=1..8` enables
 bounded prompt graph caching. It recomputes each prompt with its current tokens.
 Warm latency improves, but a new shape incurs capture overhead; default 0 keeps
