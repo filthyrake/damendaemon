@@ -3,6 +3,7 @@
 
 def validate(state,c,prefix):
     import torch
+    from .floating_parameter import require_floating
     h=c['hidden_size'];inter=c['intermediate_size'];d=c['head_dim']
     q=c['num_attention_heads']*d;kv=c['num_key_value_heads']*d
     lk=c['linear_num_key_heads'];lv=c['linear_num_value_heads']
@@ -32,6 +33,7 @@ def validate(state,c,prefix):
     extra={name for name in state if name not in shapes and not name.startswith(('mtp.','model.visual.'))}
     if extra:raise ValueError('unexpected hybrid checkpoint tensor: '+min(extra))
     for name,shape in shapes.items():
+        require_floating(state[name],name)
         if tuple(state[name].shape)!=shape:raise ValueError('hybrid checkpoint shape mismatch: '+name)
     if c['tie_word_embeddings'] and 'lm_head.weight' in state:
         head,embed=state['lm_head.weight'],state[prefix+'embed_tokens.weight']

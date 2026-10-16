@@ -1,6 +1,7 @@
 """Independent BLOOM decoder and ALiBi attention (Press et al., arXiv:2108.12409)."""
 from itertools import accumulate
 import torch
+from .floating_parameter import require_floating
 from torch.nn import functional as F
 from .device import selected_device
 from .starcoder import StarcoderExecutor
@@ -23,13 +24,13 @@ def load_weights(state, config):
         state = {key.removeprefix('transformer.'): value for key, value in state.items()}
     h, heads, d = config['hidden_size'], config['num_attention_heads'], config['head_dim']
     def take(name, shape):
-        value = state.pop(name)
+        value = require_floating(state.pop(name),name)
         if tuple(value.shape) != shape:
             raise ValueError('BLOOM checkpoint shape mismatch: ' + name)
         return value.float().contiguous()
     w = {'embed': take('word_embeddings.weight', (config['vocab_size'], h))}
     w['head'] = w['embed']
-    if 'lm_head.weight' in state and not torch.equal(state.pop('lm_head.weight').float(), w['head']):
+    if 'lm_head.weight' in state and not torch.equal(require_floating(state.pop('lm_head.weight'),'lm_head.weight').float(), w['head']):
         raise ValueError('BLOOM checkpoint declares unequal tied output weights')
     for name, source in (('embed_norm', 'word_embeddings_layernorm'), ('norm', 'ln_f')):
         w[name] = take(source + '.weight', (h,))

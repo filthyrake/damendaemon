@@ -6,6 +6,7 @@ from torch.nn import functional as F
 from safetensors import safe_open
 from tokenizers import Tokenizer
 from .config import eos_ids, read_config, _positive_number
+from .floating_parameter import require_floating
 from .device import selected_device,available_memory,empty_cache
 from .batch import BatchExecutor
 
@@ -77,7 +78,7 @@ class MambaWeights:
         state={}
         for file in weight_files(path):
             with safe_open(str(file),framework='pt',device='cpu') as reader:
-                for name in reader.keys():state[name]=reader.get_tensor(name).float()
+                for name in reader.keys():state[name]=require_floating(reader.get_tensor(name),name).float()
         def take(name,shape):
             value=state.pop(name)
             if tuple(value.shape)!=shape:raise ValueError('Mamba checkpoint shape mismatch: '+name)

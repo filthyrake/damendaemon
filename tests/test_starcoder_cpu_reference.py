@@ -37,6 +37,8 @@ class StarcoderCPUReferenceTests(unittest.TestCase):
                 parsed=decoder_config(c.to_dict())
                 state=dict(reference.state_dict())
                 weights=load_weights(dict(state),parsed)
+                with self.assertRaisesRegex(ValueError,'parameter dtype'):
+                    load_weights({**state,'model.norm.weight':state['model.norm.weight'].to(torch.int8)},parsed)
                 self.assertIs(weights['embed'],weights['head'])
                 corrupt=dict(state);corrupt['lm_head.weight']=state['lm_head.weight']+1
                 with self.assertRaisesRegex(ValueError,'unequal tied'):load_weights(corrupt,parsed)

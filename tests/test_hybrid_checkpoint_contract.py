@@ -18,6 +18,8 @@ class HybridCheckpointContractTests(unittest.TestCase):
                 state={name if wrapped else name.replace('model.language_model.','model.'):value for name,value in original.items()}
                 prefix='model.language_model.' if wrapped else 'model.'
                 expected=load_weights(dict(state),c)
+                with self.assertRaisesRegex(ValueError,'parameter dtype'):
+                    load_weights({**state,prefix+'norm.weight':state[prefix+'norm.weight'].to(torch.int8)},c)
                 state['lm_head.weight']=state[prefix+'embed_tokens.weight'].clone()
                 actual=load_weights(dict(state),c)
                 for name in expected:torch.testing.assert_close(actual[name],expected[name])

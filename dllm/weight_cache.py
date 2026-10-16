@@ -16,7 +16,7 @@ import torch
 from safetensors import safe_open, SafetensorError
 from safetensors.torch import save_file
 
-VERSION = 2  # Source tensor inventory and tied heads are validated before packing.
+VERSION = 3  # Validate source inventory, tied heads and floating dtypes before packing.
 DENSE = ('qwen2', 'qwen3', 'llama', 'phi3', 'mistral')
 
 

@@ -1,5 +1,6 @@
 """Independent GPT-NeoX decoder with partial rotary and parallel residuals."""
 import torch
+from .floating_parameter import require_floating
 from torch.nn import functional as F
 from .starcoder import StarcoderExecutor
 
@@ -8,7 +9,7 @@ def load_weights(state, config):
     h, inter = config['hidden_size'], config['intermediate_size']
     heads, dim = config['num_attention_heads'], config['head_dim']
     def take(name, shape):
-        value = state.pop(name)
+        value = require_floating(state.pop(name),name)
         if tuple(value.shape) != tuple(shape):
             raise ValueError('GPT-NeoX checkpoint shape mismatch: '+name)
         return value.float().contiguous()

@@ -1,5 +1,6 @@
 """Independent BERT embeddings and BERT/XLM-RoBERTa relevance scores."""
 from .config import read_config, _positive_number
+from .floating_parameter import require_floating
 from .safetensor_header import parse_metadata_json
 from collections import OrderedDict
 import math
@@ -152,7 +153,7 @@ class EncoderWeights:
                         prefix='roberta.' if self.config['model_type']=='xlm-roberta' else 'bert.'
                         key=name.removeprefix(prefix) if self.task=='rerank' else name
                         if key in state:raise ValueError('duplicate encoder checkpoint tensor')
-                        state[key] = reader.get_tensor(name).float()
+                        state[key] = require_floating(reader.get_tensor(name),name).float()
         h,inter = self.config['hidden_size'],self.config['intermediate_size']
         def take(name,shape):
             value = state.pop(name)

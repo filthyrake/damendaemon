@@ -3,6 +3,7 @@
 
 def validate(state, config):
     import torch
+    from .floating_parameter import require_floating
     h=config['hidden_size'];d=config['head_dim']
     q=config['num_attention_heads']*d;kv=config['num_key_value_heads']*d
     inter=config['intermediate_size'];kind=config['model_type']
@@ -43,6 +44,7 @@ def validate(state, config):
     extra=set(state)-set(shapes)
     if extra:raise ValueError('unexpected dense checkpoint tensor: '+min(extra))
     for name,shape in shapes.items():
+        require_floating(state[name],name)
         if tuple(state[name].shape)!=shape:
             raise ValueError('dense checkpoint shape mismatch: '+name)
     if tied and 'lm_head.weight' in state and not torch.equal(state['lm_head.weight'],state['model.embed_tokens.weight']):

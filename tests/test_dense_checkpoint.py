@@ -30,6 +30,8 @@ class DenseCheckpointTests(unittest.TestCase):
                 (root/'tokenizer_config.json').write_text('{}')
                 parsed=decoder_config(c.to_dict());state=dict(reference.state_dict())
                 validate(state,parsed)
+                with self.assertRaisesRegex(ValueError,'parameter dtype'):
+                    validate({**state,'model.norm.weight':state['model.norm.weight'].to(torch.int8)},parsed)
                 with patch('dllm.qwen2.selected_device',return_value='cpu'):
                     loaded=ModelWeights(root,16)
                 self.assertIs(loaded.weights['head'],loaded.weights['embed'])

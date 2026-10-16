@@ -23,6 +23,8 @@ class SpecializedCheckpointTests(unittest.TestCase):
                     c=config_class(**options);reference=model_class(c)
                     parsed=decoder_config(c.to_dict());state=dict(reference.state_dict())
                     weights=loader(dict(state),parsed)
+                    with self.assertRaisesRegex(ValueError,'parameter dtype'):
+                        loader({**state,'model.norm.weight':state['model.norm.weight'].to(torch.int8)},parsed)
                     dtype=torch.bfloat16 if loader is gemma_weights else torch.float16
                     torch.testing.assert_close(weights['embed'],state['model.embed_tokens.weight'].to(dtype))
                     if tied:self.assertIs(weights['head'],weights['embed'])

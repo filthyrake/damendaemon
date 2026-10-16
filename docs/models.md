@@ -103,7 +103,10 @@ Ordinary Qwen2/Qwen3/Llama/Mistral/Phi3, StarCoder2, Gemma and OLMoE checkpoints
 their declared tensor names and shapes. Explicit tied output weights must agree
 with input embeddings. Unknown tensors fail loading; the existing dense-loader
 visual and MTP exclusions remain unchanged. Dense prepared caches from before
-source validation are rebuilt once under cache version 2.
+source validation are rebuilt once under cache version 3. Ordinary parameters
+must use FP16, BF16, FP32 or FP64 payloads before conversion; integer, boolean
+and unmarked float8 tensors are rejected. Explicit packed-format importers keep
+their separate dtype contracts.
 
 Qwen3.5 hybrid import also validates source names, shapes and explicit tied
 heads, preserving text and multimodal text-backbone prefixes and the documented

@@ -10,7 +10,8 @@ def load_weights(state, config):
     kv=config['num_key_value_heads']*config['head_dim']
     def take(name,shape):
         if name not in state:raise ValueError('missing StarCoder2 checkpoint tensor: '+name)
-        value=state.pop(name)
+        from .floating_parameter import require_floating
+        value=require_floating(state.pop(name),name)
         if tuple(value.shape)!=shape:
             raise ValueError('StarCoder2 checkpoint shape mismatch: '+name)
         return value.float()

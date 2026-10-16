@@ -1,5 +1,6 @@
 """Learned-position GPT-2 decoder using shared native matrices and KV slots."""
 import torch
+from .floating_parameter import require_floating
 from torch.nn import functional as F
 from .starcoder import StarcoderExecutor
 
@@ -9,14 +10,14 @@ def load_weights(state,config):
         state={key.removeprefix('transformer.'):value for key,value in state.items()}
     h,inter=config['hidden_size'],config['intermediate_size']
     def take(name,shape,transpose=False):
-        value=state.pop(name)
+        value=require_floating(state.pop(name),name)
         if tuple(value.shape)!=tuple(shape):raise ValueError('GPT-2 checkpoint shape mismatch: '+name)
         return (value.t() if transpose else value).float().contiguous()
     w={'embed':take('wte.weight',(config['vocab_size'],h)),
        'position':take('wpe.weight',(config['max_position_embeddings'],h))}
     w['head']=w['embed']
     if 'lm_head.weight' in state:
-        if not torch.equal(state.pop('lm_head.weight').float(),w['head']):
+        if not torch.equal(require_floating(state.pop('lm_head.weight'),'lm_head.weight').float(),w['head']):
             raise ValueError('GPT-2 checkpoint declares unequal tied output weights')
     for suffix in ('weight','bias'):
         w['norm' if suffix=='weight' else 'norm.bias']=take('ln_f.'+suffix,(h,))

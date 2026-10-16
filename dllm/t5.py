@@ -6,6 +6,7 @@ import torch
 from safetensors import safe_open
 from tokenizers import Tokenizer
 from .config import eos_ids, read_config, _positive_number
+from .floating_parameter import require_floating
 
 
 def config(path):
@@ -99,7 +100,7 @@ class T5Weights:
         state={}
         for file in weight_files(self.path):
             with safe_open(str(file),framework='pt',device='cpu') as reader:
-                for name in reader.keys():state[name]=reader.get_tensor(name).float()
+                for name in reader.keys():state[name]=require_floating(reader.get_tensor(name),name).float()
         def take(name,shape):
             value=state.pop(name)
             if tuple(value.shape)!=shape:raise ValueError('T5 checkpoint shape mismatch: '+name)
