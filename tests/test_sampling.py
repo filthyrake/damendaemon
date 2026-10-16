@@ -6,6 +6,17 @@ from dllm.sampling import Sampling, Sampler, sample_rows
 
 
 class SamplingTests(unittest.TestCase):
+    def test_large_temperature_matches_float64_distribution(self):
+        logits=torch.tensor([3e38,-3e38,-float('inf')])
+        for temperature in (3e38,1e39,1e300):
+            probabilities=torch.softmax(logits.double()/temperature,-1)
+            boundary=probabilities[0].item()
+            for draw,expected in ((boundary/2,0),((1+boundary)/2,1)):
+                sampler=Sampler(Sampling(temperature))
+                with self.subTest(temperature=temperature,draw=draw),patch.object(sampler.random,'random',return_value=draw):
+                    self.assertEqual(sampler.select(logits).item(),expected)
+                    self.assertEqual(sample_rows(logits.unsqueeze(0),[sampler]),[expected])
+
     def test_upper_endpoint_draw_never_selects_filtered_tokens(self):
         for options, logits in (
                 (Sampling(1, top_p=.5), torch.tensor([0., -10., -20.])),

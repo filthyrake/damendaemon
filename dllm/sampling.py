@@ -148,8 +148,16 @@ class Sampler:
         if options.top_p < 1:
             values, order = values.sort(descending=True)
             indices = order if indices is None else indices[order]
-        # Subtract the maximum before dividing so small temperatures stay stable.
-        probabilities = torch.softmax((values - values.max()) / max(options.temperature, torch.finfo(torch.float32).tiny), -1)
+        if options.temperature >= 1:
+            # Scale before centering: extreme finite logits can overflow their
+            # difference even when the temperature-scaled difference is small.
+            # Reciprocal multiplication also avoids narrowing huge temperatures
+            # to FP32 infinity. Preserve masks if the reciprocal rounds to zero.
+            scaled=torch.where(torch.isneginf(values),values,values*(1/options.temperature))
+        else:
+            # Center first so tiny temperatures cannot overflow positive logits.
+            scaled=(values-values.max())/max(options.temperature,torch.finfo(torch.float32).tiny)
+        probabilities = torch.softmax(scaled, -1)
         if options.top_p < 1:
             # Keep the first token that crosses the cumulative probability bound.
             remove = probabilities.cumsum(-1) - probabilities >= options.top_p
