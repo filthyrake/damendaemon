@@ -777,3 +777,5 @@ Qwen2/Llama3 byte-level GGUF also retains unique UNUSED pieces for encoding whil
 Chat-template evaluation failures (including expression type errors, arithmetic errors and unsupported JSON-filter values) are rejected before tokenization/inference as invalid requests. Both native and CPU-reference chat preserve the original exception cause; unrelated runtime failures are not converted into request errors.
 
 Opt-in repetition/presence/frequency penalties and logit bias reject non-finite adjusted FP32 scores before selection. Finite parameters can still overflow that arithmetic. This validity check may synchronize the device when adjustments are enabled; the default unadjusted sampling path is unchanged, and GPU overhead has not been measured.
+
+Structured output uses explicit generated-byte vocabularies for GGUF tokenizers whose user-defined pieces require literal decoding. CPU tests against pinned xgrammar cover literal Unicode pieces, partial UTF-8 bytes, serialized tokenizers, hidden controls and padded rows. Suppressed-token and positional SentencePiece grammar paths remain unqualified and rejected; this is not GPU qualification.
