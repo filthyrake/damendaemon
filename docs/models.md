@@ -462,6 +462,8 @@ template, or qualify official model logits, speed, long context or GPU execution
 `dllm.deepseek_text.DeepSeekText` supplies bounded local tokenizer loading and
 independent ordinary V4 text-chat encoding. It checks vocabulary/control markers,
 adds BOS exactly once, and preserves the pinned chat/thinking history rules.
+The complete rendered prompt, including inserted control markers, must fit the
+1 MiB UTF-8 cap before tokenizer encoding.
 Five literal prompts, including Unicode and retained/dropped historical reasoning,
 match exact IDs from the pinned tokenizer (hash recorded in the text contract
 fixture). The ordinary text path explicitly rejects tools, internal task roles,

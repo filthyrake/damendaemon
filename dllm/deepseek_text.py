@@ -60,7 +60,10 @@ def render_chat(messages, *, enable_thinking=False, drop_thinking=True, reasonin
             expected='user'
     if expected != 'assistant':
         raise ValueError('V4 generation requires a final user message')
-    return ''.join(parts)
+    rendered=''.join(parts)
+    if len(rendered.encode('utf-8')) > MAX_TEXT_BYTES:
+        raise ValueError('V4 rendered prompt exceeds text byte limit')
+    return rendered
 
 
 def _read(path,limit):

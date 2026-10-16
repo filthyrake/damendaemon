@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import Mock,patch
 
 from tokenizers import Tokenizer, models, AddedToken
 
@@ -39,6 +40,28 @@ class DeepSeekTextTests(unittest.TestCase):
                          [{'role':'user','content':'Hi','reasoning_content':'No'}],
                          [{'role':'user','content':'x'*(1024*1024+1)}]):
             with self.assertRaises(ValueError):render_chat(messages)
+
+    def test_complete_rendered_byte_budget_precedes_tokenization(self):
+        cases=[([{'role':'user','content':'你好🙂'}],{}),
+               ([{'role':'system','content':'system'},{'role':'user','content':'first'},
+                 {'role':'assistant','content':'answer','reasoning_content':'reason'},
+                 {'role':'user','content':'next'}],{'enable_thinking':True,'drop_thinking':False})]
+        for messages,options in cases:
+            before=deepcopy(messages)
+            expected=render_chat(messages,**options)
+            size=len(expected.encode('utf-8'))
+            text=object.__new__(DeepSeekText)
+            text.tokenizer=Mock()
+            text.tokenizer.encode.return_value.ids=[1,2]
+            with self.subTest(options=options):
+                with patch('dllm.deepseek_text.MAX_TEXT_BYTES',size-1):
+                    with self.assertRaises(ValueError):text.chat_tokens(messages,**options)
+                    text.tokenizer.encode.assert_not_called()
+                with patch('dllm.deepseek_text.MAX_TEXT_BYTES',size):
+                    self.assertEqual(render_chat(messages,**options),expected)
+                    self.assertEqual(text.chat_tokens(messages,**options),[1,2])
+                    text.tokenizer.encode.assert_called_once_with(expected,add_special_tokens=False)
+                self.assertEqual(messages,before)
 
     def test_local_tokenizer_controls_raw_ids_decode_and_vocabulary(self):
         with tempfile.TemporaryDirectory() as temp:
