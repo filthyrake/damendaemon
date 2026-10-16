@@ -95,6 +95,12 @@ class HybridConfigTests(unittest.TestCase):
         config['text_config']['rms_norm_eps'] = 1
         self.assertEqual(decoder_config(config)['rotary_dim'], 256)
 
+    def test_rotary_head_dimensions_must_fit_host_numeric_range(self):
+        for fraction in (.25,1.0,1):
+            config=self.config();config['text_config']['head_dim']=10**400
+            config['text_config']['rope_parameters']['partial_rotary_factor']=fraction
+            with self.subTest(fraction=fraction),self.assertRaises(ValueError):decoder_config(config)
+
     def test_unsupported_hybrid_variants_fail(self):
         for change in ({'num_experts': 4}, {'layer_types': ['linear_attention']},
                        {'linear_num_value_heads': 17}, {'linear_conv_kernel_dim': 0},

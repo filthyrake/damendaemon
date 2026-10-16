@@ -27,6 +27,11 @@ class NeoxTests(unittest.TestCase):
             with self.subTest(changes=changes),self.assertRaises(ValueError):
                 decoder_config(config(**changes))
 
+    def test_rotary_head_dimensions_must_fit_host_numeric_range(self):
+        for fraction in (.25,1.0,1):
+            with self.subTest(fraction=fraction),self.assertRaises(ValueError):
+                decoder_config(config(hidden_size=10**400,rotary_pct=fraction))
+
     def test_interleaved_qkv_is_reordered_by_head(self):
         c=decoder_config(config())
         state={'gpt_neox.embed_in.weight':torch.zeros(32,16),'embed_out.weight':torch.ones(32,16),

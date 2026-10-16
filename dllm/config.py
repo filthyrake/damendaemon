@@ -55,6 +55,17 @@ def _positive_number(value):
     return type(value) in (int, float) and 0 < value <= sys.float_info.max
 
 
+def _rotary_dimension(head_dim, fraction):
+    if (type(head_dim) is not int or not _positive_number(head_dim)
+            or type(fraction) not in (int,float) or not 0<fraction<=1):
+        raise ValueError('invalid partial rotary geometry')
+    width=head_dim*fraction
+    result=int(width)
+    if result!=width or result<2 or result%2:
+        raise ValueError('invalid partial rotary dimension')
+    return result
+
+
 def rotary_scaling(value):
     if value is None:
         return None
@@ -227,12 +238,7 @@ def hybrid_config(config):
             or c['linear_num_value_heads'] % c['linear_num_key_heads']):
         raise ValueError('query/value heads must divide into key heads')
     fraction = rope.get('partial_rotary_factor', 1.)
-    if type(fraction) not in (int, float) or not 0 < fraction <= 1:
-        raise ValueError('invalid partial rotary fraction')
-    dim = c['head_dim'] * fraction
-    if int(dim) != dim or int(dim) % 2:
-        raise ValueError('invalid partial rotary dimension')
-    c['rotary_dim'] = int(dim)
+    c['rotary_dim'] = _rotary_dimension(c['head_dim'], fraction)
     c['rope_theta'] = rope.get('rope_theta', 10000.)
     for name in ('rope_theta', 'rms_norm_eps'):
         number = c.get(name)
@@ -310,14 +316,12 @@ def neox_config(config):
     dim = c['hidden_size']//c['num_attention_heads']
     fraction = c.get('rotary_pct',.25)
     base, epsilon = c.get('rotary_emb_base',10000), c.get('layer_norm_eps',1e-5)
-    if (type(fraction) not in (int,float) or not 0<fraction<=1
-            or int(dim*fraction)!=dim*fraction or int(dim*fraction)%2 or int(dim*fraction)<2):
-        raise ValueError('invalid GPT-NeoX rotary dimension')
+    rotary_dim = _rotary_dimension(dim, fraction)
     for value in (base,epsilon):
         if not _positive_number(value):
             raise ValueError('invalid GPT-NeoX rotary base or LayerNorm epsilon')
     return {**c,'head_dim':dim,'num_key_value_heads':c['num_attention_heads'],
-            'rotary_dim':int(dim*fraction),'rope_theta':base,'rope_scaling':None,
+            'rotary_dim':rotary_dim,'rope_theta':base,'rope_scaling':None,
             'rms_norm_eps':epsilon,'use_parallel_residual':c.get('use_parallel_residual',True)}
 
 
