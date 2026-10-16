@@ -32,6 +32,16 @@ class StoppingTests(unittest.TestCase):
         self.assertEqual(text_delta('abcXYZ', '', ('XYZQ','XYZ')), ('abc','abc',True))
         self.assertEqual(text_delta('abcXY', '', ('XYZQ','XYZ')), ('abc','abc',False))
 
+    def test_stop_cannot_match_unstable_replacement_suffix(self):
+        for decoded, stop in (('\ufffd','\ufffd'), ('a\ufffd','a\ufffd'),
+                              ('a\ufffd\ufffd','\ufffd'), ('a\ufffd\ufffd','\ufffd\ufffd')):
+            with self.subTest(decoded=decoded, stop=stop):
+                self.assertEqual(text_delta(decoded, '', (stop,)), ('', '', False))
+        self.assertEqual(text_delta('aé', '', ('a\ufffd',)), ('aé', 'aé', False))
+        self.assertEqual(text_delta('a\ufffd', '', ('\ufffd',), final=True), ('a', 'a', True))
+        self.assertEqual(text_delta('okEND\ufffd', '', ('END','\ufffd')), ('ok','ok',True))
+        self.assertEqual(text_delta('a\ufffdb\ufffd', '', ('\ufffd',)), ('a','a',True))
+
     def test_partial_utf8_and_revision(self):
         self.assertEqual(text_delta('abc\ufffd', 'abc'), ('','abc',False))
         self.assertEqual(text_delta('abc\ufffd', 'abc', final=True), ('\ufffd','abc\ufffd',False))

@@ -13,7 +13,10 @@ def stop_sequences(value):
 
 def text_delta(decoded, emitted, stops=(), final=False):
     """Return only irrevocable text, retaining incomplete stop/UTF-8 suffixes."""
-    matches = [index for text in stops if (index := decoded.find(text)) >= 0]
+    # A trailing replacement may disappear when the next UTF-8 byte arrives.
+    # It cannot complete a stop until finalization, though earlier stops can.
+    stable = decoded if final else decoded.rstrip('\ufffd')
+    matches = [index for text in stops if (index := stable.find(text)) >= 0]
     stopped = bool(matches)
     if stopped:
         visible = decoded[:min(matches)]

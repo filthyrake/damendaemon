@@ -87,6 +87,20 @@ class BpeSpecialTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'eos token ID'):
             tokenizer(source)
 
+    def test_incomplete_utf8_does_not_trigger_text_stop(self):
+        from dllm.stopping import text_delta
+        candidate, _, _ = tokenizer(metadata('qwen2', 4, False))
+        ids = candidate.encode('é', add_special_tokens=False).ids
+        self.assertEqual(len(ids), 2)
+        self.assertEqual(candidate.decode(ids[:1]), '\ufffd')
+        emitted = ''
+        chunks = []
+        for count in (1, 2):
+            delta, emitted, stopped = text_delta(candidate.decode(ids[:count]), emitted, ('\ufffd',), final=count == 2)
+            self.assertFalse(stopped)
+            chunks.append(delta)
+        self.assertEqual(''.join(chunks), 'é')
+
     def test_ambiguous_equal_length_specials_rejected(self):
         for pre in ('qwen2', 'llama-bpe'):
             source = metadata(pre, 4, False)
