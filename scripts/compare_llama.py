@@ -9,7 +9,7 @@ import json
 import time
 from urllib.request import Request, urlopen
 
-from dllm.bench import events
+from dllm.bench import events, _response_json, _tool_call_output
 
 
 def main():
@@ -54,19 +54,50 @@ def main():
         usage = None
         text = ""
         done = False
+        finished = False
         scored_tokens=0
         with urlopen(Request(args.base_url + ("/completions" if args.raw else "/chat/completions"), data=json.dumps(body).encode(),
                              headers={"Content-Type": "application/json"}), timeout=120) as response:
             for data in events(response, require_terminated=True):
                 if data == "[DONE]":
+                    if not finished:
+                        raise ValueError('comparison stream ended without a completion finish')
                     done = True
                     break
-                chunk = json.loads(data)
+                chunk = _response_json(data)
+                if not isinstance(chunk, dict):
+                    raise ValueError('comparison stream event must be an object')
                 if chunk.get("error") is not None:
                     raise ValueError("server returned an error event")
-                for choice in chunk.get("choices", []):
+                choices = chunk.get('choices', [])
+                if (not isinstance(choices, list) or len(choices)>1
+                        or any(not isinstance(choice, dict) for choice in choices)):
+                    raise ValueError('comparison requires a single completion choice')
+                for choice in choices:
+                    if not args.raw and not isinstance(choice.get('delta', {}), dict):
+                        raise ValueError('invalid comparison completion delta')
+                    content = choice.get('text') if args.raw else choice.get('delta', {}).get('content')
+                    if content is None:
+                        content = ''
+                    if not isinstance(content, str):
+                        raise ValueError('invalid comparison completion text')
+                    semantic_output = bool(content)
+                    if not args.raw:
+                        delta = choice.get('delta', {})
+                        if any(delta.get(key) is not None and not isinstance(delta[key], str)
+                               for key in ('reasoning', 'reasoning_content')):
+                            raise ValueError('invalid comparison reasoning delta')
+                        tool_output = _tool_call_output(delta.get('tool_calls'))
+                        semantic_output = semantic_output or tool_output or any(
+                            delta.get(key) for key in ('reasoning', 'reasoning_content'))
+                    if finished and semantic_output:
+                        raise ValueError('comparison output received after completion finish')
+                    reason = choice.get('finish_reason')
+                    if reason is not None:
+                        if not isinstance(reason, str) or not reason or finished:
+                            raise ValueError('invalid or duplicate comparison completion finish')
+                        finished = True
                     scored_tokens+=len((choice.get('logprobs') or {}).get('content') or [])
-                    content = choice.get('text', '') if args.raw else choice.get("delta", {}).get("content", "")
                     if content:
                         if first is None:
                             first = time.perf_counter()
