@@ -90,3 +90,28 @@ class OutputPreflightTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,boundary):
                 list(runtime.generate('a',None,max_tokens=1,raw_prompt=valid))
         self.assertEqual(validate_raw('long text',max_length=1),'long text')
+
+    def test_embedding_rows_before_copy_and_ownership(self):
+        from dllm.embeddings import options
+        from dllm.encoder import EncoderWeights
+        direct=Runtime.__new__(Runtime);direct.context=16
+        direct.session=Mock(side_effect=RuntimeError('session boundary'))
+        scheduled=BatchedRuntime.__new__(BatchedRuntime);scheduled.context=16
+        scheduled.models={'a':'unused'}
+        scheduled._submit=Mock(side_effect=RuntimeError('submission boundary'))
+        encoder=EncoderWeights.__new__(EncoderWeights);encoder.max_context=16;encoder.task='embedding'
+        class Oversized(list):
+            def __iter__(self):raise AssertionError('oversized row iterated/copied')
+        row=Oversized([1]*17)
+        for inputs in (row,[row],[[1],row],[row,[1]]):
+            for runtime in (direct,scheduled):
+                with self.subTest(runtime=type(runtime).__name__),self.assertRaisesRegex(ValueError,'configured context'):
+                    runtime.embed('a',inputs)
+            with self.assertRaisesRegex(ValueError,'configured context'):encoder.encode(inputs)
+        direct.session.assert_not_called();scheduled._submit.assert_not_called()
+        valid=[1]*16
+        for inputs in (valid,[valid],['hello']):
+            for runtime,boundary in ((direct,'session boundary'),(scheduled,'submission boundary')):
+                with self.assertRaisesRegex(RuntimeError,boundary):runtime.embed('a',inputs)
+        copied=options([valid],max_length=16)[0]
+        self.assertEqual(copied,[valid]);self.assertIsNot(copied[0],valid)

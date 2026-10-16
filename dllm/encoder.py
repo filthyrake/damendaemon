@@ -204,7 +204,7 @@ class EncoderWeights:
     def encode(self,inputs):
         if self.task!='embedding':raise ValueError('model supports reranking, not embeddings')
         from .embeddings import options
-        inputs, _, _ = options(inputs)
+        inputs, _, _ = options(inputs,max_length=self.max_context)
         def text(value):
             value = (self.config.get('embedding_prompt', '') + value).strip()
             return value.lower() if self.config.get('do_lower_case', False) else value

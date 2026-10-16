@@ -15,6 +15,7 @@ from dllm.runtime import Runtime
 class EmbeddingOutputTests(unittest.TestCase):
     def runtime(self, values, embedding_dimension=None):
         runtime = Runtime.__new__(Runtime)
+        runtime.context=256
         self.released = False
         model = SimpleNamespace(task='embedding', config={'hidden_size': 2},
                                 encode=lambda inputs: [[1] for _ in inputs])
@@ -79,6 +80,7 @@ class EmbeddingInputTests(unittest.TestCase):
         from unittest.mock import Mock
         from dllm.reranking import options as rerank_options
         runtime = Runtime.__new__(Runtime)
+        runtime.context=256
         runtime.session = Mock(side_effect=AssertionError('must not activate model'))
         for value in ('\ud800', '\udfff', 'prefix\ud800suffix'):
             for call in (lambda: runtime.embed('model', value),

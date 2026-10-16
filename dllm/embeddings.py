@@ -1,14 +1,16 @@
 """Embedding request validation, independent of any model or optional dependency."""
 
 
-def options(inputs,encoding_format='float',dimensions=None):
+def options(inputs,encoding_format='float',dimensions=None,*,max_length=None):
     if encoding_format not in ('float','base64'):
         raise ValueError('encoding_format must be float or base64')
     if dimensions is not None and (type(dimensions) is not int or dimensions <= 0):
         raise ValueError('dimensions must be a positive integer')
     if isinstance(inputs,str):
         inputs=[inputs]
-    elif isinstance(inputs,list) and inputs and all(type(t) is int for t in inputs):
+    elif isinstance(inputs,list) and inputs and type(inputs[0]) is int:
+        if max_length is not None and len(inputs)>max_length:
+            raise ValueError('embedding token input exceeds configured context')
         inputs=[inputs]
     if not isinstance(inputs,list) or not 1 <= len(inputs) <= 64:
         raise ValueError('embeddings require 1..64 inputs')
@@ -19,6 +21,9 @@ def options(inputs,encoding_format='float',dimensions=None):
         except UnicodeError as error:
             raise ValueError('embedding text must be valid UTF-8') from error
         return list(inputs),encoding_format,dimensions
-    if all(isinstance(row,list) and row and all(type(t) is int and t>=0 for t in row) for row in inputs):
-        return [list(row) for row in inputs],encoding_format,dimensions
+    if all(isinstance(row,list) and row for row in inputs):
+        if max_length is not None and any(len(row)>max_length for row in inputs):
+            raise ValueError('embedding token input exceeds configured context')
+        if all(all(type(t) is int and t>=0 for t in row) for row in inputs):
+            return [list(row) for row in inputs],encoding_format,dimensions
     raise ValueError('input must be nonempty text, texts, token IDs or token-ID sequences')

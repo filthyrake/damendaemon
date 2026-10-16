@@ -423,7 +423,7 @@ class Runtime:
 
     def embed(self, alias, inputs, encoding_format='float', dimensions=None):
         from .embeddings import options
-        inputs, encoding_format, dimensions = options(inputs, encoding_format, dimensions)
+        inputs, encoding_format, dimensions = options(inputs, encoding_format, dimensions,max_length=self.context)
         start = time.perf_counter()
         with self.session(alias) as (executor, tier, activation):
             model = executor.model

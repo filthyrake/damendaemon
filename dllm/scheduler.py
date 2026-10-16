@@ -171,7 +171,7 @@ class BatchedRuntime:
 
     def embed(self, alias, inputs, encoding_format="float", dimensions=None):
         from .embeddings import options
-        inputs, encoding_format, dimensions = options(inputs, encoding_format, dimensions)
+        inputs, encoding_format, dimensions = options(inputs, encoding_format, dimensions,max_length=self.context)
         if not isinstance(alias, str) or alias not in self.models:
             raise ValueError("unknown model")
         return self._submit({"action":"embed", "model":alias, "inputs":inputs,
