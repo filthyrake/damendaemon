@@ -131,6 +131,17 @@ class EncoderConfigTests(unittest.TestCase):
             self.modules=modules;self.write()
             with self.assertRaisesRegex(ValueError,'pipeline'):config(self.root)
 
+    def test_exact_cls_pooling_policy(self):
+        path=self.root/'1_Pooling/config.json'
+        policy=json.loads(path.read_text())
+        policy.update(pooling_mode_cls_token=True,pooling_mode_mean_tokens=False)
+        path.write_text(json.dumps(policy))
+        self.assertEqual(config(self.root)['embedding_pooling'],'cls')
+        for change in ({'pooling_mode_mean_tokens':True},{'pooling_mode_cls_token':1},
+                       {'pooling_mode_max_tokens':True},{'pooling_mode_cls_token':False}):
+            path.write_text(json.dumps({**policy,**change}))
+            with self.subTest(change=change),self.assertRaises(ValueError):config(self.root)
+
     def test_declared_lowercase_policy_preprocesses_text_only(self):
         from dllm.encoder import EncoderWeights
         from tokenizers import Tokenizer, models, pre_tokenizers
@@ -211,7 +222,7 @@ class EncoderConfigTests(unittest.TestCase):
                 path.write_text(json.dumps(pooling))
                 self.assertEqual(config(self.root), expected)
         for changes in ({'embedding_dimension':8.0}, {'embedding_dimension':True},
-                        {'pooling_mode':'cls'}, {'pooling_mode':['mean', 'max']},
+                        {'pooling_mode':'max'}, {'pooling_mode':['mean', 'max']},
                         {'include_prompt':False}, {'include_prompt':1},
                         {'pooling_mode_mean_tokens':True}, {'unknown':False}):
             with self.subTest(changes=changes):

@@ -14,7 +14,7 @@ from dllm.encoder import EncoderWeights, EncoderExecutor
 
 
 class EncoderCPUReferenceTests(unittest.TestCase):
-    def check_family(self, family, task, *, compact=False, truncate_dim=None, normalize=True):
+    def check_family(self, family, task, *, compact=False, truncate_dim=None, normalize=True, pooling='mean'):
         cls = XLMRobertaConfig if family == 'xlm-roberta' else BertConfig
         c = cls(vocab_size=32, hidden_size=8, intermediate_size=16,
                 num_hidden_layers=2, num_attention_heads=2,
@@ -54,6 +54,11 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                     (root/'1_Pooling/config.json').write_text(json.dumps({
                         'embedding_dimension':8, 'pooling_mode':'mean', 'include_prompt':True}))
 
+            if task=='embedding' and pooling=='cls':
+                path=root/'1_Pooling/config.json';policy=json.loads(path.read_text())
+                if compact:policy['pooling_mode']='cls'
+                else:policy.update(pooling_mode_cls_token=True,pooling_mode_mean_tokens=False)
+                path.write_text(json.dumps(policy))
             if task=='embedding' and not normalize:
                 modules=json.loads((root/'modules.json').read_text())
                 (root/'modules.json').write_text(json.dumps(modules[:2]))
@@ -80,7 +85,8 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                 with torch.inference_mode():
                     output = reference(input_ids=ids, attention_mask=mask, token_type_ids=token_types)
                     if task == 'embedding':
-                        expected = (output.last_hidden_state*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True)
+                        expected = (output.last_hidden_state[:,0] if pooling=='cls' else
+                            (output.last_hidden_state*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True))
                         if normalize:expected=F.normalize(expected,dim=-1)
                         if truncate_dim is not None:expected=expected[:,:truncate_dim]
                         actual = native.embed(tokens)
@@ -113,6 +119,14 @@ class EncoderCPUReferenceTests(unittest.TestCase):
             for width in (None,4):
                 with self.subTest(compact=compact,width=width):
                     self.check_family('bert','embedding',compact=compact,truncate_dim=width,normalize=False)
+
+    def test_cls_pooling_pipeline(self):
+        for compact in (False,True):
+            for normalize in (False,True):
+                for width in (None,4):
+                    with self.subTest(compact=compact,normalize=normalize,width=width):
+                        self.check_family('bert','embedding',compact=compact,truncate_dim=width,
+                                          normalize=normalize,pooling='cls')
 
     def test_bert_reranking(self):
         self.check_family('bert', 'rerank')

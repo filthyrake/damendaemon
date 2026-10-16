@@ -79,7 +79,7 @@ def config(path):
     if (not isinstance(modules,list) or len(modules) not in (2,3)
             or any(not isinstance(m,dict) or m.get('type') not in kind
                    for m,kind in zip(modules,kinds)) or modules[0].get('path') != ''):
-        raise ValueError('supported encoder pipeline is Transformer, mean Pooling, optional Normalize')
+        raise ValueError('supported encoder pipeline is Transformer, mean/CLS Pooling, optional Normalize')
     if not isinstance(modules[1].get('path'),str):
         raise ValueError('invalid pooling module path')
     pooling_path = Path(modules[1]['path'])
@@ -87,11 +87,14 @@ def config(path):
         raise ValueError('invalid pooling module path')
     pooling = read_config(path/pooling_path/'config.json')
     if 'embedding_dimension' in pooling or 'pooling_mode' in pooling:
-        expected = {'embedding_dimension':c['hidden_size'], 'pooling_mode':'mean', 'include_prompt':True}
+        mode=pooling.get('pooling_mode')
+        if mode not in ('mean','cls'):raise ValueError('only declared mean pooling or CLS pooling is supported')
+        expected = {'embedding_dimension':c['hidden_size'], 'pooling_mode':mode, 'include_prompt':True}
         pooling = {'include_prompt':True, **pooling}
     else:
-        expected = {'word_embedding_dimension': c['hidden_size'], 'pooling_mode_cls_token': False,
-                    'pooling_mode_mean_tokens': True, 'pooling_mode_max_tokens': False,
+        mode='cls' if pooling.get('pooling_mode_cls_token') is True else 'mean'
+        expected = {'word_embedding_dimension': c['hidden_size'], 'pooling_mode_cls_token': mode=='cls',
+                    'pooling_mode_mean_tokens': mode=='mean', 'pooling_mode_max_tokens': False,
                     'pooling_mode_mean_sqrt_len_tokens': False}
         # Newer legacy serializers write these equivalent defaults explicitly.
         # Do not silently admit weighted/last-token pooling or prompt exclusion.
@@ -100,7 +103,7 @@ def config(path):
         expected.update(defaults)
         pooling = {**defaults, **pooling}
     if pooling != expected or any(type(pooling[k]) is not type(v) for k,v in expected.items()):
-        raise ValueError('only declared masked mean pooling is supported')
+        raise ValueError('only declared mean pooling or CLS pooling is supported')
     sentence = read_config(path/'sentence_bert_config.json')
     lowercase = sentence.get('do_lower_case', False)
     if type(lowercase) is not bool:
@@ -111,7 +114,7 @@ def config(path):
     prompt,width=_saved_settings(path,c['hidden_size'])
     return {**c, 'task':'embedding', 'layer_norm_eps':eps, 'embedding_max_length':length,
             'do_lower_case':lowercase, 'embedding_prompt':prompt,'embedding_dimension':width,
-            'embedding_normalize':len(modules)==3}
+            'embedding_normalize':len(modules)==3,'embedding_pooling':mode}
 
 
 def used_tensor(name,task='embedding'):
@@ -312,5 +315,6 @@ class EncoderExecutor:
             x = norm(x+linear(F.gelu(linear(x,f'{i}.fc').float()),f'{i}.down'),f'{i}.norm2')
         if self.model.task=='rerank':
             return linear(torch.tanh(linear(x[:,0],'pooler.dense')),'classifier')
-        pooled = (x.float()*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True)
+        pooled = (x[:,0].float() if c.get('embedding_pooling','mean')=='cls'
+                  else (x.float()*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True))
         return F.normalize(pooled,p=2,dim=-1) if c.get('embedding_normalize',True) else pooled

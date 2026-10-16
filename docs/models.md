@@ -794,7 +794,7 @@ Checkpoint chat templates receive `bos_token` and `eos_token` as text even when 
 
 When no embedded `chat_template` is supplied, `chat_template.jinja` is read as UTF-8 with the same 16 MiB metadata envelope. An embedded template, including an empty string, takes precedence; a missing fallback preserves the raw-completion-only behavior. Explicit operator overrides retain their separate 128 KiB limit.
 
-Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects duplicate fields or excessive nesting before pooling configuration or checkpoint loading. The supported pipeline is Transformer → mean Pooling, optionally followed by Normalize.
+Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects duplicate fields or excessive nesting before pooling configuration or checkpoint loading. The supported pipeline is Transformer → mean or CLS Pooling, optionally followed by Normalize.
 
 Native chat tokenization consumes template output incrementally and rejects more than 16 MiB of rendered UTF-8 text, including a forced tool-call prefix, before tokenization. The template generator closes on success or failure. This bounds accumulated prompt output. Rendering also caps explicit Jinja for-loop work at 1,000,000 iterations per render, shared across nested/recursive loops and nested renders; explicit loop-filter candidates count even when rejected. Independent requests have independent budgets. These limits do not bound intermediate expression/filter allocations or establish a general execution deadline.
 
@@ -888,3 +888,11 @@ and compact module metadata. Native output then preserves the raw masked mean;
 normalization is never added implicitly. The CPU oracle covers both forms with
 and without saved truncation, across mixed-length, single and reordered batches.
 This broadens implementation coverage, not GPU or retrieval-quality qualification.
+
+BERT sentence checkpoints may declare exactly CLS pooling instead of masked
+mean pooling, in either legacy boolean metadata or compact `pooling_mode="cls"`
+metadata. CLS selects the final first-token hidden state, then applies the
+declared Normalize module and saved truncation. Combined modes, max/weighted
+pooling and prompt exclusion remain unsupported. Independent CPU oracles cover
+both metadata formats, normalization choices, saved truncation and batch order.
+This adds implementation coverage without a GPU or retrieval-quality claim.
