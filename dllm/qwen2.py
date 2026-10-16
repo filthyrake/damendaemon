@@ -20,7 +20,7 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 from .chat_template import compile_template
 
-from .tokenizer_metadata import read_tokenizer_config, read_generation_config
+from .tokenizer_metadata import read_tokenizer_config, read_generation_config, special_token_text
 from .config import decoder_config, eos_ids, read_config
 from .rotary import inverse_frequencies, attention_factor
 
@@ -222,7 +222,7 @@ class ModelWeights:
             and all(marker in template for marker in ('<tool_call>','</tool_call>','tool_calls','tools')))
         self.supports_tool_calls |= (c['model_type']=='gpt_oss' and isinstance(template,str)
             and all(marker in template for marker in ('functions.', '<|call|>', 'tool_calls', 'tools')))
-        self.special_tokens = {key: tokenizer_config.get(key) for key in ("bos_token", "eos_token")}
+        self.special_tokens = special_token_text(tokenizer_config)
 
     def finalize_weights(self, weights, prepared_scales=None):
         from .quantization import prepare

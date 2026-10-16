@@ -215,7 +215,7 @@ class Runtime:
             if action in ('unload', 'remove'):
                 self._cleanup_failed_owners()
             if action == 'register':
-                from .tokenizer_metadata import read_tokenizer_config
+                from .tokenizer_metadata import read_tokenizer_config, special_token_text
                 from tokenizers import Tokenizer
                 from .models import config as read_config, weight_bytes, is_gguf
                 from .model_path import canonical_model_path
@@ -241,6 +241,7 @@ class Runtime:
                         # Match loaders that actually consume checkpoint chat templates.
                         if (config.get('task') not in ('embedding','rerank')
                                 and config.get('model_type') not in ('mamba','mamba2','t5')):
+                            special_token_text(tokenizer_config)
                             checkpoint_template=tokenizer_config.get('chat_template')
                             template_file=candidate/'chat_template.jinja'
                             if checkpoint_template is None and template_file.exists():

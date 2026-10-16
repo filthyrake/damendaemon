@@ -37,3 +37,13 @@ class TokenizerMetadataTests(unittest.TestCase):
                             else:self.assertEqual(reader('metadata.json'),{})
                         read.assert_called_once_with(limit+1)
                     self.assertTrue(stream.closed)
+
+    def test_special_token_text_preserves_strings_and_absent_values(self):
+        from dllm.tokenizer_metadata import special_token_text
+        self.assertEqual(special_token_text({}),{'bos_token':None,'eos_token':None})
+        self.assertEqual(special_token_text({'bos_token':'','eos_token':{'content':'EOS','special':True}}),
+                         {'bos_token':'','eos_token':'EOS'})
+        for name in ('bos_token','eos_token'):
+            for value in ({}, {'content':None}, {'content':[]}, [], True, 4):
+                with self.subTest(name=name,value=value),self.assertRaises(ValueError):
+                    special_token_text({name:value})

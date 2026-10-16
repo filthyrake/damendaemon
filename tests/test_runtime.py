@@ -428,6 +428,25 @@ class RuntimeTests(unittest.TestCase):
                     self.assertEqual(runtime.model_ids(),[])
                     runtime.close()
 
+    def test_registration_rejects_invalid_structured_special_tokens(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from tokenizers import Tokenizer,models
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'config.json').write_text('{}')
+            Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
+            for value in ({}, {'content':None}, {'content':[]}, [], True, 4):
+                with self.subTest(value=value):
+                    runtime=Runtime({})
+                    (root/'tokenizer_config.json').write_text(json.dumps({'eos_token':value}))
+                    with patch('dllm.models.weight_bytes',return_value=100) as inventory:
+                        with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
+                            runtime.manage('register','bad',str(root))
+                        inventory.assert_not_called()
+                    self.assertEqual(runtime.model_ids(),[])
+                    runtime.close()
+
     def test_registration_does_not_compile_unused_chat_templates(self):
         import json
         import tempfile

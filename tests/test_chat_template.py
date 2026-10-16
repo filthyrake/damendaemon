@@ -38,3 +38,20 @@ class ChatTemplateTests(unittest.TestCase):
             with self.assertRaises(ValueError):read_override(file)
             file.write_bytes(b'\xff')
             with self.assertRaises(ValueError):read_override(file)
+
+    def test_checkpoint_structured_tokens_render_as_token_text(self):
+        from tokenizers import Tokenizer, models, pre_tokenizers
+        from dllm.qwen2 import ModelWeights
+        tokenizer = Tokenizer(models.WordLevel({'[UNK]':0,'BOS':1,'hello':2,'EOS':3},unk_token='[UNK]'))
+        tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
+        model = ModelWeights.__new__(ModelWeights)
+        model.config = {'model_type':'qwen2','vocab_size':4}
+        template = '{{ bos_token }} {{ messages[0]["content"] }} {{ eos_token }}'
+        for structured in (False,True):
+            with self.subTest(structured=structured):
+                metadata = {'bos_token':'BOS','eos_token':'EOS'}
+                if structured:
+                    metadata = {key:{'content':value,'lstrip':False,'special':True} for key,value in metadata.items()}
+                model.configure_tokenizer(tokenizer,template,metadata)
+                self.assertEqual(model.template.render(messages=[{'content':'hello'}],**model.special_tokens),'BOS hello EOS')
+                self.assertEqual(model.chat_tokens([{'role':'user','content':'hello'}]),[1,2,3])

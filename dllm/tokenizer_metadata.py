@@ -24,3 +24,18 @@ def read_tokenizer_config(path):
 
 def read_generation_config(path):
     return _read_object(path, MAX_GENERATION_CONFIG_BYTES)
+
+
+def special_token_text(metadata):
+    """Convert tokenizer AddedToken objects to the strings expected by Jinja."""
+    result = {}
+    for name in ('bos_token', 'eos_token'):
+        value = metadata.get(name)
+        if isinstance(value, dict):
+            value = value.get('content')
+            if not isinstance(value, str):
+                raise ValueError(f'{name} metadata requires text content')
+        elif value is not None and not isinstance(value, str):
+            raise ValueError(f'{name} must be text or structured token metadata')
+        result[name] = value
+    return result
