@@ -17,6 +17,16 @@ class SamplingTests(unittest.TestCase):
                     self.assertEqual(sampler.select(logits).item(),expected)
                     self.assertEqual(sample_rows(logits.unsqueeze(0),[sampler]),[expected])
 
+    def test_large_temperature_preserves_filtering_and_invalid_logits(self):
+        logits=torch.tensor([3e38,-3e38,-float('inf')])
+        for temperature in (3e38,1e39,1e300):
+            sampler=Sampler(Sampling(temperature,top_k=2,top_p=.95))
+            with self.subTest(temperature=temperature),patch.object(sampler.random,'random',return_value=.99):
+                self.assertEqual(sampler.select(logits).item(),1)
+            for values in ([0.,float('nan')],[0.,float('inf')],[-float('inf')]*2):
+                with self.subTest(temperature=temperature,values=values),self.assertRaises(RuntimeError):
+                    sampler.select(torch.tensor(values))
+
     def test_upper_endpoint_draw_never_selects_filtered_tokens(self):
         for options, logits in (
                 (Sampling(1, top_p=.5), torch.tensor([0., -10., -20.])),
