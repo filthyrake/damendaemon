@@ -16,13 +16,15 @@ def decoder_prefix(executor,prompt):
     return prompt
 
 
-def validate_raw(prompt):
+def validate_raw(prompt, *, max_length=None):
     if isinstance(prompt, str):
         try:
             prompt.encode('utf-8')
         except UnicodeError as error:
             raise ValueError('prompt must be valid UTF-8') from error
         return prompt
+    if isinstance(prompt, list) and max_length is not None and len(prompt)>max_length:
+        raise ValueError('raw prompt exceeds configured context')
     if isinstance(prompt, list) and prompt and all(type(token) is int and token >= 0 for token in prompt):
         return list(prompt)
     raise ValueError('prompt must be text or a nonempty list of token IDs')

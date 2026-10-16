@@ -186,7 +186,7 @@ class BatchedRuntime:
 
     def score(self,alias,prompt,candidate_token_ids):
         from .scoring import options
-        prompt,candidates=options(prompt,candidate_token_ids)
+        prompt,candidates=options(prompt,candidate_token_ids,max_length=self.context)
         if not isinstance(alias,str) or alias not in self.models:raise ValueError('unknown model')
         return self._submit({'action':'score','model':alias,'prompt':prompt,'candidate_token_ids':candidates})
 
@@ -251,7 +251,7 @@ class BatchedRuntime:
             raise ValueError('logprobs with custom text stops is not yet supported')
         if raw_prompt is not None:
             from .prompts import validate_raw
-            raw_prompt = validate_raw(raw_prompt)
+            raw_prompt = validate_raw(raw_prompt,max_length=self.context)
             if messages is not None or enable_thinking is not None or reasoning_effort is not None:
                 raise ValueError('raw prompts cannot include chat messages or template options')
         from .structured import prepare_options

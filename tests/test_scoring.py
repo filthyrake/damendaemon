@@ -11,6 +11,7 @@ from dllm.runtime import Runtime
 class ScoringTests(unittest.TestCase):
     def runtime(self, logits):
         runtime = Runtime.__new__(Runtime)
+        runtime.context=16
         self.session_released = False
         self.executor = SimpleNamespace(
             model=SimpleNamespace(raw_tokens=lambda _: [1, 2]), context=16,

@@ -470,7 +470,7 @@ class Runtime:
     def score(self,alias,prompt,candidate_token_ids):
         import torch
         from .scoring import options
-        prompt,candidates=options(prompt,candidate_token_ids)
+        prompt,candidates=options(prompt,candidate_token_ids,max_length=self.context)
         start=time.perf_counter()
         with self.session(alias) as (executor,tier,activation):
             if not hasattr(executor,'score_candidates'):
@@ -511,7 +511,7 @@ class Runtime:
             raise ValueError('max_tokens exceeds configured context')
         if raw_prompt is not None:
             from .prompts import validate_raw
-            raw_prompt = validate_raw(raw_prompt)
+            raw_prompt = validate_raw(raw_prompt,max_length=self.context)
         from .sampling import Sampling, Sampler
         from .stopping import stop_sequences, text_delta
         stops = stop_sequences(stop)

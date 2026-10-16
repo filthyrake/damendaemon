@@ -24,3 +24,27 @@ class OutputPreflightTests(unittest.TestCase):
             list(direct.generate('a',None,max_tokens=16,raw_prompt=[1]))
         with self.assertRaisesRegex(RuntimeError,'admission boundary'):
             list(scheduled.generate('a',None,max_tokens=16,raw_prompt=[1]))
+
+    def test_raw_prompt_limit_before_copy_or_ownership(self):
+        from dllm.prompts import validate_raw
+        direct=Runtime.__new__(Runtime);direct.context=16
+        direct.session=Mock(side_effect=RuntimeError('session boundary'))
+        scheduled=BatchedRuntime.__new__(BatchedRuntime);scheduled.context=16
+        scheduled.models={'a':'unused'}
+        scheduled.admission=Mock();scheduled.admission.acquire.side_effect=RuntimeError('admission boundary')
+        class Oversized(list):
+            def __iter__(self):raise AssertionError('oversized prompt iterated/copied')
+        prompt=Oversized([1]*17)
+        for runtime in (direct,scheduled):
+            with self.subTest(runtime=type(runtime).__name__),self.assertRaisesRegex(ValueError,'raw prompt exceeds'):
+                list(runtime.generate('a',None,max_tokens=1,raw_prompt=prompt))
+            with self.subTest(scoring=type(runtime).__name__),self.assertRaisesRegex(ValueError,'raw prompt exceeds'):
+                runtime.score('a',prompt,[1,2])
+        direct.session.assert_not_called();scheduled.admission.acquire.assert_not_called()
+        valid=[1]*16
+        copied=validate_raw(valid,max_length=16)
+        self.assertEqual(copied,valid);self.assertIsNot(copied,valid)
+        for runtime,boundary in ((direct,'session boundary'),(scheduled,'admission boundary')):
+            with self.assertRaisesRegex(RuntimeError,boundary):
+                list(runtime.generate('a',None,max_tokens=1,raw_prompt=valid))
+        self.assertEqual(validate_raw('long text',max_length=1),'long text')
