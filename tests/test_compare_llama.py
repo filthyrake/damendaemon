@@ -116,6 +116,30 @@ finally:
                     cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, timeout=10)
                 self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_response_budget_closes_stream_without_publishing(self):
+        probe = r"""
+import contextlib, io
+from unittest.mock import patch
+from scripts import compare_llama
+body = io.BytesIO(b': ping\n\n' * 20)
+output = io.StringIO()
+with patch('sys.argv', ['compare', 'http://unused.invalid', '--engine', 'dllm']), patch.object(compare_llama, 'urlopen', return_value=body), patch.object(compare_llama, 'MAX_RESPONSE_BYTES', 16, create=True), contextlib.redirect_stdout(output):
+    try:
+        compare_llama.main()
+    except ValueError as error:
+        if 'total byte limit' not in str(error):
+            raise AssertionError('wrong rejection') from error
+    else:
+        raise AssertionError('oversized stream accepted')
+if not body.closed or output.getvalue():
+    raise AssertionError('response leaked or report published')
+"""
+        for optimized in (False, True):
+            with self.subTest(optimized=optimized):
+                result = subprocess.run([sys.executable, *(['-O'] if optimized else []), '-c', probe],
+                    cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0, result.stderr)
+
     def run_case(self, case, optimized):
         return subprocess.run([sys.executable, *(['-O'] if optimized else []), '-c', HARNESS, case],
             cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, timeout=10)

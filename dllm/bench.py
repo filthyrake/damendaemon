@@ -75,22 +75,34 @@ class Result:
 
 def events(lines, *, max_line_bytes=MAX_SSE_LINE_BYTES,
            max_event_bytes=MAX_SSE_EVENT_BYTES, max_event_lines=MAX_SSE_EVENT_LINES,
-           require_terminated=False):
+           require_terminated=False, max_total_bytes=None):
     """Decode bounded SSE events, using bounded reads for HTTP/file responses.
 
     Iterable inputs are checked after delivery; their caller owns line allocation.
     Strict mode rejects pending data at EOF instead of emitting a partial event.
     Limits include wire delimiters and ignored fields. They bound parser storage,
-    not total stream duration or bytes across independently completed events.
+    not total stream duration. Optional max_total_bytes also bounds cumulative
+    wire bytes across events, including comments and delimiters.
     """
     if any(type(limit) is not int or limit < 1 for limit in
            (max_line_bytes, max_event_bytes, max_event_lines)):
         raise ValueError("invalid SSE parser bounds")
+    if max_total_bytes is not None and (type(max_total_bytes) is not int or max_total_bytes < 1):
+        raise ValueError("invalid SSE parser bounds")
+    total_bytes = 0
     reader = getattr(lines, 'readline', None)
-    source = iter(lambda: reader(max_line_bytes + 1), b'') if callable(reader) else iter(lines)
+    def read_line():
+        limit = max_line_bytes + 1
+        if max_total_bytes is not None:
+            limit = min(limit, max_total_bytes - total_bytes + 1)
+        return reader(limit)
+    source = iter(read_line, b'') if callable(reader) else iter(lines)
     data = []
     event_bytes = event_lines = 0
     for raw in source:
+        total_bytes += len(raw)
+        if max_total_bytes is not None and total_bytes > max_total_bytes:
+            raise ValueError("SSE total byte limit exceeded")
         if len(raw) > max_line_bytes:
             raise ValueError("SSE line byte limit exceeded")
         line = raw.decode("utf-8").rstrip("\r\n")

@@ -15,6 +15,8 @@ from dllm.bench import events, _response_json, _tool_call_output
 from dllm.token_workload import load_token_prompt
 
 
+MAX_RESPONSE_BYTES = 64 * 1024 * 1024
+
 def _score_count(logprobs, requested_top):
     """Count validated score records, never arbitrary container/string length."""
     if logprobs is None:
@@ -98,7 +100,7 @@ def main():
             error.close()
             raise RuntimeError(f"HTTP {error.code}") from None
         with response:
-            for data in events(response, require_terminated=True):
+            for data in events(response, require_terminated=True, max_total_bytes=MAX_RESPONSE_BYTES):
                 if data == "[DONE]":
                     if not finished:
                         raise ValueError('comparison stream ended without a completion finish')

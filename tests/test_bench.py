@@ -389,6 +389,23 @@ class BenchTests(unittest.TestCase):
         self.assertEqual(list(events(io.BytesIO(b': keepalive\n'),
                                     require_terminated=True)), [])
 
+    def test_sse_total_wire_budget_counts_delimiters_and_ignored_events(self):
+        for wire, expected in ((b'data: a\n\ndata: b\n\n', ['a', 'b']),
+                               (b': ping\r\n\r\nevent: ignored\n\n', []),
+                               ('data: é\n\n'.encode(), ['é'])):
+            with self.subTest(wire=wire):
+                self.assertEqual(list(events(io.BytesIO(wire), max_total_bytes=len(wire))), expected)
+                for source in (io.BytesIO(wire), wire.splitlines(keepends=True)):
+                    with self.assertRaisesRegex(ValueError, 'total byte limit'):
+                        list(events(source, max_total_bytes=len(wire)-1))
+        for invalid in (0, -1, True, 1.5, '20'):
+            with self.assertRaisesRegex(ValueError, 'invalid SSE'):
+                list(events([], max_total_bytes=invalid))
+        reader = io.BytesIO(b': ' + b'x' * 1000)
+        with self.assertRaisesRegex(ValueError, 'total byte limit'):
+            list(events(reader, max_total_bytes=16))
+        self.assertEqual(reader.tell(), 17)
+
     def test_sse_bounded_reads_and_line_rejection(self):
         class Reader(io.BytesIO):
             def readline(self, limit=-1):

@@ -270,3 +270,5 @@ Comparison token prompt files are read as bounded UTF-8 JSON arrays (16 MiB and 
 Reranker HTTP responses are capped at 1 MiB and decoded as strict UTF-8 JSON objects with duplicate fields and excessive nesting rejected. Non-null error envelopes fail even when valid-looking results accompany them. Result validation occurs inside the owned response context before measurements are recorded. Client timings include decoding and validation; these safeguards are not hardware performance evidence.
 
 Reranker engine selections must be unique and supported before setup. Single-engine collection is supported, but cross-engine agreement requires one `dllm` and one `vllm` report; same-engine or missing/unknown identities cannot qualify.
+
+The warm HTTP comparator caps each SSE response at 64 MiB of cumulative wire bytes, including comments, ignored fields and event delimiters. It rejects overflow before publishing a comparison and closes the response. This bounds accepted stream data and retained output, not elapsed time; the socket timeout remains an inactivity timeout. HTTP rejections are closed without reading diagnostic bodies and report only the status code.
