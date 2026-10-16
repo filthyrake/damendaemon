@@ -105,7 +105,7 @@ class _GlmIndexer:
                 raise ValueError('nonfinite GLM index query projection')
             ids,values=select_compressed(queries,keys,weights,positions[:,start:stop],ratio=1,top_k=top_k,
                                         query_chunk=query_chunk,key_chunk=key_chunk,
-                                        scale_head_weights=False,dot_scale=self.width**-.5)
+                                        scale_head_weights=False,dot_scale=self.width**-.5,validate_scores=True)
             selected[:,start:stop],scores[:,start:stop]=ids,values
         return selected,scores
 

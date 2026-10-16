@@ -64,6 +64,21 @@ class GlmIndexerTests(unittest.TestCase):
                 self.assertEqual(ids[b,s].tolist(),list(range(count))+[-1]*(3-count))
                 self.assertTrue(torch.isneginf(scores[b,s,count:]).all())
 
+    def test_finite_inputs_cannot_publish_overflowed_selection_scores(self):
+        weights={name:torch.ones_like(value) for name,value in self.weights.items()}
+        indexer=GlmIndexer(weights,rope_dim=4)
+        hidden=torch.ones(1,1,6)
+        positions=torch.zeros(1,1,dtype=torch.int64)
+        for sign in (-1,1):
+            with self.subTest(sign=sign),self.assertRaisesRegex(ValueError,'dot product'):
+                indexer.select(hidden,torch.full((1,1,5),1e20),
+                    torch.full((1,1,8),sign*1e20),positions,top_k=1)
+        # Dots remain finite, but multiplying by finite projected head weights
+        # overflows. This must not escape as a valid selected score either.
+        with self.assertRaisesRegex(ValueError,'indexer score'):
+            indexer.select(torch.full_like(hidden,1e20),torch.full((1,1,5),1e10),
+                torch.full((1,1,8),1e10),positions,top_k=1)
+
     def test_budget_and_input_rejection_before_projection(self):
         bounded=GlmIndexer(self.weights,rope_dim=4,max_output_bytes=1)
         with patch('dllm.glm_indexer.linear',side_effect=AssertionError('projection started')):
