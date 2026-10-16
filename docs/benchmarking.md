@@ -242,3 +242,9 @@ omitted; report filtering does not change the environment used by subprocesses.
 Benchmark comparator metadata and streaming JSON reject duplicate fields at every
 depth, so later keys cannot overwrite conflicting context, error or usage evidence.
 Existing response byte bounds and numerical acceptance checks still apply.
+
+Atomic report publication validates the completed temporary file against the
+64 MiB, duplicate-free JSON object reader contract before replacing earlier
+evidence. Invalid root values, key collisions introduced by JSON serialization,
+nonfinite values or oversized reports leave the previous file intact. This is
+atomic replacement, not an fsync or power-loss durability guarantee.

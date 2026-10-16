@@ -28,7 +28,7 @@ def load_report(path, *, max_bytes=MAX_REPORT_BYTES):
 
 
 def save_report(path, report):
-    """Replace only after a complete write; keep prior evidence on failure.
+    """Replace only after a complete, reader-valid write; preserve prior evidence.
 
     Unique same-directory temporaries also permit nested signal checkpoints.
     This provides atomic replacement, not fsync/power-loss durability.
@@ -43,6 +43,10 @@ def save_report(path, report):
             temporary = Path(output.name)
             json.dump(report, output, indent=2, allow_nan=False)
             output.write('\n')
+        # JSON serialization can turn distinct Python keys into duplicate JSON
+        # fields. Validate the actual bytes, including root and reader budget,
+        # before replacing evidence that downstream tools can still consume.
+        load_report(temporary, max_bytes=MAX_REPORT_BYTES)
         temporary.replace(path)
     finally:
         if temporary is not None:

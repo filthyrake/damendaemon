@@ -1,4 +1,4 @@
-"""Nonfinite measurements must not replace prior JSON evidence."""
+"""Only bounded, readable JSON reports may replace prior evidence."""
 import json
 from pathlib import Path
 import sys
@@ -20,11 +20,37 @@ class ReportIOTests(unittest.TestCase):
                     self.assertEqual(path.read_bytes(), previous)
                     self.assertEqual(list(Path(directory).iterdir()), [path])
 
+    def test_unreadable_reports_never_replace_previous_evidence(self):
+        from unittest.mock import patch
+        from dllm.report_io import load_report
+        invalid=(None,[],[{'passed':True}],True,1,'text',
+                 {'metrics':{'1':0,1:1}}, {'metrics':{'null':0,None:1}},
+                 {'text':'x'*256})
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'report.json'
+            for report in invalid:
+                with self.subTest(report=report):
+                    save_report(path,{'passed':False,'phase':'previous'})
+                    previous=path.read_bytes()
+                    with patch('dllm.report_io.MAX_REPORT_BYTES',128):
+                        with self.assertRaises(ValueError):save_report(path,report)
+                    self.assertEqual(path.read_bytes(),previous)
+                    self.assertEqual(load_report(path),{'passed':False,'phase':'previous'})
+                    self.assertEqual(list(Path(directory).iterdir()),[path])
+
+    def test_unambiguous_integer_keys_and_nested_arrays_remain_readable(self):
+        from dllm.report_io import load_report
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'report.json'
+            save_report(path,{'cases':{1:[None,True,{'value':3}]}})
+            self.assertEqual(load_report(path),{'cases':{'1':[None,True,{'value':3}]}})
+
     def test_invalid_first_report_is_not_published(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'report.json'
-            with self.assertRaises(ValueError): save_report(path, {'value': float('nan')})
-            self.assertEqual(list(Path(directory).iterdir()), [])
+            for report in ({'value':float('nan')},None,[],{'1':False,1:True}):
+                with self.subTest(report=report),self.assertRaises(ValueError):save_report(path,report)
+                self.assertEqual(list(Path(directory).iterdir()), [])
 
     def test_finite_null_and_text_evidence_remains_compatible(self):
         report = {'missing': None, 'zero': 0, 'max': sys.float_info.max,
