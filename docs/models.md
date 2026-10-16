@@ -479,7 +479,10 @@ Previously emitted deltas remain partial output when a later chunk fails.
 
 `dllm.deepseek_generation.ReferenceGenerator` connects the prepared CPU model
 and text adapter for bounded greedy reference generation. ByteLevel tokens decode
-incrementally, including split UTF-8 sequences, before channel parsing. EOS and
+incrementally, including split UTF-8 sequences and ordinary non-special added
+tokens, before channel parsing. Byte-alphabet mapping and whole-piece literal
+UTF-8 fallback match the CPU tokenizer; special added controls still require
+explicit admission. EOS and
 length completion release the cache before the final result; closing an abandoned
 iterator also releases it. Failed cleanup stays owned and must succeed before
 another prefill. Tests cover scripted failure paths and actual synthetic packed
