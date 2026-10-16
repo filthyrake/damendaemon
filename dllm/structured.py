@@ -68,6 +68,8 @@ def response_schema(value):
             if not isinstance(values, list) or ('enum' in node and not values) or ('enum' in node and 'const' in node):
                 raise ValueError('invalid enum or const')
             for item in values:
+                if type(item) is int and not -(2**63)<=item<2**63:
+                    raise ValueError('schema integer literals must fit signed 64-bit range')
                 valid = {'string': isinstance(item,str), 'integer': type(item) is int,
                          'number': type(item) in (int,float) and (type(item) is int or math.isfinite(item)),
                          'boolean': type(item) is bool, 'null': item is None}[kind]

@@ -1,4 +1,5 @@
 import json
+import importlib.util
 import unittest
 import torch
 from dllm.structured import response_schema, prepare_options
@@ -46,6 +47,33 @@ class StructuredTests(unittest.TestCase):
         encoded=response_schema(format_for(valid))
         self.assertEqual(encoded,json.dumps(valid,allow_nan=False))
         self.assertEqual(json.loads(encoded),valid)
+
+    def test_integer_schema_literals_must_fit_compiler_exact_range(self):
+        for kind in ('integer','number'):
+            for field in ('const','enum'):
+                for value in (-(2**63)-1,2**63,2**63+1,10**100):
+                    schema={'type':kind,field:[value] if field=='enum' else value}
+                    with self.subTest(schema=schema),self.assertRaises(ValueError):
+                        response_schema(format_for(schema))
+                for value in (-(2**63),2**53+1,2**63-1):
+                    schema={'type':kind,field:[value] if field=='enum' else value}
+                    self.assertEqual(json.loads(response_schema(format_for(schema))),schema)
+        self.assertEqual(json.loads(response_schema(format_for({'type':'number','const':1e308})))['const'],1e308)
+        self.assertEqual(json.loads(response_schema(format_for({'type':'integer'}))),{'type':'integer'})
+
+    @unittest.skipUnless(importlib.util.find_spec('xgrammar'),'optional xgrammar is not installed')
+    def test_supported_integer_literals_match_exactly_in_cpu_compiler(self):
+        import xgrammar as xgr
+        info=xgr.TokenizerInfo([bytes([i]) for i in range(256)]+[b''],
+                              vocab_type=xgr.VocabType.RAW,stop_token_ids=[256])
+        compiler=xgr.GrammarCompiler(info,max_threads=1)
+        for kind in ('integer','number'):
+            for value in (-(2**63),2**53+1,2**63-1):
+                with self.subTest(kind=kind,value=value):
+                    encoded=response_schema(format_for({'type':kind,'const':value}))
+                    matcher=xgr.GrammarMatcher(compiler.compile_json_schema(encoded))
+                    self.assertTrue(matcher.accept_string(str(value)))
+                    self.assertTrue(matcher.accept_token(256))
 
     def test_incompatible_options(self):
         fmt={'type':'json_object'}
