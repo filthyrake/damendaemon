@@ -25,12 +25,14 @@ class ByteLevelStream:
     def feed(self,token):
         if token in getattr(self.tokenizer, "suppressed_token_ids", ()):
             return ""
-        if token in self.added and self.added[token].special:
-            value=self.added[token].content
-            if value not in self.allowed:raise ValueError('unsupported generated added/control token')
-            decoded=self.utf8.decode(b'',final=True)+value
-            self.utf8.reset()
-            return decoded
+        if token in self.added:
+            added=self.added[token];value=added.content
+            if added.special and value not in self.allowed:
+                raise ValueError('unsupported generated added/control token')
+            if added.special or token in getattr(self.tokenizer,'_literal_tokens',{}):
+                decoded=self.utf8.decode(b'',final=True)+value
+                self.utf8.reset()
+                return decoded
         value=self.tokenizer.id_to_token(token)
         if not isinstance(value,str):raise ValueError('invalid ByteLevel vocabulary token')
         try:raw=bytes(BYTE_VALUES[char] for char in value)
