@@ -18,7 +18,8 @@ for count in (1,4,16,64):
         report['rows'].append({'pairs_per_request':count,'concurrency':concurrency,
             'trials':[{'warmup':index==0,'requests':[deepcopy(request) for _ in range(concurrency)]}
                       for index in range(6)]})
-other=deepcopy(report)
+report['engine']='dllm'
+other=deepcopy(report);other['engine']='vllm'
 request=report['rows'][2]['trials'][-1]['requests'][0]
 results=other['rows'][2]['trials'][0]['requests'][0]['results']
 if case in ('nan','inf','bool-score','text-score','huge-score'):
@@ -48,6 +49,11 @@ for value in (report,other):
     if case=='boolean-concurrency':value['rows'][0]['concurrency']=True
     if case=='nonobject-row':value['rows'][0]=[]
     if case=='nonobject-trial':value['rows'][0]['trials'][0]=[]
+if case=='same-engine':other['engine']='dllm'
+if case=='missing-engine':other.pop('engine')
+if case=='unknown-engine':other['engine']='llama.cpp'
+if case=='invalid-engine':other['engine']=[]
+if case=='reversed-engines':report,other=other,report
 result=compare_reports(report,other)
 assert result['passed'] is True and result['requests_checked']==240
 print('passed')
@@ -84,6 +90,41 @@ class RerankComparisonTests(unittest.TestCase):
         result=self.run_case('valid')
         self.assertEqual(result.returncode,0,result.stderr)
         self.assertEqual(result.stdout,'passed\n')
+
+    def test_cross_engine_identity_is_required(self):
+        for case in ('same-engine','missing-engine','unknown-engine','invalid-engine'):
+            with self.subTest(case=case):
+                result=self.run_case(case)
+                self.assertNotEqual(result.returncode,0)
+                self.assertEqual(result.stdout,'')
+                self.assertIn('ValueError',result.stderr)
+        result=self.run_case('reversed-engines')
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    def test_engine_selection_precedes_workspace_access(self):
+        script=r'''
+import io
+from unittest.mock import patch
+from contextlib import redirect_stderr
+from scripts import compare_rerank_a2 as comparator
+for engines in (['dllm','dllm'],['dllm','unknown'],['unknown']):
+    with patch('sys.argv',['compare','fixture','--engines',*engines]),redirect_stderr(io.StringIO()), \
+            patch.dict(comparator.os.environ,CUDA_VISIBLE_DEVICES='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'), \
+            patch.object(comparator.Path,'cwd',side_effect=AssertionError('workspace accessed')):
+        try:comparator.main()
+        except SystemExit as error:assert error.code==2
+        else:raise AssertionError('invalid engine selection accepted')
+for engines in (['dllm'],['vllm'],['dllm','vllm'],['vllm','dllm']):
+    with patch('sys.argv',['compare','fixture','--engines',*engines]), \
+            patch.dict(comparator.os.environ,CUDA_VISIBLE_DEVICES='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'), \
+            patch.object(comparator.Path,'cwd',side_effect=RuntimeError('workspace boundary')):
+        try:comparator.main()
+        except RuntimeError as error:assert str(error)=='workspace boundary'
+        else:raise AssertionError('valid options did not reach boundary')
+'''
+        result=subprocess.run([sys.executable,'-S','-c',script],cwd=Path(__file__).resolve().parents[1],
+                              capture_output=True,text=True,timeout=10)
+        self.assertEqual(result.returncode,0,result.stderr)
 
     def test_bounded_strict_response_reader(self):
         script=r'''

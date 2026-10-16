@@ -74,7 +74,8 @@ def _read_response(source,count):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--engines',nargs='+',default=['dllm','vllm']);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--engines',nargs='+',choices=('dllm','vllm'),default=['dllm','vllm']);args=p.parse_args()
+    if len(set(args.engines))!=len(args.engines):p.error('engines must be distinct')
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
         raise RuntimeError('restricted to the authorized A2')
     root=Path.cwd();reports=[]
@@ -157,6 +158,9 @@ def main():
 def compare_reports(left,right):
     """Check every trial/request, including warmups, by original document index."""
     _coverage(left);_coverage(right)
+    engines=(left.get('engine'),right.get('engine'))
+    if any(not isinstance(engine,str) for engine in engines) or set(engines)!={'dllm','vllm'}:
+        raise ValueError('rerank agreement requires distinct dllm and vllm reports')
     assert left['query']==right['query'] and left['base_documents']==right['base_documents']
     assert left['model']==right['model'] and left['precision']==right['precision']
     assert left['gpu_uuid']==right['gpu_uuid']

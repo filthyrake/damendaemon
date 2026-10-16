@@ -268,3 +268,5 @@ The isolated A2 comparison runner validates options before workspace reads or en
 Comparison token prompt files are read as bounded UTF-8 JSON arrays (16 MiB and 1,048,576 tokens maximum) of nonnegative integer IDs. The A2 runner checks prompt plus requested output against context before workspace reads or engine startup; the HTTP comparator validates the file before requests. This preflight does not freeze a file against subsequent caller edits or validate IDs against a model vocabulary.
 
 Reranker HTTP responses are capped at 1 MiB and decoded as strict UTF-8 JSON objects with duplicate fields and excessive nesting rejected. Non-null error envelopes fail even when valid-looking results accompany them. Result validation occurs inside the owned response context before measurements are recorded. Client timings include decoding and validation; these safeguards are not hardware performance evidence.
+
+Reranker engine selections must be unique and supported before setup. Single-engine collection is supported, but cross-engine agreement requires one `dllm` and one `vllm` report; same-engine or missing/unknown identities cannot qualify.
