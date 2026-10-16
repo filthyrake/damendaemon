@@ -76,6 +76,7 @@ class TokenObservationTests(unittest.TestCase):
         from unittest.mock import Mock
         from dllm.runtime import Runtime
         runtime = object.__new__(Runtime)
+        runtime.context = 4  # Admission preflight reads the configured context.
         model = SimpleNamespace(eos={9}, quantization='none', config={'model_type': 'qwen3'},
                                 tokenizer=SimpleNamespace(decode=lambda *a, **k: ''))
         executor = SimpleNamespace(model=model, kernel_backend='fixture', residual_dtype='float32',
@@ -87,7 +88,7 @@ class TokenObservationTests(unittest.TestCase):
         with patch('dllm.sampling.Sampler', return_value=sampler), \
                 patch('dllm.prompts.encode', return_value=[1]), patch('dllm.prompts.validate_lengths'), \
                 patch('dllm.runtime.time.perf_counter', side_effect=lambda: now[0]):
-            stream = runtime.generate('a', [], 2, raw_prompt=[1])
+            stream = runtime.generate('a', None, 2, raw_prompt=[1])
             self.assertEqual(next(stream)['token'], 1)
             now[0] = 14  # Consumer resumes four seconds later.
             self.assertEqual(next(stream)['token'], 9)

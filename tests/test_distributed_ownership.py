@@ -62,5 +62,12 @@ class OwnershipTests(RuntimeHelpers,unittest.TestCase):
         with patch.object(pair,'step',side_effect=RuntimeError('primary dispatch')),patch.object(pair,'release',side_effect=RuntimeError('secondary release')):
             with self.assertRaisesRegex(RuntimeError,'primary dispatch') as error:runtime.run()
         self.assertIn('slot release failed',' '.join(error.exception.__notes__))
-        self.assertIs(runtime.failure,error.exception);self.assertFalse(runtime.execution_lock.locked())
+        # Status stores a detached snapshot (no worker frames retained); the
+        # caller's raised exception keeps its own traceback and the note.
+        self.assertEqual(type(runtime.failure),type(error.exception))
+        self.assertEqual(str(runtime.failure),str(error.exception))
+        self.assertIn('slot release failed',' '.join(runtime.failure.__notes__))
+        self.assertIsNone(runtime.failure.__traceback__)
+        self.assertIsNot(runtime.failure,error.exception)
+        self.assertFalse(runtime.execution_lock.locked())
         self.assertIsInstance(request.events.get_nowait(),RuntimeError)
