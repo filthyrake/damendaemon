@@ -177,3 +177,7 @@ both prefix flags. Each vocabulary includes an UNUSED piece. Prompt and explicit
 decode sequences cover leading literal spaces, normal/literal adjacency, hidden
 controls, suppression and partial UTF-8. Full/generated/batch decoding and
 serialization match the pinned reference; 79 affected CPU tests passed locally.
+
+## CPU grammar qualification (#389, #390)
+
+The earlier structured-output restriction is superseded by explicit RAW generated-byte vocabularies. Actual pinned xgrammar matcher/mask tests cover literal Unicode, byte fragments, UNUSED suppression and positional SentencePiece, including serialization and prefix settings. Hidden pieces stay excluded while explicit EOS IDs terminate valid JSON. Encoding tie-breaking is independent of generated-byte matching. No GPU inference or performance is qualified by these tests.

@@ -130,9 +130,6 @@ class SentencePieceGgufTests(unittest.TestCase):
             for text in ('  abc ', 'café 👋', 'a\x00b'):
                 self.assertEqual(candidate.decode(candidate.encode(text, add_special_tokens=False).ids), text)
         self.assertEqual(result.decode(result.encode('<user>abc', add_special_tokens=False).ids), '<user> abc')
-        from dllm.structured import Constraint
-        with self.assertRaisesRegex(ValueError, 'positional SentencePiece'):
-            Constraint(SimpleNamespace(tokenizer=result), '{}')
         source['tokenizer.ggml.add_space_prefix'] = False
         source['tokenizer.ggml.add_bos_token'] = False
         source['tokenizer.ggml.add_eos_token'] = True
@@ -197,7 +194,6 @@ class SentencePieceGgufTests(unittest.TestCase):
     def test_unused_reference_matrix_and_roundtrip(self):
         from dllm.gguf_sentencepiece import restore_tokenizer
         from dllm.logprobs import TokenText
-        from dllm.structured import Constraint
         fixture = json.loads((Path(__file__).parent / 'fixtures/sentencepiece-unused.json').read_text())
         for case in fixture['cases']:
             source = metadata()
@@ -213,8 +209,6 @@ class SentencePieceGgufTests(unittest.TestCase):
             for candidate in (result, restore_tokenizer(result.to_str())):
                 for index in unused:
                     self.assertEqual(TokenText(candidate).token(index), ('', ()))
-                with self.assertRaisesRegex(ValueError, 'suppressed GGUF'):
-                    Constraint(SimpleNamespace(tokenizer=candidate), '{}')
                 for sample in case['samples']:
                     with self.subTest(unused=unused, tied=case['tied'], prefix=case['prefix'], sample=sample):
                         expected = sample['expected']

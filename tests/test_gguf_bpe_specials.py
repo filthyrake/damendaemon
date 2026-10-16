@@ -47,10 +47,8 @@ class BpeSpecialTests(unittest.TestCase):
                             self.assertEqual(''.join(stream.feed(i) for i in ids if i not in hidden) + stream.finish(), expected)
 
     def test_unused_independent_reference_and_stream(self):
-        from types import SimpleNamespace
         from dllm.bytelevel_stream import ByteLevelStream
         from dllm.logprobs import TokenText
-        from dllm.structured import Constraint
         from tests.reference.generate_gguf_bpe_unused import metadata as unused_metadata
         fixture = json.loads((Path(__file__).parent / 'fixtures/gguf-bpe-unused.json').read_text())
         for case in fixture['cases']:
@@ -59,8 +57,6 @@ class BpeSpecialTests(unittest.TestCase):
             for candidate in (original, restore_tokenizer(original.to_str())):
                 for index in case['unused']:
                     self.assertEqual(TokenText(candidate).token(index), ('', ()))
-                with self.assertRaisesRegex(ValueError, 'suppressed GGUF'):
-                    Constraint(SimpleNamespace(tokenizer=candidate), '{}')
                 for sample in case['samples']:
                     with self.subTest(pre=case['pre'], unused=case['unused'], eos=case['eos'], sample=sample):
                         ids = candidate.encode(sample['text'], add_special_tokens=sample['add_special']).ids
