@@ -16,6 +16,7 @@ import weakref
 
 import torch
 from dllm.bench import events
+from scripts.validation_stream import consume_nonterminal_prefix
 from dllm.models import load
 from dllm.prompts import decode_output
 from dllm.runtime import make_executor, require_gpu
@@ -181,9 +182,7 @@ def main():
                         for response in pool.map(lambda _: request('/v1/chat/completions', chat()), range(2)):
                             check(response)
                     with post('/v1/chat/completions', chat(stream=True)) as response:
-                        stream = events(response, require_terminated=True)
-                        next(stream)
-                        next(stream)
+                        consume_nonterminal_prefix(response)
                     check(request('/v1/chat/completions', chat()))
                     for alias in ('awq', 'alternate'):
                         status = request('/v1/models/unload', dict(model=alias, release_host=True))

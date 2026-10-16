@@ -19,6 +19,7 @@ from urllib.error import HTTPError
 
 import torch
 from dllm.bench import events
+from scripts.validation_stream import consume_nonterminal_prefix
 from dllm.device import empty_cache, device_name
 from dllm.gguf_model import GgufWeights
 from dllm.qwen2 import ModelWeights
@@ -159,7 +160,7 @@ def main():
                     concurrent = list(pool.map(lambda _: request('/v1/chat/completions', chat()), range(2)))
                 require_gate(all(r['choices'][0]['message']['content'] == expected for r in concurrent), 'concurrent output differs')
                 with post('/v1/chat/completions', chat(stream=True)) as response:
-                    stream = events(response, require_terminated=True); next(stream); next(stream)
+                    consume_nonterminal_prefix(response)
                 require_gate(request('/v1/chat/completions', chat())['choices'][0]['message']['content'] == expected, 'cancellation recovery changed output')
                 boundary_checks = []
                 for ids in boundary_prompts:

@@ -12,6 +12,7 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from dllm.bench import events
+from scripts.validation_stream import consume_nonterminal_prefix
 
 
 def main():
@@ -83,9 +84,7 @@ def main():
                     assert reasoning['choices'][0]['message']['content']
                     assert nonthinking['choices'][0]['message']['content']
                     with post('new', stream=True, max_tokens=128) as response:
-                        stream = events(response, require_terminated=True)
-                        next(stream)
-                        next(stream)
+                        consume_nonterminal_prefix(response)
                     assert request('llama')['choices'][0]['message']['content'] == baselines['llama']
                     try:
                         post('llama', chat_template_kwargs={'enable_thinking':False}).close()

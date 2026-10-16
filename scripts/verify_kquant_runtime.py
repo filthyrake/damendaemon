@@ -17,6 +17,7 @@ import torch
 from gguf import GGMLQuantizationType, GGML_QUANT_SIZES
 from gguf.quants import dequantize
 from dllm.bench import events
+from scripts.validation_stream import consume_nonterminal_prefix
 from dllm.device import device_name, empty_cache
 from dllm.gguf_model import GgufWeights
 from dllm.runtime import require_gpu, make_executor
@@ -136,7 +137,7 @@ def main():
         with ThreadPoolExecutor(4) as pool:
             concurrent=list(pool.map(lambda _:request('/v1/chat/completions',chat()),range(4)))
         require_gate(all(r['choices'][0]['message']['content']==expected for r in concurrent), 'concurrent chat output differs')
-        with post('/v1/chat/completions',chat(stream=True)) as response:next(events(response, require_terminated=True))
+        with post('/v1/chat/completions',chat(stream=True)) as response:consume_nonterminal_prefix(response, count=1)
         require_gate(request('/v1/chat/completions',chat())['choices'][0]['message']['content']==expected, 'chat changed after cancellation')
         request('/v1/models/unload',dict(model='packed'))
         restored=request('/v1/chat/completions',chat())

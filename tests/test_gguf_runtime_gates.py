@@ -49,7 +49,10 @@ def response(request,**kwargs):
                  'usage':{'prompt_tokens':1,'completion_tokens':count},'dllm_timing':{'source_tier':tier}}
     if body.get('stream'):
         text='wrong' if case=='stream-text' else '1'*body['max_tokens']
-        wire='data: '+json.dumps({'choices':[{'delta':{'content':text},'text':text}]})+'\n\n'
+        parts=[text] if case=='cancel-done' and n==8 else [text[:1],text[1:]]
+        wire=''.join('data: '+json.dumps({'choices':[{'delta':{'content':part},'text':part,
+            'finish_reason':'stop' if case=='cancel-finished' and n==8 else None}]})+'\n\n' for part in parts)
+        if case=='cancel-empty' and n==8:wire=''
         if case!='no-done':wire+='data: [DONE]\n\n'
         raw=io.BytesIO(wire.encode())
     else:raw=io.BytesIO(json.dumps(payload).encode())
@@ -75,7 +78,7 @@ class GgufRuntimeGateTests(unittest.TestCase):
         for optimized in (False,True):
             for case in ('weights','scales','numerical','graph','http-text','http-usage',
                          'host-tier','stream-text','no-done','concurrent','recovery',
-                         'unload-bytes','unload-residency','disk-text','disk-tier'):
+                         'unload-bytes','unload-residency','disk-text','disk-tier','cancel-done','cancel-finished','cancel-empty'):
                 with self.subTest(case=case,optimized=optimized):
                     result=self.run_case(case,optimized)
                     self.assertNotEqual(result.returncode,0,result.stdout)
