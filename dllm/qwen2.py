@@ -137,7 +137,8 @@ class ModelWeights:
         self.eos = eos_ids(c.get('eos_token_id'))
         generation = self.path / "generation_config.json"
         if generation.exists():
-            self.eos.update(eos_ids(read_generation_config(generation).get('eos_token_id')))
+            saved=read_generation_config(generation)
+            if 'eos_token_id' in saved:self.eos=eos_ids(saved['eos_token_id'])
         if not self.eos:
             raise ValueError('model needs at least one EOS token ID')
         if any(token >= c['vocab_size'] for token in self.eos):

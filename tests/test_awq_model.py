@@ -166,3 +166,14 @@ class AwqModelTests(unittest.TestCase):
             (path/'config.json').write_text(json.dumps(c))
             with self.assertRaisesRegex(ValueError, 'Qwen2'):
                 config(path)
+
+    def test_saved_eos_replaces_model_defaults(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory);fixture(path)
+            generation=path/'generation_config.json'
+            for saved,expected in (({'eos_token_id':2},{2}),({'eos_token_id':[2,3]},{2,3}),({}, {1})):
+                generation.write_text(json.dumps(saved))
+                with self.subTest(saved=saved):self.assertEqual(AwqWeights(path,64,'none').eos,expected)
+            for bad in (None,[],True,-1,32,4):
+                generation.write_text(json.dumps({'eos_token_id':bad}))
+                with self.subTest(bad=bad),self.assertRaises(ValueError):AwqWeights(path,64,'none')

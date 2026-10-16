@@ -160,7 +160,8 @@ class AwqWeights(ModelWeights):
                                  tool_template=checkpoint_template(self.path, tokenizer_config, tools=True))
         self.eos = eos_ids(c.get('eos_token_id'))
         if (self.path/'generation_config.json').exists():
-            self.eos.update(eos_ids(read_generation_config(self.path/'generation_config.json').get('eos_token_id')))
+            saved=read_generation_config(self.path/'generation_config.json')
+            if 'eos_token_id' in saved:self.eos=eos_ids(saved['eos_token_id'])
         if not self.eos or any(token >= c['vocab_size'] for token in self.eos):
             raise ValueError('invalid AWQ EOS token IDs')
         vocabulary = tokenizer.get_vocab()
