@@ -148,6 +148,35 @@ class EncoderConfigTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'lowercase'):
                     config(self.root)
 
+    def test_compact_mean_pooling_and_published_module_aliases(self):
+        expected = config(self.root)
+        path = self.root/'1_Pooling/config.json'
+        legacy = json.loads(path.read_text())
+        aliases = ['sentence_transformers.base.modules.transformer.Transformer',
+                   'sentence_transformers.sentence_transformer.modules.pooling.Pooling',
+                   'sentence_transformers.base.modules.normalize.Normalize']
+        for module, name in zip(self.modules, aliases):
+            module['type'] = name
+        self.write()
+        compact = {'embedding_dimension':8, 'pooling_mode':'mean', 'include_prompt':True}
+        for pooling in (legacy, compact, {'embedding_dimension':8, 'pooling_mode':'mean'}):
+            with self.subTest(pooling=pooling):
+                path.write_text(json.dumps(pooling))
+                self.assertEqual(config(self.root), expected)
+        for changes in ({'embedding_dimension':8.0}, {'embedding_dimension':True},
+                        {'pooling_mode':'cls'}, {'pooling_mode':['mean', 'max']},
+                        {'include_prompt':False}, {'include_prompt':1},
+                        {'pooling_mode_mean_tokens':True}, {'unknown':False}):
+            with self.subTest(changes=changes):
+                path.write_text(json.dumps({**compact, **changes}))
+                with self.assertRaisesRegex(ValueError, 'mean pooling'):
+                    config(self.root)
+        path.write_text(json.dumps(compact))
+        self.modules[1]['type'] = 'untrusted.modules.pooling.Pooling'
+        self.write()
+        with self.assertRaisesRegex(ValueError, 'pipeline'):
+            config(self.root)
+
     def test_equivalent_serialized_pooling_defaults_are_supported(self):
         # Sentence Transformers v3.4.1 Pooling.config_keys/save includes these
         # defaults even when only masked mean pooling is enabled.

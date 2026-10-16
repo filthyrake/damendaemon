@@ -14,7 +14,7 @@ from dllm.encoder import EncoderWeights, EncoderExecutor
 
 
 class EncoderCPUReferenceTests(unittest.TestCase):
-    def check_family(self, family, task):
+    def check_family(self, family, task, *, compact=False):
         cls = XLMRobertaConfig if family == 'xlm-roberta' else BertConfig
         c = cls(vocab_size=32, hidden_size=8, intermediate_size=16,
                 num_hidden_layers=2, num_attention_heads=2,
@@ -43,6 +43,17 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                     'pooling_mode_mean_tokens':True, 'pooling_mode_max_tokens':False,
                     'pooling_mode_mean_sqrt_len_tokens':False}))
                 (root/'sentence_bert_config.json').write_text('{"max_seq_length":32}')
+                if compact:
+                    aliases = ['sentence_transformers.base.modules.transformer.Transformer',
+                               'sentence_transformers.sentence_transformer.modules.pooling.Pooling',
+                               'sentence_transformers.base.modules.normalize.Normalize']
+                    modules = json.loads((root/'modules.json').read_text())
+                    for module, alias in zip(modules, aliases):
+                        module['type'] = alias
+                    (root/'modules.json').write_text(json.dumps(modules))
+                    (root/'1_Pooling/config.json').write_text(json.dumps({
+                        'embedding_dimension':8, 'pooling_mode':'mean', 'include_prompt':True}))
+
             model = EncoderWeights(root, 32)
             # Replace device admission only. Actual loading, tensor operations,
             # padding, positions, attention and task heads run unmocked on CPU.
@@ -78,6 +89,9 @@ class EncoderCPUReferenceTests(unittest.TestCase):
 
     def test_bert_mean_pooling(self):
         self.check_family('bert', 'embedding')
+
+    def test_compact_bert_mean_pooling(self):
+        self.check_family('bert', 'embedding', compact=True)
 
     def test_bert_reranking(self):
         self.check_family('bert', 'rerank')

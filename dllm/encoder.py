@@ -46,9 +46,13 @@ def config(path):
     if len(raw) > 1024 * 1024:
         raise ValueError('encoder module metadata exceeds 1 MiB')
     modules = parse_metadata_json(raw.decode('utf-8'))
-    kinds = ['Transformer','Pooling','Normalize']
+    kinds = [
+        ('sentence_transformers.models.Transformer', 'sentence_transformers.base.modules.transformer.Transformer'),
+        ('sentence_transformers.models.Pooling', 'sentence_transformers.sentence_transformer.modules.pooling.Pooling'),
+        ('sentence_transformers.models.Normalize', 'sentence_transformers.base.modules.normalize.Normalize'),
+    ]
     if (not isinstance(modules,list) or len(modules) != 3
-            or any(not isinstance(m,dict) or m.get('type') != 'sentence_transformers.models.'+kind
+            or any(not isinstance(m,dict) or m.get('type') not in kind
                    for m,kind in zip(modules,kinds)) or modules[0].get('path') != ''):
         raise ValueError('supported encoder pipeline is Transformer, mean Pooling, Normalize')
     if not isinstance(modules[1].get('path'),str):
@@ -57,15 +61,19 @@ def config(path):
     if pooling_path.is_absolute() or '..' in pooling_path.parts or not pooling_path.parts:
         raise ValueError('invalid pooling module path')
     pooling = read_config(path/pooling_path/'config.json')
-    expected = {'word_embedding_dimension': c['hidden_size'], 'pooling_mode_cls_token': False,
-                'pooling_mode_mean_tokens': True, 'pooling_mode_max_tokens': False,
-                'pooling_mode_mean_sqrt_len_tokens': False}
-    # Newer legacy serializers write these equivalent defaults explicitly.
-    # Do not silently admit weighted/last-token pooling or prompt exclusion.
-    defaults = {'pooling_mode_weightedmean_tokens':False,
-                'pooling_mode_lasttoken':False, 'include_prompt':True}
-    expected.update(defaults)
-    pooling = {**defaults, **pooling}
+    if 'embedding_dimension' in pooling or 'pooling_mode' in pooling:
+        expected = {'embedding_dimension':c['hidden_size'], 'pooling_mode':'mean', 'include_prompt':True}
+        pooling = {'include_prompt':True, **pooling}
+    else:
+        expected = {'word_embedding_dimension': c['hidden_size'], 'pooling_mode_cls_token': False,
+                    'pooling_mode_mean_tokens': True, 'pooling_mode_max_tokens': False,
+                    'pooling_mode_mean_sqrt_len_tokens': False}
+        # Newer legacy serializers write these equivalent defaults explicitly.
+        # Do not silently admit weighted/last-token pooling or prompt exclusion.
+        defaults = {'pooling_mode_weightedmean_tokens':False,
+                    'pooling_mode_lasttoken':False, 'include_prompt':True}
+        expected.update(defaults)
+        pooling = {**defaults, **pooling}
     if pooling != expected or any(type(pooling[k]) is not type(v) for k,v in expected.items()):
         raise ValueError('only declared masked mean pooling is supported')
     sentence = read_config(path/'sentence_bert_config.json')

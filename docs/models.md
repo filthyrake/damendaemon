@@ -832,3 +832,12 @@ including normalization of the legacy `type` field to `rope_type`. Accepted
 linear schedules therefore reach frequency construction without a missing-key
 error, and later mutation of the source metadata cannot alter the parsed
 schedule. Existing unsupported-schedule restrictions remain in force.
+
+Equivalent BERT mean-pooling checkpoints saved by Sentence Transformers 5.4
+are supported: the published Transformer/Pooling/Normalize module aliases and
+compact `embedding_dimension`, `pooling_mode="mean"`, `include_prompt=true`
+configuration map to the same native pipeline. See the
+[pinned pooling schema](https://github.com/huggingface/sentence-transformers/blob/v5.4.0/sentence_transformers/sentence_transformer/modules/pooling.py).
+Alternate/combined pooling, prompt exclusion, mixed schemas and custom module
+classes remain rejected. The CPU oracle covers compact-format loading and
+execution; this does not broaden the supported BERT architecture or GPU gates.
