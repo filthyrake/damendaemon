@@ -1,0 +1,55 @@
+name: CPU contracts
+
+on:
+  push:
+    paths:
+      - 'dllm/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/cpu-contracts.yml'
+  pull_request:
+    paths:
+      - 'dllm/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/cpu-contracts.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cpu-contracts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: Python ${{ matrix.python }} contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Dependency-free contracts
+        run: |
+          python -S -m unittest \
+            tests.test_qualification_optimization \
+            tests.test_verifier_http_errors \
+            tests.test_report_io \
+            tests.test_error_state \
+            tests.test_token_workload
+      - name: Optimized dependency-free contracts
+        run: |
+          python -S -O -m unittest \
+            tests.test_qualification_optimization \
+            tests.test_verifier_http_errors \
+            tests.test_report_io \
+            tests.test_error_state \
+            tests.test_token_workload
