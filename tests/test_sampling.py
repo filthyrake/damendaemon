@@ -241,3 +241,13 @@ class SamplingTests(unittest.TestCase):
                 sampler.prepare([],2)
                 with self.subTest(row=row,temperature=temperature),self.assertRaisesRegex(ValueError,'non-finite'):
                     sampler.select(torch.tensor(row))
+
+    def test_checked_greedy_selection_has_no_host_readback(self):
+        from dllm.sampling import greedy_tokens
+        logits=torch.tensor([[1.,2.],[float('nan'),0.]])
+        with patch.object(torch.Tensor,'item',side_effect=AssertionError('host item read')), \
+                patch.object(torch.Tensor,'tolist',side_effect=AssertionError('host list read')), \
+                patch.object(torch.Tensor,'cpu',side_effect=AssertionError('host tensor copy')):
+            ordinary=greedy_tokens(logits)
+            cached=greedy_tokens(logits,torch.tensor([1,0]))
+        self.assertEqual(ordinary.tolist(),[1,-1]);self.assertEqual(cached.tolist(),[1,-1])

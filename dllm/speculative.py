@@ -58,7 +58,8 @@ class Verifier:
         self.graph=torch.cuda.CUDAGraph()
         with torch.inference_mode(),torch.cuda.graph(self.graph):
             logits=executor.forward_batch(ids,positions,slots)
-            self.next_ids=logits.argmax(-1)
+            from .sampling import greedy_tokens
+            self.next_ids=greedy_tokens(logits)
 
     def verify(self,current,proposals,start,slot):
         import torch
@@ -71,6 +72,8 @@ class Verifier:
         with torch.inference_mode():
             self.metadata.copy_(self.staging,non_blocking=True);self.copied.record()
             self.graph.replay();predictions=self.next_ids.tolist()
+        if any(token<0 for token in predictions[:len(inputs)]):
+            raise RuntimeError('non-finite speculative verification logits')
         accepted=0
         for actual,draft in zip(predictions,proposals):
             if actual!=draft:break

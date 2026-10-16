@@ -93,3 +93,24 @@ class SpeculativeTests(unittest.TestCase):
         self.assertTrue(runtime._speculate(ready,active,executor))
         self.assertEqual(r.events.qsize(),8)
         self.assertEqual(executor.lengths,[8])
+
+    def test_verifier_rejects_invalid_used_predictions_before_acceptance(self):
+        import torch
+        from unittest.mock import Mock
+        from dllm.speculative import Verifier
+        from dllm.sampling import greedy_tokens
+        verifier=Verifier.__new__(Verifier)
+        verifier.width=4;verifier.context=32;verifier.slots=2
+        verifier.copied=Mock();verifier.graph=Mock();verifier.metadata=Mock()
+        verifier.staging=object();verifier.staging_values=[0]*12
+        logits=torch.zeros(4,5)
+        logits[0,2]=1;logits[1,3]=1;logits[2,4]=1
+        for index in range(3):
+            for invalid in (float('nan'),float('inf'),-float('inf')):
+                broken=logits.clone();broken[index,:]=invalid
+                verifier.next_ids=greedy_tokens(broken)
+                with self.subTest(index=index,invalid=invalid),self.assertRaisesRegex(RuntimeError,'non-finite speculative'):
+                    verifier.verify(1,[2,3],0,0)
+        # The fourth row is graph padding and never contributes a token.
+        logits[3,:]=float('nan');verifier.next_ids=greedy_tokens(logits)
+        self.assertEqual(verifier.verify(1,[2,3],0,0),([2,3,4],2))

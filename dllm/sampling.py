@@ -174,21 +174,28 @@ def _token_batch(tokens, count, vocab_size):
     return tokens
 
 
+def greedy_tokens(logits, selected=None):
+    """On-device greedy IDs; -1 marks NaN/+inf/all-masked rows for readback.
+
+    No host synchronization: callers must reject the sentinel before emitting
+    tokens. Existing negative-infinity masks are valid if a finite maximum exists.
+    """
+    import torch
+    if selected is None:
+        maximum, selected = logits.max(-1)
+    else:
+        maximum=logits.amax(-1)
+    if selected.shape != logits.shape[:-1] or selected.dtype not in (
+            torch.uint8,torch.int8,torch.int16,torch.int32,torch.int64):
+        raise RuntimeError('invalid selected token batch')
+    return selected.to(torch.long).masked_fill(~torch.isfinite(maximum),-1)
+
+
 def sample_rows(logits, samplers, greedy=None):
     """Validate greedy rows on-device before the existing token readback."""
     import torch
     if all(not sampler.options.temperature and sampler.constraint is None and not sampler.has_adjustments for sampler in samplers):
-        if greedy is None:
-            maximum, selected = logits.max(-1)
-        else:
-            selected=greedy
-            maximum=logits.amax(-1)
-        if selected.shape != (len(samplers),) or selected.dtype not in (
-                torch.uint8,torch.int8,torch.int16,torch.int32,torch.int64):
-            raise RuntimeError('invalid selected token batch')
-        # Sentinel failure travels with the ordinary token readback, avoiding
-        # an extra host synchronization or per-row checks in batched serving.
-        selected=selected.to(torch.long).masked_fill(~torch.isfinite(maximum),-1)
+        selected=greedy_tokens(logits,greedy)
     else:
         import torch
         selected=torch.stack([sampler._select(logits[i]) for i,sampler in enumerate(samplers)])

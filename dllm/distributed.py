@@ -178,7 +178,8 @@ class StagePair:
     def _output_tokens(self, command, hidden, positions, slots):
         try:
             logits = self._run_stage(command, hidden, positions, slots)
-            return logits.argmax(-1)
+            from .sampling import greedy_tokens
+            return greedy_tokens(logits)
         except Exception:
             # The coordinator is already waiting for this fixed-size result.
             # Signal an execution exception on the existing transfer,

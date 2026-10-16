@@ -222,3 +222,19 @@ class DistributedCliTests(unittest.TestCase):
         pair.state.lengths[0]=1
         with self.assertRaises(ValueError):pair.prefill_batch([[1],[2]],[0,1])
         pair._exchange.assert_not_called()
+
+    def test_nonfinite_output_uses_reserved_failure_token(self):
+        import torch
+        from dllm.distributed import StagePair
+        from dllm.stage_protocol import Command, DECODE
+        pair=StagePair.__new__(StagePair);pair.stage=Mock();pair.channel=Mock()
+        pair.model=SimpleNamespace(config={'vocab_size':3})
+        command=Command(1,3,DECODE,2,((0,1,4),(1,1,8)))
+        for bad in (float('nan'),float('inf'),-float('inf')):
+            pair.stage.run_decode.return_value=torch.tensor([[1.,3.,2.],[bad,bad,bad]])
+            result=pair._output_tokens(command,None,None,None)
+            self.assertEqual(result.tolist(),[1,-1])
+            with self.assertRaisesRegex(RuntimeError,'output stage failed'):pair._result_tokens(result)
+        pair.channel.complete_tokens.assert_not_called()
+        pair.stage.run_decode.return_value=torch.tensor([[-float('inf'),3.,2.],[4.,-float('inf'),1.]])
+        self.assertEqual(pair._result_tokens(pair._output_tokens(command,None,None,None)),[1,0])
