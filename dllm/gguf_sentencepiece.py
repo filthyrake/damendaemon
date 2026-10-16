@@ -41,6 +41,11 @@ def build(metadata):
             or any(type(kind) is not int or kind not in (1, 2, 3, 4, 5, 6) for kind in types)
             or any(type(score) not in (int, float) or not math.isfinite(score) for score in scores)):
         raise ValueError('invalid GGUF SentencePiece vocabulary')
+    # llama.cpp may merge/resegment UNUSED pieces but suppresses them during
+    # decoding. Dropping them changes token IDs; treating them as NORMAL also
+    # changes semantics. Reject both score paths until that contract is covered.
+    if 5 in types:
+        raise ValueError('GGUF SentencePiece with unused tokens is not yet supported')
     vocab = {text: i for i, text in enumerate(tokens) if types[i] != 5}
     if len(vocab) != sum(kind != 5 for kind in types):
         raise ValueError('duplicate active GGUF SentencePiece tokens')
@@ -121,8 +126,6 @@ def native_model(tokens, types, scores, unknown):
         from sentencepiece import sentencepiece_model_pb2 as proto
     except ImportError as error:
         raise ValueError('GGUF tied SentencePiece scores require dllm[gguf] native tokenizer dependencies') from error
-    if 5 in types:
-        raise ValueError("positional SentencePiece with unused tokens is not yet supported")
     model = proto.ModelProto()
     model.trainer_spec.model_type = proto.TrainerSpec.BPE
     model.trainer_spec.vocab_size = len(tokens)

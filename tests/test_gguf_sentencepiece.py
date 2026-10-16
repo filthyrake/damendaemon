@@ -151,6 +151,17 @@ class SentencePieceGgufTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'unused tokens'):
             tokenizer(source)
 
+    def test_unused_pieces_are_rejected_even_without_positional_ties(self):
+        # Independent llama.cpp pin 836d571 gives [1,263] for "a" in both
+        # vocabularies. Dropping UNUSED "a" previously changed dllm to
+        # [1,259,100], even though the source metadata was accepted.
+        source=metadata()
+        self.assertEqual(tokenizer(source)[0].encode('a').ids,[1,263])
+        for index in (260,262,265):
+            with self.subTest(index=index):
+                source=metadata();source['tokenizer.ggml.token_type'][index]=5
+                with self.assertRaisesRegex(ValueError,'unused tokens'):tokenizer(source)
+
     def test_invalid_vocab_and_unsupported_normalization_are_rejected(self):
         mutations = [
             lambda m: m.pop('tokenizer.ggml.scores'),

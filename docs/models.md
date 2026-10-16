@@ -767,3 +767,5 @@ Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects du
 Native chat tokenization consumes template output incrementally and rejects more than 16 MiB of rendered UTF-8 text, including a forced tool-call prefix, before tokenization. The template generator closes on success or failure. This bounds accumulated prompt output, not intermediate expression allocations or template execution time.
 
 The CPU reference chat path retains its 1 MiB rendered-output limit and uses the same text-buffer approach so empty template chunks do not accumulate retained objects. Both paths close their template generators on overflow.
+
+SentencePiece GGUF vocabularies containing UNUSED token types are rejected in both static-score and positional-score paths. The pinned llama.cpp tokenizer can encode these pieces while suppressing their decoded output, so dropping them is not equivalent. See [the CPU vocabulary reproduction](evidence/gguf/sentencepiece-unused.md); ordinary supported vocabularies are unchanged.
