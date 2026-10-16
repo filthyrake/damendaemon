@@ -1,7 +1,7 @@
 """Explicit image-capable model wrapper and expanded prompt accounting."""
 import copy
 
-from .vision_inputs import prepare_images
+from .vision_inputs import prepare_images, plan_images
 from .vision_messages import decode_image_messages
 from .vision_positions import image_positions
 
@@ -37,7 +37,11 @@ class VisionModelWeights:
         if (any(tokens.count(marker)!=count for marker in (248053,248056,248054))
                 or 248057 in tokens):
             raise ValueError('image markers do not match supplied images')
-        pixels,grids=prepare_images(prepared.images)
+        shapes = plan_images(prepared.images)
+        grids = [[1, height//16, width//16] for height, width in shapes]
+        expanded_count = len(tokens) - count + sum(height*width//1024 for height, width in shapes)
+        if expanded_count > self.max_context:
+            raise ValueError('expanded image prompt exceeds configured context')
         expanded=[]
         image=0
         for token in tokens:
@@ -47,4 +51,5 @@ class VisionModelWeights:
                 image+=1
             else:expanded.append(token)
         image_positions(expanded,grids)
+        pixels,grids=prepare_images(prepared.images)
         return ImagePrompt(expanded,pixels,grids,prepared.identities)

@@ -781,3 +781,5 @@ Opt-in repetition/presence/frequency penalties and logit bias reject non-finite 
 Structured output uses explicit generated-byte vocabularies for GGUF tokenizers including literal user-defined pieces, UNUSED suppression and positional SentencePiece encoding. CPU tests against pinned xgrammar cover literal Unicode pieces, partial UTF-8 bytes, serialized tokenizers, hidden controls and padded rows. CPU matcher tests cover static and positional SentencePiece with and without a space prefix, original and serialized forms, and UNUSED suppression. This is not GPU qualification.
 
 Experimental Qwen3.5 image loading validates vision config/rotary containers and exact integer geometry before either text or vision weight materialization. Malformed checkpoint metadata fails with a configuration error; CPU preflight tests do not qualify image inference on GPUs.
+
+Image prompt expansion is checked against model context using planned grids before resize, normalization or FP32 patch construction. Inline decoding remains separately byte/pixel bounded; runtime admission still checks the requested output-token reservation.

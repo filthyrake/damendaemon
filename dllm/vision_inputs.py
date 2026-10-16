@@ -24,12 +24,8 @@ def image_size(height, width, *, min_pixels=65536, max_pixels=16777216):
     return tuple(target)
 
 
-def prepare_images(images, *, max_patches=4096):
-    """Convert CPU HWC uint8 RGB tensors to packed FP32 patches and image grids.
-
-    Validate the complete patch budget before resizing or constructing patches.
-    Encoded-file decoding and HTTP input policy belong to the serving layer.
-    """
+def plan_images(images, *, max_patches=4096):
+    """Validate RGB metadata and return resize shapes without allocating patches."""
     if not isinstance(images,(list,tuple)) or not images:
         raise ValueError('at least one RGB image is required')
     if type(max_patches) is not int or max_patches<4:
@@ -42,6 +38,16 @@ def prepare_images(images, *, max_patches=4096):
         shapes.append(image_size(image.shape[0],image.shape[1]))
     if sum(h*w//256 for h,w in shapes)>max_patches:
         raise ValueError('vision patch budget exceeded')
+    return shapes
+
+
+def prepare_images(images, *, max_patches=4096):
+    """Convert CPU HWC uint8 RGB tensors to packed FP32 patches and image grids.
+
+    Validate the complete patch budget before resizing or constructing patches.
+    Encoded-file decoding and HTTP input policy belong to the serving layer.
+    """
+    shapes = plan_images(images, max_patches=max_patches)
     patches=[]
     grids=[]
     for image,(height,width) in zip(images,shapes):
