@@ -99,6 +99,12 @@ Quantization, prompt-prefix reuse and interleaved prefill are not yet supported
 for BLOOM. Acceptance of another BLOOM configuration does not qualify its
 checkpoint or an extended context. See [architecture evidence](architecture-parity.md).
 
+Ordinary Qwen2/Qwen3/Llama/Mistral/Phi3 and StarCoder2 checkpoints must match
+their declared tensor names and shapes. Explicit tied output weights must agree
+with input embeddings. Unknown tensors fail loading; the existing dense-loader
+visual and MTP exclusions remain unchanged. Dense prepared caches from before
+source validation are rebuilt once under cache version 2.
+
 ## T5 text encoder-decoder
 
 Pinned FLAN-T5-small and original T5-small run independently on CUDA and Apple Silicon, with separate

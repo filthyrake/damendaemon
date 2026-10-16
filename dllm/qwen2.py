@@ -182,6 +182,8 @@ class ModelWeights:
                 from .hybrid import load_weights
             self.finalize_weights(load_weights(state, c))
             return
+        from .dense_checkpoint import validate as validate_dense_checkpoint
+        validate_dense_checkpoint(state,c)
         weights = {}
         def take(key):
             return state.pop(key).to(torch.float16)
