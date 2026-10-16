@@ -68,6 +68,7 @@ def _read_response(source,count):
     if len(raw)>MAX_RESPONSE_BYTES:raise ValueError('rerank response exceeds byte limit')
     result=_response_json(raw.decode('utf-8'))
     if not isinstance(result,dict):raise ValueError('invalid rerank response')
+    if result.get('error') is not None:raise ValueError('rerank server returned an error')
     _scores(result.get('results'),count)
     return result
 

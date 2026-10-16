@@ -100,6 +100,12 @@ with patch.object(comparator,'MAX_RESPONSE_BYTES',len(valid)):
     try:comparator._read_response(Bounded(valid+b' '),1)
     except ValueError:pass
     else:raise AssertionError('oversized response accepted')
+for error in ({},[],False,0,'','failure'):
+    raw=json.dumps({'error':error,'results':[{'index':0,'relevance_score':0.5}]}).encode()
+    try:comparator._read_response(io.BytesIO(raw),1)
+    except ValueError:pass
+    else:raise AssertionError('explicit server error accepted')
+assert comparator._read_response(io.BytesIO(b'{"error":null,"results":[{"index":0,"relevance_score":0.5}]}'),1)['results']
 for raw in (b'{"results":[],"results":[{"index":0,"relevance_score":0}]}',
             b'{"results":[{"index":1,"index":0,"relevance_score":0}]}',
             b'{"results":[{"index":0,"relevance_score":NaN}]}',
