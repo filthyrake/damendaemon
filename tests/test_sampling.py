@@ -24,6 +24,27 @@ class SamplingTests(unittest.TestCase):
             self.assertEqual(sampler.select(logits).item(), 2)
 
 
+    def test_logit_batch_shape_is_checked_before_sampling(self):
+        for options in (Sampling(), Sampling(1, seed=42),
+                        Sampling(logit_bias={'0': 1})):
+            for shape in ((), (4,), (1, 4), (3, 4), (2, 1, 4), (2, 0)):
+                samplers = [Sampler(options), Sampler(options)]
+                for sampler in samplers:
+                    sampler.logprobs_top = 1
+                states = [sampler.random.getstate() if sampler.random else None for sampler in samplers]
+                with self.subTest(options=options, shape=shape), \
+                        self.assertRaisesRegex(RuntimeError, 'sampling logit batch'):
+                    sample_rows(torch.zeros(shape), samplers)
+                self.assertEqual(states, [sampler.random.getstate() if sampler.random else None for sampler in samplers])
+                self.assertTrue(all(s.last_logprobs is None for s in samplers))
+        # Empty batches retain the ordinary empty result.
+        self.assertEqual(sample_rows(torch.empty(0, 4), []), [])
+        for options in (Sampling(), Sampling(1, seed=42),
+                        Sampling(logit_bias={'0': 1})):
+            samplers = [Sampler(options), Sampler(options)]
+            self.assertEqual(sample_rows(torch.tensor([[0., -1000.], [-1000., 0.]]),
+                                         samplers), [0, 1])
+
     def test_malformed_selected_batches_are_runtime_failures(self):
         logits = torch.zeros(2, 4)
         samplers = [Sampler(Sampling()), Sampler(Sampling())]

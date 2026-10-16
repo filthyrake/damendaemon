@@ -149,7 +149,7 @@ class SchedulerTests(unittest.TestCase):
             try:
                 with patch.object(self.executor, 'prefill_batch', return_value=Tensor([])):
                     future = pool.submit(lambda: list(self.generate(count=1)))
-                    with self.assertRaisesRegex(RuntimeError, 'token batch'):
+                    with self.assertRaisesRegex(RuntimeError, 'sampling logit batch'):
                         future.result(1)
             finally:
                 # Unblocks the caller on the old implementation, which drops

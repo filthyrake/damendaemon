@@ -198,6 +198,9 @@ def greedy_tokens(logits, selected=None):
 def sample_rows(logits, samplers, greedy=None):
     """Validate greedy rows on-device before the existing token readback."""
     import torch
+    if (len(logits.shape) != 2 or logits.shape[0] != len(samplers)
+            or logits.shape[1] == 0):
+        raise RuntimeError('invalid sampling logit batch')
     if all(not sampler.options.temperature and sampler.constraint is None and not sampler.has_adjustments for sampler in samplers):
         selected=greedy_tokens(logits,greedy)
     else:
