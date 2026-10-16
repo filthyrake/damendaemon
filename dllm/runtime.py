@@ -240,6 +240,18 @@ class Runtime:
                         tokenizer_config = json.loads((candidate/'tokenizer_config.json').read_text())
                         if not isinstance(tokenizer_config, dict):
                             raise ValueError('tokenizer configuration must be an object')
+                        # Match loaders that actually consume checkpoint chat templates.
+                        if (config.get('task') not in ('embedding','rerank')
+                                and config.get('model_type') not in ('mamba','mamba2','t5')):
+                            checkpoint_template=tokenizer_config.get('chat_template')
+                            template_file=candidate/'chat_template.jinja'
+                            if checkpoint_template is None and template_file.exists():
+                                checkpoint_template=template_file.read_text()
+                            if checkpoint_template is not None:
+                                if not isinstance(checkpoint_template,str):
+                                    raise ValueError('model needs one text chat template')
+                                from .chat_template import compile_template
+                                compile_template(checkpoint_template)
                     estimated = weight_bytes(candidate,quantization=policy)
                 except Exception as error:
                     raise ValueError('invalid local model snapshot') from error

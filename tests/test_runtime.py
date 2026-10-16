@@ -376,6 +376,56 @@ class RuntimeTests(unittest.TestCase):
             runtime.manage('register','good',str(root))
             self.assertEqual(runtime.model_ids(),['good'])
 
+    def test_registration_rejects_broken_checkpoint_templates_before_inventory(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from tokenizers import Tokenizer,models
+        cases=[(False,value) for value in ([],{},True,1,'{{','{% if %}')]
+        cases += [(True,value) for value in ('{{','{% if %}')]
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'config.json').write_text('{}')
+            Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
+            for fallback,value in cases:
+                with self.subTest(fallback=fallback,value=value):
+                    runtime=Runtime({})
+                    template=root/'chat_template.jinja';template.unlink(missing_ok=True)
+                    (root/'tokenizer_config.json').write_text(json.dumps({} if fallback else {'chat_template':value}))
+                    if fallback:template.write_text(value)
+                    with patch('dllm.models.weight_bytes',return_value=100) as inventory:
+                        with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
+                            runtime.manage('register','bad',str(root))
+                        inventory.assert_not_called()
+                    self.assertEqual(runtime.model_ids(),[])
+                    self.assertEqual(runtime.quantizations,{})
+                    self.assertEqual(runtime.chat_templates,{})
+                    self.assertEqual(runtime.host,{})
+                    self.assertEqual(runtime.gpu,{})
+                    runtime.close()
+            for fallback,value in ((False,''),(False,'{{ messages[0]["content"] }}'),(True,'{{ messages[0]["content"] }}')):
+                runtime=Runtime({});(root/'chat_template.jinja').unlink(missing_ok=True)
+                (root/'tokenizer_config.json').write_text(json.dumps({} if fallback else {'chat_template':value}))
+                if fallback:(root/'chat_template.jinja').write_text(value)
+                runtime.manage('register','valid',str(root));self.assertEqual(runtime.model_ids(),['valid'])
+                runtime.close()
+
+    def test_registration_does_not_compile_unused_chat_templates(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        from tokenizers import Tokenizer,models
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'config.json').write_text('{}')
+            Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
+            (root/'tokenizer_config.json').write_text(json.dumps({'chat_template':[]}))
+            for changes in ({'task':'embedding'},{'task':'rerank'},
+                            {'model_type':'mamba'},{'model_type':'mamba2'},{'model_type':'t5'}):
+                with self.subTest(changes=changes):
+                    runtime=Runtime({})
+                    with patch('dllm.models.config',return_value={'max_position_embeddings':2048,**changes}):
+                        runtime.manage('register','valid',str(root))
+                    self.assertEqual(runtime.model_ids(),['valid']);runtime.close()
+
     def test_model_quantization_is_stable_and_used_for_reload(self):
         import tempfile
         from pathlib import Path
