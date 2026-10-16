@@ -67,6 +67,25 @@ class FlashToolsTests(unittest.TestCase):
         with self.assertRaises(ValueError):codec.render([duplicate])
         self.assertEqual(len(codec.parse(' \n'+valid+'\t'+valid+'\r')),2)
 
+    def test_escaped_nested_controls_fail_before_atomic_publication(self):
+        from dllm.glm_flash_tools import RESERVED
+        from dllm.glm_flash_tool_output import FlashToolOutput
+        from dllm.glm_text import END_THINK,EOS
+        codec=FlashTools(tools({'obj':{'type':'object','additionalProperties':True}}))
+        valid=codec.render([call({'obj':{'x':'ordinary é🙂'}})])
+        for marker in RESERVED:
+            escaped=''.join('\\u%04x' % ord(c) for c in marker)
+            for raw in ('{"nested":["'+escaped+'"]}','{"'+escaped+'":"value"}'):
+                bad='<tool_call>f<arg_key>obj</arg_key><arg_value>'+raw+'</arg_value></tool_call>'
+                with self.subTest(marker=marker,raw=raw):
+                    with self.assertRaises(ValueError):codec.parse(valid+bad)
+                    parser=FlashToolOutput(codec)
+                    self.assertEqual(parser.feed(END_THINK+valid+bad+EOS),[])
+                    with self.assertRaises(ValueError):parser.finish()
+                    self.assertTrue(parser.failed)
+                    self.assertTrue(parser.buffer.closed)
+        self.assertEqual(codec.render(codec.parse(valid)),valid)
+
     def test_byte_count_call_count_and_nested_nonfinite_bounds(self):
         codec=FlashTools(tools({'x':{'type':'string'},'obj':{'type':'object','additionalProperties':True}}))
         for calls in ([],[call({})]*65,[call({'x':'🦙'*(MAX_TEXT_BYTES//4)})]):

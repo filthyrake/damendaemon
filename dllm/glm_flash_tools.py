@@ -136,6 +136,6 @@ class FlashTools:
                 arguments[key]=raw if schema['properties'][key]['type']=='string' else _json(raw)
             cursor+=len(CLOSE)
             if not matches_schema(arguments,schema):raise ValueError('Flash tool arguments do not match declared schema')
-            calls.append(dict(id='call_'+str(len(calls)),type='function',function=dict(name=name,arguments=_dump(arguments))))
+            calls.append(dict(id='call_'+str(len(calls)),type='function',function=dict(name=name,arguments=_literal(_dump(arguments)))))
         if not calls:raise ValueError('missing Flash tool calls')
         return calls

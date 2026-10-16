@@ -30,7 +30,9 @@ apply in both directions. Parsing is atomic; a later bad call prevents a result.
 Declarations and call text are bounded to 1 MiB; each schema retains the shared
 16 KiB/depth/node limits. Duplicate JSON/object argument keys, nonfinite numbers,
 reserved model/tool delimiters, partial calls and undeclared functions fail
-explicitly. A caller cannot change accepted types by mutating its declaration
+explicitly. Reserved-marker checks also cover normalized JSON, so escaped
+markers in nested argument values or keys cannot bypass the wire checks.
+A caller cannot change accepted types by mutating its declaration
 list after construction.
 
 This module does not execute tools or change ordinary generation admission.
