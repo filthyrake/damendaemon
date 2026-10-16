@@ -60,6 +60,12 @@ def config(path):
     expected = {'word_embedding_dimension': c['hidden_size'], 'pooling_mode_cls_token': False,
                 'pooling_mode_mean_tokens': True, 'pooling_mode_max_tokens': False,
                 'pooling_mode_mean_sqrt_len_tokens': False}
+    # Newer legacy serializers write these equivalent defaults explicitly.
+    # Do not silently admit weighted/last-token pooling or prompt exclusion.
+    defaults = {'pooling_mode_weightedmean_tokens':False,
+                'pooling_mode_lasttoken':False, 'include_prompt':True}
+    expected.update(defaults)
+    pooling = {**defaults, **pooling}
     if pooling != expected or any(type(pooling[k]) is not type(v) for k,v in expected.items()):
         raise ValueError('only declared masked mean pooling is supported')
     length = read_config(path/'sentence_bert_config.json').get('max_seq_length')

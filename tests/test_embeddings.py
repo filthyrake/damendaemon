@@ -98,6 +98,28 @@ class EncoderConfigTests(unittest.TestCase):
         self.assertEqual(parsed['task'],'embedding')
         self.assertEqual(parsed['embedding_max_length'],256)
 
+    def test_equivalent_serialized_pooling_defaults_are_supported(self):
+        # Sentence Transformers v3.4.1 Pooling.config_keys/save includes these
+        # defaults even when only masked mean pooling is enabled.
+        import itertools
+        path=self.root/'1_Pooling/config.json'
+        legacy=json.loads(path.read_text());expected=config(self.root)
+        optional={'pooling_mode_weightedmean_tokens':False,
+                  'pooling_mode_lasttoken':False,'include_prompt':True}
+        for enabled in itertools.product((False,True),repeat=3):
+            extra={key:value for (key,value),present in zip(optional.items(),enabled) if present}
+            with self.subTest(extra=extra):
+                path.write_text(json.dumps({**legacy,**extra}))
+                self.assertEqual(config(self.root),expected)
+        for extra in ({'pooling_mode_weightedmean_tokens':True},
+                      {'pooling_mode_lasttoken':True}, {'include_prompt':False},
+                      {'pooling_mode_weightedmean_tokens':0},
+                      {'pooling_mode_lasttoken':0}, {'include_prompt':1},
+                      {'include_prompt':None}, {'unknown':False}):
+            with self.subTest(extra=extra):
+                path.write_text(json.dumps({**legacy,**extra}))
+                with self.assertRaisesRegex(ValueError,'mean pooling'):config(self.root)
+
     def test_module_metadata_is_bounded_unique_and_well_typed(self):
         valid=json.dumps(self.modules)
         duplicate=valid.replace('"type": "sentence_transformers.models.Pooling"',
