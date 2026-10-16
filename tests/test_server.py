@@ -378,6 +378,18 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(error.exception.code,400)
             error.exception.close()
 
+    def test_invalid_unicode_schema_returns_400_before_dispatch(self):
+        fmt={'type':'json_schema','json_schema':{'name':'bad',
+             'schema':{'type':'string','const':'\ud800'}}}
+        for method in (self.post,self.raw_post):
+            for stream in (False,True):
+                with self.subTest(method=method.__name__,stream=stream), \
+                        patch.object(self.runtime,'generate') as generate:
+                    with self.assertRaises(HTTPError) as caught:
+                        method(response_format=fmt,stream=stream)
+                    with caught.exception as response:self.assertEqual(response.code,400)
+                    generate.assert_not_called()
+
     def test_management_status_failures_are_structured_and_redacted(self):
         for error,status,message in [(RuntimeError('private backend details'),500,'model management failed'),
                                      (BusyError('private queue details'),503,'model management is busy')]:

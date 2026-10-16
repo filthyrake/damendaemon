@@ -26,6 +26,10 @@ def response_schema(value):
         raise ValueError('invalid JSON schema') from error
     if len(encoded.encode()) > 16384:
         raise ValueError('schema exceeds 16 KiB')
+    # ASCII JSON escapes conceal lone surrogates that the grammar compiler
+    # cannot represent. Keep the serialized contract and its existing byte cap.
+    try:json.dumps(schema,ensure_ascii=False,allow_nan=False).encode('utf-8')
+    except UnicodeError:raise ValueError('schema contains invalid Unicode') from None
     count = 0
     def visit(node, depth=0):
         nonlocal count

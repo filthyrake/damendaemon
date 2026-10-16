@@ -964,3 +964,5 @@ success. Incomplete request bodies can hold shutdown until the existing socket
 read timeout. This is cooperative cleanup, not a kernel execution deadline.
 `BoundedHTTPServer` itself keeps its existing embedder defaults; custom owners
 must choose and manage their own request-thread lifecycle.
+
+Structured schemas must contain valid Unicode throughout their values and keys. Lone surrogates hidden by JSON escapes are rejected during request validation, before grammar compilation; the existing ASCII-serialized 16 KiB schema budget is unchanged.

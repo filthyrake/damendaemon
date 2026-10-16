@@ -33,6 +33,20 @@ class StructuredTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             response_schema(format_for({'type':'string','const':'x'*17000}))
 
+    def test_schema_unicode_must_encode_before_compilation(self):
+        for schema in ({'type':'string','const':'\ud800'},
+                       {'type':'string','enum':['ok','\udfff']},
+                       {'type':'string','description':'\ud800'},
+                       {'type':'object','properties':{'\udfff':{'type':'string'}},'required':['\udfff']},
+                       {'anyOf':[{'type':'string','title':'\ud800'},{'type':'null'}]}):
+            with self.subTest(schema=repr(schema)),self.assertRaises(ValueError):
+                response_schema(format_for(schema))
+        valid={'type':'object','properties':{'é🙂':{'type':'string','enum':['你好','🙂']}},
+               'required':['é🙂'],'additionalProperties':False}
+        encoded=response_schema(format_for(valid))
+        self.assertEqual(encoded,json.dumps(valid,allow_nan=False))
+        self.assertEqual(json.loads(encoded),valid)
+
     def test_incompatible_options(self):
         fmt={'type':'json_object'}
         for stops,thinking,ignore in ((('x',),None,False),((),True,False),((),None,True)):
