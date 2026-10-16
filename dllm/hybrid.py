@@ -78,8 +78,9 @@ def load_weights(state, config):
                 w[f'{i}.{dest}'] = take(layer+'linear_attn.'+name, torch.float32)
             # The runtime exponentiates A_log per token; a value above exp's
             # overflow threshold yields an infinite decay that silently zeroes
-            # the linear-attention state every step.
-            if not torch.isfinite(w[f'{i}.A'].exp()).all():
+            # the linear-attention state every step. Real loads only: offline
+            # meta-tensor planning has no data to validate.
+            if not w[f'{i}.A'].is_meta and not torch.isfinite(w[f'{i}.A'].exp()).all():
                 raise ValueError('nonfinite hybrid decay rates: A_log overflows')
     return w
 
