@@ -14,7 +14,7 @@ from dllm.encoder import EncoderWeights, EncoderExecutor
 
 
 class EncoderCPUReferenceTests(unittest.TestCase):
-    def check_family(self, family, task, *, compact=False, truncate_dim=None):
+    def check_family(self, family, task, *, compact=False, truncate_dim=None, normalize=True):
         cls = XLMRobertaConfig if family == 'xlm-roberta' else BertConfig
         c = cls(vocab_size=32, hidden_size=8, intermediate_size=16,
                 num_hidden_layers=2, num_attention_heads=2,
@@ -54,6 +54,9 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                     (root/'1_Pooling/config.json').write_text(json.dumps({
                         'embedding_dimension':8, 'pooling_mode':'mean', 'include_prompt':True}))
 
+            if task=='embedding' and not normalize:
+                modules=json.loads((root/'modules.json').read_text())
+                (root/'modules.json').write_text(json.dumps(modules[:2]))
             if truncate_dim is not None:
                 (root/'config_sentence_transformers.json').write_text(json.dumps({'truncate_dim':truncate_dim}))
             model = EncoderWeights(root, 32)
@@ -77,7 +80,8 @@ class EncoderCPUReferenceTests(unittest.TestCase):
                 with torch.inference_mode():
                     output = reference(input_ids=ids, attention_mask=mask, token_type_ids=token_types)
                     if task == 'embedding':
-                        expected = F.normalize((output.last_hidden_state*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True), dim=-1)
+                        expected = (output.last_hidden_state*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True)
+                        if normalize:expected=F.normalize(expected,dim=-1)
                         if truncate_dim is not None:expected=expected[:,:truncate_dim]
                         actual = native.embed(tokens)
                     else:
@@ -88,7 +92,7 @@ class EncoderCPUReferenceTests(unittest.TestCase):
             mixed = compare(rows, types)
             if truncate_dim is not None:
                 self.assertEqual(mixed.shape[-1],min(8,truncate_dim))
-                if truncate_dim<8:self.assertTrue(torch.all(mixed.norm(dim=-1)<.999))
+                if normalize and truncate_dim<8:self.assertTrue(torch.all(mixed.norm(dim=-1)<.999))
             singles = torch.cat([compare([row], [segments]) for row,segments in zip(rows, types)])
             torch.testing.assert_close(mixed, singles, atol=1e-6, rtol=1e-5)
             compare(list(reversed(rows)), list(reversed(types)))
@@ -103,6 +107,12 @@ class EncoderCPUReferenceTests(unittest.TestCase):
         for width in (1,4,8,16):
             with self.subTest(width=width):
                 self.check_family('bert','embedding',compact=True,truncate_dim=width)
+
+    def test_mean_pooling_without_normalize(self):
+        for compact in (False,True):
+            for width in (None,4):
+                with self.subTest(compact=compact,width=width):
+                    self.check_family('bert','embedding',compact=compact,truncate_dim=width,normalize=False)
 
     def test_bert_reranking(self):
         self.check_family('bert', 'rerank')

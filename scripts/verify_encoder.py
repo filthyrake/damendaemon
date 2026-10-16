@@ -33,6 +33,8 @@ def main():
     settings_path=Path(args.path)/'config_sentence_transformers.json'
     settings=json.loads(settings_path.read_text()) if settings_path.exists() else {}
     truncate_dim=settings.get('truncate_dim')
+    modules=json.loads((Path(args.path)/'modules.json').read_text())
+    normalize=any(module['type'].endswith('.Normalize') for module in modules)
     default_name=settings.get('default_prompt_name')
     prefix=(settings.get('prompts',{}).get(default_name) or '') if default_name is not None else ''
     texts=['A dog is playing in the park.','A puppy chases a ball.','Financial markets fell today.',
@@ -46,7 +48,7 @@ def main():
         cosine=F.cosine_similarity(actual,expected)
         absolute=delta.abs().amax(-1)
         assert torch.isfinite(actual).all()
-        if truncate_dim is None or truncate_dim>=model.config['hidden_size']:
+        if normalize and (truncate_dim is None or truncate_dim>=model.config['hidden_size']):
             assert torch.allclose(actual.norm(dim=-1),torch.ones(actual.shape[0]),atol=1e-5)
         assert (relative<.002).all() and (absolute<.001).all() and (cosine>.99999).all(),(relative,absolute,cosine)
         return {'relative_rms':relative.tolist(),'max_absolute':absolute.tolist(),'cosine_similarity':cosine.tolist()}
@@ -63,7 +65,8 @@ def main():
         mask=torch.zeros_like(ids)
         for i,row in enumerate(tokens):ids[i,:len(row)]=torch.tensor(row);mask[i,:len(row)]=1
         hidden=reference(input_ids=ids,attention_mask=mask).last_hidden_state
-        expected=F.normalize((hidden*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True),p=2,dim=-1)
+        expected=(hidden*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True)
+        if normalize:expected=F.normalize(expected,p=2,dim=-1)
         if truncate_dim is not None:expected=expected[:,:truncate_dim]
         actual=executor.embed(tokens).cpu()
         checks.append({'lengths':list(map(len,tokens)),**metrics(actual,expected)})
@@ -92,7 +95,8 @@ def main():
         except ValueError:pass
     print(json.dumps({'passed':True,'model_path':args.path,'device':device_name(),'compute_dtype':str(executor.compute_dtype),
         'reference_dtype':'float32','reference_attention':'eager','host_weight_bytes':model.bytes,
-        'embedding_dimensions':model.config['embedding_dimension'],'saved_truncate_dim':truncate_dim,'max_input_tokens':model.max_context,
+        'embedding_dimensions':model.config['embedding_dimension'],'saved_truncate_dim':truncate_dim,
+        'normalize_module':normalize,'max_input_tokens':model.max_context,
         'semantic_ordering':True,'checks':checks},indent=2))
 
 

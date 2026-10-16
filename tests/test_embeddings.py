@@ -124,6 +124,12 @@ class EncoderConfigTests(unittest.TestCase):
         parsed=config(self.root)
         self.assertEqual(parsed['task'],'embedding')
         self.assertEqual(parsed['embedding_max_length'],256)
+        self.assertTrue(parsed['embedding_normalize'])
+        self.modules=self.modules[:2];self.write()
+        self.assertFalse(config(self.root)['embedding_normalize'])
+        for modules in (self.modules[:1],list(reversed(self.modules)),self.modules+self.modules):
+            self.modules=modules;self.write()
+            with self.assertRaisesRegex(ValueError,'pipeline'):config(self.root)
 
     def test_declared_lowercase_policy_preprocesses_text_only(self):
         from dllm.encoder import EncoderWeights

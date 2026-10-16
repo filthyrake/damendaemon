@@ -76,10 +76,10 @@ def config(path):
         ('sentence_transformers.models.Pooling', 'sentence_transformers.sentence_transformer.modules.pooling.Pooling'),
         ('sentence_transformers.models.Normalize', 'sentence_transformers.base.modules.normalize.Normalize'),
     ]
-    if (not isinstance(modules,list) or len(modules) != 3
+    if (not isinstance(modules,list) or len(modules) not in (2,3)
             or any(not isinstance(m,dict) or m.get('type') not in kind
                    for m,kind in zip(modules,kinds)) or modules[0].get('path') != ''):
-        raise ValueError('supported encoder pipeline is Transformer, mean Pooling, Normalize')
+        raise ValueError('supported encoder pipeline is Transformer, mean Pooling, optional Normalize')
     if not isinstance(modules[1].get('path'),str):
         raise ValueError('invalid pooling module path')
     pooling_path = Path(modules[1]['path'])
@@ -110,7 +110,8 @@ def config(path):
         raise ValueError('invalid sentence encoder length')
     prompt,width=_saved_settings(path,c['hidden_size'])
     return {**c, 'task':'embedding', 'layer_norm_eps':eps, 'embedding_max_length':length,
-            'do_lower_case':lowercase, 'embedding_prompt':prompt,'embedding_dimension':width}
+            'do_lower_case':lowercase, 'embedding_prompt':prompt,'embedding_dimension':width,
+            'embedding_normalize':len(modules)==3}
 
 
 def used_tensor(name,task='embedding'):
@@ -312,4 +313,4 @@ class EncoderExecutor:
         if self.model.task=='rerank':
             return linear(torch.tanh(linear(x[:,0],'pooler.dense')),'classifier')
         pooled = (x.float()*mask[:,:,None]).sum(1)/mask.sum(1,keepdim=True)
-        return F.normalize(pooled,p=2,dim=-1)
+        return F.normalize(pooled,p=2,dim=-1) if c.get('embedding_normalize',True) else pooled

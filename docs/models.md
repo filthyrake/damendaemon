@@ -794,7 +794,7 @@ Checkpoint chat templates receive `bos_token` and `eos_token` as text even when 
 
 When no embedded `chat_template` is supplied, `chat_template.jinja` is read as UTF-8 with the same 16 MiB metadata envelope. An embedded template, including an empty string, takes precedence; a missing fallback preserves the raw-completion-only behavior. Explicit operator overrides retain their separate 128 KiB limit.
 
-Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects duplicate fields or excessive nesting before pooling configuration or checkpoint loading. The supported pipeline remains Transformer → mean Pooling → Normalize.
+Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects duplicate fields or excessive nesting before pooling configuration or checkpoint loading. The supported pipeline is Transformer → mean Pooling, optionally followed by Normalize.
 
 Native chat tokenization consumes template output incrementally and rejects more than 16 MiB of rendered UTF-8 text, including a forced tool-call prefix, before tokenization. The template generator closes on success or failure. This bounds accumulated prompt output. Rendering also caps explicit Jinja for-loop work at 1,000,000 iterations per render, shared across nested/recursive loops and nested renders; explicit loop-filter candidates count even when rejected. Independent requests have independent budgets. These limits do not bound intermediate expression/filter allocations or establish a general execution deadline.
 
@@ -874,11 +874,17 @@ Explicit token IDs bypass text preprocessing. Missing referenced prompts and
 malformed prompt policies are rejected. Named prompts without a selected default
 are not applied.
 
-A saved positive integer `truncate_dim` is supported: the Normalize module runs
-at full width, then output is sliced to `min(hidden_size, truncate_dim)`, matching
+A saved positive integer `truncate_dim` is supported: declared pooling and optional
+Normalize run at full width, then output is sliced to `min(hidden_size, truncate_dim)`, matching
 [Sentence Transformers encode ordering](https://github.com/huggingface/sentence-transformers/blob/v5.4.0/sentence_transformers/sentence_transformer/model.py).
-The sliced vectors are not renormalized and may have norm below one. Float and
+The sliced vectors are not renormalized; their norm follows the declared pipeline. Float and
 base64 responses use that saved output width; an explicit API `dimensions` must
 match it. Arbitrary request-time reduction remains unsupported. CPU oracles
 cover mixed-length batches and full-width/no-op controls; GPU and retrieval
 quality qualification are separate gates.
+
+BERT Transformer → mean Pooling checkpoints may omit Normalize in both legacy
+and compact module metadata. Native output then preserves the raw masked mean;
+normalization is never added implicitly. The CPU oracle covers both forms with
+and without saved truncation, across mixed-length, single and reordered batches.
+This broadens implementation coverage, not GPU or retrieval-quality qualification.
