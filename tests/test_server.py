@@ -352,6 +352,16 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(error.exception.code,400)
             error.exception.close()
 
+    def test_management_status_failures_are_structured_and_redacted(self):
+        for error,status,message in [(RuntimeError('private backend details'),500,'model management failed'),
+                                     (BusyError('private queue details'),503,'model management is busy')]:
+            with self.subTest(status=status), patch.object(self.runtime,'manage',side_effect=error):
+                with self.assertRaises(HTTPError) as caught:
+                    urlopen(self.url+'/v1/models/status',timeout=2)
+                with caught.exception as response:
+                    self.assertEqual(response.code,status)
+                    self.assertEqual(json.load(response),{'error':message})
+
     def test_management_protocol_and_field_validation(self):
         with urlopen(self.url+'/v1/models/status') as response:
             self.assertEqual(json.load(response)['models'][0]['residency'],'disk')

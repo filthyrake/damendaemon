@@ -132,9 +132,13 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
                     self.send_json(200, snapshot())
             elif self.path == '/v1/models/status':
                 try:
-                    self.send_json(200, runtime.manage('status'))
+                    status = runtime.manage('status')
                 except BusyError:
                     self.send_json(503, {'error': 'model management is busy'})
+                except Exception:
+                    self.send_json(500, {'error': 'model management failed'})
+                else:
+                    self.send_json(200, status)
             elif self.path == '/v1/models/config':
                 try:
                     self.send_json(200, runtime.model_manifest())
