@@ -13,6 +13,7 @@ from dllm.runtime import BusyError
 class Tensor:
     def __init__(self, values):
         self.values = values
+        self.shape = (len(values), 256)  # Logical vocabulary extent for the greedy stub.
     def argmax(self, _):
         return self
     def item(self):
@@ -42,7 +43,8 @@ class FakeExecutor:
         return Tensor([self.prefill(prompt, slot).item() for prompt, slot in zip(prompts, slots)])
     def decode_batch(self, tokens, slots):
         self.batches.append(tuple(slots))
-        return None, Tensor([token + 1 for token in tokens])
+        selected = Tensor([token + 1 for token in tokens])
+        return selected, selected
 
 
 class FakeRuntime:

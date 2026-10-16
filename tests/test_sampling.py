@@ -36,6 +36,43 @@ class SamplingTests(unittest.TestCase):
         with patch('dllm.logprobs.score_rows', return_value=[{'token_id': 1}]):
             with self.assertRaises(RuntimeError): sample_rows(logits, samplers)
 
+    def test_selected_ids_must_fit_vocabulary(self):
+        logits = torch.zeros(2, 4)
+        samplers = [Sampler(Sampling()), Sampler(Sampling())]
+        for selected in ([4, 1], [1, 10**6]):
+            with self.subTest(selected=selected), self.assertRaises(RuntimeError):
+                sample_rows(logits, samplers, torch.tensor(selected))
+        self.assertEqual(sample_rows(logits, samplers, torch.tensor([0, 3])), [0, 3])
+
+    def test_scored_packet_bounds_and_cardinality_before_state_publication(self):
+        logits = torch.zeros(2, 4)
+        for all_scored in (False, True):
+            samplers = [Sampler(Sampling()), Sampler(Sampling())]
+            samplers[0].logprobs_top = 0
+            if all_scored:
+                samplers[1].logprobs_top = 0
+            valid = [{'token_id':0}] * (2 if all_scored else 1)
+            bad = (None, {}, [None], [{}], [], valid + [{'token_id':1}], [{'token_id':4}] + valid[1:],
+                   [{'token_id':True}] + valid[1:])
+            for packets in bad:
+                sentinel = object()
+                for sampler in samplers:
+                    sampler.last_logprobs = sentinel
+                with self.subTest(all_scored=all_scored, packets=packets):
+                    with patch('dllm.logprobs.score_rows', return_value=packets):
+                        with self.assertRaises(RuntimeError):
+                            sample_rows(logits, samplers)
+                    for sampler in samplers:
+                        self.assertIs(sampler.last_logprobs, sentinel)
+
+    def test_mixed_scored_ids_must_match_existing_selected_readback(self):
+        samplers = [Sampler(Sampling()), Sampler(Sampling())]
+        samplers[0].logprobs_top = 0
+        with patch('dllm.logprobs.score_rows', return_value=[{'token_id':1}]):
+            with self.assertRaisesRegex(RuntimeError, 'disagree'):
+                sample_rows(torch.zeros(2, 4), samplers)
+        self.assertIsNone(samplers[0].last_logprobs)
+
     def test_validation(self):
         for options in ({'temperature':True}, {'temperature':float('inf')},
                         {'temperature':-1}, {'top_p':0}, {'top_p':float('nan')},

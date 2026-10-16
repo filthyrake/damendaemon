@@ -153,11 +153,11 @@ class Sampler:
         return selected if indices is None else indices[selected]
 
 
-def _token_batch(tokens, count):
+def _token_batch(tokens, count, vocab_size):
     # Validate the existing host readback before scheduler zip loops can drop
     # unmatched requests. Do not introduce another device synchronization.
     if (not isinstance(tokens, list) or len(tokens) != count
-            or any(type(token) is not int or token < 0 for token in tokens)):
+            or any(type(token) is not int or not 0 <= token < vocab_size for token in tokens)):
         raise RuntimeError('invalid selected token batch')
     return tokens
 
@@ -175,6 +175,13 @@ def sample_rows(logits, samplers, greedy=None):
         all_rows=len(scored)==len(samplers)
         packets=score_rows(logits if all_rows else logits[scored],selected if all_rows else selected[scored],
                            [samplers[i].logprobs_top for i in scored])
+        if (not isinstance(packets, list)
+                or any(not isinstance(packet, dict) or 'token_id' not in packet for packet in packets)):
+            raise RuntimeError('invalid scored token batch')
+        scored_tokens = _token_batch([packet['token_id'] for packet in packets], len(scored), logits.shape[-1])
+        tokens = scored_tokens if all_rows else _token_batch(selected.tolist(), len(samplers), logits.shape[-1])
+        if not all_rows and scored_tokens != [tokens[index] for index in scored]:
+            raise RuntimeError('scored tokens disagree with selected token batch')
         for index,packet in zip(scored,packets):samplers[index].last_logprobs=packet
-        if all_rows:return _token_batch([packet['token_id'] for packet in packets], len(samplers))
-    return _token_batch(selected.tolist(), len(samplers))
+        return tokens
+    return _token_batch(selected.tolist(), len(samplers), logits.shape[-1])
