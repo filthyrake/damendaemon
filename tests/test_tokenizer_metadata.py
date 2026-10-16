@@ -47,3 +47,32 @@ class TokenizerMetadataTests(unittest.TestCase):
             for value in ({}, {'content':None}, {'content':[]}, [], True, 4):
                 with self.subTest(name=name,value=value),self.assertRaises(ValueError):
                     special_token_text({name:value})
+
+    def test_checkpoint_template_precedence_and_bounds(self):
+        from dllm.tokenizer_metadata import checkpoint_template
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);fallback=root/'chat_template.jinja'
+            self.assertIsNone(checkpoint_template(root,{}))
+            fallback.write_bytes(b'\xff')
+            for value in ('','embedded'):
+                self.assertEqual(checkpoint_template(root,{'chat_template':value}),value)
+            with self.assertRaises(ValueError):checkpoint_template(root,{})
+            for value in ([],{},True,1):
+                with self.subTest(value=value),self.assertRaises(ValueError):
+                    checkpoint_template(root,{'chat_template':value})
+            with patch('dllm.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',8):
+                for size in (0,8,9):
+                    fallback.write_bytes(b'x'*size)
+                    if size==9:
+                        with self.assertRaisesRegex(ValueError,'byte limit'):checkpoint_template(root,{})
+                    else:self.assertEqual(checkpoint_template(root,{'chat_template':None}),'x'*size)
+                # The cap is on bytes, including multi-byte UTF-8 text.
+                fallback.write_text('é'*5,encoding='utf-8')
+                with self.assertRaisesRegex(ValueError,'byte limit'):checkpoint_template(root,{})
+            stream=io.BytesIO(b'fallback')
+            with patch.object(Path,'exists',return_value=True),patch.object(Path,'open',return_value=stream), \
+                    patch.object(stream,'read',wraps=stream.read) as read:
+                self.assertEqual(checkpoint_template(root,{}),'fallback')
+                from dllm.tokenizer_metadata import MAX_CHECKPOINT_TEMPLATE_BYTES
+                read.assert_called_once_with(MAX_CHECKPOINT_TEMPLATE_BYTES+1)
+            self.assertTrue(stream.closed)

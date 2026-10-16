@@ -447,6 +447,24 @@ class RuntimeTests(unittest.TestCase):
                     self.assertEqual(runtime.model_ids(),[])
                     runtime.close()
 
+    def test_registration_bounds_fallback_template_before_inventory(self):
+        import tempfile
+        from pathlib import Path
+        from tokenizers import Tokenizer,models
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'config.json').write_text('{}')
+            (root/'tokenizer_config.json').write_text('{}')
+            (root/'chat_template.jinja').write_text('x'*33)
+            Tokenizer(models.WordLevel({'a':0})).save(str(root/'tokenizer.json'))
+            runtime=Runtime({})
+            with patch('dllm.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',32), \
+                    patch('dllm.models.weight_bytes',return_value=100) as inventory:
+                with self.assertRaisesRegex(ValueError,'invalid local model snapshot'):
+                    runtime.manage('register','bad',str(root))
+                inventory.assert_not_called()
+            self.assertEqual(runtime.model_ids(),[])
+            runtime.close()
+
     def test_registration_does_not_compile_unused_chat_templates(self):
         import json
         import tempfile

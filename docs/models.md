@@ -759,3 +759,5 @@ separate open gates.
 Dense and AWQ checkpoint metadata readers bound `tokenizer_config.json` to 16 MiB (including added-token metadata) and `generation_config.json` to 1 MiB. Both require UTF-8 JSON objects with unique fields at every depth; excessive nesting is a validation error. Registration uses the same tokenizer metadata reader before weight inventory or alias publication. These metadata limits do not apply to the vocabulary file `tokenizer.json`.
 
 Checkpoint chat templates receive `bos_token` and `eos_token` as text even when tokenizer metadata stores them as structured AddedToken objects: the `content` string is used. Missing values remain `None`; malformed structured entries are rejected before registering chat-capable models.
+
+When no embedded `chat_template` is supplied, `chat_template.jinja` is read as UTF-8 with the same 16 MiB metadata envelope. An embedded template, including an empty string, takes precedence; a missing fallback preserves the raw-completion-only behavior. Explicit operator overrides retain their separate 128 KiB limit.

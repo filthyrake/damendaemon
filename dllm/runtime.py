@@ -215,7 +215,7 @@ class Runtime:
             if action in ('unload', 'remove'):
                 self._cleanup_failed_owners()
             if action == 'register':
-                from .tokenizer_metadata import read_tokenizer_config, special_token_text
+                from .tokenizer_metadata import read_tokenizer_config, special_token_text, checkpoint_template
                 from tokenizers import Tokenizer
                 from .models import config as read_config, weight_bytes, is_gguf
                 from .model_path import canonical_model_path
@@ -242,15 +242,10 @@ class Runtime:
                         if (config.get('task') not in ('embedding','rerank')
                                 and config.get('model_type') not in ('mamba','mamba2','t5')):
                             special_token_text(tokenizer_config)
-                            checkpoint_template=tokenizer_config.get('chat_template')
-                            template_file=candidate/'chat_template.jinja'
-                            if checkpoint_template is None and template_file.exists():
-                                checkpoint_template=template_file.read_text()
-                            if checkpoint_template is not None:
-                                if not isinstance(checkpoint_template,str):
-                                    raise ValueError('model needs one text chat template')
+                            template = checkpoint_template(candidate, tokenizer_config)
+                            if template is not None:
                                 from .chat_template import compile_template
-                                compile_template(checkpoint_template)
+                                compile_template(template)
                     estimated = weight_bytes(candidate,quantization=policy)
                 except Exception as error:
                     raise ValueError('invalid local model snapshot') from error

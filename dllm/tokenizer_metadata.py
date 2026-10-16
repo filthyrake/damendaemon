@@ -39,3 +39,22 @@ def special_token_text(metadata):
             raise ValueError(f'{name} must be text or structured token metadata')
         result[name] = value
     return result
+
+
+# Match the envelope for templates embedded in tokenizer_config.json.
+MAX_CHECKPOINT_TEMPLATE_BYTES = MAX_TOKENIZER_CONFIG_BYTES
+
+
+def checkpoint_template(path, metadata):
+    template = metadata.get('chat_template')
+    if template is None:
+        fallback = Path(path)/'chat_template.jinja'
+        if fallback.exists():
+            with fallback.open('rb') as reader:
+                raw = reader.read(MAX_CHECKPOINT_TEMPLATE_BYTES + 1)
+            if len(raw) > MAX_CHECKPOINT_TEMPLATE_BYTES:
+                raise ValueError('checkpoint chat template exceeds metadata byte limit')
+            template = raw.decode('utf-8')
+    if template is not None and not isinstance(template, str):
+        raise ValueError('model needs one text chat template')
+    return template

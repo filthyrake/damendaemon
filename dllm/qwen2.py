@@ -20,7 +20,7 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 from .chat_template import compile_template
 
-from .tokenizer_metadata import read_tokenizer_config, read_generation_config, special_token_text
+from .tokenizer_metadata import read_tokenizer_config, read_generation_config, special_token_text, checkpoint_template
 from .config import decoder_config, eos_ids, read_config
 from .rotary import inverse_frequencies, attention_factor
 
@@ -126,9 +126,7 @@ class ModelWeights:
         self.max_context = max_context
         self.tokenizer = Tokenizer.from_file(str(self.path / "tokenizer.json"))
         tokenizer_config = read_tokenizer_config(self.path / "tokenizer_config.json")
-        template = tokenizer_config.get("chat_template")
-        if template is None and (self.path / "chat_template.jinja").exists():
-            template = (self.path / "chat_template.jinja").read_text()
+        template = checkpoint_template(self.path, tokenizer_config)
         self.configure_tokenizer(self.tokenizer, template, tokenizer_config)
         self.eos = eos_ids(c.get('eos_token_id'))
         generation = self.path / "generation_config.json"

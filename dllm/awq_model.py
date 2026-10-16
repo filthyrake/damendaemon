@@ -8,7 +8,7 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 
 from .awq import Matrix, fuse, group_size
-from .tokenizer_metadata import read_tokenizer_config, read_generation_config
+from .tokenizer_metadata import read_tokenizer_config, read_generation_config, checkpoint_template
 from .config import decoder_config, eos_ids, read_config
 from .device import selected_device
 from .download import read_index
@@ -155,9 +155,7 @@ class AwqWeights(ModelWeights):
         self.weight_cache_status = 'disabled'
         tokenizer = Tokenizer.from_file(str(self.path/'tokenizer.json'))
         tokenizer_config = read_tokenizer_config(self.path/'tokenizer_config.json')
-        template = tokenizer_config.get('chat_template')
-        if template is None and (self.path/'chat_template.jinja').exists():
-            template = (self.path/'chat_template.jinja').read_text()
+        template = checkpoint_template(self.path, tokenizer_config)
         self.configure_tokenizer(tokenizer, template, tokenizer_config)
         self.eos = eos_ids(c.get('eos_token_id'))
         if (self.path/'generation_config.json').exists():
