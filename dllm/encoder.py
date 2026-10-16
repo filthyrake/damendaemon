@@ -68,10 +68,15 @@ def config(path):
     pooling = {**defaults, **pooling}
     if pooling != expected or any(type(pooling[k]) is not type(v) for k,v in expected.items()):
         raise ValueError('only declared masked mean pooling is supported')
-    length = read_config(path/'sentence_bert_config.json').get('max_seq_length')
+    sentence = read_config(path/'sentence_bert_config.json')
+    lowercase = sentence.get('do_lower_case', False)
+    if type(lowercase) is not bool:
+        raise ValueError('sentence encoder lowercase policy must be boolean')
+    length = sentence.get('max_seq_length')
     if type(length) is not int or not 1 <= length <= c['max_position_embeddings']:
         raise ValueError('invalid sentence encoder length')
-    return {**c, 'task':'embedding', 'layer_norm_eps':eps, 'embedding_max_length':length}
+    return {**c, 'task':'embedding', 'layer_norm_eps':eps, 'embedding_max_length':length,
+            'do_lower_case':lowercase}
 
 
 def used_tensor(name,task='embedding'):
@@ -155,7 +160,10 @@ class EncoderWeights:
         if self.task!='embedding':raise ValueError('model supports reranking, not embeddings')
         from .embeddings import options
         inputs, _, _ = options(inputs)
-        tokens = [self.tokenizer.encode(value,add_special_tokens=True).ids if isinstance(value,str) else list(value)
+        def text(value):
+            value = value.strip()
+            return value.lower() if self.config.get('do_lower_case', False) else value
+        tokens = [self.tokenizer.encode(text(value),add_special_tokens=True).ids if isinstance(value,str) else list(value)
                   for value in inputs]
         if any(not row or len(row)>self.max_context or any(t<0 or t>=self.config['vocab_size'] for t in row) for row in tokens):
             raise ValueError('embedding input exceeds model context or vocabulary')

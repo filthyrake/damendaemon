@@ -98,6 +98,39 @@ class EncoderConfigTests(unittest.TestCase):
         self.assertEqual(parsed['task'],'embedding')
         self.assertEqual(parsed['embedding_max_length'],256)
 
+    def test_declared_lowercase_policy_preprocesses_text_only(self):
+        from dllm.encoder import EncoderWeights
+        from tokenizers import Tokenizer, models, pre_tokenizers
+        vocab = {'[UNK]':0, 'HELLO':1, 'hello':2, 'É':3, 'é':4, 'İ':5, 'i̇':6}
+        tokenizer = Tokenizer(models.WordLevel(vocab, unk_token='[UNK]'))
+        tokenizer.pre_tokenizer = pre_tokenizers.WhitespaceSplit()
+        path = self.root/'sentence_bert_config.json'
+        for flag in (None, False, True):
+            metadata = {'max_seq_length':256}
+            if flag is not None:
+                metadata['do_lower_case'] = flag
+            path.write_text(json.dumps(metadata))
+            model = EncoderWeights.__new__(EncoderWeights)
+            model.config = config(self.root)
+            model.max_context = 256
+            model.tokenizer = tokenizer
+            with self.subTest(flag=flag):
+                self.assertEqual(model.encode(['  HELLO  ', '\tÉ\n', 'İ']),
+                                 [[2], [4], [6]] if flag else [[1], [3], [5]])
+                # With no whitespace pretokenizer, this requires our strip policy.
+                model.tokenizer = Tokenizer(models.WordLevel(vocab, unk_token='[UNK]'))
+                self.assertEqual(model.encode('  HELLO  '), [[2]] if flag else [[1]])
+                ids = [1, 3, 5]
+                actual = model.encode(ids)
+                self.assertEqual(actual, [ids])
+                actual[0].append(2)
+                self.assertEqual(ids, [1, 3, 5])
+        for flag in (None, 0, 1, 'true', [], {}):
+            with self.subTest(invalid=flag):
+                path.write_text(json.dumps({'max_seq_length':256, 'do_lower_case':flag}))
+                with self.assertRaisesRegex(ValueError, 'lowercase'):
+                    config(self.root)
+
     def test_equivalent_serialized_pooling_defaults_are_supported(self):
         # Sentence Transformers v3.4.1 Pooling.config_keys/save includes these
         # defaults even when only masked mean pooling is enabled.

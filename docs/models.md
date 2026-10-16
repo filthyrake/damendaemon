@@ -811,3 +811,10 @@ checks do not qualify extended-context GPU generation.
 Legacy GGUF `rope.scale_linear` is also mapped to the linear schedule, with the
 same factor validation. Files mixing legacy and modern scaling declarations
 are rejected rather than choosing one silently.
+
+BERT sentence embeddings honor the strictly boolean `do_lower_case` flag in
+`sentence_bert_config.json` (default false). String inputs are stripped and,
+when requested, lowercased before tokenization, matching the
+[Sentence Transformers preprocessing policy](https://github.com/UKPLab/sentence-transformers/blob/v3.4.1/sentence_transformers/models/Transformer.py#L448).
+Explicit token-ID inputs retain their IDs. CPU tokenizer tests cover cased and
+Unicode inputs; this is not a GPU embedding-quality qualification.
