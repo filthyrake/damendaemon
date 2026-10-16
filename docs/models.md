@@ -22,6 +22,8 @@ computed digest to historical evidence to imply that workload was validated.
 Generated HTTP verification validates complete eager/graph reference cases,
 output-token vocabulary bounds, empty mismatch lists, and comparator text before
 launching its server. Malformed trace evidence cannot trigger model startup.
+HTTP expected text stops at the first checkpoint EOS token, even when the complete
+numerical reference trace continues beyond EOS.
 
 Teacher traces require the same workload identity and complete eager/graph case
 coverage with valid token IDs before HF construction. A structurally valid failed

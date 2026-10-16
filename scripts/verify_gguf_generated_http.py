@@ -53,7 +53,9 @@ def main():
     for index,ids in enumerate(ordered):
         if any(token>=source.config['vocab_size'] for token in ids):
             raise ValueError('benchmark prompt token exceeds vocabulary')
-        expected=decode(traces[(False,index)],skip_special_tokens=True)
+        tokens=traces[(False,index)]
+        end=next((i+1 for i,token in enumerate(tokens) if token in source.eos),len(tokens))
+        expected=decode(tokens[:end],skip_special_tokens=True)
         if not isinstance(expected,str):raise ValueError('reference decoding must return text')
         try:
             native=next(c for run in benchmark['runs'] if run['engine']=='llama.cpp'

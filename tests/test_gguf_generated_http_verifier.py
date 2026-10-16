@@ -11,6 +11,11 @@ from types import SimpleNamespace as NS
 from unittest.mock import patch
 from scripts import verify_gguf_generated_http as verify
 case=sys.argv[1];processes=[]
+expected_text='' if case=='eos-first' else 'expected'
+def decode(tokens,**kwargs):
+    if case=='eos' and tokens!=[2,3]:return 'incorrect post-EOS continuation'
+    if case=='eos-first' and tokens!=[3]:return 'incorrect post-EOS continuation'
+    return expected_text
 class Process:
     closed=False
     def poll(self):return None
@@ -23,7 +28,7 @@ def response(request,**kwargs):
     if isinstance(request,str):
         raw=io.BytesIO();raw.status=200;return raw
     body=json.loads(request.data)
-    text='wrong' if case==('stream-text' if body['stream'] else 'text') else 'expected'
+    text='wrong' if case==('stream-text' if body['stream'] else 'text') else expected_text
     if body['stream']:
         wire='data: '+json.dumps({'choices':[{'text':text}]})+'\n\n'
         if case!='no-done':wire+='data: [DONE]\n\n'
@@ -37,6 +42,10 @@ with tempfile.TemporaryDirectory() as tmp:
     reference={'passed':True,'sha256':checksum,'cases':[{'graph':False,'case':0,'prompt_tokens':1,'greedy_mismatches':[],'reference_tokens':[2]}]}
     reference['cases'].append(dict(reference['cases'][0],graph=True))
     reference['workload_sha256']=hashlib.sha256(b'{"output_tokens":1,"prompts":[[1]],"version":1}').hexdigest()
+    if case in ('eos','eos-first'):
+        benchmark['output_tokens']=3
+        for trace in reference['cases']:trace['reference_tokens']=[3,2,1] if case=='eos-first' else [2,3,1]
+        reference['workload_sha256']=hashlib.sha256(b'{"output_tokens":3,"prompts":[[1]],"version":1}').hexdigest()
     if case=='trace-missing':reference['cases']=[]
     if case=='trace-duplicate':reference['cases'][1]=dict(reference['cases'][0])
     if case=='trace-bool-index':reference['cases'][0]['case']=False
@@ -67,8 +76,8 @@ with tempfile.TemporaryDirectory() as tmp:
     output=root/'result.json'
     args=['verify',str(model),'--benchmark',str(root/'benchmark.json'),'--reference',str(root/'reference.json'),'--output',str(output)]
     try:
-        with patch('sys.argv',args),patch.object(verify,'plan',return_value=NS(tokenizer_json={},sentencepiece_prefix=None,config={'vocab_size':4})), \
-                patch.object(verify,'restore_tokenizer',return_value=NS(decode=lambda *args,**kwargs:'expected')), \
+        with patch('sys.argv',args),patch.object(verify,'plan',return_value=NS(tokenizer_json={},sentencepiece_prefix=None,config={'vocab_size':4},eos={3} if case in ('eos','eos-first') else set())), \
+                patch.object(verify,'restore_tokenizer',return_value=NS(decode=decode)), \
                 patch.object(verify.subprocess,'Popen',side_effect=launch),patch.object(verify,'urlopen',side_effect=response):
             verify.main()
     finally:
@@ -95,6 +104,8 @@ class GgufGeneratedHttpVerifierTests(unittest.TestCase):
 
     def test_valid_control_in_both_modes(self):
         for optimized in (False,True):
-            result=self.run_case('valid',optimized)
-            self.assertEqual(result.returncode,0,result.stderr)
-            self.assertIn('launched=1 cleaned=True passed=True',result.stderr)
+            for case in ('valid','eos','eos-first'):
+                with self.subTest(case=case,optimized=optimized):
+                    result=self.run_case(case,optimized)
+                    self.assertEqual(result.returncode,0,result.stderr)
+                    self.assertIn('launched=1 cleaned=True passed=True',result.stderr)
