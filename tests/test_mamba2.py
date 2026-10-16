@@ -46,7 +46,7 @@ class Mamba2Tests(unittest.TestCase):
                     explicit=reader(directory)
                     self.assertEqual(explicit['time_step_limit'],[0.0,float('inf')])
                     self.assertEqual(explicit['intermediate_size'],1536)
-            for change in ({'n_groups':2},{'n_groups':True},{'head_dim':63},{'state_size':257},
+            for change in ({'layer_norm_epsilon':10**400},{'n_groups':2},{'n_groups':True},{'head_dim':63},{'state_size':257},
                     {'conv_kernel':17},{'time_step_limit':[.01,1]},{'hidden_act':'relu'},
                     {'residual_in_fp32':False},{'use_bias':1},{'eos_token_id':50288},
                     {'quantization_config':{'bits':8}},{'layer_norm_epsilon':float('nan')}):

@@ -5,7 +5,7 @@ from pathlib import Path
 import torch
 from safetensors import safe_open
 from tokenizers import Tokenizer
-from .config import eos_ids, read_config
+from .config import eos_ids, read_config, _positive_number
 
 
 def config(path):
@@ -28,7 +28,7 @@ def config(path):
     if buckets<4 or buckets%4 or c['relative_attention_max_distance']<=buckets//2:
         raise ValueError('invalid T5 relative-position buckets')
     eps=c.get('layer_norm_epsilon',1.e-6)
-    if type(eps) not in (int,float) or not math.isfinite(eps) or eps<=0:
+    if not _positive_number(eps):
         raise ValueError('invalid T5 normalization epsilon')
     for key in ('decoder_start_token_id','pad_token_id'):
         if type(c.get(key)) is not int or not 0<=c[key]<c['vocab_size']:

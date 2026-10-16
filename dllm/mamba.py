@@ -5,7 +5,7 @@ import torch
 from torch.nn import functional as F
 from safetensors import safe_open
 from tokenizers import Tokenizer
-from .config import eos_ids, read_config
+from .config import eos_ids, read_config, _positive_number
 from .device import selected_device,available_memory,empty_cache
 from .batch import BatchExecutor
 
@@ -24,7 +24,7 @@ def config(path):
         c.setdefault(key,default)
         if type(c[key]) is not bool:raise ValueError('invalid Mamba bias/tie policy')
     eps=c.get('layer_norm_epsilon',1.e-5)
-    if type(eps) not in (int,float) or not math.isfinite(eps) or eps<=0:raise ValueError('invalid Mamba normalization epsilon')
+    if not _positive_number(eps):raise ValueError('invalid Mamba normalization epsilon')
     if not eos_ids(c.get('eos_token_id')) or any(t>=c['vocab_size'] for t in eos_ids(c['eos_token_id'])):
         raise ValueError('Mamba requires valid EOS tokens')
     # Bound initial qualification; absence of rotary positions is not a claim

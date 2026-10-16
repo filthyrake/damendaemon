@@ -1,5 +1,4 @@
 """Independent packed GPT-OSS execution; Harmony serving is a separate gate."""
-import math
 import os
 
 import torch
@@ -10,7 +9,7 @@ from .device import selected_device
 
 
 def validate_config(config):
-    from .config import decoder_config
+    from .config import decoder_config, _positive_number
     c=dict(config)
     scaling=c.get('rope_scaling')
     if (not isinstance(scaling,dict) or scaling.get('rope_type')!='yarn'
@@ -42,7 +41,7 @@ def validate_config(config):
             or any(x not in ('full_attention','sliding_attention') for x in layers)):
         raise ValueError('GPT-OSS needs one full/sliding attention type per layer')
     limit=c.get('swiglu_limit',7.)
-    if type(limit) not in (int,float) or not math.isfinite(limit) or limit<=0:
+    if not _positive_number(limit):
         raise ValueError('SwiGLU limit must be finite and positive')
     return {**common,**c,'swiglu_limit':limit}
 

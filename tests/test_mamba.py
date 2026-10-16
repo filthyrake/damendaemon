@@ -23,7 +23,7 @@ class MambaTests(unittest.TestCase):
             parsed=config(directory)
             self.assertEqual(parsed['max_position_embeddings'],2048)
             self.assertTrue(parsed['tie_word_embeddings'])
-            for change in ({'state_size':33},{'conv_kernel':17},{'time_step_rank':0},{'hidden_act':'gelu'},
+            for change in ({'layer_norm_epsilon':10**400},{'state_size':33},{'conv_kernel':17},{'time_step_rank':0},{'hidden_act':'gelu'},
                            {'rms_norm':False},{'use_bias':1},{'layer_norm_epsilon':0},{'eos_token_id':50280},
                            {'architectures':['Mamba2ForCausalLM']},{'quantization_config':{'bits':4}}):
                 file.write_text(json.dumps({**value,**change}))

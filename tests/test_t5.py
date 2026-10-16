@@ -23,7 +23,7 @@ class T5Tests(unittest.TestCase):
             parsed=config(directory)
             self.assertEqual(parsed['d_kv']*parsed['num_heads'],384)
             self.assertEqual(parsed['hidden_size'],512)
-            for change in ({'num_heads':0},{'relative_attention_num_buckets':3},
+            for change in ({'layer_norm_epsilon':10**400},{'num_heads':0},{'relative_attention_num_buckets':3},
                            {'relative_attention_max_distance':8},{'decoder_start_token_id':32128},
                            {'feed_forward_proj':'gated-silu'},{'quantization_config':{'bits':4}}):
                 path.write_text(json.dumps({**value,**change}))

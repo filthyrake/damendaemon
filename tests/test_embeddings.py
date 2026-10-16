@@ -99,7 +99,7 @@ class EncoderConfigTests(unittest.TestCase):
         self.assertEqual(parsed['embedding_max_length'],256)
 
     def test_unsupported_architecture_and_pooling(self):
-        for change in ({'is_decoder':True},{'position_embedding_type':'relative_key'},
+        for change in ({'layer_norm_eps':10**400},{'is_decoder':True},{'position_embedding_type':'relative_key'},
                        {'num_attention_heads':3},{'hidden_act':'relu'},{'layer_norm_eps':float('nan')},
                        {'architectures':['BertForMaskedLM']}):
             with self.subTest(change=change):

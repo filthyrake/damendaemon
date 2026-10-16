@@ -5,7 +5,7 @@ import torch
 from torch.nn import functional as F
 from safetensors import safe_open
 from tokenizers import Tokenizer
-from .config import eos_ids, read_config
+from .config import eos_ids, read_config, _positive_number
 from .mamba import MambaWeights,MambaExecutor,packable
 from .device import selected_device
 
@@ -25,7 +25,7 @@ def config(path):
     for name in ('use_bias','use_conv_bias','tie_word_embeddings'):
         if type(c.get(name)) is not bool:raise ValueError('invalid Mamba-2 bias/tie policy')
     eps=c.get('layer_norm_epsilon')
-    if type(eps) not in (int,float) or not math.isfinite(eps) or eps<=0:raise ValueError('invalid Mamba-2 epsilon')
+    if not _positive_number(eps):raise ValueError('invalid Mamba-2 epsilon')
     if not eos_ids(c.get('eos_token_id')) or max(eos_ids(c['eos_token_id']))>=c['vocab_size']:
         raise ValueError('Mamba-2 requires valid EOS tokens')
     c['intermediate_size']=2*c['hidden_size'];c['conv_dim']=c['intermediate_size']+2*c['state_size']

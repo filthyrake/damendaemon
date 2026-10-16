@@ -42,7 +42,7 @@ def tensors(c):
 class GptOssTests(unittest.TestCase):
     def test_config_rejects_incompatible_layouts(self):
         c=configuration();self.assertEqual(validate_config(c)['swiglu_limit'],7.)
-        for change in ({'num_experts_per_tok':5},{'experts_per_token':3},{'attention_bias':False},
+        for change in ({'swiglu_limit':10**400},{'num_experts_per_tok':5},{'experts_per_token':3},{'attention_bias':False},
             {'layer_types':['full_attention']},{'hidden_size':31},{'sliding_window':True},
             {'swiglu_limit':float('nan')},{'quantization_config':{'quant_method':'gptq'}},
             {'rope_scaling':{**c['rope_scaling'],'truncate':True}}):

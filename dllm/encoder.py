@@ -1,5 +1,5 @@
 """Independent BERT embeddings and BERT/XLM-RoBERTa relevance scores."""
-from .config import read_config
+from .config import read_config, _positive_number
 from collections import OrderedDict
 import json
 import math
@@ -29,7 +29,7 @@ def config(path):
     if c['hidden_size'] % c['num_attention_heads']:
         raise ValueError('encoder hidden size must divide into heads')
     eps = c.get('layer_norm_eps', 1.e-12)
-    if type(eps) not in (int,float) or not math.isfinite(eps) or eps <= 0:
+    if not _positive_number(eps):
         raise ValueError('invalid encoder normalization epsilon')
     if type(c.get('pad_token_id')) is not int or not 0 <= c['pad_token_id'] < c['vocab_size']:
         raise ValueError('encoder requires a valid padding token')
