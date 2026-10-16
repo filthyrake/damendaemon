@@ -84,3 +84,31 @@ class RerankComparisonTests(unittest.TestCase):
         result=self.run_case('valid')
         self.assertEqual(result.returncode,0,result.stderr)
         self.assertEqual(result.stdout,'passed\n')
+
+    def test_bounded_strict_response_reader(self):
+        script=r'''
+import io,json
+from unittest.mock import patch
+from scripts import compare_rerank_a2 as comparator
+valid=b'{"results":[{"index":0,"relevance_score":-0.2}],"usage":null}'
+class Bounded(io.BytesIO):
+    def read(self,size=-1):
+        assert size==len(valid)+1, 'unbounded response read'
+        return super().read(size)
+with patch.object(comparator,'MAX_RESPONSE_BYTES',len(valid)):
+    assert comparator._read_response(Bounded(valid),1)['results'][0]['index']==0
+    try:comparator._read_response(Bounded(valid+b' '),1)
+    except ValueError:pass
+    else:raise AssertionError('oversized response accepted')
+for raw in (b'{"results":[],"results":[{"index":0,"relevance_score":0}]}',
+            b'{"results":[{"index":1,"index":0,"relevance_score":0}]}',
+            b'{"results":[{"index":0,"relevance_score":NaN}]}',
+            b'{"results":[]}',b'[]',b'null',b'\xff',
+            b'{"extra":'+b'['*2000+b'0'+b']'*2000+b'}'):
+    try:comparator._read_response(io.BytesIO(raw),1)
+    except ValueError:pass
+    else:raise AssertionError('invalid response accepted')
+'''
+        result=subprocess.run([sys.executable,'-S','-c',script],cwd=Path(__file__).resolve().parents[1],
+                              capture_output=True,text=True,timeout=10)
+        self.assertEqual(result.returncode,0,result.stderr)

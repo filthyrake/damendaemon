@@ -15,11 +15,13 @@ import sys
 import time
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
+from dllm.bench import _response_json
 
 
 PAIR_COUNTS=(1,4,16,64)
 CONCURRENCIES=(1,4)
 TRIALS=6
+MAX_RESPONSE_BYTES=1024*1024
 
 
 def _coverage(report):
@@ -59,6 +61,15 @@ def _scores(results,count):
             raise ValueError('rerank score must be finite numeric evidence')
         scores[index]=score
     return scores
+
+
+def _read_response(source,count):
+    raw=source.read(MAX_RESPONSE_BYTES+1)
+    if len(raw)>MAX_RESPONSE_BYTES:raise ValueError('rerank response exceeds byte limit')
+    result=_response_json(raw.decode('utf-8'))
+    if not isinstance(result,dict):raise ValueError('invalid rerank response')
+    _scores(result.get('results'),count)
+    return result
 
 
 def main():
@@ -107,13 +118,11 @@ def main():
                     start=time.perf_counter()
                     try:
                         with urlopen(Request(url+'/v1/rerank',data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=180) as r:
-                            result=json.load(r)
+                            result=_read_response(r,len(documents))
                     except HTTPError as error:
                         error.close()
                         raise RuntimeError(f'HTTP {error.code}') from None
                     elapsed=time.perf_counter()-start
-                    if not isinstance(result,dict):raise ValueError('invalid rerank response')
-                    _scores(result.get('results'),len(documents))
                     return {'seconds':elapsed,'results':result['results'],'usage':result.get('usage')}
                 for count in PAIR_COUNTS:
                     documents=(base_docs*16)[:count]
