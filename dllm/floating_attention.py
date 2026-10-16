@@ -14,7 +14,7 @@ from .cache_indices import prefill_indices, ring_decode_indices
 from .compressed_pool import PoolState
 from .deepseek_position import rotate_pairs
 from .floating_compressor import compress_hidden
-from .floating_indexer import index_hidden
+from .floating_indexer import checked_index_hidden as index_hidden
 from .prepared_projection import PackedProjection, is_projection, linear
 from .selected_attention import selected_attention
 from .reference_numerics import finite

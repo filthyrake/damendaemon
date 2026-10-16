@@ -1,5 +1,6 @@
 """Floating indexer projection/rotation/QAT composition; no packed GEMM claim."""
 import torch
+from functools import partial
 from .prepared_projection import is_projection, linear
 
 from .activation_simulation import normalized_hadamard, simulate_fp4
@@ -77,3 +78,11 @@ def _index_hidden(hidden, low_rank, query_weight, head_weight, keys, positions, 
 def index_hidden(hidden,low_rank,query_weight,head_weight,keys,positions,inverse_frequencies,*,top_k,offset=0,query_chunk=16,key_chunk=64):
     return _index_hidden(hidden,low_rank,query_weight,head_weight,keys,positions,inverse_frequencies,
                          top_k=top_k,offset=offset,query_chunk=query_chunk,key_chunk=key_chunk)
+
+
+def checked_index_hidden(hidden,low_rank,query_weight,head_weight,keys,positions,inverse_frequencies,
+                         *,top_k,offset=0,query_chunk=16,key_chunk=64):
+    """Reference-model boundary: reject invalid intermediates and visible scores."""
+    return _index_hidden(hidden,low_rank,query_weight,head_weight,keys,positions,inverse_frequencies,
+                         top_k=top_k,offset=offset,query_chunk=query_chunk,key_chunk=key_chunk,
+                         selector=partial(select_compressed,validate_scores=True),validate_finite=True)

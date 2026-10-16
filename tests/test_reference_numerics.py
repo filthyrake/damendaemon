@@ -77,6 +77,29 @@ class ReferenceNumericsTests(unittest.TestCase):
         self.assertTrue(all(layer.attention.poisoned for layer in state.layers))
         state.close()
 
+    def test_reference_attention_indexer_failure_poisons_decode_and_rejects_prefill(self):
+        from tests.test_floating_attention import fixture as attention_fixture
+        from dllm.floating_attention import attention_prefill,attention_decode
+        hidden,weights,freq=attention_fixture(4,5)
+        _,state=attention_prefill(hidden[:,:4],weights,freq,groups=2,window=4,
+                                  ratio=4,index_top_k=2,max_tokens=6)
+        self.addCleanup(state.close)
+        original=torch.nn.functional.linear
+        def overflow_query(value,weight,*args,**kwargs):
+            if weight is weights['indexer.wq_b.weight']:
+                return torch.full((*value.shape[:-1],weight.shape[0]),float('inf'))
+            return original(value,weight,*args,**kwargs)
+        with patch('dllm.floating_indexer.linear',side_effect=overflow_query):
+            with self.assertRaisesRegex(ValueError,'indexer intermediate'):
+                attention_prefill(hidden,weights,freq,groups=2,window=4,ratio=4,index_top_k=2)
+            with self.assertRaisesRegex(ValueError,'indexer intermediate'):
+                attention_decode(hidden[:,4:5],state,position=4)
+        self.assertTrue(state.poisoned)
+        self.assertEqual(state.position,4)
+        with self.assertRaises(RuntimeError):
+            attention_decode(hidden[:,4:5],state,position=4)
+        state.close();self.assertTrue(state.closed)
+
     def test_generation_checks_all_logits_before_sampling_and_closes_state(self):
         with tempfile.TemporaryDirectory() as temp:
             text=text_fixture(Path(temp));model=ScriptedModel(text,'abcdef')

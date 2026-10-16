@@ -7,7 +7,7 @@ from dllm.activation_simulation import normalized_hadamard, simulate_fp4
 from dllm.compressed_indexer import select_compressed
 from dllm.deepseek_position import frequencies, rotate_pairs
 from dllm.floating_compressor import compress_hidden
-from dllm.floating_indexer import index_hidden
+from dllm.floating_indexer import index_hidden, checked_index_hidden
 
 
 class FloatingIndexerTests(unittest.TestCase):
@@ -71,6 +71,19 @@ class FloatingIndexerTests(unittest.TestCase):
         self.assertTrue(all(row <= 3 for row in rows))
         for value, previous in zip(args, before):
             torch.testing.assert_close(value, previous)
+
+    def test_checked_reference_path_matches_valid_outputs_and_rejects_projection_overflow(self):
+        for dtype in (torch.float32,torch.float16,torch.bfloat16):
+            args=self.fixture(dtype)
+            expected=index_hidden(*args,top_k=3)
+            actual=checked_index_hidden(*args,top_k=3)
+            torch.testing.assert_close(actual[0],expected[0])
+            torch.testing.assert_close(actual[1],expected[1])
+        args=list(self.fixture(torch.float32))
+        args[1].fill_(2.)
+        args[2].fill_(torch.finfo(torch.float32).max)
+        with self.assertRaisesRegex(ValueError,'indexer intermediate'):
+            checked_index_hidden(*args,top_k=3)
 
     def test_invalid_contracts_fail_before_projection(self):
         args = self.fixture()
