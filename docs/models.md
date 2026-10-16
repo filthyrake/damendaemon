@@ -826,3 +826,9 @@ and XLM-R raw relevance. Mixed-length and single-item batches cover padding,
 segment IDs and XLM-R position offsets. Device admission is replaced for this
 CPU harness; numerical computation is not mocked. These checks run in CPU CI
 and do not establish GPU performance or semantic quality.
+
+StarCoder2 and OLMoE configuration adapters retain the validated rotary schedule,
+including normalization of the legacy `type` field to `rope_type`. Accepted
+linear schedules therefore reach frequency construction without a missing-key
+error, and later mutation of the source metadata cannot alter the parsed
+schedule. Existing unsupported-schedule restrictions remain in force.

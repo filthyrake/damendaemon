@@ -191,6 +191,7 @@ def starcoder_config(config):
         raise ValueError('LayerNorm epsilon must be finite and positive')
     common = decoder_config({**c, 'model_type': 'mistral', 'hidden_act': 'silu', 'rms_norm_eps': epsilon})
     return {**common, **c, 'head_dim': common['head_dim'], 'rms_norm_eps': epsilon,
+            'rope_scaling': common['rope_scaling'],
             'use_bias': c.get('use_bias', True), 'tie_word_embeddings': c.get('tie_word_embeddings', True)}
 
 
@@ -208,7 +209,8 @@ def olmoe_config(config):
         raise ValueError('QKV clip must be finite and positive')
     if common['head_dim']*c['num_attention_heads'] != c['hidden_size']:
         raise ValueError('OLMoE requires whole-projection Q/K normalization dimensions')
-    return {**common,**c,'head_dim':common['head_dim'],'norm_topk_prob':c.get('norm_topk_prob',False)}
+    return {**common,**c,'head_dim':common['head_dim'],'rope_scaling':common['rope_scaling'],
+            'norm_topk_prob':c.get('norm_topk_prob',False)}
 
 
 def hybrid_config(config):

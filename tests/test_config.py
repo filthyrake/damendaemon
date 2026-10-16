@@ -46,6 +46,25 @@ class ConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 decoder_config({**config, **change})
 
+    def test_architecture_adapters_preserve_normalized_rotary_scaling(self):
+        for model in ('starcoder2', 'olmoe'):
+            extra = ({'hidden_act':'gelu_pytorch_tanh', 'norm_epsilon':1e-5} if model == 'starcoder2'
+                     else {'num_experts':4, 'num_experts_per_tok':2})
+            for key in ('type', 'rope_type'):
+                scaling = {key:'linear', 'factor':4}
+                source = self.config(model_type=model, head_dim=64, rope_scaling=scaling, **extra)
+                parsed = decoder_config(source)
+                with self.subTest(model=model, key=key):
+                    self.assertEqual(parsed['rope_scaling']['rope_type'], 'linear')
+                    self.assertEqual(parsed['rope_scaling']['factor'], 4)
+                    self.assertEqual(source['rope_scaling'], {key:'linear', 'factor':4})
+                    scaling['factor'] = 8
+                    self.assertEqual(parsed['rope_scaling']['factor'], 4)
+            for kind in ('dynamic', 'yarn'):
+                with self.subTest(model=model, unsupported=kind), self.assertRaises(ValueError):
+                    decoder_config(self.config(model_type=model, head_dim=64,
+                        rope_scaling={'type':kind, 'factor':4}, **extra))
+
     def test_unsupported_variants_fail_before_weight_loading(self):
         for changes in ({'model_type': 'qwen3_5'}, {'model_type': 'qwen3_moe'},
                         {'rope_scaling': {'type': 'dynamic', 'factor': 2}},
