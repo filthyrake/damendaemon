@@ -37,7 +37,7 @@ def main():
         actual=dequantize(tensor.data,tensor.tensor_type).reshape(expected.shape)
         if not np.array_equal(actual,expected):raise AssertionError((tensor.name,float(np.max(np.abs(actual-expected)))))
         checks.append({'tensor':tensor.name,'exact':True,'shape':list(expected.shape)})
-    assert not tensors,tuple(tensors)
+    if tensors:raise ValueError('GGUF is missing expected tensors: '+', '.join(sorted(tensors)))
     print(json.dumps({'passed':True,'model':args.model,'gguf':args.gguf,'quantization':'q8_0','checks':checks},indent=2))
 
 

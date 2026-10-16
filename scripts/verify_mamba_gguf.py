@@ -13,12 +13,15 @@ def main():
     p.add_argument('--quantization',choices=('none','q8_0'),default='q8_0');args=p.parse_args()
     torch.set_num_threads(4)
     model=load(args.model,512,quantization=args.quantization);reader=gguf.GGUFReader(args.gguf)
-    assert reader.fields['general.architecture'].contents()==model.config['model_type']
+    if reader.fields['general.architecture'].contents()!=model.config['model_type']:
+        raise ValueError('GGUF architecture differs from the source model')
     names={'embed':'token_embd.weight','head':'output.weight','norm':'output_norm.weight'}
     suffixes={'norm':'attn_norm.weight','A':'ssm_a','D':'ssm_d','conv':'ssm_conv1d.weight',
         'conv_bias':'ssm_conv1d.bias','dt_bias':'ssm_dt.bias','in_proj':'ssm_in.weight','out_proj':'ssm_out.weight',
         'x_proj':'ssm_x.weight','dt_proj':'ssm_dt.weight','in_bias':'ssm_in.bias','out_bias':'ssm_out.bias',
         'gated_norm':'ssm_norm.weight'}
+    if len({t.name for t in reader.tensors})!=len(reader.tensors):
+        raise ValueError('duplicate GGUF tensor names')
     tensors={t.name:t for t in reader.tensors}
     original=dict(tensors);count=0
     for name,value in model.weights.items():
@@ -32,10 +35,10 @@ def main():
         expected=restore(value,model.scales[name]) if name in model.scales else value
         if model.config['model_type']=='mamba2' and name.rsplit('.',1)[-1] in ('A','D','gated_norm'):
             actual=actual.reshape(expected.shape)
-        assert actual.shape==expected.shape,(name,actual.shape,expected.shape)
-        assert torch.equal(actual,expected),(name,(actual-expected).abs().max().item())
+        if actual.shape!=expected.shape:raise ValueError(f'GGUF tensor shape differs: {name}')
+        if not torch.equal(actual,expected):raise ValueError(f'GGUF tensor coefficients differ: {name}')
         count+=1
-    assert not tensors,list(tensors)
+    if tensors:raise ValueError('unexpected GGUF tensors: '+', '.join(sorted(tensors)))
     print(json.dumps({'passed':True,'model':args.model,'gguf':args.gguf,'tensors':count,
         'all_dequantized_weights_bitwise_equal':True,'quantization':args.quantization,'input_embedding':'float32'},indent=2))
 
