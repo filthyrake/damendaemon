@@ -76,3 +76,40 @@ class T5Tests(unittest.TestCase):
             for raw in ('[]','{"eos_token_id":5,"eos_token_id":6}','{"eos_token_id":NaN}'):
                 generation.write_text(raw)
                 with self.subTest(raw=raw),self.assertRaises(ValueError):config(directory)
+
+    def test_activation_overrides_and_cpu_reference_logits(self):
+        from transformers import T5Config,T5ForConditionalGeneration
+        from tokenizers import Tokenizer,models
+        from dllm.t5 import T5Weights,T5Executor
+        from unittest.mock import patch
+        for projection in ('relu','gated-gelu'):
+            with self.subTest(projection=projection),TemporaryDirectory() as directory,torch.random.fork_rng(devices=[]):
+                torch.manual_seed(73)
+                reference=T5ForConditionalGeneration(T5Config(d_model=8,d_ff=16,d_kv=4,
+                    num_heads=2,num_layers=2,vocab_size=16,decoder_start_token_id=0,
+                    pad_token_id=0,eos_token_id=1,dropout_rate=0,feed_forward_proj=projection)).eval()
+                reference.save_pretrained(directory)
+                Tokenizer(models.WordLevel({'[UNK]':0},unk_token='[UNK]')).save(str(Path(directory)/'tokenizer.json'))
+                loaded=T5Weights(directory,16)
+                with patch('dllm.t5.selected_device',return_value='cpu'),patch('dllm.t5.empty_cache'),patch('dllm.t5.available_memory',return_value=2**30):
+                    executor=T5Executor(loaded,use_graph=False,max_batch=2,kernels='torch')
+                prompts=[[7,8,1],[9,1]]
+                actual=executor.prefill_batch(prompts,[1,0])
+                for row,prompt in enumerate(prompts):
+                    with torch.inference_mode():
+                        expected=reference(input_ids=torch.tensor([prompt]),decoder_input_ids=torch.tensor([[0]])).logits[:,-1]
+                    torch.testing.assert_close(actual[row:row+1],expected,atol=1e-6,rtol=1e-5)
+                actual,_=executor.decode_batch([3,4],[1,0])
+                for row,prompt in enumerate(prompts):
+                    with torch.inference_mode():
+                        expected=reference(input_ids=torch.tensor([prompt]),decoder_input_ids=torch.tensor([[0,3+row]])).logits[:,-1]
+                    torch.testing.assert_close(actual[row:row+1],expected,atol=1e-6,rtol=1e-5)
+                path=Path(directory)/'config.json';original=json.loads(path.read_text())
+                for change in ({'dense_act_fn':'silu'},{'is_gated_act':not original['is_gated_act']},{'is_gated_act':int(original['is_gated_act'])}):
+                    path.write_text(json.dumps({**original,**change}))
+                    with self.subTest(change=change),patch('dllm.qwen2.weight_files',side_effect=AssertionError('weights opened')):
+                        with self.assertRaises(ValueError):T5Weights(directory,16)
+                overridden=T5Config(**{**original,'dense_act_fn':'silu'})
+                self.assertEqual(overridden.dense_act_fn,'silu')
+                path.write_text(json.dumps({k:v for k,v in original.items() if k not in ('dense_act_fn','is_gated_act')}))
+                self.assertEqual(config(directory)['feed_forward_proj'],projection)

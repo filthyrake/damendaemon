@@ -20,6 +20,12 @@ def config(path):
             or c.get('is_encoder_decoder') is not True or c.get('quantization_config')
             or c.get('feed_forward_proj','relu') not in ('relu','gated-gelu')):
         raise ValueError('unsupported T5 encoder-decoder configuration')
+    gated=c.get('feed_forward_proj','relu')=='gated-gelu'
+    activation='gelu_new' if gated else 'relu'
+    if (c.get('dense_act_fn',activation)!=activation
+            or type(c.get('is_gated_act',gated)) is not bool
+            or c.get('is_gated_act',gated)!=gated):
+        raise ValueError('unsupported T5 feed-forward activation override')
     for key in ('d_model','d_ff','d_kv','num_heads','num_layers','vocab_size'):
         if type(c.get(key)) is not int or c[key]<=0:
             raise ValueError('invalid T5 dimension: '+key)
