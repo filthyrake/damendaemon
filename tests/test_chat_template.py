@@ -139,3 +139,25 @@ class ChatTemplateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'rendered prompt'):
                 ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}],tools=tools,tool_json=True)
         model.tokenizer.encode.assert_not_called()
+
+
+class NamedTemplateCompatibilityTests(unittest.TestCase):
+    def test_default_rendering_matches_local_transformers(self):
+        from tokenizers import Tokenizer, models
+        from transformers import PreTrainedTokenizerFast
+        from dllm.tokenizer_metadata import checkpoint_template
+        from dllm.qwen2 import ModelWeights
+        template = "{% for message in messages %}{{ message['role'] }}:{{ message['content'] }};{% endfor %}{% if add_generation_prompt %}assistant:{% endif %}"
+        messages = [{'role':'system','content':'Be brief'}, {'role':'user','content':'héllo'}]
+        tokenizer = Tokenizer(models.WordLevel({'[UNK]':0},unk_token='[UNK]'))
+        for named in ({'tool_use':'wrong variant','default':template},
+                      [{'name':'tool_use','template':'wrong variant'}, {'name':'default','template':template}]):
+            with self.subTest(named=named):
+                reference = PreTrainedTokenizerFast(tokenizer_object=tokenizer,chat_template=named)
+                selected = checkpoint_template('.', {'chat_template':named})
+                model = ModelWeights.__new__(ModelWeights)
+                model.config = {'model_type':'qwen2','vocab_size':1}
+                model.configure_tokenizer(tokenizer, selected, {})
+                for generation in (False, True):
+                    expected = reference.apply_chat_template(messages,tokenize=False,add_generation_prompt=generation)
+                    self.assertEqual(model.template.render(messages=messages,add_generation_prompt=generation,**model.special_tokens),expected)

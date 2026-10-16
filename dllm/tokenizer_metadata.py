@@ -45,8 +45,41 @@ def special_token_text(metadata):
 MAX_CHECKPOINT_TEMPLATE_BYTES = MAX_TOKENIZER_CONFIG_BYTES
 
 
+def _default_template(collection):
+    """Select ordinary chat from HF named templates without guessing a variant."""
+    if not 1 <= len(collection) <= 64:
+        raise ValueError('named chat templates require 1..64 entries')
+    if isinstance(collection, dict):
+        entries = collection.items()
+    else:
+        if any(not isinstance(entry, dict) or set(entry) != {'name', 'template'}
+               for entry in collection):
+            raise ValueError('named chat templates require name/template entries')
+        entries = ((entry['name'], entry['template']) for entry in collection)
+    templates = {}
+    size = 0
+    for name, template in entries:
+        if not isinstance(name, str) or not name or not isinstance(template, str):
+            raise ValueError('named chat templates require nonempty names and text templates')
+        if name in templates:
+            raise ValueError('duplicate named chat template')
+        try:
+            size += len(template.encode('utf-8'))
+            name.encode('utf-8')
+        except UnicodeError as error:
+            raise ValueError('named chat templates require valid UTF-8') from error
+        if size > MAX_CHECKPOINT_TEMPLATE_BYTES:
+            raise ValueError('named chat templates exceed metadata byte limit')
+        templates[name] = template
+    if 'default' not in templates:
+        raise ValueError('named chat templates require an explicit default')
+    return templates['default']
+
+
 def checkpoint_template(path, metadata):
     template = metadata.get('chat_template')
+    if isinstance(template, (dict, list)):
+        template = _default_template(template)
     if template is None:
         fallback = Path(path)/'chat_template.jinja'
         if fallback.exists():

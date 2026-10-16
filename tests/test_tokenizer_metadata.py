@@ -76,3 +76,31 @@ class TokenizerMetadataTests(unittest.TestCase):
                 from dllm.tokenizer_metadata import MAX_CHECKPOINT_TEMPLATE_BYTES
                 read.assert_called_once_with(MAX_CHECKPOINT_TEMPLATE_BYTES+1)
             self.assertTrue(stream.closed)
+
+    def test_named_templates_select_only_explicit_default(self):
+        from dllm.tokenizer_metadata import checkpoint_template
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'chat_template.jinja').write_text('fallback')
+            for value in ({'tool_use':'tool','default':'ordinary'},
+                          [{'name':'tool_use','template':'tool'},{'name':'default','template':'ordinary'}],
+                          [{'name':'default','template':'ordinary'},{'name':'tool_use','template':'tool'}]):
+                with self.subTest(value=value):
+                    self.assertEqual(checkpoint_template(root,{'chat_template':value}),'ordinary')
+            invalid=({'tool_use':'tool'}, [{'name':'other','template':'x'}],
+                     [{'name':'default','template':'a'},{'name':'default','template':'b'}],
+                     [{'name':'default'}], [{'name':'default','template':'a','extra':1}],
+                     {'default':'x','tool_use':None}, {'default':'x','': 'y'},
+                     [{'name':[],'template':'x'}], ['default'],
+                     {'default':'x',**{str(i):'x' for i in range(64)}})
+            for value in invalid:
+                with self.subTest(value=value),self.assertRaises(ValueError):
+                    checkpoint_template(root,{'chat_template':value})
+
+    def test_named_template_collection_has_utf8_byte_budget(self):
+        from dllm.tokenizer_metadata import checkpoint_template
+        with patch('dllm.tokenizer_metadata.MAX_CHECKPOINT_TEMPLATE_BYTES',8):
+            self.assertEqual(checkpoint_template('.',{'chat_template':{'default':'é'*4}}),'é'*4)
+            for value in ({'default':'é'*5}, {'default':'é'*4,'other':'x'},
+                          {'default':'x','other':'\ud800'}):
+                with self.subTest(value=value),self.assertRaises(ValueError):
+                    checkpoint_template('.',{'chat_template':value})
