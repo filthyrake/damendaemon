@@ -247,12 +247,12 @@ def main():
                 q4_prompt_policy = dict(selected=True, source_sha256=hashlib.sha256(
                     Path(q4_prefill_policy.__file__).read_bytes()).hexdigest())
             if args.experimental_q4_marlin_context:
-                assert executor.context==args.context
+                if not (executor.context==args.context):raise ValueError('executor context differs from requested experiment')
             if args.require_q4_marlin:
-                assert '+cuda-q4-marlin' in executor.kernel_backend,executor.kernel_backend
-                assert len(executor.quant_linear.q4_marlin)==129
-                assert executor.q4_marlin_abi in (1,2)
-                assert executor.packed_layout_overhead_bytes==(111099904 if executor.q4_marlin_abi==1 else 0)
+                if not ('+cuda-q4-marlin' in executor.kernel_backend):raise ValueError('requested Marlin backend was not selected')
+                if not (len(executor.quant_linear.q4_marlin)==129):raise ValueError('Marlin projection count differs from qualification contract')
+                if not (executor.q4_marlin_abi in (1,2)):raise ValueError('unsupported Marlin ABI')
+                if not (executor.packed_layout_overhead_bytes==(111099904 if executor.q4_marlin_abi==1 else 0)):raise ValueError('Marlin layout overhead differs from ABI contract')
             if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
                 raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:
@@ -348,7 +348,7 @@ def main():
         max_absolute=max(e['max_absolute'] for c in cases for e in c['errors']),
         max_relative_rms=max(e['relative_rms'] for c in cases for e in c['errors']),
         greedy_mismatches=sum(len(c['greedy_mismatches']) for c in cases))), flush=True)
-    assert passed, 'published GGUF numerical gate failed'
+    if not (passed):raise ValueError('published GGUF numerical gate failed')
 
 
 if __name__ == '__main__': main()
