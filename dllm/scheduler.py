@@ -14,6 +14,7 @@ import threading
 import time
 
 from .runtime import Runtime, BusyError
+from .error_state import detached_error
 from .sampling import Sampling, Sampler, sample_rows
 from .stopping import stop_sequences, text_delta
 from .prompts import decode_output
@@ -313,12 +314,7 @@ class BatchedRuntime:
             if error is not None:
                 # Do not transport worker frames (and their GPU tensors) to the
                 # caller. A retained exception must not pin an evicted model.
-                try:
-                    detached = copy.copy(error).with_traceback(None)
-                except Exception:
-                    detached = RuntimeError(str(error))
-                detached.__cause__ = detached.__context__ = None
-                detached.__notes__ = list(getattr(error, '__notes__', ()))
+                detached = detached_error(error)
                 if error.__traceback__ is not None:
                     detached.add_note('Worker traceback:\n'+''.join(traceback.format_tb(error.__traceback__)))
                 error = detached
