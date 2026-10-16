@@ -84,6 +84,38 @@ with patch('sys.argv', args), patch.object(compare_llama, 'urlopen', side_effect
 
 
 class ComparatorGatesTests(unittest.TestCase):
+    def test_http_rejection_closes_without_reading_or_publishing(self):
+        probe = r"""
+import contextlib, io
+from urllib.error import HTTPError
+from unittest.mock import patch
+from scripts import compare_llama
+class UnreadBody(io.BytesIO):
+    def read(self, *args, **kwargs):
+        raise AssertionError('error body must not be read')
+body = UnreadBody(b'private body')
+error = HTTPError('http://unused.invalid', 503, 'private reason', {}, body)
+output = io.StringIO()
+try:
+    with patch('sys.argv', ['compare', 'http://unused.invalid', '--engine', 'dllm']), patch.object(compare_llama, 'urlopen', side_effect=error), contextlib.redirect_stdout(output):
+        try:
+            compare_llama.main()
+        except RuntimeError as caught:
+            if str(caught) != 'HTTP 503' or not caught.__suppress_context__:
+                raise AssertionError('unsafe diagnostic')
+        else:
+            raise AssertionError('rejection accepted')
+    if not body.closed or output.getvalue():
+        raise AssertionError('response leaked or report published')
+finally:
+    error.close()
+"""
+        for optimized in (False, True):
+            with self.subTest(optimized=optimized):
+                result = subprocess.run([sys.executable, *(['-O'] if optimized else []), '-c', probe],
+                    cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0, result.stderr)
+
     def run_case(self, case, optimized):
         return subprocess.run([sys.executable, *(['-O'] if optimized else []), '-c', HARNESS, case],
             cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, timeout=10)

@@ -8,6 +8,7 @@ import argparse
 import json
 import sys
 import time
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from dllm.bench import events, _response_json, _tool_call_output
@@ -90,8 +91,13 @@ def main():
         done = False
         finished = False
         scored_tokens=0
-        with urlopen(Request(args.base_url + ("/completions" if args.raw else "/chat/completions"), data=json.dumps(body).encode(),
-                             headers={"Content-Type": "application/json"}), timeout=120) as response:
+        try:
+            response = urlopen(Request(args.base_url + ("/completions" if args.raw else "/chat/completions"), data=json.dumps(body).encode(),
+                             headers={"Content-Type": "application/json"}), timeout=120)
+        except HTTPError as error:
+            error.close()
+            raise RuntimeError(f"HTTP {error.code}") from None
+        with response:
             for data in events(response, require_terminated=True):
                 if data == "[DONE]":
                     if not finished:
