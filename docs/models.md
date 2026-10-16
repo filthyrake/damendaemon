@@ -768,4 +768,4 @@ Native chat tokenization consumes template output incrementally and rejects more
 
 The CPU reference chat path retains its 1 MiB rendered-output limit and uses the same text-buffer approach so empty template chunks do not accumulate retained objects. Both paths close their template generators on overflow.
 
-SentencePiece GGUF vocabularies containing UNUSED token types are rejected in both static-score and positional-score paths. The pinned llama.cpp tokenizer can encode these pieces while suppressing their decoded output, so dropping them is not equivalent. See [the CPU vocabulary reproduction](evidence/gguf/sentencepiece-unused.md); ordinary supported vocabularies are unchanged.
+SentencePiece GGUF supports unique-spelling UNUSED pieces in both static-score and positional-score paths: they participate in encoding but emit no decoded text. Serialization and logprob presentation preserve this behavior. Duplicate spellings, UNUSED stop IDs, and structured output with suppressed pieces are rejected. See [the independent CPU oracle coverage](evidence/gguf/sentencepiece-unused.md); this is tokenizer compatibility evidence, not GPU qualification.

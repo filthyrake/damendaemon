@@ -103,6 +103,8 @@ def prepare_options(response_format, stops, thinking, ignore_eos=False):
 
 class Constraint:
     def __init__(self, model, schema):
+        if getattr(model.tokenizer, "suppressed_token_ids", ()):
+            raise ValueError("structured output is not yet qualified for suppressed SentencePiece tokens")
         if hasattr(model.tokenizer, "native_model"):
             raise ValueError("structured output is not yet qualified for positional SentencePiece GGUF tokenizers")
         try:

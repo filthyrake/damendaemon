@@ -74,6 +74,8 @@ class TokenText:
         return self.cache[token_id]
 
     def _token(self,token_id):
+        if token_id in getattr(self.tokenizer,"suppressed_token_ids", ()):
+            return "", ()
         piece=self.tokenizer.id_to_token(token_id)
         if piece is None:
             raise ValueError('token ID is absent from tokenizer')

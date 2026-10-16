@@ -126,7 +126,7 @@ def tokenizer(metadata):
                 eos.add(index)
     # Generation stops include end-of-text, end-of-turn and end-of-message.
     for text in ('<|im_end|>', '<|endoftext|>', '<|end_of_text|>', '<|eot_id|>', '<|eom_id|>'):
-        if text in vocab:
+        if text in vocab and types[vocab[text]] != 5:
             eos.add(vocab[text])
     if not eos:
         raise ValueError('GGUF model needs an EOS token')
@@ -143,12 +143,13 @@ def tokenizer(metadata):
             added.append((text, vocab[text]))
     if added:
         result.post_processor = processors.TemplateProcessing(single=prefix + ['$A'] + suffix, special_tokens=added)
+    suppressed = {i for i, kind in enumerate(types) if kind == 5} if sentencepiece else set()
     if native is not None:
         from .gguf_sentencepiece import PositionalSentencePieceTokenizer
-        result = PositionalSentencePieceTokenizer(result, native, metadata.get('tokenizer.ggml.add_space_prefix', True))
-    elif sentencepiece and metadata.get('tokenizer.ggml.add_space_prefix', True):
+        result = PositionalSentencePieceTokenizer(result, native, metadata.get('tokenizer.ggml.add_space_prefix', True), suppressed)
+    elif sentencepiece and (metadata.get('tokenizer.ggml.add_space_prefix', True) or suppressed):
         from .gguf_sentencepiece import SentencePieceTokenizer
-        result = SentencePieceTokenizer(result)
+        result = SentencePieceTokenizer(result, suppressed)
     return result, special, frozenset(eos)
 
 

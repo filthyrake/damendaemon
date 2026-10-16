@@ -1,5 +1,6 @@
 import importlib.util
 import math
+import json
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -147,20 +148,51 @@ class SentencePieceGgufTests(unittest.TestCase):
         result, _, _=tokenizer(source)
         self.assertEqual(result.encode('abcx',add_special_tokens=False).ids,[263,266])
         self.assertEqual(result.encode('ab',add_special_tokens=False).ids,[262])
-        source['tokenizer.ggml.token_type'][265]=5
-        with self.assertRaisesRegex(ValueError,'unused tokens'):
-            tokenizer(source)
+    def test_unused_reference_matrix_and_roundtrip(self):
+        from dllm.gguf_sentencepiece import restore_tokenizer
+        from dllm.logprobs import TokenText
+        from dllm.structured import Constraint
+        fixture = json.loads((Path(__file__).parent / 'fixtures/sentencepiece-unused.json').read_text())
+        for case in fixture['cases']:
+            source = metadata()
+            unused = case['unused']
+            for index in unused:
+                source['tokenizer.ggml.token_type'][index] = 5
+            source['tokenizer.ggml.add_space_prefix'] = case['prefix']
+            if case['tied']:
+                source['tokenizer.ggml.tokens'] += ['c', 'bc']
+                source['tokenizer.ggml.token_type'] += [1, 1]
+                source['tokenizer.ggml.scores'] += [-10., -3.]
+            result, _, _ = tokenizer(source)
+            for candidate in (result, restore_tokenizer(result.to_str())):
+                for index in unused:
+                    self.assertEqual(TokenText(candidate).token(index), ('', ()))
+                with self.assertRaisesRegex(ValueError, 'suppressed SentencePiece'):
+                    Constraint(SimpleNamespace(tokenizer=candidate), '{}')
+                for sample in case['samples']:
+                    with self.subTest(unused=unused, tied=case['tied'], prefix=case['prefix'], sample=sample):
+                        expected = sample['expected']
+                        encoded = candidate.encode(sample['text'], add_special_tokens=sample['add_special']).ids
+                        self.assertEqual(encoded, expected['ids'])
+                        ids = encoded if sample['explicit'] is None else sample['explicit']
+                        for skip, suffix in ((True, 'skip'), (False, 'all')):
+                            self.assertEqual(candidate.decode(ids, skip_special_tokens=skip).encode().hex(), expected['decode_' + suffix])
+                            self.assertEqual(candidate.decode_generated(ids, skip_special_tokens=skip).encode().hex(), expected['generated_' + suffix])
 
-    def test_unused_pieces_are_rejected_even_without_positional_ties(self):
-        # Independent llama.cpp pin 836d571 gives [1,263] for "a" in both
-        # vocabularies. Dropping UNUSED "a" previously changed dllm to
-        # [1,259,100], even though the source metadata was accepted.
-        source=metadata()
-        self.assertEqual(tokenizer(source)[0].encode('a').ids,[1,263])
-        for index in (260,262,265):
-            with self.subTest(index=index):
-                source=metadata();source['tokenizer.ggml.token_type'][index]=5
-                with self.assertRaisesRegex(ValueError,'unused tokens'):tokenizer(source)
+    def test_unused_duplicates_and_stop_ids_rejected(self):
+        source = metadata()
+        source['tokenizer.ggml.token_type'][260] = 5
+        source['tokenizer.ggml.tokens'][260] = 'b'
+        with self.assertRaisesRegex(ValueError, 'duplicate'):
+            tokenizer(source)
+        source = metadata()
+        source['tokenizer.ggml.token_type'][2] = 5
+        with self.assertRaisesRegex(ValueError, 'eos token ID'):
+            tokenizer(source)
+        source = metadata()
+        source['tokenizer.ggml.token_type'][265] = 5
+        source['tokenizer.ggml.tokens'][265] = '<|eot_id|>'
+        self.assertEqual(tokenizer(source)[2], frozenset({2}))
 
     def test_invalid_vocab_and_unsupported_normalization_are_rejected(self):
         mutations = [

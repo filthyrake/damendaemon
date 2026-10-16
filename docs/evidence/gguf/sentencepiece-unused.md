@@ -29,9 +29,44 @@ static-score vocabulary previously dropped these entries, while its positional
 path already rejected them. The same accepted file could therefore encode a
 different prompt without a validation error.
 
-Both dllm paths now reject UNUSED metadata before tokenizer/checkpoint loading.
-The regression retains the ordinary `[1,263]` control and covers UNUSED single
-characters, merge pieces and user-defined entries. Supporting these pieces
-requires an independently checked encode/decode/roundtrip contract, not simply
-removing the guard or marking them NORMAL. This remains a software capability
-boundary under #43; no idle GPU is required to investigate it further.
+#376 first rejected UNUSED metadata before loading (bbb38b9), preventing silent
+wrong IDs. #377 now implements the independently checked unique-spelling subset.
+UNUSED entries participate in encoding, including positional score ties, but
+are suppressed in full and generated decoding even with special tokens visible.
+An invisible first piece still consumes the one-time leading-space strip.
+Serialization preserves suppression. Logprob presentation emits empty text and
+empty bytes; IDs and probabilities remain available. Duplicate spellings and
+UNUSED explicit stop IDs are rejected. Structured output remains explicitly
+unqualified for tokenizers with suppressed pieces.
+
+## Independent CPU oracle
+
+`tests/reference/sentencepiece_oracle.cpp` calls the pinned public vocabulary API
+with `vocab_only=true` and `n_gpu_layers=0`; it creates no model context and loads
+no tensor weights. It emits exact IDs and byte-hex full/generated decoding for
+both special-token visibility settings. Build it against the CPU-only library:
+
+```sh
+cmake -S /path/to/llama.cpp -B /tmp/dllm-tokenizer-reference-build \
+  -DGGML_METAL=OFF -DGGML_CUDA=OFF -DGGML_OPENMP=OFF \
+  -DLLAMA_OPENSSL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF \
+  -DLLAMA_BUILD_SERVER=OFF -DLLAMA_BUILD_MTMD=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/dllm-tokenizer-reference-build --target llama --parallel 2
+c++ -std=c++17 -O2 tests/reference/sentencepiece_oracle.cpp \
+  -I/path/to/llama.cpp/include -I/path/to/llama.cpp/ggml/include \
+  -L/tmp/dllm-tokenizer-reference-build/bin -lllama \
+  -Wl,-rpath,/tmp/dllm-tokenizer-reference-build/bin -o /tmp/dllm-spm-oracle
+.venv/bin/python -m tests.reference.generate_sentencepiece_unused /tmp/dllm-spm-oracle
+.venv/bin/python -m unittest tests.test_gguf_sentencepiece
+```
+
+The frozen fixture records 744 reference calls: six UNUSED selections (including
+multiple simultaneous pieces), two score paths and two prefix policies, each
+with 22 prompt/special-policy combinations and nine explicit decode sequences.
+These cover whitespace, ordinary/special boundaries, byte fallback, Unicode,
+NUL, and UNUSED pieces between UTF-8 bytes. Tests compare original and restored
+tokenizers against all five reference outputs. The reference runs only when
+regenerating the fixture; ordinary CPU CI uses frozen results.
+
+This proves the covered tokenizer semantics, not model quality or GPU execution.
+Broader #43 hardware qualification remains open.

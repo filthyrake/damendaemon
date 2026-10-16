@@ -41,14 +41,9 @@ def build(metadata):
             or any(type(kind) is not int or kind not in (1, 2, 3, 4, 5, 6) for kind in types)
             or any(type(score) not in (int, float) or not math.isfinite(score) for score in scores)):
         raise ValueError('invalid GGUF SentencePiece vocabulary')
-    # llama.cpp may merge/resegment UNUSED pieces but suppresses them during
-    # decoding. Dropping them changes token IDs; treating them as NORMAL also
-    # changes semantics. Reject both score paths until that contract is covered.
-    if 5 in types:
-        raise ValueError('GGUF SentencePiece with unused tokens is not yet supported')
-    vocab = {text: i for i, text in enumerate(tokens) if types[i] != 5}
-    if len(vocab) != sum(kind != 5 for kind in types):
-        raise ValueError('duplicate active GGUF SentencePiece tokens')
+    vocab = {text: i for i, text in enumerate(tokens)}
+    if len(vocab) != len(tokens):
+        raise ValueError('duplicate GGUF SentencePiece tokens')
     unknown = metadata.get('tokenizer.ggml.unknown_token_id', 0)
     if (type(unknown) is not int or not 0 <= unknown < len(tokens) or types[unknown] not in (2, 3)
             or any(kind == 2 and i != unknown for i, kind in enumerate(types))):
@@ -61,7 +56,7 @@ def build(metadata):
     scored_pieces = {}
     positional = False
     for text, score, kind in zip(tokens, scores, types):
-        if kind != 1:
+        if kind not in (1, 5):
             continue
         splits = [(text[:i], text[i:]) for i in range(1, len(text))
                   if text[:i] in vocab and text[i:] in vocab]
@@ -87,14 +82,14 @@ def build(metadata):
 
 
 class SentencePieceTokenizer:
-    """Preserve GGUF's leading-space rule when an initial control token is hidden.
+    """Preserve GGUF leading-space and UNUSED-piece decoding rules.
 
-    Rust still performs vocabulary lookup and decoding. A decode-only view shares
-    the model and removes just the Strip stage; normal generated-token sequences
-    use the original tokenizer directly. The backend remains available to grammar
-    libraries that require an actual tokenizers.Tokenizer instance.
+    UNUSED IDs remain available to the encoder but never emit text, even when
+    special tokens are visible. An invisible first piece still consumes the
+    one-time prefix strip. Rust handles the remaining byte decoding.
     """
-    def __init__(self, backend):
+    def __init__(self, backend, suppressed_token_ids=()):
+        self.suppressed_token_ids = frozenset(suppressed_token_ids)
         self.backend_tokenizer = backend
         added = backend.get_added_tokens_decoder()
         self._special_ids = frozenset(i for i, token in added.items() if token.special)
@@ -107,14 +102,24 @@ class SentencePieceTokenizer:
         return getattr(self.backend_tokenizer, name)
 
     def decode(self, ids, skip_special_tokens=True):
-        decoder = (self._unstripped if skip_special_tokens and len(ids) and ids[0] in self._special_ids
-                   else self.backend_tokenizer)
+        hidden_first = bool(len(ids)) and (ids[0] in self.suppressed_token_ids
+            or (skip_special_tokens and ids[0] in self._special_ids))
+        decoder = self._unstripped if hidden_first else self.backend_tokenizer
+        if self.suppressed_token_ids:
+            ids = [i for i in ids if i not in self.suppressed_token_ids]
         return decoder.decode(ids, skip_special_tokens=skip_special_tokens)
 
     def decode_generated(self, ids, skip_special_tokens=True):
         # A continuation has no artificial beginning-of-text prefix to remove.
-        # Match llama.cpp server token-to-piece output, not full detokenization.
+        if self.suppressed_token_ids:
+            ids = [i for i in ids if i not in self.suppressed_token_ids]
         return self._unstripped.decode(ids, skip_special_tokens=skip_special_tokens)
+
+    def to_str(self, pretty=False):
+        if not self.suppressed_token_ids:
+            return self.backend_tokenizer.to_str(pretty=pretty)
+        return json.dumps(dict(dllm_sentencepiece=2, backend=self.backend_tokenizer.to_str(),
+            suppressed=sorted(self.suppressed_token_ids)), indent=2 if pretty else None)
 
     def decode_batch(self, sequences, skip_special_tokens=True):
         return [self.decode(ids, skip_special_tokens=skip_special_tokens) for ids in sequences]
@@ -143,7 +148,9 @@ def native_model(tokens, types, scores, unknown):
     for index, (text, kind, score) in enumerate(zip(tokens, types, scores)):
         piece = model.pieces.add()
         piece.piece, piece.score = text, score
-        piece.type = proto.ModelProto.SentencePiece.UNKNOWN if index == unknown else kind
+        # Native SentencePiece otherwise drops UNUSED during encoding. Decoding
+        # uses the separately serialized suppression set, never this proto.
+        piece.type = proto.ModelProto.SentencePiece.UNKNOWN if index == unknown else (1 if kind == 5 else kind)
     return model.SerializeToString()
 
 
@@ -153,8 +160,8 @@ class PositionalSentencePieceTokenizer(SentencePieceTokenizer):
     Rust retains ID lookup and byte decoding. Its static-rank encoder is never
     used for prompts on this path; serialized state preserves the native model.
     """
-    def __init__(self, backend, model, prefix=True):
-        super().__init__(backend)
+    def __init__(self, backend, model, prefix=True, suppressed_token_ids=()):
+        super().__init__(backend, suppressed_token_ids)
         try:
             from sentencepiece import SentencePieceProcessor
         except ImportError as error:
@@ -212,7 +219,8 @@ class PositionalSentencePieceTokenizer(SentencePieceTokenizer):
 
     def to_str(self, pretty=False):
         return json.dumps(dict(dllm_sentencepiece=1, backend=self.backend_tokenizer.to_str(),
-            model=base64.b64encode(self.native_model).decode('ascii'), prefix=self.space_prefix),
+            model=base64.b64encode(self.native_model).decode('ascii'), prefix=self.space_prefix,
+            suppressed=sorted(self.suppressed_token_ids)),
             indent=2 if pretty else None)
 
 
@@ -221,6 +229,8 @@ def restore_tokenizer(serialized, prefix=False):
     state = json.loads(serialized)
     if state.get('dllm_sentencepiece') == 1:
         return PositionalSentencePieceTokenizer(Tokenizer.from_str(state['backend']),
-            base64.b64decode(state['model'], validate=True), state['prefix'])
+            base64.b64decode(state['model'], validate=True), state['prefix'], state.get('suppressed', ()))
+    if state.get('dllm_sentencepiece') == 2:
+        return SentencePieceTokenizer(Tokenizer.from_str(state['backend']), state['suppressed'])
     backend = Tokenizer.from_str(serialized)
     return SentencePieceTokenizer(backend) if prefix else backend
