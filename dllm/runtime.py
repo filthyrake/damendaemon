@@ -576,7 +576,7 @@ class Runtime:
                         token = (sampler.select(logits.squeeze(0)).item()
                                  if temperature or sampler.constraint is not None or sampler.has_adjustments or sampler.logprobs_top is not None else next_token.item())
                 elapsed = time.perf_counter() - start
-                yield {"finish_reason": finish, "usage": {
+                terminal = {"finish_reason": finish, "usage": {
                     "prompt_tokens": len(prompt), "completion_tokens": len(output),
                     "total_tokens": len(prompt) + len(output),
                 }, "timing": {"source_tier": tier, "kernel_backend": executor.kernel_backend,
@@ -587,6 +587,10 @@ class Runtime:
                               "first_token_seconds": first_time, "total_seconds": elapsed,
                               "decode_tokens_per_second": (len(output) - 1) / (elapsed - first_time)
                               if len(output) > 1 and elapsed > first_time else None}}
+        # Direct callers may stop consuming at completion; ownership must
+        # already be released, and cleanup errors must precede success.
+        terminal['timing']['total_seconds'] = time.perf_counter() - start
+        yield terminal
 
 
 def make_executor(model, use_graph=True, max_batch=None, **kwargs):

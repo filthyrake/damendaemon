@@ -1,0 +1,52 @@
+"""Direct native iterator success follows KV and model lease cleanup."""
+from contextlib import contextmanager, ExitStack
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch
+import torch
+from dllm.runtime import Runtime
+
+
+class NativeCompletionTests(unittest.TestCase):
+    def test_terminal_follows_both_cleanup_boundaries(self):
+        for failure in (None,'kv','session'):
+            with self.subTest(failure=failure):
+                state=dict(kv=False,session=False)
+                model=SimpleNamespace(config={'model_type':'qwen2','vocab_size':3},eos=set(),quantization='none')
+                class Executor:
+                    kernel_backend='fake'
+                    residual_dtype='torch.float32'
+                    def reserve_request(self,*args):state['kv']=True
+                    def release_request(self,*args):
+                        state['kv']=False
+                        if failure=='kv':raise RuntimeError('KV release failed')
+                    def prefill(self,prompt):return torch.tensor([[0.,1.,2.]])
+                executor=Executor();executor.model=model
+                runtime=Runtime.__new__(Runtime)
+                @contextmanager
+                def session(alias):
+                    state['session']=True
+                    try:yield executor,'disk',0
+                    finally:
+                        state['session']=False
+                        if failure=='session':raise RuntimeError('session release failed')
+                runtime.session=session
+                with ExitStack() as stack:
+                    stack.enter_context(patch('dllm.harmony.output_stream',return_value=None))
+                    stack.enter_context(patch('dllm.prompts.encode',return_value=[1]))
+                    stack.enter_context(patch('dllm.prompts.validate_lengths'))
+                    stack.enter_context(patch('dllm.runtime.decode_output',return_value='ok'))
+                    stream=runtime.generate('a',[],1)
+                    try:
+                        self.assertEqual(next(stream)['text'],'ok')
+                        self.assertTrue(state['kv']);self.assertTrue(state['session'])
+                        if failure:
+                            with self.assertRaisesRegex(RuntimeError,'release failed'):next(stream)
+                        else:
+                            terminal=next(stream)
+                            self.assertEqual(terminal['finish_reason'],'length')
+                            self.assertFalse(state['kv']);self.assertFalse(state['session'])
+                            self.assertEqual(terminal['usage']['completion_tokens'],1)
+                            with self.assertRaises(StopIteration):next(stream)
+                    finally:stream.close()
+                self.assertFalse(state['kv']);self.assertFalse(state['session'])
