@@ -119,6 +119,10 @@ class BatchedRuntime:
     def model_ids(self):
         return self.runtime.model_ids()
 
+    def is_healthy(self):
+        with self.condition:
+            return not self.closed and not self.draining and self.worker.is_alive()
+
     def scheduler_status(self):
         """Read queue ownership without GPU access or waiting for the worker."""
         with self.condition:

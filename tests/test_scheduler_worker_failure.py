@@ -37,6 +37,7 @@ class SchedulerWorkerFailureTests(unittest.TestCase):
                             with self.assertRaisesRegex(RuntimeError, 'worker stopped'): future.result(1)
                         runtime.worker.join(2)
                         self.assertFalse(runtime.worker.is_alive())
+                        self.assertFalse(runtime.is_healthy())
                         self.assertTrue(runtime.scheduler_status()['closed'])
                         self.assertFalse(runtime.requests)
                         self.assertFalse(runtime.pending)

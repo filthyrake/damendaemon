@@ -113,7 +113,10 @@ def handler_for(runtime, auth=None, *, reservation_store=None):
             if not self.authorize():
                 return
             if self.path == "/health":
-                self.send_json(200, {"status": "ok"})
+                health = getattr(runtime, 'is_healthy', None)
+                healthy = health is None or health()
+                self.send_json(200 if healthy else 503,
+                               {"status": "ok" if healthy else "unavailable"})
             elif self.path == "/v1/models":
                 client = auth.client(self.headers.get_all('Authorization', []))
                 self.send_json(200, {"object": "list", "data": [

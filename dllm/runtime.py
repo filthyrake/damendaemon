@@ -133,6 +133,10 @@ class Runtime:
         self.lock = threading.Lock()
         self.admission = threading.BoundedSemaphore(queue_size)
 
+    def is_healthy(self):
+        """Lifecycle readiness without waiting for ongoing model execution."""
+        return not self.closing and not self.closed
+
     def model_ids(self):
         with self.registry_lock:
             return list(self.models)
