@@ -841,3 +841,11 @@ configuration map to the same native pipeline. See the
 Alternate/combined pooling, prompt exclusion, mixed schemas and custom module
 classes remain rejected. The CPU oracle covers compact-format loading and
 execution; this does not broaden the supported BERT architecture or GPU gates.
+
+Saved `config_sentence_transformers.json` metadata is read through the bounded
+JSON parser. A declared default prompt is prepended to embedding string inputs
+before stripping/lowercasing, following the
+[pinned Sentence Transformers policy](https://github.com/huggingface/sentence-transformers/blob/v5.4.0/sentence_transformers/base/model.py).
+Explicit token IDs bypass text preprocessing. Missing referenced prompts, malformed prompt policies
+and saved non-null `truncate_dim` are rejected; native dimension reduction
+remains unsupported. Named prompts without a selected default are not applied.

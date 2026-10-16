@@ -30,6 +30,10 @@ def main():
     # Read the reference preprocessing policy independently of native config.
     sentence_config=json.loads((Path(args.path)/'sentence_bert_config.json').read_text())
     lowercase=sentence_config.get('do_lower_case',False)
+    settings_path=Path(args.path)/'config_sentence_transformers.json'
+    settings=json.loads(settings_path.read_text()) if settings_path.exists() else {}
+    default_name=settings.get('default_prompt_name')
+    prefix=(settings.get('prompts',{}).get(default_name) or '') if default_name is not None else ''
     texts=['A dog is playing in the park.','A puppy chases a ball.','Financial markets fell today.',
            'こんにちは — café 🦙',' ','A long sentence '+('about a blue sky. '*20)]
     checks=[]
@@ -47,7 +51,7 @@ def main():
         tokens=model.encode(inputs)
         for value,ids in zip(inputs,tokens):
             if isinstance(value,str):
-                value=value.strip()
+                value=(prefix+value).strip()
                 if lowercase:value=value.lower()
                 assert ids==tokenizer.encode(value,add_special_tokens=True)
         count,length=len(tokens),max(map(len,tokens))

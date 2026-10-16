@@ -148,6 +148,37 @@ class EncoderConfigTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'lowercase'):
                     config(self.root)
 
+    def test_saved_default_prompt_and_truncation_policy(self):
+        from dllm.encoder import EncoderWeights
+        from tokenizers import Tokenizer, models
+        path = self.root/'config_sentence_transformers.json'
+        vocabulary = {'[UNK]':0, 'query: hello':1, 'hello':2, 'query:  hello':3}
+        model = EncoderWeights.__new__(EncoderWeights)
+        model.max_context = 256
+        model.tokenizer = Tokenizer(models.WordLevel(vocabulary, unk_token='[UNK]'))
+        (self.root/'sentence_bert_config.json').write_text('{"max_seq_length":256,"do_lower_case":true}')
+        settings = {'prompts':{'query':'QUERY: '}, 'default_prompt_name':'query'}
+        path.write_text(json.dumps(settings))
+        model.config = config(self.root)
+        self.assertEqual(model.encode('HELLO'), [[1]])
+        # Prefix before strip preserves the input's initial whitespace internally.
+        self.assertEqual(model.encode(' HELLO '), [[3]])
+        self.assertEqual(model.encode([2]), [[2]])
+        for settings in ({}, {'prompts':{'query':'QUERY: '}, 'default_prompt_name':None},
+                         {'prompts':{'query':None}, 'default_prompt_name':'query'}):
+            path.write_text(json.dumps(settings))
+            model.config = config(self.root)
+            self.assertEqual(model.encode('HELLO'), [[2]])
+        for settings in ({'truncate_dim':4}, {'truncate_dim':False},
+                         {'default_prompt_name':'missing'}, {'default_prompt_name':1},
+                         {'prompts':[], 'default_prompt_name':'query'},
+                         {'prompts':{'query':True}, 'default_prompt_name':'query'},
+                         {'prompts':{'query':'\ud800'}, 'default_prompt_name':'query'}):
+            with self.subTest(settings=ascii(settings)):
+                path.write_text(json.dumps(settings))
+                with self.assertRaises(ValueError):
+                    config(self.root)
+
     def test_compact_mean_pooling_and_published_module_aliases(self):
         expected = config(self.root)
         path = self.root/'1_Pooling/config.json'

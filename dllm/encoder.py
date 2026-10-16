@@ -11,6 +11,28 @@ from tokenizers import Tokenizer
 from .device import selected_device, available_memory, empty_cache
 
 
+def _saved_prompt(path):
+    settings_path = path/'config_sentence_transformers.json'
+    settings = read_config(settings_path) if settings_path.exists() else {}
+    if settings.get('truncate_dim') is not None:
+        raise ValueError('saved sentence embedding truncation is unsupported')
+    prompts = settings.get('prompts', {})
+    name = settings.get('default_prompt_name')
+    if (not isinstance(prompts, dict)
+            or any(not isinstance(key, str) or value is not None and not isinstance(value, str)
+                   for key, value in prompts.items())
+            or name is not None and (not isinstance(name, str) or name not in prompts)):
+        raise ValueError('invalid saved sentence embedding prompt policy')
+    try:
+        for key, value in prompts.items():
+            key.encode('utf-8')
+            if value is not None:
+                value.encode('utf-8')
+    except UnicodeError as error:
+        raise ValueError('saved sentence embedding prompts must be valid UTF-8') from error
+    return (prompts[name] or '') if name is not None else ''
+
+
 def config(path):
     path = Path(path)
     c = read_config(path/'config.json')
@@ -84,7 +106,7 @@ def config(path):
     if type(length) is not int or not 1 <= length <= c['max_position_embeddings']:
         raise ValueError('invalid sentence encoder length')
     return {**c, 'task':'embedding', 'layer_norm_eps':eps, 'embedding_max_length':length,
-            'do_lower_case':lowercase}
+            'do_lower_case':lowercase, 'embedding_prompt':_saved_prompt(path)}
 
 
 def used_tensor(name,task='embedding'):
@@ -169,7 +191,7 @@ class EncoderWeights:
         from .embeddings import options
         inputs, _, _ = options(inputs)
         def text(value):
-            value = value.strip()
+            value = (self.config.get('embedding_prompt', '') + value).strip()
             return value.lower() if self.config.get('do_lower_case', False) else value
         tokens = [self.tokenizer.encode(text(value),add_special_tokens=True).ids if isinstance(value,str) else list(value)
                   for value in inputs]
