@@ -147,7 +147,7 @@ def tokenizer(metadata):
     if native is not None:
         from .gguf_sentencepiece import PositionalSentencePieceTokenizer
         result = PositionalSentencePieceTokenizer(result, native, metadata.get('tokenizer.ggml.add_space_prefix', True), suppressed)
-    elif sentencepiece and (metadata.get('tokenizer.ggml.add_space_prefix', True) or suppressed):
+    elif sentencepiece:
         from .gguf_sentencepiece import SentencePieceTokenizer
         result = SentencePieceTokenizer(result, suppressed)
     return result, special, frozenset(eos)

@@ -98,6 +98,56 @@ class SentencePieceTokenizer:
         self._unstripped.decoder = decoders.Sequence([
             decoders.Replace('▁', ' '), decoders.ByteFallback(), decoders.Fuse()])
 
+        self._pieces = {token.content: index for index, token in backend.get_added_tokens_decoder().items()}
+        self._special_order = sorted(self._pieces, key=lambda text: len(text.encode('utf-8')), reverse=True)
+        policy = json.loads(backend.to_str()).get('post_processor')
+        self._prefix, self._suffix = [], []
+        if policy:
+            target = self._prefix
+            for entry in policy['single']:
+                if 'Sequence' in entry:
+                    target = self._suffix
+                else:
+                    target.extend(policy['special_tokens'][entry['SpecialToken']['id']]['ids'])
+
+    def encode(self, text, add_special_tokens=True):
+        if not isinstance(text, str):
+            raise TypeError('GGUF tokenizer input must be text')
+        ids = list(self._prefix) if add_special_tokens else []
+        # Match GGUF's global longest-special-first partitioning, including a
+        # longer special beginning inside a shorter one. Leftmost regex matching
+        # would incorrectly consume the shorter special in that case.
+        fragments = [text]
+        for piece in self._special_order:
+            divided = []
+            for fragment in fragments:
+                if isinstance(fragment, int):
+                    divided.append(fragment)
+                    continue
+                parts = fragment.split(piece)
+                for index, part in enumerate(parts):
+                    if index:
+                        divided.append(self._pieces[piece])
+                    if part:
+                        divided.append(part)
+            fragments = divided
+        for fragment in fragments:
+            if isinstance(fragment, int):
+                ids.append(fragment)
+                continue
+            if not fragment:
+                continue
+            ids.extend(self._encode_fragment(fragment))
+        if add_special_tokens:
+            ids.extend(self._suffix)
+        return SimpleNamespace(ids=ids)
+
+    def encode_batch(self, sequences, add_special_tokens=True):
+        return [self.encode(text, add_special_tokens=add_special_tokens) for text in sequences]
+
+    def _encode_fragment(self, fragment):
+        return self.backend_tokenizer.encode(fragment, add_special_tokens=False).ids
+
     def __getattr__(self, name):
         return getattr(self.backend_tokenizer, name)
 
@@ -116,8 +166,6 @@ class SentencePieceTokenizer:
         return self._unstripped.decode(ids, skip_special_tokens=skip_special_tokens)
 
     def to_str(self, pretty=False):
-        if not self.suppressed_token_ids:
-            return self.backend_tokenizer.to_str(pretty=pretty)
         return json.dumps(dict(dllm_sentencepiece=2, backend=self.backend_tokenizer.to_str(),
             suppressed=sorted(self.suppressed_token_ids)), indent=2 if pretty else None)
 
@@ -169,53 +217,10 @@ class PositionalSentencePieceTokenizer(SentencePieceTokenizer):
         self.native_model = model
         self.space_prefix = prefix
         self._processor = SentencePieceProcessor(model_proto=model)
-        self._pieces = {token.content: index for index, token in backend.get_added_tokens_decoder().items()}
-        self._special_order = sorted(self._pieces, key=lambda text: len(text.encode('utf-8')), reverse=True)
-        policy = json.loads(backend.to_str()).get('post_processor')
-        self._prefix, self._suffix = [], []
-        if policy:
-            target = self._prefix
-            for entry in policy['single']:
-                if 'Sequence' in entry:
-                    target = self._suffix
-                else:
-                    target.extend(policy['special_tokens'][entry['SpecialToken']['id']]['ids'])
 
-    def encode(self, text, add_special_tokens=True):
-        if not isinstance(text, str):
-            raise TypeError('GGUF tokenizer input must be text')
-        ids = list(self._prefix) if add_special_tokens else []
-        # Match GGUF's global longest-special-first partitioning, including a
-        # longer special beginning inside a shorter one. Leftmost regex matching
-        # would incorrectly consume the shorter special in that case.
-        fragments = [text]
-        for piece in self._special_order:
-            divided = []
-            for fragment in fragments:
-                if isinstance(fragment, int):
-                    divided.append(fragment)
-                    continue
-                parts = fragment.split(piece)
-                for index, part in enumerate(parts):
-                    if index:
-                        divided.append(self._pieces[piece])
-                    if part:
-                        divided.append(part)
-            fragments = divided
-        for fragment in fragments:
-            if isinstance(fragment, int):
-                ids.append(fragment)
-                continue
-            if not fragment:
-                continue
-            normalized = ('▁' if self.space_prefix else '') + fragment.replace(' ', '▁')
-            ids.extend(self._processor.encode(normalized, out_type=int))
-        if add_special_tokens:
-            ids.extend(self._suffix)
-        return SimpleNamespace(ids=ids)
-
-    def encode_batch(self, sequences, add_special_tokens=True):
-        return [self.encode(text, add_special_tokens=add_special_tokens) for text in sequences]
+    def _encode_fragment(self, fragment):
+        normalized = ('▁' if self.space_prefix else '') + fragment.replace(' ', '▁')
+        return self._processor.encode(normalized, out_type=int)
 
     def to_str(self, pretty=False):
         return json.dumps(dict(dllm_sentencepiece=1, backend=self.backend_tokenizer.to_str(),

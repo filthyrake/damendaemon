@@ -34,7 +34,8 @@ class SentencePieceGgufTests(unittest.TestCase):
         self.assertEqual(result.encode(' ab', add_special_tokens=False).ids, [259, 264])
         self.assertEqual(result.encode('', add_special_tokens=False).ids, [])
         self.assertEqual(result.encode('').ids, [1])
-        restored = Tokenizer.from_str(result.to_str())
+        from dllm.gguf_sentencepiece import restore_tokenizer
+        restored = restore_tokenizer(result.to_str())
         for text in ('ab', ' ab', '  ab  ab', '\t ab\n', 'café e\u0301 中文 😀', 'a\x00b'):
             with self.subTest(text=text):
                 ids = restored.encode(text, add_special_tokens=False).ids
@@ -59,7 +60,7 @@ class SentencePieceGgufTests(unittest.TestCase):
         self.assertEqual(result.decode([264]), 'ab')
         self.assertEqual(decode_output(SimpleNamespace(tokenizer=result), [264]), ' ab')
         self.assertEqual(decode_output(SimpleNamespace(tokenizer=result), [1, 264]), ' ab')
-        plain = Tokenizer.from_str(result.to_str())
+        plain = Tokenizer.from_str(result.backend_tokenizer.to_str())
         self.assertEqual(decode_output(SimpleNamespace(tokenizer=plain), [264]), 'ab')
 
     def test_declared_unknown_can_be_a_control_token(self):
@@ -148,6 +149,31 @@ class SentencePieceGgufTests(unittest.TestCase):
         result, _, _=tokenizer(source)
         self.assertEqual(result.encode('abcx',add_special_tokens=False).ids,[263,266])
         self.assertEqual(result.encode('ab',add_special_tokens=False).ids,[262])
+    def test_overlapping_special_reference_matrix(self):
+        from dllm.gguf_sentencepiece import restore_tokenizer
+        fixture = json.loads((Path(__file__).parent / 'fixtures/sentencepiece-specials.json').read_text())
+        for case in fixture['cases']:
+            source = metadata()
+            source['tokenizer.ggml.token_type'][262] = case['kind']
+            source['tokenizer.ggml.tokens'].append('bcx')
+            source['tokenizer.ggml.token_type'].append(case['kind'])
+            source['tokenizer.ggml.scores'].append(0.)
+            source['tokenizer.ggml.add_space_prefix'] = case['prefix']
+            source['tokenizer.ggml.add_eos_token'] = case['eos']
+            if case['tied']:
+                source['tokenizer.ggml.scores'][264] = -5.
+            result, _, _ = tokenizer(source)
+            for candidate in (result, restore_tokenizer(result.to_str())):
+                for sample in case['samples']:
+                    with self.subTest(case={k:v for k,v in case.items() if k != 'samples'}, sample=sample):
+                        expected = sample['expected']
+                        ids = candidate.encode(sample['text'], add_special_tokens=sample['add_special']).ids
+                        self.assertEqual(ids, expected['ids'])
+                        self.assertEqual(candidate.encode_batch([sample['text']], add_special_tokens=sample['add_special'])[0].ids, ids)
+                        for skip, suffix in ((True, 'skip'), (False, 'all')):
+                            self.assertEqual(candidate.decode(ids, skip_special_tokens=skip).encode().hex(), expected['decode_' + suffix])
+                            self.assertEqual(candidate.decode_generated(ids, skip_special_tokens=skip).encode().hex(), expected['generated_' + suffix])
+
     def test_unused_reference_matrix_and_roundtrip(self):
         from dllm.gguf_sentencepiece import restore_tokenizer
         from dllm.logprobs import TokenText

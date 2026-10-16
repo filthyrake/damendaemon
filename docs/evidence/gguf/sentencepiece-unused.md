@@ -70,3 +70,20 @@ regenerating the fixture; ordinary CPU CI uses frozen results.
 
 This proves the covered tokenizer semantics, not model quality or GPU execution.
 Broader #43 hardware qualification remains open.
+
+## Overlapping special pieces (#378)
+
+A second independent case exposed static-score tokenization choosing a shorter,
+leftmost special piece while llama.cpp partitions longer pieces globally first.
+With user-defined `ab` and `bcx`, `abcx` encoded as `[262,259,102,123]` instead
+of `[263,266]`. Both score paths now share the partition step; static normal
+fragments still use Rust BPE. The serialized wrapper preserves this policy even
+with automatic space-prefix insertion disabled.
+
+`tests/reference/generate_sentencepiece_specials.py` uses the same CPU oracle to
+freeze another 384 cases: control/user-defined specials, static/positional score
+paths, both prefix policies, optional automatic EOS, automatic-special toggles,
+and repeated/adjacent/overlapping specials plus Unicode and byte fallback.
+Tests compare exact IDs, full/generated decoding and batch encoding before and
+after serialization. These fixtures exercise unequal-length overlaps; they do
+not establish portable ordering for equal-byte-length overlapping specials.
