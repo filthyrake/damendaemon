@@ -25,9 +25,13 @@ from dllm.scheduler import BatchedRuntime
 from dllm.server import BoundedHTTPServer, handler_for
 
 
+def require_gate(condition, message):
+    if not condition:raise ValueError(message)
+
+
 def expanded(model):
     """Use independent format decoding; do not share native GPU unpack arithmetic."""
-    assert not model.scales, 'this proof expects all quantized matrices to use raw layouts'
+    require_gate(not model.scales, 'expanded reference requires raw packed layouts')
     reference=copy.copy(model); weights={}; copies={}
     for name,value in model.weights.items():
         if id(value) not in copies:
@@ -70,7 +74,7 @@ def main():
         relative=(error.square().mean()/expected.float().square().mean().clamp_min(1e-12)).sqrt().item()
         equal=torch.equal(expected.argmax(-1),actual.argmax(-1))
         report['comparisons'].append({**case,'max_absolute':absolute,'relative_rms':relative,'greedy_equal':equal})
-        assert absolute<.5 and relative<.01 and equal,report['comparisons'][-1]
+        require_gate(absolute<.5 and relative<.01 and equal, 'native logits differ from expanded reference')
     with torch.inference_mode():
         for paged in (False,True):
             if paged:os.environ['DLLM_KV_CACHE_TOKENS']='1024'
@@ -126,20 +130,20 @@ def main():
         whole=request('/v1/chat/completions',chat())
         other=request('/v1/chat/completions',chat('expanded'))
         expected=whole['choices'][0]['message']['content']
-        assert other['choices'][0]['message']['content']==expected,(whole,other)
+        require_gate(other['choices'][0]['message']['content']==expected, 'packed and expanded chat output differs')
         with post('/v1/chat/completions',chat(stream=True)) as response:chunks=list(events(response, require_terminated=True))
-        assert chunks[-1]=='[DONE]'
+        require_gate(bool(chunks) and chunks[-1]=='[DONE]', 'stream ended without DONE')
         text=''.join(c.get('delta',{}).get('content','') for x in chunks[:-1] for c in json.loads(x)['choices'])
-        assert text==expected
+        require_gate(text==expected, 'stream differs from ordinary chat')
         with ThreadPoolExecutor(4) as pool:
             concurrent=list(pool.map(lambda _:request('/v1/chat/completions',chat()),range(4)))
-        assert all(r['choices'][0]['message']['content']==expected for r in concurrent)
+        require_gate(all(r['choices'][0]['message']['content']==expected for r in concurrent), 'concurrent chat output differs')
         with post('/v1/chat/completions',chat(stream=True)) as response:next(events(response, require_terminated=True))
-        assert request('/v1/chat/completions',chat())['choices'][0]['message']['content']==expected
+        require_gate(request('/v1/chat/completions',chat())['choices'][0]['message']['content']==expected, 'chat changed after cancellation')
         request('/v1/models/unload',dict(model='packed'))
         restored=request('/v1/chat/completions',chat())
-        assert restored['dllm_timing']['source_tier']=='host'
-        assert restored['choices'][0]['message']['content']==expected
+        require_gate(restored['dllm_timing']['source_tier']=='host', 'reload did not restore from host')
+        require_gate(restored['choices'][0]['message']['content']==expected, 'host-restored output differs')
         trials=[]
         for length,concurrency in ((16,1),(129,1),(400,1),(129,2)):
             print(f'Timing HTTP: input={length}, concurrency={concurrency}',file=sys.stderr,flush=True)
@@ -152,19 +156,19 @@ def main():
                     with ThreadPoolExecutor(concurrency) as pool:
                         values=list(pool.map(lambda _:request('/v1/completions',body),range(concurrency)))
                 seconds=time.perf_counter()-start
-                assert all(r['usage']['prompt_tokens']==length and r['usage']['completion_tokens']==16 for r in values),values
+                require_gate(all(r['usage']['prompt_tokens']==length and r['usage']['completion_tokens']==16 for r in values), 'benchmark token counts differ from requested work')
                 return dict(alias=alias,prompt_tokens=length,concurrency=concurrency,seconds=seconds,
                             texts=[r['choices'][0]['text'] for r in values],usage=[r['usage'] for r in values])
             for alias in ('packed','expanded'):
                 for _ in range(3):run(alias)
             for turn in range(6):
                 pair=[run(alias) for alias in (('packed','expanded') if turn%2==0 else ('expanded','packed'))]
-                assert pair[0]['texts']==pair[1]['texts'],pair
+                require_gate(pair[0]['texts']==pair[1]['texts'], 'matched trial outputs differ')
                 trials.extend(pair)
         request('/v1/models/unload',dict(model='packed',release_host=True))
         reloaded=request('/v1/chat/completions',chat())
-        assert reloaded['dllm_timing']['source_tier']=='disk'
-        assert reloaded['choices'][0]['message']['content']==expected
+        require_gate(reloaded['dllm_timing']['source_tier']=='disk', 'reload did not start from disk')
+        require_gate(reloaded['choices'][0]['message']['content']==expected, 'disk-reloaded output differs')
         report['http']={'registration':True,'chat_matches_expanded':True,'stream':True,'concurrent_requests':4,
             'cancellation_recovery':True,'host_restore':True,'disk_reload':True,'sample':expected,'trials':trials,
             'medians':[dict(prompt_tokens=length,concurrency=count,**{alias:statistics.median(
