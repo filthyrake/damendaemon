@@ -98,7 +98,7 @@ class FlashBatchTests(unittest.TestCase):
                 list(runner.generate_batch([self.messages]*2,max_new_tokens=[1,3]))
         self.assertTrue(model.states[-1].closed)
         with patch.object(model,'logits',return_value=torch.full((2,self.text.vocab_size),float('nan'))):
-            with self.assertRaisesRegex(ValueError,'nonfinite'):
+            with self.assertRaisesRegex(RuntimeError,'nonfinite'):
                 list(runner.generate_batch([self.messages]*2,max_new_tokens=2))
         self.assertTrue(model.states[-1].closed)
 

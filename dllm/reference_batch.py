@@ -41,10 +41,10 @@ def _generate_equal_batch(runner, prompts, limits, streams, *, mapped_vocab_size
             check_cancelled()
             if (not isinstance(logits, torch.Tensor) or logits.shape != (len(active), runner.text.vocab_size)
                     or logits.device.type != 'cpu' or logits.dtype != torch.float32):
-                raise ValueError('invalid reference batch generation logits')
+                raise RuntimeError('invalid reference batch generation logits')
             mapped = logits[:, :mapped_vocab_size]
             if not torch.isfinite(mapped).all():
-                raise ValueError('nonfinite reference batch generation logits')
+                raise RuntimeError('nonfinite reference batch generation logits')
             tokens = mapped.argmax(-1).tolist()
             surviving_slots = []
             surviving_rows = []

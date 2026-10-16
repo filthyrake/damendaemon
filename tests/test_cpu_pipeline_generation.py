@@ -103,7 +103,7 @@ class CpuCompletionTests(unittest.TestCase):
             runner=self.runner();value=torch.zeros(shape,dtype=dtype)
             if nonfinite:value[0,2]=float('nan')
             with patch.object(HybridPipeline,'prefill_chunk',return_value=value):
-                with self.assertRaises(ValueError):list(runner.generate([1],max_new_tokens=1))
+                with self.assertRaisesRegex(RuntimeError,'completion logits'):list(runner.generate([1],max_new_tokens=1))
             self.assertIsNone(runner.pipeline)
         runner=self.runner();stream=runner.generate([1],max_new_tokens=1);next(stream);pipeline=runner.pipeline
         with patch.object(pipeline,'close',side_effect=RuntimeError('cleanup')):

@@ -115,4 +115,4 @@ class CpuPipelineReferenceGenerator:
         if (not isinstance(logits,torch.Tensor) or logits.device.type!='cpu' or logits.dtype!=torch.float32
                 or tuple(logits.shape)!=(rows,self.model.config['vocab_size'])
                 or not torch.isfinite(logits[:,:self.vocab_size]).all()):
-            raise ValueError('invalid CPU completion logits')
+            raise RuntimeError('invalid CPU completion logits')

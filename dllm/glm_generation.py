@@ -112,10 +112,10 @@ class ReferenceGenerator:
                 check_cancelled()
                 if (not isinstance(logits,torch.Tensor) or logits.shape!=(1,self.text.vocab_size)
                         or logits.device!=self.device or logits.dtype!=torch.float32):
-                    raise ValueError('invalid GLM generation logits')
+                    raise RuntimeError('invalid GLM generation logits')
                 # Unmapped padded rows are excluded without mutating model logits.
                 mapped=logits[0,:self.text.tokenizer_size]
-                if not torch.isfinite(mapped).all():raise ValueError('nonfinite GLM generation logits')
+                if not torch.isfinite(mapped).all():raise RuntimeError('nonfinite GLM generation logits')
                 if blocked_token_ids:
                     mapped=mapped.clone();mapped[list(blocked_token_ids)]=-torch.inf
                     if not torch.isfinite(mapped).any():raise ValueError('no eligible GLM output tokens')

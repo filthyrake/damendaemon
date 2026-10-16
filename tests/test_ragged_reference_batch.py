@@ -105,6 +105,31 @@ class RaggedReferenceTests(unittest.TestCase):
                     else:
                         snapshot_text(text, type(text))
 
+    def test_rejected_generation_logits_are_execution_errors_and_release_cache(self):
+        rows=[[dict(role='user',content='Hi')]]
+        for family,path,text,single,batch in self.families():
+            model=family.load_reference_model(path)
+            original=model.prefill
+            for batched in (False,True):
+                for malformed in ('nan','shape','dtype'):
+                    states=[]
+                    def prefill(*args,**kwargs):
+                        logits,state=original(*args,**kwargs)
+                        states.append(state)
+                        if malformed=='nan':logits=torch.full_like(logits,float('nan'))
+                        elif malformed=='shape':logits=logits[:,:-1]
+                        else:logits=logits.double()
+                        return logits,state
+                    runner=(batch if batched else single)(model,text,max_context=128)
+                    with self.subTest(family=family.__name__,batched=batched,malformed=malformed), \
+                            patch.object(model,'prefill',side_effect=prefill):
+                        stream=(runner.generate_batch(rows,max_new_tokens=1) if batched
+                                else runner.generate(rows[0],max_new_tokens=1))
+                        with self.assertRaisesRegex(RuntimeError,'generation logits'):
+                            next(stream)
+                    self.assertEqual(len(states),1)
+                    self.assertTrue(states[0].closed)
+
     def test_commands_opt_in_and_preflight_all_rows(self):
         rows=[[dict(role='user',content=s)] for s in ('Hi','longer input')]
         for family,path,text,_,_ in self.families():

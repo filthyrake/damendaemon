@@ -78,7 +78,7 @@ class GlmBatchTests(unittest.TestCase):
                      else patch.object(State,target,side_effect=RuntimeError(error)))
             events=[]
             with patcher:
-                with self.assertRaisesRegex((RuntimeError,ValueError),error):
+                with self.assertRaisesRegex(RuntimeError,error):
                     for event in runner.generate_batch([self.messages]*2,max_new_tokens=[1,3]):events.append(event)
             self.assertFalse(any('finish_reason' in e for e in events))
             runner.cleanup();self.assertTrue(model.states[-1].closed)

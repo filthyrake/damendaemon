@@ -107,7 +107,7 @@ class GlmGenerationTests(unittest.TestCase):
             with self.assertRaises(ValueError):ReferenceGenerator(model,self.text,max_context=128)
         model.config={};runner=ReferenceGenerator(model,self.text,max_context=128)
         with patch.object(model,'logits',return_value=torch.full((1,self.text.vocab_size),float('nan'))):
-            with self.assertRaisesRegex(ValueError,'nonfinite'):list(runner.generate(self.messages,max_new_tokens=1))
+            with self.assertRaisesRegex(RuntimeError,'nonfinite'):list(runner.generate(self.messages,max_new_tokens=1))
         self.assertTrue(model.states[-1].closed)
 
     def test_loaded_packed_snapshot_generation_matches_fresh_prefix(self):

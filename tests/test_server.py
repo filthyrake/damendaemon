@@ -121,7 +121,12 @@ class ServerTests(unittest.TestCase):
         import torch
         from dllm.sampling import Sampler, Sampling
         from dllm.logprobs import scores
+        from dllm.cpu_pipeline_generation import CpuPipelineReferenceGenerator
+        from types import SimpleNamespace
+        cpu=SimpleNamespace(vocab_size=2,model=SimpleNamespace(config={'vocab_size':2}))
         failures = (
+            lambda: CpuPipelineReferenceGenerator._check_logits(
+                cpu,torch.tensor([[float('nan'),1.]]),1),
             lambda: Sampler(Sampling()).select(torch.tensor([float('nan'), 1.])),
             lambda: Sampler(Sampling(1)).select(torch.tensor([float('nan'), 1.])),
             lambda: scores(torch.tensor([float('nan'), 1.]), 0, 1),
