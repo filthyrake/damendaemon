@@ -41,7 +41,8 @@ def _select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
             or type(offset) is not int or not 0 <= offset < 2**31
             or type(query_chunk) is not int or not 1 <= query_chunk <= 128
             or type(key_chunk) is not int or not 1 <= key_chunk <= 256
-            or type(scale_head_weights) is not bool or type(dot_scale) not in (int,float)
+            or type(scale_head_weights) is not bool or type(validate_scores) is not bool
+            or type(dot_scale) not in (int,float)
             or not 0 < dot_scale <= torch.finfo(torch.float32).max):
         raise ValueError('invalid indexer ratio, top-k, offset or chunk bounds')
     top = min(top_k, keys.shape[1])
@@ -61,8 +62,12 @@ def _select_compressed(query, keys, head_weights, positions, *, ratio, top_k,
             key = keys[:, key_start:key_stop].float()
             dots = torch.matmul(q, key[:, None].transpose(-1, -2))
             if dot_scale != 1.:dots = dots*dot_scale
-            scores = (dots.relu()*weights.unsqueeze(-1)).sum(-2)
             ids = torch.arange(key_start, key_stop, device=query.device).reshape(1, 1, -1).expand(batch, stop-start, -1)
+            # ReLU would conceal negative overflow. Only causally visible keys
+            # are initialized; unused future entries must remain ignorable.
+            if validate_scores and ((ids < visible.unsqueeze(-1)).unsqueeze(-2) & ~torch.isfinite(dots)).any():
+                raise ValueError('nonfinite visible compressed indexer dot product')
+            scores = (dots.relu()*weights.unsqueeze(-1)).sum(-2)
             scores = scores.masked_fill(ids >= visible.unsqueeze(-1), -float('inf'))
             if validate_scores and ((ids < visible.unsqueeze(-1)) & ~torch.isfinite(scores)).any():
                 raise ValueError('nonfinite visible compressed indexer score')

@@ -60,6 +60,36 @@ class CompressedIndexerTests(unittest.TestCase):
         self.assertTrue(torch.isfinite(scores[..., 0]).all())
         self.assertTrue(torch.isneginf(scores[..., 1:]).all())
 
+    def test_checked_dots_fail_before_relu_can_hide_overflow(self):
+        query=torch.full((1,1,1,2),1e20)
+        weights=torch.ones(1,1,1);positions=torch.zeros(1,1,dtype=torch.int64)
+        for sign in (-1,1):
+            keys=torch.full((1,1,2),sign*1e20)
+            with self.subTest(sign=sign),self.assertRaisesRegex(ValueError,'dot product'):
+                select_compressed(query,keys,weights,positions,ratio=1,top_k=1,validate_scores=True)
+        with self.assertRaisesRegex(ValueError,'dot product'):
+            select_compressed(torch.ones_like(query),torch.ones(1,1,2),weights,positions,
+                ratio=1,top_k=1,dot_scale=torch.finfo(torch.float32).max,validate_scores=True)
+
+    def test_checked_visibility_ignores_future_poison_and_matches_scalar_oracle(self):
+        args=self.fixture()
+        for qc,kc in ((1,1),(2,3),(16,64)):
+            actual=select_compressed(*args,ratio=4,top_k=5,query_chunk=qc,key_chunk=kc,validate_scores=True)
+            expected=oracle(*args,4,5,0)
+            torch.testing.assert_close(actual[0],expected[0])
+            torch.testing.assert_close(actual[1],expected[1],rtol=2e-5,atol=1e-6)
+        query,keys,weights,positions=args
+        positions.fill_(3);keys[:,1:]=float('nan')
+        for kc in (1,3,64):
+            ids,scores=select_compressed(query,keys,weights,positions,ratio=4,top_k=3,key_chunk=kc,validate_scores=True)
+            self.assertTrue((ids[...,0]==0).all())
+            self.assertTrue((ids[...,1:]==-1).all())
+            self.assertTrue(torch.isfinite(scores[...,0]).all())
+            self.assertTrue(torch.isneginf(scores[...,1:]).all())
+        for flag in (None,1,'yes'):
+            with self.assertRaises(ValueError):
+                select_compressed(*args,ratio=4,top_k=1,validate_scores=flag)
+
     def test_reordered_empty_inputs_and_no_host_extraction(self):
         args = self.fixture()
         originals = [t.clone() for t in args]
