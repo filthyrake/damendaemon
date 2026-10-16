@@ -107,7 +107,10 @@ class Sampler:
             values[ids] += bias
         # Finite request parameters can overflow FP32 penalty arithmetic.
         # Check this opt-in path before argmax can silently hide inf/NaN.
-        if not torch.isfinite(values).all().item():
+        # Existing -inf masks remain excluded under finite penalties/bias.
+        # Only preserve those entries; overflow from a finite source is invalid.
+        preserved_mask=torch.isneginf(logits) & torch.isneginf(values)
+        if not (torch.isfinite(values) | preserved_mask).all().item():
             raise ValueError('cannot sample non-finite adjusted logits')
         return values
 

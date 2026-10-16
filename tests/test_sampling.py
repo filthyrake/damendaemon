@@ -212,3 +212,32 @@ class SamplingTests(unittest.TestCase):
         for cached in (None,torch.tensor([1,0])):
             self.assertEqual(sample_rows(logits,samplers,cached),[1,0])
         self.assertEqual([s.select(row).item() for s,row in zip(samplers,logits)],[1,0])
+
+    def test_adjustments_preserve_existing_negative_infinity_masks(self):
+        policies=({'presence_penalty':.5},{'frequency_penalty':.25},
+                  {'repetition_penalty':2},{'logit_bias':{'0':5,'2':1}},
+                  {'presence_penalty':.5,'frequency_penalty':.25,'repetition_penalty':2,
+                   'logit_bias':{'0':5,'2':1}})
+        logits=torch.tensor([-float('inf'),4.,1.])
+        for policy in policies:
+            for temperature in (0,1):
+                with self.subTest(policy=policy,temperature=temperature):
+                    sampler=Sampler(Sampling(temperature,seed=73,**policy))
+                    sampler.prepare([0,1],3);sampler.observe(0);sampler.observe(1)
+                    adjusted=sampler.adjust(logits)
+                    self.assertTrue(torch.isneginf(adjusted[0]))
+                    self.assertTrue(torch.isfinite(adjusted[1:]).all())
+                    self.assertIn(sampler.select(logits).item(),(1,2))
+                    selected=sample_rows(torch.stack([torch.zeros(3),logits]),
+                        [Sampler(Sampling()),sampler],torch.tensor([0,0]))
+                    self.assertEqual(selected[0],0);self.assertIn(selected[1],(1,2))
+                    torch.testing.assert_close(logits,torch.tensor([-float('inf'),4.,1.]))
+        torch.testing.assert_close(adjusted,torch.tensor([-float('inf'),1.25,2.]))
+
+    def test_adjustments_do_not_make_corrupt_or_all_masked_rows_valid(self):
+        for temperature in (0,1):
+            for row in ([float('nan'),1.],[float('inf'),1.],[-float('inf'),-float('inf')]):
+                sampler=Sampler(Sampling(temperature,logit_bias={'0':1}))
+                sampler.prepare([],2)
+                with self.subTest(row=row,temperature=temperature),self.assertRaisesRegex(ValueError,'non-finite'):
+                    sampler.select(torch.tensor(row))
