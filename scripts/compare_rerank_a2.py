@@ -108,7 +108,9 @@ def main():
                     try:
                         with urlopen(Request(url+'/v1/rerank',data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=180) as r:
                             result=json.load(r)
-                    except HTTPError as error:raise RuntimeError(error.read().decode()) from error
+                    except HTTPError as error:
+                        error.close()
+                        raise RuntimeError(f'HTTP {error.code}') from None
                     elapsed=time.perf_counter()-start
                     if not isinstance(result,dict):raise ValueError('invalid rerank response')
                     _scores(result.get('results'),len(documents))

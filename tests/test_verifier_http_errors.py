@@ -68,3 +68,18 @@ class VerifierHttpErrorTests(unittest.TestCase):
                                 compile_handler(handler,0)(error)
                             self.assertTrue(body.closed,'diagnostic handler leaked its response')
                         finally:error.close()
+
+    def test_rerank_errors_close_without_reading_response_bodies(self):
+        class UnreadBody(io.BytesIO):
+            def read(self,*args,**kwargs):raise AssertionError('error response body read')
+        actual=handlers('compare_rerank_a2')
+        self.assertEqual(len(actual),1)
+        for optimize in (0,2):
+            with self.subTest(optimize=optimize):
+                body=UnreadBody(b'private diagnostic')
+                error=HTTPError('http://fixture',503,'fixture',{},body)
+                try:
+                    with self.assertRaisesRegex(RuntimeError,'^HTTP 503$'):
+                        compile_handler(actual[0],optimize)(error)
+                    self.assertTrue(body.closed)
+                finally:error.close()
