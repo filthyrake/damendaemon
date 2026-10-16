@@ -64,13 +64,60 @@ class ChatTemplateTests(unittest.TestCase):
         for error in (UndefinedError('missing field'),SecurityError('blocked'),RecursionError('nested')):
             with self.subTest(error=type(error).__name__):
                 model=SimpleNamespace(config={'model_type':'qwen2'},special_tokens={},
-                    template=SimpleNamespace(render=Mock(side_effect=error)),tokenizer=Mock())
+                    template=SimpleNamespace(generate=Mock(side_effect=error)),tokenizer=Mock())
                 with self.assertRaisesRegex(ValueError,'chat template rendering failed') as raised:
                     ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}])
                 self.assertIs(raised.exception.__cause__,error)
                 model.tokenizer.encode.assert_not_called()
         failure=RuntimeError('backend failure')
-        model.template.render.side_effect=failure
+        model.template.generate.side_effect=failure
         with self.assertRaises(RuntimeError) as raised:
             ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}])
         self.assertIs(raised.exception,failure)
+
+    def test_expanded_prompt_bytes_are_bounded_before_tokenization(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock,patch
+        from dllm.qwen2 import ModelWeights
+        template=compile_template('{% for i in range(10) %}{{ messages[0].content }}{% endfor %}')
+        model=SimpleNamespace(config={'model_type':'qwen2','vocab_size':2},special_tokens={},
+            template=template,tokenizer=SimpleNamespace(encode=Mock(return_value=SimpleNamespace(ids=[1]))))
+        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',32):
+            with self.assertRaisesRegex(ValueError,'rendered prompt'):
+                ModelWeights.chat_tokens(model,[{'role':'user','content':'éé'}])
+        model.tokenizer.encode.assert_not_called()
+
+    def test_render_budget_stops_and_closes_generator_and_counts_tool_prefix(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock,patch
+        from dllm.qwen2 import ModelWeights
+        consumed=[];closed=[]
+        def generate(**options):
+            try:
+                for index in range(100):
+                    consumed.append(index)
+                    yield 'abcd'
+            finally:closed.append(True)
+        model=SimpleNamespace(config={'model_type':'qwen2','vocab_size':2},special_tokens={},
+            template=SimpleNamespace(generate=generate),supports_tool_calls=True,
+            tokenizer=SimpleNamespace(encode=Mock(return_value=SimpleNamespace(ids=[1]))))
+        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',8):
+            with self.assertRaisesRegex(ValueError,'rendered prompt'):
+                ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}])
+        self.assertEqual(consumed,[0,1,2]);self.assertEqual(closed,[True])
+        model.tokenizer.encode.assert_not_called()
+        model.template=compile_template('éééé')
+        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',8):
+            self.assertEqual(ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}]),[1])
+        self.assertEqual(model.tokenizer.encode.call_args.args[0],'éééé')
+        tools=[{'type':'function','function':{'name':'weather','parameters':{'type':'object','properties':{}}}}]
+        model.tokenizer.encode.reset_mock()
+        budget=8+len('<tool_call>\n')
+        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',budget):
+            self.assertEqual(ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}],tools=tools,tool_json=True),[1])
+        self.assertEqual(model.tokenizer.encode.call_args.args[0],'éééé<tool_call>\n')
+        model.tokenizer.encode.reset_mock()
+        with patch('dllm.qwen2.MAX_RENDERED_CHAT_BYTES',budget-1):
+            with self.assertRaisesRegex(ValueError,'rendered prompt'):
+                ModelWeights.chat_tokens(model,[{'role':'user','content':'hello'}],tools=tools,tool_json=True)
+        model.tokenizer.encode.assert_not_called()

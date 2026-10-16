@@ -6,6 +6,8 @@ per-operation Python dispatch within a captured decode step; the host still
 stages metadata, replays the graph, and reads the selected token.
 """
 
+from contextlib import closing
+from io import StringIO
 import math
 import os
 import subprocess
@@ -24,6 +26,9 @@ from .chat_template import compile_template
 from .tokenizer_metadata import read_tokenizer_config, read_generation_config, special_token_text, checkpoint_template
 from .config import decoder_config, eos_ids, read_config
 from .rotary import inverse_frequencies, attention_factor
+
+
+MAX_RENDERED_CHAT_BYTES = 16 * 1024 * 1024
 
 
 def weight_files(path):
@@ -267,12 +272,21 @@ class ModelWeights:
             if type(enable_thinking) is not bool or self.config["model_type"] not in ("qwen3", "qwen3_5_text"):
                 raise ValueError("enable_thinking is a boolean option for Qwen3/Qwen3.5 models only")
             options["enable_thinking"] = enable_thinking
+        suffix = '<tool_call>\n' if tool_json else ''
+        size = len(suffix.encode('utf-8'))
+        if size > MAX_RENDERED_CHAT_BYTES:
+            raise ValueError('chat rendered prompt exceeds 16 MiB')
         try:
-            rendered = self.template.render(messages=messages, add_generation_prompt=True,
-                                            tools=tools, **options, **self.special_tokens)
+            with StringIO() as output, closing(self.template.generate(messages=messages, add_generation_prompt=True,
+                                                tools=tools, **options, **self.special_tokens)) as stream:
+                for chunk in stream:
+                    size += len(chunk.encode('utf-8'))
+                    if size > MAX_RENDERED_CHAT_BYTES:
+                        raise ValueError('chat rendered prompt exceeds 16 MiB')
+                    output.write(chunk)
+                rendered = output.getvalue() + suffix
         except (TemplateError, RecursionError) as error:
             raise ValueError('chat template rendering failed') from error
-        if tool_json:rendered+='<tool_call>\n'
         ids = self.tokenizer.encode(rendered, add_special_tokens=False).ids
         if not ids or any(token >= self.config['vocab_size'] for token in ids):
             raise ValueError('chat prompt must contain valid vocabulary token IDs')

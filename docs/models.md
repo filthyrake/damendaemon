@@ -763,3 +763,5 @@ Checkpoint chat templates receive `bos_token` and `eos_token` as text even when 
 When no embedded `chat_template` is supplied, `chat_template.jinja` is read as UTF-8 with the same 16 MiB metadata envelope. An embedded template, including an empty string, takes precedence; a missing fallback preserves the raw-completion-only behavior. Explicit operator overrides retain their separate 128 KiB limit.
 
 Sentence encoder `modules.json` is limited to 1 MiB of UTF-8 JSON and rejects duplicate fields or excessive nesting before pooling configuration or checkpoint loading. The supported pipeline remains Transformer → mean Pooling → Normalize.
+
+Native chat tokenization consumes template output incrementally and rejects more than 16 MiB of rendered UTF-8 text, including a forced tool-call prefix, before tokenization. The template generator closes on success or failure. This bounds accumulated prompt output, not intermediate expression allocations or template execution time.

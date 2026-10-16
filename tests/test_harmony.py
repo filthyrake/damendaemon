@@ -110,7 +110,7 @@ class HarmonyTests(unittest.TestCase):
         from dllm.qwen2 import ModelWeights
         from dllm.tool_calls import validate_messages
         class Template:
-            def render(self,**kwargs):self.arguments=kwargs;return 'rendered'
+            def generate(self,**kwargs):self.arguments=kwargs;yield 'rendered'
         template=Template();model=SimpleNamespace(template=template,config={'model_type':'gpt_oss','vocab_size':2},
             supports_tool_calls=True,special_tokens={},tokenizer=SimpleNamespace(encode=lambda *a,**k:SimpleNamespace(ids=[1])))
         call={'id':'call_a','type':'function','function':{'name':'weather','arguments':'{"city":"Paris"}'}}
