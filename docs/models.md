@@ -775,3 +775,5 @@ GGUF Qwen2/Llama3 byte-level and SentencePiece tokenizers share longest-special-
 Qwen2/Llama3 byte-level GGUF also retains unique UNUSED pieces for encoding while suppressing their decoded output. Suppression survives serialization and applies to incremental streaming and logprob text/bytes; structured output with these pieces remains unqualified and is rejected.
 
 Chat-template evaluation failures (including expression type errors, arithmetic errors and unsupported JSON-filter values) are rejected before tokenization/inference as invalid requests. Both native and CPU-reference chat preserve the original exception cause; unrelated runtime failures are not converted into request errors.
+
+Opt-in repetition/presence/frequency penalties and logit bias reject non-finite adjusted FP32 scores before selection. Finite parameters can still overflow that arithmetic. This validity check may synchronize the device when adjustments are enabled; the default unadjusted sampling path is unchanged, and GPU overhead has not been measured.

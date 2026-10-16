@@ -137,6 +137,28 @@ class SamplingTests(unittest.TestCase):
         sampler.prepare([],4)
         self.assertTrue(torch.equal(sampler.adjust(logits),torch.tensor([4.,-2.,3.,1.])))
 
+    def test_penalty_overflow_is_rejected_before_selection(self):
+        cases = ((1e-300, [1., 2.]), (1e300, [-2., -1.]), (1e300, [0., -1.]),
+                 (2., [-3e38, -2e38]))
+        for penalty, values in cases:
+            for temperature in (0, 1):
+                with self.subTest(penalty=penalty, values=values, temperature=temperature):
+                    sampler = Sampler(Sampling(temperature, repetition_penalty=penalty))
+                    sampler.prepare([0, 1], 2)
+                    logits = torch.tensor(values)
+                    original = logits.clone()
+                    with self.assertRaisesRegex(ValueError, 'non-finite adjusted'):
+                        sampler.select(logits)
+                    self.assertTrue(torch.equal(logits, original))
+                    with self.assertRaisesRegex(ValueError, 'non-finite adjusted'):
+                        sample_rows(torch.stack([torch.zeros(2), logits]), [Sampler(Sampling()), sampler])
+        ordinary = torch.tensor([1., 2.])
+        plain = Sampler(Sampling())
+        self.assertIs(plain.adjust(ordinary), ordinary)
+        valid = Sampler(Sampling(repetition_penalty=2.))
+        valid.prepare([0, 1], 2)
+        self.assertEqual(valid.select(ordinary).item(), 1)
+
     def test_penalty_validation_and_bias_snapshot(self):
         for options in ({'presence_penalty':3}, {'frequency_penalty':-3},
                         {'repetition_penalty':0}, {'repetition_penalty':True},

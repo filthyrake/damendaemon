@@ -105,6 +105,10 @@ class Sampler:
             ids = torch.tensor(list(options.logit_bias),device=values.device,dtype=torch.long)
             bias = torch.tensor(list(options.logit_bias.values()),device=values.device,dtype=torch.float32)
             values[ids] += bias
+        # Finite request parameters can overflow FP32 penalty arithmetic.
+        # Check this opt-in path before argmax can silently hide inf/NaN.
+        if not torch.isfinite(values).all().item():
+            raise ValueError('cannot sample non-finite adjusted logits')
         return values
 
     def select(self, logits):
