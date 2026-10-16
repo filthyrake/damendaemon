@@ -15,7 +15,7 @@ if HAS_GGUF:
     from dllm.gguf_model import GgufWeights, plan, tensor_groups, weight_bytes
 
 
-def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32, window=None, split_max_tensors=0, small_first_shard=False):
+def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32, window=None, split_max_tensors=0, small_first_shard=False, scaling=None):
     from tokenizers.pre_tokenizers import ByteLevel
     tokens = sorted(ByteLevel.alphabet()) + ['<|endoftext|>', '<|im_start|>', '<|im_end|>']
     c = dict(model_type=arch, hidden_size=hidden, num_attention_heads=4, head_dim=hidden//4,
@@ -26,6 +26,9 @@ def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixe
         writer.add_uint32(f'{arch}.{key}', value)
     writer.add_float32(f'{arch}.attention.layer_norm_rms_epsilon', 1e-6)
     writer.add_bool(f'{arch}.attention.causal', causal)
+    if scaling is not None:
+        writer.add_string(f'{arch}.rope.scaling.type', 'linear')
+        writer.add_float32(f'{arch}.rope.scaling.factor', scaling)
     if window is not None:
         writer.add_uint32(f'{arch}.attention.sliding_window', window)
     writer.add_tokenizer_model('gpt2'); writer.add_tokenizer_pre('qwen2')
@@ -254,6 +257,44 @@ class GgufTests(unittest.TestCase):
                 path=Path(folder)/'model.gguf'
                 fixture(path,arch='llama',rope_factors=factors)
                 with self.assertRaises(ValueError):GgufWeights(path,64,'none')
+
+    def test_linear_rotary_metadata_preserves_packed_weights_and_context(self):
+        from dllm.rotary import inverse_frequencies
+        for arch in ('qwen2', 'qwen3', 'llama'):
+            for factor in (1.0, 4.0):
+                with self.subTest(arch=arch, factor=factor), tempfile.TemporaryDirectory() as folder:
+                    paths = [Path(folder)/f'{label}.gguf' for label in ('plain', 'scaled')]
+                    fixture(paths[0], arch=arch)
+                    fixture(paths[1], arch=arch, scaling=factor)
+                    plain, scaled = [GgufWeights(path, 128, 'none') for path in paths]
+                    self.assertEqual(scaled.config['rope_scaling'], {'rope_type': 'linear', 'factor': factor})
+                    self.assertEqual(scaled.config['max_position_embeddings'], 128)
+                    self.assertEqual(plain.packed_formats, scaled.packed_formats)
+                    for name in plain.weights:
+                        self.assertTrue(torch.equal(plain.weights[name], scaled.weights[name]), name)
+                    for name in plain.scales:
+                        self.assertTrue(torch.equal(plain.scales[name], scaled.scales[name]), name)
+                    # llama.cpp uses 1/factor as the static frequency scale.
+                    expected = torch.tensor([10000.0 ** (-i/8) / factor for i in range(0, 8, 2)])
+                    torch.testing.assert_close(inverse_frequencies(scaled.config, 'cpu'), expected)
+                    with self.assertRaises(ValueError):
+                        GgufWeights(paths[1], 129, 'none')
+
+    def test_invalid_rotary_scaling_metadata_fails_preflight(self):
+        from dllm.gguf_model import model_config
+        cases = [{'type': 'linear', 'factor': factor} for factor in (None, True, '4', 0, .5, -1, float('nan'), float('inf'))]
+        cases += [{'type': kind, 'factor': 4} for kind in ('none', 'yarn', 'longrope')]
+        cases += [{'type': 'linear', 'factor': 4, 'original_context_length': 32}, {'factor': 4}]
+        for scaling in cases:
+            with self.subTest(scaling=scaling):
+                metadata = {'general.architecture': 'llama', 'llama.embedding_length': 32,
+                            'llama.feed_forward_length': 64, 'llama.block_count': 1,
+                            'llama.context_length': 128, 'llama.attention.head_count': 4,
+                            'llama.attention.head_count_kv': 2, 'llama.attention.layer_norm_rms_epsilon': 1e-6}
+                self.assertIsNone(model_config(metadata, {}, 32000, {2})['rope_scaling'])
+                metadata.update({f'llama.rope.scaling.{key}': value for key, value in scaling.items()})
+                with self.assertRaises(ValueError):
+                    model_config(metadata, {}, 32000, {2})
 
     def test_noncausal_decoder_is_rejected_during_preflight(self):
         with tempfile.TemporaryDirectory() as folder:

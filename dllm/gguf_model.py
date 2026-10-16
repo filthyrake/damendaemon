@@ -173,10 +173,13 @@ def model_config(metadata, tensors, vocab_size, eos):
         raise ValueError('GGUF sliding window must be a nonnegative integer')
     if (window and arch != 'llama') or get('attention.sliding_window_pattern') is not None:
         raise ValueError('GGUF only supports uniform Llama/Mistral sliding-window attention')
-    if (get('rope.scaling.type', 'none') != 'none'
-            or any(name.startswith(f'{arch}.rope.scaling.') and name != f'{arch}.rope.scaling.type' for name in metadata)
-            or get('expert_count', 0) != 0):
-        raise ValueError('GGUF scaled RoPE and experts are unsupported')
+    scaling = {name.removeprefix(f'{arch}.rope.scaling.'): value
+               for name, value in metadata.items() if name.startswith(f'{arch}.rope.scaling.')}
+    kind = scaling.get('type', 'none')
+    if kind not in ('none', 'linear') or set(scaling) - ({'type', 'factor'} if kind == 'linear' else {'type'}):
+        raise ValueError('GGUF only supports explicit linear RoPE scaling')
+    if get('expert_count', 0) != 0:
+        raise ValueError('GGUF experts are unsupported')
     # Uniform windows use the existing Mistral execution policy. The GGUF
     # tensor layout still uses Llama's interleaved rotary rows on disk.
     c = dict(model_type='mistral' if window else arch, hidden_act='silu', attention_bias=arch == 'qwen2',
@@ -185,6 +188,8 @@ def model_config(metadata, tensors, vocab_size, eos):
              num_attention_heads=get('attention.head_count'), num_key_value_heads=get('attention.head_count_kv'),
              rope_theta=get('rope.freq_base', 10000.0), rms_norm_eps=get('attention.layer_norm_rms_epsilon'),
              vocab_size=vocab_size, eos_token_id=sorted(eos), tie_word_embeddings='output.weight' not in tensors)
+    if kind == 'linear':
+        c['rope_scaling'] = {'rope_type': 'linear', 'factor': scaling.get('factor')}
     if window:
         c['sliding_window'] = window
     if get('attention.key_length') is not None:

@@ -799,3 +799,11 @@ Safetensors inventory preflights every header as bounded, duplicate-free UTF-8 J
 Checkpoint chat templates may be plain text, a mapping of names to text, or Hugging Face name/template entries. Named collections must have a unique explicit `default`, which is selected for ordinary chat independent of entry order. Collections are limited to 64 entries and 16 MiB of template text; malformed entries and missing defaults fail rather than falling back to another variant or file. When a named `tool_use` variant exists, supported tool requests and tool history use it; otherwise they use the default. Both selected variants are compiled during registration. Existing model/marker checks still gate tool support, and explicit template overrides replace both variants. This tokenizer compatibility does not qualify model-generated tool accuracy.
 
 The BERT sentence-encoder path accepts the equivalent optional pooling fields emitted by [Sentence Transformers v3.4.1](https://github.com/UKPLab/sentence-transformers/blob/v3.4.1/sentence_transformers/models/Pooling.py): disabled weighted-mean/last-token pooling and `include_prompt: true`. Existing required mean-pooling fields remain required. Enabled alternate pooling, prompt exclusion, unknown fields and integer substitutes for booleans remain unsupported. This is metadata compatibility for the existing Transformer → masked mean Pooling → Normalize pipeline, not support for every Sentence Transformers checkpoint format.
+
+GGUF Qwen2, Qwen3 and Llama imports accept explicit `rope.scaling.type=linear`
+with a finite numeric `rope.scaling.factor >= 1`. The native static schedule
+divides inverse frequencies by that factor, following
+[llama.cpp's metadata interpretation](https://github.com/ggml-org/llama.cpp/blob/836d57176dc699a726c55418e4f96b8ca628e1bf/src/llama-model.cpp#L1425).
+The declared context limit and packed weights are preserved. Other scaling
+types and additional scaling fields remain rejected. CPU import and frequency
+checks do not qualify extended-context GPU generation.
