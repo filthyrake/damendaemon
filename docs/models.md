@@ -807,3 +807,7 @@ divides inverse frequencies by that factor, following
 The declared context limit and packed weights are preserved. Other scaling
 types and additional scaling fields remain rejected. CPU import and frequency
 checks do not qualify extended-context GPU generation.
+
+Legacy GGUF `rope.scale_linear` is also mapped to the linear schedule, with the
+same factor validation. Files mixing legacy and modern scaling declarations
+are rejected rather than choosing one silently.

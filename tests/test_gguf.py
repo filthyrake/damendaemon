@@ -15,7 +15,7 @@ if HAS_GGUF:
     from dllm.gguf_model import GgufWeights, plan, tensor_groups, weight_bytes
 
 
-def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32, window=None, split_max_tensors=0, small_first_shard=False, scaling=None):
+def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixed=False, rope_factors=None, causal=True, hidden=32, window=None, split_max_tensors=0, small_first_shard=False, scaling=None, legacy_scaling=None):
     from tokenizers.pre_tokenizers import ByteLevel
     tokens = sorted(ByteLevel.alphabet()) + ['<|endoftext|>', '<|im_start|>', '<|im_end|>']
     c = dict(model_type=arch, hidden_size=hidden, num_attention_heads=4, head_dim=hidden//4,
@@ -29,6 +29,8 @@ def fixture(path, kind=8, arch='qwen2', tied=False, packed_embedding=False, mixe
     if scaling is not None:
         writer.add_string(f'{arch}.rope.scaling.type', 'linear')
         writer.add_float32(f'{arch}.rope.scaling.factor', scaling)
+    if legacy_scaling is not None:
+        writer.add_float32(f'{arch}.rope.scale_linear', legacy_scaling)
     if window is not None:
         writer.add_uint32(f'{arch}.attention.sliding_window', window)
     writer.add_tokenizer_model('gpt2'); writer.add_tokenizer_pre('qwen2')
@@ -279,6 +281,31 @@ class GgufTests(unittest.TestCase):
                     torch.testing.assert_close(inverse_frequencies(scaled.config, 'cpu'), expected)
                     with self.assertRaises(ValueError):
                         GgufWeights(paths[1], 129, 'none')
+
+    def test_legacy_linear_rotary_metadata_is_not_ignored(self):
+        from dllm.rotary import inverse_frequencies
+        with tempfile.TemporaryDirectory() as folder:
+            modern, legacy = [Path(folder)/f'{label}.gguf' for label in ('modern', 'legacy')]
+            fixture(modern, arch='llama', scaling=4)
+            fixture(legacy, arch='llama', legacy_scaling=4)
+            expected, actual = [GgufWeights(path, 128, 'none') for path in (modern, legacy)]
+            self.assertEqual(actual.config, expected.config)
+            torch.testing.assert_close(inverse_frequencies(actual.config, 'cpu'),
+                                       torch.tensor([10000.0 ** (-i/8)/4 for i in range(0, 8, 2)]))
+            for name in expected.weights:
+                self.assertTrue(torch.equal(expected.weights[name], actual.weights[name]), name)
+            for name in expected.scales:
+                self.assertTrue(torch.equal(expected.scales[name], actual.scales[name]), name)
+            for factor in (0, .5, -1, float('nan'), float('inf')):
+                path = Path(folder)/f'invalid-{factor}.gguf'
+                fixture(path, legacy_scaling=factor)
+                with self.assertRaises(ValueError):
+                    plan(path)
+            for factor in (2, 4):
+                path = Path(folder)/f'ambiguous-{factor}.gguf'
+                fixture(path, scaling=4, legacy_scaling=factor)
+                with self.assertRaises(ValueError):
+                    plan(path)
 
     def test_invalid_rotary_scaling_metadata_fails_preflight(self):
         from dllm.gguf_model import model_config

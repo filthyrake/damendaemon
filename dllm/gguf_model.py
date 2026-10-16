@@ -175,6 +175,10 @@ def model_config(metadata, tensors, vocab_size, eos):
         raise ValueError('GGUF only supports uniform Llama/Mistral sliding-window attention')
     scaling = {name.removeprefix(f'{arch}.rope.scaling.'): value
                for name, value in metadata.items() if name.startswith(f'{arch}.rope.scaling.')}
+    if f'{arch}.rope.scale_linear' in metadata:
+        if scaling:
+            raise ValueError('GGUF mixes legacy and modern RoPE scaling metadata')
+        scaling = {'type': 'linear', 'factor': get('rope.scale_linear')}
     kind = scaling.get('type', 'none')
     if kind not in ('none', 'linear') or set(scaling) - ({'type', 'factor'} if kind == 'linear' else {'type'}):
         raise ValueError('GGUF only supports explicit linear RoPE scaling')
