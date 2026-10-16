@@ -250,3 +250,5 @@ nonfinite values or oversized reports leave the previous file intact. This is
 atomic replacement, not an fsync or power-loss durability guarantee.
 
 Benchmark SSE accounting validates streamed function-tool envelopes before counting output. Malformed arrays, indices, types or function fields fail the request, including when accompanied by valid text. Only nonempty function name/argument fragments count as tool output; IDs and other metadata alone do not establish first output or an output gap. Partial argument strings remain allowed, including length-limited responses.
+
+Non-null SSE error envelopes fail both benchmark and comparator requests even when their values are empty or false. Optional server timing accepts absent/null/object values; falsey non-object values are rejected instead of silently dropped. Failed requests never receive successful or qualifying-token credit.

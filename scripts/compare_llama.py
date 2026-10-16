@@ -62,8 +62,8 @@ def main():
                     done = True
                     break
                 chunk = json.loads(data)
-                if chunk.get("error"):
-                    raise RuntimeError(chunk["error"])
+                if chunk.get("error") is not None:
+                    raise ValueError("server returned an error event")
                 for choice in chunk.get("choices", []):
                     scored_tokens+=len((choice.get('logprobs') or {}).get('content') or [])
                     content = choice.get('text', '') if args.raw else choice.get("delta", {}).get("content", "")

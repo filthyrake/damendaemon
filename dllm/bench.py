@@ -168,7 +168,7 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                 chunk = _response_json(data)
                 if not isinstance(chunk, dict):
                     raise ValueError("stream event must be an object")
-                if chunk.get("error"):
+                if chunk.get("error") is not None:
                     raise ValueError("server returned an error event")
                 choices = chunk.get("choices", [])
                 if (not isinstance(choices, list) or len(choices) > 1
@@ -206,7 +206,9 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                         result.output_event_gaps_seconds.append(arrived-result.last_output_seconds)
                     result.last_output_seconds = arrived
                     result.output_events += 1
-                timing = chunk.get("dllm_timing") or {}
+                timing = chunk.get("dllm_timing")
+                if timing is None:
+                    timing = {}
                 if not isinstance(timing, dict):
                     raise ValueError("invalid server timing metadata")
                 queued = timing.get("queue_seconds")

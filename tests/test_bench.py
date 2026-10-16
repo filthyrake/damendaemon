@@ -46,6 +46,9 @@ class Handler(BaseHTTPRequestHandler):
         if model.startswith('text-field:'):
             _, field, encoded = model.split(':', 2)
             chunks[1]['choices'][0]['delta'] = {field: json.loads(encoded)}
+        if model.startswith('envelope:'):
+            _, field, encoded = model.split(':', 2)
+            chunks[1][field] = json.loads(encoded)
         if model.startswith('tool-and-text:'):
             chunks[1]['choices'][0]['delta'] = {'content':'visible',
                 'tool_calls':json.loads(model.split(':',1)[1])}
@@ -297,6 +300,23 @@ class BenchTests(unittest.TestCase):
                 self.assertGreater(result.output_events, 0)
                 self.assertEqual(summarize([result], 1)['succeeded'], 0)
                 self.assertEqual(profile_summary([result], 1, profile)['qualifying_output_tokens'], 0)
+
+    def test_falsey_error_and_invalid_timing_envelopes_cannot_qualify(self):
+        profile = dict(max_first_output_seconds=5, max_output_event_gap_seconds=5,
+                       min_request_output_tokens_per_second=.001)
+        for field, values in (('error', ({}, [], False, 0, '')),
+                              ('dllm_timing', ([], False, 0, ''))):
+            for value in values:
+                with self.subTest(field=field,value=value):
+                    result = self.request('envelope:' + field + ':' + json.dumps(value))
+                    self.assertEqual(result.error, 'ValueError')
+                    self.assertEqual(summarize([result],1)['succeeded'],0)
+                    self.assertEqual(profile_summary([result],1,profile)['qualifying_output_tokens'],0)
+        for field,value in (('error',None),('dllm_timing',None),('dllm_timing',{})):
+            with self.subTest(field=field,value=value):
+                result = self.request('envelope:' + field + ':' + json.dumps(value))
+                self.assertIsNone(result.error)
+                self.assertEqual(result.output_events,2)
 
     def test_malformed_tool_deltas_cannot_qualify(self):
         profile = dict(max_first_output_seconds=5, max_output_event_gap_seconds=5,

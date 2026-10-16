@@ -14,6 +14,8 @@ choice = {'delta': {'content': 'hello'}}
 if case == 'no-output': choice['delta'] = {}
 if case == 'scored': choice['logprobs'] = {'content': [{'token': 'hello'}]}
 chunks = [{'choices': [choice]}]
+if case.startswith('error-'):
+    chunks[0]['error'] = {'empty':{}, 'false':False, 'zero':0, 'list':[], 'text':'', 'null':None}[case[6:]]
 if case != 'no-usage':
     tokens = {'short': 1, 'float': 2.0, 'bool': True}.get(case, 2)
     chunks.append({'choices': [], 'usage': {'completion_tokens': tokens}})
@@ -33,7 +35,8 @@ class ComparatorGatesTests(unittest.TestCase):
 
     def test_invalid_evidence_never_publishes_comparison(self):
         for optimized in (False, True):
-            for case in ('no-done', 'no-output', 'no-usage', 'short', 'float', 'bool', 'no-scores'):
+            for case in ('no-done', 'no-output', 'no-usage', 'short', 'float', 'bool', 'no-scores',
+                         'error-empty','error-false','error-zero','error-list','error-text'):
                 with self.subTest(optimized=optimized, case=case):
                     result = self.run_case(case, optimized)
                     self.assertNotEqual(result.returncode, 0)
@@ -42,7 +45,7 @@ class ComparatorGatesTests(unittest.TestCase):
 
     def test_complete_evidence_is_accepted_in_both_modes(self):
         for optimized in (False, True):
-            for case in ('valid', 'scored'):
+            for case in ('valid', 'scored', 'error-null'):
                 with self.subTest(optimized=optimized, case=case):
                     result = self.run_case(case, optimized)
                     self.assertEqual(result.returncode, 0, result.stderr)
