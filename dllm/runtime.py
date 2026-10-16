@@ -512,6 +512,8 @@ class Runtime:
         if raw_prompt is not None:
             from .prompts import validate_raw
             raw_prompt = validate_raw(raw_prompt,max_length=self.context)
+            if messages is not None or enable_thinking is not None or reasoning_effort is not None:
+                raise ValueError('raw prompts cannot include chat messages or template options')
         from .sampling import Sampling, Sampler
         from .stopping import stop_sequences, text_delta
         stops = stop_sequences(stop)

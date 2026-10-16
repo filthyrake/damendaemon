@@ -100,6 +100,10 @@ def matches_schema(value,schema):
 
 
 def prepare_options(response_format, stops, thinking, ignore_eos=False):
+    if thinking is not None and type(thinking) is not bool:
+        raise ValueError('enable_thinking must be boolean')
+    if type(ignore_eos) is not bool:
+        raise ValueError('ignore_eos must be boolean')
     schema = response_schema(response_format)
     if schema is not None:
         if stops or thinking is True or ignore_eos:

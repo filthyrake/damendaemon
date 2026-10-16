@@ -6,6 +6,32 @@ from dllm.scheduler import BatchedRuntime
 
 
 class OutputPreflightTests(unittest.TestCase):
+    def test_invalid_generation_flags_before_ownership(self):
+        direct=Runtime.__new__(Runtime);direct.context=16
+        direct.session=Mock(side_effect=AssertionError('session acquired'))
+        scheduled=BatchedRuntime.__new__(BatchedRuntime);scheduled.context=16
+        scheduled.models={'a':'unused'};scheduled.admission=Mock()
+        for invalid in (0,1,'false',[],{}):
+            for runtime in (direct,scheduled):
+                with self.subTest(thinking=invalid,runtime=type(runtime).__name__),self.assertRaisesRegex(ValueError,'boolean'):
+                    list(runtime.generate('a',[],max_tokens=1,enable_thinking=invalid))
+            with self.subTest(ignore_eos=invalid),self.assertRaisesRegex(ValueError,'boolean'):
+                list(direct.generate('a',[],max_tokens=1,ignore_eos=invalid))
+        direct.session.assert_not_called();scheduled.admission.acquire.assert_not_called()
+
+    def test_direct_raw_chat_conflicts_before_session(self):
+        runtime=Runtime.__new__(Runtime);runtime.context=16
+        runtime.session=Mock(side_effect=RuntimeError('session boundary'))
+        for options in ({'messages':[]},{'messages':[{'role':'user','content':'x'}]},
+                        {'messages':None,'enable_thinking':False},
+                        {'messages':None,'enable_thinking':True},
+                        {'messages':None,'reasoning_effort':'low'}):
+            with self.subTest(options=options),self.assertRaisesRegex(ValueError,'raw prompts cannot'):
+                list(runtime.generate('a',raw_prompt=[1],max_tokens=1,**options))
+        runtime.session.assert_not_called()
+        with self.assertRaisesRegex(RuntimeError,'session boundary'):
+            list(runtime.generate('a',None,raw_prompt=[1],max_tokens=1))
+
     def test_direct_and_scheduled_limits_before_ownership(self):
         direct=Runtime.__new__(Runtime);direct.context=16
         direct.session=Mock(side_effect=RuntimeError('session boundary'))
