@@ -193,7 +193,7 @@ class SentencePieceGgufTests(unittest.TestCase):
             for candidate in (result, restore_tokenizer(result.to_str())):
                 for index in unused:
                     self.assertEqual(TokenText(candidate).token(index), ('', ()))
-                with self.assertRaisesRegex(ValueError, 'suppressed SentencePiece'):
+                with self.assertRaisesRegex(ValueError, 'suppressed GGUF'):
                     Constraint(SimpleNamespace(tokenizer=candidate), '{}')
                 for sample in case['samples']:
                     with self.subTest(unused=unused, tied=case['tied'], prefix=case['prefix'], sample=sample):

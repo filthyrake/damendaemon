@@ -23,6 +23,8 @@ class ByteLevelStream:
         self.utf8=codecs.getincrementaldecoder('utf-8')(errors='replace')
 
     def feed(self,token):
+        if token in getattr(self.tokenizer, "suppressed_token_ids", ()):
+            return ""
         if token in self.added:
             value=self.added[token].content
             if value not in self.allowed:raise ValueError('unsupported generated added/control token')

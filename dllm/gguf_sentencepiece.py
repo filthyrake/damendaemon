@@ -91,8 +91,7 @@ class SentencePieceTokenizer(SpecialTokenTokenizer):
     one-time prefix strip. Rust handles the remaining byte decoding.
     """
     def __init__(self, backend, suppressed_token_ids=()):
-        self.suppressed_token_ids = frozenset(suppressed_token_ids)
-        super().__init__(backend)
+        super().__init__(backend, suppressed_token_ids)
         added = backend.get_added_tokens_decoder()
         self._special_ids = frozenset(i for i, token in added.items() if token.special)
         self._unstripped = Tokenizer(backend.model)
@@ -182,7 +181,7 @@ def restore_tokenizer(serialized, prefix=False):
     """Restore both static-rank and native positional GGUF tokenizer state."""
     state = json.loads(serialized)
     if state.get('dllm_gguf_special') == 1:
-        return SpecialTokenTokenizer(Tokenizer.from_str(state['backend']))
+        return SpecialTokenTokenizer(Tokenizer.from_str(state['backend']), state.get('suppressed', ()))
     if state.get('dllm_sentencepiece') == 1:
         return PositionalSentencePieceTokenizer(Tokenizer.from_str(state['backend']),
             base64.b64decode(state['model'], validate=True), state['prefix'], state.get('suppressed', ()))

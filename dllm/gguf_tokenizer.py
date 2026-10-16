@@ -35,7 +35,8 @@ def validate_special_overlaps(tokens, types):
 
 class SpecialTokenTokenizer:
     """Partition longer special pieces before normal-fragment tokenization."""
-    def __init__(self, backend):
+    def __init__(self, backend, suppressed_token_ids=()):
+        self.suppressed_token_ids = frozenset(suppressed_token_ids)
         self.backend_tokenizer = backend
         self._pieces = {token.content: index for index, token in backend.get_added_tokens_decoder().items()}
         self._special_order = sorted(self._pieces, key=lambda text: len(text.encode('utf-8')), reverse=True)
@@ -90,6 +91,15 @@ class SpecialTokenTokenizer:
     def __getattr__(self, name):
         return getattr(self.backend_tokenizer, name)
 
+    def decode(self, ids, skip_special_tokens=True):
+        if self.suppressed_token_ids:
+            ids = [i for i in ids if i not in self.suppressed_token_ids]
+        return self.backend_tokenizer.decode(ids, skip_special_tokens=skip_special_tokens)
+
+    def decode_batch(self, sequences, skip_special_tokens=True):
+        return [self.decode(ids, skip_special_tokens=skip_special_tokens) for ids in sequences]
+
     def to_str(self, pretty=False):
-        return json.dumps(dict(dllm_gguf_special=1, backend=self.backend_tokenizer.to_str()),
+        return json.dumps(dict(dllm_gguf_special=1, backend=self.backend_tokenizer.to_str(),
+                               suppressed=sorted(self.suppressed_token_ids)),
                           indent=2 if pretty else None)

@@ -77,9 +77,9 @@ def bpe_tokenizer(metadata):
         raise ValueError('GGUF tokenizer requires tokens, token types and BPE merges')
     if any(not isinstance(t, str) or not t for t in tokens) or any(t not in (1, 3, 4, 5) for t in types):
         raise ValueError('unsupported GGUF token or token type')
-    vocab = {t: i for i, t in enumerate(tokens) if types[i] != 5}
-    if len(vocab) != sum(t != 5 for t in types):
-        raise ValueError('duplicate active GGUF token strings')
+    vocab = {t: i for i, t in enumerate(tokens)}
+    if len(vocab) != len(tokens):
+        raise ValueError('duplicate GGUF token strings')
     from .gguf_tokenizer import validate_special_overlaps
     validate_special_overlaps(tokens, types)
     if not set(pre_tokenizers.ByteLevel.alphabet()).issubset(vocab):
@@ -145,7 +145,7 @@ def tokenizer(metadata):
             added.append((text, vocab[text]))
     if added:
         result.post_processor = processors.TemplateProcessing(single=prefix + ['$A'] + suffix, special_tokens=added)
-    suppressed = {i for i, kind in enumerate(types) if kind == 5} if sentencepiece else set()
+    suppressed = {i for i, kind in enumerate(types) if kind == 5}
     if native is not None:
         from .gguf_sentencepiece import PositionalSentencePieceTokenizer
         result = PositionalSentencePieceTokenizer(result, native, metadata.get('tokenizer.ggml.add_space_prefix', True), suppressed)
@@ -154,7 +154,7 @@ def tokenizer(metadata):
         result = SentencePieceTokenizer(result, suppressed)
     else:
         from .gguf_tokenizer import SpecialTokenTokenizer
-        result = SpecialTokenTokenizer(result)
+        result = SpecialTokenTokenizer(result, suppressed)
     return result, special, frozenset(eos)
 
 

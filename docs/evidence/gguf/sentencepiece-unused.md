@@ -121,3 +121,26 @@ policies, special toggles and overlapping/adjacent/Unicode/byte-fallback prompts
 Original and restored wrappers match exact IDs, decoding and batch behavior.
 Separate tests preserve byte-level incremental streaming and logprob presentation.
 The frozen matrix runs in CPU CI without building the reference or using GPUs.
+
+## Byte-level UNUSED pieces (#381)
+
+A Llama3 whole-word lookup exposed another silent mismatch: alphabet plus EOS,
+normal `aa`, UNUSED `ab`, and only merge `a a` encoded `ab` as `[64,65]` in dllm
+versus reference `[258]`. Qwen2's control case returned `[64,65]` in both.
+
+Byte-level vocabularies now retain unique UNUSED spellings for lookup and merges.
+The shared wrapper suppresses those IDs during decoding regardless of special
+visibility, preserves the suppression set through serialization, and supplies
+it to incremental ByteLevel decoding and logprob presentation. Suppressed pieces
+do not flush an incomplete UTF-8 sequence. Structured output with suppressed
+pieces remains explicitly rejected; duplicate spellings and UNUSED EOS IDs are
+still rejected before loading.
+
+`tests/reference/generate_gguf_bpe_unused.py` freezes 696 independent CPU cases:
+two pre-tokenizers, six UNUSED selections, two automatic-special policies,
+24 prompt/policy combinations plus five explicit decode sequences per vocabulary.
+Coverage includes single bytes, merged pieces, whole-word pieces absent from the
+merge table, formerly user-defined pieces, simultaneous suppression and split
+UTF-8 bytes. Normal/restored full and batch decoding, exact encoding, incremental
+streaming and logprob presentation are checked. This is tokenizer compatibility
+evidence only; the model and GPU qualification gates remain open.
