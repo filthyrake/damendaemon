@@ -140,9 +140,11 @@ class ServerTests(unittest.TestCase):
             ModelWeights.chat_tokens(model,messages)
             raise AssertionError('inference must not be reached')
         for source in ('{{ messages[1].content }}', '{{ messages[0].content + 1 }}',
-                       '{{ range(3) | tojson }}', '{{ 1 / (messages | length - 1) }}'):
+                       '{{ range(3) | tojson }}', '{{ 1 / (messages | length - 1) }}',
+                       '{% for i in range(30) %}{% endfor %}hello'):
             model.template=compile_template(source)
-            with patch.object(self.runtime,'generate',side_effect=generate):
+            with patch.object(self.runtime,'generate',side_effect=generate), \
+                    patch('dllm.chat_template.MAX_TEMPLATE_ITERATIONS',20):
                 for stream in (False,True):
                     with self.subTest(source=source,stream=stream):
                         with self.assertRaises(HTTPError) as raised:
