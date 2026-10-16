@@ -120,7 +120,7 @@ class SamplingTests(unittest.TestCase):
 
     def test_small_temperature_and_invalid_logits(self):
         self.assertEqual(Sampler(Sampling(1e-300)).select(torch.tensor([1.,2.])).item(), 1)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(RuntimeError):
             Sampler(Sampling(1)).select(torch.tensor([float('nan'), 1.]))
 
     def test_penalties_use_correct_history_and_preserve_logits(self):
@@ -198,7 +198,7 @@ class SamplingTests(unittest.TestCase):
         for row in ([float('nan'),1.], [1.,float('nan')], [float('inf'),1.],
                     [-float('inf'),-float('inf')]):
             logits=torch.tensor(row)
-            with self.subTest(row=row),self.assertRaisesRegex(ValueError,'non-finite greedy'):
+            with self.subTest(row=row),self.assertRaisesRegex(RuntimeError,'non-finite greedy'):
                 Sampler(Sampling()).select(logits)
             batch=torch.stack([torch.tensor([1.,0.]),logits])
             for cached in (None,torch.tensor([0,0])):
@@ -239,7 +239,7 @@ class SamplingTests(unittest.TestCase):
             for row in ([float('nan'),1.],[float('inf'),1.],[-float('inf'),-float('inf')]):
                 sampler=Sampler(Sampling(temperature,logit_bias={'0':1}))
                 sampler.prepare([],2)
-                with self.subTest(row=row,temperature=temperature),self.assertRaisesRegex(ValueError,'non-finite'):
+                with self.subTest(row=row,temperature=temperature),self.assertRaisesRegex(RuntimeError,'non-finite'):
                     sampler.select(torch.tensor(row))
 
     def test_checked_greedy_selection_has_no_host_readback(self):
@@ -259,6 +259,6 @@ class SamplingTests(unittest.TestCase):
                 samplers[1].logprobs_top=1
                 if all_scored:samplers[0].logprobs_top=1
                 logits=torch.tensor([[1.,2.],[bad,bad]])
-                with self.subTest(all_scored=all_scored,bad=bad),self.assertRaisesRegex(ValueError,'non-finite'):
+                with self.subTest(all_scored=all_scored,bad=bad),self.assertRaisesRegex(RuntimeError,'non-finite'):
                     sample_rows(logits,samplers)
                 self.assertTrue(all(s.last_logprobs is None for s in samplers))

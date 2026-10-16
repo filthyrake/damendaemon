@@ -42,7 +42,7 @@ def score_rows(logits,selected,tops):
     result=[]
     for row,ids,top in zip(numbers,token_ids,tops):
         if any(not math.isfinite(value) for value in row):
-            raise ValueError('cannot report non-finite model log probabilities')
+            raise RuntimeError('cannot report non-finite model log probabilities')
         result.append({'token_id':ids[0],'logprob':row[0],'top':list(zip(ids[1:top+1],row[1:top+1]))})
     return result
 

@@ -71,6 +71,6 @@ class NativeCompletionTests(unittest.TestCase):
             with patch('dllm.harmony.output_stream',return_value=None), \
                     patch('dllm.prompts.encode',return_value=[1]), \
                     patch('dllm.prompts.validate_lengths'):
-                with self.subTest(value=value),self.assertRaisesRegex(ValueError,'non-finite greedy'):
+                with self.subTest(value=value),self.assertRaisesRegex(RuntimeError,'non-finite greedy'):
                     next(runtime.generate('a',[],1))
             self.assertFalse(state['kv']);self.assertFalse(state['session'])

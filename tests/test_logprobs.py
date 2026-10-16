@@ -58,7 +58,7 @@ class LogprobTests(unittest.TestCase):
             with self.subTest(enabled=enabled,top=top),self.assertRaises(ValueError):options(enabled,top)
         self.assertIsNone(options(None,None))
         self.assertEqual(options(True,0),0)
-        with self.assertRaises(ValueError):scores(torch.tensor([float('nan'),0.]),0,1)
+        with self.assertRaises(RuntimeError):scores(torch.tensor([float('nan'),0.]),0,1)
 
     def test_batch_keeps_different_top_counts_and_unscored_rows_isolated(self):
         samplers=[Sampler(Sampling()) for _ in range(3)]
@@ -139,7 +139,7 @@ class LogprobTests(unittest.TestCase):
     def test_selected_out_of_range_fails_without_unchecked_gather(self):
         from dllm.logprobs import score_rows
         for selected in (-1,3,2**40):
-            with self.subTest(selected=selected),self.assertRaisesRegex(ValueError,'non-finite'):
+            with self.subTest(selected=selected),self.assertRaisesRegex(RuntimeError,'non-finite'):
                 score_rows(torch.tensor([[1.,2.,3.]]),torch.tensor([selected]),[1])
 
     def test_nested_decoder_sequences_preserve_byte_fragments(self):

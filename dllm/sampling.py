@@ -111,6 +111,10 @@ class Sampler:
         # Only preserve those entries; overflow from a finite source is invalid.
         preserved_mask=torch.isneginf(logits) & torch.isneginf(values)
         if not (torch.isfinite(values) | preserved_mask).all().item():
+            # Distinguish corrupt model output from request-induced overflow.
+            # This extra readback is only needed on the failure path.
+            if (torch.isnan(logits) | torch.isposinf(logits)).any().item():
+                raise RuntimeError('cannot sample non-finite model logits')
             raise ValueError('cannot sample non-finite adjusted logits')
         return values
 
@@ -135,7 +139,7 @@ class Sampler:
             # max propagates NaN and preserves +inf/all-masked -inf. A finite
             # maximum still permits ordinary -inf vocabulary/grammar masks.
             if not torch.isfinite(maximum).item():
-                raise ValueError('cannot sample non-finite greedy logits')
+                raise RuntimeError('cannot sample non-finite greedy logits')
             return selected
         values = logits.float()
         indices = None
@@ -152,7 +156,7 @@ class Sampler:
             probabilities = probabilities.masked_fill(remove, 0)
             probabilities = probabilities / probabilities.sum()
         if not torch.isfinite(probabilities).all().item():
-            raise ValueError('cannot sample non-finite model probabilities')
+            raise RuntimeError('cannot sample non-finite model probabilities')
         cumulative = probabilities.cumsum(-1)
         # Renormalize the entire CDF: assigning only its last entry to one
         # would give a zero-probability tail any FP32 rounding shortfall.

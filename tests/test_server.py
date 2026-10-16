@@ -117,6 +117,34 @@ class ServerTests(unittest.TestCase):
                                data=json.dumps(data).encode(),
                                headers={"Content-Type": "application/json"}), timeout=5)
 
+    def test_nonfinite_model_output_is_an_execution_error(self):
+        import torch
+        from dllm.sampling import Sampler, Sampling
+        from dllm.logprobs import scores
+        failures = (
+            lambda: Sampler(Sampling()).select(torch.tensor([float('nan'), 1.])),
+            lambda: Sampler(Sampling(1)).select(torch.tensor([float('nan'), 1.])),
+            lambda: scores(torch.tensor([float('nan'), 1.]), 0, 1),
+            lambda: Sampler(Sampling(logit_bias={'0': 1})).select(
+                torch.tensor([float('inf'), 1.])),
+        )
+        for failure in failures:
+            def generate(*args, **kwargs):
+                failure()
+                yield  # Exercise failures during generator iteration.
+            with self.subTest(failure=failure), \
+                    patch.object(self.runtime, 'generate', side_effect=generate), \
+                    patch('dllm.server.traceback.print_exc'):
+                with self.assertRaises(HTTPError) as raised:
+                    self.post()
+                with raised.exception as response:
+                    self.assertEqual(response.code, 500)
+                    self.assertEqual(json.load(response)['error'], 'model execution failed')
+        with self.assertRaises(HTTPError) as raised:
+            self.post(temperature=-1)
+        with raised.exception as response:
+            self.assertEqual(response.code, 400)
+
     def test_oversized_sampling_integers_return_400_before_dispatch(self):
         with patch.object(self.runtime, 'generate') as generate:
             for name in ('temperature', 'top_p', 'presence_penalty',
