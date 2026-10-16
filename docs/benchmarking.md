@@ -7,9 +7,10 @@ a passing qualification report.
 
 The `CPU contracts` GitHub workflow runs an explicit dependency-free test list on
 GitHub-hosted Python 3.11 and 3.12, in normal and optimized modes. It covers
-qualification startup guards, HTTP error handling, report I/O, error snapshots
-and token-workload identity. It installs no runtime dependencies and performs no
-model loading, inference, GPU validation or shared-host operations. Passing this
+qualification startup guards, HTTP error handling, report I/O, error snapshots,
+token-workload identity and CLI manifest preflight. It installs no runtime
+dependencies and performs no model loading, inference, GPU validation or
+shared-host operations. Passing this
 workflow is a software contract check, not a hardware qualification result.
 
 [Documentation](README.md) · [Project](../README.md) · [Support matrix](support.md)

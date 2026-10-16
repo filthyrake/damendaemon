@@ -66,7 +66,10 @@ def load(path, resolve):
         raw = reader.read(1024 * 1024 + 1)
     if len(raw) > 1024 * 1024:
         raise ValueError('model manifest exceeds 1 MiB')
-    data = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_object)
+    try:
+        data = json.loads(raw.decode('utf-8'), object_pairs_hook=unique_object)
+    except RecursionError as error:
+        raise ValueError('model manifest nesting is too deep') from error
     if (not isinstance(data, dict) or set(data) != {'version', 'models'}
             or type(data['version']) is not int or data['version'] != 1
             or not isinstance(data['models'], dict) or not data['models']):
