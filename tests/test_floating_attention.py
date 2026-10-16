@@ -4,7 +4,7 @@ from unittest.mock import patch
 import torch
 
 from dllm.deepseek_position import frequencies, rotate_pairs
-from dllm.floating_attention import _query_norm, attention_prefill
+from dllm.floating_attention import _query_norm, attention_decode, attention_prefill
 
 
 def fixture(ratio=0, length=13, dtype=torch.float32, dim=8):
@@ -107,3 +107,32 @@ class FloatingAttentionTests(unittest.TestCase):
                 _query_norm(query, 1e-6, backend)
         torch.testing.assert_close(_query_norm(torch.ones(1, 1, 2, 128), 1e-6, None),
                                    torch.ones(1, 1, 2, 128))
+
+    def test_reference_attention_validates_selected_scores(self):
+        # Finite inputs can still overflow the score matmul into inf; the model
+        # path must validate selected rows/scores instead of silently softmaxing
+        # NaN (CUDA validates internally and takes no flag).
+        from dllm.selected_attention import selected_attention
+        query = torch.zeros(1, 1, 2, 128); query[0, 0, 0, 0] = 1e10
+        kv = torch.zeros(1, 4, 128); kv[0, 1, 0] = 1e30
+        sink = torch.zeros(2)
+        indices = torch.tensor([[[0, 1]]])
+        with self.assertRaisesRegex(ValueError, 'nonfinite selected attention scores'):
+            selected_attention(query, kv, indices, sink, validate_finite=True)
+        ok = selected_attention(query, torch.zeros(1, 4, 128), indices, sink, validate_finite=True)
+        self.assertTrue(torch.isfinite(ok).all())
+
+    def test_prefill_and_decode_request_score_validation(self):
+        seen = []
+        real = attention_prefill.__globals__['selected_attention']
+        def spy(*args, **kwargs):
+            seen.append(kwargs.get('validate_finite'))
+            return real(*args, **kwargs)
+        args = fixture(0, 5)
+        hidden, weights, freq = args
+        _, state = attention_prefill(*args, groups=2, window=4, max_tokens=8)
+        decode_args = hidden[:, :1].contiguous()
+        with patch('dllm.floating_attention.selected_attention', side_effect=spy):
+            attention_prefill(*args, groups=2, window=4, max_tokens=8)
+            attention_decode(decode_args, state, position=5)
+        self.assertTrue(seen and all(item is True for item in seen), seen)

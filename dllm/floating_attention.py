@@ -250,7 +250,8 @@ def _attention_prefill(hidden, weights, inverse_frequencies, *, groups, window, 
                                        index_keys[:, :length//ratio], pos.unsqueeze(0).expand(batch, -1), inverse_frequencies,
                                        top_k=index_top_k, offset=length, query_chunk=query_chunk)
             indices = torch.cat((indices, selected), -1)
-        attended = selected_fn(query, combined, indices, weights['attn_sink'], query_chunk=query_chunk)
+        attended = selected_fn(query, combined, indices, weights['attn_sink'], query_chunk=query_chunk,
+                               validate_finite=backend is None)
         attended[..., -rd:] = rotate_pairs(attended[..., -rd:], pos, inverse_frequencies, inverse=True)
         grouped = attended.reshape(batch, stop-start, groups, heads*width//groups)
         projected = _grouped_project(grouped,weights['wo_a.weight'],groups,orank,backend)
@@ -323,7 +324,8 @@ def _attention_decode(hidden, state, *, position):
                                            state.index_keys[:, :visible], pos.unsqueeze(0).expand(batch,-1), freq,
                                            top_k=state.index_top_k, offset=state.window_size, query_chunk=1)
                 indices = torch.cat((indices, selected), -1)
-            attended = selected_fn(query, state.cache, indices, weights['attn_sink'], query_chunk=1)
+            attended = selected_fn(query, state.cache, indices, weights['attn_sink'], query_chunk=1,
+                                   validate_finite=backend is None)
             attended[..., -rd:] = rotate_pairs(attended[..., -rd:], pos, freq, inverse=True)
             grouped = attended.reshape(batch, 1, state.groups, heads*width//state.groups)
             projected = _grouped_project(grouped,weights['wo_a.weight'],state.groups,orank,backend)

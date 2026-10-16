@@ -69,5 +69,6 @@ def _selected_attention(query, kv, indices, sink, *, scale=None, query_chunk=16,
     return output
 
 
-def selected_attention(query,kv,indices,sink,*,scale=None,query_chunk=16,key_chunk=64):
-    return _selected_attention(query,kv,indices,sink,scale=scale,query_chunk=query_chunk,key_chunk=key_chunk)
+def selected_attention(query,kv,indices,sink,*,scale=None,query_chunk=16,key_chunk=64,validate_finite=False):
+    return _selected_attention(query,kv,indices,sink,scale=scale,query_chunk=query_chunk,key_chunk=key_chunk,
+                               validate_finite=validate_finite)
