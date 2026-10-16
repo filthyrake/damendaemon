@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 import weakref
 import torch
-from tokenizers import Tokenizer,decoders,models
+from tokenizers import Tokenizer,decoders,models,AddedToken
 
 from dllm.logprobs import TokenText,options,scores
 from dllm.sampling import Sampler,Sampling,sample_rows
@@ -81,6 +81,52 @@ class LogprobTests(unittest.TestCase):
         self.assertEqual(text.token(4),(' ',(32,)))
         ref=weakref.ref(text);del text;gc.collect()
         self.assertIsNone(ref())
+
+    def test_native_bytelevel_added_tokens_report_generated_bytes(self):
+        from dllm.bytelevel_stream import BYTE_VALUES
+        tokenizer=Tokenizer(models.BPE({char:i for i,char in enumerate(BYTE_VALUES)},[]))
+        tokenizer.decoder=decoders.ByteLevel()
+        pieces=('Ġcustom','Ã','©','aé','aé🙂')
+        tokenizer.add_tokens([AddedToken(piece,special=False) for piece in pieces])
+        text=TokenText(tokenizer)
+        for sequence in ([piece] for piece in pieces):
+            ids=[tokenizer.token_to_id(piece) for piece in sequence]
+            raw=b''.join(bytes(text.token(token)[1]) for token in ids)
+            self.assertEqual(raw.decode('utf-8',errors='replace'),tokenizer.decode(ids,skip_special_tokens=False))
+        ids=[tokenizer.token_to_id(piece) for piece in ('Ã','©')]
+        self.assertEqual(b''.join(bytes(text.token(token)[1]) for token in ids),'é'.encode())
+        packet=text.format({'token_id':tokenizer.token_to_id('Ġcustom'),'logprob':-.5,'top':[]})
+        self.assertEqual(packet['token'],' custom')
+        self.assertEqual(packet['bytes'],list(b' custom'))
+
+    def test_added_byte_fallback_pieces_preserve_partial_bytes(self):
+        tokenizer=Tokenizer(models.WordLevel({'<0xC3>':0,'<0xA9>':1}))
+        tokenizer.decoder=decoders.ByteFallback()
+        tokenizer.add_tokens([AddedToken(piece,special=False) for piece in ('<0xC3>','<0xA9>')])
+        text=TokenText(tokenizer)
+        raw=b''.join(bytes(text.token(token)[1]) for token in (0,1))
+        self.assertEqual(raw,'é'.encode())
+        self.assertEqual(raw.decode(),tokenizer.decode([0,1]))
+
+    def test_added_metaspace_piece_matches_continuation_bytes(self):
+        tokenizer=Tokenizer(models.WordLevel({'a':0,'▁custom':1}))
+        tokenizer.decoder=decoders.Metaspace()
+        tokenizer.add_tokens([AddedToken('▁custom',special=False)])
+        text=TokenText(tokenizer)
+        raw=b''.join(bytes(text.token(token)[1]) for token in (0,1))
+        self.assertEqual(raw.decode(),tokenizer.decode([0,1]))
+        self.assertEqual(raw,b'a custom')
+
+    def test_gguf_added_literal_keeps_its_distinct_byte_contract(self):
+        from dllm.gguf_tokenizer import SpecialTokenTokenizer
+        tokenizer=Tokenizer(models.BPE({'a':0},[]));tokenizer.decoder=decoders.ByteLevel()
+        tokenizer.add_tokens([AddedToken('Ġcustom',special=False)])
+        token=tokenizer.token_to_id('Ġcustom')
+        wrapped=SpecialTokenTokenizer(tokenizer)
+        text,raw=TokenText(wrapped).token(token)
+        self.assertEqual(text,wrapped.decode([token]))
+        self.assertEqual(bytes(raw),'Ġcustom'.encode())
+        self.assertEqual(TokenText(tokenizer).token(token),(' custom',tuple(b' custom')))
 
     def test_byte_fallback_and_unknown_decoder_bytes(self):
         tokenizer=Tokenizer(models.WordLevel({'<0xE2>':0,'<0x82>':1,'<0xAC>':2}))

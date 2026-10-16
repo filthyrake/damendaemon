@@ -968,3 +968,5 @@ must choose and manage their own request-thread lifecycle.
 Structured schemas must contain valid Unicode throughout their values and keys. Lone surrogates hidden by JSON escapes are rejected during request validation, before grammar compilation; the existing ASCII-serialized 16 KiB schema budget is unchanged.
 
 Integer literals in schema `const` and `enum` constraints must fit signed 64-bit range, including literals under `type: number`. Larger literals are rejected because the grammar compiler can round them through floating point. Unconstrained integer schemas and finite floating-point constants remain supported.
+
+Native ByteLevel, byte-fallback and metaspace logprob token text and bytes follow the supported decoder mapping for ordinary added tokens, including leading-space glyphs and partial UTF-8 pieces. GGUF user-defined literal pieces retain their separate literal-byte contract; special controls remain hidden.

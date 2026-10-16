@@ -81,10 +81,16 @@ class TokenText:
             raise ValueError('token ID is absent from tokenizer')
         if token_id in self.added:
             added=self.added[token_id]
-            return piece,None if added.special else tuple(piece.encode('utf-8'))
+            if added.special:return piece,None
+            # GGUF user pieces deliberately bypass the backend decoder.
+            # Native added pieces follow their supported byte decoder instead.
+            mapped=self.byte_level or self.byte_fallback or self.metaspace is not None
+            if not mapped or token_id in getattr(self.tokenizer,'_literal_tokens',{}):
+                return piece,tuple(piece.encode('utf-8'))
         raw=None
-        if self.byte_level and all(char in self.byte_values for char in piece):
-            raw=bytes(self.byte_values[char] for char in piece)
+        if self.byte_level:
+            raw=(bytes(self.byte_values[char] for char in piece)
+                 if all(char in self.byte_values for char in piece) else piece.encode('utf-8'))
         elif self.byte_fallback or self.metaspace is not None:
             if self.byte_fallback and re.fullmatch(r'<0x[0-9A-Fa-f]{2}>',piece):
                 raw=bytes([int(piece[3:5],16)])
