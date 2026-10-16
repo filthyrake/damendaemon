@@ -65,7 +65,7 @@ def main():
         except (KeyError,IndexError,TypeError,StopIteration) as error:
             raise ValueError('benchmark lacks required comparator text') from error
         if not isinstance(native_text,str):raise ValueError('comparator output must be text')
-        prepared.append((ids,expected,native_text))
+        prepared.append((ids,expected,native_text,end))
     output=Path(args.output);report=dict(passed=False,model_sha256=checksum,workload_sha256=workload_sha256,cases=[],
         reference=args.reference,benchmark=args.benchmark,scope='normal HTTP continuation decoding against independently qualified token traces')
     with socket.socket() as listener:listener.bind(('127.0.0.1',0));port=listener.getsockname()[1]
@@ -86,20 +86,32 @@ def main():
                 except URLError:pass
                 if time.monotonic()>deadline:raise TimeoutError('server startup')
                 time.sleep(.2)
-            for ids,expected,native_text in prepared:
+            for ids,expected,native_text,completion_tokens in prepared:
                 body=dict(model='a',prompt=ids,temperature=0,max_tokens=benchmark['output_tokens'])
-                case=dict(prompt_tokens=len(ids),expected=expected);report['cases'].append(case)
+                expected_usage=dict(prompt_tokens=len(ids),completion_tokens=completion_tokens,
+                                    total_tokens=len(ids)+completion_tokens)
+                case=dict(prompt_tokens=len(ids),expected=expected,expected_usage=expected_usage);report['cases'].append(case)
                 for streaming in (False,True):
-                    request=Request(base+'/v1/completions',data=json.dumps({**body,'stream':streaming}).encode(),
+                    request_body={**body,'stream':streaming}
+                    if streaming:request_body['stream_options']={'include_usage':True}
+                    request=Request(base+'/v1/completions',data=json.dumps(request_body).encode(),
                                     headers={'Content-Type':'application/json'})
                     with urlopen(request,timeout=300) as response:
                         if streaming:
                             chunks=list(events(response, require_terminated=True))
                             if not chunks or chunks[-1]!='[DONE]':raise ValueError('incomplete HTTP stream')
-                            text=''.join(c.get('text','') for item in chunks[:-1] for c in json.loads(item)['choices'])
+                            payloads=[json.loads(item) for item in chunks[:-1]]
+                            records=[item['usage'] for item in payloads if item.get('usage') is not None]
+                            if len(records)!=1:raise ValueError('stream requires exactly one usage record')
+                            usage=records[0]
+                            text=''.join(c.get('text','') for item in payloads for c in item['choices'])
                         else:
                             value=json.load(response);text=value['choices'][0]['text'];case['timing']=value['dllm_timing']
-                    case['stream' if streaming else 'nonstream']=dict(text=text,equal=text==expected)
+                            usage=value.get('usage')
+                    if (not isinstance(usage,dict) or any(type(usage.get(key)) is not int or usage[key]!=count
+                            for key,count in expected_usage.items())):
+                        raise ValueError('HTTP token accounting differs from reference workload')
+                    case['stream' if streaming else 'nonstream']=dict(text=text,equal=text==expected,usage=usage)
                     if text!=expected:raise ValueError('HTTP continuation differs from independent token trace')
                 case['llama_reference_equal']=expected==native_text
             report['passed']=True

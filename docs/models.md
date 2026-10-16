@@ -27,7 +27,8 @@ Generated HTTP verification validates complete eager/graph reference cases,
 output-token vocabulary bounds, empty mismatch lists, and comparator text before
 launching its server. Malformed trace evidence cannot trigger model startup.
 HTTP expected text stops at the first checkpoint EOS token, even when the complete
-numerical reference trace continues beyond EOS.
+numerical reference trace continues beyond EOS. Both HTTP modes must report exact
+prompt, completion and total token counts; streaming must supply one usage record.
 
 Teacher traces require the same workload identity and complete eager/graph case
 coverage with valid token IDs before HF construction. A structurally valid failed

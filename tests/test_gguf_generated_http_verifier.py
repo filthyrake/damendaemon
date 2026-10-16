@@ -29,11 +29,23 @@ def response(request,**kwargs):
         raw=io.BytesIO();raw.status=200;return raw
     body=json.loads(request.data)
     text='wrong' if case==('stream-text' if body['stream'] else 'text') else expected_text
+    count=1 if case=='eos-first' else 2 if case=='eos' else body['max_tokens']
+    usage={'prompt_tokens':len(body['prompt']),'completion_tokens':count,'total_tokens':len(body['prompt'])+count}
+    if case=='usage-prompt':usage['prompt_tokens']+=1
+    if case=='usage-total':usage['total_tokens']+=1
+    if case=='usage-bool':usage['completion_tokens']=True
+    if case=='usage-count' and not body['stream']:usage['completion_tokens']+=1
+    if case=='stream-usage-count' and body['stream']:usage['completion_tokens']+=1
     if body['stream']:
+        assert body.get('stream_options')=={'include_usage':True}
         wire='data: '+json.dumps({'choices':[{'text':text}]})+'\n\n'
+        if case!='stream-usage-missing':
+            wire+=('data: '+json.dumps({'choices':[],'usage':usage})+'\n\n')*(2 if case=='stream-usage-duplicate' else 1)
         if case!='no-done':wire+='data: [DONE]\n\n'
         return io.BytesIO(wire.encode())
-    return io.BytesIO(json.dumps({'choices':[{'text':text}],'dllm_timing':{}}).encode())
+    payload={'choices':[{'text':text}],'dllm_timing':{},'usage':usage}
+    if case=='usage-missing':payload.pop('usage')
+    return io.BytesIO(json.dumps(payload).encode())
 with tempfile.TemporaryDirectory() as tmp:
     root=Path(tmp);model=root/'model.gguf';model.write_bytes(b'fixture')
     checksum=hashlib.sha256(model.read_bytes()).hexdigest()
@@ -104,6 +116,15 @@ class GgufGeneratedHttpVerifierTests(unittest.TestCase):
                     self.assertNotIn('passed=True',result.stderr)
                     self.assertIn('cleaned=True',result.stderr)
                     if case in before:self.assertIn('launched=0',result.stderr)
+
+    def test_matching_text_with_invalid_usage_cannot_pass(self):
+        for optimized in (False,True):
+            for case in ('usage-missing','usage-prompt','usage-count','usage-total','usage-bool',
+                         'stream-usage-missing','stream-usage-count','stream-usage-duplicate'):
+                with self.subTest(case=case,optimized=optimized):
+                    result=self.run_case(case,optimized)
+                    self.assertNotEqual(result.returncode,0,result.stdout)
+                    self.assertIn('launched=1 cleaned=True passed=False',result.stderr)
 
     def test_valid_control_in_both_modes(self):
         for optimized in (False,True):
