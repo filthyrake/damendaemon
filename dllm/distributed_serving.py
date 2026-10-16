@@ -15,6 +15,7 @@ from .sampling import Sampling
 from .stopping import text_delta
 from .request_scope import cache_scope
 from .distributed_admission import DistributedAdmission
+from .error_state import detached_error
 from .client_decode_turns import ClientDecodeTurns
 from .client_prefill_turns import ClientPrefillTurns
 
@@ -267,6 +268,7 @@ class DistributedRuntime:
     def _run_owned(self,idle_timeout,heartbeat_interval,stop_after_drain):
         last_request=last_control=time.monotonic()
         active=[]
+        primary_error=None
         try:
             while not self.closed.is_set():
                 retired=[item for item in active if item.done or item.request.cancelled.is_set()]
@@ -336,7 +338,8 @@ class DistributedRuntime:
                     self.pair.heartbeat();self.heartbeats+=1;last_control=time.monotonic()
                 if active and not progressed:self.closed.wait(min(.01,heartbeat_interval))
         except BaseException as error:
-            self.failure=error
+            primary_error=error
+            self.failure=detached_error(error)
             for item in active:self._publish(item.request,RuntimeError('distributed worker session failed'))
             raise
         finally:
@@ -344,8 +347,10 @@ class DistributedRuntime:
             try:
                 if active and not self.pair.state.failed:self._release(active)
             except BaseException as cleanup:
-                if self.failure is None:self.failure=cleanup;raise
-                self.failure.add_note('distributed slot release failed; retain pair for backend cleanup')
+                if self.failure is None:self.failure=detached_error(cleanup);raise
+                note='distributed slot release failed; retain pair for backend cleanup'
+                self.failure.add_note(note)
+                if primary_error is not None:primary_error.add_note(note)
             finally:
                 self.active=False
                 self.decode_turns.reset();self.prefill_turn=0;self.prefill_turns.reset()

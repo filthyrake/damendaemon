@@ -1,6 +1,7 @@
 """Bounded serialized native reference host admission with terminal-epoch ownership."""
 from .native_host_serving import NativeHostReferenceRuntime
-from .queued_reference_serving import QueuedReferenceRuntime,detached_error
+from .queued_reference_serving import QueuedReferenceRuntime
+from .error_state import detached_error
 from .runtime import BusyError
 
 

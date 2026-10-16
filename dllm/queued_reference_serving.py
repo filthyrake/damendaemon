@@ -1,30 +1,19 @@
 """Optional single-owner queue for explicit CPU reference HTTP generation."""
 from contextlib import closing
 from dataclasses import dataclass,field
-import copy
 import json
 import queue
 import threading
 import time
 
 from .distributed_admission import DistributedAdmission
+from .error_state import detached_error
 from .reference_serving import ReferenceRuntime
 from .request_scope import cache_scope
 from .runtime import BusyError
 from .reference_cancellation import cancellation_scope
 
 BUFFER_EVENTS=8
-
-
-def detached_error(error):
-    """Retain error semantics without retaining worker execution frames."""
-    try:
-        detached=copy.copy(error).with_traceback(None)
-    except Exception:
-        detached=RuntimeError(str(error))
-    detached.__cause__=detached.__context__=None
-    detached.__notes__=list(getattr(error,'__notes__',()))
-    return detached
 
 
 @dataclass
