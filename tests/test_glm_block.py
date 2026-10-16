@@ -64,6 +64,25 @@ class GlmBlockTests(unittest.TestCase):
                 finally:fresh.close()
                 self.assertEqual(state.position,position+1)
 
+    def test_normalization_failure_preserves_or_poisons_state_at_the_right_boundary(self):
+        attention,hidden=fixture()
+        block=GlmBlock(attention,GlmFeedForward(ffn_weights(),top_k=2),torch.ones(6),torch.ones(6))
+        state=block.new_state(2,7);self.addCleanup(state.close)
+        with patch.object(attention,'forward',wraps=attention.forward) as forward:
+            with self.assertRaisesRegex(RuntimeError,'normalization variance'):
+                block.forward(torch.full_like(hidden[:,:1],1e20),state,position=0)
+            forward.assert_not_called()
+        self.assertFalse(state.poisoned);self.assertEqual(state.attention.position,0)
+        original=attention.forward
+        def oversized(*args,**kwargs):
+            attended,indices=original(*args,**kwargs)
+            return torch.full_like(attended,1e20),indices
+        with patch.object(attention,'forward',side_effect=oversized):
+            with self.assertRaisesRegex(RuntimeError,'normalization variance'):
+                block.forward(hidden[:,:1],state,position=0)
+        self.assertTrue(state.poisoned);self.assertTrue(state.attention.poisoned)
+        self.assertEqual(state.position,0);self.assertEqual(state.attention.position,1)
+
     def test_ffn_failure_after_attention_poisoned_without_block_cursor_commit(self):
         attention,hidden=fixture();ffn=GlmFeedForward(ffn_weights(),top_k=2)
         block=GlmBlock(attention,ffn,torch.ones(6),torch.ones(6));state=block.new_state(2,7)

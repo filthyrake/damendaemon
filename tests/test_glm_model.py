@@ -41,6 +41,32 @@ class GlmModelTests(unittest.TestCase):
         expected=(hidden/(hidden.square().mean(-1,keepdim=True)+1e-5).sqrt()*model.norm)@model.head.T
         torch.testing.assert_close(whole,expected,rtol=2e-5,atol=2e-6)
 
+    def test_final_normalization_rejects_hidden_overflow_and_releases_prefill(self):
+        model=self.model
+        for value in (1e20,float('nan'),float('inf')):
+            for all_logits in (False,True):
+                with self.subTest(value=value,all_logits=all_logits), \
+                        self.assertRaisesRegex(RuntimeError,'normalization variance'):
+                    model._logits(torch.full((1,2,6),value),all_logits)
+        state=model.new_state(2,5)
+        last=model.blocks[-1]
+        original=last.forward
+        def oversized(*args,**kwargs):
+            hidden,indices=original(*args,**kwargs)
+            return torch.full_like(hidden,1e20),indices
+        with patch.object(model,'new_state',return_value=state), \
+                patch.object(last,'forward',side_effect=oversized):
+            with self.assertRaisesRegex(RuntimeError,'normalization variance'):
+                model.prefill(self.tokens[:,:1],capacity=5)
+        self.assertTrue(state.closed);self.assertFalse(state.layers)
+        self.assertFalse(model.failed_cleanups)
+
+    def test_normalization_output_overflow_is_not_a_valid_head_input(self):
+        from dllm.glm_normalization import rms_norm
+        hidden=torch.tensor([[[1.,0.,0.,0.,0.,0.]]])
+        with self.assertRaisesRegex(RuntimeError,'normalization output'):
+            rms_norm(hidden,torch.full((6,),torch.finfo(torch.float32).max),1e-5)
+
     def test_global_budget_before_layer_allocation_and_reordered_slots(self):
         model=self.model
         with patch.object(model.blocks[0],'new_state',side_effect=AssertionError('allocated')):

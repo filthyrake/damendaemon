@@ -4,6 +4,7 @@ import torch
 from .glm_attention import _float
 from .glm_cached_attention import CachedGlmAttention,GlmAttentionState
 from .glm_ffn import GlmFeedForward
+from .glm_normalization import rms_norm
 
 
 @dataclass
@@ -51,7 +52,7 @@ class _GlmBlock:
                 raise RuntimeError('GLM block and attention cursors disagree')
             if not _float(hidden,3,self.device) or hidden.shape[-1]!=self.dim or type(position) is not int or position!=state.position:
                 raise ValueError('invalid GLM block input/position')
-            def norm(value,weight):return value*torch.rsqrt(value.square().mean(-1,keepdim=True)+self.epsilon)*weight
+            def norm(value,weight):return rms_norm(value,weight,self.epsilon)
             before=state.attention.position
             try:
                 attended,indices=self.attention.forward(norm(hidden,self.input_norm),state.attention,

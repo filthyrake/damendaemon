@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from .glm_attention import _float,_budgets
 from .glm_block import GlmBlock
+from .glm_normalization import rms_norm
 
 
 @dataclass
@@ -133,7 +134,7 @@ class _GlmModel:
 
     def _logits(self,hidden,all_logits):
         value=hidden if all_logits else hidden[:,-1]
-        value=value*torch.rsqrt(value.square().mean(-1,keepdim=True)+self.epsilon)*self.norm
+        value=rms_norm(value,self.norm,self.epsilon)
         result=F.linear(value,self.head)
         if not torch.isfinite(result).all():raise ValueError('nonfinite GLM model logits')
         return result
