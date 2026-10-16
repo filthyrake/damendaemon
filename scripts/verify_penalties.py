@@ -119,7 +119,10 @@ def main():
                     assert [f.result() for f in futures]==[baseline,expected,baseline,expected]
                 for invalid in ({'logit_bias':{str(config['vocab_size']):1}}, {'presence_penalty':3}, {'repetition_penalty':0}):
                     try:request(**invalid);raise AssertionError('invalid control accepted')
-                    except HTTPError as error:assert error.code==400;error.close()
+                    except HTTPError as error:
+                        with error:
+                            if error.code != 400:
+                                raise ValueError('unexpected HTTP rejection status')
                 assert request()==baseline
                 print(json.dumps({'passed':True,'device':args.device,'model':args.model,
                     'independent_numeric_cases':cases,'chat_raw_streaming':True,

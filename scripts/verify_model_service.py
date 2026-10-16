@@ -90,8 +90,9 @@ def main():
                         post('llama', chat_template_kwargs={'enable_thinking':False}).close()
                         raise AssertionError('unsupported template option accepted')
                     except HTTPError as error:
-                        assert error.code == 400
-                        error.close()
+                        with error:
+                            if error.code != 400:
+                                raise ValueError('unexpected HTTP rejection status')
                     # A longer, multilingual chat follows the rejection and disconnect.
                     document = '\n'.join(f'Record {i}: cabinet {i%11}.' for i in range(80))
                     long_result = request('new', messages=[{'role':'system','content':'Answer briefly.'},

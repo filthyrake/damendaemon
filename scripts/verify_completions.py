@@ -83,8 +83,9 @@ def main():
                         post(body,route).close()
                         raise AssertionError('invalid input accepted')
                     except HTTPError as error:
-                        assert error.code==400
-                        error.close()
+                        with error:
+                            if error.code != 400:
+                                raise ValueError('unexpected HTTP rejection status')
                 assert request()['choices'][0]['text']==content
                 print(json.dumps({'passed':True,'model_path':str(source),'device':args.device,
                     'raw_text_equals_token_ids':True,'stream_matches_nonstream':True,

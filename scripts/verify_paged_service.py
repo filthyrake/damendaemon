@@ -55,7 +55,9 @@ def main():
         try:
             post(ids=(seed*100)[:500],count=64)
         except HTTPError as error:
-            assert error.code==400
+            with error:
+                if error.code != 400:
+                    raise ValueError('unexpected HTTP rejection status')
         else:
             raise AssertionError('request larger than pool was accepted')
         assert post()['choices']==outputs[0]['choices']

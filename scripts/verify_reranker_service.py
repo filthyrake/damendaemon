@@ -47,7 +47,10 @@ def main():
                 ('/v1/rerank',{'model':'rank','query':'hello','documents':['blue '*509]}),
                 ('/v1/rerank',{'model':'rank','query':query,'documents':docs,'top_n':True})]:
             try:post(path,body);raise AssertionError('invalid request accepted')
-            except HTTPError as error:assert error.code==400,error.read()
+            except HTTPError as error:
+                with error:
+                    if error.code != 400:
+                        raise ValueError(error.read())
         assert rank(return_documents=True)['results']==first['results']
         sets=[docs,list(reversed(docs)),docs[1:]+docs[:1],[docs[0],docs[0],docs[1]]]
         expected=[rank(documents=items)['results'] for items in sets]

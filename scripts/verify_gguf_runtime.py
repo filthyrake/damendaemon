@@ -125,7 +125,8 @@ def main():
                         return urlopen(Request(base+route, data=json.dumps(body).encode(),
                             headers={'Content-Type':'application/json'}), timeout=180)
                     except HTTPError as error:
-                        raise RuntimeError(error.read().decode()) from error
+                        with error:
+                            raise RuntimeError(error.read().decode()) from error
                 def request(route, body):
                     with post(route, body) as response: return json.load(response)
                 def check_trace(response, label, alias, chat=False):

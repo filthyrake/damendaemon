@@ -75,7 +75,10 @@ def main():
                 for action,body in (('register',{'model':'bad','path':str(Path(directory)/'missing')}),
                                     ('register',{'model':'a','path':b}),('load',{'model':'unknown'})):
                     try:manage(action,**body);raise AssertionError('invalid management command accepted')
-                    except HTTPError as error:assert error.code==400;error.close()
+                    except HTTPError as error:
+                        with error:
+                            if error.code != 400:
+                                raise ValueError('unexpected HTTP rejection status')
                 assert generate('b')['choices'][0]['message']['content']
                 assert generate()['choices']==first['choices']
                 listing=json.loads(subprocess.check_output([sys.executable,'-m','dllm','models','--server',base],text=True,timeout=180))

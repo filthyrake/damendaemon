@@ -71,14 +71,23 @@ def main():
                 try:
                     post('/v1/models/register',{'model':'encoder','path':encoder,'quantization':'q8_0'})
                     raise AssertionError('alias quantization changed silently')
-                except HTTPError as error:assert error.code==400;error.close()
+                except HTTPError as error:
+                    with error:
+                        if error.code != 400:
+                            raise ValueError('unexpected HTTP rejection status')
                 for body in ({'input':[True]}, {'input':[1]*257}, {'dimensions':128}, {'encoding_format':'int8'}, {'model':'chat'}):
                     try:embed(**body);raise AssertionError('invalid embedding request accepted')
-                    except HTTPError as error:assert error.code==400;error.close()
+                    except HTTPError as error:
+                        with error:
+                            if error.code != 400:
+                                raise ValueError('unexpected HTTP rejection status')
                 try:
                     post('/v1/chat/completions',{'model':'encoder','messages':[{'role':'user','content':'hi'}]})
                     raise AssertionError('encoder accepted generation')
-                except HTTPError as error:assert error.code==400;error.close()
+                except HTTPError as error:
+                    with error:
+                        if error.code != 400:
+                            raise ValueError('unexpected HTTP rejection status')
                 assert embed()['data']==first['data']
                 print(json.dumps({'passed':True,'device':args.device,'encoder':encoder,'decoder':decoder,
                     'text_token_equivalence':True,'float_base64_equivalence':True,'batch_order_and_usage':True,

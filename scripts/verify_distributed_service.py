@@ -124,10 +124,16 @@ def worker(args):
                             {**body(),'max_tokens':512},{**body(),'model':'missing'},
                             {**body(),'stop':['x']}):
                 try:call('/v1/completions',invalid)
-                except HTTPError as error:assert error.code==400;error.close()
+                except HTTPError as error:
+                    with error:
+                        if error.code != 400:
+                            raise ValueError('unexpected HTTP rejection status')
                 else:raise AssertionError('unsupported request accepted')
             try:call('/v1/models/unload',dict(model='a'))
-            except HTTPError as error:assert error.code==400;error.close()
+            except HTTPError as error:
+                with error:
+                    if error.code != 400:
+                        raise ValueError('unexpected HTTP rejection status')
             else:raise AssertionError('distributed unload accepted')
             check(request(),label='invalid-input-and-unsupported-feature-recovery')
             chat=dict(model='a',messages=[dict(role='user',content='What is 2 + 2?')],max_tokens=8,temperature=0)

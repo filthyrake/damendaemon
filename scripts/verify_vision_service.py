@@ -148,7 +148,10 @@ def main():
                             'https://example.com/image.png'):
                     invalid={**payloads[0],'messages':[dict(role='user',content=[dict(type='image_url',image_url=dict(url=url))])]}
                     try:request(invalid)
-                    except HTTPError as error:assert error.code==400
+                    except HTTPError as error:
+                        with error:
+                            if error.code != 400:
+                                raise ValueError('unexpected HTTP rejection status')
                     else:raise AssertionError('invalid image accepted')
                 check(request(payloads[0]),0,'malformed-input-recovery')
                 check(request({**payloads[0],'model':'b'}),0,'second-model-alias')

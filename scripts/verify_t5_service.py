@@ -39,8 +39,10 @@ def main():
     def rejected(payload,path='/v1/completions'):
         try:post(payload,path)
         except HTTPError as error:
-            assert error.code==400,(error.code,error.read())
-            return
+            with error:
+                if error.code != 400:
+                    raise ValueError((error.code, error.read()))
+                return
         raise AssertionError('invalid request accepted')
     try:
         expected=post(body())

@@ -87,7 +87,10 @@ def main():
             {**base,'tool_choice':'required','tools':[{'type':'function','function':{'name':'test','parameters':{'type':'object'}}}]},
             {**base,'reasoning_effort':'maximum'},{**base,'chat_template_kwargs':{'enable_thinking':True}}):
             try:post(invalid)
-            except HTTPError as error:assert error.code==400
+            except HTTPError as error:
+                with error:
+                    if error.code != 400:
+                        raise ValueError('unexpected HTTP rejection status')
             else:raise AssertionError('unsupported Harmony request accepted')
         with runtime.runtime.session('oss') as (executor,_,_):
             old=weakref.ref(executor);graph=weakref.ref(executor.batch_graphs[1][4])

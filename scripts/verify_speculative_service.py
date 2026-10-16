@@ -45,7 +45,9 @@ def main():
         start=time.perf_counter()
         try:
             with urlopen(Request(url,data=json.dumps(data).encode(),headers={'Content-Type':'application/json'}),timeout=180) as r:result=json.load(r)
-        except HTTPError as error:raise RuntimeError(error.read().decode()) from error
+        except HTTPError as error:
+            with error:
+                raise RuntimeError(error.read().decode()) from error
         return result,(time.perf_counter()-start)*1000
     @contextmanager
     def baseline(alias):

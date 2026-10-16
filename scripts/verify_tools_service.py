@@ -57,8 +57,9 @@ def main():
         try:
             manage('register',**body)
         except HTTPError as error:
-            assert error.code==400,error.read().decode()
-            error.close()
+            with error:
+                if error.code != 400:
+                    raise ValueError(error.read().decode())
         else:
             raise AssertionError('invalid registration succeeded')
         assert runtime.manage('status')==before

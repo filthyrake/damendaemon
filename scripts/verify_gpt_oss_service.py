@@ -68,7 +68,10 @@ def main():
             post({'model':'oss','messages':[{'role':'user','content':'Hello'}],'max_tokens':4,
                 'tool_choice':'required','tools':[{'type':'function','function':{'name':'unqualified','parameters':{'type':'object'}}}]},'/v1/chat/completions')
         except HTTPError as error:
-            message=error.read().decode();assert error.code==400 and 'error' in json.loads(message),message
+            with error:
+                message = error.read().decode()
+                if not (error.code == 400 and 'error' in json.loads(message)):
+                    raise ValueError(message)
         else:raise AssertionError('unsupported forced Harmony tools accepted')
         with runtime.runtime.session('oss') as (executor,_,_):
             old=weakref.ref(executor);graph=weakref.ref(executor.batch_graphs[1][4])

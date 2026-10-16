@@ -127,8 +127,9 @@ def main():
                             post(alias, **extra).close()
                             raise AssertionError("bad request unexpectedly succeeded")
                         except HTTPError as error:
-                            assert error.code == expected_status, error.code
-                            error.close()
+                            with error:
+                                if error.code != expected_status:
+                                    raise ValueError(error.code)
                     # Close mid-generation and immediately ask for another model.
                     with post(stream=True) as response:
                         next(events(response, require_terminated=True))

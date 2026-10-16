@@ -94,7 +94,10 @@ def main():
                 status('initial')
                 if args.inject_stage_failure:
                     try:request()
-                    except HTTPError as error:assert error.code==500
+                    except HTTPError as error:
+                        with error:
+                            if error.code != 500:
+                                raise ValueError('unexpected HTTP rejection status')
                     else:raise AssertionError('injected stage failure returned success')
                     failed=status('failed-executor')
                     assert failed['models'][0]['executor_failed']
@@ -134,7 +137,10 @@ def main():
                 check(request(1),1,label='cancel-and-reuse-slot')
                 for invalid in ({**body(),'max_tokens':600},{**body(),'prompt':[151936]}):
                     try:call('/v1/completions',invalid)
-                    except HTTPError as error:assert error.code==400
+                    except HTTPError as error:
+                        with error:
+                            if error.code != 400:
+                                raise ValueError('unexpected HTTP rejection status')
                     else:raise AssertionError('invalid request accepted')
                 check(request(),label='invalid-request-recovery')
                 chat=dict(model='a',messages=[dict(role='user',content='Explain binary search briefly.')],max_tokens=8)

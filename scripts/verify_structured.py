@@ -79,7 +79,9 @@ def main():
                     try:
                         post(**options).close();raise AssertionError('invalid request accepted')
                     except HTTPError as error:
-                        assert error.code==400;error.close()
+                        with error:
+                            if error.code != 400:
+                                raise ValueError('unexpected HTTP rejection status')
                 # Disconnect an active constrained stream, then prove slot reuse.
                 with post(stream=True,max_tokens=256) as response:
                     next(events(response, require_terminated=True))

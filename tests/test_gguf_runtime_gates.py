@@ -31,6 +31,9 @@ def popen(*args,**kwargs):
     kwargs['stdout'].write('dllm listening on http://fixture\n');kwargs['stdout'].flush();return process
 def response(request,**kwargs):
     body=json.loads(request.data);route=request.full_url.rsplit('/',1)[-1]
+    if case in ('http-error','http-error-decode'):
+        raw=io.BytesIO(b'failure' if case=='http-error' else bytes([255]));responses.append(raw)
+        raise verify.HTTPError(request.full_url,500,'fixture',{},raw)
     if route=='unload':
         unloaded[0]=True
         payload={'host_cached_bytes':1 if case=='unload-bytes' else 0,
@@ -78,7 +81,7 @@ class GgufRuntimeGateTests(unittest.TestCase):
         for optimized in (False,True):
             for case in ('weights','scales','numerical','graph','http-text','http-usage',
                          'host-tier','stream-text','no-done','concurrent','recovery',
-                         'unload-bytes','unload-residency','disk-text','disk-tier','cancel-done','cancel-finished','cancel-empty'):
+                         'unload-bytes','unload-residency','disk-text','disk-tier','cancel-done','cancel-finished','cancel-empty','http-error','http-error-decode'):
                 with self.subTest(case=case,optimized=optimized):
                     result=self.run_case(case,optimized)
                     self.assertNotEqual(result.returncode,0,result.stdout)
