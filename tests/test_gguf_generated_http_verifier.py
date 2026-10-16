@@ -34,8 +34,20 @@ with tempfile.TemporaryDirectory() as tmp:
     checksum=hashlib.sha256(model.read_bytes()).hexdigest()
     benchmark={'model_sha256':checksum,'prompts':{'1':[1]},'output_tokens':1,'runs':[{'engine':'llama.cpp','cases':[
         {'prompt_tokens':1,'concurrency':1,'rounds':[{'requests':[{'text':'expected'}]}]*4}]}]}
-    reference={'passed':True,'sha256':checksum,'cases':[{'graph':False,'case':0,'prompt_tokens':1,'greedy_mismatches':0,'reference_tokens':[2]}]}
+    reference={'passed':True,'sha256':checksum,'cases':[{'graph':False,'case':0,'prompt_tokens':1,'greedy_mismatches':[],'reference_tokens':[2]}]}
+    reference['cases'].append(dict(reference['cases'][0],graph=True))
     reference['workload_sha256']=hashlib.sha256(b'{"output_tokens":1,"prompts":[[1]],"version":1}').hexdigest()
+    if case=='trace-missing':reference['cases']=[]
+    if case=='trace-duplicate':reference['cases'][1]=dict(reference['cases'][0])
+    if case=='trace-bool-index':reference['cases'][0]['case']=False
+    if case=='trace-bool-graph':reference['cases'][0]['graph']=0
+    if case=='trace-short':reference['cases'][0]['reference_tokens']=[]
+    if case=='trace-bool-token':reference['cases'][0]['reference_tokens']=[True]
+    if case=='trace-vocab':reference['cases'][0]['reference_tokens']=[4]
+    if case=='trace-mismatch':reference['cases'][0]['greedy_mismatches']=[0]
+    if case=='trace-null-mismatch':reference['cases'][0]['greedy_mismatches']=None
+    if case=='comparator-missing':benchmark['runs']=[]
+    if case=='comparator-text':benchmark['runs'][0]['cases'][0]['rounds'][3]['requests'][0]['text']=None
     if case=='changed-token':benchmark['prompts']={'1':[3]}
     if case=='changed-output':benchmark['output_tokens']=2
     if case=='missing-identity':reference.pop('workload_sha256')
@@ -55,7 +67,7 @@ with tempfile.TemporaryDirectory() as tmp:
     output=root/'result.json'
     args=['verify',str(model),'--benchmark',str(root/'benchmark.json'),'--reference',str(root/'reference.json'),'--output',str(output)]
     try:
-        with patch('sys.argv',args),patch.object(verify,'plan',return_value=NS(tokenizer_json={},sentencepiece_prefix=None)), \
+        with patch('sys.argv',args),patch.object(verify,'plan',return_value=NS(tokenizer_json={},sentencepiece_prefix=None,config={'vocab_size':4})), \
                 patch.object(verify,'restore_tokenizer',return_value=NS(decode=lambda *args,**kwargs:'expected')), \
                 patch.object(verify.subprocess,'Popen',side_effect=launch),patch.object(verify,'urlopen',side_effect=response):
             verify.main()
@@ -71,7 +83,7 @@ class GgufGeneratedHttpVerifierTests(unittest.TestCase):
             cwd=Path(__file__).resolve().parents[1],capture_output=True,text=True,timeout=10)
 
     def test_invalid_inputs_refuse_launch_and_bad_outputs_fail(self):
-        before=('changed-token','changed-output','missing-identity','prompt-order','empty','bad-reference','zero-output','bool-output','context','bool-token','many-prompts')
+        before=('trace-missing','trace-duplicate','trace-bool-index','trace-bool-graph','trace-short','trace-bool-token','trace-vocab','trace-mismatch','trace-null-mismatch','comparator-missing','comparator-text','changed-token','changed-output','missing-identity','prompt-order','empty','bad-reference','zero-output','bool-output','context','bool-token','many-prompts')
         for optimized in (False,True):
             for case in (*before,'text','stream-text','no-done'):
                 with self.subTest(case=case,optimized=optimized):

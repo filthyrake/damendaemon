@@ -18,7 +18,7 @@ from urllib.request import Request, urlopen
 from dllm.gguf_sentencepiece import restore_tokenizer
 from dllm.bench import events
 from dllm.gguf_model import plan
-from dllm.token_workload import token_workload_digest
+from dllm.token_workload import token_workload_digest, teacher_token_lookup
 
 
 def main():
@@ -45,6 +45,24 @@ def main():
     if checksum!=reference['sha256']:raise ValueError('model differs from reference')
     source=plan(args.model);tokenizer=restore_tokenizer(source.tokenizer_json, source.sentencepiece_prefix)
     decode=getattr(tokenizer,'decode_generated',tokenizer.decode)
+    ordered=[prompts[key] for key in sorted(prompts,key=int)]
+    traces=teacher_token_lookup(reference,ordered,maximum,source.config['vocab_size'])
+    if any(case.get('greedy_mismatches')!=[] for case in reference['cases']):
+        raise ValueError('reference must contain empty greedy mismatch lists')
+    prepared=[]
+    for index,ids in enumerate(ordered):
+        if any(token>=source.config['vocab_size'] for token in ids):
+            raise ValueError('benchmark prompt token exceeds vocabulary')
+        expected=decode(traces[(False,index)],skip_special_tokens=True)
+        if not isinstance(expected,str):raise ValueError('reference decoding must return text')
+        try:
+            native=next(c for run in benchmark['runs'] if run['engine']=='llama.cpp'
+                        for c in run['cases'] if c['prompt_tokens']==len(ids) and c['concurrency']==1)
+            native_text=native['rounds'][3]['requests'][0]['text']
+        except (KeyError,IndexError,TypeError,StopIteration) as error:
+            raise ValueError('benchmark lacks required comparator text') from error
+        if not isinstance(native_text,str):raise ValueError('comparator output must be text')
+        prepared.append((ids,expected,native_text))
     output=Path(args.output);report=dict(passed=False,model_sha256=checksum,workload_sha256=workload_sha256,cases=[],
         reference=args.reference,benchmark=args.benchmark,scope='normal HTTP continuation decoding against independently qualified token traces')
     with socket.socket() as listener:listener.bind(('127.0.0.1',0));port=listener.getsockname()[1]
@@ -65,11 +83,7 @@ def main():
                 except URLError:pass
                 if time.monotonic()>deadline:raise TimeoutError('server startup')
                 time.sleep(.2)
-            for index,key in enumerate(sorted(benchmark['prompts'],key=int)):
-                ids=benchmark['prompts'][key]
-                trace=next(c for c in reference['cases'] if not c['graph'] and c['case']==index)
-                if trace['prompt_tokens']!=len(ids) or trace['greedy_mismatches']:raise ValueError('reference case mismatch')
-                expected=decode(trace['reference_tokens'],skip_special_tokens=True)
+            for ids,expected,native_text in prepared:
                 body=dict(model='a',prompt=ids,temperature=0,max_tokens=benchmark['output_tokens'])
                 case=dict(prompt_tokens=len(ids),expected=expected);report['cases'].append(case)
                 for streaming in (False,True):
@@ -84,9 +98,7 @@ def main():
                             value=json.load(response);text=value['choices'][0]['text'];case['timing']=value['dllm_timing']
                     case['stream' if streaming else 'nonstream']=dict(text=text,equal=text==expected)
                     if text!=expected:raise ValueError('HTTP continuation differs from independent token trace')
-                native=next(c for run in benchmark['runs'] if run['engine']=='llama.cpp'
-                            for c in run['cases'] if c['prompt_tokens']==len(ids) and c['concurrency']==1)
-                case['llama_reference_equal']=expected==native['rounds'][3]['requests'][0]['text']
+                case['llama_reference_equal']=expected==native_text
             report['passed']=True
         except Exception as error:
             report['error']=repr(error);raise

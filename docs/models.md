@@ -15,6 +15,10 @@ ordered prompt token IDs and output budget. Generated-HTTP qualification require
 that digest to match the requested benchmark workload before starting its server.
 Older reference reports without the digest must be regenerated; do not add a
 computed digest to historical evidence to imply that workload was validated.
+Generated HTTP verification validates complete eager/graph reference cases,
+output-token vocabulary bounds, empty mismatch lists, and comparator text before
+launching its server. Malformed trace evidence cannot trigger model startup.
+
 Teacher traces require the same workload identity and complete eager/graph case
 coverage with valid token IDs before HF construction. A structurally valid failed
 numerical trace remains usable for diagnostics; its use does not qualify a model.
