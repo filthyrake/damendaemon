@@ -254,3 +254,5 @@ Benchmark SSE accounting validates streamed function-tool envelopes before count
 Non-null SSE error envelopes fail both benchmark and comparator requests even when their values are empty or false. Optional server timing accepts absent/null/object values; falsey non-object values are rejected instead of silently dropped. Failed requests never receive successful or qualifying-token credit.
 
 The warm comparator also requires an explicit completion finish before `[DONE]`, rejects duplicate finishes and post-finish text, and rejects ambiguous choice envelopes and duplicate JSON fields. Terminal chunks may carry their final text; trailing usage-only chunks remain supported in raw and chat modes.
+
+Comparator logprob evidence requires typed token records with finite nonpositive probabilities, valid optional raw bytes, and bounded requested top-score records. Score counts cannot exceed the completion budget; fewer records remain allowed because EOS may have no score packet. These checks establish response structure, not numerical agreement with an independent model.

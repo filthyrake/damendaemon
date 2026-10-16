@@ -6,10 +6,45 @@ disables llama.cpp prompt caching explicitly. Run servers on the GPU sequentiall
 from concurrent.futures import ThreadPoolExecutor
 import argparse
 import json
+import sys
 import time
 from urllib.request import Request, urlopen
 
 from dllm.bench import events, _response_json, _tool_call_output
+
+
+def _score_count(logprobs, requested_top):
+    """Count validated score records, never arbitrary container/string length."""
+    if logprobs is None:
+        return 0
+    if not isinstance(logprobs, dict):
+        raise ValueError('invalid comparison logprob envelope')
+    content = logprobs.get('content')
+    if content is None:
+        return 0
+    if not isinstance(content, list):
+        raise ValueError('invalid comparison logprob content')
+
+    def record(value):
+        if (not isinstance(value, dict) or not isinstance(value.get('token'), str)
+                or type(value.get('logprob')) not in (int, float)
+                or not -sys.float_info.max <= value['logprob'] <= 0):
+            raise ValueError('invalid comparison token probability')
+        raw = value.get('bytes')
+        if raw is not None and (not isinstance(raw, list)
+                or any(type(byte) is not int or not 0<=byte<=255 for byte in raw)):
+            raise ValueError('invalid comparison token bytes')
+
+    for value in content:
+        record(value)
+        top = value.get('top_logprobs', [])
+        maximum = 20 if requested_top is None else requested_top
+        if (not isinstance(top, list) or len(top)>maximum
+                or (requested_top and not top)):
+            raise ValueError('invalid or missing comparison top probabilities')
+        for candidate in top:
+            record(candidate)
+    return len(content)
 
 
 def main():
@@ -97,7 +132,9 @@ def main():
                         if not isinstance(reason, str) or not reason or finished:
                             raise ValueError('invalid or duplicate comparison completion finish')
                         finished = True
-                    scored_tokens+=len((choice.get('logprobs') or {}).get('content') or [])
+                    scored_tokens += _score_count(choice.get('logprobs'), args.top_logprobs)
+                    if scored_tokens > args.max_tokens:
+                        raise ValueError('comparison scores exceed completion token budget')
                     if content:
                         if first is None:
                             first = time.perf_counter()
