@@ -255,7 +255,8 @@ class BatchedRuntime:
             if messages is not None or enable_thinking is not None or reasoning_effort is not None:
                 raise ValueError('raw prompts cannot include chat messages or template options')
         from .structured import prepare_options
-        schema, enable_thinking = prepare_options(response_format, stops, enable_thinking)
+        schema, enable_thinking = prepare_options(response_format, stops, enable_thinking,
+                                                  reasoning_effort=reasoning_effort)
         if tool_schema is not None:
             if enable_thinking is True:
                 raise ValueError('forced tool calls cannot use thinking or ignore_eos')

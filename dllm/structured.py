@@ -99,11 +99,14 @@ def matches_schema(value,schema):
     return ('const' not in schema or value==schema['const']) and ('enum' not in schema or value in schema['enum'])
 
 
-def prepare_options(response_format, stops, thinking, ignore_eos=False):
+def prepare_options(response_format, stops, thinking, ignore_eos=False, *, reasoning_effort=None):
     if thinking is not None and type(thinking) is not bool:
         raise ValueError('enable_thinking must be boolean')
     if type(ignore_eos) is not bool:
         raise ValueError('ignore_eos must be boolean')
+    if reasoning_effort is not None and (not isinstance(reasoning_effort,str)
+            or reasoning_effort not in ('low','medium','high')):
+        raise ValueError('reasoning_effort must be low, medium or high')
     schema = response_schema(response_format)
     if schema is not None:
         if stops or thinking is True or ignore_eos:

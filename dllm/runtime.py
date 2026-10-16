@@ -527,7 +527,8 @@ class Runtime:
         if stops and sampler.logprobs_top is not None:
             raise ValueError('logprobs with custom text stops is not yet supported')
         from .structured import prepare_options, Constraint
-        schema, enable_thinking = prepare_options(response_format, stops, enable_thinking, ignore_eos)
+        schema, enable_thinking = prepare_options(response_format, stops, enable_thinking, ignore_eos,
+                                                  reasoning_effort=reasoning_effort)
         if tool_schema is not None:
             if enable_thinking is True or ignore_eos:
                 raise ValueError('forced tool calls cannot use thinking or ignore_eos')

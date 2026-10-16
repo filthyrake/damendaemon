@@ -19,6 +19,22 @@ class OutputPreflightTests(unittest.TestCase):
                 list(direct.generate('a',[],max_tokens=1,ignore_eos=invalid))
         direct.session.assert_not_called();scheduled.admission.acquire.assert_not_called()
 
+    def test_reasoning_effort_syntax_before_ownership(self):
+        direct=Runtime.__new__(Runtime);direct.context=16
+        direct.session=Mock(side_effect=RuntimeError('session boundary'))
+        scheduled=BatchedRuntime.__new__(BatchedRuntime);scheduled.context=16
+        scheduled.models={'a':'unused'};scheduled.admission=Mock()
+        scheduled.admission.acquire.side_effect=RuntimeError('admission boundary')
+        for value in (True,1,'','extreme',[],{}):
+            for runtime in (direct,scheduled):
+                with self.subTest(value=value,runtime=type(runtime).__name__),self.assertRaisesRegex(ValueError,'reasoning_effort'):
+                    list(runtime.generate('a',[],max_tokens=1,reasoning_effort=value))
+        direct.session.assert_not_called();scheduled.admission.acquire.assert_not_called()
+        for value in ('low','medium','high'):
+            for runtime,boundary in ((direct,'session boundary'),(scheduled,'admission boundary')):
+                with self.subTest(value=value,runtime=type(runtime).__name__),self.assertRaisesRegex(RuntimeError,boundary):
+                    list(runtime.generate('a',[],max_tokens=1,reasoning_effort=value))
+
     def test_direct_raw_chat_conflicts_before_session(self):
         runtime=Runtime.__new__(Runtime);runtime.context=16
         runtime.session=Mock(side_effect=RuntimeError('session boundary'))
