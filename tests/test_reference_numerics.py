@@ -85,9 +85,9 @@ class ReferenceNumericsTests(unittest.TestCase):
                            torch.full((1,text.vocab_size),float('inf')),
                            torch.zeros(text.vocab_size),torch.zeros(1,text.vocab_size,dtype=torch.float16)):
                 with patch.object(model,'logits',return_value=logits):
-                    with self.assertRaises(ValueError):list(runner.generate(messages,max_new_tokens=2))
+                    with self.assertRaises(RuntimeError):list(runner.generate(messages,max_new_tokens=2))
                 self.assertTrue(model.states[-1].closed)
             generator=runner.generate(messages,max_new_tokens=4);next(generator)
             with patch.object(model,'decode',return_value=torch.full((1,text.vocab_size),float('nan'))):
-                with self.assertRaisesRegex(ValueError,'nonfinite'):list(generator)
+                with self.assertRaisesRegex(RuntimeError,'nonfinite'):list(generator)
             self.assertTrue(model.states[-1].closed)
