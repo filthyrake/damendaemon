@@ -262,3 +262,5 @@ The warm comparator validates every non-null usage envelope and rejects conflict
 Reranker measurement collection and cross-report agreement require exactly one finite numeric score for every requested document index. Boolean, duplicate, missing, out-of-range, or non-integer indices and nonfinite scores fail before throughput or agreement reporting; result order may differ across engines.
 
 Reranker agreement also requires all eight workload rows (1/4/16/64 documents at concurrency 1/4), each with one warmup and five measured trials containing the expected request count. Empty or partial reports cannot pass agreement.
+
+The isolated A2 comparison runner validates options before workspace reads or engine startup: context is 1–1,048,576 tokens, requested output is at least two tokens and smaller than context, startup timeout is 1–86,400 seconds, and the host budget must convert to a finite positive byte count. Raw/token-ID prompts cannot request the chat-only logprob comparison. These checks do not establish model-specific context support or available memory.

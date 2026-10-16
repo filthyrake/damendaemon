@@ -6,6 +6,7 @@ Never starts both engines at once. Only terminates process groups it creates.
 from dllm.evidence_environment import report_environment
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -50,6 +51,17 @@ def main():
         parser.error('GPU memory utilization must be between zero and one')
     if 'llama.cpp' in args.engines and not args.gguf:
         parser.error('llama.cpp requires --gguf with matching weights and precision')
+    if not 1 <= args.context <= 2**20:
+        parser.error('context must be 1..1048576 tokens')
+    if not 2 <= args.max_tokens < args.context:
+        parser.error('max tokens must be at least two and smaller than context')
+    if not 1 <= args.startup_timeout <= 86400:
+        parser.error('startup timeout must be 1..86400 seconds')
+    host_bytes = args.host_gib * 1024**3
+    if not math.isfinite(host_bytes) or host_bytes < 1:
+        parser.error('host memory budget must be finite and at least one byte')
+    if (args.raw or args.prompt_token_ids) and args.top_logprobs is not None:
+        parser.error('logprob benchmark currently requires chat completion')
     root = Path.cwd()
     uuid = 'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'
     if os.environ.get('CUDA_VISIBLE_DEVICES') != uuid:
