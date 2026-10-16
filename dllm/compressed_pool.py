@@ -26,7 +26,7 @@ class PoolState:
 
 
 @torch.no_grad()
-def pool_projected(values, gates, offsets, *, state=None):
+def pool_projected(values, gates, offsets, *, state=None, validate_scores=False):
     """Return (completed FP32 vectors, replacement state, block-start positions).
 
     values/gates [batch, tokens, channels], offsets [ratio, channels]. Ratio four
@@ -40,6 +40,8 @@ def pool_projected(values, gates, offsets, *, state=None):
     State holds at most two blocks; output size is proportional to completed
     blocks. Concurrent use requires the caller to serialize position commits.
     """
+    if type(validate_scores) is not bool:
+        raise ValueError('pooling score validation must be boolean')
     if (not isinstance(values, torch.Tensor) or values.ndim != 3 or values.dtype != torch.float32
             or not isinstance(gates, torch.Tensor) or gates.shape != values.shape
             or gates.dtype != torch.float32 or gates.device != values.device
@@ -72,7 +74,10 @@ def pool_projected(values, gates, offsets, *, state=None):
         take = min(tokens-consumed, ratio-partial)
         target = slice(current+partial, current+partial+take)
         buffer[:, target] = values[:, consumed:consumed+take]
-        scores[:, target] = gates[:, consumed:consumed+take]+offsets[partial:partial+take]
+        combined=gates[:, consumed:consumed+take]+offsets[partial:partial+take]
+        if validate_scores and not torch.isfinite(combined).all():
+            raise ValueError('nonfinite projected pooling scores')
+        scores[:, target] = combined
         consumed += take
         if (position+consumed) % ratio == 0:
             if overlap:

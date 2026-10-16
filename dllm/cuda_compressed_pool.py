@@ -53,7 +53,7 @@ def pool_projected(values,gates,offsets,*,state=None,max_workspace_bytes=64*1024
     if any(not torch.isfinite(v).all() for v in (values,gates,offsets)):
         raise ValueError('nonfinite CUDA pooling input')
     _finite_state(state)
-    result,replacement,starts=_pool(values,gates,offsets,state=state)
+    result,replacement,starts=_pool(values,gates,offsets,state=state,validate_scores=True)
     if not torch.isfinite(result).all():raise ValueError('nonfinite CUDA pooling result')
     _finite_state(replacement)
     return result,replacement,starts

@@ -1,5 +1,6 @@
 """Floating projected compressor composition with explicit cache simulations."""
 import math
+from functools import partial
 
 import torch
 from torch.nn import functional as F
@@ -56,7 +57,7 @@ def _compress_hidden(hidden, value_weight, gate_weight, offsets, norm_weight, in
     if validate_finite:
         for value in (hidden,value_weight,gate_weight,offsets,norm_weight,inverse_frequencies):checked(value)
     source = hidden.float()
-    pooling=pool_projected if pool_fn is None else pool_fn
+    pooling=partial(pool_projected,validate_scores=validate_finite) if pool_fn is None else pool_fn
     pooled, replacement, starts = pooling(checked(F.linear(source, value_weight)),checked(F.linear(source, gate_weight)),offsets,state=state)
     checked(pooled)
     rounded = pooled.to(hidden.dtype).float()

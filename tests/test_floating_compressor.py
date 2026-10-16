@@ -39,6 +39,17 @@ class FloatingCompressorTests(unittest.TestCase):
         torch.testing.assert_close(state.values,values)
         torch.testing.assert_close(state.scores,scores)
 
+    def test_checked_compression_rejects_gate_overflow_in_partial_and_complete_blocks(self):
+        for length in (1,4,8):
+            for sign in (-1,1):
+                args=list(self.fixture())
+                args[0]=torch.ones(2,length,5)
+                args[2].fill_(sign*1e37)
+                args[3].fill_(sign*torch.finfo(torch.float32).max)
+                with self.subTest(length=length,sign=sign), \
+                        self.assertRaisesRegex(ValueError,'pooling scores'):
+                    checked_compress_hidden(*args)
+
     def test_frequency_schedule_and_adjacent_rotation_scalar_reference(self):
         for original in (0, 65536):
             actual = frequencies(64, base=160000, original_length=original, factor=16)
