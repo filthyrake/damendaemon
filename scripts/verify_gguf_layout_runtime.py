@@ -17,6 +17,10 @@ from dllm.gguf_model import GgufWeights
 from dllm.runtime import make_executor, require_gpu
 
 
+def require_gate(condition, message):
+    if not condition:raise ValueError(message)
+
+
 def paged_capacity(context, lengths):
     # Each slot owns whole pages; rounding only the combined token count can
     # under-reserve when several requests cross a page boundary together.
@@ -168,12 +172,12 @@ def main():
                 report['q4_prompt_policy'] = dict(selected=True, source_sha256=hashlib.sha256(
                     Path(q4_prefill_policy.__file__).read_bytes()).hexdigest())
             if args.experimental_q4_marlin_context:
-                assert executor.context==args.context
+                require_gate(executor.context==args.context, 'executor context differs from requested experiment')
             if args.require_q4_marlin:
-                assert '+cuda-q4-marlin' in executor.kernel_backend,executor.kernel_backend
-                assert len(executor.quant_linear.q4_marlin)==129
-                assert executor.q4_marlin_abi in (1,2)
-                assert executor.packed_layout_overhead_bytes==(111099904 if executor.q4_marlin_abi==1 else 0)
+                require_gate('+cuda-q4-marlin' in executor.kernel_backend, 'requested Marlin backend was not selected')
+                require_gate(len(executor.quant_linear.q4_marlin)==129, 'Marlin projection count differs from qualification contract')
+                require_gate(executor.q4_marlin_abi in (1,2), 'unsupported Marlin ABI')
+                require_gate(executor.packed_layout_overhead_bytes==(111099904 if executor.q4_marlin_abi==1 else 0), 'Marlin layout overhead differs from ABI contract')
             if args.require_resident_cache and not getattr(executor, 'packed_cache_bytes', 0):
                 raise ValueError('normal resident cache was not selected')
             if args.experimental_dense_cache:
@@ -211,14 +215,14 @@ def main():
                     print(f'Checking paged={paged}, graph={graph}', flush=True)
                     executor = make_executor(source, use_graph=graph, max_batch=4)
                     if args.experimental_q4_marlin_prefill_budget:
-                        assert executor.prefill_token_budget==args.experimental_q4_marlin_prefill_budget
+                        require_gate(executor.prefill_token_budget==args.experimental_q4_marlin_prefill_budget, 'prefill budget differs from requested experiment')
                     if args.experimental_q4_marlin_context:
-                        assert executor.context==args.context
+                        require_gate(executor.context==args.context, 'executor context differs from requested experiment')
                     if args.require_q4_marlin:
-                        assert '+cuda-q4-marlin' in executor.kernel_backend
-                        assert len(executor.quant_linear.q4_marlin)==129
-                        assert executor.q4_marlin_abi in (1,2)
-                        assert executor.packed_layout_overhead_bytes==(111099904 if executor.q4_marlin_abi==1 else 0)
+                        require_gate('+cuda-q4-marlin' in executor.kernel_backend, 'requested Marlin backend was not selected')
+                        require_gate(len(executor.quant_linear.q4_marlin)==129, 'Marlin projection count differs from qualification contract')
+                        require_gate(executor.q4_marlin_abi in (1,2), 'unsupported Marlin ABI')
+                        require_gate(executor.packed_layout_overhead_bytes==(111099904 if executor.q4_marlin_abi==1 else 0), 'Marlin layout overhead differs from ABI contract')
                     for count in (1, 2, 4):
                         slots = list(range(count))
                         actual = executor.prefill_batch(prompts[:count], slots)
