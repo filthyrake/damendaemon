@@ -93,6 +93,8 @@ class SentencePieceTokenizer(SpecialTokenTokenizer):
     def __init__(self, backend, suppressed_token_ids=()):
         super().__init__(backend, suppressed_token_ids)
         added = backend.get_added_tokens_decoder()
+        self._strip_prefix = any(step.get('type') == 'Strip' for step in
+            json.loads(backend.decoder.__getstate__()).get('decoders', []))
         self._special_ids = frozenset(i for i, token in added.items() if token.special)
         self._unstripped = Tokenizer(backend.model)
         self._unstripped.add_tokens(list(added.values()))
@@ -105,12 +107,17 @@ class SentencePieceTokenizer(SpecialTokenTokenizer):
         decoder = self._unstripped if hidden_first else self.backend_tokenizer
         if self.suppressed_token_ids:
             ids = [i for i in ids if i not in self.suppressed_token_ids]
+        if self._literal_tokens:
+            return self._decode_literals(ids, self._unstripped, skip_special_tokens,
+                                         strip_first=self._strip_prefix and not hidden_first)
         return decoder.decode(ids, skip_special_tokens=skip_special_tokens)
 
     def decode_generated(self, ids, skip_special_tokens=True):
         # A continuation has no artificial beginning-of-text prefix to remove.
         if self.suppressed_token_ids:
             ids = [i for i in ids if i not in self.suppressed_token_ids]
+        if self._literal_tokens:
+            return self._decode_literals(ids, self._unstripped, skip_special_tokens)
         return self._unstripped.decode(ids, skip_special_tokens=skip_special_tokens)
 
     def to_str(self, pretty=False):

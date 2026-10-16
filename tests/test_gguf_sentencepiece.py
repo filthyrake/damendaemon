@@ -174,6 +174,26 @@ class SentencePieceGgufTests(unittest.TestCase):
                             self.assertEqual(candidate.decode(ids, skip_special_tokens=skip).encode().hex(), expected['decode_' + suffix])
                             self.assertEqual(candidate.decode_generated(ids, skip_special_tokens=skip).encode().hex(), expected['generated_' + suffix])
 
+    def test_literal_special_reference_prefix_and_generated(self):
+        from dllm.gguf_sentencepiece import restore_tokenizer
+        from tests.reference.generate_sentencepiece_literals import metadata as literal_metadata
+        fixture = json.loads((Path(__file__).parent / 'fixtures/sentencepiece-literals.json').read_text())
+        for case in fixture['cases']:
+            source = literal_metadata(case['literal'], case['kind'], case['tied'], case['prefix'])
+            original, _, _ = tokenizer(source)
+            for candidate in (original, restore_tokenizer(original.to_str())):
+                for sample in case['samples']:
+                    with self.subTest(literal=case['literal'], kind=case['kind'], tied=case['tied'], prefix=case['prefix'], sample=sample):
+                        encoded = candidate.encode(sample['text'], add_special_tokens=False).ids
+                        self.assertEqual(encoded, sample['expected']['ids'])
+                        ids = encoded if sample['explicit'] is None else sample['explicit']
+                        for skip, suffix in ((True, 'skip'), (False, 'all')):
+                            expected = bytes.fromhex(sample['expected']['decode_' + suffix]).decode(errors='replace')
+                            generated = bytes.fromhex(sample['expected']['generated_' + suffix]).decode(errors='replace')
+                            self.assertEqual(candidate.decode(ids, skip_special_tokens=skip), expected)
+                            self.assertEqual(candidate.decode_batch([ids], skip_special_tokens=skip), [expected])
+                            self.assertEqual(candidate.decode_generated(ids, skip_special_tokens=skip), generated)
+
     def test_unused_reference_matrix_and_roundtrip(self):
         from dllm.gguf_sentencepiece import restore_tokenizer
         from dllm.logprobs import TokenText

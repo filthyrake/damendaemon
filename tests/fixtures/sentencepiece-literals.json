@@ -1,0 +1,6813 @@
+{
+  "reference": "llama.cpp 836d57176dc699a726c55418e4f96b8ca628e1bf",
+  "cases": [
+    {
+      "literal": "▁user",
+      "kind": 3,
+      "tied": false,
+      "prefix": false,
+      "samples": [
+        {
+          "text": "▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "a▁userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "6162",
+            "generated_skip": "6162",
+            "decode_all": "e29681757365726162",
+            "generated_all": "e29681757365726162"
+          }
+        },
+        {
+          "text": "▁user▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572e2968175736572",
+            "generated_all": "e2968175736572e2968175736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": "▁user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "206366c3a9",
+            "generated_skip": "206366c3a9",
+            "decode_all": "e2968175736572206366c3a9",
+            "generated_all": "e2968175736572206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3c2f733ee2968175736572",
+            "generated_all": "3c2f733ee2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "e2968175736572206162",
+            "generated_all": "e2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3e2968175736572a9",
+            "generated_all": "c3e2968175736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "▁user",
+      "kind": 3,
+      "tied": false,
+      "prefix": true,
+      "samples": [
+        {
+          "text": "▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "a▁userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61206162",
+            "generated_skip": "2061206162",
+            "decode_all": "61e2968175736572206162",
+            "generated_all": "2061e2968175736572206162"
+          }
+        },
+        {
+          "text": "▁user▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572e2968175736572",
+            "generated_all": "e2968175736572e2968175736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": "▁user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "20206366c3a9",
+            "generated_skip": "20206366c3a9",
+            "decode_all": "e296817573657220206366c3a9",
+            "generated_all": "e296817573657220206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61",
+            "generated_skip": "2061",
+            "decode_all": "613c2f733ee2968175736572",
+            "generated_all": "20613c2f733ee2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "e2968175736572206162",
+            "generated_all": "e2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3e2968175736572a9",
+            "generated_all": "c3e2968175736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "▁user",
+      "kind": 3,
+      "tied": true,
+      "prefix": false,
+      "samples": [
+        {
+          "text": "▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "a▁userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "6162",
+            "generated_skip": "6162",
+            "decode_all": "e29681757365726162",
+            "generated_all": "e29681757365726162"
+          }
+        },
+        {
+          "text": "▁user▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572e2968175736572",
+            "generated_all": "e2968175736572e2968175736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": "▁user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "206366c3a9",
+            "generated_skip": "206366c3a9",
+            "decode_all": "e2968175736572206366c3a9",
+            "generated_all": "e2968175736572206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3c2f733ee2968175736572",
+            "generated_all": "3c2f733ee2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "e2968175736572206162",
+            "generated_all": "e2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3e2968175736572a9",
+            "generated_all": "c3e2968175736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "▁user",
+      "kind": 3,
+      "tied": true,
+      "prefix": true,
+      "samples": [
+        {
+          "text": "▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "a▁userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61206162",
+            "generated_skip": "2061206162",
+            "decode_all": "61e2968175736572206162",
+            "generated_all": "2061e2968175736572206162"
+          }
+        },
+        {
+          "text": "▁user▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572e2968175736572",
+            "generated_all": "e2968175736572e2968175736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": "▁user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "20206366c3a9",
+            "generated_skip": "20206366c3a9",
+            "decode_all": "e296817573657220206366c3a9",
+            "generated_all": "e296817573657220206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61",
+            "generated_skip": "2061",
+            "decode_all": "613c2f733ee2968175736572",
+            "generated_all": "20613c2f733ee2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "e2968175736572206162",
+            "generated_all": "e2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3e2968175736572a9",
+            "generated_all": "c3e2968175736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "▁user",
+      "kind": 4,
+      "tied": false,
+      "prefix": false,
+      "samples": [
+        {
+          "text": "▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "a▁userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "e29681757365726162",
+            "generated_skip": "e29681757365726162",
+            "decode_all": "e29681757365726162",
+            "generated_all": "e29681757365726162"
+          }
+        },
+        {
+          "text": "▁user▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "e2968175736572e2968175736572",
+            "generated_skip": "e2968175736572e2968175736572",
+            "decode_all": "e2968175736572e2968175736572",
+            "generated_all": "e2968175736572e2968175736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": "▁user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "e2968175736572206366c3a9",
+            "generated_skip": "e2968175736572206366c3a9",
+            "decode_all": "e2968175736572206366c3a9",
+            "generated_all": "e2968175736572206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "3c2f733ee2968175736572",
+            "generated_all": "3c2f733ee2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "e2968175736572206162",
+            "generated_all": "e2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3e2968175736572a9",
+            "generated_skip": "c3e2968175736572a9",
+            "decode_all": "c3e2968175736572a9",
+            "generated_all": "c3e2968175736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "▁user",
+      "kind": 4,
+      "tied": false,
+      "prefix": true,
+      "samples": [
+        {
+          "text": "▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "a▁userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61e2968175736572206162",
+            "generated_skip": "2061e2968175736572206162",
+            "decode_all": "61e2968175736572206162",
+            "generated_all": "2061e2968175736572206162"
+          }
+        },
+        {
+          "text": "▁user▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "e2968175736572e2968175736572",
+            "generated_skip": "e2968175736572e2968175736572",
+            "decode_all": "e2968175736572e2968175736572",
+            "generated_all": "e2968175736572e2968175736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": "▁user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "e296817573657220206366c3a9",
+            "generated_skip": "e296817573657220206366c3a9",
+            "decode_all": "e296817573657220206366c3a9",
+            "generated_all": "e296817573657220206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61e2968175736572",
+            "generated_skip": "2061e2968175736572",
+            "decode_all": "613c2f733ee2968175736572",
+            "generated_all": "20613c2f733ee2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "e2968175736572206162",
+            "generated_all": "e2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3e2968175736572a9",
+            "generated_skip": "c3e2968175736572a9",
+            "decode_all": "c3e2968175736572a9",
+            "generated_all": "c3e2968175736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "▁user",
+      "kind": 4,
+      "tied": true,
+      "prefix": false,
+      "samples": [
+        {
+          "text": "▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "a▁userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "e29681757365726162",
+            "generated_skip": "e29681757365726162",
+            "decode_all": "e29681757365726162",
+            "generated_all": "e29681757365726162"
+          }
+        },
+        {
+          "text": "▁user▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "e2968175736572e2968175736572",
+            "generated_skip": "e2968175736572e2968175736572",
+            "decode_all": "e2968175736572e2968175736572",
+            "generated_all": "e2968175736572e2968175736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": "▁user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "e2968175736572206366c3a9",
+            "generated_skip": "e2968175736572206366c3a9",
+            "decode_all": "e2968175736572206366c3a9",
+            "generated_all": "e2968175736572206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "3c2f733ee2968175736572",
+            "generated_all": "3c2f733ee2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "e2968175736572206162",
+            "generated_all": "e2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3e2968175736572a9",
+            "generated_skip": "c3e2968175736572a9",
+            "decode_all": "c3e2968175736572a9",
+            "generated_all": "c3e2968175736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "▁user",
+      "kind": 4,
+      "tied": true,
+      "prefix": true,
+      "samples": [
+        {
+          "text": "▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "a▁userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61e2968175736572206162",
+            "generated_skip": "2061e2968175736572206162",
+            "decode_all": "61e2968175736572206162",
+            "generated_all": "2061e2968175736572206162"
+          }
+        },
+        {
+          "text": "▁user▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "e2968175736572e2968175736572",
+            "generated_skip": "e2968175736572e2968175736572",
+            "decode_all": "e2968175736572e2968175736572",
+            "generated_all": "e2968175736572e2968175736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": "▁user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "e296817573657220206366c3a9",
+            "generated_skip": "e296817573657220206366c3a9",
+            "decode_all": "e296817573657220206366c3a9",
+            "generated_all": "e296817573657220206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>▁user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61e2968175736572",
+            "generated_skip": "2061e2968175736572",
+            "decode_all": "613c2f733ee2968175736572",
+            "generated_all": "20613c2f733ee2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572",
+            "generated_skip": "e2968175736572",
+            "decode_all": "e2968175736572",
+            "generated_all": "e2968175736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "e2968175736572206162",
+            "generated_all": "e2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "e2968175736572206162",
+            "generated_skip": "e2968175736572206162",
+            "decode_all": "3c733ee2968175736572206162",
+            "generated_all": "3c733ee2968175736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3e2968175736572a9",
+            "generated_skip": "c3e2968175736572a9",
+            "decode_all": "c3e2968175736572a9",
+            "generated_all": "c3e2968175736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " user",
+      "kind": 3,
+      "tied": false,
+      "prefix": false,
+      "samples": [
+        {
+          "text": " user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "a userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "6162",
+            "generated_skip": "6162",
+            "decode_all": "20757365726162",
+            "generated_all": "20757365726162"
+          }
+        },
+        {
+          "text": " user user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "20757365722075736572",
+            "generated_all": "20757365722075736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": " user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "206366c3a9",
+            "generated_skip": "206366c3a9",
+            "decode_all": "2075736572206366c3a9",
+            "generated_all": "2075736572206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3c2f733e2075736572",
+            "generated_all": "3c2f733e2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "2075736572206162",
+            "generated_all": "2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c32075736572a9",
+            "generated_all": "c32075736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " user",
+      "kind": 3,
+      "tied": false,
+      "prefix": true,
+      "samples": [
+        {
+          "text": " user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "75736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "a userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61206162",
+            "generated_skip": "2061206162",
+            "decode_all": "612075736572206162",
+            "generated_all": "20612075736572206162"
+          }
+        },
+        {
+          "text": " user user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "757365722075736572",
+            "generated_all": "20757365722075736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": " user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "20206366c3a9",
+            "generated_skip": "20206366c3a9",
+            "decode_all": "7573657220206366c3a9",
+            "generated_all": "207573657220206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61",
+            "generated_skip": "2061",
+            "decode_all": "613c2f733e2075736572",
+            "generated_all": "20613c2f733e2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "75736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "75736572206162",
+            "generated_all": "2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c32075736572a9",
+            "generated_all": "c32075736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " user",
+      "kind": 3,
+      "tied": true,
+      "prefix": false,
+      "samples": [
+        {
+          "text": " user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "a userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "6162",
+            "generated_skip": "6162",
+            "decode_all": "20757365726162",
+            "generated_all": "20757365726162"
+          }
+        },
+        {
+          "text": " user user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "20757365722075736572",
+            "generated_all": "20757365722075736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": " user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "206366c3a9",
+            "generated_skip": "206366c3a9",
+            "decode_all": "2075736572206366c3a9",
+            "generated_all": "2075736572206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3c2f733e2075736572",
+            "generated_all": "3c2f733e2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "2075736572206162",
+            "generated_all": "2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c32075736572a9",
+            "generated_all": "c32075736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " user",
+      "kind": 3,
+      "tied": true,
+      "prefix": true,
+      "samples": [
+        {
+          "text": " user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "75736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "a userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61206162",
+            "generated_skip": "2061206162",
+            "decode_all": "612075736572206162",
+            "generated_all": "20612075736572206162"
+          }
+        },
+        {
+          "text": " user user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "757365722075736572",
+            "generated_all": "20757365722075736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": " user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "20206366c3a9",
+            "generated_skip": "20206366c3a9",
+            "decode_all": "7573657220206366c3a9",
+            "generated_all": "207573657220206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61",
+            "generated_skip": "2061",
+            "decode_all": "613c2f733e2075736572",
+            "generated_all": "20613c2f733e2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "75736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "75736572206162",
+            "generated_all": "2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c32075736572a9",
+            "generated_all": "c32075736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " user",
+      "kind": 4,
+      "tied": false,
+      "prefix": false,
+      "samples": [
+        {
+          "text": " user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "a userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "20757365726162",
+            "generated_skip": "20757365726162",
+            "decode_all": "20757365726162",
+            "generated_all": "20757365726162"
+          }
+        },
+        {
+          "text": " user user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "20757365722075736572",
+            "generated_skip": "20757365722075736572",
+            "decode_all": "20757365722075736572",
+            "generated_all": "20757365722075736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": " user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "2075736572206366c3a9",
+            "generated_skip": "2075736572206366c3a9",
+            "decode_all": "2075736572206366c3a9",
+            "generated_all": "2075736572206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "3c2f733e2075736572",
+            "generated_all": "3c2f733e2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "2075736572206162",
+            "generated_all": "2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c32075736572a9",
+            "generated_skip": "c32075736572a9",
+            "decode_all": "c32075736572a9",
+            "generated_all": "c32075736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " user",
+      "kind": 4,
+      "tied": false,
+      "prefix": true,
+      "samples": [
+        {
+          "text": " user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "75736572",
+            "generated_skip": "2075736572",
+            "decode_all": "75736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "a userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "612075736572206162",
+            "generated_skip": "20612075736572206162",
+            "decode_all": "612075736572206162",
+            "generated_all": "20612075736572206162"
+          }
+        },
+        {
+          "text": " user user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "757365722075736572",
+            "generated_skip": "20757365722075736572",
+            "decode_all": "757365722075736572",
+            "generated_all": "20757365722075736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": " user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "7573657220206366c3a9",
+            "generated_skip": "207573657220206366c3a9",
+            "decode_all": "7573657220206366c3a9",
+            "generated_all": "207573657220206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "612075736572",
+            "generated_skip": "20612075736572",
+            "decode_all": "613c2f733e2075736572",
+            "generated_all": "20613c2f733e2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "75736572",
+            "generated_skip": "2075736572",
+            "decode_all": "75736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "75736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "75736572206162",
+            "generated_all": "2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c32075736572a9",
+            "generated_skip": "c32075736572a9",
+            "decode_all": "c32075736572a9",
+            "generated_all": "c32075736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " user",
+      "kind": 4,
+      "tied": true,
+      "prefix": false,
+      "samples": [
+        {
+          "text": " user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "a userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "20757365726162",
+            "generated_skip": "20757365726162",
+            "decode_all": "20757365726162",
+            "generated_all": "20757365726162"
+          }
+        },
+        {
+          "text": " user user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "20757365722075736572",
+            "generated_skip": "20757365722075736572",
+            "decode_all": "20757365722075736572",
+            "generated_all": "20757365722075736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": " user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "2075736572206366c3a9",
+            "generated_skip": "2075736572206366c3a9",
+            "decode_all": "2075736572206366c3a9",
+            "generated_all": "2075736572206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "3c2f733e2075736572",
+            "generated_all": "3c2f733e2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "2075736572206162",
+            "generated_all": "2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c32075736572a9",
+            "generated_skip": "c32075736572a9",
+            "decode_all": "c32075736572a9",
+            "generated_all": "c32075736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " user",
+      "kind": 4,
+      "tied": true,
+      "prefix": true,
+      "samples": [
+        {
+          "text": " user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "75736572",
+            "generated_skip": "2075736572",
+            "decode_all": "75736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "a userab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "612075736572206162",
+            "generated_skip": "20612075736572206162",
+            "decode_all": "612075736572206162",
+            "generated_all": "20612075736572206162"
+          }
+        },
+        {
+          "text": " user user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "757365722075736572",
+            "generated_skip": "20757365722075736572",
+            "decode_all": "757365722075736572",
+            "generated_all": "20757365722075736572"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": " user café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "7573657220206366c3a9",
+            "generated_skip": "207573657220206366c3a9",
+            "decode_all": "7573657220206366c3a9",
+            "generated_all": "207573657220206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> user",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "612075736572",
+            "generated_skip": "20612075736572",
+            "decode_all": "613c2f733e2075736572",
+            "generated_all": "20613c2f733e2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "75736572",
+            "generated_skip": "2075736572",
+            "decode_all": "75736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572",
+            "generated_skip": "2075736572",
+            "decode_all": "2075736572",
+            "generated_all": "2075736572"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "75736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "75736572206162",
+            "generated_all": "2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2075736572206162",
+            "generated_skip": "2075736572206162",
+            "decode_all": "3c733e2075736572206162",
+            "generated_all": "3c733e2075736572206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c32075736572a9",
+            "generated_skip": "c32075736572a9",
+            "decode_all": "c32075736572a9",
+            "generated_all": "c32075736572a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " x▁y",
+      "kind": 3,
+      "tied": false,
+      "prefix": false,
+      "samples": [
+        {
+          "text": " x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "a x▁yab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "6162",
+            "generated_skip": "6162",
+            "decode_all": "2078e29681796162",
+            "generated_all": "2078e29681796162"
+          }
+        },
+        {
+          "text": " x▁y x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e29681792078e2968179",
+            "generated_all": "2078e29681792078e2968179"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": " x▁y café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "206366c3a9",
+            "generated_skip": "206366c3a9",
+            "decode_all": "2078e2968179206366c3a9",
+            "generated_all": "2078e2968179206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3c2f733e2078e2968179",
+            "generated_all": "3c2f733e2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "2078e2968179206162",
+            "generated_all": "2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c32078e2968179a9",
+            "generated_all": "c32078e2968179a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " x▁y",
+      "kind": 3,
+      "tied": false,
+      "prefix": true,
+      "samples": [
+        {
+          "text": " x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "78e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "a x▁yab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61206162",
+            "generated_skip": "2061206162",
+            "decode_all": "612078e2968179206162",
+            "generated_all": "20612078e2968179206162"
+          }
+        },
+        {
+          "text": " x▁y x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "78e29681792078e2968179",
+            "generated_all": "2078e29681792078e2968179"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": " x▁y café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "20206366c3a9",
+            "generated_skip": "20206366c3a9",
+            "decode_all": "78e296817920206366c3a9",
+            "generated_all": "2078e296817920206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61",
+            "generated_skip": "2061",
+            "decode_all": "613c2f733e2078e2968179",
+            "generated_all": "20613c2f733e2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "78e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "78e2968179206162",
+            "generated_all": "2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c32078e2968179a9",
+            "generated_all": "c32078e2968179a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " x▁y",
+      "kind": 3,
+      "tied": true,
+      "prefix": false,
+      "samples": [
+        {
+          "text": " x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "a x▁yab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "6162",
+            "generated_skip": "6162",
+            "decode_all": "2078e29681796162",
+            "generated_all": "2078e29681796162"
+          }
+        },
+        {
+          "text": " x▁y x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e29681792078e2968179",
+            "generated_all": "2078e29681792078e2968179"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": " x▁y café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "206366c3a9",
+            "generated_skip": "206366c3a9",
+            "decode_all": "2078e2968179206366c3a9",
+            "generated_all": "2078e2968179206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3c2f733e2078e2968179",
+            "generated_all": "3c2f733e2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "2078e2968179206162",
+            "generated_all": "2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c32078e2968179a9",
+            "generated_all": "c32078e2968179a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " x▁y",
+      "kind": 3,
+      "tied": true,
+      "prefix": true,
+      "samples": [
+        {
+          "text": " x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "78e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "a x▁yab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61206162",
+            "generated_skip": "2061206162",
+            "decode_all": "612078e2968179206162",
+            "generated_all": "20612078e2968179206162"
+          }
+        },
+        {
+          "text": " x▁y x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "78e29681792078e2968179",
+            "generated_all": "2078e29681792078e2968179"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": " x▁y café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "20206366c3a9",
+            "generated_skip": "20206366c3a9",
+            "decode_all": "78e296817920206366c3a9",
+            "generated_all": "2078e296817920206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61",
+            "generated_skip": "2061",
+            "decode_all": "613c2f733e2078e2968179",
+            "generated_all": "20613c2f733e2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "78e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "78e2968179206162",
+            "generated_all": "2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c32078e2968179a9",
+            "generated_all": "c32078e2968179a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " x▁y",
+      "kind": 4,
+      "tied": false,
+      "prefix": false,
+      "samples": [
+        {
+          "text": " x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "a x▁yab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "2078e29681796162",
+            "generated_skip": "2078e29681796162",
+            "decode_all": "2078e29681796162",
+            "generated_all": "2078e29681796162"
+          }
+        },
+        {
+          "text": " x▁y x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "2078e29681792078e2968179",
+            "generated_skip": "2078e29681792078e2968179",
+            "decode_all": "2078e29681792078e2968179",
+            "generated_all": "2078e29681792078e2968179"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": " x▁y café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "2078e2968179206366c3a9",
+            "generated_skip": "2078e2968179206366c3a9",
+            "decode_all": "2078e2968179206366c3a9",
+            "generated_all": "2078e2968179206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "3c2f733e2078e2968179",
+            "generated_all": "3c2f733e2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "2078e2968179206162",
+            "generated_all": "2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c32078e2968179a9",
+            "generated_skip": "c32078e2968179a9",
+            "decode_all": "c32078e2968179a9",
+            "generated_all": "c32078e2968179a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " x▁y",
+      "kind": 4,
+      "tied": false,
+      "prefix": true,
+      "samples": [
+        {
+          "text": " x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "78e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "78e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "a x▁yab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "612078e2968179206162",
+            "generated_skip": "20612078e2968179206162",
+            "decode_all": "612078e2968179206162",
+            "generated_all": "20612078e2968179206162"
+          }
+        },
+        {
+          "text": " x▁y x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "78e29681792078e2968179",
+            "generated_skip": "2078e29681792078e2968179",
+            "decode_all": "78e29681792078e2968179",
+            "generated_all": "2078e29681792078e2968179"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": " x▁y café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "78e296817920206366c3a9",
+            "generated_skip": "2078e296817920206366c3a9",
+            "decode_all": "78e296817920206366c3a9",
+            "generated_all": "2078e296817920206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "612078e2968179",
+            "generated_skip": "20612078e2968179",
+            "decode_all": "613c2f733e2078e2968179",
+            "generated_all": "20613c2f733e2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "78e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "78e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "78e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "78e2968179206162",
+            "generated_all": "2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c32078e2968179a9",
+            "generated_skip": "c32078e2968179a9",
+            "decode_all": "c32078e2968179a9",
+            "generated_all": "c32078e2968179a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " x▁y",
+      "kind": 4,
+      "tied": true,
+      "prefix": false,
+      "samples": [
+        {
+          "text": " x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "a x▁yab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "2078e29681796162",
+            "generated_skip": "2078e29681796162",
+            "decode_all": "2078e29681796162",
+            "generated_all": "2078e29681796162"
+          }
+        },
+        {
+          "text": " x▁y x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "2078e29681792078e2968179",
+            "generated_skip": "2078e29681792078e2968179",
+            "decode_all": "2078e29681792078e2968179",
+            "generated_all": "2078e29681792078e2968179"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": " x▁y café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "2078e2968179206366c3a9",
+            "generated_skip": "2078e2968179206366c3a9",
+            "decode_all": "2078e2968179206366c3a9",
+            "generated_all": "2078e2968179206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "3c2f733e2078e2968179",
+            "generated_all": "3c2f733e2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "2078e2968179206162",
+            "generated_all": "2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c32078e2968179a9",
+            "generated_skip": "c32078e2968179a9",
+            "decode_all": "c32078e2968179a9",
+            "generated_all": "c32078e2968179a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": " x▁y",
+      "kind": 4,
+      "tied": true,
+      "prefix": true,
+      "samples": [
+        {
+          "text": " x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "78e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "78e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "a x▁yab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "612078e2968179206162",
+            "generated_skip": "20612078e2968179206162",
+            "decode_all": "612078e2968179206162",
+            "generated_all": "20612078e2968179206162"
+          }
+        },
+        {
+          "text": " x▁y x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "78e29681792078e2968179",
+            "generated_skip": "2078e29681792078e2968179",
+            "decode_all": "78e29681792078e2968179",
+            "generated_all": "2078e29681792078e2968179"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": " x▁y café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              198,
+              172
+            ],
+            "decode_skip": "78e296817920206366c3a9",
+            "generated_skip": "2078e296817920206366c3a9",
+            "decode_all": "78e296817920206366c3a9",
+            "generated_all": "2078e296817920206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s> x▁y",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "612078e2968179",
+            "generated_skip": "20612078e2968179",
+            "decode_all": "613c2f733e2078e2968179",
+            "generated_all": "20613c2f733e2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "78e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "78e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179",
+            "generated_skip": "2078e2968179",
+            "decode_all": "2078e2968179",
+            "generated_all": "2078e2968179"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "78e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "78e2968179206162",
+            "generated_all": "2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "2078e2968179206162",
+            "generated_skip": "2078e2968179206162",
+            "decode_all": "3c733e2078e2968179206162",
+            "generated_all": "3c733e2078e2968179206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c32078e2968179a9",
+            "generated_skip": "c32078e2968179a9",
+            "decode_all": "c32078e2968179a9",
+            "generated_all": "c32078e2968179a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "é",
+      "kind": 3,
+      "tied": false,
+      "prefix": false,
+      "samples": [
+        {
+          "text": "é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "aéab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "6162",
+            "generated_skip": "6162",
+            "decode_all": "c3a96162",
+            "generated_all": "c3a96162"
+          }
+        },
+        {
+          "text": "éé",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9c3a9",
+            "generated_all": "c3a9c3a9"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": "é café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              265
+            ],
+            "decode_skip": "206366",
+            "generated_skip": "206366",
+            "decode_all": "c3a9206366c3a9",
+            "generated_all": "c3a9206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3c2f733ec3a9",
+            "generated_all": "3c2f733ec3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "c3a9206162",
+            "generated_all": "c3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3c3a9a9",
+            "generated_all": "c3c3a9a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "é",
+      "kind": 3,
+      "tied": false,
+      "prefix": true,
+      "samples": [
+        {
+          "text": "é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "aéab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61206162",
+            "generated_skip": "2061206162",
+            "decode_all": "61c3a9206162",
+            "generated_all": "2061c3a9206162"
+          }
+        },
+        {
+          "text": "éé",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9c3a9",
+            "generated_all": "c3a9c3a9"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": "é café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              265
+            ],
+            "decode_skip": "20206366",
+            "generated_skip": "20206366",
+            "decode_all": "c3a920206366c3a9",
+            "generated_all": "c3a920206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61",
+            "generated_skip": "2061",
+            "decode_all": "613c2f733ec3a9",
+            "generated_all": "20613c2f733ec3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "c3a9206162",
+            "generated_all": "c3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3c3a9a9",
+            "generated_all": "c3c3a9a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "é",
+      "kind": 3,
+      "tied": true,
+      "prefix": false,
+      "samples": [
+        {
+          "text": "é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "aéab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "6162",
+            "generated_skip": "6162",
+            "decode_all": "c3a96162",
+            "generated_all": "c3a96162"
+          }
+        },
+        {
+          "text": "éé",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9c3a9",
+            "generated_all": "c3a9c3a9"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": "é café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              265
+            ],
+            "decode_skip": "206366",
+            "generated_skip": "206366",
+            "decode_all": "c3a9206366c3a9",
+            "generated_all": "c3a9206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "3c2f733ec3a9",
+            "generated_all": "3c2f733ec3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "c3a9206162",
+            "generated_all": "c3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3c3a9a9",
+            "generated_all": "c3c3a9a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "é",
+      "kind": 3,
+      "tied": true,
+      "prefix": true,
+      "samples": [
+        {
+          "text": "é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "aéab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61206162",
+            "generated_skip": "2061206162",
+            "decode_all": "61c3a9206162",
+            "generated_all": "2061c3a9206162"
+          }
+        },
+        {
+          "text": "éé",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9c3a9",
+            "generated_all": "c3a9c3a9"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": "é café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              265
+            ],
+            "decode_skip": "20206366",
+            "generated_skip": "20206366",
+            "decode_all": "c3a920206366c3a9",
+            "generated_all": "c3a920206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61",
+            "generated_skip": "2061",
+            "decode_all": "613c2f733ec3a9",
+            "generated_all": "20613c2f733ec3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "c3a9206162",
+            "generated_all": "c3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "206162",
+            "generated_skip": "206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3c3a9a9",
+            "generated_all": "c3c3a9a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "é",
+      "kind": 4,
+      "tied": false,
+      "prefix": false,
+      "samples": [
+        {
+          "text": "é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "aéab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "c3a96162",
+            "generated_skip": "c3a96162",
+            "decode_all": "c3a96162",
+            "generated_all": "c3a96162"
+          }
+        },
+        {
+          "text": "éé",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "c3a9c3a9",
+            "generated_skip": "c3a9c3a9",
+            "decode_all": "c3a9c3a9",
+            "generated_all": "c3a9c3a9"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": "é café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              265
+            ],
+            "decode_skip": "c3a9206366c3a9",
+            "generated_skip": "c3a9206366c3a9",
+            "decode_all": "c3a9206366c3a9",
+            "generated_all": "c3a9206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "3c2f733ec3a9",
+            "generated_all": "3c2f733ec3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "c3a9206162",
+            "generated_all": "c3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3c3a9a9",
+            "generated_skip": "c3c3a9a9",
+            "decode_all": "c3c3a9a9",
+            "generated_all": "c3c3a9a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "é",
+      "kind": 4,
+      "tied": false,
+      "prefix": true,
+      "samples": [
+        {
+          "text": "é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "aéab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61c3a9206162",
+            "generated_skip": "2061c3a9206162",
+            "decode_all": "61c3a9206162",
+            "generated_all": "2061c3a9206162"
+          }
+        },
+        {
+          "text": "éé",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "c3a9c3a9",
+            "generated_skip": "c3a9c3a9",
+            "decode_all": "c3a9c3a9",
+            "generated_all": "c3a9c3a9"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": "é café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              265
+            ],
+            "decode_skip": "c3a920206366c3a9",
+            "generated_skip": "c3a920206366c3a9",
+            "decode_all": "c3a920206366c3a9",
+            "generated_all": "c3a920206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61c3a9",
+            "generated_skip": "2061c3a9",
+            "decode_all": "613c2f733ec3a9",
+            "generated_all": "20613c2f733ec3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "c3a9206162",
+            "generated_all": "c3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3c3a9a9",
+            "generated_skip": "c3c3a9a9",
+            "decode_all": "c3c3a9a9",
+            "generated_all": "c3c3a9a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "é",
+      "kind": 4,
+      "tied": true,
+      "prefix": false,
+      "samples": [
+        {
+          "text": "é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "aéab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              265,
+              262
+            ],
+            "decode_skip": "c3a96162",
+            "generated_skip": "c3a96162",
+            "decode_all": "c3a96162",
+            "generated_all": "c3a96162"
+          }
+        },
+        {
+          "text": "éé",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "c3a9c3a9",
+            "generated_skip": "c3a9c3a9",
+            "decode_all": "c3a9c3a9",
+            "generated_all": "c3a9c3a9"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "20616220",
+            "decode_all": "20616220",
+            "generated_all": "20616220"
+          }
+        },
+        {
+          "text": "é café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              102,
+              260,
+              105,
+              265
+            ],
+            "decode_skip": "c3a9206366c3a9",
+            "generated_skip": "c3a9206366c3a9",
+            "decode_all": "c3a9206366c3a9",
+            "generated_all": "c3a9206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              260,
+              2,
+              265
+            ],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "3c2f733ec3a9",
+            "generated_all": "3c2f733ec3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "c3a9206162",
+            "generated_all": "c3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3c3a9a9",
+            "generated_skip": "c3c3a9a9",
+            "decode_all": "c3c3a9a9",
+            "generated_all": "c3c3a9a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    },
+    {
+      "literal": "é",
+      "kind": 4,
+      "tied": true,
+      "prefix": true,
+      "samples": [
+        {
+          "text": "é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265
+            ],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "aéab",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              265,
+              264
+            ],
+            "decode_skip": "61c3a9206162",
+            "generated_skip": "2061c3a9206162",
+            "decode_all": "61c3a9206162",
+            "generated_all": "2061c3a9206162"
+          }
+        },
+        {
+          "text": "éé",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              265
+            ],
+            "decode_skip": "c3a9c3a9",
+            "generated_skip": "c3a9c3a9",
+            "decode_all": "c3a9c3a9",
+            "generated_all": "c3a9c3a9"
+          }
+        },
+        {
+          "text": " ab ",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              259,
+              264,
+              259
+            ],
+            "decode_skip": "20616220",
+            "generated_skip": "2020616220",
+            "decode_all": "20616220",
+            "generated_all": "2020616220"
+          }
+        },
+        {
+          "text": "é café",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              265,
+              259,
+              259,
+              102,
+              260,
+              105,
+              265
+            ],
+            "decode_skip": "c3a920206366c3a9",
+            "generated_skip": "c3a920206366c3a9",
+            "decode_all": "c3a920206366c3a9",
+            "generated_all": "c3a920206366c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": null,
+          "expected": {
+            "ids": [],
+            "decode_skip": "",
+            "generated_skip": "",
+            "decode_all": "",
+            "generated_all": ""
+          }
+        },
+        {
+          "text": "a</s>é",
+          "explicit": null,
+          "expected": {
+            "ids": [
+              263,
+              2,
+              265
+            ],
+            "decode_skip": "61c3a9",
+            "generated_skip": "2061c3a9",
+            "decode_all": "613c2f733ec3a9",
+            "generated_all": "20613c2f733ec3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            260,
+            265
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c3a9",
+            "generated_all": "c3a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            265,
+            260,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "c3a9206162",
+            "generated_all": "c3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            1,
+            260,
+            265,
+            264
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9206162",
+            "generated_skip": "c3a9206162",
+            "decode_all": "3c733ec3a9206162",
+            "generated_all": "3c733ec3a9206162"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            265,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3c3a9a9",
+            "generated_skip": "c3c3a9a9",
+            "decode_all": "c3c3a9a9",
+            "generated_all": "c3c3a9a9"
+          }
+        },
+        {
+          "text": "",
+          "explicit": [
+            198,
+            1,
+            172
+          ],
+          "expected": {
+            "ids": [],
+            "decode_skip": "c3a9",
+            "generated_skip": "c3a9",
+            "decode_all": "c33c733ea9",
+            "generated_all": "c33c733ea9"
+          }
+        }
+      ]
+    }
+  ]
+}

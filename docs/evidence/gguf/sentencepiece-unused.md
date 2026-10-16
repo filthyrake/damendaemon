@@ -161,3 +161,19 @@ Tests compare full/batch decoding before/after serialization and incremental
 streaming. For deliberately incomplete UTF-8, reference raw bytes are converted
 to text with replacement, matching the public text-decoding contract. Logprob
 presentation already preserved literal spellings and remains covered.
+
+## Literal SentencePiece specials (#383)
+
+A user-defined `▁user` at ID 265 encoded correctly but full decoding returned
+`user`, and generated decoding returned ` user`; the reference preserves literal
+`▁user` in both. SentencePiece now shares literal-span decoding while retaining
+its original-first-token whitespace rule. Normal pieces still replace `▁`
+with a space. Generated output remains unstripped. Hidden initial controls and
+UNUSED pieces still consume the first-token strip opportunity even when invisible.
+
+`tests/reference/generate_sentencepiece_literals.py` freezes 448 CPU cases across
+four literal spellings, control/user types, static/positional score paths and
+both prefix flags. Each vocabulary includes an UNUSED piece. Prompt and explicit
+decode sequences cover leading literal spaces, normal/literal adjacency, hidden
+controls, suppression and partial UTF-8. Full/generated/batch decoding and
+serialization match the pinned reference; 79 affected CPU tests passed locally.

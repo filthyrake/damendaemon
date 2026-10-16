@@ -99,6 +99,9 @@ class SpecialTokenTokenizer:
             ids = [i for i in ids if i not in self.suppressed_token_ids]
         if not self._literal_tokens:
             return self.backend_tokenizer.decode(ids, skip_special_tokens=skip_special_tokens)
+        return self._decode_literals(ids, self.backend_tokenizer, skip_special_tokens)
+
+    def _decode_literals(self, ids, decoder, skip_special_tokens, strip_first=False):
         parts, normal = [], []
         for index in ids:
             literal = self._literal_tokens.get(index)
@@ -109,11 +112,13 @@ class SpecialTokenTokenizer:
                 # Hidden controls must not separate incomplete UTF-8 bytes.
                 continue
             if normal:
-                parts.append(self.backend_tokenizer.decode(normal, skip_special_tokens=skip_special_tokens))
+                parts.append(decoder.decode(normal, skip_special_tokens=skip_special_tokens))
                 normal.clear()
             parts.append(literal.content)
         if normal:
-            parts.append(self.backend_tokenizer.decode(normal, skip_special_tokens=skip_special_tokens))
+            parts.append(decoder.decode(normal, skip_special_tokens=skip_special_tokens))
+        if strip_first and parts and parts[0].startswith(' '):
+            parts[0] = parts[0][1:]
         return ''.join(parts)
 
     def decode_batch(self, sequences, skip_special_tokens=True):
