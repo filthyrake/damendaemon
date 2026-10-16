@@ -1,6 +1,7 @@
 """Optional single-owner queue for explicit CPU reference HTTP generation."""
 from contextlib import closing
 from dataclasses import dataclass,field
+import copy
 import json
 import queue
 import threading
@@ -13,6 +14,17 @@ from .runtime import BusyError
 from .reference_cancellation import cancellation_scope
 
 BUFFER_EVENTS=8
+
+
+def detached_error(error):
+    """Retain error semantics without retaining worker execution frames."""
+    try:
+        detached=copy.copy(error).with_traceback(None)
+    except Exception:
+        detached=RuntimeError(str(error))
+    detached.__cause__=detached.__context__=None
+    detached.__notes__=list(getattr(error,'__notes__',()))
+    return detached
 
 
 @dataclass
@@ -99,6 +111,7 @@ class QueuedReferenceRuntime(ReferenceRuntime):
         while not terminal and request.events.qsize()>=BUFFER_EVENTS:
             if request.cancelled.wait(.01) or self.stopping.is_set():return False
         if request.cancelled.is_set() or (self.stopping.is_set() and not terminal):return False
+        if isinstance(event,BaseException):event=detached_error(event)
         request.events.put_nowait(event);return True
 
     def _retire(self,request):
@@ -147,13 +160,13 @@ class QueuedReferenceRuntime(ReferenceRuntime):
                 except Exception as error:
                     self._publish(request,error,terminal=True)
                     if self.cleanup_pending():
-                        self.failure=error;self.stopping.set()
+                        self.failure=detached_error(error);self.stopping.set()
                 finally:
                     if self.cleanup_pending() and self.failure is None:
                         self.failure=RuntimeError('CPU reference cleanup remains pending');self.stopping.set()
                     self._retire(request)
         except BaseException as error:
-            self.failure=error;self.stopping.set()
+            self.failure=detached_error(error);self.stopping.set()
         finally:self._flush()
 
     def close(self):

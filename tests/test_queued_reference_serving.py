@@ -31,6 +31,64 @@ class QueuedReferenceTests(unittest.TestCase):
     def generate(self,runtime,**options):
         return runtime.generate('model',self.fixture.messages,512,tools=fixtures.TOOLS,**options)
 
+    def test_host_terminal_failure_state_does_not_retain_worker_frames(self):
+        import gc
+        import weakref
+        from types import SimpleNamespace
+        from dllm.queued_native_host_serving import QueuedNativeHostReferenceRuntime
+        from dllm.native_host_serving import NativeHostReferenceRuntime
+        class Allocation:pass
+        runtime=QueuedNativeHostReferenceRuntime.__new__(QueuedNativeHostReferenceRuntime)
+        runtime.alias='model';runtime.failure=None;runtime.stopping=threading.Event()
+        runtime._terminal=lambda:True
+        references=[]
+        def failed(*args,**kwargs):
+            allocation=Allocation();references.append(weakref.ref(allocation))
+            raise ValueError('host terminal failure')
+            yield
+        request=SimpleNamespace(messages=[],maximum=1,options={})
+        with patch.object(NativeHostReferenceRuntime,'generate',side_effect=failed):
+            try:list(runtime._generate_owned(request))
+            except ValueError:pass
+            else:self.fail('host failure was hidden')
+        gc.collect()
+        self.assertIsInstance(runtime.failure,ValueError)
+        self.assertTrue(runtime.stopping.is_set())
+        self.assertIsNone(runtime.failure.__traceback__)
+        self.assertIsNone(references[0]())
+
+    def test_retained_errors_do_not_keep_worker_frames_alive(self):
+        import gc
+        import weakref
+        class Allocation:pass
+        for fatal in (False,True):
+            with self.subTest(fatal=fatal):
+                runtime,_=self.runtime()
+                references=[];retained=[]
+                def owned(request):
+                    allocation=Allocation();references.append(weakref.ref(allocation))
+                    error=SystemExit('fatal fixture') if fatal else ValueError('request fixture')
+                    error.add_note('cleanup note')
+                    raise error
+                    yield  # Keep the failure inside the owned iterator.
+                with patch.object(runtime,'_generate_owned',side_effect=owned):
+                    try:list(self.generate(runtime))
+                    except Exception as error:retained.append(error)
+                    else:self.fail('failed request completed')
+                    wait_for(lambda:not runtime.accepted)
+                    if fatal:
+                        runtime.worker.join(2)
+                        self.assertIsInstance(runtime.failure,SystemExit)
+                        retained.append(runtime.failure)
+                    else:
+                        self.assertIsInstance(retained[0],ValueError)
+                        self.assertEqual(str(retained[0]),'request fixture')
+                        self.assertEqual(retained[0].__notes__,['cleanup note'])
+                    gc.collect()
+                    self.assertEqual(len(references),1)
+                    self.assertIsNone(references[0]())
+                runtime.close()
+
     def test_invalid_owned_streams_fail_without_hanging_or_publishing_success(self):
         for case in ('empty', 'missing', 'duplicate', 'late', 'cleanup', 'invalid-final'):
             with self.subTest(case=case):

@@ -1,6 +1,6 @@
 """Bounded serialized native reference host admission with terminal-epoch ownership."""
 from .native_host_serving import NativeHostReferenceRuntime
-from .queued_reference_serving import QueuedReferenceRuntime
+from .queued_reference_serving import QueuedReferenceRuntime,detached_error
 from .runtime import BusyError
 
 
@@ -20,7 +20,7 @@ class QueuedNativeHostReferenceRuntime(QueuedReferenceRuntime,NativeHostReferenc
             yield from NativeHostReferenceRuntime.generate(self,self.alias,request.messages,request.maximum,**request.options)
         except BaseException as error:
             if self._terminal():
-                if self.failure is None:self.failure=error
+                if self.failure is None:self.failure=detached_error(error)
                 self.stopping.set()
             raise
 
