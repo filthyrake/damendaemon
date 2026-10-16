@@ -12,8 +12,8 @@ from unittest.mock import Mock,patch
 from urllib.error import HTTPError
 from scripts import verify_harmony_tools as verify
 case=sys.argv[1];responses=[];counter=[0]
-runtime=NS(generate=Mock(return_value=iter([{'token':1},{'finish_reason':'tool_calls'}])),close=Mock())
-server=NS(server_port=1,serve_forever=Mock(),shutdown=Mock(),server_close=Mock())
+runtime=NS(generate=Mock(return_value=iter([{'token':1},{'finish_reason':'tool_calls'}])),close=Mock(side_effect=OSError('runtime cleanup') if case=='close-failure' else None))
+server=NS(server_port=1,serve_forever=Mock(),shutdown=Mock(),server_close=Mock(side_effect=OSError('server cleanup') if case=='server-close-failure' else None))
 def response(request,**kwargs):
     body=json.loads(request.data);counter[0]+=1
     if body.get('tool_choice') in ('required',) or isinstance(body.get('tool_choice'),dict) or body['tools'][0]['function'].get('strict'):
@@ -52,12 +52,12 @@ with tempfile.TemporaryDirectory() as tmp:
         with patch('sys.argv',['verify','unused','--output',str(output)]), \
                 patch.dict(os.environ,{'CUDA_VISIBLE_DEVICES':'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'}), \
                 patch.object(verify,'BatchedRuntime',return_value=runtime), \
-                patch.object(verify,'BoundedHTTPServer',return_value=server), \
+                patch.object(verify,'BoundedHTTPServer',side_effect=OSError('bind failed') if case=='bind-failure' else None,return_value=server), \
                 patch.object(verify,'torch',NS(set_num_threads=Mock(),cuda=NS(get_device_name=lambda:'fake'))), \
                 patch.object(verify,'urlopen',side_effect=response):
             verify.main()
     finally:
-        print('published='+str(output.exists())+' cleaned='+str(runtime.close.called and server.shutdown.called and server.server_close.called)+' responses_closed='+str(all(r.closed for r in responses)),file=sys.stderr)
+        print('published='+str(output.exists())+' cleaned='+str(runtime.close.called and (case=='bind-failure' or server.shutdown.called and server.server_close.called))+' responses_closed='+str(all(r.closed for r in responses)),file=sys.stderr)
 '''
 
 
@@ -69,7 +69,7 @@ class HarmonyVerifierTests(unittest.TestCase):
     def test_invalid_qualification_fails_without_publishing(self):
         for optimized in (False,True):
             for case in ('wrong-tool','wrong-args','index','diverge','history','cap','none-choice',
-                         'shared-id','wrong-status','stream-error','no-done','truncated-done'):
+                         'close-failure','server-close-failure','bind-failure','shared-id','wrong-status','stream-error','no-done','truncated-done'):
                 with self.subTest(case=case,optimized=optimized):
                     result=self.run_case(case,optimized)
                     self.assertNotEqual(result.returncode,0,result.stdout)

@@ -25,8 +25,8 @@ class Executor:
     def prefill_batch(self,prompts,slots):return self.scores(len(prompts))
     def decode_batch(self,tokens,slots):return self.scores(len(tokens)),None
     def prefill_chunk(self,*args,**kwargs):return self.scores(1)
-runtime=NS(runtime=NS(lock=threading.Lock(),host={}),close=Mock())
-server=NS(server_port=1,serve_forever=Mock(),shutdown=Mock(),server_close=Mock())
+runtime=NS(runtime=NS(lock=threading.Lock(),host={}),close=Mock(side_effect=OSError('runtime cleanup') if case=='close-failure' else None))
+server=NS(server_port=1,serve_forever=Mock(),shutdown=Mock(),server_close=Mock(side_effect=OSError('server cleanup') if case=='server-close-failure' else None))
 def response(request,**kwargs):
     body=json.loads(request.data);route=request.full_url.rsplit('/',1)[-1]
     if route=='unload':tier[0]='disk' if body.get('release_host') else 'host'
@@ -51,7 +51,7 @@ try:
             patch.object(verify,'device_name',return_value='fixture'),patch.object(verify,'empty_cache'), \
             patch.object(verify,'GgufWeights',return_value=model),patch.object(verify,'expanded',return_value=reference), \
             patch.object(verify,'make_executor',side_effect=Executor),patch.object(verify,'BatchedRuntime',return_value=runtime), \
-            patch.object(verify,'BoundedHTTPServer',return_value=server),patch.object(verify,'urlopen',side_effect=response):
+            patch.object(verify,'BoundedHTTPServer',side_effect=OSError('bind failed') if case=='bind-failure' else None,return_value=server),patch.object(verify,'urlopen',side_effect=response):
         verify.main()
 finally:
     print('closed='+str(runtime.close.called)+' responses_closed='+str(all(r.closed for r in responses)),file=sys.stderr)
@@ -66,7 +66,7 @@ class KquantVerifierTests(unittest.TestCase):
     def test_bad_evidence_never_publishes_pass(self):
         for optimized in (False,True):
             for case in ('numerical','greedy','nonfinite','chat','stream-text','no-done',
-                         'work-count','trial-text','reload-text','reload-tier'):
+                         'close-failure','server-close-failure','bind-failure','work-count','trial-text','reload-text','reload-tier'):
                 with self.subTest(case=case,optimized=optimized):
                     result=self.run_case(case,optimized)
                     self.assertNotEqual(result.returncode,0,result.stdout)

@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 import statistics
 import sys
-import threading
 import time
 from urllib.request import Request,urlopen
 
@@ -22,7 +21,8 @@ from dllm.device import device_name, empty_cache
 from dllm.gguf_model import GgufWeights
 from dllm.runtime import require_gpu, make_executor
 from dllm.scheduler import BatchedRuntime
-from dllm.server import BoundedHTTPServer, handler_for
+from dllm.server import BoundedHTTPServer
+from scripts.validation_server import owned_http_server
 
 
 def require_gate(condition, message):
@@ -110,17 +110,15 @@ def main():
     del model
     gc.collect();empty_cache()
     runtime=BatchedRuntime({},context=512,batch_size=4,gpu_models=2,host_models=2,host_gib=12)
-    server=BoundedHTTPServer(('127.0.0.1',0),handler_for(runtime))
-    worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start()
-    base=f'http://127.0.0.1:{server.server_port}'
-    def post(route,body):
-        return urlopen(Request(base+route,data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=300)
-    def request(route,body):
-        with post(route,body) as response:return json.load(response)
-    def chat(alias='packed',**options):
-        return dict(model=alias,messages=[{'role':'user','content':'Explain binary search with a short worked example.'}],
-                    temperature=0,max_tokens=32,**options)
-    try:
+    with owned_http_server(runtime, server_factory=BoundedHTTPServer) as server:
+        base=f'http://127.0.0.1:{server.server_port}'
+        def post(route,body):
+            return urlopen(Request(base+route,data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=300)
+        def request(route,body):
+            with post(route,body) as response:return json.load(response)
+        def chat(alias='packed',**options):
+            return dict(model=alias,messages=[{'role':'user','content':'Explain binary search with a short worked example.'}],
+                        temperature=0,max_tokens=32,**options)
         print('Checking HTTP chat, streaming, concurrency and lifecycle',file=sys.stderr,flush=True)
         for alias in ('packed','expanded'):
             request('/v1/models/register',dict(model=alias,path=str(Path(args.model).resolve()),quantization='none'))
@@ -175,9 +173,7 @@ def main():
                 t['seconds'] for t in trials if t['alias']==alias and t['prompt_tokens']==length and t['concurrency']==count)
                 for alias in ('packed','expanded')}) for length,count in ((16,1),(129,1),(400,1),(129,2))]}
         report['passed']=True
-        print(json.dumps(report,indent=2))
-    finally:
-        server.shutdown();server.server_close();worker.join();runtime.close()
+    print(json.dumps(report,indent=2))
 
 
 if __name__=='__main__':main()
