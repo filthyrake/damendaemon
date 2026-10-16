@@ -125,6 +125,20 @@ class AwqModelTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'shard index'):
                 plan(path)
 
+    def test_index_growth_after_discovery_keeps_second_read_bounded(self):
+        from dllm import awq_model
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory);_,values=fixture(path)
+            index=path/'model.safetensors.index.json'
+            index.write_text(json.dumps({'weight_map':{name:'model.safetensors' for name in values}}))
+            discover=awq_model.weight_files
+            def grow_after_discovery(root):
+                files=discover(root)
+                with index.open('a') as writer:writer.write(' '*(16*1024*1024))
+                return files
+            with patch.object(awq_model,'weight_files',side_effect=grow_after_discovery):
+                with self.assertRaisesRegex(ValueError,'16 MiB metadata limit'):plan(path)
+
     def test_tied_head_disagreement_and_nonfinite_scales_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)

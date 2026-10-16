@@ -11,6 +11,7 @@ from tokenizers import Tokenizer
 from .awq import Matrix, fuse, group_size
 from .config import decoder_config, eos_ids, read_config
 from .device import selected_device
+from .download import read_index
 from .qwen2 import ModelWeights, weight_files
 from .quantization import mode
 
@@ -120,7 +121,7 @@ def plan(path):
         raise ValueError(f'missing AWQ tensors: {sorted(missing)}')
     index = path/'model.safetensors.index.json'
     if index.exists():
-        declared = json.loads(index.read_text()).get('weight_map')
+        declared = read_index(index).get('weight_map')
         actual = {name: str(file.relative_to(path)) for name, (file, _, _) in tensors.items()}
         if declared != actual:
             raise ValueError('AWQ shard index does not match tensor locations')
