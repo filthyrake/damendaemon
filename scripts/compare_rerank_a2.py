@@ -17,6 +17,22 @@ from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 
 
+def _scores(results,count):
+    """Validate complete per-document evidence before indexing or timing credit."""
+    if type(count) is not int or count<1 or not isinstance(results,list) or len(results)!=count:
+        raise ValueError('rerank results require exact document cardinality')
+    scores={}
+    for result in results:
+        if not isinstance(result,dict):raise ValueError('invalid rerank result')
+        index=result.get('index');score=result.get('relevance_score')
+        if type(index) is not int or not 0<=index<count or index in scores:
+            raise ValueError('invalid or duplicate rerank document index')
+        if type(score) not in (int,float) or not -sys.float_info.max<=score<=sys.float_info.max:
+            raise ValueError('rerank score must be finite numeric evidence')
+        scores[index]=score
+    return scores
+
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('model');p.add_argument('--engines',nargs='+',default=['dllm','vllm']);args=p.parse_args()
     if os.environ.get('CUDA_VISIBLE_DEVICES')!='GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283':
@@ -65,7 +81,10 @@ def main():
                         with urlopen(Request(url+'/v1/rerank',data=json.dumps(body).encode(),headers={'Content-Type':'application/json'}),timeout=180) as r:
                             result=json.load(r)
                     except HTTPError as error:raise RuntimeError(error.read().decode()) from error
-                    return {'seconds':time.perf_counter()-start,'results':result['results'],'usage':result.get('usage')}
+                    elapsed=time.perf_counter()-start
+                    if not isinstance(result,dict):raise ValueError('invalid rerank response')
+                    _scores(result.get('results'),len(documents))
+                    return {'seconds':elapsed,'results':result['results'],'usage':result.get('usage')}
                 for count in (1,4,16,64):
                     documents=(base_docs*16)[:count]
                     for concurrency in (1,4):
@@ -105,15 +124,13 @@ def compare_reports(left,right):
     for a,b in zip(left['rows'],right['rows']):
         assert (a['pairs_per_request'],a['concurrency'])==(b['pairs_per_request'],b['concurrency'])
         reference=a['trials'][-1]['requests'][0]
-        expected={v['index']:v['relevance_score'] for v in reference['results']}
-        assert len(expected)==a['pairs_per_request']
+        expected=_scores(reference['results'],a['pairs_per_request'])
         maximum=0
         for row in (a,b):
             for trial in row['trials']:
                 assert len(trial['requests'])==row['concurrency']
                 for request in trial['requests']:
-                    actual={v['index']:v['relevance_score'] for v in request['results']}
-                    assert actual.keys()==expected.keys() and len(request['results'])==len(expected)
+                    actual=_scores(request['results'],row['pairs_per_request'])
                     difference=max(abs(expected[i]-actual[i]) for i in expected)
                     assert difference<.0002,(a['pairs_per_request'],difference)
                     assert request['usage']==reference['usage']
