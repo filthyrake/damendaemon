@@ -934,3 +934,10 @@ at least half. Outputs return in original input order, and variable bucket
 shapes bypass retained graph capture. Small/homogeneous batches keep the
 existing graph path. CPU reference tests establish numerical parity and reduced
 padded work sizes, not measured GPU latency or throughput.
+
+Mamba-1 and single-group Mamba-2 now have independent CPU checkpoint oracles.
+Tiny actual Transformers checkpoints test the native torch recurrence against
+fresh full-prefix reference logits through unequal prompts, reordered decode
+slots, chunk boundaries and slot reuse, with and without projection/convolution
+biases. These tests run in CPU CI and do not validate Triton/Metal kernels or
+GPU performance.
