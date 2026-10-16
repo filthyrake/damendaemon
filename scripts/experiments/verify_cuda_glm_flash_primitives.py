@@ -1,4 +1,7 @@
 """Tiny guarded CUDA Flash primitive gate against independent scalar equations."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from pathlib import Path
 from scripts.experiments.q5_cuda_oracle import require_guard

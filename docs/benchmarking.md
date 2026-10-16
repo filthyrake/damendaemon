@@ -2,8 +2,11 @@
 
 Run qualification and benchmark commands without Python optimization (`-O`,
 `-OO`, or `PYTHONOPTIMIZE`). Root `verify_*`, `benchmark_*`, and `compare_*` scripts with assertion-based
-acceptance checks reject optimized execution before imports or setup, so disabled checks cannot produce
-a passing qualification report.
+acceptance checks, and all assertion-bearing scripts under `scripts/experiments/`,
+reject optimized execution before imports or setup. This preserves device-count
+and numerical gates as well as report acceptance checks. The CPU guard test
+executes only each isolated guard prefix at optimization levels 0, 1 and 2;
+it never imports or runs the experiments.
 
 The `CPU contracts` GitHub workflow runs an explicit dependency-free test list on
 GitHub-hosted Python 3.11 and 3.12, in normal and optimized modes. It covers

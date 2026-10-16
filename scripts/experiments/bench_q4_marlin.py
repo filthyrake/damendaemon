@@ -1,4 +1,7 @@
 """Independent real-projection gate for experimental Q4_0 Marlin execution."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

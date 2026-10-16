@@ -1,4 +1,7 @@
 """Guarded range-loaded CUDA stages against whole CPU models; one physical GPU."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from pathlib import Path
 import tempfile

@@ -4,6 +4,9 @@ Run from the repository root with explicit CUDA UUIDs. Startup/capture is
 excluded. The four server launches are counterbalanced; no other GPU test may
 run concurrently. Worker mode also supports a bounded cross-host launch.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

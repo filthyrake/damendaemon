@@ -1,4 +1,7 @@
 """Bounded CUDA Flash linear layer gate; synthetic equations, not model proof."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from pathlib import Path
 from unittest.mock import patch

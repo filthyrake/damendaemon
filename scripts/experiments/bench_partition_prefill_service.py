@@ -3,6 +3,9 @@
 Select exactly two GPU UUIDs and run GPU jobs sequentially. The idle coalescing
 window is identical in both modes (zero by default). Startup/capture is excluded.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

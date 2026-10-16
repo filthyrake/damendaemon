@@ -1,4 +1,7 @@
 """Tiny CUDA learned-pool selection gate with scalar score and padding controls."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import math
 from pathlib import Path

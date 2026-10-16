@@ -1,4 +1,7 @@
 """Real GPU dispatch-shape experiment, separate from model/server performance."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

@@ -8,12 +8,14 @@ class QualificationOptimizationTests(unittest.TestCase):
     def test_assert_based_scripts_require_normal_python_before_imports(self):
         root=Path(__file__).resolve().parents[1]/'scripts'
         checked=0
-        for path in sorted(root.glob('*.py')):
-            if not path.name.startswith(('verify_','benchmark_','compare_')):continue
+        paths = [path for path in root.glob('*.py')
+                 if path.name.startswith(('verify_','benchmark_','compare_'))]
+        paths.extend((root/'experiments').rglob('*.py'))
+        for path in sorted(paths):
             tree=ast.parse(path.read_text(),filename=str(path))
             if not any(isinstance(node,ast.Assert) for node in ast.walk(tree)):continue
             checked+=1
-            with self.subTest(script=path.name):
+            with self.subTest(script=str(path.relative_to(root))):
                 offset=0
                 if (isinstance(tree.body[0],ast.Expr) and isinstance(tree.body[0].value,ast.Constant)
                         and isinstance(tree.body[0].value.value,str)):offset=1

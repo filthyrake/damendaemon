@@ -1,4 +1,7 @@
 """Guarded tiny CUDA DeepSeek blocks against decoded CPU controls."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from pathlib import Path
 from unittest.mock import patch

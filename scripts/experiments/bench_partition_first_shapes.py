@@ -1,4 +1,7 @@
 """Fresh-process/private-Triton-cache first-shape latency; host files may be cached."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

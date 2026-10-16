@@ -1,4 +1,7 @@
 """Matched model-level row-bound experiment; no HTTP/network throughput claim."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import hashlib

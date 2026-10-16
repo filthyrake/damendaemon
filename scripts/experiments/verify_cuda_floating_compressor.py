@@ -1,4 +1,7 @@
 """Tiny CUDA compressor projection/pool/norm/RoPE and explicit cache simulations."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import math
 from pathlib import Path

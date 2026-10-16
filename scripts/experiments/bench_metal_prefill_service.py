@@ -1,4 +1,7 @@
 """Counterbalanced real HTTP comparison of old and bounded Metal prefill policies."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

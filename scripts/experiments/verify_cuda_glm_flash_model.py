@@ -1,4 +1,7 @@
 """Tiny mixed packed CUDA Flash logits/state gate, no official-model claim."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from pathlib import Path
 from unittest.mock import patch

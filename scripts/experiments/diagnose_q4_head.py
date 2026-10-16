@@ -4,6 +4,9 @@ Diagnostic only: temporary dense head copies are never used by serving or fed
 back into KV state. The unchanged native result advances the teacher-forced
 trace. This is not a speed benchmark or an alternative qualification tolerance.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

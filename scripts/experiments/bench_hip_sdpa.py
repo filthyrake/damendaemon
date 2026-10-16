@@ -5,6 +5,9 @@ Compare both against CPU FP32 math, record selected operators and ABBA timings.
 Primary context: https://github.com/pytorch/pytorch/blob/main/torch/testing/_internal/common_cuda.py
 The upstream experimental gate motivates a probe, not a support/performance claim.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 import os

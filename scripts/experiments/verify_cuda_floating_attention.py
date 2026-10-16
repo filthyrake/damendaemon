@@ -1,4 +1,7 @@
 """Guarded tiny DeepSeek attention composition; no model/performance qualification."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 from pathlib import Path
 from unittest.mock import patch
