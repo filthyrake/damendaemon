@@ -1,4 +1,4 @@
-"""Independent BERT/XLM-RoBERTa embeddings and BERT/XLM-RoBERTa relevance scores."""
+"""Independent BERT and RoBERTa-family embeddings and relevance scores."""
 from .config import read_config, _positive_number
 from .floating_parameter import require_floating
 from .safetensor_header import parse_metadata_json
@@ -41,7 +41,8 @@ def config(path):
     c = read_config(path/'config.json')
     family=c.get('model_type')
     architectures={'bert':(['BertModel'],['BertForSequenceClassification']),
-        'xlm-roberta':(['XLMRobertaModel'],['XLMRobertaForSequenceClassification'])}
+        'xlm-roberta':(['XLMRobertaModel'],['XLMRobertaForSequenceClassification']),
+        'roberta':(['RobertaModel'],['RobertaForSequenceClassification'])}
     if (not isinstance(family,str) or family not in architectures or c.get('architectures') not in architectures[family]
             or c.get('is_decoder', False) or c.get('add_cross_attention', False)
             or c.get('position_embedding_type', 'absolute') != 'absolute'
@@ -58,9 +59,9 @@ def config(path):
         raise ValueError('invalid encoder normalization epsilon')
     if type(c.get('pad_token_id')) is not int or not 0 <= c['pad_token_id'] < c['vocab_size']:
         raise ValueError('encoder requires a valid padding token')
-    capacity=c['max_position_embeddings']-(c['pad_token_id']+1 if family=='xlm-roberta' else 0)
+    capacity=c['max_position_embeddings']-(c['pad_token_id']+1 if family in ('roberta','xlm-roberta') else 0)
     if capacity<=0:raise ValueError('invalid encoder position capacity')
-    if c['architectures'] not in (['BertModel'],['XLMRobertaModel']):
+    if c['architectures'] not in (['BertModel'],['XLMRobertaModel'],['RobertaModel']):
         labels=c.get('num_labels',len(c.get('id2label',{})))
         if (type(labels) is not int or labels!=1 or c.get('problem_type') not in (None,'regression')
                 or c.get('sbert_ce_default_activation_function','torch.nn.modules.linear.Identity')!='torch.nn.modules.linear.Identity'):
@@ -163,7 +164,7 @@ class EncoderWeights:
             with safe_open(str(file),framework='pt',device='cpu') as reader:
                 for name in reader.keys():
                     if used_tensor(name,self.task):
-                        prefix='roberta.' if self.config['model_type']=='xlm-roberta' else 'bert.'
+                        prefix='roberta.' if self.config['model_type'] in ('roberta','xlm-roberta') else 'bert.'
                         key=name.removeprefix(prefix) if self.task=='rerank' else name
                         if key in state:raise ValueError('duplicate encoder checkpoint tensor')
                         state[key] = require_floating(reader.get_tensor(name),name).float()
@@ -194,7 +195,7 @@ class EncoderWeights:
             for name,shape in (('pooler.dense.weight',(h,h)),('pooler.dense.bias',(h,)),
                     ('classifier.weight',(1,h)),('classifier.bias',(1,))):
                 source=name
-                if self.config['model_type']=='xlm-roberta':
+                if self.config['model_type'] in ('roberta','xlm-roberta'):
                     source=name.replace('pooler.dense.','classifier.dense.') if name.startswith('pooler.') else name.replace('classifier.','classifier.out_proj.')
                 w[name]=take(source,shape)
         if state:raise ValueError('unexpected encoder checkpoint tensors')
@@ -307,7 +308,7 @@ class EncoderExecutor:
             return F.layer_norm(value,(c['hidden_size'],),w[name+'.weight'],w[name+'.bias'],c['layer_norm_eps'])
         def linear(value,name):return F.linear(value.to(self.compute_dtype),w[name+'.weight'],w[name+'.bias'])
         type_embeddings=w['type'][0] if types is None else F.embedding(types,w['type'])
-        if c['model_type']=='xlm-roberta':
+        if c['model_type'] in ('roberta','xlm-roberta'):
             nonpadding=ids.ne(c['pad_token_id']).int()
             positions=nonpadding.cumsum(1,dtype=torch.int32)*nonpadding+c['pad_token_id']
             x=norm(F.embedding(ids,w['embed'])+type_embeddings+F.embedding(positions.long(),w['position']),'embed_norm')

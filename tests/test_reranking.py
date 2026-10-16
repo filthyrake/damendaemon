@@ -69,3 +69,18 @@ class RerankingTests(unittest.TestCase):
                     {'architectures':['XLMRobertaForMaskedLM']},{'max_position_embeddings':2}):
                 path.write_text(json.dumps({**c,**change}))
                 with self.assertRaises(ValueError):dispatch(root)
+
+    def test_roberta_dispatch_and_unsupported_heads(self):
+        from dllm.models import config as dispatch
+        c={'model_type':'roberta','architectures':['RobertaForSequenceClassification'],
+           'hidden_size':8,'intermediate_size':16,'num_attention_heads':2,'num_hidden_layers':2,
+           'max_position_embeddings':514,'vocab_size':32,'type_vocab_size':1,
+           'hidden_act':'gelu','pad_token_id':1,'num_labels':1}
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'config.json';path.write_text(json.dumps(c))
+            self.assertEqual(dispatch(root)['task'],'rerank')
+            self.assertEqual(dispatch(root)['embedding_max_length'],512)
+            for change in ({'num_labels':2},{'architectures':['RobertaForMaskedLM']},
+                           {'is_decoder':True},{'max_position_embeddings':2}):
+                path.write_text(json.dumps({**c,**change}))
+                with self.subTest(change=change),self.assertRaises(ValueError):dispatch(root)

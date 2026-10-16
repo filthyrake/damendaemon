@@ -920,3 +920,10 @@ length cannot exceed `max_position_embeddings - pad_token_id - 1`.
 Independent CPU tests compare actual XLM-R checkpoints against Transformers
 across all pooling modes and mixed lengths. GPU performance and retrieval
 quality remain unqualified.
+
+The same native encoder also accepts standard `RobertaModel` sentence pipelines
+and one-output `RobertaForSequenceClassification` relevance checkpoints.
+RoBERTa shares the padding-offset context bound with XLM-R. Decoder variants,
+masked-language-model heads and multiclass classifiers remain unsupported.
+Tiny actual RoBERTa checkpoint tests cover pooled vectors and raw relevance
+scores against Transformers on CPU; this does not qualify GPU performance.
