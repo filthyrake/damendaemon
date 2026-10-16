@@ -133,7 +133,17 @@ class ReferenceRuntime:
             with cancellation_scope(self.stopping.is_set),closing(iterator) as stream:
                 for event in stream:
                     if self.stopping.is_set():raise BusyError('CPU reference runtime closed during generation')
-                    if 'finish_reason' in event:final=event
+                    if not isinstance(event,dict):raise RuntimeError('invalid CPU reference event')
+                    if final is not None:raise RuntimeError('CPU reference emitted an event after completion')
+                    if 'finish_reason' in event:
+                        usage=event.get('usage')
+                        if (not isinstance(event['finish_reason'],str) or not event['finish_reason']
+                                or not isinstance(usage,dict)
+                                or any(type(usage.get(key)) is not int or usage[key]<0
+                                       for key in ('prompt_tokens','completion_tokens'))):
+                            raise RuntimeError('invalid CPU reference completion result')
+                        # Detach metadata before resuming the runner for cleanup.
+                        final=dict(event,usage=dict(usage))
                     else:
                         output=dict(text=event.get('content',''))
                         if event.get('reasoning_content'):output['reasoning_content']=event['reasoning_content']

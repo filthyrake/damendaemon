@@ -69,6 +69,30 @@ class ReferenceServingTests(unittest.TestCase):
         return urlopen(Request(base+'/v1/chat/completions',data=json.dumps(body).encode(),
             headers={'Content-Type':'application/json'}),timeout=4)
 
+    def test_rejects_malformed_runner_terminal_sequences_and_releases_owner(self):
+        runtime,_=self.runtime('glm')
+        final=dict(finish_reason='stop',usage=dict(prompt_tokens=1,completion_tokens=1))
+        cases=[[],[final,final],[final,dict(content='late')],['not an event'],
+               [dict(final,finish_reason='')],[dict(final,usage=[])],
+               [dict(finish_reason='stop',usage=dict(prompt_tokens=1))],
+               [dict(final,usage=dict(prompt_tokens=True,completion_tokens=1))],
+               [dict(final,usage=dict(prompt_tokens=1,completion_tokens=-1))]]
+        for events in cases:
+            with self.subTest(events=events):
+                closed=threading.Event()
+                def stream(*args,**kwargs):
+                    try:yield from events
+                    finally:closed.set()
+                with patch.object(runtime.runner,'generate',side_effect=stream):
+                    with self.assertRaises(RuntimeError):
+                        list(runtime.generate('model',self.messages,2))
+                self.assertTrue(closed.is_set())
+                self.assertFalse(runtime.active)
+                self.assertFalse(runtime.lock.locked())
+                self.assertTrue(runtime.is_healthy())
+        # The rejected iterator must not poison the next request.
+        self.assertEqual(list(runtime.generate('model',self.messages,512))[-1]['finish_reason'],'stop')
+
     def test_http_all_families_reasoning_content_and_native_strict_tools(self):
         for family in ('glm','flash','deepseek'):
             runtime,model=self.runtime(family,tools=True);base=self.serve(runtime)
