@@ -17,6 +17,34 @@ from urllib.error import HTTPError
 from urllib.request import Request,urlopen
 
 
+PAIR_COUNTS=(1,4,16,64)
+CONCURRENCIES=(1,4)
+TRIALS=6
+
+
+def _coverage(report):
+    """Require every workload and measured trial emitted by this runner."""
+    expected=[(count,concurrency) for count in PAIR_COUNTS for concurrency in CONCURRENCIES]
+    rows=report.get('rows') if isinstance(report,dict) else None
+    if not isinstance(rows,list) or len(rows)!=len(expected):
+        raise ValueError('incomplete rerank workload coverage')
+    for row,(count,concurrency) in zip(rows,expected):
+        if (not isinstance(row,dict) or type(row.get('pairs_per_request')) is not int
+                or type(row.get('concurrency')) is not int
+                or (row['pairs_per_request'],row['concurrency'])!=(count,concurrency)):
+            raise ValueError('invalid rerank workload grid')
+        trials=row.get('trials')
+        if not isinstance(trials,list) or len(trials)!=TRIALS:
+            raise ValueError('incomplete rerank trial coverage')
+        for index,trial in enumerate(trials):
+            if not isinstance(trial,dict) or trial.get('warmup') is not (index==0):
+                raise ValueError('invalid rerank warmup sequence')
+            requests=trial.get('requests')
+            if (not isinstance(requests,list) or len(requests)!=concurrency
+                    or any(not isinstance(request,dict) or 'results' not in request for request in requests)):
+                raise ValueError('incomplete rerank request coverage')
+
+
 def _scores(results,count):
     """Validate complete per-document evidence before indexing or timing credit."""
     if type(count) is not int or count<1 or not isinstance(results,list) or len(results)!=count:
@@ -85,12 +113,12 @@ def main():
                     if not isinstance(result,dict):raise ValueError('invalid rerank response')
                     _scores(result.get('results'),len(documents))
                     return {'seconds':elapsed,'results':result['results'],'usage':result.get('usage')}
-                for count in (1,4,16,64):
+                for count in PAIR_COUNTS:
                     documents=(base_docs*16)[:count]
-                    for concurrency in (1,4):
+                    for concurrency in CONCURRENCIES:
                         trials=[]
                         with ThreadPoolExecutor(concurrency) as pool:
-                            for index in range(6):
+                            for index in range(TRIALS):
                                 start=time.perf_counter();requests=list(pool.map(request,[documents]*concurrency))
                                 elapsed=time.perf_counter()-start
                                 trials.append({'warmup':index==0,'seconds':elapsed,'pairs_per_second':count*concurrency/elapsed,
@@ -116,6 +144,7 @@ def main():
 
 def compare_reports(left,right):
     """Check every trial/request, including warmups, by original document index."""
+    _coverage(left);_coverage(right)
     assert left['query']==right['query'] and left['base_documents']==right['base_documents']
     assert left['model']==right['model'] and left['precision']==right['precision']
     assert left['gpu_uuid']==right['gpu_uuid']

@@ -260,3 +260,5 @@ Comparator logprob evidence requires typed token records with finite nonpositive
 The warm comparator validates every non-null usage envelope and rejects conflicting completion counts. Counts must be exact integers within the requested output budget. Null or empty intermediate usage and identical repeated counts are accepted; later metadata without a completion count cannot erase earlier validated usage.
 
 Reranker measurement collection and cross-report agreement require exactly one finite numeric score for every requested document index. Boolean, duplicate, missing, out-of-range, or non-integer indices and nonfinite scores fail before throughput or agreement reporting; result order may differ across engines.
+
+Reranker agreement also requires all eight workload rows (1/4/16/64 documents at concurrency 1/4), each with one warmup and five measured trials containing the expected request count. Empty or partial reports cannot pass agreement.
