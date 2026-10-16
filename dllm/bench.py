@@ -113,6 +113,30 @@ def events(lines, *, max_line_bytes=MAX_SSE_LINE_BYTES,
         yield "\n".join(data)
 
 
+def _tool_call_output(calls):
+    """Validate streaming function fragments; metadata alone is not output."""
+    if calls is None:
+        return False
+    if not isinstance(calls, list):
+        raise ValueError('invalid tool-call delta')
+    output = False
+    for call in calls:
+        if (not isinstance(call, dict) or type(call.get('index')) is not int
+                or call['index'] < 0
+                or (call.get('id') is not None and not isinstance(call['id'], str))
+                or call.get('type') not in (None, 'function')):
+            raise ValueError('invalid tool-call delta')
+        function = call.get('function')
+        if function is None:
+            continue
+        if (not isinstance(function, dict)
+                or any(function.get(key) is not None and not isinstance(function[key], str)
+                       for key in ('name', 'arguments'))):
+            raise ValueError('invalid tool-call function delta')
+        output = output or bool(function.get('name') or function.get('arguments'))
+    return output
+
+
 def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=None):
     payload = {
         "model": model,
@@ -152,15 +176,16 @@ def request_one(base_url, model, prompt, max_tokens, timeout, index, api_key=Non
                     raise ValueError("expected a single completion choice")
                 if any(not isinstance(choice.get("delta", {}), dict) for choice in choices):
                     raise ValueError("invalid completion delta")
+                has_output = False
                 for choice in choices:
                     delta = choice.get("delta", {})
                     if any(delta.get(key) is not None and not isinstance(delta[key], str)
                            for key in ("content", "reasoning_content", "reasoning")):
                         raise ValueError("invalid completion text delta")
-                has_output = any(
-                    any(choice.get("delta", {}).get(key) for key in
-                        ("content", "reasoning_content", "reasoning", "tool_calls"))
-                    for choice in choices)
+                    # Always validate tool fragments, even alongside text.
+                    tool_output = _tool_call_output(delta.get('tool_calls'))
+                    has_output = has_output or tool_output or any(
+                        delta.get(key) for key in ('content', 'reasoning_content', 'reasoning'))
                 if finished and has_output:
                     raise ValueError("output received after completion finish")
                 for choice in choices:

@@ -46,6 +46,9 @@ class Handler(BaseHTTPRequestHandler):
         if model.startswith('text-field:'):
             _, field, encoded = model.split(':', 2)
             chunks[1]['choices'][0]['delta'] = {field: json.loads(encoded)}
+        if model.startswith('tool-and-text:'):
+            chunks[1]['choices'][0]['delta'] = {'content':'visible',
+                'tool_calls':json.loads(model.split(':',1)[1])}
         if model == 'missing-finish':
             del chunks[3]
         elif model == 'invalid-finish':
@@ -294,6 +297,48 @@ class BenchTests(unittest.TestCase):
                 self.assertGreater(result.output_events, 0)
                 self.assertEqual(summarize([result], 1)['succeeded'], 0)
                 self.assertEqual(profile_summary([result], 1, profile)['qualifying_output_tokens'], 0)
+
+    def test_malformed_tool_deltas_cannot_qualify(self):
+        profile = dict(max_first_output_seconds=5, max_output_event_gap_seconds=5,
+                       min_request_output_tokens_per_second=.001)
+        invalid = [True, False, 1, 'call', {}, [None], [True], [{}],
+                   [{'index':True}], [{'index':-1}], [{'index':0,'id':1}],
+                   [{'index':0,'type':'custom'}], [{'index':0,'function':[]}],
+                   [{'index':0,'function':{'name':True}}],
+                   [{'index':0,'function':{'arguments':{}}}]]
+        for calls in invalid:
+            with self.subTest(calls=calls):
+                result = self.request('text-field:tool_calls:' + json.dumps(calls))
+                self.assertEqual(result.error, 'ValueError')
+                self.assertEqual(result.output_events, 0)
+                self.assertEqual(summarize([result], 1)['succeeded'], 0)
+                self.assertEqual(profile_summary([result], 1, profile)['qualifying_output_tokens'], 0)
+
+    def test_text_cannot_hide_invalid_tool_fragment(self):
+        result = self.request('tool-and-text:true')
+        self.assertEqual(result.error, 'ValueError')
+        self.assertEqual(result.output_events, 0)
+        self.assertEqual(summarize([result], 1)['succeeded'], 0)
+
+    def test_partial_function_deltas_count_only_semantic_output(self):
+        for calls in ([{'index':0,'id':'call_fixture','type':'function',
+                        'function':{'name':'lookup','arguments':''}}],
+                      [{'index':0,'function':{'name':None,'arguments':'{"x":'}}],
+                      [{'index':0,'function':{'arguments':'1}'}}]):
+            with self.subTest(calls=calls):
+                result = self.request('text-field:tool_calls:' + json.dumps(calls))
+                self.assertIsNone(result.error)
+                self.assertEqual(result.output_events, 2)
+                self.assertEqual(result.output_tokens, 7)
+        for calls in (None, [], [{'index':0}],
+                      [{'index':0,'id':'call_fixture','type':'function'}],
+                      [{'index':0,'id':None,'type':None,'function':None}],
+                      [{'index':0,'function':{'name':None,'arguments':''}}]):
+            with self.subTest(calls=calls):
+                result = self.request('text-field:tool_calls:' + json.dumps(calls))
+                self.assertIsNone(result.error)
+                self.assertEqual(result.output_events, 1)
+                self.assertEqual(result.output_event_gaps_seconds, [])
 
     def test_terminal_chunk_can_include_last_output_before_usage(self):
         for reason in ('stop', 'length', 'tool_calls'):

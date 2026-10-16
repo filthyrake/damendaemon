@@ -248,3 +248,5 @@ Atomic report publication validates the completed temporary file against the
 evidence. Invalid root values, key collisions introduced by JSON serialization,
 nonfinite values or oversized reports leave the previous file intact. This is
 atomic replacement, not an fsync or power-loss durability guarantee.
+
+Benchmark SSE accounting validates streamed function-tool envelopes before counting output. Malformed arrays, indices, types or function fields fail the request, including when accompanied by valid text. Only nonempty function name/argument fragments count as tool output; IDs and other metadata alone do not establish first output or an output gap. Partial argument strings remain allowed, including length-limited responses.
