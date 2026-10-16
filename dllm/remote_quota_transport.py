@@ -7,7 +7,6 @@ No listener is created until RemoteQuotaServer is explicitly constructed.
 from dataclasses import dataclass,field
 import ipaddress
 import json
-import math
 import re
 import secrets
 import socket
@@ -91,7 +90,8 @@ def _address(address,*,listening=False):
 
 
 def _timeout(value):
-    if type(value) not in (int,float) or not math.isfinite(value) or not 0<value<=30:raise ValueError('invalid quota timeout')
+    # Bound integers before float conversion; the range also excludes NaN/inf.
+    if type(value) not in (int,float) or not 0<value<=30:raise ValueError('invalid quota timeout')
     return float(value)
 
 

@@ -49,6 +49,7 @@ jobs:
             tests.test_checkpoint_json \
             tests.test_tokenizer_metadata \
             tests.test_stopping \
+            tests.test_quota_timeout \
             tests.test_bench
       - name: Optimized dependency-free contracts
         run: |
@@ -62,6 +63,7 @@ jobs:
             tests.test_checkpoint_json \
             tests.test_tokenizer_metadata \
             tests.test_stopping \
+            tests.test_quota_timeout \
             tests.test_bench
 
   runtime-integration:
