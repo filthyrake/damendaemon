@@ -136,6 +136,8 @@ class ModelWeights:
             self.eos.update(eos_ids(read_generation_config(generation).get('eos_token_id')))
         if not self.eos:
             raise ValueError('model needs at least one EOS token ID')
+        if any(token >= c['vocab_size'] for token in self.eos):
+            raise ValueError('EOS token IDs must be within the model vocabulary')
         from .weight_cache import configured_cache
         cache = configured_cache(self.path, c, self.quantization, files)
         self.weight_cache_status = 'disabled' if cache is None else 'miss'
