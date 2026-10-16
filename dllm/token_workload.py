@@ -1,6 +1,22 @@
 """Stable identity for ordered integer-token qualification workloads."""
 import hashlib
 import json
+from pathlib import Path
+
+
+def load_token_prompt(path, *, max_bytes=16*1024*1024, max_tokens=2**20):
+    """Read a bounded UTF-8 token array before starting comparison work."""
+    if type(max_bytes) is not int or max_bytes<1 or type(max_tokens) is not int or max_tokens<1:
+        raise ValueError('invalid token prompt limits')
+    with Path(path).open('rb') as source:
+        raw=source.read(max_bytes+1)
+    if len(raw)>max_bytes:raise ValueError('token prompt exceeds byte limit')
+    try:tokens=json.loads(raw.decode('utf-8'))
+    except RecursionError:raise ValueError('token prompt nesting is too deep') from None
+    if (not isinstance(tokens,list) or not 1<=len(tokens)<=max_tokens
+            or any(type(token) is not int or token<0 for token in tokens)):
+        raise ValueError('token prompt requires a bounded nonempty nonnegative integer array')
+    return tokens
 
 
 def token_workload_digest(prompts, output_tokens):

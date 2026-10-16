@@ -50,7 +50,7 @@ jobs:
             tests.test_tokenizer_metadata \
             tests.test_stopping \
             tests.test_quota_timeout \
-            tests.test_compare_llama tests.test_compare_rerank tests.test_compare_a2_preflight \
+            tests.test_compare_llama tests.test_compare_rerank tests.test_compare_a2_preflight tests.test_comparison_prompt_files \
             tests.test_bench
       - name: Optimized dependency-free contracts
         run: |
@@ -65,7 +65,7 @@ jobs:
             tests.test_tokenizer_metadata \
             tests.test_stopping \
             tests.test_quota_timeout \
-            tests.test_compare_llama tests.test_compare_rerank tests.test_compare_a2_preflight \
+            tests.test_compare_llama tests.test_compare_rerank tests.test_compare_a2_preflight tests.test_comparison_prompt_files \
             tests.test_bench
 
   runtime-integration:

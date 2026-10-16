@@ -11,6 +11,7 @@ import time
 from urllib.request import Request, urlopen
 
 from dllm.bench import events, _response_json, _tool_call_output
+from dllm.token_workload import load_token_prompt
 
 
 def _score_count(logprobs, requested_top):
@@ -61,10 +62,8 @@ def main():
     if args.max_tokens<2:parser.error('max tokens must be at least two')
     prompt_ids = None
     if args.prompt_token_ids:
-        with open(args.prompt_token_ids) as source:
-            prompt_ids = json.load(source)
-        if not isinstance(prompt_ids,list) or not prompt_ids or any(type(t) is not int or t < 0 for t in prompt_ids):
-            parser.error('prompt token file must contain a nonempty integer array')
+        try:prompt_ids = load_token_prompt(args.prompt_token_ids)
+        except (OSError,ValueError):parser.error('invalid or oversized prompt token file')
         args.raw = True
     if not 1 <= args.concurrency <= 8:
         parser.error("concurrency must be 1..8")

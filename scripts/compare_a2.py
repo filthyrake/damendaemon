@@ -16,6 +16,7 @@ import sys
 import time
 from urllib.request import urlopen
 from dllm.bench import llama_context
+from dllm.token_workload import load_token_prompt
 
 
 def main():
@@ -62,6 +63,9 @@ def main():
         parser.error('host memory budget must be finite and at least one byte')
     if (args.raw or args.prompt_token_ids) and args.top_logprobs is not None:
         parser.error('logprob benchmark currently requires chat completion')
+    if args.prompt_token_ids:
+        try:load_token_prompt(args.prompt_token_ids,max_tokens=args.context-args.max_tokens)
+        except (OSError,ValueError):parser.error('invalid or over-context prompt token file')
     root = Path.cwd()
     uuid = 'GPU-1b29c7c8-46b1-6a03-2ab7-a47b5b93a283'
     if os.environ.get('CUDA_VISIBLE_DEVICES') != uuid:

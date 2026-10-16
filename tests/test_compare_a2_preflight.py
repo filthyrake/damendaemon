@@ -24,7 +24,7 @@ class ComparisonPreflightTests(unittest.TestCase):
 
     def test_valid_options_reach_workspace_boundary(self):
         for args in ([],['--context','1048576','--max-tokens','2','--startup-timeout','86400','--host-gib','0.000001'],
-                     ['--raw'],['--prompt-token-ids','unread.json'],['--top-logprobs','0']):
+                     ['--raw'],['--top-logprobs','0']):
             with self.subTest(args=args),patch('sys.argv',['compare',*args]), \
                     patch.object(compare_a2.Path,'cwd',side_effect=RuntimeError('workspace boundary')):
                 with self.assertRaisesRegex(RuntimeError,'workspace boundary'):compare_a2.main()

@@ -264,3 +264,5 @@ Reranker measurement collection and cross-report agreement require exactly one f
 Reranker agreement also requires all eight workload rows (1/4/16/64 documents at concurrency 1/4), each with one warmup and five measured trials containing the expected request count. Empty or partial reports cannot pass agreement.
 
 The isolated A2 comparison runner validates options before workspace reads or engine startup: context is 1–1,048,576 tokens, requested output is at least two tokens and smaller than context, startup timeout is 1–86,400 seconds, and the host budget must convert to a finite positive byte count. Raw/token-ID prompts cannot request the chat-only logprob comparison. These checks do not establish model-specific context support or available memory.
+
+Comparison token prompt files are read as bounded UTF-8 JSON arrays (16 MiB and 1,048,576 tokens maximum) of nonnegative integer IDs. The A2 runner checks prompt plus requested output against context before workspace reads or engine startup; the HTTP comparator validates the file before requests. This preflight does not freeze a file against subsequent caller edits or validate IDs against a model vocabulary.
