@@ -251,3 +251,14 @@ class SamplingTests(unittest.TestCase):
             ordinary=greedy_tokens(logits)
             cached=greedy_tokens(logits,torch.tensor([1,0]))
         self.assertEqual(ordinary.tolist(),[1,-1]);self.assertEqual(cached.tolist(),[1,-1])
+
+    def test_scored_greedy_failure_never_publishes_packets(self):
+        for all_scored in (False,True):
+            for bad in (float('nan'),float('inf'),-float('inf')):
+                samplers=[Sampler(Sampling()),Sampler(Sampling())]
+                samplers[1].logprobs_top=1
+                if all_scored:samplers[0].logprobs_top=1
+                logits=torch.tensor([[1.,2.],[bad,bad]])
+                with self.subTest(all_scored=all_scored,bad=bad),self.assertRaisesRegex(ValueError,'non-finite'):
+                    sample_rows(logits,samplers)
+                self.assertTrue(all(s.last_logprobs is None for s in samplers))

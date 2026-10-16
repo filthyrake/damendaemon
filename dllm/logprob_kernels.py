@@ -34,7 +34,7 @@ def _finish(X,SELECTED,STATS,VALUES,IDS,OUT,N:tl.constexpr,PARTS:tl.constexpr,K:
     maximum=tl.max(maxima,0)
     normalizer=tl.log(tl.sum(totals*tl.exp(maxima-maximum),0))
     selected=tl.load(SELECTED+row)
-    value=tl.load(X+row*N+selected).to(tl.float32)
+    value=tl.load(X+row*N+selected,mask=(selected>=0)&(selected<N),other=float('nan')).to(tl.float32)
     base=row*(K+1)*2
     tl.store(OUT+base,selected.to(tl.float32))
     tl.store(OUT+base+K+1,(value-maximum)-normalizer)

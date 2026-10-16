@@ -135,3 +135,9 @@ class LogprobTests(unittest.TestCase):
         self.assertEqual(b''.join(bytes(text.token(i)[1]) for i in range(3)).decode(),'€')
         tokenizer.decoder=decoders.WordPiece()
         self.assertIsNone(TokenText(tokenizer).token(0)[1])
+
+    def test_selected_out_of_range_fails_without_unchecked_gather(self):
+        from dllm.logprobs import score_rows
+        for selected in (-1,3,2**40):
+            with self.subTest(selected=selected),self.assertRaisesRegex(ValueError,'non-finite'):
+                score_rows(torch.tensor([[1.,2.,3.]]),torch.tensor([selected]),[1])

@@ -36,7 +36,9 @@ def score_rows(logits,selected,tops):
     values=torch.log_softmax(logits.float(),dim=-1)
     best,ids=values.topk(min(max(tops),values.shape[-1]),dim=-1)
     chosen=selected.reshape(-1,1)
-    numbers=torch.cat((values.gather(1,chosen),best),dim=1).cpu().tolist()
+    valid=(chosen>=0)&(chosen<values.shape[-1])
+    chosen_values=values.gather(1,chosen.clamp(0,values.shape[-1]-1)).masked_fill(~valid,float('nan'))
+    numbers=torch.cat((chosen_values,best),dim=1).cpu().tolist()
     token_ids=torch.cat((chosen,ids),dim=1).cpu().tolist()
     result=[]
     for row,ids,top in zip(numbers,token_ids,tops):
