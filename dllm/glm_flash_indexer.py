@@ -96,7 +96,9 @@ class _FlashIndexer:
                 if complete:
                     # Only complete visible pools enter scoring; no future pool
                     # contributes even when the cache contains a full prefill.
-                    scores=(q[batch,token]@pooled[:complete].T/(d**.5)).relu()
+                    scores=q[batch,token]@pooled[:complete].T/(d**.5)
+                    _finite(scores)
+                    scores=scores.relu()
                     scores=(scores*head_weights[batch,token,:,None]).sum(0);_finite(scores)
                     selected=torch.argsort(scores,descending=True,stable=True)[:self.top_k//p]
                     raw=indices[selected].flatten();result[batch,token,:raw.numel()]=raw

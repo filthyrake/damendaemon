@@ -14,6 +14,21 @@ def indexer(**options):
 
 
 class FlashIndexerTests(unittest.TestCase):
+    def test_visible_dot_overflow_rejected_before_relu(self):
+        c=indexer();c.weights['wq_b.weight'].fill_(1)
+        hidden=torch.ones(1,1,4);low=torch.full((1,1,2),1e20)
+        gates=torch.zeros(1,2,3);positions=torch.tensor([[1]])
+        for sign in (-1,1):
+            with self.subTest(sign=sign),self.assertRaisesRegex(ValueError,'nonfinite'):
+                c.select(hidden,low,torch.full((1,2,3),sign*1e20),gates,positions)
+
+    def test_future_pool_dots_are_not_evaluated(self):
+        c=indexer();c.weights['wq_b.weight'].fill_(1)
+        hidden=torch.ones(1,1,4);low=torch.full((1,1,2),1e20)
+        keys=torch.ones(1,4,3);keys[:,2:]=1e20
+        actual=c.select(hidden,low,keys,torch.zeros_like(keys),torch.tensor([[1]]))
+        self.assertEqual(actual.tolist(),[[[0,1,-1]]])
+
     def test_learned_pool_and_scores_independent_scalar_control(self):
         c=indexer();hidden=torch.randn(1,7,4);low=torch.randn(1,7,2);keys,gates=c.project_keys(hidden)
         raw=hidden@c.weights['wk.weight'].T
