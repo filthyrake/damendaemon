@@ -507,6 +507,8 @@ class Runtime:
         """
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be a positive integer")
+        if max_tokens > self.context:
+            raise ValueError('max_tokens exceeds configured context')
         if raw_prompt is not None:
             from .prompts import validate_raw
             raw_prompt = validate_raw(raw_prompt)

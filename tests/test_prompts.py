@@ -11,6 +11,7 @@ class PromptTests(unittest.TestCase):
         from dllm.stopping import stop_sequences
         from dllm.tool_calls import validate_messages
         runtime = Runtime.__new__(Runtime)
+        runtime.context = 1024
         runtime.session = Mock(side_effect=AssertionError('must not activate model'))
         for text in ('\ud800', '\udfff', 'prefix\ud800suffix'):
             for call in (lambda: validate_raw(text),

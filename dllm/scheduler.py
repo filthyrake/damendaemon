@@ -100,6 +100,7 @@ class BatchedRuntime:
         if selected_split() is not None and (prefill_chunk_size or prefix_cache_tokens):
             raise ValueError('layer partition does not yet support chunked prefill or prefix snapshots')
         self.runtime = Runtime(models, batch_size=batch_size, queue_size=queue_size, queue_timeout=queue_timeout, **kwargs)
+        self.context = kwargs.get('context', 1024)
         if prefill_chunk_size or prefix_cache_tokens:
             from .device import selected_device
             if selected_device()=='cuda':
@@ -236,6 +237,8 @@ class BatchedRuntime:
             raise ValueError("unknown model")
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError("max_tokens must be positive")
+        if max_tokens > self.context:
+            raise ValueError('max_tokens exceeds configured context')
         sampler = Sampler(Sampling(temperature, top_p, top_k, seed, presence_penalty, frequency_penalty, repetition_penalty, logit_bias))
         stops = stop_sequences(stop)
         from .tool_calls import prepare_tools

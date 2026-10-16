@@ -23,6 +23,7 @@ class NativeCompletionTests(unittest.TestCase):
                     def prefill(self,prompt):return torch.tensor([[0.,1.,2.]])
                 executor=Executor();executor.model=model
                 runtime=Runtime.__new__(Runtime)
+                runtime.context=1024
                 @contextmanager
                 def session(alias):
                     state['session']=True
