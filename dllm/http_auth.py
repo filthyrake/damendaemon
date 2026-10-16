@@ -127,7 +127,7 @@ class AuthPolicy:
                                             value.get('max_reserved_output_tokens'), value.get('max_prefix_cache_tokens'),
                                             value.get('max_requests_per_minute'), value.get('max_output_tokens_per_minute'),value.get('decode_weight',1),value.get('prefill_weight',1)))
                 clients = tuple(parsed)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError, RecursionError):
                 raise ValueError('DLLM_CLIENT_KEYS requires valid distinct clients with key/max_inflight and optional models/max_reserved_output_tokens/max_prefix_cache_tokens/max_requests_per_minute/max_output_tokens_per_minute/decode_weight/prefill_weight') from None
         return cls(os.environ.get('DLLM_API_KEY'), os.environ.get('DLLM_ADMIN_API_KEY'), clients)
 

@@ -134,6 +134,24 @@ class AuthPolicyTests(unittest.TestCase):
         self.assertIn('DLLM_API_KEY', errors.getvalue())
         self.assertNotIn('short', errors.getvalue())
 
+    def test_deep_client_configuration_is_sanitized_before_model_resolution(self):
+        payload = '{"client":{"key":"' + API_KEY + '","max_inflight":1,"models":' + '['*10000 + '0' + ']'*10000 + '}}'
+        with patch.dict('os.environ', {'DLLM_CLIENT_KEYS':payload}, clear=True):
+            with self.assertRaisesRegex(ValueError, 'DLLM_CLIENT_KEYS') as raised:
+                AuthPolicy.from_env()
+            self.assertNotIn(API_KEY, str(raised.exception))
+            self.assertTrue(raised.exception.__suppress_context__)
+            errors = io.StringIO()
+            with patch('sys.argv', ['dllm','serve','--model','a=Qwen/not-downloaded']), \
+                    patch('sys.stderr', errors), patch('dllm.cli.resolve_model') as resolve:
+                with self.assertRaises(SystemExit) as exit_status:
+                    main()
+                self.assertEqual(exit_status.exception.code, 2)
+                resolve.assert_not_called()
+            self.assertIn('DLLM_CLIENT_KEYS', errors.getvalue())
+            self.assertNotIn(API_KEY, errors.getvalue())
+            self.assertNotIn('Traceback', errors.getvalue())
+
     def test_authenticated_redirect_does_not_reach_second_endpoint(self):
         calls = []
         class Redirect(BaseHTTPRequestHandler):
