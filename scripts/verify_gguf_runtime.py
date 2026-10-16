@@ -26,6 +26,11 @@ from dllm.runtime import make_executor
 from dllm.prompts import decode_output
 
 
+def require_gate(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
 def decoded_trace(model, tokens):
     stop = next((i for i, token in enumerate(tokens) if token in model.eos), None)
     visible = tokens if stop is None else tokens[:stop+1]
@@ -54,9 +59,9 @@ def main():
         boundary_prompts = [(corpus * ((length + len(corpus) - 1)//len(corpus)))[:length]
                             for length in (window-1, window, window+1) if length > 0]
     for name, value in reference.weights.items():
-        assert torch.equal(value, source.weights[name]), name
+        require_gate(torch.equal(value, source.weights[name]), name)
     for name, value in reference.scales.items():
-        assert torch.equal(value, source.scales[name]), name
+        require_gate(torch.equal(value, source.scales[name]), name)
     report = dict(gguf=str(Path(args.gguf).resolve()), hf=str(Path(args.hf).resolve()), device=device_name(),
                   torch=torch.__version__, quantization=source.quantization,
                   weights_exact=len(reference.weights), scales_exact=len(reference.scales),
@@ -86,14 +91,14 @@ def main():
                     if 'rope_factors' in source.weights:
                         # Llama GGUF stores explicit FP32 divisors. Their rounded
                         # inverse schedule differs slightly from HF's formula.
-                        assert absolute < .5 and relative < .01 and expected.argmax(-1).item()==actual.argmax(-1).item(), (graph,length,errors[-1])
+                        require_gate(absolute < .5 and relative < .01 and expected.argmax(-1).item()==actual.argmax(-1).item(), (graph,length,errors[-1]))
                     else:
-                        assert equal, (graph, length, absolute)
+                        require_gate(equal, (graph, length, absolute))
                     token = expected.argmax(-1).item(); output.append(token)
                     if len(output) < steps:
                         expected, _ = a.decode(token); actual, _ = b.decode(token)
                 decoded = dict(gguf=decoded_trace(source, output), hf=decoded_trace(reference, output))
-                if graph:assert decoded == expected_http[label]
+                if graph:require_gate(decoded == expected_http[label], 'graph and eager decoded traces differ')
                 else:expected_http[label] = decoded
                 report['cases'].append(dict(graph=graph, case=label, prompt_tokens=length, prompt_ids=ids,
                                            qualified_steps=steps, exact_logit_steps=exact, errors=errors, output_tokens=output))
@@ -124,8 +129,8 @@ def main():
                     with post(route, body) as response: return json.load(response)
                 def check_trace(response, label, alias, chat=False):
                     text = response['choices'][0]['message']['content'] if chat else response['choices'][0]['text']
-                    assert text == expected_http[label][alias]['text'], (label, alias, text, expected_http[label][alias])
-                    assert response['usage']['completion_tokens'] == expected_http[label][alias]['completion_tokens']
+                    require_gate(text == expected_http[label][alias]['text'], (label, alias, text, expected_http[label][alias]))
+                    require_gate(response['usage']['completion_tokens'] == expected_http[label][alias]['completion_tokens'], 'HTTP token count differs from decoded trace')
                 for alias, model, policy in (('gguf', args.gguf, 'none'), ('hf', args.hf, quantization)):
                     request('/v1/models/register', dict(model=alias, path=str(Path(model).resolve()), quantization=policy))
                 def chat(alias='gguf', **options):
@@ -137,25 +142,25 @@ def main():
                 hf_chat = other['choices'][0]['message']['content']
                 check_trace(other, 'chat-hf', 'hf', chat=True)
                 if not args.allow_tokenizer_differences:
-                    assert hf_chat == expected
+                    require_gate(hf_chat == expected, 'GGUF and HF chat outputs differ')
                 matched = request('/v1/completions', dict(model='hf', prompt=chat_inputs['gguf'],
                                   temperature=0, max_tokens=32))
                 check_trace(matched, 'chat-gguf', 'hf')
-                assert matched['usage'] == baseline['usage']
+                require_gate(matched['usage'] == baseline['usage'], 'matched-input usage differs')
                 restored = request('/v1/chat/completions', chat())
-                assert restored['choices'][0]['message']['content'] == expected
-                assert restored['dllm_timing']['source_tier'] == 'host'
+                require_gate(restored['choices'][0]['message']['content'] == expected, 'host restore changed output')
+                require_gate(restored['dllm_timing']['source_tier'] == 'host', 'restore did not use host cache')
                 with post('/v1/chat/completions', chat(stream=True)) as response:
                     chunks = list(events(response, require_terminated=True))
-                assert chunks[-1] == '[DONE]'
+                require_gate(bool(chunks) and chunks[-1] == '[DONE]', 'stream omitted DONE')
                 text = ''.join(c.get('delta', {}).get('content', '') for item in chunks[:-1] for c in json.loads(item)['choices'])
-                assert text == expected
+                require_gate(text == expected, 'stream output differs')
                 with ThreadPoolExecutor(2) as pool:
                     concurrent = list(pool.map(lambda _: request('/v1/chat/completions', chat()), range(2)))
-                assert all(r['choices'][0]['message']['content'] == expected for r in concurrent)
+                require_gate(all(r['choices'][0]['message']['content'] == expected for r in concurrent), 'concurrent output differs')
                 with post('/v1/chat/completions', chat(stream=True)) as response:
                     stream = events(response, require_terminated=True); next(stream); next(stream)
-                assert request('/v1/chat/completions', chat())['choices'][0]['message']['content'] == expected
+                require_gate(request('/v1/chat/completions', chat())['choices'][0]['message']['content'] == expected, 'cancellation recovery changed output')
                 boundary_checks = []
                 for ids in boundary_prompts:
                     body = dict(prompt=ids, temperature=0, max_tokens=min(8,args.context-len(ids)))
@@ -165,13 +170,13 @@ def main():
                     check_trace(first, f'boundary-{len(ids)}', 'gguf')
                     check_trace(other, f'boundary-{len(ids)}', 'hf')
                     if not args.allow_tokenizer_differences:
-                        assert target == other['choices'][0]['text']
-                    assert first['usage'] == other['usage'] and first['usage']['completion_tokens'] > 0
+                        require_gate(target == other['choices'][0]['text'], 'boundary outputs differ')
+                    require_gate(first['usage'] == other['usage'] and first['usage']['completion_tokens'] > 0, 'boundary usage differs or is empty')
                     with post('/v1/completions', dict(model='gguf', stream=True, **body)) as response:
                         chunks = list(events(response, require_terminated=True))
-                    assert chunks[-1] == '[DONE]'
+                    require_gate(bool(chunks) and chunks[-1] == '[DONE]', 'stream omitted DONE')
                     streamed = ''.join(c.get('text', '') for item in chunks[:-1] for c in json.loads(item)['choices'])
-                    assert streamed == target
+                    require_gate(streamed == target, 'boundary stream output differs')
                     boundary_checks.append(dict(prompt_tokens=len(ids), usage=first['usage'], text=target,
                                                 hf_text=other['choices'][0]['text'],
                                                 hf_gguf_text_equal=target == other['choices'][0]['text'],
@@ -186,16 +191,16 @@ def main():
                         check_trace(result, 'warm-raw', alias)
                         timing.append(dict(model=alias, seconds=elapsed, usage=result['usage'], text=result['choices'][0]['text']))
                 if args.allow_tokenizer_differences:
-                    assert len({json.dumps(r['usage'],sort_keys=True) for r in timing}) == 1
+                    require_gate(len({json.dumps(r['usage'],sort_keys=True) for r in timing}) == 1, 'timed trial usage differs')
                 else:
-                    assert len({r['text'] for r in timing}) == 1
+                    require_gate(len({r['text'] for r in timing}) == 1, 'timed trial outputs differ')
                 for alias in ('gguf', 'hf'):
                     status = request('/v1/models/unload', dict(model=alias, release_host=True))
-                assert status['host_cached_bytes'] == 0
-                assert all(m['residency'] == 'disk' for m in status['models'])
+                require_gate(status['host_cached_bytes'] == 0, 'unload retained host bytes')
+                require_gate(all(m['residency'] == 'disk' for m in status['models']), 'unload retained resident models')
                 reloaded = request('/v1/chat/completions', chat())
-                assert reloaded['choices'][0]['message']['content'] == expected
-                assert reloaded['dllm_timing']['source_tier'] == 'disk'
+                require_gate(reloaded['choices'][0]['message']['content'] == expected, 'disk reload changed output')
+                require_gate(reloaded['dllm_timing']['source_tier'] == 'disk', 'reload did not use disk')
                 report['http'] = dict(registration=True, exact_chat=hf_chat == expected and chat_inputs['gguf'] == chat_inputs['hf'],
                     hf_chat_sample=hf_chat, exact_decoded_traces=True, stream=True, concurrency=True,
                     cancellation_recovery=True, host_restore=True, unload=True, disk_reload=True,
