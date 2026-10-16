@@ -215,7 +215,7 @@ class Runtime:
             if action in ('unload', 'remove'):
                 self._cleanup_failed_owners()
             if action == 'register':
-                import json
+                from .tokenizer_metadata import read_tokenizer_config
                 from tokenizers import Tokenizer
                 from .models import config as read_config, weight_bytes, is_gguf
                 from .model_path import canonical_model_path
@@ -237,9 +237,7 @@ class Runtime:
                         validate_override(chat_template, config)
                     if not is_gguf(candidate):
                         Tokenizer.from_file(str(candidate/'tokenizer.json'))
-                        tokenizer_config = json.loads((candidate/'tokenizer_config.json').read_text())
-                        if not isinstance(tokenizer_config, dict):
-                            raise ValueError('tokenizer configuration must be an object')
+                        tokenizer_config = read_tokenizer_config(candidate/'tokenizer_config.json')
                         # Match loaders that actually consume checkpoint chat templates.
                         if (config.get('task') not in ('embedding','rerank')
                                 and config.get('model_type') not in ('mamba','mamba2','t5')):

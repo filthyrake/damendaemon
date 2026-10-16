@@ -1,6 +1,5 @@
 """Strict host import for AWQ GEMM; kept separate from runtime dispatch gates."""
 from dataclasses import dataclass
-import json
 import math
 from pathlib import Path
 
@@ -9,6 +8,7 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 
 from .awq import Matrix, fuse, group_size
+from .tokenizer_metadata import read_tokenizer_config, read_generation_config
 from .config import decoder_config, eos_ids, read_config
 from .device import selected_device
 from .download import read_index
@@ -154,14 +154,14 @@ class AwqWeights(ModelWeights):
         self.quantization, self.weight_format = 'none', 'awq_gemm'
         self.weight_cache_status = 'disabled'
         tokenizer = Tokenizer.from_file(str(self.path/'tokenizer.json'))
-        tokenizer_config = json.loads((self.path/'tokenizer_config.json').read_text())
+        tokenizer_config = read_tokenizer_config(self.path/'tokenizer_config.json')
         template = tokenizer_config.get('chat_template')
         if template is None and (self.path/'chat_template.jinja').exists():
             template = (self.path/'chat_template.jinja').read_text()
         self.configure_tokenizer(tokenizer, template, tokenizer_config)
         self.eos = eos_ids(c.get('eos_token_id'))
         if (self.path/'generation_config.json').exists():
-            self.eos.update(eos_ids(json.loads((self.path/'generation_config.json').read_text()).get('eos_token_id')))
+            self.eos.update(eos_ids(read_generation_config(self.path/'generation_config.json').get('eos_token_id')))
         if not self.eos or any(token >= c['vocab_size'] for token in self.eos):
             raise ValueError('invalid AWQ EOS token IDs')
         vocabulary = tokenizer.get_vocab()

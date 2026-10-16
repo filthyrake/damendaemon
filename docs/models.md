@@ -755,3 +755,5 @@ The default weight cap deliberately cannot admit the full official GLM-5.3
 snapshot. No downloads, model registration or hardware jobs are started by this
 command. Full official-weight, tool, HTTP and long-context qualification remain
 separate open gates.
+
+Dense and AWQ checkpoint metadata readers bound `tokenizer_config.json` to 16 MiB (including added-token metadata) and `generation_config.json` to 1 MiB. Both require UTF-8 JSON objects with unique fields at every depth; excessive nesting is a validation error. Registration uses the same tokenizer metadata reader before weight inventory or alias publication. These metadata limits do not apply to the vocabulary file `tokenizer.json`.

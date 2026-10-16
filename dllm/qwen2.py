@@ -6,7 +6,6 @@ per-operation Python dispatch within a captured decode step; the host still
 stages metadata, replays the graph, and reads the selected token.
 """
 
-import json
 import math
 import os
 import subprocess
@@ -21,6 +20,7 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 from .chat_template import compile_template
 
+from .tokenizer_metadata import read_tokenizer_config, read_generation_config
 from .config import decoder_config, eos_ids, read_config
 from .rotary import inverse_frequencies, attention_factor
 
@@ -125,7 +125,7 @@ class ModelWeights:
             admit_checkpoint(files)
         self.max_context = max_context
         self.tokenizer = Tokenizer.from_file(str(self.path / "tokenizer.json"))
-        tokenizer_config = json.loads((self.path / "tokenizer_config.json").read_text())
+        tokenizer_config = read_tokenizer_config(self.path / "tokenizer_config.json")
         template = tokenizer_config.get("chat_template")
         if template is None and (self.path / "chat_template.jinja").exists():
             template = (self.path / "chat_template.jinja").read_text()
@@ -133,7 +133,7 @@ class ModelWeights:
         self.eos = eos_ids(c.get('eos_token_id'))
         generation = self.path / "generation_config.json"
         if generation.exists():
-            self.eos.update(eos_ids(json.loads(generation.read_text()).get('eos_token_id')))
+            self.eos.update(eos_ids(read_generation_config(generation).get('eos_token_id')))
         if not self.eos:
             raise ValueError('model needs at least one EOS token ID')
         from .weight_cache import configured_cache
