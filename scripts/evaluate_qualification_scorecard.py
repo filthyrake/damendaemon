@@ -15,7 +15,8 @@ def main(argv=None):
         with args.input.open('rb') as reader:raw=reader.read(16*1024**2+1)
         if len(raw)>16*1024**2:raise ValueError('scorecard input exceeds 16 MiB')
         def invalid_constant(value):raise ValueError('nonfinite JSON constant: '+value)
-        source=json.loads(raw,object_pairs_hook=_unique_fields,parse_constant=invalid_constant)
+        try:source=json.loads(raw,object_pairs_hook=_unique_fields,parse_constant=invalid_constant)
+        except RecursionError as error:raise ValueError('scorecard JSON nesting is too deep') from error
         result=evaluate_scorecard(source)
         result['verified_evidence_files']=verify_evidence(source,args.evidence_root)
         print(json.dumps(result,indent=2,allow_nan=False))

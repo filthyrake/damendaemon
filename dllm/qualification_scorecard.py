@@ -5,7 +5,7 @@ cannot establish that an experiment actually happened or that its reports are
 honest; it prevents missing/incomparable/proxy data from becoming a verdict.
 """
 import hashlib
-import math
+import sys
 from pathlib import Path
 import re
 
@@ -75,7 +75,7 @@ def _measurement(record,identity,phases):
     if not isinstance(record['metrics'],dict) or set(record['metrics'])-set(METRICS):raise ValueError('unknown scorecard metric')
     for name,value in record['metrics'].items():
         if value is None:continue
-        if type(value) not in (int,float) or not math.isfinite(value) or value<0:raise ValueError('invalid scorecard metric value')
+        if type(value) not in (int,float) or not 0<=value<=sys.float_info.max:raise ValueError('invalid scorecard metric value')
         if name in METRICS[:6] and value<=0:raise ValueError('throughput and measured latency must be positive')
     missing=[name for name in PINS if record['identity'][name]!=identity[name]]
     reasons=['incomparable identity: '+','.join(missing)] if missing else []

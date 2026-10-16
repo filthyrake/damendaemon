@@ -106,7 +106,7 @@ class QualificationScorecardTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'digest'):verify_evidence(document,root)
 
     def test_invalid_numbers_pins_duplicate_cells_and_metrics_fail(self):
-        for value in (True,-1,float('nan'),float('inf')):
+        for value in (True,-1,float('nan'),float('inf'),10**400):
             document=fixture();document['cells'][0]['measurement']['metrics']['decode_tokens_per_second']=value
             with self.assertRaises(ValueError):evaluate_scorecard(document)
         document=fixture();document['cells'][0]['identity']['model_revision']='main'
@@ -115,6 +115,22 @@ class QualificationScorecardTests(unittest.TestCase):
         with self.assertRaises(ValueError):evaluate_scorecard(document)
         document=fixture();document['cells'][0]['measurement']['metrics']['peak_allocated_bytes']=4096
         with self.assertRaises(ValueError):evaluate_scorecard(document)
+
+    def test_cli_rejects_oversized_metric_and_excessive_json_nesting(self):
+        document=fixture()
+        document['cells'][0]['measurement']['metrics']['decode_tokens_per_second']=10**400
+        cases=[json.dumps(document),'{"version":1,"cells":'+'['*10000+'0'+']'*10000+'}']
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);source=root/'input.json'
+            for index,raw in enumerate(cases):
+                with self.subTest(case=index):
+                    source.write_text(raw);out=io.StringIO();err=io.StringIO()
+                    with redirect_stdout(out),redirect_stderr(err),self.assertRaises(SystemExit) as caught:
+                        main([str(source),'--evidence-root',str(root)])
+                    self.assertEqual(caught.exception.code,2)
+                    self.assertEqual(out.getvalue(),'')
+                    self.assertIn('Scorecard rejected:',err.getvalue())
+                    self.assertNotIn('Traceback',err.getvalue())
 
     def test_bounded_cli_binds_hashes_and_rejects_missing_or_escaping_evidence(self):
         with tempfile.TemporaryDirectory() as temp:
