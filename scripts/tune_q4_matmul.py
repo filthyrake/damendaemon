@@ -1,4 +1,7 @@
 """Measure contiguous packed loads with paired low/high Tensor Core products for Q4 matrix products."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import torch
 import triton as tr

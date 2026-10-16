@@ -1,8 +1,8 @@
 # Benchmarking and evidence
 
 Run qualification and benchmark commands without Python optimization (`-O`,
-`-OO`, or `PYTHONOPTIMIZE`). Root `verify_*`, `benchmark_*`, and `compare_*` scripts with assertion-based
-acceptance checks, and all assertion-bearing scripts under `scripts/experiments/`,
+`-OO`, or `PYTHONOPTIMIZE`). All assertion-bearing root scripts, including benchmark, probe and tuning entry
+points, and scripts under `scripts/experiments/`,
 reject optimized execution before imports or setup. This preserves device-count
 and numerical gates as well as report acceptance checks. The CPU guard test
 executes only each isolated guard prefix at optimization levels 0, 1 and 2;

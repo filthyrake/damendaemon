@@ -1,4 +1,7 @@
 """A2 image encoder graph candidate: changed-pixel proof and warm ABBA timings."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import hashlib
 import json

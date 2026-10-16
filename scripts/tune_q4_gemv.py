@@ -1,4 +1,7 @@
 """A2-only tile sweep; every candidate must meet the independent matrix gate."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import json
 import torch
 import triton as tr

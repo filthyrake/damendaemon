@@ -3,6 +3,9 @@
 Diagnostic only: changes executor fields after constructing an eager executor.
 No production policy is enabled by this experiment.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import json

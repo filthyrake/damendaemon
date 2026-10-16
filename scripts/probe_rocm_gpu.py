@@ -3,6 +3,9 @@
 Run in an isolated ROCm PyTorch environment with one explicitly selected device.
 No package installation, driver configuration or service changes are performed.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import hashlib

@@ -4,6 +4,9 @@ Oracle proposals are an unattainable acceptance upper bound, never a real-world
 speed claim. Every block evaluates the complete target vocabulary. CUDA graph
 queries share one KV slot but have distinct causal positions.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import json
 import os

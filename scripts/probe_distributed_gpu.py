@@ -3,6 +3,9 @@
 Launch one process on each explicitly selected GPU. Socket and IB are forced
 transport choices; RDMA success alone does not establish GPUDirect RDMA.
 """
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import faulthandler
 import gc

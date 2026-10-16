@@ -1,4 +1,7 @@
 """Check prepared and resident weights for optional Metal Q8 decoders."""
+if not __debug__:
+    raise RuntimeError("Qualification assertions are disabled; run Python without -O or -OO.")
+
 import argparse
 import gc
 import json
