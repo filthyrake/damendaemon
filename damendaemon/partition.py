@@ -6,7 +6,8 @@ poisons the whole executor until residency replaces it.
 """
 import torch
 from .prefill import groups
-from .layer_stage import LayerStage,shard_model
+from .layer_stage import LayerStage
+from .stage_rebind import compatible_shard,copy_stage_weights,commit_stage_binding
 from .partition_policy import validate,rebind_enabled,packed_prefill_enabled
 
 
@@ -63,40 +64,21 @@ class PartitionExecutor:
             return False
         try:validate(model,self.stages[0].layer_range[1],self.max_batch)
         except ValueError:return False
-        def aliases(values):
-            first={}
-            return {name:first.setdefault(id(value),name) for name,value in values.items()}
-        for stage in self.stages:
-            shard=shard_model(model,*stage.layer_range)
-            if stage.w.keys()!=shard.weights.keys() or stage.model.scales.keys()!=shard.scales.keys():return False
-            if aliases(stage.w)!=aliases(shard.weights):return False
-            existing_scales={name:stage.quant_linear.scales[id(stage.w[name])] for name in shard.scales}
-            if aliases(existing_scales)!=aliases(shard.scales):return False
-            for name,target in stage.w.items():
-                source=shard.weights[name]
-                if target.shape!=source.shape or target.dtype!=source.dtype:return False
-            for name,source in shard.scales.items():
-                target=stage.quant_linear.scales[id(stage.w[name])]
-                if target.shape!=source.shape or target.dtype!=source.dtype:return False
-        return True
+        return all(compatible_shard(stage,model) is not None for stage in self.stages)
 
     @torch.inference_mode()
     def rebind(self,model):
         if not self.can_rebind(model):raise ValueError('incompatible partition weight rebind')
         try:
             for device in range(2):torch.cuda.synchronize(device)
-            for device,stage in enumerate(self.stages):
-                shard=shard_model(model,*stage.layer_range)
+            shards=[compatible_shard(stage,model) for stage in self.stages]
+            for device,(stage,shard) in enumerate(zip(self.stages,shards)):
                 with torch.cuda.device(device):
-                    for name,target in stage.w.items():target.copy_(shard.weights[name])
-                    for name,source in shard.scales.items():
-                        stage.quant_linear.scales[id(stage.w[name])].copy_(source)
-                    if stage.q4_linear is not None:stage.q4_linear.refresh()
+                    copy_stage_weights(stage,shard)
                     torch.cuda.synchronize(device)
-                stage.model=shard
-                stage.c=shard.config
-                stage.lengths=[0]*self.max_batch
             # Commit metadata only after every device has finished its copies.
+            for stage,shard in zip(self.stages,shards):
+                commit_stage_binding(stage,shard,self.max_batch)
             self.model=model
             self.lengths=[0]*self.max_batch
             self.length=0

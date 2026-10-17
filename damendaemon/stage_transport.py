@@ -48,13 +48,13 @@ class StageChannel:
         # and observe the collective result before any activation transfer.
         return sent_words if self.rank == 0 else self.header.cpu().tolist()
 
-    def finish(self, command):
+    def finish(self, command, *, success=True):
         try:
             if self.state.pending != command or self.state.failed:
                 raise RuntimeError('stage completion does not own pending work')
             # All work must complete before the peer may reuse a released slot.
             torch.cuda.synchronize()
-            self.acknowledgement.fill_(1)
+            self.acknowledgement.fill_(int(success))
             dist.all_reduce(self.acknowledgement, op=dist.ReduceOp.MIN)
             # wait() is not a host completion fence for asynchronous NCCL work.
             # Reading the result also catches a failed collective before commit.

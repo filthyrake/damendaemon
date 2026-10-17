@@ -7,13 +7,13 @@ execution or transport failure poisons the epoch and requires fresh workers.
 """
 from dataclasses import dataclass
 
-MAGIC = 0x444C4C4D
+MAGIC = 0x44414D4E
 VERSION = 5
 # Reserved output payload for an output-stage exception with a usable transport.
 FAILED_TOKEN = -1
 MAX_SLOTS = 4
 HEADER_WORDS = 7 + 3 * MAX_SLOTS
-PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK = range(1, 8)
+PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK, SWITCH = range(1, 9)
 MAX_INTEGER = (1 << 63) - 1
 
 
@@ -49,7 +49,7 @@ def decode(words):
     magic, version, epoch, sequence, operation, rows, count = words[:7]
     if magic != MAGIC or version != VERSION:
         raise ValueError('unsupported stage control protocol')
-    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK):
+    if epoch < 1 or sequence < 1 or operation not in (PREFILL, DECODE, RELEASE, STOP, PING, PREFILL_BATCH, PREFILL_CHUNK, SWITCH):
         raise ValueError('invalid stage epoch, sequence or operation')
     if not 0 <= count <= MAX_SLOTS or rows < 0:
         raise ValueError('invalid stage shape')
@@ -76,14 +76,16 @@ class StageState:
     The default 512 limit preserves legacy callers. An explicit context_limit
     up to 2**20 enables metadata accounting, not model/hardware qualification.
     """
-    def __init__(self, epoch, context, slots=MAX_SLOTS, *, context_limit=512):
+    def __init__(self, epoch, context, slots=MAX_SLOTS, *, context_limit=512, models=1):
         if (type(epoch) is not int or not 1 <= epoch <= MAX_INTEGER or
                 type(context_limit) is not int or not 1 <= context_limit <= 2**20 or
                 type(context) is not int or not 1 <= context <= context_limit or
-                type(slots) is not int or not 1 <= slots <= MAX_SLOTS):
+                type(slots) is not int or not 1 <= slots <= MAX_SLOTS or
+                type(models) is not int or not 1 <= models <= 2):
             raise ValueError('unsupported stage session bounds')
         self.epoch, self.context, self.slots = epoch, context, slots
         self.sequence = 1
+        self.models, self.model_index = models, 0
         self.generations = [0] * slots
         self.lengths = [0] * slots
         self.pending = None
@@ -131,6 +133,13 @@ class StageState:
                         position != self.lengths[slot] or position == 0 or
                         (command.operation == DECODE and position >= self.context)):
                     raise ValueError('stale or exhausted stage slot')
+        elif command.operation == SWITCH:
+            # rows carries the pre-agreed model-table index, never a path or
+            # arbitrary payload. No live request may survive a weight change.
+            if (command.entries or not 0 <= command.rows < self.models
+                    or command.rows == self.model_index or any(self.lengths)
+                    or self.epoch == MAX_INTEGER):
+                raise ValueError('invalid or busy stage model switch')
         elif command.rows != 0 or command.entries:
             raise ValueError('invalid stage stop or heartbeat record')
         self.pending = command
@@ -154,7 +163,13 @@ class StageState:
             elif command.operation == RELEASE:
                 self.lengths[slot] = 0
         self.closed = command.operation == STOP
-        self.sequence += 1
+        if command.operation == SWITCH:
+            self.model_index = command.rows
+            self.epoch += 1
+            self.sequence = 1
+            self.generations = [0] * self.slots
+        else:
+            self.sequence += 1
         self.pending = None
 
     def poison(self):

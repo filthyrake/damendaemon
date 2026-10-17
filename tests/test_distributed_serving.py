@@ -317,3 +317,78 @@ class DistributedPackedTests(RuntimeHelpers, unittest.TestCase):
         self.assertEqual([r[-1]['timing']['prefill_batch_size'] for r in results],[2]*4)
         self.assertEqual([c[2] for c in pair.calls if c[0]=='prefill_batch'],[[0,1],[2,3]])
         self.assertEqual(pair.state.lengths,[0]*4);self.assertEqual(errors,[])
+
+
+class SwitchingPair(BatchedPair):
+    def __init__(self):
+        super().__init__()
+        other=Model()
+        self.models={'a':self.model,'b':other}
+        self.identities={'a':b'a'*32,'b':b'b'*32}
+        self.identity=self.identities['a']
+        self.selected='a'
+        self.inputs=[]
+        self.switch_failure=False
+    def switch_model(self,alias):
+        assert not any(self.state.lengths)
+        self.calls.append(('switch',threading.get_ident(),alias))
+        if self.switch_failure:
+            self.state.failed=True
+            raise RuntimeError('injected peer weight-copy failure')
+        self.selected=alias;self.model=self.models[alias];self.identity=self.identities[alias]
+    def prefill(self,tokens,slot):
+        super().prefill(tokens,slot)
+        self.inputs.append((self.selected,list(tokens)))
+        self.outputs[slot]=65 if self.selected=='a' else 97
+        return self.outputs[slot]
+
+
+class DistributedSwitchTests(RuntimeHelpers,unittest.TestCase):
+    def test_queued_alternating_models_drain_and_switch_on_single_owner(self):
+        pair=SwitchingPair();runtime=DistributedRuntime(pair,'a')
+        with ThreadPoolExecutor(3) as pool:
+            futures=[]
+            for index,alias in enumerate(('a','b','a')):
+                futures.append(pool.submit(lambda alias=alias:list(runtime.generate(alias,None,2,raw_prompt=[1]))))
+                self.queued(runtime,index+1)
+            owner,errors=self.start(runtime)
+            results=[future.result(3) for future in futures]
+        self.assertEqual([''.join(e.get('text','') for e in r) for r in results],['AB','ab','AB'])
+        self.assertEqual([c[2] for c in pair.calls if c[0]=='switch'],['b','a'])
+        for index,call in enumerate(pair.calls):
+            if call[0]=='switch':self.assertEqual(pair.calls[index-1][0],'release')
+        self.assertEqual({c[1] for c in pair.calls},{owner.ident})
+        self.assertEqual(results[0][-1]['timing']['source_tier'],'gpu')
+        self.assertEqual(results[1][-1]['timing']['source_tier'],'host')
+        self.assertGreater(results[1][-1]['timing']['activation_seconds'],0)
+        self.assertEqual(runtime.manage('status')['model_switches'],2)
+        self.assertEqual([m['residency'] for m in runtime.manage('status')['models']],['gpu','host'])
+        self.assertEqual(errors,[])
+
+    def test_queued_target_uses_its_own_tokenizer_before_activation(self):
+        pair=SwitchingPair()
+        pair.models['a'].chat_tokens=lambda messages,**kwargs:[7,8]
+        pair.models['b'].chat_tokens=lambda messages,**kwargs:[9,10]
+        runtime=DistributedRuntime(pair,'a')
+        with ThreadPoolExecutor(2) as pool:
+            first=pool.submit(lambda:list(runtime.generate('b',[{'role':'user','content':'x'}],2)))
+            self.queued(runtime)
+            second=pool.submit(lambda:list(runtime.generate('a',[{'role':'user','content':'x'}],2)))
+            self.queued(runtime,2);self.start(runtime)
+            first.result(3);second.result(3)
+        self.assertEqual(pair.inputs,[('b',[9,10]),('a',[7,8])])
+
+    def test_failed_switch_cannot_publish_success_or_admit_following_model(self):
+        pair=SwitchingPair();pair.switch_failure=True;runtime=DistributedRuntime(pair,'a')
+        with ThreadPoolExecutor(2) as pool:
+            first=pool.submit(lambda:list(runtime.generate('b',None,2,raw_prompt=[1])))
+            self.queued(runtime)
+            second=pool.submit(lambda:list(runtime.generate('a',None,2,raw_prompt=[1])))
+            self.queued(runtime,2);owner,errors=self.start(runtime)
+            with self.assertRaises(RuntimeError):first.result(3)
+            with self.assertRaises(BusyError):second.result(3)
+        owner.join(2)
+        self.assertEqual(runtime.current_alias,'a')
+        self.assertEqual(runtime.switches,0)
+        self.assertEqual([c[0] for c in pair.calls],['switch'])
+        self.assertTrue(runtime.closed.is_set());self.assertEqual(len(errors),1)

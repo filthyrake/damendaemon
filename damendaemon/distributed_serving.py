@@ -29,6 +29,7 @@ class Request:
     maximum: int
     submitted: float
     events: queue.Queue
+    alias: str = 'model'
     cancelled: threading.Event = field(default_factory=threading.Event)
     started: threading.Event = field(default_factory=threading.Event)
     cache_scope: object = field(default_factory=cache_scope.get,repr=False)
@@ -47,6 +48,7 @@ class Active:
     finish: str = 'length'
     batch_size: int = 1
     prefill_batch_size: int = 1
+    activation_seconds: float = 0
     acquired: bool = False
     prefill_offset: int = 0
     prefill_turn: int = 0
@@ -78,6 +80,11 @@ class DistributedRuntime:
         self.active=False
         self.max_batch=getattr(pair,'max_batch',1)
         self.packed_prefill=getattr(pair,'packed_prefill',False)
+        self.models=getattr(pair,'models',{alias:pair.model})
+        self.identities=getattr(pair,'identities',{alias:pair.identity})
+        if alias not in self.models:raise ValueError('initial model alias is not configured')
+        self.current_alias=alias
+        self.switches=0
         self.completed=0
         self.heartbeats=0
         self.client_decode_turns=client_decode_turns;self.decode_turns=ClientDecodeTurns()
@@ -126,13 +133,15 @@ class DistributedRuntime:
                 self._publish(waiting,BusyError('distributed session is closed'))
                 self.accepted.pop(id(waiting),None)
 
-    def model_ids(self):return [self.alias]
+    def model_ids(self):return list(self.models)
 
     def manage(self, action, **options):
         if action!='status' or options:raise ValueError('distributed model management is not supported')
         return dict(device='distributed-cuda',context=self.pair.model.max_context,
-            models=[dict(id=self.alias,residency='gpu',quantization=self.pair.model.quantization,
-                         model_sha256=self.pair.identity.hex())],
+            models=[dict(id=alias,residency='gpu' if alias==self.current_alias else 'host',
+                         quantization=model.quantization,model_sha256=self.identities[alias].hex())
+                    for alias,model in self.models.items()],
+            current_model=self.current_alias,model_switches=self.switches,
             weight_layout='q4-adjacent-body' if getattr(self.pair,'q4_stage_adjacent',False) else 'canonical',
             distributed=True,stage_layers=[[0,12],[12,24]],max_batch_size=self.max_batch,packed_prefill=self.packed_prefill,
             active=self.active,queued=self.requests.qsize(),completed=self.completed,
@@ -146,9 +155,10 @@ class DistributedRuntime:
     def rerank(self,*args,**kwargs):raise ValueError('distributed reranking is unsupported')
 
     def generate(self, alias, messages, max_tokens, *, raw_prompt=None, enable_thinking=None, **options):
-        if alias!=self.alias:raise ValueError('unknown distributed model')
+        if alias not in self.models:raise ValueError('unknown distributed model')
+        model=self.models[alias]
         with self.admission_lock:self._check_admission()
-        if type(max_tokens) is not int or not 1 <= max_tokens <= self.pair.model.max_context:
+        if type(max_tokens) is not int or not 1 <= max_tokens <= model.max_context:
             raise ValueError('invalid completion limit')
         stops=options.pop('stop',None)
         if stops or set(options)-set(Sampling.__dataclass_fields__):
@@ -156,12 +166,12 @@ class DistributedRuntime:
         if Sampling(**options)!=Sampling():
             raise ValueError('distributed serving supports default greedy sampling only')
         with self.prepare_lock:
-            tokens=encode(self.pair.model,messages,raw_prompt=raw_prompt,enable_thinking=enable_thinking)
-        if not tokens or len(tokens)+max_tokens>self.pair.model.max_context:
+            tokens=encode(model,messages,raw_prompt=raw_prompt,enable_thinking=enable_thinking)
+        if not tokens or len(tokens)+max_tokens>model.max_context:
             raise ValueError('prompt plus completion limit exceeds distributed context')
         # One extra position is reserved for a release-acknowledged final or error.
         # The owner never schedules a token when eight data events are buffered.
-        request=Request(tokens,max_tokens,time.monotonic(),queue.Queue(STREAM_BUFFER_EVENTS+1))
+        request=Request(tokens,max_tokens,time.monotonic(),queue.Queue(STREAM_BUFFER_EVENTS+1),alias=alias)
         with self.admission_lock:
             self._check_admission()
             try:self.requests.put_nowait(request)
@@ -221,7 +231,8 @@ class DistributedRuntime:
             self._publish(request,dict(finish_reason=item.finish,
                 usage=dict(prompt_tokens=len(request.tokens),completion_tokens=count,
                            total_tokens=len(request.tokens)+count),
-                timing=dict(source_tier=self.source_tier,activation_seconds=0,
+                timing=dict(source_tier='host' if item.activation_seconds else self.source_tier,
+                    activation_seconds=item.activation_seconds,
                     queue_seconds=item.started-request.submitted,
                     first_token_seconds=item.first-request.submitted,
                     generation_first_token_seconds=item.first-item.started,
@@ -269,6 +280,7 @@ class DistributedRuntime:
         last_request=last_control=time.monotonic()
         active=[]
         primary_error=None
+        deferred=None
         try:
             while not self.closed.is_set():
                 retired=[item for item in active if item.done or item.request.cancelled.is_set()]
@@ -282,16 +294,30 @@ class DistributedRuntime:
                 # Short/EOS requests cannot monopolize the owner by refilling here.
                 pending=[]
                 for slot in free:
-                    try:request=self.requests.get(timeout=.1) if not active else self.requests.get_nowait()
-                    except queue.Empty:break
+                    if deferred is not None:
+                        request=deferred
+                        if active:break  # Drain this model before the queued switch.
+                        deferred=None
+                    else:
+                        try:request=self.requests.get(timeout=.1) if not active else self.requests.get_nowait()
+                        except queue.Empty:break
                     if request.cancelled.is_set() or time.monotonic()-request.submitted>=self.queue_timeout:
                         self._publish(request,BusyError('distributed request queue deadline exceeded'))
                         self._retire([request])
                         continue
+                    if request.alias!=self.current_alias and active:
+                        deferred=request
+                        break
                     request.started.set()
                     item=Active(request,slot,time.monotonic())
                     active.append(item);self.active=True
                     progressed=True
+                    if request.alias!=self.current_alias:
+                        started=time.monotonic()
+                        self.pair.switch_model(request.alias)
+                        item.activation_seconds=time.monotonic()-started
+                        self.current_alias=request.alias
+                        self.switches+=1
                     pending.append(item)
                 if self.interleaved_prefill:
                     if self._prefill_one_chunk(active):
@@ -354,6 +380,9 @@ class DistributedRuntime:
             finally:
                 self.active=False
                 self.decode_turns.reset();self.prefill_turn=0;self.prefill_turns.reset()
+                if deferred is not None:
+                    self._publish(deferred,BusyError('distributed session is closed'))
+                    self._retire([deferred])
                 with self.admission_lock:self.accepted.clear()
 
     def close(self):self._close_admission()
