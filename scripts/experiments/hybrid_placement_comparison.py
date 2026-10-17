@@ -59,11 +59,17 @@ def batch_round(prompts):
     results = [None]*len(prompts)
     started = time.monotonic()
     def drive(index):
-        results[index] = generate(prompts[index])
+        try:
+            results[index] = generate(prompts[index])
+        except Exception as error:
+            results[index] = dict(error=str(error), tokens=0)
     threads = [threading.Thread(target=drive, args=(index,)) for index in range(len(prompts))]
     for thread in threads: thread.start()
     for thread in threads: thread.join()
     seconds = time.monotonic()-started
+    failed = [entry['error'] for entry in results if 'error' in entry]
+    if failed:
+        raise RuntimeError(f'generation failures: {failed[:2]}')
     total = sum(entry['tokens'] for entry in results)
     return dict(prompts=prompts, results=results, wall_seconds=seconds,
                 completion_tokens=total, tokens_per_second=total/seconds)
@@ -82,6 +88,8 @@ def main():
                   device=torch.cuda.get_device_name(), torch=torch.__version__,
                   context=512, batches=list(BATCHES), rounds={})
     save(args.output, report)
+    manifest_path = args.output.with_suffix('.manifest.json')
+    save(manifest_path, dict(version=1, models=dict(qwen38=dict(path=MODEL, quantization='q4_0'))))
     environment = dict(os.environ)
     server = None
     try:
@@ -90,7 +98,7 @@ def main():
             environment['DAMENDAEMON_HYBRID_PRECISION'] = 'compensated'
         server = subprocess.Popen(
             [sys.executable, '-m', 'scripts.experiments.hybrid_q4_context_probe', 'serve',
-             '--model', f'qwen38={MODEL}', '--device', 'cuda', '--context', '512',
+             '--model-config', manifest_path, '--device', 'cuda', '--context', '512',
              '--no-graph', '--port', str(PORT), '--gpu-models', '1', '--host-models', '1',
              '--host-gib', '40'],
             env=environment, stdout=open(args.output.with_suffix('.serve.log'), 'w'),
