@@ -28,6 +28,10 @@ def parser_for_command():
     parser.add_argument('--output-mib',type=bounded_integer(1,2048),default=64)
     parser.add_argument('--cpu-threads',type=bounded_integer(1,16),default=1)
     parser.add_argument('--flash-images',action='store_true',help='explicit CUDA Flash still-image/tool HTTP owner')
+    parser.add_argument('--device-routing',action='store_true',
+                        help='route packed-MoE experts on device without host readback (opt-in)')
+    parser.add_argument('--composition',choices=('per_token','batched','fused'),default='per_token',
+                        help='packed-MoE composition; fused requires DeepSeek (opt-in)')
     for name,maximum in (('vision-weight-mib',2048),('image-workspace-mib',2048),('image-output-mib',2048),('max-patches',65536)):
         parser.add_argument('--'+name,type=bounded_integer(1,maximum),help='requires --flash-images')
     parser.set_defaults(queue_size=0)
@@ -98,7 +102,8 @@ def prepare(args):
         cpu=load_reference_model(path,max_weight_bytes=args.weight_mib*1024**2,
             workspace_bytes=args.projection_workspace_mib*1024**2)
         placed=place(cpu,device=device,max_bytes=args.device_weight_mib*1024**2,
-            workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2)
+            workspace_bytes=args.workspace_mib*1024**2,max_output_bytes=args.output_mib*1024**2,
+            device_routing=args.device_routing,composition=args.composition)
     else:
         cpu=load_reference_model(path,max_weight_bytes=args.weight_mib*1024**2,
             projection_workspace_bytes=args.projection_workspace_mib*1024**2,
@@ -110,7 +115,8 @@ def prepare(args):
                 max_tokens=args.max_patches or 4096,max_workspace_bytes=args.workspace_mib*1024**2,
                 max_output_bytes=args.output_mib*1024**2)
             placed=place_cuda_flash_image(cpu,vision,device=device,max_bytes=args.device_weight_mib*1024**2)
-        else:placed=place(cpu,device=device,max_bytes=args.device_weight_mib*1024**2)
+        else:placed=place(cpu,device=device,max_bytes=args.device_weight_mib*1024**2,
+            device_routing=args.device_routing,composition=args.composition)
     model=placed.model
     try:
         image_options={} if not args.flash_images else dict(vision=placed.vision,

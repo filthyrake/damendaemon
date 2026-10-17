@@ -37,6 +37,15 @@ class ServeCudaTests(unittest.TestCase):
         self.assertEqual(args.context,128);self.assertLess(args.device_weight_mib,args.allocator_mib)
         self.assertFalse(hasattr(args,'host'))
 
+    def test_composition_flags_default_off_and_validate(self):
+        args=parser_for_command().parse_args(['/local/snapshot','--device','cuda:0'])
+        self.assertIs(args.device_routing,False);self.assertEqual(args.composition,'per_token')
+        args=parser_for_command().parse_args(['/local/snapshot','--device','cuda:0',
+                                              '--device-routing','--composition','fused'])
+        self.assertIs(args.device_routing,True);self.assertEqual(args.composition,'fused')
+        with self.assertRaises(SystemExit):
+            parser_for_command().parse_args(['/local/snapshot','--device','cuda:0','--composition','threads'])
+
 
 if __name__=='__main__':unittest.main()
 
