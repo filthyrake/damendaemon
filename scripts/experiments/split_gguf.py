@@ -58,9 +58,11 @@ def snapshot(path):
     return dict(files=files, semantics=semantics)
 
 
-def prepare(single, split, output, context=128, steps=4):
+def prepare(single, split, output, context=128, steps=4, timeout_seconds=120):
     if not 32 <= context <= 128 or not 1 <= steps <= 8:
         raise ValueError('context must be 32..128 and steps 1..8')
+    if type(timeout_seconds) is not int or not 120 <= timeout_seconds <= 300:
+        raise ValueError('timeout must be 120..300 seconds')
     a, b = snapshot(single), snapshot(split)
     if len(a['files']) != 1 or len(b['files']) < 2:
         raise ValueError('provide a single checkpoint and the first member of a split set')
@@ -76,7 +78,7 @@ def prepare(single, split, output, context=128, steps=4):
         raise ValueError('prompt does not fit bounded context')
     output.mkdir()  # Never overwrite previous evidence.
     manifest = dict(schema=1, context=context, steps=steps, prompt_ids=ids,
-                    allocator_mib=1536, timeout_seconds=120,
+                    allocator_mib=1536, timeout_seconds=timeout_seconds,
                     sources=dict(single=a, split=b), hardware_validated=False)
     save(output/'manifest.json', manifest)
     return manifest
@@ -212,7 +214,7 @@ def execute(folder, invoke=subprocess.run):
     manifest = json.loads((folder/'manifest.json').read_text())
     if manifest['schema'] != 1 or not 32 <= manifest['context'] <= 128 or not 1 <= manifest['steps'] <= 8:
         raise ValueError('invalid manifest bounds')
-    if manifest['allocator_mib'] != 1536 or manifest['timeout_seconds'] != 120:
+    if manifest['allocator_mib'] != 1536 or not 120 <= manifest['timeout_seconds'] <= 300:
         raise ValueError('invalid resource bounds')
     if not manifest['prompt_ids'] or len(manifest['prompt_ids'])+manifest['steps'] > manifest['context']:
         raise ValueError('invalid prompt bounds')
@@ -222,7 +224,7 @@ def execute(folder, invoke=subprocess.run):
     report = dict(run_id=run_id, passed=False, hardware_validated=False, performance_qualified=False, completed=[])
     started = time.monotonic()
     def remaining_budget():
-        remaining = 120 - (time.monotonic() - started)
+        remaining = manifest['timeout_seconds'] - (time.monotonic() - started)
         if remaining <= 0:
             raise TimeoutError('total qualification deadline')
         return remaining

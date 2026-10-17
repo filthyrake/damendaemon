@@ -42,6 +42,11 @@ class PreparationTests(unittest.TestCase):
             for context,steps in [(31,4),(129,4),(128,0),(128,9)]:
                 with self.assertRaises(ValueError):
                     prepare(single,parts[0],root/'bad',context,steps)
+            for bad_timeout in (119,301,'180',None):
+                with self.assertRaises(ValueError):
+                    prepare(single,parts[0],root/'bad',timeout_seconds=bad_timeout)
+            extended=prepare(single,parts[0],root/'extended',timeout_seconds=300)
+            self.assertEqual(extended['timeout_seconds'],300)
             self.assertFalse((root/'bad').exists())
 
     def test_metadata_mismatch(self):
